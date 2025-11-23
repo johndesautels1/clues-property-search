@@ -1,0 +1,488 @@
+// CLUES Property Dashboard - PostgreSQL Schema
+// 110-Field Property Data with Confidence Tracking
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// MAIN PROPERTY TABLE
+// ============================================
+model Property {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Computed Scores
+  smartScore       Int?
+  dataCompleteness Int?
+  aiConfidence     Int?
+
+  // Media
+  images         String[]
+  virtualTourUrl String?
+
+  // LLM Source Tracking
+  llmClaude Boolean @default(false)
+  llmGpt    Boolean @default(false)
+  llmGrok   Boolean @default(false)
+  llmGemini Boolean @default(false)
+
+  // Relations to field groups
+  address    PropertyAddress?
+  details    PropertyDetails?
+  structural PropertyStructural?
+  location   PropertyLocation?
+  financial  PropertyFinancial?
+  utilities  PropertyUtilities?
+
+  // Scrape history
+  scrapeHistory ScrapeHistory[]
+
+  @@index([smartScore])
+  @@index([createdAt])
+}
+
+// ============================================
+// ADDRESS FIELDS (1-10)
+// ============================================
+model PropertyAddress {
+  id         String   @id @default(cuid())
+  propertyId String   @unique
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Field 1: Full Address
+  fullAddress           String?
+  fullAddressConfidence String?
+  fullAddressNotes      String?
+  fullAddressSources    String[]
+
+  // Field 2: MLS Primary
+  mlsPrimary           String?
+  mlsPrimaryConfidence String?
+  mlsPrimaryNotes      String?
+  mlsPrimarySources    String[]
+
+  // Field 3: MLS Secondary
+  mlsSecondary           String?
+  mlsSecondaryConfidence String?
+  mlsSecondaryNotes      String?
+  mlsSecondarySources    String[]
+
+  // Field 4: Listing Status
+  listingStatus           String?
+  listingStatusConfidence String?
+  listingStatusNotes      String?
+  listingStatusSources    String[]
+
+  // Field 5: Listing Date
+  listingDate           DateTime?
+  listingDateConfidence String?
+  listingDateNotes      String?
+  listingDateSources    String[]
+
+  // Field 6: Listing Price
+  listingPrice           Decimal?  @db.Decimal(12, 2)
+  listingPriceConfidence String?
+  listingPriceNotes      String?
+  listingPriceSources    String[]
+
+  // Field 7: Price Per Sqft
+  pricePerSqft           Decimal? @db.Decimal(10, 2)
+  pricePerSqftConfidence String?
+  pricePerSqftNotes      String?
+  pricePerSqftSources    String[]
+
+  // Additional address components
+  streetAddress String?
+  city          String?
+  state         String?
+  zipCode       String?
+  county        String?
+  latitude      Decimal? @db.Decimal(10, 7)
+  longitude     Decimal? @db.Decimal(10, 7)
+
+  @@index([city])
+  @@index([zipCode])
+  @@index([listingStatus])
+}
+
+// ============================================
+// PROPERTY DETAILS (8-30)
+// ============================================
+model PropertyDetails {
+  id         String   @id @default(cuid())
+  propertyId String   @unique
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Field 8: Bedrooms
+  bedrooms           Int?
+  bedroomsConfidence String?
+  bedroomsNotes      String?
+  bedroomsSources    String[]
+
+  // Field 9: Full Bathrooms
+  fullBathrooms           Int?
+  fullBathroomsConfidence String?
+  fullBathroomsNotes      String?
+  fullBathroomsSources    String[]
+
+  // Field 10: Half Bathrooms
+  halfBathrooms           Int?
+  halfBathroomsConfidence String?
+  halfBathroomsNotes      String?
+  halfBathroomsSources    String[]
+
+  // Field 11: Total Bathrooms
+  totalBathrooms           Decimal? @db.Decimal(4, 1)
+  totalBathroomsConfidence String?
+  totalBathroomsNotes      String?
+  totalBathroomsSources    String[]
+
+  // Field 12: Living Sqft
+  livingSqft           Int?
+  livingSqftConfidence String?
+  livingSqftNotes      String?
+  livingSqftSources    String[]
+
+  // Field 13: Total Sqft Under Roof
+  totalSqftUnderRoof           Int?
+  totalSqftUnderRoofConfidence String?
+  totalSqftUnderRoofNotes      String?
+  totalSqftUnderRoofSources    String[]
+
+  // Field 14: Lot Size Sqft
+  lotSizeSqft           Int?
+  lotSizeSqftConfidence String?
+  lotSizeSqftNotes      String?
+  lotSizeSqftSources    String[]
+
+  // Field 15: Lot Size Acres
+  lotSizeAcres           Decimal? @db.Decimal(8, 4)
+  lotSizeAcresConfidence String?
+  lotSizeAcresNotes      String?
+  lotSizeAcresSources    String[]
+
+  // Field 16: Year Built
+  yearBuilt           Int?
+  yearBuiltConfidence String?
+  yearBuiltNotes      String?
+  yearBuiltSources    String[]
+
+  // Field 17: Property Type
+  propertyType           String?
+  propertyTypeConfidence String?
+  propertyTypeNotes      String?
+  propertyTypeSources    String[]
+
+  // Field 18: Stories
+  stories           Int?
+  storiesConfidence String?
+  storiesNotes      String?
+  storiesSources    String[]
+
+  // Field 19: Garage Spaces
+  garageSpaces           Int?
+  garageSpacesConfidence String?
+  garageSpacesNotes      String?
+  garageSpacesSources    String[]
+
+  // Field 20: Parking Total
+  parkingTotal           String?
+  parkingTotalConfidence String?
+  parkingTotalNotes      String?
+  parkingTotalSources    String[]
+
+  // Field 21: HOA Y/N
+  hoaYn           Boolean?
+  hoaYnConfidence String?
+  hoaYnNotes      String?
+  hoaYnSources    String[]
+
+  // Field 22: HOA Fee Annual
+  hoaFeeAnnual           Decimal? @db.Decimal(10, 2)
+  hoaFeeAnnualConfidence String?
+  hoaFeeAnnualNotes      String?
+  hoaFeeAnnualSources    String[]
+
+  // Field 23: Annual Taxes
+  annualTaxes           Decimal? @db.Decimal(10, 2)
+  annualTaxesConfidence String?
+  annualTaxesNotes      String?
+  annualTaxesSources    String[]
+
+  // Field 24: Tax Year
+  taxYear           Int?
+  taxYearConfidence String?
+  taxYearNotes      String?
+  taxYearSources    String[]
+
+  // Field 25: Assessed Value
+  assessedValue           Decimal? @db.Decimal(12, 2)
+  assessedValueConfidence String?
+  assessedValueNotes      String?
+  assessedValueSources    String[]
+
+  // Field 26: Market Value Estimate
+  marketValueEstimate           Decimal? @db.Decimal(12, 2)
+  marketValueEstimateConfidence String?
+  marketValueEstimateNotes      String?
+  marketValueEstimateSources    String[]
+
+  // Field 27: Last Sale Date
+  lastSaleDate           DateTime?
+  lastSaleDateConfidence String?
+  lastSaleDateNotes      String?
+  lastSaleDateSources    String[]
+
+  // Field 28: Last Sale Price
+  lastSalePrice           Decimal? @db.Decimal(12, 2)
+  lastSalePriceConfidence String?
+  lastSalePriceNotes      String?
+  lastSalePriceSources    String[]
+
+  // Field 29: Ownership Type
+  ownershipType           String?
+  ownershipTypeConfidence String?
+  ownershipTypeNotes      String?
+  ownershipTypeSources    String[]
+
+  // Field 30: Parcel ID
+  parcelId           String?
+  parcelIdConfidence String?
+  parcelIdNotes      String?
+  parcelIdSources    String[]
+
+  @@index([propertyType])
+  @@index([bedrooms])
+  @@index([yearBuilt])
+}
+
+// ============================================
+// STRUCTURAL DETAILS (31-50)
+// ============================================
+model PropertyStructural {
+  id         String   @id @default(cuid())
+  propertyId String   @unique
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Fields 31-50 with confidence tracking
+  roofType                     String?
+  roofTypeConfidence           String?
+  roofAgeEst                   String?
+  roofAgeEstConfidence         String?
+  exteriorMaterial             String?
+  exteriorMaterialConfidence   String?
+  foundation                   String?
+  foundationConfidence         String?
+  hvacType                     String?
+  hvacTypeConfidence           String?
+  hvacAge                      String?
+  hvacAgeConfidence            String?
+  flooringType                 String?
+  flooringTypeConfidence       String?
+  kitchenFeatures              String?
+  kitchenFeaturesConfidence    String?
+  appliancesIncluded           String[]
+  appliancesIncludedConfidence String?
+  fireplaceYn                  Boolean?
+  fireplaceYnConfidence        String?
+  poolYn                       Boolean?
+  poolYnConfidence             String?
+  poolType                     String?
+  poolTypeConfidence           String?
+  deckPatio                    String?
+  deckPatioConfidence          String?
+  fence                        String?
+  fenceConfidence              String?
+  landscaping                  String?
+  landscapingConfidence        String?
+  recentRenovations            String?
+  recentRenovationsConfidence  String?
+  permitHistoryRoof            String?
+  permitHistoryRoofConfidence  String?
+  permitHistoryHvac            String?
+  permitHistoryHvacConfidence  String?
+  permitHistoryPool            String?
+  permitHistoryPoolConfidence  String?
+  interiorCondition            String?
+  interiorConditionConfidence  String?
+}
+
+// ============================================
+// LOCATION DATA (51-75)
+// ============================================
+model PropertyLocation {
+  id         String   @id @default(cuid())
+  propertyId String   @unique
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Schools
+  assignedElementary         String?
+  elementaryRating           String?
+  elementaryDistanceMiles    Decimal? @db.Decimal(5, 2)
+  assignedMiddle             String?
+  middleRating               String?
+  middleDistanceMiles        Decimal? @db.Decimal(5, 2)
+  assignedHigh               String?
+  highRating                 String?
+  highDistanceMiles          Decimal? @db.Decimal(5, 2)
+
+  // Walkability
+  walkScore                Int?
+  transitScore             Int?
+  bikeScore                Int?
+  walkScoreConfidence      String?
+
+  // Distances
+  distanceGroceryMiles     Decimal? @db.Decimal(5, 2)
+  distanceHospitalMiles    Decimal? @db.Decimal(5, 2)
+  distanceAirportMiles     Decimal? @db.Decimal(5, 2)
+  distanceParkMiles        Decimal? @db.Decimal(5, 2)
+  distanceBeachMiles       Decimal? @db.Decimal(5, 2)
+
+  // Safety
+  crimeIndexViolent          String?
+  crimeIndexProperty         String?
+  neighborhoodSafetyRating   String?
+  crimeConfidence            String?
+
+  // Environment
+  noiseLevel               String?
+  trafficLevel             String?
+  walkabilityDescription   String?
+  commuteTimeCityCenter    String?
+  publicTransitAccess      String?
+
+  @@index([walkScore])
+}
+
+// ============================================
+// FINANCIAL DATA (76-90)
+// ============================================
+model PropertyFinancial {
+  id         String   @id @default(cuid())
+  propertyId String   @unique
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Tax Data
+  annualPropertyTax        Decimal? @db.Decimal(10, 2)
+  taxExemptions            String?
+  propertyTaxRate          Decimal? @db.Decimal(6, 4)
+  recentTaxPaymentHistory  String?
+
+  // Market Data
+  medianHomePriceNeighborhood Decimal? @db.Decimal(12, 2)
+  pricePerSqftRecentAvg       Decimal? @db.Decimal(10, 2)
+  daysOnMarketAvg             Int?
+  inventorySurplus            String?
+
+  // Rental Data
+  rentalEstimateMonthly    Decimal? @db.Decimal(10, 2)
+  rentalYieldEst           Decimal? @db.Decimal(6, 4)
+  vacancyRateNeighborhood  Decimal? @db.Decimal(5, 2)
+  capRateEst               Decimal? @db.Decimal(6, 4)
+
+  // Insurance & Financing
+  insuranceEstAnnual       Decimal? @db.Decimal(10, 2)
+  financingTerms           String?
+  comparableSalesLast3     String[]
+
+  // Confidence tracking
+  financialDataConfidence  String?
+}
+
+// ============================================
+// UTILITIES & ENVIRONMENT (91-110)
+// ============================================
+model PropertyUtilities {
+  id         String   @id @default(cuid())
+  propertyId String   @unique
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Utilities
+  electricProvider       String?
+  waterProvider          String?
+  sewerProvider          String?
+  naturalGas             String?
+  internetProvidersTop3  String[]
+  maxInternetSpeed       String?
+  cableTvProvider        String?
+
+  // Environment
+  airQualityIndexCurrent   String?
+  floodZone                String?
+  floodRiskLevel           String?
+  climateRiskWildfireFlood String?
+  noiseLevelDbEst          String?
+  solarPotential           String?
+  evChargingYn             String?
+  smartHomeFeatures        String?
+
+  // Community
+  accessibilityMods      String?
+  petPolicy              String?
+  ageRestrictions        String?
+  specialAssessments     String?
+
+  // Summary
+  notesConfidenceSummary String?
+}
+
+// ============================================
+// SCRAPE HISTORY
+// ============================================
+model ScrapeHistory {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  scrapeDate     DateTime @default(now())
+  llmUsed        String
+  fieldsUpdated  Int
+  totalCost      Decimal? @db.Decimal(10, 4)
+  sourceUrls     String[]
+  errorMessages  String[]
+  rawResponse    Json?
+
+  @@index([propertyId, scrapeDate])
+}
+
+// ============================================
+// USER & SETTINGS
+// ============================================
+model User {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  email     String   @unique
+  name      String?
+
+  // API Keys (encrypted)
+  anthropicKey String?
+  openaiKey    String?
+  grokKey      String?
+  geminiKey    String?
+
+  // Preferences
+  defaultLlm   String @default("auto")
+  theme        String @default("quantum-dark")
+
+  // CLUES Integration
+  cluesAppId   String?
+  cluesToken   String?
+}
+
+// ============================================
+// API CONFIGURATION
+// ============================================
+model ApiConfig {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}

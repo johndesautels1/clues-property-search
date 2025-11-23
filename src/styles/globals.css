@@ -1,0 +1,420 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   CLUES QUANTUM 5D GLASSMORPHIC DESIGN SYSTEM
+   Mobile-First | Ultra Space Age | 2025+
+   ============================================ */
+
+@layer base {
+  :root {
+    /* Core Quantum Colors */
+    --quantum-black: #0a0a0f;
+    --quantum-dark: #13141f;
+    --quantum-card: #1e1f2e;
+    --quantum-border: #2a2b3d;
+    --quantum-cyan: #00ffff;
+    --quantum-blue: #0080ff;
+    --quantum-purple: #8b5cf6;
+    --quantum-pink: #ff0080;
+    --quantum-green: #00ff88;
+    --quantum-gold: #ffd700;
+    --quantum-red: #ff0040;
+
+    /* 5D Glass Effects */
+    --glass-blur: 20px;
+    --glass-blur-heavy: 40px;
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+    /* Safe Areas for Mobile */
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+
+    /* Touch-friendly sizing */
+    --touch-target: 44px;
+    --touch-target-lg: 48px;
+  }
+
+  html {
+    font-family: 'Exo 2', sans-serif;
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-quantum-black text-white;
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
+    overflow-x: hidden;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Disable pull-to-refresh on mobile */
+  body {
+    overscroll-behavior-y: contain;
+  }
+
+  /* Custom scrollbar - sleek quantum style */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--quantum-dark);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--quantum-cyan), var(--quantum-purple));
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--quantum-cyan);
+  }
+}
+
+@layer components {
+  /* ========================
+     5D GLASSMORPHIC CARDS
+     ======================== */
+  .glass-card {
+    @apply relative overflow-hidden rounded-2xl;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      rgba(255, 255, 255, 0.02) 100%
+    );
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .glass-card-hover {
+    @apply glass-card transition-all duration-300;
+  }
+
+  .glass-card-hover:hover {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 20px 60px rgba(0, 255, 255, 0.15);
+    border-color: rgba(0, 255, 255, 0.3);
+  }
+
+  /* 5D Depth Effect */
+  .glass-5d {
+    @apply glass-card;
+    background: linear-gradient(
+      145deg,
+      rgba(0, 255, 255, 0.08) 0%,
+      rgba(0, 128, 255, 0.05) 25%,
+      rgba(139, 92, 246, 0.05) 50%,
+      rgba(255, 0, 128, 0.03) 75%,
+      transparent 100%
+    );
+    backdrop-filter: blur(var(--glass-blur-heavy));
+    -webkit-backdrop-filter: blur(var(--glass-blur-heavy));
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      0 0 80px rgba(0, 255, 255, 0.1),
+      inset 0 0 80px rgba(255, 255, 255, 0.02);
+  }
+
+  /* ========================
+     QUANTUM BUTTONS
+     ======================== */
+  .btn-quantum {
+    @apply relative inline-flex items-center justify-center gap-2
+           px-6 py-3 rounded-xl font-semibold
+           transition-all duration-300 overflow-hidden;
+    min-height: var(--touch-target);
+    background: linear-gradient(135deg, var(--quantum-cyan), var(--quantum-blue));
+    color: var(--quantum-black);
+    box-shadow: 0 4px 20px rgba(0, 255, 255, 0.3);
+  }
+
+  .btn-quantum:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0, 255, 255, 0.5);
+  }
+
+  .btn-quantum:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(0, 255, 255, 0.3);
+  }
+
+  .btn-glass {
+    @apply relative inline-flex items-center justify-center gap-2
+           px-6 py-3 rounded-xl font-semibold
+           transition-all duration-300;
+    min-height: var(--touch-target);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+  }
+
+  .btn-glass:hover {
+    background: rgba(0, 255, 255, 0.2);
+    border-color: rgba(0, 255, 255, 0.4);
+  }
+
+  /* ========================
+     MOBILE-FIRST INPUTS
+     ======================== */
+  .input-glass {
+    @apply w-full px-4 py-3 rounded-xl
+           bg-white/5 border border-white/10
+           text-white placeholder:text-gray-500
+           focus:outline-none focus:border-quantum-cyan/50
+           focus:ring-2 focus:ring-quantum-cyan/20
+           transition-all duration-200;
+    min-height: var(--touch-target);
+    font-size: 16px; /* Prevents zoom on iOS */
+    backdrop-filter: blur(10px);
+  }
+
+  /* ========================
+     QUANTUM BADGES / SCORES
+     ======================== */
+  .score-badge {
+    @apply inline-flex items-center justify-center
+           px-3 py-1 rounded-full text-sm font-bold;
+    background: linear-gradient(135deg, var(--quantum-cyan), var(--quantum-purple));
+    color: var(--quantum-black);
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+  }
+
+  .score-excellent {
+    @apply text-quantum-green;
+    text-shadow: 0 0 10px var(--quantum-green);
+  }
+
+  .score-good {
+    @apply text-quantum-blue;
+    text-shadow: 0 0 10px var(--quantum-blue);
+  }
+
+  .score-fair {
+    @apply text-quantum-gold;
+    text-shadow: 0 0 10px var(--quantum-gold);
+  }
+
+  .score-poor {
+    @apply text-quantum-red;
+    text-shadow: 0 0 10px var(--quantum-red);
+  }
+
+  /* ========================
+     NEON TEXT EFFECTS
+     ======================== */
+  .text-glow-cyan {
+    text-shadow: 0 0 10px var(--quantum-cyan),
+                 0 0 20px var(--quantum-cyan),
+                 0 0 30px var(--quantum-cyan);
+  }
+
+  .text-glow-purple {
+    text-shadow: 0 0 10px var(--quantum-purple),
+                 0 0 20px var(--quantum-purple),
+                 0 0 30px var(--quantum-purple);
+  }
+
+  .text-gradient-quantum {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, var(--quantum-cyan), var(--quantum-blue), var(--quantum-purple));
+  }
+
+  /* ========================
+     MOBILE NAVIGATION
+     ======================== */
+  .nav-mobile {
+    @apply fixed bottom-0 left-0 right-0 z-50;
+    padding-bottom: var(--safe-bottom);
+    background: linear-gradient(180deg, rgba(10, 10, 15, 0.95), rgba(10, 10, 15, 1));
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .nav-item {
+    @apply flex flex-col items-center justify-center gap-1
+           py-2 px-4 transition-all duration-200;
+    min-height: var(--touch-target);
+  }
+
+  .nav-item.active {
+    @apply text-quantum-cyan;
+  }
+
+  .nav-item.active .nav-icon {
+    filter: drop-shadow(0 0 8px var(--quantum-cyan));
+  }
+
+  /* ========================
+     LOADING STATES
+     ======================== */
+  .skeleton {
+    @apply relative overflow-hidden bg-white/5 rounded-lg;
+  }
+
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      transparent
+    );
+    animation: shimmer 1.5s infinite;
+  }
+
+  /* ========================
+     PROGRESS BARS
+     ======================== */
+  .progress-quantum {
+    @apply h-2 rounded-full overflow-hidden bg-white/10;
+  }
+
+  .progress-quantum-fill {
+    @apply h-full rounded-full transition-all duration-500;
+    background: linear-gradient(90deg, var(--quantum-cyan), var(--quantum-purple));
+  }
+
+  /* ========================
+     AMBIENT PARTICLES
+     ======================== */
+  .particle {
+    @apply fixed pointer-events-none;
+    width: 2px;
+    height: 2px;
+    background: var(--quantum-cyan);
+    border-radius: 50%;
+    opacity: 0.6;
+    animation: particle 20s linear infinite;
+  }
+
+  /* ========================
+     PAGE TRANSITIONS
+     ======================== */
+  .page-enter {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  .page-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 300ms, transform 300ms;
+  }
+
+  .page-exit {
+    opacity: 1;
+  }
+
+  .page-exit-active {
+    opacity: 0;
+    transition: opacity 200ms;
+  }
+}
+
+@layer utilities {
+  /* Safe area utilities */
+  .pt-safe {
+    padding-top: var(--safe-top);
+  }
+
+  .pb-safe {
+    padding-bottom: var(--safe-bottom);
+  }
+
+  .px-safe {
+    padding-left: var(--safe-left);
+    padding-right: var(--safe-right);
+  }
+
+  /* Touch-friendly utilities */
+  .touch-target {
+    min-height: var(--touch-target);
+    min-width: var(--touch-target);
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Holographic effect */
+  .holographic {
+    background: linear-gradient(
+      125deg,
+      rgba(0, 255, 255, 0.2) 0%,
+      rgba(0, 128, 255, 0.2) 20%,
+      rgba(139, 92, 246, 0.2) 40%,
+      rgba(255, 0, 128, 0.2) 60%,
+      rgba(255, 215, 0, 0.2) 80%,
+      rgba(0, 255, 136, 0.2) 100%
+    );
+    background-size: 400% 400%;
+    animation: holographic 8s ease-in-out infinite;
+  }
+
+  /* Grid pattern overlay */
+  .grid-pattern {
+    background-image:
+      linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+}
+
+/* Keyframe animations */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes particle {
+  0% {
+    transform: translateY(100vh) rotate(0deg);
+    opacity: 0;
+  }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.6; }
+  100% {
+    transform: translateY(-100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@keyframes holographic {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
