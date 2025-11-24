@@ -151,6 +151,12 @@ export default function PropertyDetail() {
     console.log('✅ Full property has address:', fullProperty.address);
     console.log('✅ Full property has details:', fullProperty.details);
     console.log('✅ Full property has location:', fullProperty.location);
+    console.log('🔍 ACTUAL VALUES:');
+    console.log('  - Full Address:', fullProperty.address.fullAddress.value);
+    console.log('  - MLS Primary:', fullProperty.address.mlsPrimary.value);
+    console.log('  - Bedrooms:', fullProperty.details.bedrooms.value);
+    console.log('  - Living Sqft:', fullProperty.details.livingSqft.value);
+    console.log('  - Elementary School:', fullProperty.location.assignedElementary.value);
   } else {
     console.log('❌ NO FULL PROPERTY DATA FOUND!');
   }

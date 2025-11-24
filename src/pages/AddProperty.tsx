@@ -452,12 +452,23 @@ export default function AddProperty() {
 
       console.log('Importing property:', propertyCard);
       console.log('CSV row has', filledFieldsCount, 'filled fields');
+      console.log('📝 RAW CSV DATA SAMPLE:');
+      console.log('  - 1_full_address:', row['1_full_address']);
+      console.log('  - 2_mls_number_primary:', row['2_mls_number_primary']);
+      console.log('  - 12_bedrooms:', row['12_bedrooms']);
+      console.log('  - 16_living_sqft:', row['16_living_sqft']);
+      console.log('  - 55_assigned_elementary:', row['55_assigned_elementary']);
 
       // Create full property with all 110 fields
       const fullProperty = convertCsvToFullProperty(row, propertyId);
       console.log('🔍 Full property created:', fullProperty.id);
       console.log('📍 Address fields:', fullProperty.address);
       console.log('🏗️ Details fields:', fullProperty.details);
+      console.log('🔍 CONVERTED VALUES:');
+      console.log('  - Full Address:', fullProperty.address.fullAddress.value);
+      console.log('  - MLS Primary:', fullProperty.address.mlsPrimary.value);
+      console.log('  - Bedrooms:', fullProperty.details.bedrooms.value);
+      console.log('  - Living Sqft:', fullProperty.details.livingSqft.value);
 
       if (propertyCard.address || propertyCard.price > 0) {
         propertyCards.push(propertyCard);
