@@ -1,29 +1,43 @@
 /**
  * CLUES Property Dashboard - Desktop Header
- * Only visible on larger screens
+ * With user info and logout
  */
 
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Home,
   Building2,
   PlusCircle,
+  Search,
   GitCompare,
   Settings,
-  Menu,
+  LogOut,
+  Shield,
+  User,
 } from 'lucide-react';
+import { useAuthStore, useCurrentUser, useIsAdmin } from '@/store/authStore';
 
 const navItems = [
   { path: '/', icon: Home, label: 'Dashboard' },
   { path: '/properties', icon: Building2, label: 'Properties' },
-  { path: '/add', icon: PlusCircle, label: 'Add Property' },
+  { path: '/search', icon: Search, label: 'Search Property' },
+  { path: '/add', icon: PlusCircle, label: 'Quick Add' },
   { path: '/compare', icon: GitCompare, label: 'Compare' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];
 
 export default function Header() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const currentUser = useCurrentUser();
+  const isAdmin = useIsAdmin();
+  const { logout } = useAuthStore();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <header className="hidden md:block sticky top-0 z-50">
@@ -80,10 +94,36 @@ export default function Header() {
               })}
             </nav>
 
-            {/* User/Actions */}
+            {/* User Info & Logout */}
             <div className="flex items-center gap-3">
-              <button className="btn-glass px-4 py-2 text-sm">
-                Connect to CLUES
+              {/* Role Badge */}
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${
+                isAdmin
+                  ? 'bg-quantum-cyan/20 text-quantum-cyan'
+                  : 'bg-quantum-purple/20 text-quantum-purple'
+              }`}>
+                {isAdmin ? (
+                  <Shield className="w-4 h-4" />
+                ) : (
+                  <User className="w-4 h-4" />
+                )}
+                <span className="text-sm font-semibold">
+                  {isAdmin ? 'Admin' : 'User'}
+                </span>
+              </div>
+
+              {/* User Name */}
+              <span className="text-gray-300 text-sm">
+                {currentUser?.name}
+              </span>
+
+              {/* Logout Button */}
+              <button
+                onClick={handleLogout}
+                className="p-2 rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                title="Logout"
+              >
+                <LogOut className="w-5 h-5" />
               </button>
             </div>
           </div>

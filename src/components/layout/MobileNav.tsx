@@ -8,9 +8,9 @@ import { motion } from 'framer-motion';
 import {
   Home,
   Building2,
-  PlusCircle,
+  Search,
   GitCompare,
-  Settings,
+  User,
 } from 'lucide-react';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
@@ -24,9 +24,9 @@ interface NavItem {
 const navItems: NavItem[] = [
   { path: '/', icon: Home, label: 'Home' },
   { path: '/properties', icon: Building2, label: 'Properties' },
-  { path: '/add', icon: PlusCircle, label: 'Add' },
+  { path: '/search', icon: Search, label: 'Search' },
   { path: '/compare', icon: GitCompare, label: 'Compare' },
-  { path: '/settings', icon: Settings, label: 'Settings' },
+  { path: '/settings', icon: User, label: 'Account' },
 ];
 
 export default function MobileNav() {

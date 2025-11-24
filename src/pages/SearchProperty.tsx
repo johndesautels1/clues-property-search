@@ -1,0 +1,204 @@
+/**
+ * CLUES Property Dashboard - Search Property Page
+ * Full 110-field property search/entry form
+ * Sources visible to admin only
+ */
+
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Search, ArrowLeft, CheckCircle } from 'lucide-react';
+import PropertySearchForm from '@/components/property/PropertySearchForm';
+import { usePropertyStore } from '@/store/propertyStore';
+import { useCurrentUser } from '@/store/authStore';
+import type { PropertyCard } from '@/types/property';
+
+// Generate unique ID
+const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
+
+export default function SearchProperty() {
+  const navigate = useNavigate();
+  const { addProperty } = usePropertyStore();
+  const currentUser = useCurrentUser();
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [savedPropertyId, setSavedPropertyId] = useState<string | null>(null);
+
+  const handleSubmit = (formData: Record<string, { value: any; source: string }>) => {
+    // Extract values from form data
+    const getValue = (key: string, defaultVal: any = '') => {
+      return formData[key]?.value ?? defaultVal;
+    };
+
+    // Parse address components
+    const fullAddress = getValue('addressIdentity.fullAddress', '');
+    const addressParts = fullAddress.split(',').map((s: string) => s.trim());
+    const street = addressParts[0] || '';
+    const cityStateZip = addressParts.slice(1).join(', ');
+    const cityMatch = cityStateZip.match(/^([^,]+)/);
+    const stateZipMatch = cityStateZip.match(/([A-Z]{2})\s*(\d{5})/);
+
+    const city = cityMatch?.[1]?.trim() || getValue('hoaOwnership.county', 'Unknown City');
+    const state = stateZipMatch?.[1] || 'FL';
+    const zip = stateZipMatch?.[2] || '';
+
+    // Create property card
+    const newProperty: PropertyCard = {
+      id: generateId(),
+      address: street || fullAddress,
+      city,
+      state,
+      zip,
+      price: getValue('pricing.listingPrice', 0),
+      pricePerSqft: getValue('pricing.pricePerSqft', 0),
+      bedrooms: getValue('propertyBasics.bedrooms', 0),
+      bathrooms: getValue('propertyBasics.totalBathrooms', 0) ||
+                 (getValue('propertyBasics.fullBathrooms', 0) + getValue('propertyBasics.halfBathrooms', 0) * 0.5),
+      sqft: getValue('propertyBasics.livingSqft', 0),
+      yearBuilt: getValue('propertyBasics.yearBuilt', new Date().getFullYear()),
+      smartScore: calculateSmartScore(formData),
+      dataCompleteness: calculateCompleteness(formData),
+      listingStatus: getValue('addressIdentity.listingStatus', 'Active') || 'Active',
+      daysOnMarket: 0,
+    };
+
+    // Save to store
+    addProperty(newProperty);
+    setSavedPropertyId(newProperty.id);
+    setShowSuccess(true);
+
+    // Also save full 110-field data (would go to separate store/DB in production)
+    console.log('Full 110-field data:', formData);
+  };
+
+  // Calculate SMART score based on data quality
+  const calculateSmartScore = (formData: Record<string, { value: any; source: string }>) => {
+    let score = 70; // Base score
+
+    // Bonus for verified sources
+    const verifiedSources = ['MLS', 'County Assessor', 'County Tax Collector', 'FEMA MSC'];
+    Object.values(formData).forEach(field => {
+      if (verifiedSources.includes(field.source)) {
+        score += 0.5;
+      }
+    });
+
+    // Bonus for key fields filled
+    const keyFields = [
+      'pricing.listingPrice',
+      'propertyBasics.bedrooms',
+      'propertyBasics.livingSqft',
+      'propertyBasics.yearBuilt',
+      'taxesAssessments.annualTaxes',
+      'environmentRisk.floodZone',
+    ];
+    keyFields.forEach(key => {
+      if (formData[key]?.value) {
+        score += 2;
+      }
+    });
+
+    return Math.min(Math.round(score), 100);
+  };
+
+  // Calculate data completeness percentage
+  const calculateCompleteness = (formData: Record<string, { value: any; source: string }>) => {
+    const totalFields = 110;
+    const filledFields = Object.values(formData).filter(f => {
+      const val = f.value;
+      return val !== undefined && val !== '' && val !== null &&
+             !(Array.isArray(val) && val.length === 0);
+    }).length;
+
+    return Math.round((filledFields / totalFields) * 100);
+  };
+
+  if (showSuccess) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="min-h-screen flex items-center justify-center p-4"
+      >
+        <div className="glass-card p-8 max-w-md w-full text-center">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', bounce: 0.5 }}
+            className="w-20 h-20 mx-auto mb-6 rounded-full bg-quantum-green/20 flex items-center justify-center"
+          >
+            <CheckCircle className="w-10 h-10 text-quantum-green" />
+          </motion.div>
+          <h2 className="text-2xl font-bold text-white mb-2">Property Saved!</h2>
+          <p className="text-gray-400 mb-6">
+            Your property has been added to the dashboard.
+          </p>
+          <div className="flex gap-4">
+            <button
+              onClick={() => savedPropertyId && navigate(`/property/${savedPropertyId}`)}
+              className="flex-1 py-3 bg-gradient-to-r from-quantum-cyan to-quantum-blue text-quantum-black font-semibold rounded-xl hover:shadow-lg hover:shadow-quantum-cyan/30 transition-all"
+            >
+              View Property
+            </button>
+            <button
+              onClick={() => {
+                setShowSuccess(false);
+                setSavedPropertyId(null);
+              }}
+              className="flex-1 py-3 border border-white/20 text-white font-semibold rounded-xl hover:bg-white/5 transition-colors"
+            >
+              Add Another
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="px-4 py-6 md:px-8 md:py-10 max-w-6xl mx-auto"
+    >
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-6">
+        <button
+          onClick={() => navigate(-1)}
+          className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-quantum-cyan to-quantum-purple bg-clip-text text-transparent flex items-center gap-3">
+            <Search className="w-8 h-8 text-quantum-cyan" />
+            Search for Property
+          </h1>
+          <p className="text-gray-400 mt-1">
+            Enter address to auto-populate or fill in all 110 fields manually
+          </p>
+        </div>
+      </div>
+
+      {/* User Info Badge */}
+      <div className="mb-6 flex items-center gap-2 text-sm">
+        <span className="text-gray-500">Logged in as:</span>
+        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+          currentUser?.role === 'admin'
+            ? 'bg-quantum-cyan/20 text-quantum-cyan'
+            : 'bg-quantum-purple/20 text-quantum-purple'
+        }`}>
+          {currentUser?.role === 'admin' ? 'Admin' : 'User'}
+        </span>
+        <span className="text-white">{currentUser?.name}</span>
+        {currentUser?.role === 'admin' && (
+          <span className="text-gray-500 text-xs ml-2">
+            (Source fields visible)
+          </span>
+        )}
+      </div>
+
+      {/* Property Search Form */}
+      <PropertySearchForm onSubmit={handleSubmit} />
+    </motion.div>
+  );
+}
