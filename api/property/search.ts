@@ -468,6 +468,204 @@ async function getDistances(lat: number, lon: number): Promise<Record<string, an
   return fields;
 }
 
+// Google Places - School distances
+async function getSchoolDistances(lat: number, lon: number): Promise<Record<string, any>> {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey) return {};
+
+  const origin = `${lat},${lon}`;
+  const fields: Record<string, any> = {};
+
+  const schoolTypes = [
+    { type: 'primary_school', field: '58_elementary_distance_miles', name: 'Elementary School' },
+    { type: 'secondary_school', field: '61_middle_distance_miles', name: 'Middle School' },
+    { type: 'school', keyword: 'high school', field: '64_high_distance_miles', name: 'High School' },
+  ];
+
+  for (const school of schoolTypes) {
+    try {
+      let searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${origin}&rankby=distance&type=${school.type}&key=${apiKey}`;
+      if (school.keyword) {
+        searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${origin}&rankby=distance&keyword=${encodeURIComponent(school.keyword)}&key=${apiKey}`;
+      }
+
+      const searchRes = await fetch(searchUrl);
+      const searchData = await searchRes.json();
+
+      if (searchData.results && searchData.results.length > 0) {
+        const nearest = searchData.results[0];
+        const destLat = nearest.geometry.location.lat;
+        const destLon = nearest.geometry.location.lng;
+
+        const distUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destLat},${destLon}&units=imperial&key=${apiKey}`;
+        const distRes = await fetch(distUrl);
+        const distData = await distRes.json();
+
+        if (distData.rows?.[0]?.elements?.[0]?.distance) {
+          const meters = distData.rows[0].elements[0].distance.value;
+          const miles = (meters / 1609.34).toFixed(1);
+
+          fields[school.field] = {
+            value: parseFloat(miles),
+            source: 'Google Places',
+            confidence: 'High',
+            details: nearest.name
+          };
+        }
+      }
+    } catch (e) {
+      console.error(`Error getting ${school.name} distance:`, e);
+    }
+  }
+
+  return fields;
+}
+
+// FREE Crime Data - Uses FBI UCR data via community-crime-map or similar free sources
+async function getCrimeData(lat: number, lon: number, address: string): Promise<Record<string, any>> {
+  const fields: Record<string, any> = {};
+
+  try {
+    // Try CrimeGrade.org scrape (free)
+    const zipMatch = address.match(/\b(\d{5})\b/);
+    if (zipMatch) {
+      const zip = zipMatch[1];
+      const crimeUrl = `https://crimegrade.org/safest-places-in-${zip}/`;
+
+      const res = await fetch(crimeUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        }
+      });
+
+      if (res.ok) {
+        const html = await res.text();
+
+        // Extract overall crime grade
+        const gradeMatch = html.match(/Overall Crime Grade[^A-F]*([A-F][+-]?)/i) ||
+                          html.match(/crime grade[^A-F]*([A-F][+-]?)/i);
+        if (gradeMatch) {
+          fields['80_neighborhood_safety_rating'] = {
+            value: `Grade ${gradeMatch[1]}`,
+            source: 'CrimeGrade.org',
+            confidence: 'Medium'
+          };
+        }
+
+        // Extract violent crime grade
+        const violentMatch = html.match(/Violent Crime[^A-F]*([A-F][+-]?)/i);
+        if (violentMatch) {
+          fields['78_crime_index_violent'] = {
+            value: `Grade ${violentMatch[1]}`,
+            source: 'CrimeGrade.org',
+            confidence: 'Medium'
+          };
+        }
+
+        // Extract property crime grade
+        const propertyMatch = html.match(/Property Crime[^A-F]*([A-F][+-]?)/i);
+        if (propertyMatch) {
+          fields['79_crime_index_property'] = {
+            value: `Grade ${propertyMatch[1]}`,
+            source: 'CrimeGrade.org',
+            confidence: 'Medium'
+          };
+        }
+      }
+    }
+
+    // If CrimeGrade didn't work, try AreaVibes (also free)
+    if (Object.keys(fields).length === 0) {
+      const cityMatch = address.match(/,\s*([^,]+),\s*[A-Z]{2}/i);
+      if (cityMatch) {
+        const city = cityMatch[1].trim().toLowerCase().replace(/\s+/g, '-');
+        const state = address.match(/,\s*([A-Z]{2})\s*\d{5}/i)?.[1]?.toLowerCase();
+
+        if (city && state) {
+          const areaVibesUrl = `https://www.areavibes.com/${city}-${state}/crime/`;
+          const res = await fetch(areaVibesUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            }
+          });
+
+          if (res.ok) {
+            const html = await res.text();
+
+            // Extract livability score
+            const scoreMatch = html.match(/Crime[^0-9]*(\d+)/i);
+            if (scoreMatch) {
+              const score = parseInt(scoreMatch[1]);
+              let rating = 'Poor';
+              if (score >= 80) rating = 'Excellent';
+              else if (score >= 60) rating = 'Good';
+              else if (score >= 40) rating = 'Fair';
+
+              fields['80_neighborhood_safety_rating'] = {
+                value: `${rating} (Score: ${score}/100)`,
+                source: 'AreaVibes',
+                confidence: 'Medium'
+              };
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Crime data error:', e);
+  }
+
+  return fields;
+}
+
+// Google Places - Public transit access
+async function getTransitAccess(lat: number, lon: number): Promise<Record<string, any>> {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey) return {};
+
+  const origin = `${lat},${lon}`;
+  const fields: Record<string, any> = {};
+
+  try {
+    // Search for transit stations nearby
+    const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${origin}&radius=1609&type=transit_station&key=${apiKey}`;
+    const searchRes = await fetch(searchUrl);
+    const searchData = await searchRes.json();
+
+    if (searchData.results && searchData.results.length > 0) {
+      const stations = searchData.results.slice(0, 3).map((s: any) => s.name);
+      fields['72_public_transit_access'] = {
+        value: `Yes - ${searchData.results.length} stations within 1 mile: ${stations.join(', ')}`,
+        source: 'Google Places',
+        confidence: 'High'
+      };
+    } else {
+      // Check for bus stops
+      const busUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${origin}&radius=805&type=bus_station&key=${apiKey}`;
+      const busRes = await fetch(busUrl);
+      const busData = await busRes.json();
+
+      if (busData.results && busData.results.length > 0) {
+        fields['72_public_transit_access'] = {
+          value: `Limited - ${busData.results.length} bus stops within 0.5 miles`,
+          source: 'Google Places',
+          confidence: 'Medium'
+        };
+      } else {
+        fields['72_public_transit_access'] = {
+          value: 'No public transit within 1 mile',
+          source: 'Google Places',
+          confidence: 'High'
+        };
+      }
+    }
+  } catch (e) {
+    console.error('Transit access error:', e);
+  }
+
+  return fields;
+}
+
 // Google Distance Matrix - Commute time to downtown
 async function getCommuteTime(lat: number, lon: number, county: string): Promise<Record<string, any>> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
@@ -526,17 +724,20 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   fields['coordinates'] = { value: { lat: geo.lat, lon: geo.lon }, source: 'Google Maps', confidence: 'High' };
 
   // Call all APIs in parallel
-  const [walkScore, floodZone, airQuality, noiseData, climateData, distances, commuteTime] = await Promise.all([
+  const [walkScore, floodZone, airQuality, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeData] = await Promise.all([
     getWalkScore(geo.lat, geo.lon, address),
     getFloodZone(geo.lat, geo.lon),
     getAirQuality(geo.lat, geo.lon),
     getNoiseData(geo.lat, geo.lon),
     getClimateData(geo.lat, geo.lon),
     getDistances(geo.lat, geo.lon),
-    getCommuteTime(geo.lat, geo.lon, geo.county)
+    getCommuteTime(geo.lat, geo.lon, geo.county),
+    getSchoolDistances(geo.lat, geo.lon),
+    getTransitAccess(geo.lat, geo.lon),
+    getCrimeData(geo.lat, geo.lon, address)
   ]);
 
-  Object.assign(fields, walkScore, floodZone, airQuality, noiseData, climateData, distances, commuteTime);
+  Object.assign(fields, walkScore, floodZone, airQuality, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeData);
 
   // Filter out nulls
   return Object.fromEntries(
@@ -555,34 +756,83 @@ async function callPerplexity(address: string): Promise<Record<string, any>> {
     return {};
   }
 
-  const prompt = `Search for real property data for: ${address}
+  const prompt = `Search the web for REAL property data for this address: ${address}
 
-Search Zillow, Redfin, Realtor.com, and county property appraiser websites.
+Search these sources: Zillow, Redfin, Realtor.com, Trulia, county property appraiser, county tax collector, GreatSchools.org, and any other reliable real estate sources.
 
-Return ONLY data you can actually verify from these sources. For each field include the source website.
+I need ALL of these fields. Return ONLY what you can verify from real sources. Include the source URL or website name for each.
 
-I need these fields in JSON format:
+PROPERTY BASICS:
+- 1_full_address: full street address
+- 2_mls_primary: MLS listing number
+- 4_listing_status: For Sale, Sold, Pending, Off Market
+- 5_listing_date: when listed
+- 6_parcel_id: county parcel/folio number
+- 7_listing_price: current or last list price
+- 10_last_sale_date: date of last sale
+- 11_last_sale_price: price of last sale
+- 12_bedrooms: number of bedrooms
+- 13_full_bathrooms: full baths
+- 14_half_bathrooms: half baths
+- 16_living_sqft: heated/living square feet
+- 18_lot_size_sqft: lot size in sqft
+- 20_year_built: year constructed
+- 21_property_type: Single Family, Condo, Townhouse, etc
+- 22_stories: number of stories
+- 23_garage_spaces: garage capacity
+- 25_hoa_yn: true/false if HOA exists
+- 26_hoa_fee_annual: annual HOA fee
+
+TAXES & VALUE:
+- 9_market_value_estimate: Zestimate or similar
+- 29_annual_taxes: annual property tax amount
+- 31_assessed_value: county assessed value
+- 32_tax_exemptions: Homestead or other exemptions
+- 33_property_tax_rate: mill rate
+
+STRUCTURE:
+- 36_roof_type: tile, shingle, metal, etc
+- 37_roof_age_est: estimated roof age or year installed
+- 38_exterior_material: stucco, brick, siding
+- 39_foundation: slab, crawl space, basement
+- 40_hvac_type: central, split, window
+- 41_hvac_age: estimated HVAC age
+- 45_fireplace_yn: true/false
+- 47_pool_yn: true/false
+- 48_pool_type: in-ground, above-ground, screened
+
+SCHOOLS (from GreatSchools.org):
+- 56_assigned_elementary: school name
+- 57_elementary_rating: rating out of 10
+- 59_assigned_middle: school name
+- 60_middle_rating: rating out of 10
+- 62_assigned_high: school name
+- 63_high_rating: rating out of 10
+
+MARKET DATA:
+- 81_median_home_price_neighborhood: median price in area
+- 82_price_per_sqft_recent_avg: average $/sqft in area
+- 83_days_on_market_avg: average DOM in area
+- 85_rental_estimate_monthly: estimated monthly rent
+- 86_rental_yield_est: estimated rental yield %
+- 91_comparable_sales: 2-3 recent nearby sales with prices
+
+CRIME (from NeighborhoodScout, CrimeGrade, or similar):
+- 78_crime_index_violent: violent crime rating
+- 79_crime_index_property: property crime rating
+- 80_neighborhood_safety_rating: overall safety grade
+
+UTILITIES:
+- 92_electric_provider: electric company name
+- 93_water_provider: water company name
+- 96_internet_providers_top3: top internet providers
+
+Return as JSON format:
 {
-  "7_listing_price": {"value": number, "source": "website name"},
-  "12_bedrooms": {"value": number, "source": "website name"},
-  "13_full_bathrooms": {"value": number, "source": "website name"},
-  "16_living_sqft": {"value": number, "source": "website name"},
-  "18_lot_size_sqft": {"value": number, "source": "website name"},
-  "20_year_built": {"value": number, "source": "website name"},
-  "21_property_type": {"value": "string", "source": "website name"},
-  "29_annual_taxes": {"value": number, "source": "website name"},
-  "31_assessed_value": {"value": number, "source": "website name"},
-  "56_assigned_elementary": {"value": "school name", "source": "website name"},
-  "57_elementary_rating": {"value": "rating", "source": "website name"},
-  "59_assigned_middle": {"value": "school name", "source": "website name"},
-  "60_middle_rating": {"value": "rating", "source": "website name"},
-  "62_assigned_high": {"value": "school name", "source": "website name"},
-  "63_high_rating": {"value": "rating", "source": "website name"},
-  "81_median_home_price_neighborhood": {"value": number, "source": "website name"},
-  "85_rental_estimate_monthly": {"value": number, "source": "website name"}
+  "field_name": {"value": "actual value", "source": "website name"}
 }
 
-CRITICAL: Only include fields you found REAL data for. Do NOT make up values. Return valid JSON only.`;
+CRITICAL: Only include fields with REAL verified data. If you cannot find data for a field, DO NOT include it. Never make up values.`;
 
   try {
     console.log('Calling Perplexity API...');
