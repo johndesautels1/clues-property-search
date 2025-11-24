@@ -105,6 +105,34 @@ const defaultSort: PropertySort = {
   direction: 'desc',
 };
 
+// Custom storage to handle Map serialization
+const customStorage = {
+  getItem: (name: string) => {
+    const str = localStorage.getItem(name);
+    if (!str) return null;
+    const parsed = JSON.parse(str);
+    // Convert fullProperties array back to Map
+    if (parsed.state?.fullProperties && Array.isArray(parsed.state.fullProperties)) {
+      parsed.state.fullProperties = new Map(parsed.state.fullProperties);
+    }
+    return parsed;
+  },
+  setItem: (name: string, value: any) => {
+    const toStore = {
+      ...value,
+      state: {
+        ...value.state,
+        // Convert Map to array for storage
+        fullProperties: Array.from(value.state.fullProperties.entries()),
+      },
+    };
+    localStorage.setItem(name, JSON.stringify(toStore));
+  },
+  removeItem: (name: string) => {
+    localStorage.removeItem(name);
+  },
+};
+
 export const usePropertyStore = create<PropertyState>()(
   persist(
     (set, get) => ({
@@ -209,25 +237,7 @@ export const usePropertyStore = create<PropertyState>()(
     }),
     {
       name: 'clues-property-store',
-      storage: createJSONStorage(() => localStorage),
-      // Custom serializer to handle Map
-      serialize: (state) => {
-        return JSON.stringify({
-          ...state,
-          state: {
-            ...state.state,
-            fullProperties: Array.from(state.state.fullProperties.entries()),
-          },
-        });
-      },
-      deserialize: (str) => {
-        const parsed = JSON.parse(str);
-        if (parsed.state?.fullProperties) {
-          parsed.state.fullProperties = new Map(parsed.state.fullProperties);
-        }
-        return parsed;
-      },
-      // Persist everything so properties survive page refresh
+      storage: customStorage,
     }
   )
 );
