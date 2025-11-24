@@ -856,29 +856,45 @@ CRITICAL: Only include fields with REAL verified data. If you cannot find data f
     });
 
     const data = await response.json();
-    console.log('Perplexity response received');
+
+    if (!response.ok) {
+      console.error('Perplexity API error:', response.status, data);
+      return {};
+    }
+
+    console.log('Perplexity response received:', JSON.stringify(data).substring(0, 500));
 
     if (data.choices?.[0]?.message?.content) {
       const text = data.choices[0].message.content;
+      console.log('Perplexity content:', text.substring(0, 500));
+
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        // Add confidence and format properly
-        const fields: Record<string, any> = {};
-        for (const [key, val] of Object.entries(parsed)) {
-          if (val && typeof val === 'object' && (val as any).value !== null) {
-            fields[key] = {
-              value: (val as any).value,
-              source: `${(val as any).source} (via Perplexity)`,
-              confidence: 'High'
-            };
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          // Add confidence and format properly
+          const fields: Record<string, any> = {};
+          for (const [key, val] of Object.entries(parsed)) {
+            if (val && typeof val === 'object' && (val as any).value !== null) {
+              fields[key] = {
+                value: (val as any).value,
+                source: `${(val as any).source} (via Perplexity)`,
+                confidence: 'High'
+              };
+            }
           }
+          console.log(`Perplexity found ${Object.keys(fields).length} fields`);
+          return fields;
+        } catch (parseError) {
+          console.error('Failed to parse Perplexity JSON:', parseError);
+          console.error('Raw text:', text);
         }
-        console.log(`Perplexity found ${Object.keys(fields).length} fields`);
-        return fields;
+      } else {
+        console.log('No JSON found in Perplexity response');
       }
+    } else {
+      console.log('No content in Perplexity response');
     }
-    console.log('Failed to parse Perplexity response');
     return {};
   } catch (error) {
     console.error('Perplexity error:', error);
