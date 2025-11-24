@@ -58,6 +58,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedEngines, setSelectedEngines] = useState(['claude', 'gpt', 'grok', 'gemini']);
+  const [skipLLMs, setSkipLLMs] = useState(false);
   const [searchResults, setSearchResults] = useState<any>(null);
 
   // Initialize form data
@@ -150,18 +151,23 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
 
   const handleAddressSearch = async () => {
     if (!addressInput.trim()) return;
-    if (selectedEngines.length === 0) {
-      setSearchError('Please select at least one AI engine');
-      return;
-    }
 
     setIsSearching(true);
     setSearchError('');
-    setSearchProgress('Initializing search...');
+    setSearchProgress('Step 1: Scraping Realtor.com for real property data...');
     setShowSuggestions(false);
 
     try {
-      setSearchProgress(`Searching with ${selectedEngines.map(e => e.toUpperCase()).join(', ')}...`);
+      // Update progress as we go
+      setTimeout(() => {
+        if (isSearching) setSearchProgress('Step 2: Calling free APIs (FEMA, WalkScore)...');
+      }, 2000);
+
+      if (!skipLLMs) {
+        setTimeout(() => {
+          if (isSearching) setSearchProgress(`Step 3: Filling gaps with ${selectedEngines.map(e => e.toUpperCase()).join(', ')}...`);
+        }, 4000);
+      }
 
       const response = await fetch(`${API_BASE}/search`, {
         method: 'POST',
@@ -170,7 +176,8 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
         },
         body: JSON.stringify({
           address: addressInput,
-          engines: selectedEngines,
+          engines: skipLLMs ? [] : selectedEngines,
+          skipLLMs,
         }),
       });
 
@@ -475,31 +482,57 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
           </div>
         </div>
 
-        {/* AI Engine Selection */}
-        <div className="mt-4">
-          <label className="block text-xs text-gray-500 mb-2">AI Engines to Use:</label>
-          <div className="flex flex-wrap gap-2">
-            {[
-              { id: 'claude', name: 'Claude', color: 'orange' },
-              { id: 'gpt', name: 'GPT-4o', color: 'green' },
-              { id: 'grok', name: 'Grok', color: 'blue' },
-              { id: 'gemini', name: 'Gemini', color: 'purple' },
-            ].map(engine => (
-              <button
-                key={engine.id}
-                type="button"
-                onClick={() => toggleEngine(engine.id)}
-                className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
-                  selectedEngines.includes(engine.id)
-                    ? 'bg-quantum-cyan/20 border-quantum-cyan text-quantum-cyan'
-                    : 'border-white/10 text-gray-400 hover:border-white/20'
+        {/* Data Source Options */}
+        <div className="mt-4 p-3 bg-white/5 rounded-xl space-y-3">
+          {/* Free Data Only Toggle */}
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="text-sm text-white font-medium">Free Data Only (Fast)</label>
+              <p className="text-xs text-gray-500">Realtor.com + FEMA + WalkScore only - no AI costs</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSkipLLMs(!skipLLMs)}
+              className={`relative w-12 h-6 rounded-full transition-colors ${
+                skipLLMs ? 'bg-quantum-green' : 'bg-white/20'
+              }`}
+            >
+              <span
+                className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                  skipLLMs ? 'left-7' : 'left-1'
                 }`}
-              >
-                {selectedEngines.includes(engine.id) && <Check className="w-3 h-3 inline mr-1" />}
-                {engine.name}
-              </button>
-            ))}
+              />
+            </button>
           </div>
+
+          {/* AI Engine Selection (only shown if not skipping LLMs) */}
+          {!skipLLMs && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-2">AI Engines to Fill Gaps (costs $):</label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { id: 'claude', name: 'Claude', color: 'orange' },
+                  { id: 'gpt', name: 'GPT-4o', color: 'green' },
+                  { id: 'grok', name: 'Grok', color: 'blue' },
+                  { id: 'gemini', name: 'Gemini', color: 'purple' },
+                ].map(engine => (
+                  <button
+                    key={engine.id}
+                    type="button"
+                    onClick={() => toggleEngine(engine.id)}
+                    className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                      selectedEngines.includes(engine.id)
+                        ? 'bg-quantum-cyan/20 border-quantum-cyan text-quantum-cyan'
+                        : 'border-white/10 text-gray-400 hover:border-white/20'
+                    }`}
+                  >
+                    {selectedEngines.includes(engine.id) && <Check className="w-3 h-3 inline mr-1" />}
+                    {engine.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Search Progress */}
@@ -562,7 +595,9 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
         )}
 
         <p className="text-xs text-gray-500 mt-3">
-          Uses Claude, GPT, Grok & Gemini to search Zillow, Redfin, county records, and more
+          {skipLLMs
+            ? '📊 Free sources: Realtor.com scraping, FEMA flood maps, WalkScore, AirNow'
+            : '🔍 Real data from Realtor.com + free APIs, then AI fills remaining gaps'}
         </p>
       </div>
 

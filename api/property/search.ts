@@ -1,9 +1,263 @@
 /**
  * CLUES Property Search API
- * Calls multiple LLMs in parallel to extract 110 property fields
+ * Strategy:
+ * 1. First scrape Realtor.com for real property data
+ * 2. Then call free APIs (WalkScore, FEMA, Google Maps, AirNow)
+ * 3. Finally use LLMs only to fill gaps with web search
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+// ============================================
+// REALTOR.COM SCRAPER
+// ============================================
+
+const SCRAPER_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9',
+};
+
+function addressToRealtorUrl(address: string): string {
+  const parts = address.split(',').map(p => p.trim());
+  if (parts.length < 3) return '';
+  const street = parts[0].replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+  const city = parts[1].replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+  const stateZip = parts[2].trim().split(' ');
+  const state = stateZip[0];
+  const zip = stateZip[1] || '';
+  return `https://www.realtor.com/realestateandhomes-detail/${street}_${city}_${state}_${zip}`;
+}
+
+function extractNextData(html: string): any {
+  const match = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+  if (!match) return null;
+  try {
+    const data = JSON.parse(match[1]);
+    return data?.props?.pageProps?.initialReduxState || data?.props?.pageProps;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function scrapeRealtorData(address: string): Promise<Record<string, any>> {
+  const directUrl = addressToRealtorUrl(address);
+  if (!directUrl) return {};
+
+  try {
+    const response = await fetch(directUrl, { headers: SCRAPER_HEADERS });
+    if (!response.ok) return {};
+
+    const html = await response.text();
+    const data = extractNextData(html);
+    if (!data) return {};
+
+    const property = data?.propertyDetails?.listingDetail || data?.property || data;
+    const listing = property?.listing || property;
+    const location = property?.location || property?.address || {};
+    const description = property?.description || {};
+    const taxHistory = property?.tax_history || [];
+    const priceHistory = property?.price_history || [];
+
+    const fields: Record<string, any> = {};
+
+    // Address
+    const addr = location.address || location;
+    if (addr?.line) {
+      fields['1_full_address'] = {
+        value: `${addr.line}, ${addr.city}, ${addr.state_code} ${addr.postal_code}`,
+        source: 'Realtor.com',
+        confidence: 'High'
+      };
+    }
+
+    // MLS & Status
+    fields['2_mls_primary'] = { value: listing?.mls?.id || property?.mls_id, source: 'Realtor.com', confidence: 'High' };
+    fields['4_listing_status'] = { value: property?.status || listing?.status, source: 'Realtor.com', confidence: 'High' };
+    fields['5_listing_date'] = { value: listing?.list_date || property?.list_date, source: 'Realtor.com', confidence: 'High' };
+    fields['6_parcel_id'] = { value: property?.property_id, source: 'Realtor.com', confidence: 'High' };
+
+    // Pricing
+    const price = listing?.list_price || property?.list_price || property?.price;
+    const sqft = description?.sqft || property?.sqft || property?.building_size?.size;
+    fields['7_listing_price'] = { value: price, source: 'Realtor.com', confidence: 'High' };
+    fields['8_price_per_sqft'] = { value: (price && sqft) ? Math.round(price / sqft) : null, source: 'Calculated', confidence: 'High' };
+
+    // Last sale from price history
+    if (priceHistory?.length > 0) {
+      const lastSale = priceHistory.find((h: any) => h.event_name === 'Sold');
+      if (lastSale) {
+        fields['10_last_sale_date'] = { value: lastSale.date, source: 'Realtor.com', confidence: 'High' };
+        fields['11_last_sale_price'] = { value: lastSale.price, source: 'Realtor.com', confidence: 'High' };
+      }
+    }
+
+    // Property Basics
+    fields['12_bedrooms'] = { value: description?.beds || property?.beds, source: 'Realtor.com', confidence: 'High' };
+    fields['13_full_bathrooms'] = { value: description?.baths_full || property?.baths_full, source: 'Realtor.com', confidence: 'High' };
+    fields['14_half_bathrooms'] = { value: description?.baths_half || property?.baths_half || 0, source: 'Realtor.com', confidence: 'High' };
+
+    const fullBaths = description?.baths_full || property?.baths_full || 0;
+    const halfBaths = description?.baths_half || property?.baths_half || 0;
+    fields['15_total_bathrooms'] = { value: fullBaths + (halfBaths * 0.5), source: 'Calculated', confidence: 'High' };
+
+    fields['16_living_sqft'] = { value: sqft, source: 'Realtor.com', confidence: 'High' };
+    fields['18_lot_size_sqft'] = { value: description?.lot_sqft || property?.lot_sqft, source: 'Realtor.com', confidence: 'High' };
+
+    const lotSqft = description?.lot_sqft || property?.lot_sqft;
+    fields['19_lot_size_acres'] = { value: lotSqft ? (lotSqft / 43560).toFixed(2) : null, source: 'Calculated', confidence: 'High' };
+
+    fields['20_year_built'] = { value: description?.year_built || property?.year_built, source: 'Realtor.com', confidence: 'High' };
+    fields['21_property_type'] = { value: description?.type || property?.prop_type || property?.type, source: 'Realtor.com', confidence: 'High' };
+    fields['22_stories'] = { value: description?.stories || property?.stories, source: 'Realtor.com', confidence: 'Medium' };
+    fields['23_garage_spaces'] = { value: description?.garage || property?.garage, source: 'Realtor.com', confidence: 'Medium' };
+
+    // HOA
+    const hoa = property?.hoa || listing?.hoa;
+    fields['25_hoa_yn'] = { value: hoa ? true : false, source: 'Realtor.com', confidence: 'Medium' };
+    if (hoa?.fee) {
+      fields['26_hoa_fee_annual'] = { value: hoa.fee * 12, source: 'Realtor.com', confidence: 'Medium' };
+    }
+
+    // County
+    fields['28_county'] = { value: location?.county?.name || location?.address?.county, source: 'Realtor.com', confidence: 'High' };
+
+    // Taxes
+    if (taxHistory?.length > 0) {
+      const latestTax = taxHistory[0];
+      fields['29_annual_taxes'] = { value: latestTax?.tax, source: 'Realtor.com', confidence: 'High' };
+      fields['30_tax_year'] = { value: latestTax?.year, source: 'Realtor.com', confidence: 'High' };
+      fields['31_assessed_value'] = { value: latestTax?.assessment?.total, source: 'Realtor.com', confidence: 'High' };
+    }
+
+    // Filter out null values
+    return Object.fromEntries(
+      Object.entries(fields).filter(([_, v]) => v.value !== null && v.value !== undefined)
+    );
+  } catch (e) {
+    console.error('Realtor scrape error:', e);
+    return {};
+  }
+}
+
+// ============================================
+// FREE API ENRICHMENT
+// ============================================
+
+async function geocodeAddress(address: string): Promise<{ lat: number; lon: number; county: string } | null> {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey) return null;
+
+  try {
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.results?.[0]) {
+      const result = data.results[0];
+      let county = '';
+      for (const component of result.address_components) {
+        if (component.types.includes('administrative_area_level_2')) {
+          county = component.long_name;
+          break;
+        }
+      }
+      return { lat: result.geometry.location.lat, lon: result.geometry.location.lng, county };
+    }
+  } catch (e) {
+    console.error('Geocode error:', e);
+  }
+  return null;
+}
+
+async function getWalkScore(lat: number, lon: number, address: string): Promise<Record<string, any>> {
+  const apiKey = process.env.WALKSCORE_API_KEY;
+  if (!apiKey) return {};
+
+  try {
+    const url = `https://api.walkscore.com/score?format=json&address=${encodeURIComponent(address)}&lat=${lat}&lon=${lon}&wsapikey=${apiKey}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    if (data.status !== 1) return {};
+
+    return {
+      '65_walk_score': { value: `${data.walkscore} - ${data.description}`, source: 'WalkScore', confidence: 'High' },
+      '66_transit_score': { value: data.transit?.score ? `${data.transit.score} - ${data.transit.description}` : null, source: 'WalkScore', confidence: 'High' },
+      '67_bike_score': { value: data.bike?.score ? `${data.bike.score} - ${data.bike.description}` : null, source: 'WalkScore', confidence: 'High' },
+      '70_walkability_description': { value: data.description, source: 'WalkScore', confidence: 'High' }
+    };
+  } catch (e) {
+    return {};
+  }
+}
+
+async function getFloodZone(lat: number, lon: number): Promise<Record<string, any>> {
+  try {
+    const url = `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?where=1%3D1&geometry=${lon}%2C${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE%2CZONE_SUBTY%2CSFHA_TF&returnGeometry=false&f=json`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.features?.[0]) {
+      const zone = data.features[0].attributes;
+      const floodZone = zone.FLD_ZONE || 'Unknown';
+      const isHighRisk = ['A', 'AE', 'AH', 'AO', 'V', 'VE'].some(z => floodZone.startsWith(z));
+      return {
+        '100_flood_zone': { value: `FEMA Zone ${floodZone}`, source: 'FEMA NFHL', confidence: 'High' },
+        '101_flood_risk_level': { value: isHighRisk ? 'High Risk (Special Flood Hazard Area)' : 'Minimal Risk', source: 'FEMA NFHL', confidence: 'High' }
+      };
+    }
+    return {
+      '100_flood_zone': { value: 'Zone X (Minimal Risk)', source: 'FEMA NFHL', confidence: 'Medium' },
+      '101_flood_risk_level': { value: 'Minimal', source: 'FEMA NFHL', confidence: 'Medium' }
+    };
+  } catch (e) {
+    return {};
+  }
+}
+
+async function getAirQuality(lat: number, lon: number): Promise<Record<string, any>> {
+  const apiKey = process.env.AIRNOW_API_KEY;
+  if (!apiKey) return {};
+
+  try {
+    const url = `https://www.airnowapi.org/aq/observation/latLong/current/?format=application/json&latitude=${lat}&longitude=${lon}&distance=25&API_KEY=${apiKey}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    if (data?.[0]) {
+      return {
+        '99_air_quality_index_current': { value: `${data[0].AQI} - ${data[0].Category.Name}`, source: 'AirNow', confidence: 'High' }
+      };
+    }
+  } catch (e) {}
+  return {};
+}
+
+async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>> {
+  const geo = await geocodeAddress(address);
+  if (!geo) return {};
+
+  const fields: Record<string, any> = {};
+  fields['28_county'] = { value: geo.county, source: 'Google Maps', confidence: 'High' };
+  fields['coordinates'] = { value: { lat: geo.lat, lon: geo.lon }, source: 'Google Maps', confidence: 'High' };
+
+  // Call free APIs in parallel
+  const [walkScore, floodZone, airQuality] = await Promise.all([
+    getWalkScore(geo.lat, geo.lon, address),
+    getFloodZone(geo.lat, geo.lon),
+    getAirQuality(geo.lat, geo.lon)
+  ]);
+
+  Object.assign(fields, walkScore, floodZone, airQuality);
+
+  // Filter out nulls
+  return Object.fromEntries(
+    Object.entries(fields).filter(([_, v]) => v.value !== null && v.value !== undefined)
+  );
+}
+
+// ============================================
+// LLM CALLS (for filling gaps)
+// ============================================
 
 // Field definitions for the prompt
 const FIELD_GROUPS = `
@@ -353,7 +607,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { address, url, engines = ['claude', 'gpt', 'grok', 'gemini'] } = req.body;
+  const { address, url, engines = ['claude', 'gpt', 'grok', 'gemini'], skipLLMs = false } = req.body;
 
   if (!address && !url) {
     return res.status(400).json({ error: 'Address or URL required' });
@@ -362,25 +616,78 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const searchQuery = address || `property at URL: ${url}`;
 
   try {
-    // Call selected LLMs in parallel
-    const promises: Promise<any>[] = [];
+    const sources_used: string[] = [];
+    let allFields: Record<string, any> = {};
 
-    if (engines.includes('claude')) promises.push(callClaude(searchQuery));
-    if (engines.includes('gpt')) promises.push(callGPT(searchQuery));
-    if (engines.includes('grok')) promises.push(callGrok(searchQuery));
-    if (engines.includes('gemini')) promises.push(callGemini(searchQuery));
+    // STEP 1: Scrape Realtor.com for real property data (FREE)
+    console.log('Step 1: Scraping Realtor.com...');
+    const realtorData = await scrapeRealtorData(searchQuery);
+    if (Object.keys(realtorData).length > 0) {
+      Object.assign(allFields, realtorData);
+      sources_used.push('Realtor.com');
+      console.log(`Found ${Object.keys(realtorData).length} fields from Realtor.com`);
+    }
 
-    const results = await Promise.all(promises);
+    // STEP 2: Enrich with free APIs (WalkScore, FEMA, AirNow)
+    console.log('Step 2: Enriching with free APIs...');
+    const enrichedData = await enrichWithFreeAPIs(searchQuery);
+    if (Object.keys(enrichedData).length > 0) {
+      // Only add fields not already found
+      for (const [key, value] of Object.entries(enrichedData)) {
+        if (!allFields[key]) {
+          allFields[key] = value;
+        }
+      }
+      if (enrichedData['65_walk_score']) sources_used.push('WalkScore');
+      if (enrichedData['100_flood_zone']) sources_used.push('FEMA NFHL');
+      if (enrichedData['99_air_quality_index_current']) sources_used.push('AirNow');
+      if (enrichedData['28_county']) sources_used.push('Google Maps');
+      console.log(`Added ${Object.keys(enrichedData).length} fields from free APIs`);
+    }
 
-    // Merge all results
-    const merged = mergeResults(results);
+    // STEP 3: Use LLMs to fill remaining gaps (optional, costs money)
+    let llmResponses: any[] = [];
+    if (!skipLLMs && engines.length > 0) {
+      console.log('Step 3: Calling LLMs to fill gaps...');
+      const promises: Promise<any>[] = [];
+
+      if (engines.includes('claude')) promises.push(callClaude(searchQuery));
+      if (engines.includes('gpt')) promises.push(callGPT(searchQuery));
+      if (engines.includes('grok')) promises.push(callGrok(searchQuery));
+      if (engines.includes('gemini')) promises.push(callGemini(searchQuery));
+
+      const results = await Promise.all(promises);
+      const merged = mergeResults(results);
+      llmResponses = merged.llm_responses || [];
+
+      // Only add LLM fields that we don't already have from real sources
+      for (const [key, value] of Object.entries(merged.fields || {})) {
+        if (!allFields[key]) {
+          allFields[key] = value;
+        }
+      }
+
+      if (merged.sources) {
+        sources_used.push(...merged.sources.filter((s: string) => !sources_used.includes(s)));
+      }
+    }
+
+    const total_fields = Object.keys(allFields).length;
+    const completion_percentage = Math.round((total_fields / 110) * 100);
 
     return res.status(200).json({
       success: true,
       address: searchQuery,
-      ...merged,
+      fields: allFields,
+      total_fields_found: total_fields,
+      completion_percentage,
+      sources: sources_used,
+      llm_responses: llmResponses,
+      strategy: 'real-data-first',
+      note: 'Data sourced from Realtor.com scraping and free APIs. LLMs used only to fill gaps.'
     });
   } catch (error) {
+    console.error('Search error:', error);
     return res.status(500).json({
       error: 'Failed to search property',
       details: String(error),
