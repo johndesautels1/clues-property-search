@@ -1265,71 +1265,93 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const searchQuery = address || `property at URL: ${url}`;
 
   try {
+    console.log('=== STARTING PROPERTY SEARCH ===');
+    console.log('Address:', searchQuery);
     const sources_used: string[] = [];
     let allFields: Record<string, any> = {};
 
     // STEP 1: Scrape Realtor.com for real property data (FREE)
     console.log('Step 1: Scraping Realtor.com...');
-    const realtorData = await scrapeRealtorData(searchQuery);
-    if (Object.keys(realtorData).length > 0) {
-      Object.assign(allFields, realtorData);
-      sources_used.push('Realtor.com');
-      console.log(`Found ${Object.keys(realtorData).length} fields from Realtor.com`);
+    try {
+      const realtorData = await scrapeRealtorData(searchQuery);
+      if (Object.keys(realtorData).length > 0) {
+        Object.assign(allFields, realtorData);
+        sources_used.push('Realtor.com');
+        console.log(`Found ${Object.keys(realtorData).length} fields from Realtor.com`);
+      }
+    } catch (e) {
+      console.error('Realtor.com scrape failed:', e);
     }
 
     // STEP 2: Enrich with free APIs (WalkScore, FEMA, AirNow)
     console.log('Step 2: Enriching with free APIs...');
-    const enrichedData = await enrichWithFreeAPIs(searchQuery);
-    if (Object.keys(enrichedData).length > 0) {
-      // Only add fields not already found
-      for (const [key, value] of Object.entries(enrichedData)) {
-        if (!allFields[key]) {
-          allFields[key] = value;
+    try {
+      const enrichedData = await enrichWithFreeAPIs(searchQuery);
+      if (Object.keys(enrichedData).length > 0) {
+        // Only add fields not already found
+        for (const [key, value] of Object.entries(enrichedData)) {
+          if (!allFields[key]) {
+            allFields[key] = value;
+          }
         }
+        if (enrichedData['65_walk_score']) sources_used.push('WalkScore');
+        if (enrichedData['100_flood_zone']) sources_used.push('FEMA NFHL');
+        if (enrichedData['99_air_quality_index_current']) sources_used.push('AirNow');
+        if (enrichedData['28_county']) sources_used.push('Google Maps');
+        console.log(`Added ${Object.keys(enrichedData).length} fields from free APIs`);
       }
-      if (enrichedData['65_walk_score']) sources_used.push('WalkScore');
-      if (enrichedData['100_flood_zone']) sources_used.push('FEMA NFHL');
-      if (enrichedData['99_air_quality_index_current']) sources_used.push('AirNow');
-      if (enrichedData['28_county']) sources_used.push('Google Maps');
-      console.log(`Added ${Object.keys(enrichedData).length} fields from free APIs`);
+    } catch (e) {
+      console.error('Free APIs enrichment failed:', e);
     }
 
     // STEP 3: Scrape Florida County Property Appraiser
     const county = allFields['28_county']?.value || '';
     if (county) {
       console.log(`Step 3: Scraping ${county} Property Appraiser...`);
-      const countyData = await scrapeFloridaCounty(searchQuery, county);
-      if (Object.keys(countyData).length > 0) {
-        for (const [key, value] of Object.entries(countyData)) {
-          if (!allFields[key]) {
-            allFields[key] = value;
+      try {
+        const countyData = await scrapeFloridaCounty(searchQuery, county);
+        if (Object.keys(countyData).length > 0) {
+          for (const [key, value] of Object.entries(countyData)) {
+            if (!allFields[key]) {
+              allFields[key] = value;
+            }
           }
+          sources_used.push(`${county} Property Appraiser`);
+          console.log(`Added ${Object.keys(countyData).length} fields from county appraiser`);
         }
-        sources_used.push(`${county} Property Appraiser`);
-        console.log(`Added ${Object.keys(countyData).length} fields from county appraiser`);
+      } catch (e) {
+        console.error('County scraping failed:', e);
       }
     }
 
     // STEP 3B: Scrape BroadbandNow for internet providers
     console.log('Step 3B: Scraping BroadbandNow for internet data...');
-    const internetData = await getInternetProviders(searchQuery);
-    if (Object.keys(internetData).length > 0) {
-      Object.assign(allFields, internetData);
-      sources_used.push('BroadbandNow');
-      console.log(`Added ${Object.keys(internetData).length} fields from BroadbandNow`);
+    try {
+      const internetData = await getInternetProviders(searchQuery);
+      if (Object.keys(internetData).length > 0) {
+        Object.assign(allFields, internetData);
+        sources_used.push('BroadbandNow');
+        console.log(`Added ${Object.keys(internetData).length} fields from BroadbandNow`);
+      }
+    } catch (e) {
+      console.error('BroadbandNow scraping failed:', e);
     }
 
     // STEP 4: Call Perplexity for additional real web data
     console.log('Step 4: Calling Perplexity for real web search...');
-    const perplexityData = await callPerplexity(searchQuery);
-    if (Object.keys(perplexityData).length > 0) {
-      for (const [key, value] of Object.entries(perplexityData)) {
-        if (!allFields[key]) {
-          allFields[key] = value;
+    try {
+      const perplexityData = await callPerplexity(searchQuery);
+      if (Object.keys(perplexityData).length > 0) {
+        for (const [key, value] of Object.entries(perplexityData)) {
+          if (!allFields[key]) {
+            allFields[key] = value;
+          }
         }
+        sources_used.push('Perplexity Web Search');
+        console.log(`Added ${Object.keys(perplexityData).length} fields from Perplexity`);
       }
-      sources_used.push('Perplexity Web Search');
-      console.log(`Added ${Object.keys(perplexityData).length} fields from Perplexity`);
+    } catch (e) {
+      console.error('Perplexity call failed:', e);
     }
 
     // STEP 3: Use LLMs to fill remaining gaps (optional, costs money)
@@ -1382,10 +1404,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       note: 'REAL DATA ONLY from scrapers and APIs. Perplexity/LLMs disabled by default (can enable with usePerplexity=true flag).'
     });
   } catch (error) {
-    console.error('Search error:', error);
+    console.error('=== SEARCH ERROR ===');
+    console.error('Error:', error);
+    console.error('Stack:', (error as Error).stack);
     return res.status(500).json({
       error: 'Failed to search property',
       details: String(error),
+      message: (error as Error).message,
     });
   }
 }
+
