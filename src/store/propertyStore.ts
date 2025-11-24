@@ -6,7 +6,7 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { PropertyCard, PropertyFilters, PropertySort } from '@/types/property';
+import type { PropertyCard, Property, PropertyFilters, PropertySort } from '@/types/property';
 
 // Demo properties to start with
 const initialProperties: PropertyCard[] = [
@@ -66,6 +66,7 @@ const initialProperties: PropertyCard[] = [
 interface PropertyState {
   // Properties data
   properties: PropertyCard[];
+  fullProperties: Map<string, Property>; // Store full 110-field properties separately
   selectedPropertyId: string | null;
   isLoading: boolean;
   error: string | null;
@@ -80,10 +81,11 @@ interface PropertyState {
 
   // Actions
   setProperties: (properties: PropertyCard[]) => void;
-  addProperty: (property: PropertyCard) => void;
-  addProperties: (properties: PropertyCard[]) => void;
+  addProperty: (property: PropertyCard, fullProperty?: Property) => void;
+  addProperties: (properties: PropertyCard[], fullProperties?: Property[]) => void;
   removeProperty: (id: string) => void;
   updateProperty: (id: string, updates: Partial<PropertyCard>) => void;
+  updateFullProperty: (id: string, property: Property) => void;
   selectProperty: (id: string | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -93,6 +95,7 @@ interface PropertyState {
   setSearchQuery: (query: string) => void;
   setViewMode: (mode: 'grid' | 'list' | 'map') => void;
   getPropertyById: (id: string) => PropertyCard | undefined;
+  getFullPropertyById: (id: string) => Property | undefined;
 }
 
 const defaultFilters: PropertyFilters = {};
@@ -107,6 +110,7 @@ export const usePropertyStore = create<PropertyState>()(
     (set, get) => ({
       // Initial state - load demo properties
       properties: initialProperties,
+      fullProperties: new Map<string, Property>(),
       selectedPropertyId: null,
       isLoading: false,
       error: null,
@@ -119,20 +123,41 @@ export const usePropertyStore = create<PropertyState>()(
       setProperties: (properties) =>
         set({ properties, isLoading: false, error: null }),
 
-      addProperty: (property) =>
-        set((state) => ({
-          properties: [property, ...state.properties],
-        })),
+      addProperty: (property, fullProperty) =>
+        set((state) => {
+          const newFullProperties = new Map(state.fullProperties);
+          if (fullProperty) {
+            newFullProperties.set(property.id, fullProperty);
+          }
+          return {
+            properties: [property, ...state.properties],
+            fullProperties: newFullProperties,
+          };
+        }),
 
-      addProperties: (newProperties) =>
-        set((state) => ({
-          properties: [...newProperties, ...state.properties],
-        })),
+      addProperties: (newProperties, fullProperties) =>
+        set((state) => {
+          const newFullPropertiesMap = new Map(state.fullProperties);
+          if (fullProperties) {
+            fullProperties.forEach((fp) => {
+              newFullPropertiesMap.set(fp.id, fp);
+            });
+          }
+          return {
+            properties: [...newProperties, ...state.properties],
+            fullProperties: newFullPropertiesMap,
+          };
+        }),
 
       removeProperty: (id) =>
-        set((state) => ({
-          properties: state.properties.filter((p) => p.id !== id),
-        })),
+        set((state) => {
+          const newFullProperties = new Map(state.fullProperties);
+          newFullProperties.delete(id);
+          return {
+            properties: state.properties.filter((p) => p.id !== id),
+            fullProperties: newFullProperties,
+          };
+        }),
 
       updateProperty: (id, updates) =>
         set((state) => ({
@@ -140,6 +165,13 @@ export const usePropertyStore = create<PropertyState>()(
             p.id === id ? { ...p, ...updates } : p
           ),
         })),
+
+      updateFullProperty: (id, property) =>
+        set((state) => {
+          const newFullProperties = new Map(state.fullProperties);
+          newFullProperties.set(id, property);
+          return { fullProperties: newFullProperties };
+        }),
 
       selectProperty: (id) =>
         set({ selectedPropertyId: id }),
@@ -170,10 +202,31 @@ export const usePropertyStore = create<PropertyState>()(
       getPropertyById: (id) => {
         return get().properties.find((p) => p.id === id);
       },
+
+      getFullPropertyById: (id) => {
+        return get().fullProperties.get(id);
+      },
     }),
     {
       name: 'clues-property-store',
       storage: createJSONStorage(() => localStorage),
+      // Custom serializer to handle Map
+      serialize: (state) => {
+        return JSON.stringify({
+          ...state,
+          state: {
+            ...state.state,
+            fullProperties: Array.from(state.state.fullProperties.entries()),
+          },
+        });
+      },
+      deserialize: (str) => {
+        const parsed = JSON.parse(str);
+        if (parsed.state?.fullProperties) {
+          parsed.state.fullProperties = new Map(parsed.state.fullProperties);
+        }
+        return parsed;
+      },
       // Persist everything so properties survive page refresh
     }
   )

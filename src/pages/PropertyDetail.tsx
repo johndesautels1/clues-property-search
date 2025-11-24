@@ -40,9 +40,10 @@ const itemVariants = {
 export default function PropertyDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getPropertyById, removeProperty } = usePropertyStore();
+  const { getPropertyById, getFullPropertyById, removeProperty } = usePropertyStore();
 
   const property = id ? getPropertyById(id) : undefined;
+  const fullProperty = id ? getFullPropertyById(id) : undefined;
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -230,7 +231,7 @@ export default function PropertyDetail() {
           </p>
         </motion.div>
 
-        {/* Location Scores - Placeholder since we don't have this data yet */}
+        {/* Location Scores */}
         <motion.div variants={itemVariants} className="glass-card p-4 mb-6">
           <h2 className="font-semibold text-white mb-4 flex items-center gap-2">
             <MapPin className="w-5 h-5 text-quantum-cyan" />
@@ -240,76 +241,186 @@ export default function PropertyDetail() {
             <div>
               <div className="flex justify-between mb-1">
                 <span className="text-sm text-gray-400">Walk</span>
-                <span className="text-sm font-bold text-quantum-cyan">--</span>
+                <span className="text-sm font-bold text-quantum-cyan">
+                  {fullProperty?.location.walkScore.value ?? '--'}
+                </span>
               </div>
               <div className="progress-quantum h-1.5">
-                <div className="progress-quantum-fill" style={{ width: '0%' }} />
+                <div className="progress-quantum-fill" style={{ width: `${fullProperty?.location.walkScore.value ?? 0}%` }} />
               </div>
             </div>
             <div>
               <div className="flex justify-between mb-1">
                 <span className="text-sm text-gray-400">Transit</span>
-                <span className="text-sm font-bold text-quantum-cyan">--</span>
+                <span className="text-sm font-bold text-quantum-cyan">
+                  {fullProperty?.location.transitScore.value ?? '--'}
+                </span>
               </div>
               <div className="progress-quantum h-1.5">
-                <div className="progress-quantum-fill" style={{ width: '0%' }} />
+                <div className="progress-quantum-fill" style={{ width: `${fullProperty?.location.transitScore.value ?? 0}%` }} />
               </div>
             </div>
             <div>
               <div className="flex justify-between mb-1">
                 <span className="text-sm text-gray-400">Bike</span>
-                <span className="text-sm font-bold text-quantum-cyan">--</span>
+                <span className="text-sm font-bold text-quantum-cyan">
+                  {fullProperty?.location.bikeScore.value ?? '--'}
+                </span>
               </div>
               <div className="progress-quantum h-1.5">
-                <div className="progress-quantum-fill" style={{ width: '0%' }} />
+                <div className="progress-quantum-fill" style={{ width: `${fullProperty?.location.bikeScore.value ?? 0}%` }} />
               </div>
             </div>
             <div>
               <div className="flex justify-between mb-1">
                 <span className="text-sm text-gray-400">Safety</span>
-                <span className="text-sm font-bold text-quantum-green">--</span>
+                <span className="text-sm font-bold text-quantum-green">
+                  {fullProperty?.location.neighborhoodSafetyRating.value ?? '--'}
+                </span>
               </div>
               <div className="progress-quantum h-1.5">
                 <div className="progress-quantum-fill" style={{ width: '0%' }} />
               </div>
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-3 text-center">
-            Location scores available after AI enrichment
-          </p>
+          {!fullProperty && (
+            <p className="text-xs text-gray-500 mt-3 text-center">
+              Location scores available after AI enrichment
+            </p>
+          )}
         </motion.div>
 
-        {/* Schools - Placeholder */}
+        {/* Schools */}
         <motion.div variants={itemVariants} className="glass-card p-4 mb-6">
           <h2 className="font-semibold text-white mb-4 flex items-center gap-2">
             <School className="w-5 h-5 text-quantum-cyan" />
             Assigned Schools
           </h2>
-          <p className="text-gray-500 text-sm text-center py-4">
-            School data available after AI enrichment
-          </p>
+          {fullProperty ? (
+            <div className="space-y-3">
+              {fullProperty.location.assignedElementary.value && (
+                <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                  <div>
+                    <p className="text-white font-medium">{fullProperty.location.assignedElementary.value}</p>
+                    <p className="text-xs text-gray-400">Elementary • {fullProperty.location.elementaryDistanceMiles.value ?? '--'} miles</p>
+                  </div>
+                  <span className="px-2 py-1 rounded bg-quantum-cyan/20 text-quantum-cyan text-sm font-bold">
+                    {fullProperty.location.elementaryRating.value ?? '--'}
+                  </span>
+                </div>
+              )}
+              {fullProperty.location.assignedMiddle.value && (
+                <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                  <div>
+                    <p className="text-white font-medium">{fullProperty.location.assignedMiddle.value}</p>
+                    <p className="text-xs text-gray-400">Middle • {fullProperty.location.middleDistanceMiles.value ?? '--'} miles</p>
+                  </div>
+                  <span className="px-2 py-1 rounded bg-quantum-cyan/20 text-quantum-cyan text-sm font-bold">
+                    {fullProperty.location.middleRating.value ?? '--'}
+                  </span>
+                </div>
+              )}
+              {fullProperty.location.assignedHigh.value && (
+                <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                  <div>
+                    <p className="text-white font-medium">{fullProperty.location.assignedHigh.value}</p>
+                    <p className="text-xs text-gray-400">High School • {fullProperty.location.highDistanceMiles.value ?? '--'} miles</p>
+                  </div>
+                  <span className="px-2 py-1 rounded bg-quantum-cyan/20 text-quantum-cyan text-sm font-bold">
+                    {fullProperty.location.highRating.value ?? '--'}
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-sm text-center py-4">
+              School data available after AI enrichment
+            </p>
+          )}
         </motion.div>
 
-        {/* Utilities - Placeholder */}
+        {/* Utilities & Connectivity */}
         <motion.div variants={itemVariants} className="glass-card p-4 mb-6">
           <h2 className="font-semibold text-white mb-4 flex items-center gap-2">
             <Wifi className="w-5 h-5 text-quantum-cyan" />
             Utilities & Connectivity
           </h2>
-          <p className="text-gray-500 text-sm text-center py-4">
-            Utility data available after AI enrichment
-          </p>
+          {fullProperty ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              {fullProperty.utilities.electricProvider.value && (
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-quantum-cyan" />
+                  <span className="text-gray-400">Electric:</span>
+                  <span className="text-white">{fullProperty.utilities.electricProvider.value}</span>
+                </div>
+              )}
+              {fullProperty.utilities.waterProvider.value && (
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-quantum-cyan" />
+                  <span className="text-gray-400">Water:</span>
+                  <span className="text-white">{fullProperty.utilities.waterProvider.value}</span>
+                </div>
+              )}
+              {fullProperty.utilities.maxInternetSpeed.value && (
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-quantum-cyan" />
+                  <span className="text-gray-400">Internet:</span>
+                  <span className="text-white">{fullProperty.utilities.maxInternetSpeed.value}</span>
+                </div>
+              )}
+              {fullProperty.utilities.naturalGas.value && (
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-quantum-cyan" />
+                  <span className="text-gray-400">Gas:</span>
+                  <span className="text-white">{fullProperty.utilities.naturalGas.value}</span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-sm text-center py-4">
+              Utility data available after AI enrichment
+            </p>
+          )}
         </motion.div>
 
-        {/* Environmental - Placeholder */}
+        {/* Environmental Data */}
         <motion.div variants={itemVariants} className="glass-card p-4 mb-6">
           <h2 className="font-semibold text-white mb-4 flex items-center gap-2">
             <Sun className="w-5 h-5 text-quantum-cyan" />
             Environmental Data
           </h2>
-          <p className="text-gray-500 text-sm text-center py-4">
-            Environmental data available after AI enrichment
-          </p>
+          {fullProperty ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              {fullProperty.utilities.floodZone.value && (
+                <div>
+                  <span className="text-gray-400">Flood Zone:</span>
+                  <span className="text-white ml-2">{fullProperty.utilities.floodZone.value}</span>
+                </div>
+              )}
+              {fullProperty.utilities.floodRiskLevel.value && (
+                <div>
+                  <span className="text-gray-400">Flood Risk:</span>
+                  <span className="text-white ml-2">{fullProperty.utilities.floodRiskLevel.value}</span>
+                </div>
+              )}
+              {fullProperty.utilities.airQualityIndexCurrent.value && (
+                <div>
+                  <span className="text-gray-400">Air Quality:</span>
+                  <span className="text-white ml-2">{fullProperty.utilities.airQualityIndexCurrent.value}</span>
+                </div>
+              )}
+              {fullProperty.utilities.solarPotential.value && (
+                <div>
+                  <span className="text-gray-400">Solar Potential:</span>
+                  <span className="text-white ml-2">{fullProperty.utilities.solarPotential.value}</span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-sm text-center py-4">
+              Environmental data available after AI enrichment
+            </p>
+          )}
         </motion.div>
 
         {/* Action Buttons */}

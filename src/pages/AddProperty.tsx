@@ -17,7 +17,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { usePropertyStore } from '@/store/propertyStore';
-import type { PropertyCard } from '@/types/property';
+import type { PropertyCard, Property, DataField } from '@/types/property';
 
 type ScrapeStatus = 'idle' | 'searching' | 'scraping' | 'enriching' | 'complete' | 'error';
 type InputMode = 'address' | 'url' | 'manual' | 'csv';
@@ -27,7 +27,7 @@ const generateId = () => Date.now().toString(36) + Math.random().toString(36).su
 
 export default function AddProperty() {
   const navigate = useNavigate();
-  const { addProperty } = usePropertyStore();
+  const { addProperty, addProperties } = usePropertyStore();
 
   const [address, setAddress] = useState('');
   const [url, setUrl] = useState('');
@@ -243,6 +243,155 @@ export default function AddProperty() {
     reader.readAsText(file);
   };
 
+  // Helper to create a DataField with default values
+  const createDataField = <T,>(value: T | null, confidence: 'High' | 'Medium-High' | 'Medium' | 'Low' = 'Medium'): DataField<T> => ({
+    value,
+    confidence,
+    notes: 'Imported from CSV',
+    sources: ['CSV Upload'],
+    lastUpdated: new Date().toISOString(),
+  });
+
+  // Convert CSV row with 110 fields to full Property object
+  const convertCsvToFullProperty = (row: any, propertyId: string): Property => {
+    const now = new Date().toISOString();
+
+    return {
+      id: propertyId,
+      createdAt: now,
+      updatedAt: now,
+      address: {
+        fullAddress: createDataField(row['1_full_address'] || ''),
+        mlsPrimary: createDataField(row['2_mls_primary'] || ''),
+        mlsSecondary: createDataField(row['3_mls_secondary'] || ''),
+        listingStatus: createDataField(row['4_listing_status'] || 'Active'),
+        listingDate: createDataField(row['5_listing_date'] || ''),
+        listingPrice: createDataField(row['6_listing_price'] ? parseFloat(row['6_listing_price'].toString().replace(/[^0-9.]/g, '')) : null),
+        pricePerSqft: createDataField(row['7_price_per_sqft'] ? parseFloat(row['7_price_per_sqft'].toString().replace(/[^0-9.]/g, '')) : null),
+        streetAddress: createDataField(row['street_address'] || row['1_full_address'] || ''),
+        city: createDataField(row['city'] || ''),
+        state: createDataField(row['state'] || 'FL'),
+        zipCode: createDataField(row['zip'] || row['zipCode'] || ''),
+        county: createDataField(row['county'] || ''),
+        latitude: createDataField(row['latitude'] ? parseFloat(row['latitude']) : null),
+        longitude: createDataField(row['longitude'] ? parseFloat(row['longitude']) : null),
+      },
+      details: {
+        bedrooms: createDataField(row['12_bedrooms'] ? parseInt(row['12_bedrooms']) : null),
+        fullBathrooms: createDataField(row['13_full_bathrooms'] ? parseInt(row['13_full_bathrooms']) : null),
+        halfBathrooms: createDataField(row['14_half_bathrooms'] ? parseInt(row['14_half_bathrooms']) : null),
+        totalBathrooms: createDataField(row['15_total_bathrooms'] ? parseFloat(row['15_total_bathrooms']) : null),
+        livingSqft: createDataField(row['16_living_sqft'] ? parseInt(row['16_living_sqft']) : null),
+        totalSqftUnderRoof: createDataField(row['17_total_sqft_under_roof'] ? parseInt(row['17_total_sqft_under_roof']) : null),
+        lotSizeSqft: createDataField(row['18_lot_size_sqft'] ? parseInt(row['18_lot_size_sqft']) : null),
+        lotSizeAcres: createDataField(row['19_lot_size_acres'] ? parseFloat(row['19_lot_size_acres']) : null),
+        yearBuilt: createDataField(row['20_year_built'] ? parseInt(row['20_year_built']) : null),
+        propertyType: createDataField(row['21_property_type'] || 'Single Family'),
+        stories: createDataField(row['22_stories'] ? parseInt(row['22_stories']) : null),
+        garageSpaces: createDataField(row['23_garage_spaces'] ? parseInt(row['23_garage_spaces']) : null),
+        parkingTotal: createDataField(row['24_parking_total'] || ''),
+        hoaYn: createDataField(row['25_hoa_yn'] ? row['25_hoa_yn'].toLowerCase() === 'yes' || row['25_hoa_yn'] === 'true' : null),
+        hoaFeeAnnual: createDataField(row['26_hoa_fee_annual'] ? parseFloat(row['26_hoa_fee_annual'].toString().replace(/[^0-9.]/g, '')) : null),
+        annualTaxes: createDataField(row['27_annual_taxes'] ? parseFloat(row['27_annual_taxes'].toString().replace(/[^0-9.]/g, '')) : null),
+        taxYear: createDataField(row['28_tax_year'] ? parseInt(row['28_tax_year']) : null),
+        assessedValue: createDataField(row['29_assessed_value'] ? parseFloat(row['29_assessed_value'].toString().replace(/[^0-9.]/g, '')) : null),
+        marketValueEstimate: createDataField(row['30_market_value_estimate'] ? parseFloat(row['30_market_value_estimate'].toString().replace(/[^0-9.]/g, '')) : null),
+        lastSaleDate: createDataField(row['31_last_sale_date'] || ''),
+        lastSalePrice: createDataField(row['32_last_sale_price'] ? parseFloat(row['32_last_sale_price'].toString().replace(/[^0-9.]/g, '')) : null),
+        ownershipType: createDataField(row['33_ownership_type'] || ''),
+        parcelId: createDataField(row['34_parcel_id'] || ''),
+      },
+      structural: {
+        roofType: createDataField(row['35_roof_type'] || ''),
+        roofAgeEst: createDataField(row['36_roof_age_est'] || ''),
+        exteriorMaterial: createDataField(row['37_exterior_material'] || ''),
+        foundation: createDataField(row['38_foundation'] || ''),
+        hvacType: createDataField(row['39_hvac_type'] || ''),
+        hvacAge: createDataField(row['40_hvac_age'] || ''),
+        flooringType: createDataField(row['41_flooring_type'] || ''),
+        kitchenFeatures: createDataField(row['42_kitchen_features'] || ''),
+        appliancesIncluded: createDataField(row['43_appliances_included'] ? row['43_appliances_included'].split(',').map((s: string) => s.trim()) : []),
+        fireplaceYn: createDataField(row['44_fireplace_yn'] ? row['44_fireplace_yn'].toLowerCase() === 'yes' || row['44_fireplace_yn'] === 'true' : null),
+        poolYn: createDataField(row['45_pool_yn'] ? row['45_pool_yn'].toLowerCase() === 'yes' || row['45_pool_yn'] === 'true' : null),
+        poolType: createDataField(row['46_pool_type'] || ''),
+        deckPatio: createDataField(row['47_deck_patio'] || ''),
+        fence: createDataField(row['48_fence'] || ''),
+        landscaping: createDataField(row['49_landscaping'] || ''),
+        recentRenovations: createDataField(row['50_recent_renovations'] || ''),
+        permitHistoryRoof: createDataField(row['51_permit_history_roof'] || ''),
+        permitHistoryHvac: createDataField(row['52_permit_history_hvac'] || ''),
+        permitHistoryPoolAdditions: createDataField(row['53_permit_history_pool_additions'] || ''),
+        interiorCondition: createDataField(row['54_interior_condition'] || ''),
+      },
+      location: {
+        assignedElementary: createDataField(row['55_assigned_elementary'] || ''),
+        elementaryRating: createDataField(row['56_elementary_rating'] || ''),
+        elementaryDistanceMiles: createDataField(row['57_elementary_distance_miles'] ? parseFloat(row['57_elementary_distance_miles']) : null),
+        assignedMiddle: createDataField(row['58_assigned_middle'] || ''),
+        middleRating: createDataField(row['59_middle_rating'] || ''),
+        middleDistanceMiles: createDataField(row['60_middle_distance_miles'] ? parseFloat(row['60_middle_distance_miles']) : null),
+        assignedHigh: createDataField(row['61_assigned_high'] || ''),
+        highRating: createDataField(row['62_high_rating'] || ''),
+        highDistanceMiles: createDataField(row['63_high_distance_miles'] ? parseFloat(row['63_high_distance_miles']) : null),
+        walkScore: createDataField(row['64_walk_score'] ? parseInt(row['64_walk_score']) : null),
+        transitScore: createDataField(row['65_transit_score'] ? parseInt(row['65_transit_score']) : null),
+        bikeScore: createDataField(row['66_bike_score'] ? parseInt(row['66_bike_score']) : null),
+        distanceGroceryMiles: createDataField(row['67_distance_grocery_miles'] ? parseFloat(row['67_distance_grocery_miles']) : null),
+        distanceHospitalMiles: createDataField(row['68_distance_hospital_miles'] ? parseFloat(row['68_distance_hospital_miles']) : null),
+        distanceAirportMiles: createDataField(row['69_distance_airport_miles'] ? parseFloat(row['69_distance_airport_miles']) : null),
+        distanceParkMiles: createDataField(row['70_distance_park_miles'] ? parseFloat(row['70_distance_park_miles']) : null),
+        distanceBeachMiles: createDataField(row['71_distance_beach_miles'] ? parseFloat(row['71_distance_beach_miles']) : null),
+        crimeIndexViolent: createDataField(row['72_crime_index_violent'] || ''),
+        crimeIndexProperty: createDataField(row['73_crime_index_property'] || ''),
+        neighborhoodSafetyRating: createDataField(row['74_neighborhood_safety_rating'] || ''),
+        noiseLevel: createDataField(row['75_noise_level'] || ''),
+        trafficLevel: createDataField(row['76_traffic_level'] || ''),
+        walkabilityDescription: createDataField(row['77_walkability_description'] || ''),
+        commuteTimeCityCenter: createDataField(row['78_commute_time_city_center'] || ''),
+        publicTransitAccess: createDataField(row['79_public_transit_access'] || ''),
+      },
+      financial: {
+        annualPropertyTax: createDataField(row['80_annual_property_tax'] ? parseFloat(row['80_annual_property_tax'].toString().replace(/[^0-9.]/g, '')) : null),
+        taxExemptions: createDataField(row['81_tax_exemptions'] || ''),
+        propertyTaxRate: createDataField(row['82_property_tax_rate'] ? parseFloat(row['82_property_tax_rate']) : null),
+        recentTaxPaymentHistory: createDataField(row['83_recent_tax_payment_history'] || ''),
+        medianHomePriceNeighborhood: createDataField(row['84_median_home_price_neighborhood'] ? parseFloat(row['84_median_home_price_neighborhood'].toString().replace(/[^0-9.]/g, '')) : null),
+        pricePerSqftRecentAvg: createDataField(row['85_price_per_sqft_recent_avg'] ? parseFloat(row['85_price_per_sqft_recent_avg'].toString().replace(/[^0-9.]/g, '')) : null),
+        daysOnMarketAvg: createDataField(row['86_days_on_market_avg'] ? parseFloat(row['86_days_on_market_avg']) : null),
+        inventorySurplus: createDataField(row['87_inventory_surplus'] || ''),
+        rentalEstimateMonthly: createDataField(row['88_rental_estimate_monthly'] ? parseFloat(row['88_rental_estimate_monthly'].toString().replace(/[^0-9.]/g, '')) : null),
+        rentalYieldEst: createDataField(row['89_rental_yield_est'] ? parseFloat(row['89_rental_yield_est']) : null),
+        vacancyRateNeighborhood: createDataField(row['90_vacancy_rate_neighborhood'] ? parseFloat(row['90_vacancy_rate_neighborhood']) : null),
+        capRateEst: createDataField(row['91_cap_rate_est'] ? parseFloat(row['91_cap_rate_est']) : null),
+        insuranceEstAnnual: createDataField(row['92_insurance_est_annual'] ? parseFloat(row['92_insurance_est_annual'].toString().replace(/[^0-9.]/g, '')) : null),
+        financingTerms: createDataField(row['93_financing_terms'] || ''),
+        comparableSalesLast3: createDataField(row['94_comparable_sales_last_3'] ? row['94_comparable_sales_last_3'].split(',').map((s: string) => s.trim()) : []),
+      },
+      utilities: {
+        electricProvider: createDataField(row['95_electric_provider'] || ''),
+        waterProvider: createDataField(row['96_water_provider'] || ''),
+        sewerProvider: createDataField(row['97_sewer_provider'] || ''),
+        naturalGas: createDataField(row['98_natural_gas'] || ''),
+        internetProvidersTop3: createDataField(row['99_internet_providers_top_3'] ? row['99_internet_providers_top_3'].split(',').map((s: string) => s.trim()) : []),
+        maxInternetSpeed: createDataField(row['100_max_internet_speed'] || ''),
+        cableTvProvider: createDataField(row['101_cable_tv_provider'] || ''),
+        airQualityIndexCurrent: createDataField(row['102_air_quality_index_current'] || ''),
+        floodZone: createDataField(row['103_flood_zone'] || ''),
+        floodRiskLevel: createDataField(row['104_flood_risk_level'] || ''),
+        climateRiskWildfireFlood: createDataField(row['105_climate_risk_wildfire_flood'] || ''),
+        noiseLevelDbEst: createDataField(row['106_noise_level_db_est'] || ''),
+        solarPotential: createDataField(row['107_solar_potential'] || ''),
+        evChargingYn: createDataField(row['108_ev_charging_yn'] || ''),
+        smartHomeFeatures: createDataField(row['109_smart_home_features'] || ''),
+        accessibilityMods: createDataField(row['110_accessibility_mods'] || ''),
+        petPolicy: createDataField(row['pet_policy'] || ''),
+        ageRestrictions: createDataField(row['age_restrictions'] || ''),
+        specialAssessments: createDataField(row['special_assessments'] || ''),
+        notesConfidenceSummary: createDataField(row['notes_confidence_summary'] || ''),
+      },
+    };
+  };
+
   const handleCsvImport = () => {
     if (csvData.length === 0) {
       alert('No data to import');
@@ -250,15 +399,21 @@ export default function AddProperty() {
     }
 
     let imported = 0;
+    const propertyCards: PropertyCard[] = [];
+    const fullProperties: Property[] = [];
+
     csvData.forEach(row => {
-      // Try to extract address from 110-field format
+      // Generate ID for this property
+      const propertyId = generateId();
+
+      // Try to extract address from 110-field format or standard format
       const address = row['1_full_address'] || row['address'] || row['Address'] || '';
       const city = row['city'] || row['City'] || '';
       const state = row['state'] || row['State'] || 'FL';
       const zip = row['zip'] || row['ZIP'] || '';
 
-      // Extract price
-      const listingPrice = row['7_listing_price'] || row['price'] || row['Price'] || '0';
+      // Extract price (support both field definition format and standard)
+      const listingPrice = row['6_listing_price'] || row['7_listing_price'] || row['price'] || row['Price'] || '0';
       const price = parseInt(String(listingPrice).replace(/[^0-9]/g, '')) || 0;
 
       // Extract bedrooms/bathrooms
@@ -274,8 +429,11 @@ export default function AddProperty() {
       // Extract status
       const status = row['4_listing_status'] || row['status'] || row['Status'] || 'Active';
 
-      const property: PropertyCard = {
-        id: generateId(),
+      // Count non-empty fields for data completeness
+      const filledFieldsCount = Object.values(row).filter(v => v && v !== '').length;
+
+      const propertyCard: PropertyCard = {
+        id: propertyId,
         address,
         city,
         state,
@@ -287,26 +445,36 @@ export default function AddProperty() {
         sqft,
         yearBuilt,
         smartScore: Math.floor(Math.random() * 20) + 75,
-        dataCompleteness: Object.values(row).filter(v => v && v !== '').length,
+        dataCompleteness: Math.min(100, filledFieldsCount), // Cap at 100
         listingStatus: status as 'Active' | 'Pending' | 'Sold',
         daysOnMarket: 0,
       };
 
-      console.log('Importing property:', property);
+      console.log('Importing property:', propertyCard);
+      console.log('CSV row has', filledFieldsCount, 'filled fields');
 
-      if (property.address || property.price > 0) {
-        addProperty(property);
+      // Create full property with all 110 fields
+      const fullProperty = convertCsvToFullProperty(row, propertyId);
+
+      if (propertyCard.address || propertyCard.price > 0) {
+        propertyCards.push(propertyCard);
+        fullProperties.push(fullProperty);
         imported++;
       }
     });
 
+    // Add all properties to the store at once
+    if (propertyCards.length > 0) {
+      addProperties(propertyCards, fullProperties);
+    }
+
     setStatus('complete');
-    alert(`Successfully imported ${imported} properties`);
+    alert(`Successfully imported ${imported} properties with all 110 fields preserved`);
     setCsvFile(null);
     setCsvData([]);
 
     // Navigate to property list
-    setTimeout(() => navigate('/properties'), 1000);
+    setTimeout(() => navigate('/properties'), 1500);
   };
 
   return (
@@ -412,13 +580,22 @@ export default function AddProperty() {
 
                 {csvData.length > 0 && (
                   <div className="mb-4">
-                    <p className="text-sm text-gray-400 mb-2">Preview (first 3 rows):</p>
+                    <p className="text-sm text-gray-400 mb-2">Preview (first 3 properties):</p>
                     <div className="bg-black/30 rounded-lg p-3 text-xs font-mono overflow-x-auto">
-                      {csvData.slice(0, 3).map((row, i) => (
-                        <div key={i} className="mb-2">
-                          {row.address} - {row.city}, {row.state} - ${row.price}
-                        </div>
-                      ))}
+                      {csvData.slice(0, 3).map((row, i) => {
+                        const address = row['1_full_address'] || row['address'] || row['Address'] || 'No address';
+                        const city = row['city'] || row['City'] || '';
+                        const state = row['state'] || row['State'] || '';
+                        const priceRaw = row['6_listing_price'] || row['7_listing_price'] || row['price'] || row['Price'] || '0';
+                        const price = parseInt(String(priceRaw).replace(/[^0-9]/g, '')) || 0;
+                        const fieldCount = Object.values(row).filter(v => v && v !== '').length;
+
+                        return (
+                          <div key={i} className="mb-2">
+                            {address} - {city}{city && state ? ', ' : ''}{state} - ${price.toLocaleString()} ({fieldCount} fields)
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
