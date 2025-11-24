@@ -233,6 +233,67 @@ async function getAirQuality(lat: number, lon: number): Promise<Record<string, a
   return {};
 }
 
+// HowLoud API - Noise levels
+async function getNoiseData(lat: number, lon: number): Promise<Record<string, any>> {
+  const apiKey = process.env.HOWLOUD_API_KEY;
+  if (!apiKey) {
+    console.log('HOWLOUD_API_KEY not set');
+    return {};
+  }
+
+  try {
+    const url = `https://api.howloud.com/score?lat=${lat}&lng=${lon}&key=${apiKey}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    const fields: Record<string, any> = {};
+
+    if (data && data.score !== undefined) {
+      // HowLoud score: 0-100 (higher = quieter)
+      let noiseLevel = 'High Noise';
+      if (data.score >= 80) noiseLevel = 'Very Quiet';
+      else if (data.score >= 60) noiseLevel = 'Quiet';
+      else if (data.score >= 40) noiseLevel = 'Moderate';
+      else if (data.score >= 20) noiseLevel = 'Noisy';
+
+      fields['68_noise_level'] = {
+        value: `${noiseLevel} (Score: ${data.score}/100)`,
+        source: 'HowLoud',
+        confidence: 'High'
+      };
+
+      // Traffic noise component if available
+      if (data.traffic !== undefined) {
+        let trafficLevel = 'Heavy';
+        if (data.traffic >= 80) trafficLevel = 'Very Light';
+        else if (data.traffic >= 60) trafficLevel = 'Light';
+        else if (data.traffic >= 40) trafficLevel = 'Moderate';
+        else if (data.traffic >= 20) trafficLevel = 'Heavy';
+
+        fields['69_traffic_level'] = {
+          value: `${trafficLevel} (Score: ${data.traffic}/100)`,
+          source: 'HowLoud',
+          confidence: 'High'
+        };
+      }
+
+      // Estimated noise in decibels if available
+      if (data.decibels !== undefined) {
+        fields['103_noise_level_db_est'] = {
+          value: `${data.decibels} dB`,
+          source: 'HowLoud',
+          confidence: 'High'
+        };
+      }
+    }
+
+    return fields;
+  } catch (e) {
+    console.error('HowLoud error:', e);
+    return {};
+  }
+}
+
 // BroadbandNow Scraper - Internet providers (FREE - no API key)
 async function getInternetProviders(address: string): Promise<Record<string, any>> {
   try {
@@ -460,16 +521,17 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   fields['coordinates'] = { value: { lat: geo.lat, lon: geo.lon }, source: 'Google Maps', confidence: 'High' };
 
   // Call all APIs in parallel
-  const [walkScore, floodZone, airQuality, climateData, distances, commuteTime] = await Promise.all([
+  const [walkScore, floodZone, airQuality, noiseData, climateData, distances, commuteTime] = await Promise.all([
     getWalkScore(geo.lat, geo.lon, address),
     getFloodZone(geo.lat, geo.lon),
     getAirQuality(geo.lat, geo.lon),
+    getNoiseData(geo.lat, geo.lon),
     getClimateData(geo.lat, geo.lon),
     getDistances(geo.lat, geo.lon),
     getCommuteTime(geo.lat, geo.lon, geo.county)
   ]);
 
-  Object.assign(fields, walkScore, floodZone, airQuality, climateData, distances, commuteTime);
+  Object.assign(fields, walkScore, floodZone, airQuality, noiseData, climateData, distances, commuteTime);
 
   // Filter out nulls
   return Object.fromEntries(
