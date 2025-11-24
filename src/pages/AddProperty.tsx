@@ -252,6 +252,14 @@ export default function AddProperty() {
     lastUpdated: new Date().toISOString(),
   });
 
+  // Helper to parse price ranges - takes first number only
+  const parsePrice = (str: string | undefined): number | null => {
+    if (!str) return null;
+    // Handle ranges like "$1,085-$1,499" - extract first number only
+    const firstNumber = str.split('-')[0].replace(/[^0-9.]/g, '');
+    return firstNumber ? parseFloat(firstNumber) : null;
+  };
+
   // Convert CSV row with 110 fields to full Property object
   const convertCsvToFullProperty = (row: any, propertyId: string): Property => {
     const now = new Date().toISOString();
@@ -311,8 +319,8 @@ export default function AddProperty() {
         flooringType: createDataField(row['40_flooring_types'] || ''),
         kitchenFeatures: createDataField(''),
         appliancesIncluded: createDataField([]),
-        fireplaceYn: createDataField(row['37_fireplace'] ? row['37_fireplace'].toLowerCase() === 'true' : false),
-        poolYn: createDataField(row['34_pool'] ? row['34_pool'].toLowerCase() === 'true' : false),
+        fireplaceYn: createDataField(row['37_fireplace'] ? row['37_fireplace'].toLowerCase() === 'true' || row['37_fireplace'].toLowerCase() === 'yes' : false),
+        poolYn: createDataField(row['34_pool'] ? row['34_pool'].toLowerCase() === 'true' || row['34_pool'].toLowerCase() === 'yes' : false),
         poolType: createDataField(row['35_pool_type'] || ''),
         deckPatio: createDataField(''),
         fence: createDataField(row['36_fence_type'] || ''),
@@ -363,7 +371,7 @@ export default function AddProperty() {
         rentalYieldEst: createDataField(0),
         vacancyRateNeighborhood: createDataField(0),
         capRateEst: createDataField(row['76_cap_rate_estimate'] ? parseFloat(row['76_cap_rate_estimate']) : null),
-        insuranceEstAnnual: createDataField(row['80_insurance_estimate_annual'] ? parseFloat(row['80_insurance_estimate_annual'].toString().replace(/[^0-9.]/g, '')) : null),
+        insuranceEstAnnual: createDataField(parsePrice(row['80_insurance_estimate_annual'])),
         financingTerms: createDataField(''),
         comparableSalesLast3: createDataField([]),
       },
@@ -413,18 +421,18 @@ export default function AddProperty() {
       const zip = row['zip'] || row['ZIP'] || '';
 
       // Extract price (support both field definition format and standard)
-      const listingPrice = row['6_listing_price'] || row['7_listing_price'] || row['price'] || row['Price'] || '0';
+      const listingPrice = row['5_list_price'] || row['7_sold_price'] || row['price'] || row['Price'] || '0';
       const price = parseInt(String(listingPrice).replace(/[^0-9]/g, '')) || 0;
 
       // Extract bedrooms/bathrooms
-      const bedrooms = parseInt(row['12_bedrooms'] || row['bedrooms'] || row['Bedrooms'] || '0');
-      const bathrooms = parseFloat(row['15_total_bathrooms'] || row['bathrooms'] || row['Bathrooms'] || '0');
+      const bedrooms = parseInt(row['11_bedrooms'] || row['bedrooms'] || row['Bedrooms'] || '0');
+      const bathrooms = parseFloat(row['14_bathrooms_total'] || row['bathrooms'] || row['Bathrooms'] || '0');
 
       // Extract sqft
-      const sqft = parseInt(row['16_living_sqft'] || row['sqft'] || row['Sqft'] || '0');
+      const sqft = parseInt(row['15_living_area_sqft'] || row['sqft'] || row['Sqft'] || '0');
 
       // Extract year built
-      const yearBuilt = parseInt(row['20_year_built'] || row['yearBuilt'] || row['Year Built'] || new Date().getFullYear().toString());
+      const yearBuilt = parseInt(row['9_year_built'] || row['yearBuilt'] || row['Year Built'] || new Date().getFullYear().toString());
 
       // Extract status
       const status = row['4_listing_status'] || row['status'] || row['Status'] || 'Active';
