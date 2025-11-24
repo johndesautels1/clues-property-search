@@ -256,7 +256,99 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
 }
 
 // ============================================
-// LLM CALLS (for filling gaps)
+// PERPLEXITY - HAS REAL WEB SEARCH
+// ============================================
+
+async function callPerplexity(address: string): Promise<Record<string, any>> {
+  const apiKey = process.env.PERPLEXITY_API_KEY;
+  if (!apiKey) {
+    console.log('PERPLEXITY_API_KEY not set');
+    return {};
+  }
+
+  const prompt = `Search for real property data for: ${address}
+
+Search Zillow, Redfin, Realtor.com, and county property appraiser websites.
+
+Return ONLY data you can actually verify from these sources. For each field include the source website.
+
+I need these fields in JSON format:
+{
+  "7_listing_price": {"value": number, "source": "website name"},
+  "12_bedrooms": {"value": number, "source": "website name"},
+  "13_full_bathrooms": {"value": number, "source": "website name"},
+  "16_living_sqft": {"value": number, "source": "website name"},
+  "18_lot_size_sqft": {"value": number, "source": "website name"},
+  "20_year_built": {"value": number, "source": "website name"},
+  "21_property_type": {"value": "string", "source": "website name"},
+  "29_annual_taxes": {"value": number, "source": "website name"},
+  "31_assessed_value": {"value": number, "source": "website name"},
+  "56_assigned_elementary": {"value": "school name", "source": "website name"},
+  "57_elementary_rating": {"value": "rating", "source": "website name"},
+  "59_assigned_middle": {"value": "school name", "source": "website name"},
+  "60_middle_rating": {"value": "rating", "source": "website name"},
+  "62_assigned_high": {"value": "school name", "source": "website name"},
+  "63_high_rating": {"value": "rating", "source": "website name"},
+  "81_median_home_price_neighborhood": {"value": number, "source": "website name"},
+  "85_rental_estimate_monthly": {"value": number, "source": "website name"}
+}
+
+CRITICAL: Only include fields you found REAL data for. Do NOT make up values. Return valid JSON only.`;
+
+  try {
+    console.log('Calling Perplexity API...');
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-sonar-large-128k-online',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a real estate data researcher. Search the web and return ONLY verified data from real sources. Never make up data.'
+          },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.1,
+      }),
+    });
+
+    const data = await response.json();
+    console.log('Perplexity response received');
+
+    if (data.choices?.[0]?.message?.content) {
+      const text = data.choices[0].message.content;
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        // Add confidence and format properly
+        const fields: Record<string, any> = {};
+        for (const [key, val] of Object.entries(parsed)) {
+          if (val && typeof val === 'object' && (val as any).value !== null) {
+            fields[key] = {
+              value: (val as any).value,
+              source: `${(val as any).source} (via Perplexity)`,
+              confidence: 'High'
+            };
+          }
+        }
+        console.log(`Perplexity found ${Object.keys(fields).length} fields`);
+        return fields;
+      }
+    }
+    console.log('Failed to parse Perplexity response');
+    return {};
+  } catch (error) {
+    console.error('Perplexity error:', error);
+    return {};
+  }
+}
+
+// ============================================
+// LLM CALLS (DISABLED - hallucinate without web access)
 // ============================================
 
 // Field definitions for the prompt
@@ -607,7 +699,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { address, url, engines = ['claude', 'gpt', 'grok', 'gemini'], skipLLMs = false } = req.body;
+  // LLMs turned OFF - they hallucinate without web access
+  // Only Perplexity has real web search capability
+  const { address, url, engines = [], skipLLMs = true } = req.body;
 
   if (!address && !url) {
     return res.status(400).json({ error: 'Address or URL required' });
@@ -643,6 +737,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (enrichedData['99_air_quality_index_current']) sources_used.push('AirNow');
       if (enrichedData['28_county']) sources_used.push('Google Maps');
       console.log(`Added ${Object.keys(enrichedData).length} fields from free APIs`);
+    }
+
+    // STEP 3: Call Perplexity for additional real web data
+    console.log('Step 3: Calling Perplexity for real web search...');
+    const perplexityData = await callPerplexity(searchQuery);
+    if (Object.keys(perplexityData).length > 0) {
+      for (const [key, value] of Object.entries(perplexityData)) {
+        if (!allFields[key]) {
+          allFields[key] = value;
+        }
+      }
+      sources_used.push('Perplexity Web Search');
+      console.log(`Added ${Object.keys(perplexityData).length} fields from Perplexity`);
     }
 
     // STEP 3: Use LLMs to fill remaining gaps (optional, costs money)
