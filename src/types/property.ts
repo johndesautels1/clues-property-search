@@ -32,6 +32,7 @@ export interface AddressData {
   county: DataField<string>;
   latitude: DataField<number>;
   longitude: DataField<number>;
+  neighborhoodName: DataField<string>;   // #41
 }
 
 // Property Details (8-30)
@@ -51,6 +52,8 @@ export interface PropertyDetails {
   parkingTotal: DataField<string>;       // #20
   hoaYn: DataField<boolean>;             // #21
   hoaFeeAnnual: DataField<number>;       // #22
+  hoaName: DataField<string>;            // #70
+  hoaIncludes: DataField<string>;        // #71
   annualTaxes: DataField<number>;        // #23
   taxYear: DataField<number>;            // #24
   assessedValue: DataField<number>;      // #25
@@ -69,10 +72,14 @@ export interface StructuralDetails {
   foundation: DataField<string>;         // #34
   hvacType: DataField<string>;           // #35
   hvacAge: DataField<string>;            // #36
+  waterHeaterType: DataField<string>;    // #30
+  garageType: DataField<string>;         // #31
   flooringType: DataField<string>;       // #37
   kitchenFeatures: DataField<string>;    // #38
   appliancesIncluded: DataField<string[]>; // #39
+  laundryType: DataField<string>;        // #39
   fireplaceYn: DataField<boolean>;       // #40
+  fireplaceCount: DataField<number>;     // #38
   poolYn: DataField<boolean>;            // #41
   poolType: DataField<string>;           // #42
   deckPatio: DataField<string>;          // #43
@@ -96,6 +103,8 @@ export interface LocationData {
   assignedHigh: DataField<string>;       // #57
   highRating: DataField<string>;         // #58
   highDistanceMiles: DataField<number>;  // #59
+  schoolDistrictName: DataField<string>; // #65
+  elevationFeet: DataField<number>;      // #55
   walkScore: DataField<number>;          // #60
   transitScore: DataField<number>;       // #61
   bikeScore: DataField<number>;          // #62
@@ -122,6 +131,9 @@ export interface FinancialData {
   recentTaxPaymentHistory: DataField<string>; // #79
   medianHomePriceNeighborhood: DataField<number>; // #80
   pricePerSqftRecentAvg: DataField<number>; // #81
+  redfinEstimate: DataField<number>;     // #74
+  priceToRentRatio: DataField<number>;   // #77
+  priceVsMedianPercent: DataField<number>; // #79
   daysOnMarketAvg: DataField<number>;    // #82
   inventorySurplus: DataField<string>;   // #83
   rentalEstimateMonthly: DataField<number>; // #84
@@ -139,18 +151,34 @@ export interface UtilitiesData {
   waterProvider: DataField<string>;      // #92
   sewerProvider: DataField<string>;      // #93
   naturalGas: DataField<string>;         // #94
+  trashProvider: DataField<string>;      // #85
   internetProvidersTop3: DataField<string[]>; // #95
   maxInternetSpeed: DataField<string>;   // #96
+  fiberAvailable: DataField<boolean>;    // #88
   cableTvProvider: DataField<string>;    // #97
+  avgElectricBill: DataField<string>;    // #90
+  avgWaterBill: DataField<string>;       // #91
+  cellCoverageQuality: DataField<string>; // #94
+  emergencyServicesDistance: DataField<string>; // #95
   airQualityIndexCurrent: DataField<string>; // #98
+  airQualityGrade: DataField<string>;    // #97
   floodZone: DataField<string>;          // #99
   floodRiskLevel: DataField<string>;     // #100
   climateRiskWildfireFlood: DataField<string>; // #101
+  wildfireRisk: DataField<string>;       // #98
+  earthquakeRisk: DataField<string>;     // #99
+  hurricaneRisk: DataField<string>;      // #100
+  tornadoRisk: DataField<string>;        // #101
+  radonRisk: DataField<string>;          // #102
+  superfundNearby: DataField<boolean>;   // #103
+  seaLevelRiseRisk: DataField<string>;   // #105
   noiseLevelDbEst: DataField<string>;    // #102
   solarPotential: DataField<string>;     // #103
   evChargingYn: DataField<string>;       // #104
   smartHomeFeatures: DataField<string>;  // #105
   accessibilityMods: DataField<string>;  // #106
+  viewType: DataField<string>;           // #108
+  lotFeatures: DataField<string>;        // #109
   petPolicy: DataField<string>;          // #107
   ageRestrictions: DataField<string>;    // #108
   specialAssessments: DataField<string>; // #109
