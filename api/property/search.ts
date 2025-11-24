@@ -1303,23 +1303,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log(`Added ${Object.keys(internetData).length} fields from BroadbandNow`);
     }
 
-    // STEP 4: Call Perplexity for additional real web data (OPTIONAL - can still hallucinate)
-    // Only call if explicitly requested via usePerplexity flag
-    const { usePerplexity = false } = req.body;
-    if (usePerplexity) {
-      console.log('Step 4: Calling Perplexity for real web search...');
-      const perplexityData = await callPerplexity(searchQuery);
-      if (Object.keys(perplexityData).length > 0) {
-        for (const [key, value] of Object.entries(perplexityData)) {
-          if (!allFields[key]) {
-            allFields[key] = value;
-          }
+    // STEP 4: Call Perplexity for additional real web data
+    console.log('Step 4: Calling Perplexity for real web search...');
+    const perplexityData = await callPerplexity(searchQuery);
+    if (Object.keys(perplexityData).length > 0) {
+      for (const [key, value] of Object.entries(perplexityData)) {
+        if (!allFields[key]) {
+          allFields[key] = value;
         }
-        sources_used.push('Perplexity Web Search');
-        console.log(`Added ${Object.keys(perplexityData).length} fields from Perplexity`);
       }
-    } else {
-      console.log('Step 4: Skipping Perplexity (use usePerplexity=true to enable)');
+      sources_used.push('Perplexity Web Search');
+      console.log(`Added ${Object.keys(perplexityData).length} fields from Perplexity`);
     }
 
     // STEP 3: Use LLMs to fill remaining gaps (optional, costs money)
