@@ -4,7 +4,7 @@
  */
 
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Bed,
   Bath,
@@ -12,18 +12,33 @@ import {
   Calendar,
   TrendingUp,
   MapPin,
+  Trash2,
 } from 'lucide-react';
 import type { PropertyCard as PropertyCardType } from '@/types/property';
+import { usePropertyStore } from '@/store/propertyStore';
 
 interface PropertyCardProps {
   property: PropertyCardType;
   variant?: 'default' | 'compact' | 'detailed';
+  showDelete?: boolean;
 }
 
 export default function PropertyCard({
   property,
   variant = 'default',
+  showDelete = true,
 }: PropertyCardProps) {
+  const navigate = useNavigate();
+  const { removeProperty } = usePropertyStore();
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (confirm(`Delete ${property.address}?`)) {
+      removeProperty(property.id);
+    }
+  };
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -73,6 +88,17 @@ export default function PropertyCard({
                 {property.smartScore}
               </span>
             </div>
+
+            {/* Delete Button */}
+            {showDelete && (
+              <button
+                onClick={handleDelete}
+                className="absolute top-3 left-3 p-2 rounded-full bg-red-500/20 backdrop-blur-lg border border-red-500/30 hover:bg-red-500/40 transition-colors"
+                title="Delete property"
+              >
+                <Trash2 className="w-4 h-4 text-red-400" />
+              </button>
+            )}
 
             {/* Status Badge */}
             <div className="absolute bottom-3 left-3 px-2 py-1 rounded-full bg-quantum-green/20 backdrop-blur-lg border border-quantum-green/30">

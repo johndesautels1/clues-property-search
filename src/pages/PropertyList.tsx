@@ -12,6 +12,7 @@ import {
   Map,
   X,
   Plus,
+  Trash2,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import PropertyCard from '@/components/property/PropertyCard';
@@ -20,10 +21,12 @@ import {
   useFilteredProperties,
   useSearchQuery,
   useFilters,
+  useProperties,
 } from '@/store/propertyStore';
 
 export default function PropertyList() {
   const filteredProperties = useFilteredProperties();
+  const allProperties = useProperties();
   const searchQuery = useSearchQuery();
   const filters = useFilters();
   const {
@@ -32,7 +35,14 @@ export default function PropertyList() {
     setSearchQuery,
     setFilters,
     clearFilters,
+    setProperties,
   } = usePropertyStore();
+
+  const handleDeleteAll = () => {
+    if (confirm(`Delete ALL ${allProperties.length} properties? This cannot be undone!`)) {
+      setProperties([]);
+    }
+  };
 
   const showFilters = usePropertyStore((state) =>
     Object.keys(state.filters).some(key => state.filters[key as keyof typeof state.filters] !== undefined)
@@ -55,13 +65,24 @@ export default function PropertyList() {
       animate={{ opacity: 1 }}
     >
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="font-orbitron text-2xl md:text-3xl font-bold text-white mb-2">
-          Properties
-        </h1>
-        <p className="text-gray-400 text-sm">
-          {filteredProperties.length} properties found
-        </p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="font-orbitron text-2xl md:text-3xl font-bold text-white mb-2">
+            Properties
+          </h1>
+          <p className="text-gray-400 text-sm">
+            {filteredProperties.length} properties found
+          </p>
+        </div>
+        {allProperties.length > 0 && (
+          <button
+            onClick={handleDeleteAll}
+            className="btn-glass text-red-400 hover:bg-red-500/20 border-red-500/30 flex items-center gap-2"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span className="hidden md:inline">Delete All</span>
+          </button>
+        )}
       </div>
 
       {/* Search & Controls Bar */}
