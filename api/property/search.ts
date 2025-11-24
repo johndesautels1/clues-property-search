@@ -233,6 +233,119 @@ async function getAirQuality(lat: number, lon: number): Promise<Record<string, a
   return {};
 }
 
+// BroadbandNow Scraper - Internet providers (FREE - no API key)
+async function getInternetProviders(address: string): Promise<Record<string, any>> {
+  try {
+    const searchUrl = `https://broadbandnow.com/search?q=${encodeURIComponent(address)}`;
+    const response = await fetch(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      }
+    });
+
+    if (!response.ok) return {};
+
+    const html = await response.text();
+    const fields: Record<string, any> = {};
+
+    // Extract provider names
+    const providerMatches = html.match(/class="provider-name[^"]*"[^>]*>([^<]+)</g);
+    if (providerMatches && providerMatches.length > 0) {
+      const providers = providerMatches
+        .slice(0, 3)
+        .map(m => m.match(/>([^<]+)</)?.[1])
+        .filter(Boolean);
+
+      if (providers.length > 0) {
+        fields['96_internet_providers_top3'] = {
+          value: providers.join(', '),
+          source: 'BroadbandNow',
+          confidence: 'High'
+        };
+      }
+    }
+
+    // Extract max speed
+    const speedMatch = html.match(/(\d+)\s*Mbps/i);
+    if (speedMatch) {
+      fields['97_max_internet_speed'] = {
+        value: `${speedMatch[1]} Mbps`,
+        source: 'BroadbandNow',
+        confidence: 'High'
+      };
+    }
+
+    // Extract cable provider
+    const cableMatch = html.match(/Cable[^<]*<[^>]*>([^<]+)</i);
+    if (cableMatch) {
+      fields['98_cable_tv_provider'] = {
+        value: cableMatch[1].trim(),
+        source: 'BroadbandNow',
+        confidence: 'Medium'
+      };
+    }
+
+    return fields;
+  } catch (e) {
+    console.error('BroadbandNow scrape error:', e);
+    return {};
+  }
+}
+
+// Weather.com API - Climate data
+async function getClimateData(lat: number, lon: number): Promise<Record<string, any>> {
+  const apiKey = process.env.WEATHERCOM_API_KEY;
+  if (!apiKey) {
+    console.log('WEATHERCOM_API_KEY not set');
+    return {};
+  }
+
+  try {
+    // Get current conditions and monthly averages
+    const url = `https://api.weather.com/v3/wx/observations/current?geocode=${lat},${lon}&units=e&language=en-US&format=json&apiKey=${apiKey}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    const fields: Record<string, any> = {};
+
+    if (data) {
+      // Current temperature and conditions
+      const conditions = [];
+      if (data.temperature) conditions.push(`Current: ${data.temperature}°F`);
+      if (data.temperatureFeelsLike) conditions.push(`Feels like: ${data.temperatureFeelsLike}°F`);
+      if (data.relativeHumidity) conditions.push(`Humidity: ${data.relativeHumidity}%`);
+      if (data.wxPhraseLong) conditions.push(data.wxPhraseLong);
+
+      if (conditions.length > 0) {
+        fields['102_climate_risk_summary'] = {
+          value: conditions.join(', '),
+          source: 'Weather.com',
+          confidence: 'High'
+        };
+      }
+
+      // UV Index for solar potential estimate
+      if (data.uvIndex !== undefined) {
+        let solarPotential = 'Low';
+        if (data.uvIndex >= 6) solarPotential = 'High';
+        else if (data.uvIndex >= 3) solarPotential = 'Moderate';
+
+        fields['104_solar_potential'] = {
+          value: `${solarPotential} (UV Index: ${data.uvIndex})`,
+          source: 'Weather.com',
+          confidence: 'Medium'
+        };
+      }
+    }
+
+    return fields;
+  } catch (e) {
+    console.error('Weather.com error:', e);
+    return {};
+  }
+}
+
 // Google Places - Get distances to amenities
 async function getDistances(lat: number, lon: number): Promise<Record<string, any>> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
@@ -347,15 +460,16 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   fields['coordinates'] = { value: { lat: geo.lat, lon: geo.lon }, source: 'Google Maps', confidence: 'High' };
 
   // Call all APIs in parallel
-  const [walkScore, floodZone, airQuality, distances, commuteTime] = await Promise.all([
+  const [walkScore, floodZone, airQuality, climateData, distances, commuteTime] = await Promise.all([
     getWalkScore(geo.lat, geo.lon, address),
     getFloodZone(geo.lat, geo.lon),
     getAirQuality(geo.lat, geo.lon),
+    getClimateData(geo.lat, geo.lon),
     getDistances(geo.lat, geo.lon),
     getCommuteTime(geo.lat, geo.lon, geo.county)
   ]);
 
-  Object.assign(fields, walkScore, floodZone, airQuality, distances, commuteTime);
+  Object.assign(fields, walkScore, floodZone, airQuality, climateData, distances, commuteTime);
 
   // Filter out nulls
   return Object.fromEntries(
@@ -861,6 +975,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         sources_used.push(`${county} Property Appraiser`);
         console.log(`Added ${Object.keys(countyData).length} fields from county appraiser`);
       }
+    }
+
+    // STEP 3B: Scrape BroadbandNow for internet providers
+    console.log('Step 3B: Scraping BroadbandNow for internet data...');
+    const internetData = await getInternetProviders(searchQuery);
+    if (Object.keys(internetData).length > 0) {
+      Object.assign(allFields, internetData);
+      sources_used.push('BroadbandNow');
+      console.log(`Added ${Object.keys(internetData).length} fields from BroadbandNow`);
     }
 
     // STEP 4: Call Perplexity for additional real web data
