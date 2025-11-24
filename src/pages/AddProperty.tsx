@@ -1,10 +1,11 @@
 /**
  * CLUES Property Dashboard - Add Property Page
- * LLM-powered property scraping interface
+ * LLM-powered property scraping + Manual entry - CONNECTED TO STORE
  */
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import {
   Search,
   Sparkles,
@@ -12,16 +13,89 @@ import {
   CheckCircle,
   Loader2,
   AlertCircle,
+  PenLine,
 } from 'lucide-react';
+import { usePropertyStore } from '@/store/propertyStore';
+import type { PropertyCard } from '@/types/property';
 
 type ScrapeStatus = 'idle' | 'searching' | 'scraping' | 'enriching' | 'complete' | 'error';
+type InputMode = 'address' | 'url' | 'manual';
+
+// Generate a simple unique ID
+const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
 
 export default function AddProperty() {
+  const navigate = useNavigate();
+  const { addProperty } = usePropertyStore();
+
   const [address, setAddress] = useState('');
   const [url, setUrl] = useState('');
-  const [inputMode, setInputMode] = useState<'address' | 'url'>('address');
+  const [inputMode, setInputMode] = useState<InputMode>('manual');
   const [status, setStatus] = useState<ScrapeStatus>('idle');
   const [progress, setProgress] = useState(0);
+  const [selectedEngine, setSelectedEngine] = useState('Auto');
+  const [lastAddedId, setLastAddedId] = useState<string | null>(null);
+
+  // Manual entry form state
+  const [manualForm, setManualForm] = useState({
+    address: '',
+    city: '',
+    state: 'FL',
+    zip: '',
+    price: '',
+    bedrooms: '',
+    bathrooms: '',
+    sqft: '',
+    yearBuilt: '',
+    propertyType: 'Single Family',
+    listingStatus: 'Active',
+  });
+
+  const handleManualSubmit = () => {
+    if (!manualForm.address || !manualForm.city || !manualForm.price) {
+      alert('Please fill in at least address, city, and price');
+      return;
+    }
+
+    const newProperty: PropertyCard = {
+      id: generateId(),
+      address: manualForm.address,
+      city: manualForm.city,
+      state: manualForm.state,
+      zip: manualForm.zip,
+      price: parseInt(manualForm.price) || 0,
+      pricePerSqft: manualForm.sqft && manualForm.price
+        ? Math.round(parseInt(manualForm.price) / parseInt(manualForm.sqft))
+        : 0,
+      bedrooms: parseInt(manualForm.bedrooms) || 0,
+      bathrooms: parseFloat(manualForm.bathrooms) || 0,
+      sqft: parseInt(manualForm.sqft) || 0,
+      yearBuilt: parseInt(manualForm.yearBuilt) || new Date().getFullYear(),
+      smartScore: Math.floor(Math.random() * 20) + 75, // Random 75-95 for demo
+      dataCompleteness: Object.values(manualForm).filter(v => v).length * 10,
+      listingStatus: manualForm.listingStatus as 'Active' | 'Pending' | 'Sold',
+      daysOnMarket: 0,
+    };
+
+    addProperty(newProperty);
+    setLastAddedId(newProperty.id);
+    setStatus('complete');
+
+    // Reset form
+    setManualForm({
+      address: '',
+      city: '',
+      state: 'FL',
+      zip: '',
+      price: '',
+      bedrooms: '',
+      bathrooms: '',
+      sqft: '',
+      yearBuilt: '',
+      propertyType: 'Single Family',
+      listingStatus: 'Active',
+    });
+  };
 
   const handleScrape = async () => {
     if (!address && !url) return;
@@ -29,7 +103,7 @@ export default function AddProperty() {
     setStatus('searching');
     setProgress(10);
 
-    // Simulate scraping process
+    // Simulate scraping process (in production, this calls the LLM scraper API)
     setTimeout(() => {
       setStatus('scraping');
       setProgress(30);
@@ -41,6 +115,27 @@ export default function AddProperty() {
     }, 3000);
 
     setTimeout(() => {
+      // Create a mock scraped property
+      const scrapedProperty: PropertyCard = {
+        id: generateId(),
+        address: address || 'Scraped Property',
+        city: 'Tampa',
+        state: 'FL',
+        zip: '33601',
+        price: Math.floor(Math.random() * 500000) + 300000,
+        pricePerSqft: Math.floor(Math.random() * 200) + 200,
+        bedrooms: Math.floor(Math.random() * 3) + 2,
+        bathrooms: Math.floor(Math.random() * 2) + 1,
+        sqft: Math.floor(Math.random() * 1500) + 1000,
+        yearBuilt: Math.floor(Math.random() * 50) + 1970,
+        smartScore: Math.floor(Math.random() * 20) + 80,
+        dataCompleteness: Math.floor(Math.random() * 15) + 85,
+        listingStatus: 'Active',
+        daysOnMarket: Math.floor(Math.random() * 30),
+      };
+
+      addProperty(scrapedProperty);
+      setLastAddedId(scrapedProperty.id);
       setStatus('complete');
       setProgress(100);
     }, 5000);
@@ -55,12 +150,20 @@ export default function AddProperty() {
       case 'enriching':
         return 'Enriching with Walk Score, Crime, Schools...';
       case 'complete':
-        return 'Property data complete!';
+        return 'Property added successfully!';
       case 'error':
         return 'Error scraping property';
       default:
         return '';
     }
+  };
+
+  const resetForm = () => {
+    setStatus('idle');
+    setProgress(0);
+    setAddress('');
+    setUrl('');
+    setLastAddedId(null);
   };
 
   return (
@@ -75,37 +178,201 @@ export default function AddProperty() {
           Add Property
         </h1>
         <p className="text-gray-400">
-          AI-powered 110-field data extraction
+          AI-powered extraction or manual entry
         </p>
       </div>
 
       {/* Input Mode Tabs */}
       <div className="flex rounded-xl overflow-hidden border border-white/10 mb-6">
         <button
+          onClick={() => setInputMode('manual')}
+          className={`flex-1 py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${
+            inputMode === 'manual'
+              ? 'bg-quantum-cyan/20 text-quantum-cyan'
+              : 'text-gray-500 hover:text-white'
+          }`}
+        >
+          <PenLine className="w-4 h-4" />
+          Manual
+        </button>
+        <button
           onClick={() => setInputMode('address')}
-          className={`flex-1 py-3 text-sm font-semibold transition-colors ${
+          className={`flex-1 py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${
             inputMode === 'address'
               ? 'bg-quantum-cyan/20 text-quantum-cyan'
               : 'text-gray-500 hover:text-white'
           }`}
         >
-          By Address
+          <Search className="w-4 h-4" />
+          Address
         </button>
         <button
           onClick={() => setInputMode('url')}
-          className={`flex-1 py-3 text-sm font-semibold transition-colors ${
+          className={`flex-1 py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${
             inputMode === 'url'
               ? 'bg-quantum-cyan/20 text-quantum-cyan'
               : 'text-gray-500 hover:text-white'
           }`}
         >
-          By URL
+          <Globe className="w-4 h-4" />
+          URL
         </button>
       </div>
 
       {/* Input Form */}
       <div className="glass-card p-6 mb-6">
-        {inputMode === 'address' ? (
+        {inputMode === 'manual' ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-sm text-gray-400 mb-2">
+                  Street Address *
+                </label>
+                <input
+                  type="text"
+                  placeholder="280 41st Ave"
+                  value={manualForm.address}
+                  onChange={(e) => setManualForm({ ...manualForm, address: e.target.value })}
+                  className="input-glass"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">
+                  City *
+                </label>
+                <input
+                  type="text"
+                  placeholder="St Pete Beach"
+                  value={manualForm.city}
+                  onChange={(e) => setManualForm({ ...manualForm, city: e.target.value })}
+                  className="input-glass"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">
+                    State
+                  </label>
+                  <select
+                    value={manualForm.state}
+                    onChange={(e) => setManualForm({ ...manualForm, state: e.target.value })}
+                    className="input-glass"
+                  >
+                    <option value="FL">FL</option>
+                    <option value="GA">GA</option>
+                    <option value="TX">TX</option>
+                    <option value="CA">CA</option>
+                    <option value="NY">NY</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">
+                    ZIP
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="33706"
+                    value={manualForm.zip}
+                    onChange={(e) => setManualForm({ ...manualForm, zip: e.target.value })}
+                    className="input-glass"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">
+                  Price *
+                </label>
+                <input
+                  type="number"
+                  placeholder="549000"
+                  value={manualForm.price}
+                  onChange={(e) => setManualForm({ ...manualForm, price: e.target.value })}
+                  className="input-glass"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">
+                  Sq Ft
+                </label>
+                <input
+                  type="number"
+                  placeholder="1426"
+                  value={manualForm.sqft}
+                  onChange={(e) => setManualForm({ ...manualForm, sqft: e.target.value })}
+                  className="input-glass"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">
+                  Bedrooms
+                </label>
+                <select
+                  value={manualForm.bedrooms}
+                  onChange={(e) => setManualForm({ ...manualForm, bedrooms: e.target.value })}
+                  className="input-glass"
+                >
+                  <option value="">Select</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5+</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">
+                  Bathrooms
+                </label>
+                <select
+                  value={manualForm.bathrooms}
+                  onChange={(e) => setManualForm({ ...manualForm, bathrooms: e.target.value })}
+                  className="input-glass"
+                >
+                  <option value="">Select</option>
+                  <option value="1">1</option>
+                  <option value="1.5">1.5</option>
+                  <option value="2">2</option>
+                  <option value="2.5">2.5</option>
+                  <option value="3">3+</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">
+                  Year Built
+                </label>
+                <input
+                  type="number"
+                  placeholder="1958"
+                  value={manualForm.yearBuilt}
+                  onChange={(e) => setManualForm({ ...manualForm, yearBuilt: e.target.value })}
+                  className="input-glass"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">
+                  Status
+                </label>
+                <select
+                  value={manualForm.listingStatus}
+                  onChange={(e) => setManualForm({ ...manualForm, listingStatus: e.target.value })}
+                  className="input-glass"
+                >
+                  <option value="Active">Active</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Sold">Sold</option>
+                </select>
+              </div>
+            </div>
+
+            <button
+              onClick={handleManualSubmit}
+              className="btn-quantum w-full mt-4"
+            >
+              <CheckCircle className="w-5 h-5" />
+              Add Property
+            </button>
+          </div>
+        ) : inputMode === 'address' ? (
           <div className="space-y-4">
             <div>
               <label className="block text-sm text-gray-400 mb-2">
@@ -122,6 +389,46 @@ export default function AddProperty() {
                 />
               </div>
             </div>
+
+            {/* LLM Selection */}
+            <div className="mt-6">
+              <label className="block text-sm text-gray-400 mb-2">
+                AI Engine
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {['Auto', 'Claude', 'GPT', 'Hybrid'].map((engine) => (
+                  <button
+                    key={engine}
+                    onClick={() => setSelectedEngine(engine)}
+                    className={`p-3 rounded-xl border transition-colors ${
+                      engine === selectedEngine
+                        ? 'border-quantum-cyan bg-quantum-cyan/10 text-quantum-cyan'
+                        : 'border-white/10 text-gray-400 hover:border-white/20'
+                    }`}
+                  >
+                    <span className="text-sm font-semibold">{engine}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={handleScrape}
+              disabled={status !== 'idle' && status !== 'complete' && status !== 'error'}
+              className="btn-quantum w-full mt-6"
+            >
+              {status === 'idle' || status === 'complete' || status === 'error' ? (
+                <>
+                  <Sparkles className="w-5 h-5" />
+                  Extract Property Data
+                </>
+              ) : (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Processing...
+                </>
+              )}
+            </button>
           </div>
         ) : (
           <div className="space-y-4">
@@ -143,52 +450,52 @@ export default function AddProperty() {
             <p className="text-xs text-gray-500">
               Supports: Zillow, Redfin, Trulia, Realtor.com, Compass, homes.com
             </p>
+
+            {/* LLM Selection */}
+            <div className="mt-6">
+              <label className="block text-sm text-gray-400 mb-2">
+                AI Engine
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {['Auto', 'Claude', 'GPT', 'Hybrid'].map((engine) => (
+                  <button
+                    key={engine}
+                    onClick={() => setSelectedEngine(engine)}
+                    className={`p-3 rounded-xl border transition-colors ${
+                      engine === selectedEngine
+                        ? 'border-quantum-cyan bg-quantum-cyan/10 text-quantum-cyan'
+                        : 'border-white/10 text-gray-400 hover:border-white/20'
+                    }`}
+                  >
+                    <span className="text-sm font-semibold">{engine}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={handleScrape}
+              disabled={status !== 'idle' && status !== 'complete' && status !== 'error'}
+              className="btn-quantum w-full mt-6"
+            >
+              {status === 'idle' || status === 'complete' || status === 'error' ? (
+                <>
+                  <Sparkles className="w-5 h-5" />
+                  Extract Property Data
+                </>
+              ) : (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Processing...
+                </>
+              )}
+            </button>
           </div>
         )}
-
-        {/* LLM Selection */}
-        <div className="mt-6">
-          <label className="block text-sm text-gray-400 mb-2">
-            AI Engine
-          </label>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {['Auto', 'Claude', 'GPT', 'Hybrid'].map((engine) => (
-              <button
-                key={engine}
-                className={`p-3 rounded-xl border transition-colors ${
-                  engine === 'Auto'
-                    ? 'border-quantum-cyan bg-quantum-cyan/10 text-quantum-cyan'
-                    : 'border-white/10 text-gray-400 hover:border-white/20'
-                }`}
-              >
-                <span className="text-sm font-semibold">{engine}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Scrape Button */}
-        <button
-          onClick={handleScrape}
-          disabled={status !== 'idle' && status !== 'complete' && status !== 'error'}
-          className="btn-quantum w-full mt-6"
-        >
-          {status === 'idle' || status === 'complete' || status === 'error' ? (
-            <>
-              <Sparkles className="w-5 h-5" />
-              Extract Property Data
-            </>
-          ) : (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              Processing...
-            </>
-          )}
-        </button>
       </div>
 
-      {/* Progress Display */}
-      {status !== 'idle' && (
+      {/* Progress Display - for scraping modes */}
+      {status !== 'idle' && inputMode !== 'manual' && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -257,16 +564,14 @@ export default function AddProperty() {
               className="mt-6 pt-4 border-t border-white/10"
             >
               <div className="flex gap-4">
-                <button className="btn-quantum flex-1">
+                <button
+                  onClick={() => lastAddedId && navigate(`/property/${lastAddedId}`)}
+                  className="btn-quantum flex-1"
+                >
                   View Property
                 </button>
                 <button
-                  onClick={() => {
-                    setStatus('idle');
-                    setProgress(0);
-                    setAddress('');
-                    setUrl('');
-                  }}
+                  onClick={resetForm}
                   className="btn-glass flex-1"
                 >
                   Add Another
@@ -274,6 +579,36 @@ export default function AddProperty() {
               </div>
             </motion.div>
           )}
+        </motion.div>
+      )}
+
+      {/* Success message for manual entry */}
+      {status === 'complete' && inputMode === 'manual' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-5d p-6"
+        >
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <CheckCircle className="w-8 h-8 text-quantum-green" />
+            <span className="font-semibold text-white text-lg">
+              Property Added Successfully!
+            </span>
+          </div>
+          <div className="flex gap-4">
+            <button
+              onClick={() => lastAddedId && navigate(`/property/${lastAddedId}`)}
+              className="btn-quantum flex-1"
+            >
+              View Property
+            </button>
+            <button
+              onClick={resetForm}
+              className="btn-glass flex-1"
+            >
+              Add Another
+            </button>
+          </div>
         </motion.div>
       )}
     </motion.div>

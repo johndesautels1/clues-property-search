@@ -3,6 +3,7 @@
  * Mobile-first overview with key metrics
  */
 
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
@@ -15,52 +16,7 @@ import {
   Zap,
 } from 'lucide-react';
 import PropertyCard from '@/components/property/PropertyCard';
-import { useFilteredProperties } from '@/store/propertyStore';
-
-// Demo data - will be replaced with real data
-const demoStats = [
-  { label: 'Total Properties', value: '24', icon: Building2, color: 'cyan' },
-  { label: 'Avg. SMART Score', value: '87', icon: Zap, color: 'purple' },
-  { label: 'Total Value', value: '$8.2M', icon: DollarSign, color: 'green' },
-  { label: 'Data Complete', value: '94%', icon: BarChart3, color: 'blue' },
-];
-
-const demoProperties = [
-  {
-    id: '1',
-    address: '280 41st Ave',
-    city: 'St Pete Beach',
-    state: 'FL',
-    zip: '33706',
-    price: 549000,
-    pricePerSqft: 385,
-    bedrooms: 3,
-    bathrooms: 2,
-    sqft: 1426,
-    yearBuilt: 1958,
-    smartScore: 94,
-    dataCompleteness: 98,
-    listingStatus: 'Active',
-    daysOnMarket: 12,
-  },
-  {
-    id: '2',
-    address: '2015 Hillwood Dr',
-    city: 'Clearwater',
-    state: 'FL',
-    zip: '33763',
-    price: 374800,
-    pricePerSqft: 262,
-    bedrooms: 3,
-    bathrooms: 2,
-    sqft: 1432,
-    yearBuilt: 1979,
-    smartScore: 88,
-    dataCompleteness: 95,
-    listingStatus: 'Active',
-    daysOnMarket: 28,
-  },
-];
+import { useFilteredProperties, useProperties } from '@/store/propertyStore';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -78,6 +34,36 @@ const itemVariants = {
 };
 
 export default function Dashboard() {
+  const properties = useProperties();
+  const filteredProperties = useFilteredProperties();
+
+  // Calculate real stats from store data
+  const stats = useMemo(() => {
+    const totalValue = properties.reduce((sum, p) => sum + p.price, 0);
+    const avgSmartScore = properties.length > 0
+      ? Math.round(properties.reduce((sum, p) => sum + (p.smartScore || 0), 0) / properties.length)
+      : 0;
+    const avgDataComplete = properties.length > 0
+      ? Math.round(properties.reduce((sum, p) => sum + (p.dataCompleteness || 0), 0) / properties.length)
+      : 0;
+
+    const formatValue = (val: number) => {
+      if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`;
+      if (val >= 1000) return `$${(val / 1000).toFixed(0)}K`;
+      return `$${val}`;
+    };
+
+    return [
+      { label: 'Total Properties', value: properties.length.toString(), icon: Building2, color: 'cyan' },
+      { label: 'Avg. SMART Score', value: avgSmartScore.toString(), icon: Zap, color: 'purple' },
+      { label: 'Total Value', value: formatValue(totalValue), icon: DollarSign, color: 'green' },
+      { label: 'Data Complete', value: `${avgDataComplete}%`, icon: BarChart3, color: 'blue' },
+    ];
+  }, [properties]);
+
+  // Get recent properties (up to 3)
+  const recentProperties = filteredProperties.slice(0, 3);
+
   return (
     <motion.div
       className="px-4 py-6 md:px-8 md:py-10 max-w-7xl mx-auto"
@@ -100,7 +86,7 @@ export default function Dashboard() {
         variants={itemVariants}
         className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
       >
-        {demoStats.map((stat) => {
+        {stats.map((stat) => {
           const Icon = stat.icon;
           return (
             <div
@@ -155,9 +141,19 @@ export default function Dashboard() {
         </div>
 
         <div className="space-y-4">
-          {demoProperties.map((property) => (
-            <PropertyCard key={property.id} property={property} />
-          ))}
+          {recentProperties.length > 0 ? (
+            recentProperties.map((property) => (
+              <PropertyCard key={property.id} property={property} />
+            ))
+          ) : (
+            <div className="glass-card p-8 text-center">
+              <p className="text-gray-400 mb-4">No properties yet</p>
+              <Link to="/add" className="btn-quantum inline-flex">
+                <Plus className="w-5 h-5" />
+                Add Your First Property
+              </Link>
+            </div>
+          )}
         </div>
       </motion.div>
 

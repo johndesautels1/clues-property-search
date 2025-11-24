@@ -1,9 +1,8 @@
 /**
  * CLUES Property Dashboard - Property List Page
- * Mobile-first property grid with filters
+ * Mobile-first property grid with filters - CONNECTED TO STORE
  */
 
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Search,
@@ -12,69 +11,42 @@ import {
   List,
   Map,
   X,
+  Plus,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import PropertyCard from '@/components/property/PropertyCard';
-import { usePropertyStore, useFilteredProperties } from '@/store/propertyStore';
-
-// Demo properties
-const demoProperties = [
-  {
-    id: '1',
-    address: '280 41st Ave',
-    city: 'St Pete Beach',
-    state: 'FL',
-    zip: '33706',
-    price: 549000,
-    pricePerSqft: 385,
-    bedrooms: 3,
-    bathrooms: 2,
-    sqft: 1426,
-    yearBuilt: 1958,
-    smartScore: 94,
-    dataCompleteness: 98,
-    listingStatus: 'Active',
-    daysOnMarket: 12,
-  },
-  {
-    id: '2',
-    address: '2015 Hillwood Dr',
-    city: 'Clearwater',
-    state: 'FL',
-    zip: '33763',
-    price: 374800,
-    pricePerSqft: 262,
-    bedrooms: 3,
-    bathrooms: 2,
-    sqft: 1432,
-    yearBuilt: 1979,
-    smartScore: 88,
-    dataCompleteness: 95,
-    listingStatus: 'Active',
-    daysOnMarket: 28,
-  },
-  {
-    id: '3',
-    address: '1240 Beach Blvd',
-    city: 'Naples',
-    state: 'FL',
-    zip: '34102',
-    price: 1250000,
-    pricePerSqft: 520,
-    bedrooms: 4,
-    bathrooms: 3,
-    sqft: 2404,
-    yearBuilt: 2018,
-    smartScore: 96,
-    dataCompleteness: 100,
-    listingStatus: 'Active',
-    daysOnMarket: 5,
-  },
-];
+import {
+  usePropertyStore,
+  useFilteredProperties,
+  useSearchQuery,
+  useFilters,
+} from '@/store/propertyStore';
 
 export default function PropertyList() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
-  const { viewMode, setViewMode } = usePropertyStore();
+  const filteredProperties = useFilteredProperties();
+  const searchQuery = useSearchQuery();
+  const filters = useFilters();
+  const {
+    viewMode,
+    setViewMode,
+    setSearchQuery,
+    setFilters,
+    clearFilters,
+  } = usePropertyStore();
+
+  const showFilters = usePropertyStore((state) =>
+    Object.keys(state.filters).some(key => state.filters[key as keyof typeof state.filters] !== undefined)
+  );
+
+  const handleFilterChange = (key: string, value: string | number | undefined) => {
+    if (value === '' || value === undefined) {
+      const newFilters = { ...filters };
+      delete newFilters[key as keyof typeof newFilters];
+      usePropertyStore.setState({ filters: newFilters });
+    } else {
+      setFilters({ [key]: typeof value === 'string' ? parseInt(value) || value : value });
+    }
+  };
 
   return (
     <motion.div
@@ -88,7 +60,7 @@ export default function PropertyList() {
           Properties
         </h1>
         <p className="text-gray-400 text-sm">
-          {demoProperties.length} properties found
+          {filteredProperties.length} properties found
         </p>
       </div>
 
@@ -117,13 +89,15 @@ export default function PropertyList() {
         {/* Filter & View Controls */}
         <div className="flex gap-3">
           <button
-            onClick={() => setShowFilters(!showFilters)}
+            onClick={clearFilters}
             className={`btn-glass flex items-center gap-2 ${
               showFilters ? 'border-quantum-cyan text-quantum-cyan' : ''
             }`}
           >
             <SlidersHorizontal className="w-5 h-5" />
-            <span className="hidden md:inline">Filters</span>
+            <span className="hidden md:inline">
+              {showFilters ? 'Clear Filters' : 'Filters'}
+            </span>
           </button>
 
           {/* View Mode Toggle - Mobile: Icons only */}
@@ -162,71 +136,103 @@ export default function PropertyList() {
         </div>
       </div>
 
-      {/* Filters Panel */}
-      {showFilters && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          className="glass-card p-4 md:p-6 mb-6"
-        >
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-xs text-gray-500 mb-2">Min Price</label>
-              <input
-                type="number"
-                placeholder="$0"
-                className="input-glass text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-2">Max Price</label>
-              <input
-                type="number"
-                placeholder="$10M"
-                className="input-glass text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-2">Beds</label>
-              <select className="input-glass text-sm">
-                <option value="">Any</option>
-                <option value="1">1+</option>
-                <option value="2">2+</option>
-                <option value="3">3+</option>
-                <option value="4">4+</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-2">Baths</label>
-              <select className="input-glass text-sm">
-                <option value="">Any</option>
-                <option value="1">1+</option>
-                <option value="2">2+</option>
-                <option value="3">3+</option>
-              </select>
-            </div>
+      {/* Filters Panel - Always visible */}
+      <motion.div
+        initial={{ opacity: 0, height: 0 }}
+        animate={{ opacity: 1, height: 'auto' }}
+        className="glass-card p-4 md:p-6 mb-6"
+      >
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-xs text-gray-500 mb-2">Min Price</label>
+            <input
+              type="number"
+              placeholder="$0"
+              value={filters.minPrice || ''}
+              onChange={(e) => handleFilterChange('minPrice', e.target.value)}
+              className="input-glass text-sm"
+            />
           </div>
-        </motion.div>
-      )}
+          <div>
+            <label className="block text-xs text-gray-500 mb-2">Max Price</label>
+            <input
+              type="number"
+              placeholder="$10M"
+              value={filters.maxPrice || ''}
+              onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
+              className="input-glass text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-2">Min Beds</label>
+            <select
+              className="input-glass text-sm"
+              value={filters.minBeds || ''}
+              onChange={(e) => handleFilterChange('minBeds', e.target.value)}
+            >
+              <option value="">Any</option>
+              <option value="1">1+</option>
+              <option value="2">2+</option>
+              <option value="3">3+</option>
+              <option value="4">4+</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-2">Min Baths</label>
+            <select
+              className="input-glass text-sm"
+              value={filters.minBaths || ''}
+              onChange={(e) => handleFilterChange('minBaths', e.target.value)}
+            >
+              <option value="">Any</option>
+              <option value="1">1+</option>
+              <option value="2">2+</option>
+              <option value="3">3+</option>
+            </select>
+          </div>
+        </div>
+      </motion.div>
 
       {/* Property Grid/List */}
-      <div
-        className={
-          viewMode === 'grid'
-            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
-            : 'space-y-4'
-        }
-      >
-        {demoProperties.map((property) => (
-          <PropertyCard key={property.id} property={property} />
-        ))}
-      </div>
+      {filteredProperties.length > 0 ? (
+        <div
+          className={
+            viewMode === 'grid'
+              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
+              : 'space-y-4'
+          }
+        >
+          {filteredProperties.map((property) => (
+            <PropertyCard key={property.id} property={property} />
+          ))}
+        </div>
+      ) : (
+        <div className="glass-card p-12 text-center">
+          <p className="text-gray-400 mb-4">
+            {searchQuery || Object.keys(filters).length > 0
+              ? 'No properties match your filters'
+              : 'No properties yet'}
+          </p>
+          {searchQuery || Object.keys(filters).length > 0 ? (
+            <button onClick={clearFilters} className="btn-glass">
+              Clear Filters
+            </button>
+          ) : (
+            <Link to="/add" className="btn-quantum inline-flex">
+              <Plus className="w-5 h-5" />
+              Add Your First Property
+            </Link>
+          )}
+        </div>
+      )}
 
-      {/* Load More */}
-      <div className="mt-8 text-center">
-        <button className="btn-glass">Load More Properties</button>
-      </div>
+      {/* Add Property FAB for mobile */}
+      <Link
+        to="/add"
+        className="fixed bottom-24 right-4 md:hidden btn-quantum w-14 h-14 rounded-full p-0 flex items-center justify-center shadow-lg shadow-quantum-cyan/30"
+      >
+        <Plus className="w-6 h-6" />
+      </Link>
     </motion.div>
   );
 }

@@ -1,9 +1,9 @@
 /**
  * CLUES Property Dashboard - Property Detail Page
- * Full 110-field display with data quality indicators
+ * Full property display with data quality indicators - CONNECTED TO STORE
  */
 
-import { useParams } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft,
@@ -14,67 +14,15 @@ import {
   Bath,
   Ruler,
   Calendar,
-  DollarSign,
-  Shield,
+  Trash2,
+  Edit,
   Zap,
   School,
-  Car,
-  Droplets,
-  Sun,
   Wifi,
+  Sun,
   CheckCircle,
-  AlertCircle,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
-
-// Demo property data (would come from API)
-const demoProperty = {
-  id: '1',
-  address: {
-    fullAddress: '280 41st Ave, St Pete Beach, FL 33706',
-    street: '280 41st Ave',
-    city: 'St Pete Beach',
-    state: 'FL',
-    zip: '33706',
-    county: 'Pinellas',
-  },
-  price: 549000,
-  pricePerSqft: 385,
-  smartScore: 94,
-  dataCompleteness: 98,
-  details: {
-    bedrooms: 3,
-    bathrooms: 2,
-    sqft: 1426,
-    lotSqft: 5000,
-    yearBuilt: 1958,
-    propertyType: 'Single Family',
-    stories: 1,
-    garage: 1,
-  },
-  scores: {
-    walk: 72,
-    transit: 35,
-    bike: 68,
-    crime: 85,
-  },
-  schools: {
-    elementary: { name: 'Gulf Beaches Elementary', rating: 8 },
-    middle: { name: 'Azalea Middle', rating: 7 },
-    high: { name: 'Boca Ciega High', rating: 6 },
-  },
-  utilities: {
-    electric: 'Duke Energy',
-    water: 'Pinellas County',
-    internet: ['Spectrum', 'AT&T Fiber', 'Xfinity'],
-    maxSpeed: '1 Gbps',
-  },
-  environmental: {
-    floodZone: 'X (Minimal)',
-    airQuality: 'Good (45 AQI)',
-    solarPotential: 'Excellent',
-  },
-};
+import { usePropertyStore } from '@/store/propertyStore';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -91,6 +39,10 @@ const itemVariants = {
 
 export default function PropertyDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { getPropertyById, removeProperty } = usePropertyStore();
+
+  const property = id ? getPropertyById(id) : undefined;
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -99,6 +51,28 @@ export default function PropertyDetail() {
       maximumFractionDigits: 0,
     }).format(price);
   };
+
+  const handleDelete = () => {
+    if (id && confirm('Are you sure you want to delete this property?')) {
+      removeProperty(id);
+      navigate('/properties');
+    }
+  };
+
+  if (!property) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="glass-card p-8 text-center">
+          <h2 className="text-xl font-bold text-white mb-4">Property Not Found</h2>
+          <p className="text-gray-400 mb-6">This property may have been deleted.</p>
+          <Link to="/properties" className="btn-quantum">
+            <ArrowLeft className="w-5 h-5" />
+            Back to Properties
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -123,6 +97,9 @@ export default function PropertyDetail() {
             <button className="p-2">
               <Share2 className="w-6 h-6" />
             </button>
+            <button onClick={handleDelete} className="p-2 text-red-400 hover:text-red-300">
+              <Trash2 className="w-6 h-6" />
+            </button>
           </div>
         </div>
       </motion.div>
@@ -140,11 +117,36 @@ export default function PropertyDetail() {
         <div className="absolute bottom-4 right-4 glass-card px-4 py-2">
           <div className="flex items-center gap-2">
             <Zap className="w-5 h-5 text-quantum-cyan" />
-            <span className="text-2xl font-bold text-quantum-green">
-              {demoProperty.smartScore}
+            <span className={`text-2xl font-bold ${
+              property.smartScore >= 90 ? 'text-quantum-green' :
+              property.smartScore >= 70 ? 'text-quantum-cyan' :
+              'text-quantum-gold'
+            }`}>
+              {property.smartScore}
             </span>
             <span className="text-xs text-gray-400">SMART Score</span>
           </div>
+        </div>
+
+        {/* Desktop back button */}
+        <div className="hidden md:block absolute top-4 left-4">
+          <Link to="/properties" className="glass-card p-3 inline-flex items-center gap-2 hover:bg-white/10">
+            <ArrowLeft className="w-5 h-5" />
+            Back
+          </Link>
+        </div>
+
+        {/* Desktop actions */}
+        <div className="hidden md:flex absolute top-4 right-4 gap-2">
+          <button className="glass-card p-3 hover:bg-white/10">
+            <Heart className="w-5 h-5" />
+          </button>
+          <button className="glass-card p-3 hover:bg-white/10">
+            <Share2 className="w-5 h-5" />
+          </button>
+          <button onClick={handleDelete} className="glass-card p-3 hover:bg-red-500/20 text-red-400">
+            <Trash2 className="w-5 h-5" />
+          </button>
         </div>
       </motion.div>
 
@@ -154,19 +156,34 @@ export default function PropertyDetail() {
         <motion.div variants={itemVariants} className="mb-6">
           <div className="flex items-baseline gap-3 mb-2">
             <span className="text-3xl md:text-4xl font-bold text-white">
-              {formatPrice(demoProperty.price)}
+              {formatPrice(property.price)}
             </span>
-            <span className="text-gray-500">
-              ${demoProperty.pricePerSqft}/sqft
-            </span>
+            {property.pricePerSqft > 0 && (
+              <span className="text-gray-500">
+                ${property.pricePerSqft}/sqft
+              </span>
+            )}
           </div>
           <h1 className="text-xl font-semibold text-white">
-            {demoProperty.address.street}
+            {property.address}
           </h1>
           <p className="text-gray-400">
-            {demoProperty.address.city}, {demoProperty.address.state}{' '}
-            {demoProperty.address.zip}
+            {property.city}, {property.state} {property.zip}
           </p>
+          <div className="flex items-center gap-2 mt-2">
+            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+              property.listingStatus === 'Active' ? 'bg-quantum-green/20 text-quantum-green' :
+              property.listingStatus === 'Pending' ? 'bg-quantum-gold/20 text-quantum-gold' :
+              'bg-gray-500/20 text-gray-400'
+            }`}>
+              {property.listingStatus}
+            </span>
+            {property.daysOnMarket > 0 && (
+              <span className="text-xs text-gray-500">
+                {property.daysOnMarket} days on market
+              </span>
+            )}
+          </div>
         </motion.div>
 
         {/* Quick Stats */}
@@ -176,22 +193,22 @@ export default function PropertyDetail() {
         >
           <div className="glass-card p-4 text-center">
             <Bed className="w-5 h-5 text-quantum-cyan mx-auto mb-1" />
-            <span className="text-xl font-bold text-white">{demoProperty.details.bedrooms}</span>
+            <span className="text-xl font-bold text-white">{property.bedrooms}</span>
             <p className="text-xs text-gray-500">Beds</p>
           </div>
           <div className="glass-card p-4 text-center">
             <Bath className="w-5 h-5 text-quantum-cyan mx-auto mb-1" />
-            <span className="text-xl font-bold text-white">{demoProperty.details.bathrooms}</span>
+            <span className="text-xl font-bold text-white">{property.bathrooms}</span>
             <p className="text-xs text-gray-500">Baths</p>
           </div>
           <div className="glass-card p-4 text-center">
             <Ruler className="w-5 h-5 text-quantum-cyan mx-auto mb-1" />
-            <span className="text-xl font-bold text-white">{demoProperty.details.sqft.toLocaleString()}</span>
+            <span className="text-xl font-bold text-white">{property.sqft.toLocaleString()}</span>
             <p className="text-xs text-gray-500">Sq Ft</p>
           </div>
           <div className="glass-card p-4 text-center">
             <Calendar className="w-5 h-5 text-quantum-cyan mx-auto mb-1" />
-            <span className="text-xl font-bold text-white">{demoProperty.details.yearBuilt}</span>
+            <span className="text-xl font-bold text-white">{property.yearBuilt}</span>
             <p className="text-xs text-gray-500">Built</p>
           </div>
         </motion.div>
@@ -200,20 +217,20 @@ export default function PropertyDetail() {
         <motion.div variants={itemVariants} className="glass-5d p-4 mb-6">
           <div className="flex items-center justify-between mb-2">
             <span className="font-semibold text-white">110-Field Data Quality</span>
-            <span className="text-quantum-cyan font-bold">{demoProperty.dataCompleteness}%</span>
+            <span className="text-quantum-cyan font-bold">{property.dataCompleteness}%</span>
           </div>
           <div className="progress-quantum h-2">
             <div
               className="progress-quantum-fill"
-              style={{ width: `${demoProperty.dataCompleteness}%` }}
+              style={{ width: `${property.dataCompleteness}%` }}
             />
           </div>
           <p className="text-xs text-gray-500 mt-2">
-            108/110 fields populated with Medium+ confidence
+            {Math.round(property.dataCompleteness * 1.1)}/110 fields populated
           </p>
         </motion.div>
 
-        {/* Location Scores */}
+        {/* Location Scores - Placeholder since we don't have this data yet */}
         <motion.div variants={itemVariants} className="glass-card p-4 mb-6">
           <h2 className="font-semibold text-white mb-4 flex items-center gap-2">
             <MapPin className="w-5 h-5 text-quantum-cyan" />
@@ -223,122 +240,86 @@ export default function PropertyDetail() {
             <div>
               <div className="flex justify-between mb-1">
                 <span className="text-sm text-gray-400">Walk</span>
-                <span className="text-sm font-bold text-quantum-cyan">{demoProperty.scores.walk}</span>
+                <span className="text-sm font-bold text-quantum-cyan">--</span>
               </div>
               <div className="progress-quantum h-1.5">
-                <div className="progress-quantum-fill" style={{ width: `${demoProperty.scores.walk}%` }} />
+                <div className="progress-quantum-fill" style={{ width: '0%' }} />
               </div>
             </div>
             <div>
               <div className="flex justify-between mb-1">
                 <span className="text-sm text-gray-400">Transit</span>
-                <span className="text-sm font-bold text-quantum-cyan">{demoProperty.scores.transit}</span>
+                <span className="text-sm font-bold text-quantum-cyan">--</span>
               </div>
               <div className="progress-quantum h-1.5">
-                <div className="progress-quantum-fill" style={{ width: `${demoProperty.scores.transit}%` }} />
+                <div className="progress-quantum-fill" style={{ width: '0%' }} />
               </div>
             </div>
             <div>
               <div className="flex justify-between mb-1">
                 <span className="text-sm text-gray-400">Bike</span>
-                <span className="text-sm font-bold text-quantum-cyan">{demoProperty.scores.bike}</span>
+                <span className="text-sm font-bold text-quantum-cyan">--</span>
               </div>
               <div className="progress-quantum h-1.5">
-                <div className="progress-quantum-fill" style={{ width: `${demoProperty.scores.bike}%` }} />
+                <div className="progress-quantum-fill" style={{ width: '0%' }} />
               </div>
             </div>
             <div>
               <div className="flex justify-between mb-1">
                 <span className="text-sm text-gray-400">Safety</span>
-                <span className="text-sm font-bold text-quantum-green">{demoProperty.scores.crime}</span>
+                <span className="text-sm font-bold text-quantum-green">--</span>
               </div>
               <div className="progress-quantum h-1.5">
-                <div className="progress-quantum-fill" style={{ width: `${demoProperty.scores.crime}%` }} />
+                <div className="progress-quantum-fill" style={{ width: '0%' }} />
               </div>
             </div>
           </div>
+          <p className="text-xs text-gray-500 mt-3 text-center">
+            Location scores available after AI enrichment
+          </p>
         </motion.div>
 
-        {/* Schools */}
+        {/* Schools - Placeholder */}
         <motion.div variants={itemVariants} className="glass-card p-4 mb-6">
           <h2 className="font-semibold text-white mb-4 flex items-center gap-2">
             <School className="w-5 h-5 text-quantum-cyan" />
             Assigned Schools
           </h2>
-          <div className="space-y-3">
-            {Object.entries(demoProperty.schools).map(([level, school]) => (
-              <div key={level} className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-white">{school.name}</p>
-                  <p className="text-xs text-gray-500 capitalize">{level}</p>
-                </div>
-                <div className={`px-2 py-1 rounded-full ${
-                  school.rating >= 8 ? 'bg-quantum-green/20 text-quantum-green' :
-                  school.rating >= 6 ? 'bg-quantum-blue/20 text-quantum-blue' :
-                  'bg-quantum-gold/20 text-quantum-gold'
-                }`}>
-                  <span className="text-sm font-bold">{school.rating}/10</span>
-                </div>
-              </div>
-            ))}
-          </div>
+          <p className="text-gray-500 text-sm text-center py-4">
+            School data available after AI enrichment
+          </p>
         </motion.div>
 
-        {/* Utilities */}
+        {/* Utilities - Placeholder */}
         <motion.div variants={itemVariants} className="glass-card p-4 mb-6">
           <h2 className="font-semibold text-white mb-4 flex items-center gap-2">
             <Wifi className="w-5 h-5 text-quantum-cyan" />
             Utilities & Connectivity
           </h2>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-gray-500">Electric</p>
-              <p className="text-white">{demoProperty.utilities.electric}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Water</p>
-              <p className="text-white">{demoProperty.utilities.water}</p>
-            </div>
-            <div className="col-span-2">
-              <p className="text-gray-500">Internet ({demoProperty.utilities.maxSpeed})</p>
-              <p className="text-white">{demoProperty.utilities.internet.join(', ')}</p>
-            </div>
-          </div>
+          <p className="text-gray-500 text-sm text-center py-4">
+            Utility data available after AI enrichment
+          </p>
         </motion.div>
 
-        {/* Environmental */}
+        {/* Environmental - Placeholder */}
         <motion.div variants={itemVariants} className="glass-card p-4 mb-6">
           <h2 className="font-semibold text-white mb-4 flex items-center gap-2">
             <Sun className="w-5 h-5 text-quantum-cyan" />
             Environmental Data
           </h2>
-          <div className="grid grid-cols-3 gap-4 text-sm">
-            <div>
-              <p className="text-gray-500">Flood Zone</p>
-              <p className="text-quantum-green flex items-center gap-1">
-                <CheckCircle className="w-4 h-4" />
-                {demoProperty.environmental.floodZone}
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-500">Air Quality</p>
-              <p className="text-quantum-green">{demoProperty.environmental.airQuality}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Solar</p>
-              <p className="text-quantum-gold">{demoProperty.environmental.solarPotential}</p>
-            </div>
-          </div>
+          <p className="text-gray-500 text-sm text-center py-4">
+            Environmental data available after AI enrichment
+          </p>
         </motion.div>
 
         {/* Action Buttons */}
         <motion.div variants={itemVariants} className="flex gap-4">
           <button className="btn-quantum flex-1">
-            Request Full Report
+            Request AI Enrichment
           </button>
-          <button className="btn-glass flex-1">
+          <Link to="/compare" className="btn-glass flex-1 text-center">
             Compare Properties
-          </button>
+          </Link>
         </motion.div>
       </div>
     </motion.div>
