@@ -15,6 +15,7 @@ const Login = lazy(() => import('@/pages/Login'));
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const PropertyList = lazy(() => import('@/pages/PropertyList'));
 const PropertyDetail = lazy(() => import('@/pages/PropertyDetail'));
+const PropertyDebug = lazy(() => import('@/pages/PropertyDebug'));
 const AddProperty = lazy(() => import('@/pages/AddProperty'));
 const SearchProperty = lazy(() => import('@/pages/SearchProperty'));
 const Compare = lazy(() => import('@/pages/Compare'));
@@ -69,6 +70,7 @@ function App() {
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/properties" element={<PropertyList />} />
                     <Route path="/property/:id" element={<PropertyDetail />} />
+                    <Route path="/property/:id/debug" element={<PropertyDebug />} />
                     <Route path="/add" element={<AddProperty />} />
                     <Route path="/search" element={<SearchProperty />} />
                     <Route path="/compare" element={<Compare />} />
