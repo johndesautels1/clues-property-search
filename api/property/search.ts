@@ -7,6 +7,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { scrapeFloridaCounty } from './florida-counties';
 
 // ============================================
 // REALTOR.COM SCRAPER
@@ -232,6 +233,111 @@ async function getAirQuality(lat: number, lon: number): Promise<Record<string, a
   return {};
 }
 
+// Google Places - Get distances to amenities
+async function getDistances(lat: number, lon: number): Promise<Record<string, any>> {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey) {
+    console.log('GOOGLE_MAPS_API_KEY not set for distances');
+    return {};
+  }
+
+  const origin = `${lat},${lon}`;
+  const fields: Record<string, any> = {};
+
+  const placeTypes = [
+    { type: 'supermarket', field: '73_distance_grocery_miles', name: 'Grocery' },
+    { type: 'hospital', field: '74_distance_hospital_miles', name: 'Hospital' },
+    { type: 'airport', field: '75_distance_airport_miles', name: 'Airport' },
+    { type: 'park', field: '76_distance_park_miles', name: 'Park' },
+    { type: 'beach', field: '77_distance_beach_miles', name: 'Beach' },
+  ];
+
+  for (const place of placeTypes) {
+    try {
+      // Find nearest place of this type
+      const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${origin}&rankby=distance&type=${place.type}&key=${apiKey}`;
+      const searchRes = await fetch(searchUrl);
+      const searchData = await searchRes.json();
+
+      if (searchData.results && searchData.results.length > 0) {
+        const nearest = searchData.results[0];
+        const destLat = nearest.geometry.location.lat;
+        const destLon = nearest.geometry.location.lng;
+
+        // Get actual driving distance
+        const distUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destLat},${destLon}&units=imperial&key=${apiKey}`;
+        const distRes = await fetch(distUrl);
+        const distData = await distRes.json();
+
+        if (distData.rows?.[0]?.elements?.[0]?.distance) {
+          const meters = distData.rows[0].elements[0].distance.value;
+          const miles = (meters / 1609.34).toFixed(1);
+
+          fields[place.field] = {
+            value: parseFloat(miles),
+            source: 'Google Places',
+            confidence: 'High',
+            details: nearest.name
+          };
+        }
+      }
+    } catch (e) {
+      console.error(`Error getting ${place.name} distance:`, e);
+    }
+  }
+
+  return fields;
+}
+
+// Google Distance Matrix - Commute time to downtown
+async function getCommuteTime(lat: number, lon: number, county: string): Promise<Record<string, any>> {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey) return {};
+
+  // Downtown coordinates for your counties
+  const downtowns: Record<string, { coords: string; name: string }> = {
+    'pinellas': { coords: '27.7676,-82.6403', name: 'Downtown St. Petersburg' },
+    'hillsborough': { coords: '27.9506,-82.4572', name: 'Downtown Tampa' },
+    'manatee': { coords: '27.4989,-82.5748', name: 'Downtown Bradenton' },
+    'polk': { coords: '28.0395,-81.9498', name: 'Downtown Lakeland' },
+    'pasco': { coords: '28.2362,-82.7179', name: 'Downtown New Port Richey' },
+    'hernando': { coords: '28.4755,-82.4584', name: 'Downtown Brooksville' },
+  };
+
+  const countyLower = county.toLowerCase().replace(' county', '');
+  const downtown = downtowns[countyLower] || downtowns['hillsborough']; // Default Tampa
+
+  try {
+    const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${lat},${lon}&destinations=${downtown.coords}&departure_time=now&key=${apiKey}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.rows?.[0]?.elements?.[0]?.duration_in_traffic) {
+      return {
+        '71_commute_time_city_center': {
+          value: data.rows[0].elements[0].duration_in_traffic.text,
+          source: 'Google Distance Matrix',
+          confidence: 'High',
+          details: `To ${downtown.name}`
+        }
+      };
+    } else if (data.rows?.[0]?.elements?.[0]?.duration) {
+      return {
+        '71_commute_time_city_center': {
+          value: data.rows[0].elements[0].duration.text,
+          source: 'Google Distance Matrix',
+          confidence: 'High',
+          details: `To ${downtown.name}`
+        }
+      };
+    }
+  } catch (e) {
+    console.error('Commute time error:', e);
+  }
+
+  return {};
+}
+
 async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>> {
   const geo = await geocodeAddress(address);
   if (!geo) return {};
@@ -240,14 +346,16 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   fields['28_county'] = { value: geo.county, source: 'Google Maps', confidence: 'High' };
   fields['coordinates'] = { value: { lat: geo.lat, lon: geo.lon }, source: 'Google Maps', confidence: 'High' };
 
-  // Call free APIs in parallel
-  const [walkScore, floodZone, airQuality] = await Promise.all([
+  // Call all APIs in parallel
+  const [walkScore, floodZone, airQuality, distances, commuteTime] = await Promise.all([
     getWalkScore(geo.lat, geo.lon, address),
     getFloodZone(geo.lat, geo.lon),
-    getAirQuality(geo.lat, geo.lon)
+    getAirQuality(geo.lat, geo.lon),
+    getDistances(geo.lat, geo.lon),
+    getCommuteTime(geo.lat, geo.lon, geo.county)
   ]);
 
-  Object.assign(fields, walkScore, floodZone, airQuality);
+  Object.assign(fields, walkScore, floodZone, airQuality, distances, commuteTime);
 
   // Filter out nulls
   return Object.fromEntries(
@@ -739,8 +847,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log(`Added ${Object.keys(enrichedData).length} fields from free APIs`);
     }
 
-    // STEP 3: Call Perplexity for additional real web data
-    console.log('Step 3: Calling Perplexity for real web search...');
+    // STEP 3: Scrape Florida County Property Appraiser
+    const county = allFields['28_county']?.value || '';
+    if (county) {
+      console.log(`Step 3: Scraping ${county} Property Appraiser...`);
+      const countyData = await scrapeFloridaCounty(searchQuery, county);
+      if (Object.keys(countyData).length > 0) {
+        for (const [key, value] of Object.entries(countyData)) {
+          if (!allFields[key]) {
+            allFields[key] = value;
+          }
+        }
+        sources_used.push(`${county} Property Appraiser`);
+        console.log(`Added ${Object.keys(countyData).length} fields from county appraiser`);
+      }
+    }
+
+    // STEP 4: Call Perplexity for additional real web data
+    console.log('Step 4: Calling Perplexity for real web search...');
     const perplexityData = await callPerplexity(searchQuery);
     if (Object.keys(perplexityData).length > 0) {
       for (const [key, value] of Object.entries(perplexityData)) {
