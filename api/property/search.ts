@@ -1303,17 +1303,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log(`Added ${Object.keys(internetData).length} fields from BroadbandNow`);
     }
 
-    // STEP 4: Call Perplexity for additional real web data
-    console.log('Step 4: Calling Perplexity for real web search...');
-    const perplexityData = await callPerplexity(searchQuery);
-    if (Object.keys(perplexityData).length > 0) {
-      for (const [key, value] of Object.entries(perplexityData)) {
-        if (!allFields[key]) {
-          allFields[key] = value;
+    // STEP 4: Call Perplexity for additional real web data (OPTIONAL - can still hallucinate)
+    // Only call if explicitly requested via usePerplexity flag
+    const { usePerplexity = false } = req.body;
+    if (usePerplexity) {
+      console.log('Step 4: Calling Perplexity for real web search...');
+      const perplexityData = await callPerplexity(searchQuery);
+      if (Object.keys(perplexityData).length > 0) {
+        for (const [key, value] of Object.entries(perplexityData)) {
+          if (!allFields[key]) {
+            allFields[key] = value;
+          }
         }
+        sources_used.push('Perplexity Web Search');
+        console.log(`Added ${Object.keys(perplexityData).length} fields from Perplexity`);
       }
-      sources_used.push('Perplexity Web Search');
-      console.log(`Added ${Object.keys(perplexityData).length} fields from Perplexity`);
+    } else {
+      console.log('Step 4: Skipping Perplexity (use usePerplexity=true to enable)');
     }
 
     // STEP 3: Use LLMs to fill remaining gaps (optional, costs money)
@@ -1346,6 +1352,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const total_fields = Object.keys(allFields).length;
     const completion_percentage = Math.round((total_fields / 110) * 100);
 
+    // Add breakdown by source
+    const sourceBreakdown: Record<string, number> = {};
+    for (const [key, field] of Object.entries(allFields)) {
+      const source = (field as any).source || 'Unknown';
+      sourceBreakdown[source] = (sourceBreakdown[source] || 0) + 1;
+    }
+
     return res.status(200).json({
       success: true,
       address: searchQuery,
@@ -1353,9 +1366,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       total_fields_found: total_fields,
       completion_percentage,
       sources: sources_used,
+      source_breakdown: sourceBreakdown,
       llm_responses: llmResponses,
-      strategy: 'real-data-first',
-      note: 'Data sourced from Realtor.com scraping and free APIs. LLMs used only to fill gaps.'
+      strategy: 'real-data-only',
+      note: 'REAL DATA ONLY from scrapers and APIs. Perplexity/LLMs disabled by default (can enable with usePerplexity=true flag).'
     });
   } catch (error) {
     console.error('Search error:', error);
