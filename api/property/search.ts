@@ -1255,8 +1255,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // LLMs turned OFF - they hallucinate without web access
-  // Only Perplexity has real web search capability
-  const { address, url, engines = [], skipLLMs = true } = req.body;
+  // Perplexity has real web search BUT is too slow (>10sec)
+  const { address, url, engines = [], skipLLMs = true, usePerplexity = false } = req.body;
 
   if (!address && !url) {
     return res.status(400).json({ error: 'Address or URL required' });
@@ -1290,21 +1290,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.error('Free APIs enrichment failed:', e);
     }
 
-    // STEP 2: Call Perplexity for additional real web data - ONLY THIS for property data
-    console.log('Step 2: Calling Perplexity for real web search...');
-    try {
-      const perplexityData = await callPerplexity(searchQuery);
-      if (Object.keys(perplexityData).length > 0) {
-        for (const [key, value] of Object.entries(perplexityData)) {
-          if (!allFields[key]) {
-            allFields[key] = value;
+    // STEP 2: Call Perplexity ONLY if explicitly requested (too slow for default, causes timeout)
+    if (usePerplexity) {
+      console.log('Step 2: Calling Perplexity for real web search...');
+      try {
+        const perplexityData = await callPerplexity(searchQuery);
+        if (Object.keys(perplexityData).length > 0) {
+          for (const [key, value] of Object.entries(perplexityData)) {
+            if (!allFields[key]) {
+              allFields[key] = value;
+            }
           }
+          sources_used.push('Perplexity Web Search');
+          console.log(`Added ${Object.keys(perplexityData).length} fields from Perplexity`);
         }
-        sources_used.push('Perplexity Web Search');
-        console.log(`Added ${Object.keys(perplexityData).length} fields from Perplexity`);
+      } catch (e) {
+        console.error('Perplexity call failed:', e);
       }
-    } catch (e) {
-      console.error('Perplexity call failed:', e);
+    } else {
+      console.log('Step 2: Skipping Perplexity (too slow, causes timeout). Set usePerplexity=true to enable.');
     }
 
     // STEP 3: Use LLMs to fill remaining gaps (optional, costs money)
