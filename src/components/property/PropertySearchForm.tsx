@@ -1,10 +1,10 @@
 /**
  * CLUES Property Dashboard - Property Search Form
- * 110-field form with address autocomplete
+ * 110-field form with real LLM-powered address search
  * Sources visible to admin only
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
@@ -13,6 +13,9 @@ import {
   Check,
   Info,
   Loader2,
+  Sparkles,
+  AlertCircle,
+  CheckCircle,
 } from 'lucide-react';
 import { useIsAdmin } from '@/store/authStore';
 import {
@@ -26,6 +29,7 @@ import {
 interface FieldValue {
   value: string | number | boolean | string[];
   source: DataSource;
+  confidence?: string;
 }
 
 interface PropertySearchFormProps {
@@ -33,12 +37,28 @@ interface PropertySearchFormProps {
   initialData?: Record<string, FieldValue>;
 }
 
+interface AddressSuggestion {
+  description: string;
+  placeId: string;
+  mainText: string;
+  secondaryText: string;
+}
+
+// API base URL - uses relative path for Vercel
+const API_BASE = '/api/property';
+
 export default function PropertySearchForm({ onSubmit, initialData }: PropertySearchFormProps) {
   const isAdmin = useIsAdmin();
   const [formData, setFormData] = useState<Record<string, FieldValue>>({});
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(['A', 'B', 'C']); // First 3 groups expanded by default
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(['A', 'B', 'C']);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchProgress, setSearchProgress] = useState('');
+  const [searchError, setSearchError] = useState('');
   const [addressInput, setAddressInput] = useState('');
+  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedEngines, setSelectedEngines] = useState(['claude', 'gpt', 'grok', 'gemini']);
+  const [searchResults, setSearchResults] = useState<any>(null);
 
   // Initialize form data
   useEffect(() => {
@@ -46,6 +66,35 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
       setFormData(initialData);
     }
   }, [initialData]);
+
+  // Debounced address autocomplete
+  const fetchSuggestions = useCallback(async (input: string) => {
+    if (input.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/autocomplete?input=${encodeURIComponent(input)}`);
+      const data = await res.json();
+      if (data.suggestions) {
+        setSuggestions(data.suggestions);
+        setShowSuggestions(true);
+      }
+    } catch (error) {
+      console.error('Autocomplete error:', error);
+    }
+  }, []);
+
+  // Debounce input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (addressInput) {
+        fetchSuggestions(addressInput);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [addressInput, fetchSuggestions]);
 
   const toggleGroup = (groupId: string) => {
     setExpandedGroups(prev =>
@@ -83,24 +132,110 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
     }));
   };
 
+  const toggleEngine = (engine: string) => {
+    setSelectedEngines(prev =>
+      prev.includes(engine)
+        ? prev.filter(e => e !== engine)
+        : [...prev, engine]
+    );
+  };
+
+  // Map API field keys to form field keys
+  const mapApiFieldToFormKey = (apiKey: string): string | null => {
+    // API returns keys like "1_full_address", we need "addressIdentity.fullAddress"
+    const fieldNumber = parseInt(apiKey.split('_')[0]);
+    const fieldDef = FIELD_DEFINITIONS.find(f => f.id === fieldNumber);
+    return fieldDef?.key || null;
+  };
+
   const handleAddressSearch = async () => {
     if (!addressInput.trim()) return;
+    if (selectedEngines.length === 0) {
+      setSearchError('Please select at least one AI engine');
+      return;
+    }
 
     setIsSearching(true);
+    setSearchError('');
+    setSearchProgress('Initializing search...');
+    setShowSuggestions(false);
 
-    // Simulate API call for address lookup
-    // In production, this would call Google Places API, Zillow API, etc.
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      setSearchProgress(`Searching with ${selectedEngines.map(e => e.toUpperCase()).join(', ')}...`);
 
-    // Auto-populate some fields based on address
-    // This is mock data - real implementation would fetch from APIs
-    const mockData: Record<string, FieldValue> = {
-      'addressIdentity.fullAddress': { value: addressInput, source: 'Manual Entry' },
-      // More fields would be auto-populated from API responses
-    };
+      const response = await fetch(`${API_BASE}/search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          address: addressInput,
+          engines: selectedEngines,
+        }),
+      });
 
-    setFormData(prev => ({ ...prev, ...mockData }));
-    setIsSearching(false);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Search failed');
+      }
+
+      setSearchResults(data);
+      setSearchProgress(`Found ${data.total_fields_found || 0} of 110 fields (${data.completion_percentage || 0}%)`);
+
+      // Map API response to form data
+      const newFormData: Record<string, FieldValue> = {
+        'addressIdentity.fullAddress': { value: addressInput, source: 'Manual Entry' },
+      };
+
+      if (data.fields) {
+        for (const [apiKey, fieldData] of Object.entries(data.fields)) {
+          const field = fieldData as any;
+          const formKey = mapApiFieldToFormKey(apiKey);
+
+          if (formKey && field.value !== null && field.value !== undefined) {
+            // Parse source to get a valid DataSource
+            let source: DataSource = 'Other';
+            const sourceStr = field.source || '';
+
+            // Try to match known sources
+            for (const knownSource of DATA_SOURCES) {
+              if (sourceStr.toLowerCase().includes(knownSource.toLowerCase())) {
+                source = knownSource;
+                break;
+              }
+            }
+
+            // Handle LLM sources
+            if (sourceStr.includes('Claude')) source = 'Claude AI';
+            else if (sourceStr.includes('GPT')) source = 'GPT AI';
+
+            newFormData[formKey] = {
+              value: field.value,
+              source,
+              confidence: field.confidence,
+            };
+          }
+        }
+      }
+
+      setFormData(prev => ({ ...prev, ...newFormData }));
+
+      // Expand all groups to show results
+      expandAllGroups();
+
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchError(error instanceof Error ? error.message : 'Search failed');
+      setSearchProgress('');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSuggestionClick = (suggestion: AddressSuggestion) => {
+    setAddressInput(suggestion.description);
+    setShowSuggestions(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -112,6 +247,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
     const fieldValue = formData[field.key];
     const value = fieldValue?.value ?? '';
     const source = fieldValue?.source ?? 'Manual Entry';
+    const confidence = (fieldValue as any)?.confidence;
 
     return (
       <div key={field.id} className="grid grid-cols-12 gap-2 items-start py-2 border-b border-white/5">
@@ -121,7 +257,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
         </div>
 
         {/* Field Label & Input */}
-        <div className="col-span-6 md:col-span-5">
+        <div className={isAdmin ? "col-span-5" : "col-span-11"}>
           <label className="block text-sm text-gray-300 mb-1">
             {field.label}
             {field.required && <span className="text-red-400 ml-1">*</span>}
@@ -130,13 +266,22 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
                 <Info className="w-3 h-3 inline" />
               </span>
             )}
+            {confidence && (
+              <span className={`ml-2 text-xs px-1.5 py-0.5 rounded ${
+                confidence === 'High' ? 'bg-green-500/20 text-green-400' :
+                confidence === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                'bg-red-500/20 text-red-400'
+              }`}>
+                {confidence}
+              </span>
+            )}
           </label>
           {renderFieldInput(field, value, (val) => updateField(field.key, val))}
         </div>
 
         {/* Source Selector - Admin Only */}
         {isAdmin && (
-          <div className="col-span-5 md:col-span-6">
+          <div className="col-span-6">
             <label className="block text-xs text-gray-500 mb-1">Source</label>
             <select
               value={source}
@@ -275,34 +420,149 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
       {/* Address Search Bar */}
       <div className="glass-card p-4">
         <label className="block text-sm text-gray-400 mb-2">
-          Quick Address Search
+          <Sparkles className="w-4 h-4 inline mr-1 text-quantum-cyan" />
+          AI-Powered Property Search
         </label>
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-            <input
-              type="text"
-              value={addressInput}
-              onChange={(e) => setAddressInput(e.target.value)}
-              placeholder="Enter address to auto-populate fields..."
-              className="w-full bg-quantum-dark border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white placeholder-gray-500 focus:border-quantum-cyan focus:outline-none"
-            />
+        <div className="relative">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+              <input
+                type="text"
+                value={addressInput}
+                onChange={(e) => setAddressInput(e.target.value)}
+                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                placeholder="Enter property address..."
+                className="w-full bg-quantum-dark border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white placeholder-gray-500 focus:border-quantum-cyan focus:outline-none"
+              />
+
+              {/* Autocomplete Suggestions */}
+              <AnimatePresence>
+                {showSuggestions && suggestions.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute z-50 top-full left-0 right-0 mt-1 bg-quantum-dark border border-white/10 rounded-xl overflow-hidden shadow-lg"
+                  >
+                    {suggestions.map((suggestion, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleSuggestionClick(suggestion)}
+                        className="w-full px-4 py-3 text-left hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
+                      >
+                        <div className="text-white text-sm">{suggestion.mainText}</div>
+                        <div className="text-gray-500 text-xs">{suggestion.secondaryText}</div>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+            <button
+              type="button"
+              onClick={handleAddressSearch}
+              disabled={isSearching || !addressInput.trim()}
+              className="px-6 py-3 bg-gradient-to-r from-quantum-cyan to-quantum-blue text-quantum-black font-semibold rounded-xl hover:shadow-lg hover:shadow-quantum-cyan/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSearching ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                'Search'
+              )}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={handleAddressSearch}
-            disabled={isSearching}
-            className="px-6 py-3 bg-gradient-to-r from-quantum-cyan to-quantum-blue text-quantum-black font-semibold rounded-xl hover:shadow-lg hover:shadow-quantum-cyan/30 transition-all disabled:opacity-50"
-          >
-            {isSearching ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              'Search'
-            )}
-          </button>
         </div>
-        <p className="text-xs text-gray-500 mt-2">
-          Auto-populates data from MLS, Zillow, County Records, and more
+
+        {/* AI Engine Selection */}
+        <div className="mt-4">
+          <label className="block text-xs text-gray-500 mb-2">AI Engines to Use:</label>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { id: 'claude', name: 'Claude', color: 'orange' },
+              { id: 'gpt', name: 'GPT-4o', color: 'green' },
+              { id: 'grok', name: 'Grok', color: 'blue' },
+              { id: 'gemini', name: 'Gemini', color: 'purple' },
+            ].map(engine => (
+              <button
+                key={engine.id}
+                type="button"
+                onClick={() => toggleEngine(engine.id)}
+                className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                  selectedEngines.includes(engine.id)
+                    ? 'bg-quantum-cyan/20 border-quantum-cyan text-quantum-cyan'
+                    : 'border-white/10 text-gray-400 hover:border-white/20'
+                }`}
+              >
+                {selectedEngines.includes(engine.id) && <Check className="w-3 h-3 inline mr-1" />}
+                {engine.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Search Progress */}
+        {(searchProgress || searchError) && (
+          <div className="mt-4">
+            {searchError ? (
+              <div className="flex items-center gap-2 text-red-400 text-sm bg-red-400/10 p-3 rounded-xl">
+                <AlertCircle className="w-4 h-4" />
+                {searchError}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-quantum-cyan text-sm">
+                {isSearching ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <CheckCircle className="w-4 h-4" />
+                )}
+                {searchProgress}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Search Results Summary */}
+        {searchResults && !isSearching && (
+          <div className="mt-4 p-3 bg-white/5 rounded-xl">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-400">Search Results</span>
+              <span className="text-sm font-semibold text-quantum-green">
+                {searchResults.completion_percentage}% Complete
+              </span>
+            </div>
+            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-quantum-cyan to-quantum-green rounded-full transition-all"
+                style={{ width: `${searchResults.completion_percentage}%` }}
+              />
+            </div>
+            {searchResults.llm_responses && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {searchResults.llm_responses.map((resp: any, idx: number) => (
+                  <span
+                    key={idx}
+                    className={`text-xs px-2 py-1 rounded ${
+                      resp.error ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
+                    }`}
+                  >
+                    {resp.llm}: {resp.error ? 'Error' : `${resp.fields_found} fields`}
+                  </span>
+                ))}
+              </div>
+            )}
+            {searchResults.conflicts && searchResults.conflicts.length > 0 && (
+              <div className="mt-2 text-xs text-yellow-400">
+                <AlertCircle className="w-3 h-3 inline mr-1" />
+                {searchResults.conflicts.length} data conflicts found (review flagged fields)
+              </div>
+            )}
+          </div>
+        )}
+
+        <p className="text-xs text-gray-500 mt-3">
+          Uses Claude, GPT, Grok & Gemini to search Zillow, Redfin, county records, and more
         </p>
       </div>
 
@@ -365,7 +625,13 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
                   </span>
                   <div className="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-quantum-cyan to-quantum-purple rounded-full transition-all"
+                      className={`h-full rounded-full transition-all ${
+                        filledCount === groupFields.length
+                          ? 'bg-quantum-green'
+                          : filledCount > 0
+                          ? 'bg-gradient-to-r from-quantum-cyan to-quantum-purple'
+                          : 'bg-white/20'
+                      }`}
                       style={{ width: `${(filledCount / groupFields.length) * 100}%` }}
                     />
                   </div>
