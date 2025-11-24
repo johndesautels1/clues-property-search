@@ -236,13 +236,18 @@ async function getAirQuality(lat: number, lon: number): Promise<Record<string, a
 // HowLoud API - Noise levels
 async function getNoiseData(lat: number, lon: number): Promise<Record<string, any>> {
   const apiKey = process.env.HOWLOUD_API_KEY;
+  const clientId = process.env.HOWLOUD_CLIENT_ID;
   if (!apiKey) {
     console.log('HOWLOUD_API_KEY not set');
     return {};
   }
 
   try {
-    const url = `https://api.howloud.com/score?lat=${lat}&lng=${lon}&key=${apiKey}`;
+    // Include client_id if provided
+    let url = `https://api.howloud.com/score?lat=${lat}&lng=${lon}&key=${apiKey}`;
+    if (clientId) {
+      url += `&client_id=${clientId}`;
+    }
     const response = await fetch(url);
     const data = await response.json();
 
