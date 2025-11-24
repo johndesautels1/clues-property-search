@@ -59,6 +59,8 @@ interface DataFieldProps {
 
 const DataField = ({ label, value, icon, format = 'text' }: DataFieldProps) => {
   if (value === null || value === undefined || value === '') return null;
+  // Hide 0 values for number, percent, and currency formats (but not for text)
+  if (value === 0 && (format === 'number' || format === 'percent' || format === 'currency')) return null;
 
   const formattedValue = formatValue(value, format);
 

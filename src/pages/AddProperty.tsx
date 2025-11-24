@@ -365,7 +365,7 @@ export default function AddProperty() {
         recentTaxPaymentHistory: createDataField(''),
         medianHomePriceNeighborhood: createDataField(row['78_median_home_price_area'] ? parseFloat(row['78_median_home_price_area'].toString().replace(/[^0-9.]/g, '')) : null),
         pricePerSqftRecentAvg: createDataField(row['19_price_per_sqft'] ? parseFloat(row['19_price_per_sqft'].toString().replace(/[^0-9.]/g, '')) : null),
-        daysOnMarketAvg: createDataField(row['20_days_on_market'] ? parseFloat(row['20_days_on_market']) : null),
+        daysOnMarketAvg: createDataField(row['20_days_on_market'] && row['20_days_on_market'] !== 'N/A' ? parseFloat(row['20_days_on_market']) : null),
         inventorySurplus: createDataField(''),
         rentalEstimateMonthly: createDataField(row['75_rental_estimate_monthly'] ? parseFloat(row['75_rental_estimate_monthly'].toString().replace(/[^0-9.]/g, '')) : null),
         rentalYieldEst: createDataField(0),
