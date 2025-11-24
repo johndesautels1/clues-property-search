@@ -203,16 +203,40 @@ export default function AddProperty() {
       const rows = text.split('\n').filter(r => r.trim());
       const headers = parseCSVLine(rows[0]);
 
-      const data = rows.slice(1).map(row => {
-        const values = parseCSVLine(row);
-        const obj: any = {};
-        headers.forEach((header, i) => {
-          obj[header] = values[i] || '';
-        });
-        return obj;
-      });
+      // Check if this is a field definition format (Field, Category, Name, Value, Notes/Sources)
+      const isFieldDefinitionFormat = headers.includes('Field') && headers.includes('Name') && headers.includes('Value');
 
-      console.log('CSV parsed:', { headers: headers.length, rows: data.length, firstRow: data[0] });
+      let data: any[];
+
+      if (isFieldDefinitionFormat) {
+        // Convert field definition format to single property object
+        const property: any = {};
+        rows.slice(1).forEach(row => {
+          const values = parseCSVLine(row);
+          const fieldNum = values[headers.indexOf('Field')] || '';
+          const fieldName = values[headers.indexOf('Name')] || '';
+          const fieldValue = values[headers.indexOf('Value')] || '';
+
+          // Create key from field number and name
+          const key = `${fieldNum}_${fieldName}`;
+          property[key] = fieldValue;
+        });
+
+        data = [property]; // Single property with all fields
+        console.log('CSV parsed as field definition format:', { fields: Object.keys(property).length, property });
+      } else {
+        // Standard CSV format - each row is a property
+        data = rows.slice(1).map(row => {
+          const values = parseCSVLine(row);
+          const obj: any = {};
+          headers.forEach((header, i) => {
+            obj[header] = values[i] || '';
+          });
+          return obj;
+        });
+        console.log('CSV parsed as standard format:', { headers: headers.length, rows: data.length, firstRow: data[0] });
+      }
+
       setCsvData(data);
     };
 
