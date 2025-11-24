@@ -420,28 +420,289 @@ function extractFromHernandoHtml(html: string): Record<string, any> {
 }
 
 // ============================================
+// ZIP CODE TO COUNTY MAPPING
+// ============================================
+const COUNTY_ZIPS: Record<string, string[]> = {
+  'pinellas': ['33701', '33702', '33703', '33704', '33705', '33706', '33707', '33708', '33709', '33710', '33711', '33713', '33714', '33715', '33716', '33755', '33756', '33759', '33760', '33761', '33762', '33763', '33764', '33765', '33767', '33770', '33771', '33772', '33773', '33774', '33776', '33777', '33778', '33781', '33782', '33785', '33786'],
+  'hillsborough': ['33503', '33508', '33510', '33511', '33527', '33534', '33547', '33556', '33563', '33565', '33566', '33567', '33569', '33570', '33572', '33573', '33578', '33579', '33584', '33592', '33594', '33596', '33598', '33601', '33602', '33603', '33604', '33605', '33606', '33607', '33609', '33610', '33611', '33612', '33613', '33614', '33615', '33616', '33617', '33618', '33619', '33620', '33621', '33624', '33625', '33626', '33629', '33634', '33635', '33637', '33647'],
+  'manatee': ['34201', '34202', '34203', '34205', '34207', '34208', '34209', '34210', '34211', '34212', '34215', '34216', '34217', '34218', '34219', '34220', '34221', '34222', '34243', '34250', '34251'],
+  'polk': ['33801', '33803', '33805', '33809', '33810', '33811', '33812', '33813', '33815', '33823', '33825', '33827', '33830', '33837', '33838', '33839', '33840', '33841', '33843', '33844', '33849', '33850', '33853', '33859', '33860', '33868', '33880', '33881', '33884', '33896', '33897', '33898'],
+  'pasco': ['33523', '33525', '33540', '33541', '33542', '33543', '33544', '33545', '33559', '34610', '34637', '34638', '34639', '34652', '34653', '34654', '34655', '34667', '34668', '34669', '34690', '34691'],
+  'hernando': ['34601', '34602', '34604', '34606', '34607', '34608', '34609', '34613', '34614']
+};
+
+export function detectCountyFromZip(address: string): string | null {
+  const zipMatch = address.match(/\b(\d{5})\b/);
+  if (!zipMatch) return null;
+
+  const zip = zipMatch[1];
+  for (const [county, zips] of Object.entries(COUNTY_ZIPS)) {
+    if (zips.includes(zip)) {
+      return county;
+    }
+  }
+  return null;
+}
+
+// ============================================
+// TAX COLLECTOR SCRAPERS (fields 32-35)
+// ============================================
+
+// Tax Collector URLs
+const TAX_URLS: Record<string, string> = {
+  'pinellas': 'https://www.tax.pinellas.gov/taxsearch/',
+  'hillsborough': 'https://hillsborough.county-taxes.com/public/search/property_tax',
+  'manatee': 'https://www.taxcollector.com/taxes/',
+  'polk': 'https://www.polktaxes.com/taxes/',
+  'pasco': 'https://www.pascotaxes.com/taxes/',
+  'hernando': 'https://www.hernandotax.us/taxes/'
+};
+
+async function scrapeTaxCollector(address: string, county: string, parcelId?: string): Promise<Record<string, any>> {
+  const countyLower = county.toLowerCase().replace(' county', '').trim();
+  const source = `${county} Tax Collector`;
+  const fields: Record<string, any> = {};
+
+  try {
+    let searchUrl = '';
+
+    // Route to correct tax collector site
+    switch (countyLower) {
+      case 'pinellas':
+        searchUrl = `https://www.tax.pinellas.gov/taxsearch/search.asp?searchtype=address&searchterm=${encodeURIComponent(address)}`;
+        break;
+      case 'hillsborough':
+        searchUrl = `https://hillsborough.county-taxes.com/public/search/property_tax?search=${encodeURIComponent(address)}`;
+        break;
+      case 'pasco':
+        searchUrl = `https://www.pascotaxes.com/records-search/?address=${encodeURIComponent(address)}`;
+        break;
+      case 'manatee':
+        searchUrl = `https://www.taxcollector.com/taxes/search?address=${encodeURIComponent(address)}`;
+        break;
+      case 'polk':
+        searchUrl = `https://www.polktaxes.com/taxes/search?address=${encodeURIComponent(address)}`;
+        break;
+      case 'hernando':
+        searchUrl = `https://www.hernandotax.us/taxes/search?address=${encodeURIComponent(address)}`;
+        break;
+      default:
+        return {};
+    }
+
+    const res = await fetch(searchUrl, { headers: HEADERS });
+    if (!res.ok) return {};
+
+    const html = await res.text();
+
+    // Extract tax exemptions (homestead, etc.)
+    const exemptionPatterns = [
+      /Homestead[:\s]*(Yes|No|Exempt|\$[\d,]+)/i,
+      /Exemptions?[:\s]*([^<\n]+)/i,
+      /Tax Exemption[:\s]*([^<\n]+)/i
+    ];
+    for (const pattern of exemptionPatterns) {
+      const match = html.match(pattern);
+      if (match && match[1] && match[1].trim() !== '') {
+        fields['32_tax_exemptions'] = { value: match[1].trim(), source, confidence: 'High' };
+        break;
+      }
+    }
+
+    // Extract mill rate / tax rate
+    const ratePatterns = [
+      /Mill(?:age)? Rate[:\s]*([\d.]+)/i,
+      /Tax Rate[:\s]*([\d.]+%?)/i,
+      /Rate[:\s]*([\d.]+)\s*mills/i
+    ];
+    for (const pattern of ratePatterns) {
+      const match = html.match(pattern);
+      if (match) {
+        fields['33_property_tax_rate'] = { value: match[1], source, confidence: 'High' };
+        break;
+      }
+    }
+
+    // Extract tax history (look for table rows with years/amounts)
+    const historyMatches = html.matchAll(/(\d{4})[^$]*\$?([\d,]+\.?\d*)/g);
+    const taxHistory: string[] = [];
+    for (const match of historyMatches) {
+      const year = parseInt(match[1]);
+      if (year >= 2019 && year <= 2025) {
+        taxHistory.push(`${match[1]}: $${match[2]}`);
+      }
+    }
+    if (taxHistory.length > 0) {
+      fields['34_recent_tax_history'] = { value: taxHistory.slice(0, 5).join(', '), source, confidence: 'High' };
+    }
+
+    // Extract special assessments (CDD, etc.)
+    const assessmentPatterns = [
+      /(?:Special|Non.?Ad.?Valorem) Assessment[s]?[:\s]*\$?([\d,]+)/i,
+      /CDD[:\s]*\$?([\d,]+)/i,
+      /Assessment[:\s]*\$?([\d,]+)/i
+    ];
+    for (const pattern of assessmentPatterns) {
+      const match = html.match(pattern);
+      if (match) {
+        fields['35_special_assessments'] = { value: `$${match[1]}`, source, confidence: 'High' };
+        break;
+      }
+    }
+
+    return fields;
+  } catch (e) {
+    console.error(`${county} Tax Collector scrape error:`, e);
+    return {};
+  }
+}
+
+// ============================================
+// PERMIT SCRAPERS (fields 37, 41, 52-55)
+// Most Florida counties use Accela for permits
+// ============================================
+
+const PERMIT_URLS: Record<string, string> = {
+  'pinellas': 'https://aca-prod.accela.com/pinellas/',
+  'hillsborough': 'https://aca-prod.accela.com/hcfl/',
+  'manatee': 'https://aca-prod.accela.com/manatee/',
+  'polk': 'https://aca-prod.accela.com/POLKCO/',
+  'pasco': 'https://aca-prod.accela.com/pasco/',
+  'hernando': 'https://aca-prod.accela.com/hernando/'
+};
+
+async function scrapePermits(address: string, county: string): Promise<Record<string, any>> {
+  const countyLower = county.toLowerCase().replace(' county', '').trim();
+  const source = `${county} Building Department`;
+  const fields: Record<string, any> = {};
+
+  const baseUrl = PERMIT_URLS[countyLower];
+  if (!baseUrl) return {};
+
+  try {
+    // Search for permits by address
+    const searchUrl = `${baseUrl}Cap/CapHome.aspx?module=Building&TabName=Building&SearchType=Address&Address=${encodeURIComponent(address)}`;
+    const res = await fetch(searchUrl, { headers: HEADERS });
+    if (!res.ok) return {};
+
+    const html = await res.text();
+
+    // Look for roof permits
+    const roofPermits: string[] = [];
+    const roofMatches = html.matchAll(/(?:Roof|Re-?roof)[^<]*?(\d{1,2}\/\d{1,2}\/\d{4}|\d{4})/gi);
+    for (const match of roofMatches) {
+      roofPermits.push(match[0]);
+    }
+    if (roofPermits.length > 0) {
+      fields['53_permit_history_roof'] = { value: roofPermits.slice(0, 3).join('; '), source, confidence: 'High' };
+
+      // Calculate roof age from most recent permit
+      const yearMatch = roofPermits[0].match(/(\d{4})/);
+      if (yearMatch) {
+        const roofYear = parseInt(yearMatch[1]);
+        const age = new Date().getFullYear() - roofYear;
+        fields['37_roof_age_est'] = { value: `${age} years (permit ${roofYear})`, source, confidence: 'High' };
+      }
+    }
+
+    // Look for HVAC permits
+    const hvacPermits: string[] = [];
+    const hvacMatches = html.matchAll(/(?:HVAC|A\/C|Air Condition|Heat|Mechanical)[^<]*?(\d{1,2}\/\d{1,2}\/\d{4}|\d{4})/gi);
+    for (const match of hvacMatches) {
+      hvacPermits.push(match[0]);
+    }
+    if (hvacPermits.length > 0) {
+      fields['54_permit_history_hvac'] = { value: hvacPermits.slice(0, 3).join('; '), source, confidence: 'High' };
+
+      // Calculate HVAC age
+      const yearMatch = hvacPermits[0].match(/(\d{4})/);
+      if (yearMatch) {
+        const hvacYear = parseInt(yearMatch[1]);
+        const age = new Date().getFullYear() - hvacYear;
+        fields['41_hvac_age'] = { value: `${age} years (permit ${hvacYear})`, source, confidence: 'High' };
+      }
+    }
+
+    // Look for other permits (electrical, plumbing, additions)
+    const otherPermits: string[] = [];
+    const otherMatches = html.matchAll(/(?:Electric|Plumb|Addition|Remodel|Renovat|Pool|Fence|Solar)[^<]*?(\d{1,2}\/\d{1,2}\/\d{4}|\d{4})/gi);
+    for (const match of otherMatches) {
+      otherPermits.push(match[0]);
+    }
+    if (otherPermits.length > 0) {
+      fields['55_permit_history_other'] = { value: otherPermits.slice(0, 5).join('; '), source, confidence: 'High' };
+    }
+
+    // Recent renovations summary
+    const allPermits = [...roofPermits, ...hvacPermits, ...otherPermits];
+    const recentPermits = allPermits.filter(p => {
+      const yearMatch = p.match(/(\d{4})/);
+      return yearMatch && parseInt(yearMatch[1]) >= 2019;
+    });
+    if (recentPermits.length > 0) {
+      fields['52_recent_renovations'] = { value: `${recentPermits.length} permits since 2019`, source, confidence: 'Medium' };
+    }
+
+    return fields;
+  } catch (e) {
+    console.error(`${county} Permits scrape error:`, e);
+    return {};
+  }
+}
+
+// ============================================
 // MAIN FUNCTION - Routes to correct county
 // ============================================
 export async function scrapeFloridaCounty(address: string, county: string): Promise<Record<string, any>> {
-  const countyLower = county.toLowerCase().replace(' county', '').trim();
+  let countyLower = county.toLowerCase().replace(' county', '').trim();
 
-  console.log(`Scraping ${countyLower} county property appraiser...`);
+  // If county not provided, try to detect from ZIP
+  if (!countyLower || countyLower === '') {
+    const detected = detectCountyFromZip(address);
+    if (detected) {
+      countyLower = detected;
+      console.log(`Detected county from ZIP: ${countyLower}`);
+    }
+  }
 
+  console.log(`Scraping ${countyLower} county data...`);
+
+  let allFields: Record<string, any> = {};
+
+  // 1. Property Appraiser data
+  let appraiserData: Record<string, any> = {};
   switch (countyLower) {
     case 'pinellas':
-      return await scrapePinellas(address);
+      appraiserData = await scrapePinellas(address);
+      break;
     case 'hillsborough':
-      return await scrapeHillsborough(address);
+      appraiserData = await scrapeHillsborough(address);
+      break;
     case 'manatee':
-      return await scrapeManatee(address);
+      appraiserData = await scrapeManatee(address);
+      break;
     case 'polk':
-      return await scrapePolk(address);
+      appraiserData = await scrapePolk(address);
+      break;
     case 'pasco':
-      return await scrapePasco(address);
+      appraiserData = await scrapePasco(address);
+      break;
     case 'hernando':
-      return await scrapeHernando(address);
+      appraiserData = await scrapeHernando(address);
+      break;
     default:
       console.log(`County "${county}" not supported for scraping`);
-      return {};
   }
+  Object.assign(allFields, appraiserData);
+
+  // 2. Tax Collector data (fields 32-35)
+  const taxData = await scrapeTaxCollector(address, countyLower);
+  Object.assign(allFields, taxData);
+
+  // 3. Permit data (fields 37, 41, 52-55)
+  const permitData = await scrapePermits(address, countyLower);
+  Object.assign(allFields, permitData);
+
+  console.log(`Found ${Object.keys(allFields).length} fields from ${countyLower} county sources`);
+  return allFields;
 }
