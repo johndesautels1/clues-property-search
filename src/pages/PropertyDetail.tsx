@@ -144,6 +144,17 @@ export default function PropertyDetail() {
   const property = id ? getPropertyById(id) : undefined;
   const fullProperty = id ? getFullPropertyById(id) : undefined;
 
+  console.log('🔎 DETAIL PAGE: Property ID:', id);
+  console.log('📇 Basic property:', property);
+  console.log('📋 Full property:', fullProperty);
+  if (fullProperty) {
+    console.log('✅ Full property has address:', fullProperty.address);
+    console.log('✅ Full property has details:', fullProperty.details);
+    console.log('✅ Full property has location:', fullProperty.location);
+  } else {
+    console.log('❌ NO FULL PROPERTY DATA FOUND!');
+  }
+
   const handleDelete = () => {
     if (id && confirm('Are you sure you want to delete this property?')) {
       removeProperty(id);

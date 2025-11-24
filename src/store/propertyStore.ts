@@ -126,6 +126,9 @@ const customStorage = {
         fullProperties: Array.from(value.state.fullProperties.entries()),
       },
     };
+    console.log('💽 STORAGE: Saving to localStorage');
+    console.log('💽 Full properties count:', value.state.fullProperties.size);
+    console.log('💽 First property sample:', value.state.fullProperties.entries().next().value);
     localStorage.setItem(name, JSON.stringify(toStore));
   },
   removeItem: (name: string) => {
@@ -165,12 +168,21 @@ export const usePropertyStore = create<PropertyState>()(
 
       addProperties: (newProperties, fullProperties) =>
         set((state) => {
+          console.log('🏪 STORE: addProperties called');
+          console.log('📥 Receiving:', newProperties.length, 'property cards');
+          console.log('📥 Receiving:', fullProperties?.length || 0, 'full properties');
+
           const newFullPropertiesMap = new Map(state.fullProperties);
           if (fullProperties) {
             fullProperties.forEach((fp) => {
+              console.log('💾 Storing full property ID:', fp.id);
+              console.log('💾 Address data:', fp.address);
               newFullPropertiesMap.set(fp.id, fp);
             });
           }
+
+          console.log('📊 Map now has', newFullPropertiesMap.size, 'full properties');
+
           return {
             properties: [...newProperties, ...state.properties],
             fullProperties: newFullPropertiesMap,

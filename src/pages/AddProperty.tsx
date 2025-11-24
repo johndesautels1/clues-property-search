@@ -455,6 +455,9 @@ export default function AddProperty() {
 
       // Create full property with all 110 fields
       const fullProperty = convertCsvToFullProperty(row, propertyId);
+      console.log('🔍 Full property created:', fullProperty.id);
+      console.log('📍 Address fields:', fullProperty.address);
+      console.log('🏗️ Details fields:', fullProperty.details);
 
       if (propertyCard.address || propertyCard.price > 0) {
         propertyCards.push(propertyCard);
@@ -465,6 +468,8 @@ export default function AddProperty() {
 
     // Add all properties to the store at once
     if (propertyCards.length > 0) {
+      console.log('✅ Adding to store:', propertyCards.length, 'cards and', fullProperties.length, 'full properties');
+      console.log('📦 First full property being saved:', fullProperties[0]);
       addProperties(propertyCards, fullProperties);
     }
 
