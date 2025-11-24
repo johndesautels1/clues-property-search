@@ -178,18 +178,41 @@ export default function AddProperty() {
 
     reader.onload = (e) => {
       const text = e.target?.result as string;
-      const rows = text.split('\n');
-      const headers = rows[0].split(',').map(h => h.trim());
 
-      const data = rows.slice(1).filter(row => row.trim()).map(row => {
-        const values = row.split(',');
+      // Parse CSV properly handling quoted fields with commas
+      const parseCSVLine = (line: string): string[] => {
+        const result: string[] = [];
+        let current = '';
+        let inQuotes = false;
+
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        result.push(current.trim());
+        return result;
+      };
+
+      const rows = text.split('\n').filter(r => r.trim());
+      const headers = parseCSVLine(rows[0]);
+
+      const data = rows.slice(1).map(row => {
+        const values = parseCSVLine(row);
         const obj: any = {};
         headers.forEach((header, i) => {
-          obj[header] = values[i]?.trim() || '';
+          obj[header] = values[i] || '';
         });
         return obj;
       });
 
+      console.log('CSV parsed:', { headers: headers.length, rows: data.length, firstRow: data[0] });
       setCsvData(data);
     };
 
@@ -204,27 +227,50 @@ export default function AddProperty() {
 
     let imported = 0;
     csvData.forEach(row => {
+      // Try to extract address from 110-field format
+      const address = row['1_full_address'] || row['address'] || row['Address'] || '';
+      const city = row['city'] || row['City'] || '';
+      const state = row['state'] || row['State'] || 'FL';
+      const zip = row['zip'] || row['ZIP'] || '';
+
+      // Extract price
+      const listingPrice = row['7_listing_price'] || row['price'] || row['Price'] || '0';
+      const price = parseInt(String(listingPrice).replace(/[^0-9]/g, '')) || 0;
+
+      // Extract bedrooms/bathrooms
+      const bedrooms = parseInt(row['12_bedrooms'] || row['bedrooms'] || row['Bedrooms'] || '0');
+      const bathrooms = parseFloat(row['15_total_bathrooms'] || row['bathrooms'] || row['Bathrooms'] || '0');
+
+      // Extract sqft
+      const sqft = parseInt(row['16_living_sqft'] || row['sqft'] || row['Sqft'] || '0');
+
+      // Extract year built
+      const yearBuilt = parseInt(row['20_year_built'] || row['yearBuilt'] || row['Year Built'] || new Date().getFullYear().toString());
+
+      // Extract status
+      const status = row['4_listing_status'] || row['status'] || row['Status'] || 'Active';
+
       const property: PropertyCard = {
         id: generateId(),
-        address: row.address || row.Address || '',
-        city: row.city || row.City || '',
-        state: row.state || row.State || 'FL',
-        zip: row.zip || row.ZIP || '',
-        price: parseInt(row.price || row.Price || '0'),
-        pricePerSqft: row.sqft && row.price
-          ? Math.round(parseInt(row.price) / parseInt(row.sqft))
-          : 0,
-        bedrooms: parseInt(row.bedrooms || row.Bedrooms || '0'),
-        bathrooms: parseFloat(row.bathrooms || row.Bathrooms || '0'),
-        sqft: parseInt(row.sqft || row.Sqft || row['Square Feet'] || '0'),
-        yearBuilt: parseInt(row.yearBuilt || row['Year Built'] || new Date().getFullYear().toString()),
+        address,
+        city,
+        state,
+        zip,
+        price,
+        pricePerSqft: sqft && price ? Math.round(price / sqft) : 0,
+        bedrooms,
+        bathrooms,
+        sqft,
+        yearBuilt,
         smartScore: Math.floor(Math.random() * 20) + 75,
-        dataCompleteness: 60,
-        listingStatus: (row.status || row.Status || 'Active') as 'Active' | 'Pending' | 'Sold',
-        daysOnMarket: parseInt(row.daysOnMarket || '0'),
+        dataCompleteness: Object.values(row).filter(v => v && v !== '').length,
+        listingStatus: status as 'Active' | 'Pending' | 'Sold',
+        daysOnMarket: 0,
       };
 
-      if (property.address && property.city) {
+      console.log('Importing property:', property);
+
+      if (property.address || property.price > 0) {
         addProperty(property);
         imported++;
       }
@@ -234,6 +280,9 @@ export default function AddProperty() {
     alert(`Successfully imported ${imported} properties`);
     setCsvFile(null);
     setCsvData([]);
+
+    // Navigate to property list
+    setTimeout(() => navigate('/properties'), 1000);
   };
 
   return (
