@@ -14,12 +14,13 @@ import {
   Loader2,
   AlertCircle,
   PenLine,
+  Upload,
 } from 'lucide-react';
 import { usePropertyStore } from '@/store/propertyStore';
 import type { PropertyCard } from '@/types/property';
 
 type ScrapeStatus = 'idle' | 'searching' | 'scraping' | 'enriching' | 'complete' | 'error';
-type InputMode = 'address' | 'url' | 'manual';
+type InputMode = 'address' | 'url' | 'manual' | 'csv';
 
 // Generate a simple unique ID
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -35,6 +36,8 @@ export default function AddProperty() {
   const [progress, setProgress] = useState(0);
   const [selectedEngine, setSelectedEngine] = useState('Auto');
   const [lastAddedId, setLastAddedId] = useState<string | null>(null);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [csvData, setCsvData] = useState<any[]>([]);
 
   // Manual entry form state
   const [manualForm, setManualForm] = useState({
@@ -166,6 +169,73 @@ export default function AddProperty() {
     setLastAddedId(null);
   };
 
+  const handleCsvUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setCsvFile(file);
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const rows = text.split('\n');
+      const headers = rows[0].split(',').map(h => h.trim());
+
+      const data = rows.slice(1).filter(row => row.trim()).map(row => {
+        const values = row.split(',');
+        const obj: any = {};
+        headers.forEach((header, i) => {
+          obj[header] = values[i]?.trim() || '';
+        });
+        return obj;
+      });
+
+      setCsvData(data);
+    };
+
+    reader.readAsText(file);
+  };
+
+  const handleCsvImport = () => {
+    if (csvData.length === 0) {
+      alert('No data to import');
+      return;
+    }
+
+    let imported = 0;
+    csvData.forEach(row => {
+      const property: PropertyCard = {
+        id: generateId(),
+        address: row.address || row.Address || '',
+        city: row.city || row.City || '',
+        state: row.state || row.State || 'FL',
+        zip: row.zip || row.ZIP || '',
+        price: parseInt(row.price || row.Price || '0'),
+        pricePerSqft: row.sqft && row.price
+          ? Math.round(parseInt(row.price) / parseInt(row.sqft))
+          : 0,
+        bedrooms: parseInt(row.bedrooms || row.Bedrooms || '0'),
+        bathrooms: parseFloat(row.bathrooms || row.Bathrooms || '0'),
+        sqft: parseInt(row.sqft || row.Sqft || row['Square Feet'] || '0'),
+        yearBuilt: parseInt(row.yearBuilt || row['Year Built'] || new Date().getFullYear().toString()),
+        smartScore: Math.floor(Math.random() * 20) + 75,
+        dataCompleteness: 60,
+        listingStatus: (row.status || row.Status || 'Active') as 'Active' | 'Pending' | 'Sold',
+        daysOnMarket: parseInt(row.daysOnMarket || '0'),
+      };
+
+      if (property.address && property.city) {
+        addProperty(property);
+        imported++;
+      }
+    });
+
+    setStatus('complete');
+    alert(`Successfully imported ${imported} properties`);
+    setCsvFile(null);
+    setCsvData([]);
+  };
+
   return (
     <motion.div
       className="px-4 py-6 md:px-8 md:py-10 max-w-2xl mx-auto"
@@ -217,11 +287,80 @@ export default function AddProperty() {
           <Globe className="w-4 h-4" />
           URL
         </button>
+        <button
+          onClick={() => setInputMode('csv')}
+          className={`flex-1 py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${
+            inputMode === 'csv'
+              ? 'bg-quantum-cyan/20 text-quantum-cyan'
+              : 'text-gray-500 hover:text-white'
+          }`}
+        >
+          <Upload className="w-4 h-4" />
+          Upload CSV
+        </button>
       </div>
 
       {/* Input Form */}
       <div className="glass-card p-6 mb-6">
-        {inputMode === 'manual' ? (
+        {inputMode === 'csv' ? (
+          <div className="space-y-4">
+            <div className="text-center py-8">
+              <Upload className="w-16 h-16 mx-auto mb-4 text-quantum-cyan" />
+              <h3 className="text-lg font-semibold mb-2">Upload Property CSV</h3>
+              <p className="text-sm text-gray-400 mb-6">
+                Import multiple properties at once. CSV should include: address, city, state, zip, price, bedrooms, bathrooms, sqft
+              </p>
+
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleCsvUpload}
+                className="hidden"
+                id="csv-upload"
+              />
+              <label
+                htmlFor="csv-upload"
+                className="btn-quantum inline-flex items-center gap-2 cursor-pointer"
+              >
+                <Upload className="w-5 h-5" />
+                Choose CSV File
+              </label>
+            </div>
+
+            {csvFile && (
+              <div className="border border-quantum-cyan/20 rounded-xl p-4 bg-quantum-cyan/5">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="font-semibold">{csvFile.name}</p>
+                    <p className="text-sm text-gray-400">{csvData.length} properties found</p>
+                  </div>
+                  <CheckCircle className="w-6 h-6 text-quantum-cyan" />
+                </div>
+
+                {csvData.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-400 mb-2">Preview (first 3 rows):</p>
+                    <div className="bg-black/30 rounded-lg p-3 text-xs font-mono overflow-x-auto">
+                      {csvData.slice(0, 3).map((row, i) => (
+                        <div key={i} className="mb-2">
+                          {row.address} - {row.city}, {row.state} - ${row.price}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  onClick={handleCsvImport}
+                  className="btn-quantum w-full"
+                >
+                  <CheckCircle className="w-5 h-5" />
+                  Import {csvData.length} Properties
+                </button>
+              </div>
+            )}
+          </div>
+        ) : inputMode === 'manual' ? (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
