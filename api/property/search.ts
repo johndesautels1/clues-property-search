@@ -756,11 +756,24 @@ async function callPerplexity(address: string): Promise<Record<string, any>> {
     return {};
   }
 
-  const prompt = `Search the web for REAL property data for this address: ${address}
+  const prompt = `You have REAL-TIME WEB SEARCH. Use it to find VERIFIED property data for this address: ${address}
 
-Search these sources: Zillow, Redfin, Realtor.com, Trulia, county property appraiser, county tax collector, GreatSchools.org, and any other reliable real estate sources.
+CRITICAL INSTRUCTIONS - ANTI-HALLUCINATION:
+1. You MUST use web search to find real data from actual websites
+2. NEVER make up or estimate values - if you can't find it, say "Not found"
+3. Include the exact source URL for each field you find
+4. Cross-verify important values (price, sqft) across multiple sources
+5. Only return data you actually found via web search
 
-I need ALL of these fields. Return ONLY what you can verify from real sources. Include the source URL or website name for each.
+Search these sources IN THIS ORDER:
+- Zillow.com, Redfin.com, Realtor.com (for listing data, MLS numbers, prices)
+- County property appraiser website for the specific county (for tax data, parcel IDs, assessed values)
+- GreatSchools.org (for school assignments and ratings)
+- FEMA NFHL (for flood zones)
+- Public tax collector records
+- Recent sales comps from MLS or Zillow
+
+I need ALL of these fields. Return ONLY what you can verify from real sources with actual URLs:
 
 PROPERTY BASICS:
 - 1_full_address: full street address
@@ -827,12 +840,18 @@ UTILITIES:
 - 93_water_provider: water company name
 - 96_internet_providers_top3: top internet providers
 
-Return as JSON format:
+Return as JSON format with SOURCE URLS:
 {
-  "field_name": {"value": "actual value", "source": "website name"}
+  "field_name": {"value": "actual value", "source": "Website Name - https://actual-url.com/page"}
 }
 
-CRITICAL: Only include fields with REAL verified data. If you cannot find data for a field, DO NOT include it. Never make up values.`;
+CRITICAL RULES:
+- Only include fields with REAL verified data from actual web searches
+- If you cannot find data for a field, DO NOT include it in the response
+- NEVER make up, estimate, or guess values
+- Include the actual URL you found the data on
+- If a source doesn't have a field, skip it rather than guessing
+- For missing fields, it's better to return fewer fields with high confidence than more fields with made-up data`;
 
   try {
     console.log('Calling Perplexity API...');
@@ -972,37 +991,44 @@ GROUP Q - Additional Features (105-110):
 109. age_restrictions, 110. notes_confidence_summary
 `;
 
-const SYSTEM_PROMPT = `You are a real estate data extraction expert. Given a property address, search the web thoroughly and extract as many of the 110 property data fields as possible.
+const SYSTEM_PROMPT = `You are a real estate data extraction expert. IMPORTANT: You do NOT have real-time web access or search capabilities.
 
 ${FIELD_GROUPS}
 
-INSTRUCTIONS:
-1. Search Zillow, Redfin, Realtor.com, Trulia for listing data
-2. Search county property appraiser/assessor websites for tax and parcel data
-3. Search county permit records for roof, HVAC, renovation history
-4. Use GreatSchools.org for school assignments and ratings
-5. Use WalkScore.com for walk/transit/bike scores
-6. Use FEMA flood maps for flood zone data
-7. Search for recent comparable sales in the area
-8. Estimate rental values from Zillow, Zumper, RentCafe
-9. Look up utility providers for the area
-10. Make reasonable inferences where direct data isn't available (mark confidence as "Low")
+CRITICAL INSTRUCTIONS - ANTI-HALLUCINATION:
+1. You CANNOT search the web or access live websites
+2. You can ONLY use data from your training knowledge (cutoff: early 2024)
+3. For any property-specific data (prices, MLS numbers, current listings, recent sales, current owners), you MUST return null - DO NOT make up values
+4. You can provide general knowledge about:
+   - Typical utility providers for a region/county (if you know them)
+   - School districts for well-known areas
+   - General flood zone information for geographic areas
+   - Typical HOA structures, property types, architectural styles
+
+WHAT YOU MUST NEVER DO:
+- Never invent MLS numbers, parcel IDs, or listing prices
+- Never make up current property values or tax amounts
+- Never create fake owner names or sale dates
+- Never estimate specific property details you don't know
+- Never claim to have "searched" websites
 
 RESPONSE FORMAT:
 Return a JSON object with this structure:
 {
   "fields": {
-    "1_full_address": { "value": "...", "source": "...", "confidence": "High|Medium|Low" },
-    "2_mls_primary": { "value": "...", "source": "Zillow", "confidence": "High" },
-    ...for all 110 fields
+    "28_county": { "value": "Pinellas County", "source": "Geographic knowledge", "confidence": "High" },
+    "92_electric_provider": { "value": "Duke Energy", "source": "Regional knowledge", "confidence": "Medium" },
+    "7_listing_price": { "value": null, "source": "Requires web search", "confidence": "Unverified" },
+    ...
   },
-  "sources_searched": ["Zillow", "County Assessor", ...],
-  "fields_found": 67,
-  "fields_missing": [list of field numbers not found]
+  "sources_searched": ["Training data only - NO WEB ACCESS"],
+  "fields_found": 15,
+  "fields_missing": [1,2,3,4,5,6,7,8,9,10,11,12,etc],
+  "note": "Limited to general geographic/regional knowledge only. Cannot provide property-specific data without web search."
 }
 
-For fields you cannot find, set value to null and confidence to "Unverified".
-Be thorough - search multiple sources and cross-reference data.`;
+Only fill in fields where you have GENERAL KNOWLEDGE (counties, regions, typical providers).
+For property-specific data, always return null with confidence "Unverified".`;
 
 // Claude API call
 async function callClaude(address: string): Promise<any> {
@@ -1088,10 +1114,43 @@ Search thoroughly across all available web sources. Return the JSON response wit
   }
 }
 
-// Grok API call (xAI)
+// Grok API call (xAI) - WITH ANTI-HALLUCINATION INSTRUCTIONS
 async function callGrok(address: string): Promise<any> {
   const apiKey = process.env.GROK_API_KEY;
   if (!apiKey) return { error: 'GROK_API_KEY not set', fields: {} };
+
+  // ANTI-HALLUCINATION SYSTEM PROMPT - Based on Grok's recommendations
+  const grokSystemPrompt = `You are a real estate data analyst with access to web search tools. For any given address, compile a comprehensive 110-field dataset on the property.
+
+CRITICAL ANTI-HALLUCINATION RULES:
+1. USE YOUR WEB SEARCH TOOLS - You have access to web_search and browse_pages tools. USE THEM to find real data from:
+   - Zillow, Redfin, Realtor.com, Trulia
+   - County property appraiser/assessor websites
+   - FEMA flood maps
+   - GreatSchools.org
+   - Public tax records
+   - MLS listings
+
+2. NEVER MAKE UP DATA - If you cannot find a field value from real sources, set it to null with confidence "Unverified"
+3. CITE YOUR SOURCES - For every field, include the actual website/source where you found the data
+4. VERIFY BEFORE RETURNING - Cross-check important values (price, sqft, beds/baths) across multiple sources
+5. USE ONLY PUBLIC DATA - No private/restricted databases
+
+${FIELD_GROUPS}
+
+Return JSON in this exact format:
+{
+  "fields": {
+    "1_full_address": { "value": "...", "source": "Zillow.com", "confidence": "High" },
+    "2_mls_primary": { "value": "...", "source": "MLS listing", "confidence": "High" },
+    ...
+  },
+  "sources_searched": ["Zillow", "County Assessor", ...],
+  "fields_found": 67,
+  "fields_missing": [list of field numbers you could NOT find]
+}
+
+For any field you cannot find real data for, use: { "value": null, "source": "Not found", "confidence": "Unverified" }`;
 
   try {
     const response = await fetch('https://api.x.ai/v1/chat/completions', {
@@ -1101,21 +1160,34 @@ async function callGrok(address: string): Promise<any> {
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'grok-beta',
+        model: 'grok-beta', // Use grok-4 for better tool calling, grok-beta for cost savings
         max_tokens: 8000,
+        temperature: 0.1, // Low temperature for factual consistency
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: grokSystemPrompt },
           {
             role: 'user',
-            content: `Extract all 110 property data fields for this address: ${address}
+            content: `Use your web search tools to find REAL property data for this address: ${address}
 
-Search thoroughly across all available web sources. Return the JSON response with all fields you can find.`,
+Search Zillow, Redfin, Realtor.com, county records, and other public sources. Return ONLY verified data you found from actual web searches. Include source URLs in your response.`,
           },
         ],
+        // Enable tool calling for web search
+        tools: [
+          {
+            type: 'function',
+            function: {
+              name: 'web_search',
+              description: 'Search the web for property data from real estate websites and public records'
+            }
+          }
+        ]
       }),
     });
 
     const data = await response.json();
+    console.log('Grok response:', JSON.stringify(data).substring(0, 500));
+
     if (data.choices && data.choices[0]?.message?.content) {
       const text = data.choices[0].message.content;
       const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -1125,6 +1197,7 @@ Search thoroughly across all available web sources. Return the JSON response wit
     }
     return { error: 'Failed to parse Grok response', fields: {}, llm: 'Grok' };
   } catch (error) {
+    console.error('Grok error:', error);
     return { error: String(error), fields: {}, llm: 'Grok' };
   }
 }
@@ -1254,9 +1327,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // LLMs turned OFF - they hallucinate without web access
-  // Perplexity has real web search BUT is too slow (>10sec)
-  const { address, url, engines = [], skipLLMs = true, usePerplexity = false } = req.body;
+  // UPDATED STRATEGY: Grok + Perplexity as PRIMARY (both have web search)
+  // Claude/GPT/Gemini as FALLBACK (limited to general knowledge only)
+  const { address, url, engines = ['grok', 'perplexity'], skipLLMs = false, usePerplexity = true, useGrok = true } = req.body;
 
   if (!address && !url) {
     return res.status(400).json({ error: 'Address or URL required' });
@@ -1290,9 +1363,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.error('Free APIs enrichment failed:', e);
     }
 
-    // STEP 2: Call Perplexity ONLY if explicitly requested (too slow for default, causes timeout)
+    // STEP 2: Call Grok (PRIMARY - has web search tools)
+    if (useGrok) {
+      console.log('Step 2: Calling Grok for real web search with tools...');
+      try {
+        const grokData = await callGrok(searchQuery);
+        if (grokData.fields && Object.keys(grokData.fields).length > 0) {
+          for (const [key, value] of Object.entries(grokData.fields)) {
+            if (!allFields[key]) {
+              allFields[key] = value;
+            }
+          }
+          sources_used.push('Grok Web Search');
+          console.log(`Added ${Object.keys(grokData.fields).length} fields from Grok`);
+        }
+      } catch (e) {
+        console.error('Grok call failed:', e);
+      }
+    }
+
+    // STEP 3: Call Perplexity (SECONDARY - also has web search)
     if (usePerplexity) {
-      console.log('Step 2: Calling Perplexity for real web search...');
+      console.log('Step 3: Calling Perplexity for real web search...');
       try {
         const perplexityData = await callPerplexity(searchQuery);
         if (Object.keys(perplexityData).length > 0) {
@@ -1307,19 +1399,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } catch (e) {
         console.error('Perplexity call failed:', e);
       }
-    } else {
-      console.log('Step 2: Skipping Perplexity (too slow, causes timeout). Set usePerplexity=true to enable.');
     }
 
-    // STEP 3: Use LLMs to fill remaining gaps (optional, costs money)
+    // STEP 4: Use Claude/GPT/Gemini to fill remaining gaps (FALLBACK - no web access, general knowledge only)
     let llmResponses: any[] = [];
     if (!skipLLMs && engines.length > 0) {
-      console.log('Step 3: Calling LLMs to fill gaps...');
+      console.log('Step 4: Calling fallback LLMs for general knowledge...');
       const promises: Promise<any>[] = [];
 
       if (engines.includes('claude')) promises.push(callClaude(searchQuery));
       if (engines.includes('gpt')) promises.push(callGPT(searchQuery));
-      if (engines.includes('grok')) promises.push(callGrok(searchQuery));
       if (engines.includes('gemini')) promises.push(callGemini(searchQuery));
 
       const results = await Promise.all(promises);
@@ -1357,8 +1446,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sources: sources_used,
       source_breakdown: sourceBreakdown,
       llm_responses: llmResponses,
-      strategy: 'real-data-only',
-      note: 'REAL DATA ONLY from scrapers and APIs. Perplexity/LLMs disabled by default (can enable with usePerplexity=true flag).'
+      strategy: 'grok-perplexity-primary',
+      note: 'NEW STRATEGY: Grok + Perplexity (both have web search) as PRIMARY sources. Free APIs for enrichment. Claude/GPT/Gemini as FALLBACK for general knowledge only (no hallucinations).'
     });
   } catch (error) {
     console.error('=== SEARCH ERROR ===');

@@ -20,7 +20,7 @@ import { usePropertyStore } from '@/store/propertyStore';
 import type { PropertyCard, Property, DataField } from '@/types/property';
 
 type ScrapeStatus = 'idle' | 'searching' | 'scraping' | 'enriching' | 'complete' | 'error';
-type InputMode = 'address' | 'url' | 'manual' | 'csv';
+type InputMode = 'address' | 'url' | 'manual' | 'csv' | 'text';
 
 // Generate a simple unique ID
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -38,6 +38,7 @@ export default function AddProperty() {
   const [lastAddedId, setLastAddedId] = useState<string | null>(null);
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvData, setCsvData] = useState<any[]>([]);
+  const [propertyText, setPropertyText] = useState('');
 
   // Manual entry form state
   const [manualForm, setManualForm] = useState({
@@ -591,6 +592,17 @@ export default function AddProperty() {
           <Upload className="w-4 h-4" />
           Upload CSV
         </button>
+        <button
+          onClick={() => setInputMode('text')}
+          className={`flex-1 py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${
+            inputMode === 'text'
+              ? 'bg-quantum-cyan/20 text-quantum-cyan'
+              : 'text-gray-500 hover:text-white'
+          }`}
+        >
+          <Sparkles className="w-4 h-4" />
+          Paste Description
+        </button>
       </div>
 
       {/* Input Form */}
@@ -871,7 +883,7 @@ export default function AddProperty() {
               )}
             </button>
           </div>
-        ) : (
+        ) : inputMode === 'url' ? (
           <div className="space-y-4">
             <div>
               <label className="block text-sm text-gray-400 mb-2">
@@ -932,11 +944,70 @@ export default function AddProperty() {
               )}
             </button>
           </div>
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">
+                Property Description / Paragraph
+              </label>
+              <textarea
+                placeholder="Paste property description here... Example:
+
+Beautiful 3BR/2BA beach house at 290 41st Ave, St Pete Beach, FL 33706. Built in 1958, 1,426 sqft living space on a 7,200 sqft lot. Listed at $549,000 ($385/sqft). Walk to beach, hurricane risk extreme, flood zone AE. Assigned schools: Azalea Elementary (8/10), Azalea Middle (7/10), SPHS (9/10)..."
+                value={propertyText}
+                onChange={(e) => setPropertyText(e.target.value)}
+                className="input-glass min-h-[200px] resize-y"
+              />
+            </div>
+            <p className="text-xs text-gray-500">
+              AI will extract all 110 property fields from your description using Grok + Perplexity web search
+            </p>
+
+            {/* LLM Selection */}
+            <div className="mt-6">
+              <label className="block text-sm text-gray-400 mb-2">
+                AI Engine
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {['Grok', 'Perplexity', 'Both'].map((engine) => (
+                  <button
+                    key={engine}
+                    onClick={() => setSelectedEngine(engine)}
+                    className={`p-3 rounded-xl border transition-colors ${
+                      engine === selectedEngine
+                        ? 'border-quantum-cyan bg-quantum-cyan/10 text-quantum-cyan'
+                        : 'border-white/10 text-gray-400 hover:border-white/20'
+                    }`}
+                  >
+                    <span className="text-sm font-semibold">{engine}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={handleScrape}
+              disabled={status !== 'idle' && status !== 'complete' && status !== 'error'}
+              className="btn-quantum w-full mt-6"
+            >
+              {status === 'idle' || status === 'complete' || status === 'error' ? (
+                <>
+                  <Sparkles className="w-5 h-5" />
+                  Parse with AI
+                </>
+              ) : (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Processing...
+                </>
+              )}
+            </button>
+          </div>
         )}
       </div>
 
       {/* Progress Display - for scraping modes */}
-      {status !== 'idle' && inputMode !== 'manual' && (
+      {status !== 'idle' && inputMode !== 'manual' && inputMode !== 'csv' && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
