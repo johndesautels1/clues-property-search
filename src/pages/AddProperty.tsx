@@ -102,47 +102,294 @@ export default function AddProperty() {
   };
 
   const handleScrape = async () => {
-    if (!address && !url) return;
+    // Validate input based on mode
+    if (inputMode === 'address' && !address) {
+      alert('Please enter a property address');
+      return;
+    }
+    if (inputMode === 'url' && !url) {
+      alert('Please enter a listing URL');
+      return;
+    }
+    if (inputMode === 'text' && !propertyText) {
+      alert('Please paste a property description');
+      return;
+    }
 
     setStatus('searching');
     setProgress(10);
 
-    // Simulate scraping process (in production, this calls the LLM scraper API)
-    setTimeout(() => {
+    try {
+      // Determine which input to use
+      let searchQuery = '';
+      if (inputMode === 'address') {
+        searchQuery = address;
+      } else if (inputMode === 'url') {
+        searchQuery = url;
+      } else if (inputMode === 'text') {
+        // Extract address from text if possible, or use full text
+        searchQuery = propertyText;
+      }
+
+      // Call the backend API
+      const apiUrl = import.meta.env.VITE_API_URL || '/api/property/search';
+
       setStatus('scraping');
       setProgress(30);
-    }, 1500);
 
-    setTimeout(() => {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          address: searchQuery,
+          url: inputMode === 'url' ? url : undefined,
+          engines: selectedEngine === 'Grok' ? ['grok'] :
+                   selectedEngine === 'Perplexity' ? ['perplexity'] :
+                   selectedEngine === 'Both' ? ['grok', 'perplexity'] :
+                   ['grok', 'perplexity'], // default to both
+          useGrok: selectedEngine === 'Grok' || selectedEngine === 'Both',
+          usePerplexity: selectedEngine === 'Perplexity' || selectedEngine === 'Both',
+        }),
+      });
+
       setStatus('enriching');
       setProgress(60);
-    }, 3000);
 
-    setTimeout(() => {
-      // Create a mock scraped property
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      setProgress(90);
+
+      // Extract property data from API response
+      const fields = data.fields || {};
+
+      // Parse address components
+      const fullAddress = fields['1_full_address']?.value || searchQuery;
+      const addressParts = fullAddress.split(',').map((s: string) => s.trim());
+      const street = addressParts[0] || '';
+      const city = fields['city']?.value || addressParts[1] || 'Unknown';
+      const stateZip = addressParts[2] || '';
+      const stateMatch = stateZip.match(/([A-Z]{2})/);
+      const zipMatch = stateZip.match(/(\d{5})/);
+
+      // Create property card from API response
       const scrapedProperty: PropertyCard = {
         id: generateId(),
-        address: address || 'Scraped Property',
-        city: 'Tampa',
-        state: 'FL',
-        zip: '33601',
-        price: Math.floor(Math.random() * 500000) + 300000,
-        pricePerSqft: Math.floor(Math.random() * 200) + 200,
-        bedrooms: Math.floor(Math.random() * 3) + 2,
-        bathrooms: Math.floor(Math.random() * 2) + 1,
-        sqft: Math.floor(Math.random() * 1500) + 1000,
-        yearBuilt: Math.floor(Math.random() * 50) + 1970,
-        smartScore: Math.floor(Math.random() * 20) + 80,
-        dataCompleteness: Math.floor(Math.random() * 15) + 85,
-        listingStatus: 'Active',
-        daysOnMarket: Math.floor(Math.random() * 30),
+        address: street || fullAddress,
+        city,
+        state: stateMatch?.[1] || 'FL',
+        zip: zipMatch?.[1] || '',
+        price: fields['7_listing_price']?.value || 0,
+        pricePerSqft: fields['8_price_per_sqft']?.value || 0,
+        bedrooms: fields['12_bedrooms']?.value || 0,
+        bathrooms: fields['15_total_bathrooms']?.value || 0,
+        sqft: fields['16_living_sqft']?.value || 0,
+        yearBuilt: fields['20_year_built']?.value || new Date().getFullYear(),
+        smartScore: data.completion_percentage || 75,
+        dataCompleteness: data.completion_percentage || 0,
+        listingStatus: fields['4_listing_status']?.value || 'Active',
+        daysOnMarket: 0,
       };
 
-      addProperty(scrapedProperty);
+      // Create full property object with all 110 fields if available
+      const fullPropertyData = convertApiResponseToFullProperty(fields, scrapedProperty.id);
+
+      addProperty(scrapedProperty, fullPropertyData);
       setLastAddedId(scrapedProperty.id);
       setStatus('complete');
       setProgress(100);
-    }, 5000);
+
+      console.log('✅ Property scraped successfully:', data);
+      console.log('📊 Fields found:', data.total_fields_found);
+      console.log('📋 Sources:', data.sources);
+
+    } catch (error) {
+      console.error('Scrape error:', error);
+      setStatus('error');
+      alert(`Failed to extract property data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  // Convert API response to full Property object
+  const convertApiResponseToFullProperty = (fields: any, propertyId: string): Property => {
+    const now = new Date().toISOString();
+
+    return {
+      id: propertyId,
+      createdAt: now,
+      updatedAt: now,
+      address: {
+        fullAddress: createDataField(fields['1_full_address']?.value),
+        mlsPrimary: createDataField(fields['2_mls_primary']?.value),
+        mlsSecondary: createDataField(fields['3_mls_secondary']?.value),
+        listingStatus: createDataField(fields['4_listing_status']?.value),
+        listingDate: createDataField(fields['5_listing_date']?.value),
+        listingPrice: createDataField(fields['7_listing_price']?.value),
+        pricePerSqft: createDataField(fields['8_price_per_sqft']?.value),
+        streetAddress: createDataField(fields['1_full_address']?.value?.split(',')[0]),
+        city: createDataField(fields['city']?.value),
+        state: createDataField(fields['state']?.value),
+        zipCode: createDataField(fields['zip']?.value),
+        county: createDataField(fields['28_county']?.value),
+        latitude: createDataField(fields['coordinates']?.value?.lat),
+        longitude: createDataField(fields['coordinates']?.value?.lon),
+        neighborhoodName: createDataField(fields['41_neighborhood_name']?.value),
+      },
+      details: {
+        bedrooms: createDataField(fields['12_bedrooms']?.value),
+        fullBathrooms: createDataField(fields['13_full_bathrooms']?.value),
+        halfBathrooms: createDataField(fields['14_half_bathrooms']?.value),
+        totalBathrooms: createDataField(fields['15_total_bathrooms']?.value),
+        livingSqft: createDataField(fields['16_living_sqft']?.value),
+        totalSqftUnderRoof: createDataField(fields['17_total_sqft_under_roof']?.value),
+        lotSizeSqft: createDataField(fields['18_lot_size_sqft']?.value),
+        lotSizeAcres: createDataField(fields['19_lot_size_acres']?.value),
+        yearBuilt: createDataField(fields['20_year_built']?.value),
+        propertyType: createDataField(fields['21_property_type']?.value),
+        stories: createDataField(fields['22_stories']?.value),
+        garageSpaces: createDataField(fields['23_garage_spaces']?.value),
+        parkingTotal: createDataField(fields['24_parking_total']?.value),
+        hoaYn: createDataField(fields['25_hoa_yn']?.value),
+        hoaFeeAnnual: createDataField(fields['26_hoa_fee_annual']?.value),
+        hoaName: createDataField(fields['70_hoa_name']?.value),
+        hoaIncludes: createDataField(fields['71_hoa_includes']?.value),
+        annualTaxes: createDataField(fields['29_annual_taxes']?.value),
+        taxYear: createDataField(fields['30_tax_year']?.value),
+        assessedValue: createDataField(fields['31_assessed_value']?.value),
+        marketValueEstimate: createDataField(fields['9_market_value_estimate']?.value),
+        lastSaleDate: createDataField(fields['10_last_sale_date']?.value),
+        lastSalePrice: createDataField(fields['11_last_sale_price']?.value),
+        ownershipType: createDataField(fields['27_ownership_type']?.value),
+        parcelId: createDataField(fields['6_parcel_id']?.value),
+      },
+      structural: {
+        roofType: createDataField(fields['36_roof_type']?.value),
+        roofAgeEst: createDataField(fields['37_roof_age_est']?.value),
+        exteriorMaterial: createDataField(fields['38_exterior_material']?.value),
+        foundation: createDataField(fields['39_foundation']?.value),
+        hvacType: createDataField(fields['40_hvac_type']?.value),
+        hvacAge: createDataField(fields['41_hvac_age']?.value),
+        waterHeaterType: createDataField(fields['30_water_heater_type']?.value),
+        garageType: createDataField(fields['31_garage_type']?.value),
+        flooringType: createDataField(fields['42_flooring_type']?.value),
+        kitchenFeatures: createDataField(fields['43_kitchen_features']?.value),
+        appliancesIncluded: createDataField(fields['44_appliances_included']?.value),
+        laundryType: createDataField(fields['39_laundry_type']?.value),
+        fireplaceYn: createDataField(fields['45_fireplace_yn']?.value),
+        fireplaceCount: createDataField(fields['38_fireplace_count']?.value),
+        poolYn: createDataField(fields['47_pool_yn']?.value),
+        poolType: createDataField(fields['48_pool_type']?.value),
+        deckPatio: createDataField(fields['49_deck_patio']?.value),
+        fence: createDataField(fields['50_fence']?.value),
+        landscaping: createDataField(fields['51_landscaping']?.value),
+        recentRenovations: createDataField(fields['52_recent_renovations']?.value),
+        permitHistoryRoof: createDataField(fields['53_permit_history_roof']?.value),
+        permitHistoryHvac: createDataField(fields['54_permit_history_hvac']?.value),
+        permitHistoryPoolAdditions: createDataField(fields['55_permit_history_other']?.value),
+        interiorCondition: createDataField(fields['46_interior_condition']?.value),
+      },
+      location: {
+        assignedElementary: createDataField(fields['56_assigned_elementary']?.value),
+        elementaryRating: createDataField(fields['57_elementary_rating']?.value),
+        elementaryDistanceMiles: createDataField(fields['58_elementary_distance_miles']?.value),
+        assignedMiddle: createDataField(fields['59_assigned_middle']?.value),
+        middleRating: createDataField(fields['60_middle_rating']?.value),
+        middleDistanceMiles: createDataField(fields['61_middle_distance_miles']?.value),
+        assignedHigh: createDataField(fields['62_assigned_high']?.value),
+        highRating: createDataField(fields['63_high_rating']?.value),
+        highDistanceMiles: createDataField(fields['64_high_distance_miles']?.value),
+        schoolDistrictName: createDataField(fields['65_school_district_name']?.value),
+        elevationFeet: createDataField(fields['55_elevation_feet']?.value),
+        walkScore: createDataField(fields['65_walk_score']?.value),
+        transitScore: createDataField(fields['66_transit_score']?.value),
+        bikeScore: createDataField(fields['67_bike_score']?.value),
+        distanceGroceryMiles: createDataField(fields['73_distance_grocery_miles']?.value),
+        distanceHospitalMiles: createDataField(fields['74_distance_hospital_miles']?.value),
+        distanceAirportMiles: createDataField(fields['75_distance_airport_miles']?.value),
+        distanceParkMiles: createDataField(fields['76_distance_park_miles']?.value),
+        distanceBeachMiles: createDataField(fields['77_distance_beach_miles']?.value),
+        crimeIndexViolent: createDataField(fields['78_crime_index_violent']?.value),
+        crimeIndexProperty: createDataField(fields['79_crime_index_property']?.value),
+        neighborhoodSafetyRating: createDataField(fields['80_neighborhood_safety_rating']?.value),
+        noiseLevel: createDataField(fields['68_noise_level']?.value),
+        trafficLevel: createDataField(fields['69_traffic_level']?.value),
+        walkabilityDescription: createDataField(fields['70_walkability_description']?.value),
+        commuteTimeCityCenter: createDataField(fields['71_commute_time_city_center']?.value),
+        publicTransitAccess: createDataField(fields['72_public_transit_access']?.value),
+      },
+      financial: {
+        annualPropertyTax: createDataField(fields['76_annual_property_tax']?.value),
+        taxExemptions: createDataField(fields['32_tax_exemptions']?.value),
+        propertyTaxRate: createDataField(fields['33_property_tax_rate']?.value),
+        recentTaxPaymentHistory: createDataField(fields['34_recent_tax_history']?.value),
+        medianHomePriceNeighborhood: createDataField(fields['81_median_home_price_neighborhood']?.value),
+        pricePerSqftRecentAvg: createDataField(fields['82_price_per_sqft_recent_avg']?.value),
+        redfinEstimate: createDataField(fields['74_redfin_estimate']?.value),
+        priceToRentRatio: createDataField(fields['77_price_to_rent_ratio']?.value),
+        priceVsMedianPercent: createDataField(fields['79_price_vs_median_percent']?.value),
+        daysOnMarketAvg: createDataField(fields['83_days_on_market_avg']?.value),
+        inventorySurplus: createDataField(fields['84_inventory_surplus']?.value),
+        rentalEstimateMonthly: createDataField(fields['85_rental_estimate_monthly']?.value),
+        rentalYieldEst: createDataField(fields['86_rental_yield_est']?.value),
+        vacancyRateNeighborhood: createDataField(fields['87_vacancy_rate_neighborhood']?.value),
+        capRateEst: createDataField(fields['88_cap_rate_est']?.value),
+        insuranceEstAnnual: createDataField(fields['89_insurance_est_annual']?.value),
+        financingTerms: createDataField(fields['90_financing_terms']?.value),
+        comparableSalesLast3: createDataField(fields['91_comparable_sales']?.value),
+      },
+      utilities: {
+        electricProvider: createDataField(fields['92_electric_provider']?.value),
+        waterProvider: createDataField(fields['93_water_provider']?.value),
+        sewerProvider: createDataField(fields['94_sewer_provider']?.value),
+        naturalGas: createDataField(fields['95_natural_gas']?.value),
+        trashProvider: createDataField(fields['85_trash_provider']?.value),
+        internetProvidersTop3: createDataField(fields['96_internet_providers_top3']?.value),
+        maxInternetSpeed: createDataField(fields['97_max_internet_speed']?.value),
+        fiberAvailable: createDataField(fields['88_fiber_available']?.value),
+        cableTvProvider: createDataField(fields['98_cable_tv_provider']?.value),
+        avgElectricBill: createDataField(fields['90_avg_electric_bill']?.value),
+        avgWaterBill: createDataField(fields['91_avg_water_bill']?.value),
+        cellCoverageQuality: createDataField(fields['94_cell_coverage_quality']?.value),
+        emergencyServicesDistance: createDataField(fields['95_emergency_services_distance']?.value),
+        airQualityIndexCurrent: createDataField(fields['99_air_quality_index_current']?.value),
+        airQualityGrade: createDataField(fields['97_air_quality_grade']?.value),
+        floodZone: createDataField(fields['100_flood_zone']?.value),
+        floodRiskLevel: createDataField(fields['101_flood_risk_level']?.value),
+        climateRiskWildfireFlood: createDataField(fields['102_climate_risk_summary']?.value),
+        wildfireRisk: createDataField(fields['98_wildfire_risk']?.value),
+        earthquakeRisk: createDataField(fields['99_earthquake_risk']?.value),
+        hurricaneRisk: createDataField(fields['100_hurricane_risk']?.value),
+        tornadoRisk: createDataField(fields['101_tornado_risk']?.value),
+        radonRisk: createDataField(fields['102_radon_risk']?.value),
+        superfundNearby: createDataField(fields['103_superfund_nearby']?.value),
+        seaLevelRiseRisk: createDataField(fields['105_sea_level_rise_risk']?.value),
+        noiseLevelDbEst: createDataField(fields['103_noise_level_db_est']?.value),
+        solarPotential: createDataField(fields['104_solar_potential']?.value),
+        evChargingYn: createDataField(fields['105_ev_charging_yn']?.value),
+        smartHomeFeatures: createDataField(fields['106_smart_home_features']?.value),
+        accessibilityMods: createDataField(fields['107_accessibility_mods']?.value),
+        viewType: createDataField(fields['108_view_type']?.value),
+        lotFeatures: createDataField(fields['109_lot_features']?.value),
+        petPolicy: createDataField(fields['108_pet_policy']?.value),
+        ageRestrictions: createDataField(fields['109_age_restrictions']?.value),
+        specialAssessments: createDataField(fields['35_special_assessments']?.value),
+        notesConfidenceSummary: createDataField(fields['110_notes_confidence_summary']?.value),
+      },
+      smartScore: 0,
+      dataCompleteness: 0,
+      aiConfidence: 0,
+      llmSources: {
+        grok: !!fields.some?.((f: any) => f?.source?.includes('Grok')),
+        claude: !!fields.some?.((f: any) => f?.source?.includes('Claude')),
+        gpt: !!fields.some?.((f: any) => f?.source?.includes('GPT')),
+        gemini: !!fields.some?.((f: any) => f?.source?.includes('Gemini')),
+      },
+    };
   };
 
   const getStatusMessage = () => {
