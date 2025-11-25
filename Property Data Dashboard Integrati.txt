@@ -1,0 +1,43 @@
+# Property Data Dashboard Integration Brief
+
+## Context
+John E. Desautels & Associates is building a real estate intelligence dashboard as part of the CLUES™ (Comprehensive Location Utility & Evaluation System) platform launching Jan 1, 2026.
+
+## Your Mission
+Build the backend integration and frontend dashboard page that:
+1. Accepts up to 10 property addresses from users
+2. Sends those addresses to multiple LLMs via API webhook (or CSV fallback)
+3. Receives back completed 110-field property data tables
+4. Merges results from multiple LLMs without overwriting high-confidence fields
+5. Displays the consolidated property profiles in a clean, scannable dashboard UI
+
+## Critical Requirements
+- **Never overwrite Medium/High confidence fields** unless newer authoritative source
+- **Merge data from multiple LLMs** intelligently (Claude Sonnet 4.5, Opus 4.1, Gemini, Grok, GPT-5.1)
+- **Track data provenance** (which LLM filled which field, when, from what source)
+- **Handle conflicts gracefully** (show both values with sources when LLMs disagree)
+- **Backend code: Claude Sonnet 4.5** (you're writing the integration layer)
+- **Database: Link to existing CLUES Quantum Master App** (20-module system)
+
+## Data Contract
+- Each property has exactly 110 fields
+- Each field has 4 attributes: `value`, `confidence`, `notes`, `sources`
+- Confidence levels: High, Medium-High, Medium, Low
+- Input: Up to 10 normalized addresses
+- Output: JSON or CSV with all 110 fields per address
+
+## Key Files Provided
+1. `MASTER_PROTOCOL.md` - Complete instructions for LLMs on data collection
+2. `SCHEMA_110_FIELDS.json` - Field definitions, data types, validation rules
+3. `CSV_TEMPLATE.csv` - Blank template for CSV fallback mode
+4. `API_SPEC.yaml` - OpenAPI specification for webhook endpoints
+
+## Success Criteria
+- User uploads 10 addresses → Dashboard shows 110-field profiles for all 10
+- High completion rate (90%+ fields filled with Medium+ confidence)
+- No data loss during LLM merges
+- Clean, professional UI that John can demo to clients
+- Seamless integration with existing CLUES database
+
+## John's Priority
+**100% truthfulness** - No placeholder data, no fabrication. If data isn't available, mark it clearly and suggest next steps.

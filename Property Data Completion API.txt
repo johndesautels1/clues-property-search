@@ -1,0 +1,112 @@
+openapi: 3.0.0
+info:
+  title: Property Data Completion API
+  version: 1.0.0
+  description: Multi-LLM property data acquisition system for CLUES platform
+
+servers:
+  - url: https://api.clues-realestate.com/v1
+    description: Production server
+
+paths:
+  /property/complete:
+    post:
+      summary: Submit property addresses for 110-field completion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [addresses]
+              properties:
+                batch_id:
+                  type: string
+                  description: Unique identifier for this batch request
+                addresses:
+                  type: array
+                  minItems: 1
+                  maxItems: 10
+                  items:
+                    type: string
+                  example: ["2015 Hillwood Dr, Clearwater, FL 33763"]
+                existing_data:
+                  type: object
+                  description: Partial data to avoid re-work
+                  additionalProperties:
+                    type: object
+                requirements:
+                  type: object
+                  properties:
+                    overwrite_policy:
+                      type: string
+                      enum: [never_overwrite_medium_or_higher, always_update, manual_review]
+                      default: never_overwrite_medium_or_higher
+                    fill_only_missing_or_low:
+                      type: boolean
+                      default: true
+                    max_addresses:
+                      type: integer
+                      minimum: 1
+                      maximum: 10
+                      default: 10
+      responses:
+        '200':
+          description: Property data completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  batch_id:
+                    type: string
+                  processing_timestamp:
+                    type: string
+                    format: date-time
+                  llm_processor:
+                    type: string
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        address:
+                          type: string
+                        completion_stats:
+                          type: object
+                        fields:
+                          type: object
+                          description: All 110 fields in standardized format
+
+  /property/merge:
+    post:
+      summary: Merge results from multiple LLMs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [batch_id, llm_results]
+              properties:
+                batch_id:
+                  type: string
+                llm_results:
+                  type: array
+                  items:
+                    type: object
+                    description: Results from individual LLMs
+      responses:
+        '200':
+          description: Merged results with conflict resolution
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  merged_data:
+                    type: object
+                  conflicts:
+                    type: array
+                    items:
+                      type: object

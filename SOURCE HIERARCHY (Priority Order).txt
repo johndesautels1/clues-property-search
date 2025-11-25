@@ -1,0 +1,43 @@
+SOURCE HIERARCHY (Priority Order)
+Tier 1: Official Government & County Records
+
+County Property Appraiser (tax assessor)
+County Clerk of Court (deed records)
+County/City Permit Portal (building, roof, HVAC, pool permits)
+FEMA Flood Map Service Center (flood zones)
+EPA/NOAA (environmental data)
+
+Tier 2: MLS & Broker Direct
+
+MLS data (primary source for listing info)
+Broker websites publishing MLS fields (Coldwell, Compass, Weichert if MLS-backed)
+
+Tier 3: Major Listing Aggregators
+
+Zillow (with specific listing URLs and timestamps)
+Redfin (especially for permits, climate data, schools)
+Realtor.com (cross-reference for listing details)
+
+Tier 4: Specialized Data Providers
+
+GreatSchools.org + Niche.com (school ratings)
+School District official sites (assignments)
+WalkScore.com / Local Logic (walkability, noise)
+BroadbandNow / ISP provider portals (internet)
+First Street Foundation / RiskFactor.com (climate)
+IQAir.com / AirNow.gov (air quality)
+
+Tier 5: Market Data & Estimates
+
+RentCafe / Zumper / Apartments.com (rental estimates)
+Census Bureau / HUD (vacancy rates)
+NeighborhoodScout (crime - paid access preferred)
+CoStar / local market reports (cap rates, market trends)
+
+Conflict Resolution:
+
+Most recent authoritative data wins
+Official records > MLS > aggregators
+Visual evidence (photos, permits) > text descriptions
+Multiple sources confirm = High confidence
+Single source = Medium or Low confidence

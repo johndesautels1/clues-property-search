@@ -1,0 +1,4 @@
+import CLUESPropertyDashboard from './CLUESPropertyDashboard';
+
+const properties = await fetchFromCLUESAPI();
+<CLUESPropertyDashboard properties={properties} />

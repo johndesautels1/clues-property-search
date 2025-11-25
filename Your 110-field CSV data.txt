@@ -1,0 +1,7 @@
+// Your 110-field CSV data
+const propertyData = {
+  address: '280 41st Ave',
+  city: 'St Pete Beach',
+  smartScore: 94,  // Your SMART Score™
+  // ... all 110 fields
+};
