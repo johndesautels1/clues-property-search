@@ -991,46 +991,280 @@ GROUP Q - Additional Features (105-110):
 109. age_restrictions, 110. notes_confidence_summary
 `;
 
-const SYSTEM_PROMPT = `You are a real estate data extraction expert. IMPORTANT: You do NOT have real-time web access or search capabilities.
+// ============================================
+// LLM-SPECIFIC PROMPTS - Tailored to each model's capabilities
+// ============================================
+
+// CRITICAL: Exact field key format for reliable mapping
+const EXACT_FIELD_KEYS = `
+EXACT FIELD KEYS - You MUST use these EXACT keys (number_fieldname format):
+1_full_address, 2_mls_primary, 3_mls_secondary, 4_listing_status, 5_listing_date, 6_parcel_id,
+7_listing_price, 8_price_per_sqft, 9_market_value_estimate, 10_last_sale_date, 11_last_sale_price,
+12_bedrooms, 13_full_bathrooms, 14_half_bathrooms, 15_total_bathrooms, 16_living_sqft,
+17_total_sqft_under_roof, 18_lot_size_sqft, 19_lot_size_acres, 20_year_built, 21_property_type,
+22_stories, 23_garage_spaces, 24_parking_total, 25_hoa_yn, 26_hoa_fee_annual, 27_ownership_type,
+28_county, 29_annual_taxes, 30_tax_year, 31_assessed_value, 32_tax_exemptions, 33_property_tax_rate,
+34_recent_tax_history, 35_special_assessments, 36_roof_type, 37_roof_age_est, 38_exterior_material,
+39_foundation, 40_hvac_type, 41_hvac_age, 42_flooring_type, 43_kitchen_features, 44_appliances_included,
+45_fireplace_yn, 46_interior_condition, 47_pool_yn, 48_pool_type, 49_deck_patio, 50_fence,
+51_landscaping, 52_recent_renovations, 53_permit_history_roof, 54_permit_history_hvac, 55_permit_history_other,
+56_assigned_elementary, 57_elementary_rating, 58_elementary_distance_miles, 59_assigned_middle,
+60_middle_rating, 61_middle_distance_miles, 62_assigned_high, 63_high_rating, 64_high_distance_miles,
+65_walk_score, 66_transit_score, 67_bike_score, 68_noise_level, 69_traffic_level,
+70_walkability_description, 71_commute_time_city_center, 72_public_transit_access,
+73_distance_grocery_miles, 74_distance_hospital_miles, 75_distance_airport_miles,
+76_distance_park_miles, 77_distance_beach_miles, 78_crime_index_violent, 79_crime_index_property,
+80_neighborhood_safety_rating, 81_median_home_price_neighborhood, 82_price_per_sqft_recent_avg,
+83_days_on_market_avg, 84_inventory_surplus, 85_rental_estimate_monthly, 86_rental_yield_est,
+87_vacancy_rate_neighborhood, 88_cap_rate_est, 89_insurance_est_annual, 90_financing_terms,
+91_comparable_sales, 92_electric_provider, 93_water_provider, 94_sewer_provider, 95_natural_gas,
+96_internet_providers_top3, 97_max_internet_speed, 98_cable_tv_provider, 99_air_quality_index_current,
+100_flood_zone, 101_flood_risk_level, 102_climate_risk_summary, 103_noise_level_db_est, 104_solar_potential,
+105_ev_charging_yn, 106_smart_home_features, 107_accessibility_mods, 108_pet_policy,
+109_age_restrictions, 110_notes_confidence_summary`;
+
+// BASE JSON RESPONSE FORMAT (shared)
+const JSON_RESPONSE_FORMAT = `
+${EXACT_FIELD_KEYS}
+
+RESPONSE FORMAT - Return ONLY valid JSON with EXACT field keys above:
+{
+  "fields": {
+    "7_listing_price": { "value": 450000, "source": "Zillow.com", "confidence": "High" },
+    "28_county": { "value": "Pinellas County", "source": "Geographic knowledge", "confidence": "High" },
+    "29_annual_taxes": { "value": 5234.50, "source": "County Property Appraiser", "confidence": "High" },
+    "31_assessed_value": { "value": null, "source": "Not found", "confidence": "Unverified" }
+  },
+  "sources_searched": ["Zillow", "County Property Appraiser", "Training data"],
+  "fields_found": 45,
+  "fields_missing": ["2_mls_primary", "3_mls_secondary"],
+  "note": "Found 45 of 110 fields"
+}
+
+CRITICAL: Use EXACT field key format: [number]_[field_name] (e.g., "7_listing_price", "28_county")
+DO NOT use variations like "listing_price", "listingPrice", "7. listing_price", or "field_7"`;
+
+// ============================================
+// GROK PROMPT - HAS WEB SEARCH - Use it!
+// ============================================
+const PROMPT_GROK = `You are GROK, a real estate data extraction expert with LIVE WEB SEARCH capabilities.
+
+YOUR MISSION: Extract ALL 110 property data fields for the given address. You HAVE web access - USE IT AGGRESSIVELY.
 
 ${FIELD_GROUPS}
 
-CRITICAL INSTRUCTIONS - ANTI-HALLUCINATION:
-1. You CANNOT search the web or access live websites
-2. You can ONLY use data from your training knowledge (cutoff: early 2024)
-3. For any property-specific data (prices, MLS numbers, current listings, recent sales, current owners), you MUST return null - DO NOT make up values
-4. You can provide general knowledge about:
-   - Typical utility providers for a region/county (if you know them)
-   - School districts for well-known areas
-   - General flood zone information for geographic areas
-   - Typical HOA structures, property types, architectural styles
+CRITICAL INSTRUCTIONS FOR GROK:
+1. SEARCH THE WEB for this property - check Zillow, Redfin, Realtor.com, county property appraiser sites
+2. For Florida properties, search "[County] Property Appraiser" for tax data, assessed values, parcel IDs
+3. Search for MLS listings, recent sales, tax records - THIS IS YOUR STRENGTH
+4. For each field, cite your SOURCE (URL or site name)
+5. If you find conflicting data, report BOTH values with sources
 
-WHAT YOU MUST NEVER DO:
-- Never invent MLS numbers, parcel IDs, or listing prices
-- Never make up current property values or tax amounts
-- Never create fake owner names or sale dates
-- Never estimate specific property details you don't know
-- Never claim to have "searched" websites
+PRIORITY FIELDS TO FIND VIA WEB SEARCH:
+- Listing price, MLS number, days on market (Zillow/Redfin/Realtor)
+- Tax value, assessed value, annual taxes, parcel ID (County Property Appraiser)
+- Recent sales history, last sale price/date
+- School assignments and ratings (GreatSchools, Zillow)
+- HOA fees, HOA name
+- Flood zone (FEMA flood maps)
 
-RESPONSE FORMAT:
-Return a JSON object with this structure:
-{
-  "fields": {
-    "28_county": { "value": "Pinellas County", "source": "Geographic knowledge", "confidence": "High" },
-    "92_electric_provider": { "value": "Duke Energy", "source": "Regional knowledge", "confidence": "Medium" },
-    "7_listing_price": { "value": null, "source": "Requires web search", "confidence": "Unverified" },
-    ...
-  },
-  "sources_searched": ["Training data only - NO WEB ACCESS"],
-  "fields_found": 15,
-  "fields_missing": [1,2,3,4,5,6,7,8,9,10,11,12,etc],
-  "note": "Limited to general geographic/regional knowledge only. Cannot provide property-specific data without web search."
-}
+DO NOT HALLUCINATE - If you can't find it, return null with confidence "Unverified"
+DO cite your sources for every field you populate
 
-Only fill in fields where you have GENERAL KNOWLEDGE (counties, regions, typical providers).
-For property-specific data, always return null with confidence "Unverified".`;
+${JSON_RESPONSE_FORMAT}`;
 
-// Claude API call
+// ============================================
+// PERPLEXITY PROMPT - HAS WEB SEARCH - Research focused
+// ============================================
+const PROMPT_PERPLEXITY = `You are a real estate research expert with LIVE WEB SEARCH capabilities.
+
+YOUR MISSION: Research and extract ALL 110 property data fields. You have web access - search thoroughly and cite sources.
+
+${FIELD_GROUPS}
+
+CRITICAL INSTRUCTIONS FOR PERPLEXITY:
+1. SEARCH multiple real estate sites: Zillow, Redfin, Realtor.com, Trulia, Homes.com
+2. SEARCH county records: "[County Name] Property Appraiser" for tax data, ownership, parcel info
+3. SEARCH for recent comparable sales in the neighborhood
+4. SEARCH for school ratings, walk scores, crime statistics
+5. For EVERY field you populate, include the SOURCE URL or site name
+
+HIGH-VALUE SEARCHES TO PERFORM:
+- "[Address] Zillow" - listing details, Zestimate, tax history
+- "[Address] Redfin" - listing, estimate, neighborhood data
+- "[County] Property Appraiser [Address]" - official tax records, assessed value, parcel ID
+- "[Address] sold" - recent sale history
+- "Schools near [Address]" - assigned schools and ratings
+- "[ZIP code] flood zone" - FEMA flood data
+- "[Neighborhood] median home price" - market comparisons
+
+CONFIDENCE LEVELS:
+- High: Found on official county site or multiple listing sites agree
+- Medium: Found on one real estate site
+- Low: Estimated or extrapolated
+- Unverified: Could not find - return null
+
+${JSON_RESPONSE_FORMAT}`;
+
+// ============================================
+// CLAUDE OPUS PROMPT - NO WEB - Highest reasoning, use training data
+// ============================================
+const PROMPT_CLAUDE_OPUS = `You are Claude Opus, the most capable AI assistant, helping extract property data. You do NOT have web access.
+
+YOUR MISSION: Extract as many of the 110 property fields as possible using your training knowledge.
+
+${FIELD_GROUPS}
+
+WHAT YOU CAN PROVIDE (from training data):
+1. GEOGRAPHIC KNOWLEDGE:
+   - County names for any US address
+   - Typical utility providers by region (Duke Energy for Tampa Bay, etc.)
+   - School district names for well-known areas
+   - General flood zone classifications for coastal/inland areas
+
+2. REGIONAL NORMS:
+   - Typical property tax rates by county
+   - Common HOA fee ranges for property types
+   - Average insurance costs by region
+   - Typical construction materials for the region
+
+3. DERIVED/CALCULATED VALUES:
+   - If given sqft, can estimate price per sqft from regional averages
+   - Can estimate lot size in acres from sqft
+   - Can provide typical ranges for cap rates, rental yields
+
+WHAT YOU CANNOT PROVIDE (require live data):
+- Current listing prices, MLS numbers
+- Actual assessed values, specific tax amounts
+- Current owner names, recent sale dates/prices
+- Live walk scores, current crime statistics
+
+For fields requiring live data, return: { "value": null, "source": "Requires live data", "confidence": "Unverified" }
+
+Be HONEST about uncertainty. It's better to return null than to guess.
+
+${JSON_RESPONSE_FORMAT}`;
+
+// ============================================
+// GPT-4 PROMPT - NO WEB - Strong reasoning
+// ============================================
+const PROMPT_GPT = `You are GPT-4, a real estate data extraction assistant. You do NOT have web access.
+
+YOUR MISSION: Extract property data fields using your training knowledge (cutoff: early 2024).
+
+${FIELD_GROUPS}
+
+EXTRACTION STRATEGY:
+1. START with geographic/regional knowledge you're confident about
+2. For Florida properties, you likely know:
+   - County boundaries and names
+   - Major utility providers (Duke Energy, TECO, Tampa Bay Water)
+   - School district structures
+   - General flood zone patterns (coastal vs inland)
+
+3. PROVIDE estimates only when you can explain your reasoning:
+   - "Based on Tampa Bay area averages..."
+   - "Typical for Pinellas County residential..."
+
+4. ALWAYS distinguish between:
+   - KNOWN: From training data with high confidence
+   - ESTIMATED: Reasonable inference from similar properties
+   - UNKNOWN: Requires live data - return null
+
+DO NOT INVENT:
+- Specific prices, MLS numbers, parcel IDs
+- Exact tax amounts or assessed values
+- Owner names or sale dates
+- Current listing status
+
+${JSON_RESPONSE_FORMAT}`;
+
+// ============================================
+// CLAUDE SONNET PROMPT - NO WEB - Fast, efficient
+// ============================================
+const PROMPT_CLAUDE_SONNET = `You are Claude Sonnet, a fast and efficient property data extractor. No web access.
+
+TASK: Extract property fields from training knowledge. Be quick but accurate.
+
+${FIELD_GROUPS}
+
+QUICK EXTRACTION RULES:
+1. Geographic data (county, region): Usually can provide
+2. Utility providers: Often know major providers by state/region
+3. School districts: Know structure, not specific assignments
+4. Tax rates: Know typical ranges by state
+5. Property-specific data (prices, MLS, owners): Return null
+
+CONFIDENCE GUIDE:
+- High: Geographic facts, major utility providers
+- Medium: Regional estimates, typical ranges
+- Unverified: Anything property-specific
+
+Keep responses focused. Don't over-explain.
+
+${JSON_RESPONSE_FORMAT}`;
+
+// ============================================
+// COPILOT PROMPT - NO WEB - Structured output focus
+// ============================================
+const PROMPT_COPILOT = `You are an AI assistant helping extract structured property data. No web access.
+
+TASK: Return a structured JSON with property fields from training knowledge.
+
+${FIELD_GROUPS}
+
+FOCUS ON:
+1. Correctly structured JSON output
+2. Proper field keys matching the schema
+3. Appropriate null values for unknown data
+4. Clear source attribution
+
+PROVIDE:
+- Geographic data you're confident about
+- Regional utility/service provider names
+- General area characteristics
+
+RETURN NULL FOR:
+- Specific prices, values, taxes
+- MLS numbers, parcel IDs
+- Owner information
+- Current market data
+
+${JSON_RESPONSE_FORMAT}`;
+
+// ============================================
+// GEMINI PROMPT - NO WEB - Knowledge focused
+// ============================================
+const PROMPT_GEMINI = `You are Gemini, a knowledgeable AI helping extract property data. No web access.
+
+TASK: Extract property data fields using your training knowledge.
+
+${FIELD_GROUPS}
+
+EXTRACTION APPROACH:
+1. Provide what you know from training data
+2. Be clear about confidence levels
+3. Return null for property-specific data requiring live lookups
+4. Focus on geographic, regional, and structural knowledge
+
+LIKELY CAN PROVIDE:
+- County identification
+- Regional utility providers
+- General school district info
+- Typical construction/architectural styles
+- Climate and environmental generalities
+
+CANNOT PROVIDE (return null):
+- Current listing data
+- Specific tax amounts
+- Recent sales data
+- Current owner info
+
+${JSON_RESPONSE_FORMAT}`;
+
+// Legacy fallback prompt
+const SYSTEM_PROMPT = PROMPT_CLAUDE_OPUS;
+
 // Claude Opus API call - MOST RELIABLE per audit
 async function callClaudeOpus(address: string): Promise<any> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -1045,15 +1279,15 @@ async function callClaudeOpus(address: string): Promise<any> {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-opus-4-20250514',
+        model: 'claude-opus-4-5-20251101',
         max_tokens: 8000,
-        system: SYSTEM_PROMPT,
+        system: PROMPT_CLAUDE_OPUS,
         messages: [
           {
             role: 'user',
             content: `Extract all 110 property data fields for this address: ${address}
 
-Search thoroughly across all available web sources. Return the JSON response with all fields you can find.`,
+Use your training knowledge to provide geographic, regional, and structural data. Return null for fields requiring live data.`,
           },
         ],
       }),
@@ -1089,13 +1323,13 @@ async function callClaudeSonnet(address: string): Promise<any> {
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 8000,
-        system: SYSTEM_PROMPT,
+        system: PROMPT_CLAUDE_SONNET,
         messages: [
           {
             role: 'user',
-            content: `Extract all 110 property data fields for this address: ${address}
+            content: `Extract property data fields for: ${address}
 
-Search thoroughly across all available web sources. Return the JSON response with all fields you can find.`,
+Quick extraction from training knowledge. Return null for property-specific data.`,
           },
         ],
       }),
@@ -1146,12 +1380,12 @@ async function callCopilot(address: string): Promise<any> {
         model: 'gpt-4',
         max_tokens: 8000,
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: PROMPT_COPILOT },
           {
             role: 'user',
-            content: `Extract all 110 property data fields for this address: ${address}
+            content: `Extract property data fields for: ${address}
 
-Search thoroughly across all available web sources. Return the JSON response with all fields you can find.`,
+Return structured JSON with proper field keys. Use null for unknown data.`,
           },
         ],
       }),
@@ -1171,7 +1405,7 @@ Search thoroughly across all available web sources. Return the JSON response wit
   }
 }
 
-// OpenAI GPT API call
+// OpenAI GPT API call - #2 in reliability
 async function callGPT(address: string): Promise<any> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return { error: 'OPENAI_API_KEY not set', fields: {} };
@@ -1187,12 +1421,12 @@ async function callGPT(address: string): Promise<any> {
         model: 'gpt-4o',
         max_tokens: 8000,
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: PROMPT_GPT },
           {
             role: 'user',
             content: `Extract all 110 property data fields for this address: ${address}
 
-Search thoroughly across all available web sources. Return the JSON response with all fields you can find.`,
+Use your training knowledge. Return JSON with EXACT field keys (e.g., "7_listing_price", "28_county"). Return null for fields requiring live data.`,
           },
         ],
       }),
@@ -1212,43 +1446,19 @@ Search thoroughly across all available web sources. Return the JSON response wit
   }
 }
 
-// Grok API call (xAI) - WITH ANTI-HALLUCINATION INSTRUCTIONS
+// Grok API call (xAI) - #3 in reliability, HAS WEB SEARCH
 async function callGrok(address: string): Promise<any> {
   const apiKey = process.env.GROK_API_KEY;
   if (!apiKey) return { error: 'GROK_API_KEY not set', fields: {} };
 
-  // ANTI-HALLUCINATION SYSTEM PROMPT - Based on Grok's recommendations
-  const grokSystemPrompt = `You are a real estate data analyst with access to web search tools. For any given address, compile a comprehensive 110-field dataset on the property.
+  // Grok-specific prompt with web search emphasis
+  const grokSystemPrompt = `${PROMPT_GROK}
 
-CRITICAL ANTI-HALLUCINATION RULES:
-1. USE YOUR WEB SEARCH TOOLS - You have access to web_search and browse_pages tools. USE THEM to find real data from:
-   - Zillow, Redfin, Realtor.com, Trulia
-   - County property appraiser/assessor websites
-   - FEMA flood maps
-   - GreatSchools.org
-   - Public tax records
-   - MLS listings
+${EXACT_FIELD_KEYS}
 
-2. NEVER MAKE UP DATA - If you cannot find a field value from real sources, set it to null with confidence "Unverified"
-3. CITE YOUR SOURCES - For every field, include the actual website/source where you found the data
-4. VERIFY BEFORE RETURNING - Cross-check important values (price, sqft, beds/baths) across multiple sources
-5. USE ONLY PUBLIC DATA - No private/restricted databases
-
-${FIELD_GROUPS}
-
-Return JSON in this exact format:
-{
-  "fields": {
-    "1_full_address": { "value": "...", "source": "Zillow.com", "confidence": "High" },
-    "2_mls_primary": { "value": "...", "source": "MLS listing", "confidence": "High" },
-    ...
-  },
-  "sources_searched": ["Zillow", "County Assessor", ...],
-  "fields_found": 67,
-  "fields_missing": [list of field numbers you could NOT find]
-}
-
-For any field you cannot find real data for, use: { "value": null, "source": "Not found", "confidence": "Unverified" }`;
+CRITICAL: Use EXACT field keys like "7_listing_price", "28_county", "29_annual_taxes"
+SEARCH THE WEB AGGRESSIVELY for: listing prices, tax values, assessed values, MLS numbers, school ratings
+CITE YOUR SOURCES for every field you populate`;
 
   try {
     const response = await fetch('https://api.x.ai/v1/chat/completions', {
@@ -1300,7 +1510,7 @@ Search Zillow, Redfin, Realtor.com, county records, and other public sources. Re
   }
 }
 
-// Gemini API call
+// Gemini API call - #6 in reliability
 async function callGemini(address: string): Promise<any> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return { error: 'GEMINI_API_KEY not set', fields: {} };
@@ -1318,11 +1528,12 @@ async function callGemini(address: string): Promise<any> {
             {
               parts: [
                 {
-                  text: `${SYSTEM_PROMPT}
+                  text: `${PROMPT_GEMINI}
 
-Extract all 110 property data fields for this address: ${address}
+Extract property data fields for this address: ${address}
 
-Search thoroughly across all available web sources. Return the JSON response with all fields you can find.`,
+Use EXACT field keys like "7_listing_price", "28_county", "29_annual_taxes".
+Return null for property-specific data you don't have. Return JSON only.`,
                 },
               ],
             },
