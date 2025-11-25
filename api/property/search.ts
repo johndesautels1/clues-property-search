@@ -1744,15 +1744,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 console.log(`⚠️  CONFLICT on ${key}: ${existingValue} vs ${fieldValue}`);
               }
             } else {
-              // New field - add it
-              allFields[key] = value;
+              // New field - add it only if value is not null/empty
+              const val = (value as any)?.value !== undefined ? (value as any).value : value;
+              if (val !== null && val !== undefined && val !== '' && val !== 'Not available') {
+                allFields[key] = value;
+              }
             }
           }
 
+          // Count only fields with actual values
           currentCompletion = Object.keys(allFields).length;
-          console.log(`✅ ${llm.name}: ${Object.keys(llmFields).length} fields | Total: ${currentCompletion}/110`);
+          console.log(`✅ ${llm.name}: ${Object.keys(llmFields).length} fields returned | ${currentCompletion} stored with actual values`);
 
-          // Stop if we have 100% completion (110 fields)
+          // Stop if we have 100% completion (110 fields with ACTUAL values)
           if (useCascade && currentCompletion >= 110) {
             console.log(`🎯 100% completion reached! Stopping cascade at ${llm.name}`);
             break;
@@ -1776,7 +1780,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    const total_fields = Object.keys(allFields).length;
+    // Only count fields with actual non-null values
+    const total_fields = Object.entries(allFields).filter(([_, field]) => {
+      const value = (field as any)?.value !== undefined ? (field as any).value : field;
+      return value !== null && value !== undefined && value !== '' && value !== 'Not available';
+    }).length;
     const completion_percentage = Math.round((total_fields / 110) * 100);
 
     // Add breakdown by source
