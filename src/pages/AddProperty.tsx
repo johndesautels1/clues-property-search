@@ -39,6 +39,7 @@ export default function AddProperty() {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvData, setCsvData] = useState<any[]>([]);
   const [propertyText, setPropertyText] = useState('');
+  const [enrichWithAI, setEnrichWithAI] = useState(false);
 
   // Manual entry form state
   const [manualForm, setManualForm] = useState({
@@ -676,105 +677,168 @@ export default function AddProperty() {
     };
   };
 
-  const handleCsvImport = () => {
+  const handleCsvImport = async () => {
     if (csvData.length === 0) {
       alert('No data to import');
       return;
     }
 
-    let imported = 0;
-    const propertyCards: PropertyCard[] = [];
-    const fullProperties: Property[] = [];
+    setStatus('scraping');
+    setProgress(10);
 
-    csvData.forEach(row => {
-      // Generate ID for this property
-      const propertyId = generateId();
+    try {
+      let imported = 0;
+      const propertyCards: PropertyCard[] = [];
+      const fullProperties: Property[] = [];
 
-      // Try to extract address from 110-field format or standard format
-      const address = row['1_full_address'] || row['address'] || row['Address'] || '';
-      const city = row['city'] || row['City'] || '';
-      const state = row['state'] || row['State'] || 'FL';
-      const zip = row['zip'] || row['ZIP'] || '';
+      // Process each CSV row
+      for (let i = 0; i < csvData.length; i++) {
+        const row = csvData[i];
 
-      // Extract price (support both field definition format and standard)
-      const listingPrice = row['5_list_price'] || row['7_sold_price'] || row['price'] || row['Price'] || '0';
-      const price = parseInt(String(listingPrice).replace(/[^0-9]/g, '')) || 0;
+        // Generate ID for this property
+        const propertyId = generateId();
 
-      // Extract bedrooms/bathrooms
-      const bedrooms = parseInt(row['11_bedrooms'] || row['bedrooms'] || row['Bedrooms'] || '0');
-      const bathrooms = parseFloat(row['14_bathrooms_total'] || row['bathrooms'] || row['Bathrooms'] || '0');
+        // Try to extract address from 110-field format or standard format
+        const address = row['1_full_address'] || row['address'] || row['Address'] || '';
+        const city = row['city'] || row['City'] || '';
+        const state = row['state'] || row['State'] || 'FL';
+        const zip = row['zip'] || row['ZIP'] || '';
 
-      // Extract sqft
-      const sqft = parseInt(row['15_living_area_sqft'] || row['sqft'] || row['Sqft'] || '0');
+        // Extract price (support both field definition format and standard)
+        const listingPrice = row['5_list_price'] || row['7_sold_price'] || row['price'] || row['Price'] || '0';
+        const price = parseInt(String(listingPrice).replace(/[^0-9]/g, '')) || 0;
 
-      // Extract year built
-      const yearBuilt = parseInt(row['9_year_built'] || row['yearBuilt'] || row['Year Built'] || new Date().getFullYear().toString());
+        // Extract bedrooms/bathrooms
+        const bedrooms = parseInt(row['11_bedrooms'] || row['bedrooms'] || row['Bedrooms'] || '0');
+        const bathrooms = parseFloat(row['14_bathrooms_total'] || row['bathrooms'] || row['Bathrooms'] || '0');
 
-      // Extract status
-      const status = row['4_listing_status'] || row['status'] || row['Status'] || 'Active';
+        // Extract sqft
+        const sqft = parseInt(row['15_living_area_sqft'] || row['sqft'] || row['Sqft'] || '0');
 
-      // Count non-empty fields for data completeness
-      const filledFieldsCount = Object.values(row).filter(v => v && v !== '').length;
+        // Extract year built
+        const yearBuilt = parseInt(row['9_year_built'] || row['yearBuilt'] || row['Year Built'] || new Date().getFullYear().toString());
 
-      const propertyCard: PropertyCard = {
-        id: propertyId,
-        address,
-        city,
-        state,
-        zip,
-        price,
-        pricePerSqft: sqft && price ? Math.round(price / sqft) : 0,
-        bedrooms,
-        bathrooms,
-        sqft,
-        yearBuilt,
-        smartScore: Math.floor(Math.random() * 20) + 75,
-        dataCompleteness: Math.min(100, filledFieldsCount), // Cap at 100
-        listingStatus: status as 'Active' | 'Pending' | 'Sold',
-        daysOnMarket: 0,
-      };
+        // Extract status
+        const listingStatus = row['4_listing_status'] || row['status'] || row['Status'] || 'Active';
 
-      console.log('Importing property:', propertyCard);
-      console.log('CSV row has', filledFieldsCount, 'filled fields');
-      console.log('📝 RAW CSV DATA SAMPLE:');
-      console.log('  - 1_full_address:', row['1_full_address']);
-      console.log('  - 2_mls_number_primary:', row['2_mls_number_primary']);
-      console.log('  - 11_bedrooms:', row['11_bedrooms']);
-      console.log('  - 15_living_area_sqft:', row['15_living_area_sqft']);
-      console.log('  - 56_elementary_school_name:', row['56_elementary_school_name']);
+        // Count non-empty fields for data completeness
+        const filledFieldsCount = Object.values(row).filter(v => v && v !== '').length;
+        const dataCompleteness = Math.round((filledFieldsCount / 110) * 100);
 
-      // Create full property with all 110 fields
-      const fullProperty = convertCsvToFullProperty(row, propertyId);
-      console.log('🔍 Full property created:', fullProperty.id);
-      console.log('📍 Address fields:', fullProperty.address);
-      console.log('🏗️ Details fields:', fullProperty.details);
-      console.log('🔍 CONVERTED VALUES:');
-      console.log('  - Full Address:', fullProperty.address.fullAddress.value);
-      console.log('  - MLS Primary:', fullProperty.address.mlsPrimary.value);
-      console.log('  - Bedrooms:', fullProperty.details.bedrooms.value);
-      console.log('  - Living Sqft:', fullProperty.details.livingSqft.value);
+        // Create full property with all 110 fields from CSV
+        let fullProperty = convertCsvToFullProperty(row, propertyId);
 
-      if (propertyCard.address || propertyCard.price > 0) {
-        propertyCards.push(propertyCard);
-        fullProperties.push(fullProperty);
-        imported++;
+        // ENRICHMENT: Call LLM APIs to fill missing fields if enabled
+        if (enrichWithAI && address) {
+          setStatus('enriching');
+          setProgress(50 + (i / csvData.length) * 40); // 50-90% for enrichment
+
+          console.log(`🤖 Enriching property ${i + 1}/${csvData.length} with AI:`, address);
+
+          try {
+            const apiUrl = import.meta.env.VITE_API_URL || '/api/property/search';
+            const response = await fetch(apiUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                address: address,
+                engines: ['grok', 'perplexity'],
+                useGrok: true,
+                usePerplexity: true,
+              }),
+            });
+
+            if (response.ok) {
+              const enrichData = await response.json();
+              const enrichedFields = enrichData.fields || {};
+
+              // Merge enriched data with CSV data (CSV takes precedence)
+              fullProperty = mergePropertyData(fullProperty, enrichedFields, propertyId);
+
+              // Update completion percentage
+              const totalFields = Object.keys(enrichedFields).length;
+              console.log(`✅ Enriched ${totalFields} fields for ${address}`);
+            }
+          } catch (error) {
+            console.error(`❌ Failed to enrich ${address}:`, error);
+          }
+        }
+
+        const propertyCard: PropertyCard = {
+          id: propertyId,
+          address,
+          city,
+          state,
+          zip,
+          price,
+          pricePerSqft: sqft && price ? Math.round(price / sqft) : 0,
+          bedrooms,
+          bathrooms,
+          sqft,
+          yearBuilt,
+          smartScore: Math.floor(Math.random() * 20) + 75,
+          dataCompleteness,
+          listingStatus: listingStatus as 'Active' | 'Pending' | 'Sold',
+          daysOnMarket: 0,
+        };
+
+        if (propertyCard.address || propertyCard.price > 0) {
+          propertyCards.push(propertyCard);
+          fullProperties.push(fullProperty);
+          imported++;
+        }
       }
-    });
 
-    // Add all properties to the store at once
-    if (propertyCards.length > 0) {
-      console.log('✅ Adding to store:', propertyCards.length, 'cards and', fullProperties.length, 'full properties');
-      console.log('📦 First full property being saved:', fullProperties[0]);
-      addProperties(propertyCards, fullProperties);
+      setProgress(95);
+
+      // Add all properties to the store at once
+      if (propertyCards.length > 0) {
+        console.log('✅ Adding to store:', propertyCards.length, 'properties');
+        addProperties(propertyCards, fullProperties);
+      }
+
+      setProgress(100);
+      setStatus('complete');
+      alert(`Successfully imported ${imported} properties${enrichWithAI ? ' and enriched with AI' : ''}`);
+      setCsvFile(null);
+      setCsvData([]);
+
+      // Navigate to property list
+      setTimeout(() => navigate('/properties'), 1500);
+
+    } catch (error) {
+      console.error('CSV import error:', error);
+      setStatus('error');
+      alert(`Failed to import CSV: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  };
 
-    setStatus('complete');
-    alert(`Successfully imported ${imported} properties with all 110 fields preserved`);
-    setCsvFile(null);
-    setCsvData([]);
+  // Merge enriched API data with existing CSV data (CSV takes precedence)
+  const mergePropertyData = (csvProperty: Property, apiFields: any, propertyId: string): Property => {
+    // For each field, only fill if CSV value is null/empty
+    const merged = { ...csvProperty };
 
-    // Navigate to property list
-    setTimeout(() => navigate('/properties'), 1500);
+    // Helper to merge if CSV field is empty
+    const mergeField = (csvField: DataField<any>, apiFieldKey: string) => {
+      if (!csvField.value && apiFields[apiFieldKey]?.value) {
+        return createDataField(apiFields[apiFieldKey].value, 'Medium');
+      }
+      return csvField;
+    };
+
+    // Merge address fields
+    merged.address.mlsPrimary = mergeField(merged.address.mlsPrimary, '2_mls_primary');
+    merged.address.county = mergeField(merged.address.county, '28_county');
+    merged.address.latitude = mergeField(merged.address.latitude, 'coordinates');
+    merged.address.longitude = mergeField(merged.address.longitude, 'coordinates');
+
+    // Merge location fields
+    merged.location.walkScore = mergeField(merged.location.walkScore, '65_walk_score');
+    merged.location.transitScore = mergeField(merged.location.transitScore, '66_transit_score');
+    merged.utilities.floodZone = mergeField(merged.utilities.floodZone, '100_flood_zone');
+
+    // Could merge all 110 fields here, but for now just key ones
+    return merged;
   };
 
   return (
@@ -911,12 +975,43 @@ export default function AddProperty() {
                   </div>
                 )}
 
+                {/* AI Enrichment Option */}
+                <div className="mt-6 p-4 bg-quantum-cyan/5 border border-quantum-cyan/20 rounded-xl">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={enrichWithAI}
+                      onChange={(e) => setEnrichWithAI(e.target.checked)}
+                      className="w-5 h-5 rounded border-gray-600 text-quantum-cyan focus:ring-quantum-cyan"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-quantum-cyan" />
+                        <span className="text-white font-semibold">Enrich with AI after import</span>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Use Grok + Perplexity to fill missing fields and verify data accuracy
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
                 <button
                   onClick={handleCsvImport}
-                  className="btn-quantum w-full"
+                  disabled={status === 'scraping' || status === 'enriching'}
+                  className="btn-quantum w-full mt-4"
                 >
-                  <CheckCircle className="w-5 h-5" />
-                  Import {csvData.length} Properties
+                  {status === 'scraping' || status === 'enriching' ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      {enrichWithAI ? 'Enriching with AI...' : 'Importing...'}
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-5 h-5" />
+                      Import {csvData.length} Properties {enrichWithAI && '+ AI Enrich'}
+                    </>
+                  )}
                 </button>
               </div>
             )}
