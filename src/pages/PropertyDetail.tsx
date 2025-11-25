@@ -333,12 +333,24 @@ export default function PropertyDetail() {
         const data = await response.json();
         const newFieldData = data.fields[fieldKey];
 
-        if (newFieldData) {
-          // Update the property with the new field value
-          alert(`✅ ${llmName} found data for ${fieldKey}: ${newFieldData.value}`);
-          // TODO: Update fullProperty in store with new field data
+        if (newFieldData && newFieldData.value != null) {
+          const updated = JSON.parse(JSON.stringify(fullProperty));
+          const paths: Record<string, [string, string]> = {
+            '1_full_address': ['address', 'fullAddress'],
+            '7_listing_price': ['address', 'listingPrice'],
+            '12_bedrooms': ['details', 'bedrooms'],
+            '16_living_sqft': ['details', 'livingSqft'],
+            '65_walk_score': ['location', 'walkScore'],
+            '100_flood_zone': ['utilities', 'floodZone'],
+          };
+          const path = paths[fieldKey];
+          if (path && updated[path[0]]) {
+            updated[path[0]][path[1]] = { value: newFieldData.value, confidence: 'Medium', notes: `Updated by ${llmName}`, sources: [llmName] };
+            updateFullProperty(id, updated);
+            alert(`✅ ${llmName}: ${newFieldData.value}`);
+          } else { alert(`✅ ${llmName}: ${newFieldData.value}`); }
         } else {
-          alert(`❌ ${llmName} could not find data for ${fieldKey}`);
+          alert(`❌ ${llmName} found no data`);
         }
       } else {
         alert(`Error calling ${llmName} API`);
