@@ -1634,7 +1634,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const {
     address,
     url,
-    engines = ['claude-opus', 'gpt', 'grok', 'claude-sonnet', 'copilot', 'gemini'],
+    engines = ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'],
     skipLLMs = false,
     usePerplexity = false, // Removed from default cascade - use engines array
     useGrok = true,
@@ -1687,15 +1687,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // STEP 2-7: CASCADE through all 6 LLMs in RELIABILITY order (per audit)
-    // Claude Opus (KING) → GPT → Grok → Claude Sonnet → Copilot → Gemini
+    // NEW ORDER: Web-search LLMs FIRST (Perplexity, Grok), then knowledge-based
+    // Perplexity has REAL web search - best for verified data
     const llmCascade = [
+      { name: 'perplexity', fn: callPerplexity, enabled: engines.includes('perplexity') },
+      { name: 'grok', fn: callGrok, enabled: engines.includes('grok') },
       { name: 'claude-opus', fn: callClaudeOpus, enabled: engines.includes('claude-opus') },
       { name: 'gpt', fn: callGPT, enabled: engines.includes('gpt') },
-      { name: 'grok', fn: callGrok, enabled: useGrok || engines.includes('grok') },
       { name: 'claude-sonnet', fn: callClaudeSonnet, enabled: engines.includes('claude-sonnet') },
-      { name: 'copilot', fn: callCopilot, enabled: engines.includes('copilot') },
       { name: 'gemini', fn: callGemini, enabled: engines.includes('gemini') },
-      { name: 'perplexity', fn: callPerplexity, enabled: usePerplexity || engines.includes('perplexity') }, // Optional fallback
     ];
 
     let llmResponses: any[] = [];
@@ -1812,7 +1812,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       conflicts, // NEW: Fields where LLMs disagreed
       llm_responses: llmResponses,
       strategy: 'cascade',
-      cascade_order: ['claude-opus', 'gpt', 'grok', 'claude-sonnet', 'copilot', 'gemini', 'perplexity'],
+      cascade_order: ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'],
       note: 'CASCADE STRATEGY (Reliability Order per Audit): Claude Opus (KING) → GPT → Grok → Claude Sonnet → Copilot → Gemini → Perplexity. Stops at 100% completion.'
     });
   } catch (error) {
