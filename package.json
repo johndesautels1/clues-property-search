@@ -2,6 +2,9 @@
   "name": "clues-quantum-property-dashboard",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
     "build": "cd app && npm install && npm run build",
     "dev": "cd app && npm run dev"
