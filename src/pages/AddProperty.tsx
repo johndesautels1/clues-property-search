@@ -25,6 +25,18 @@ type InputMode = 'address' | 'url' | 'manual' | 'csv' | 'text';
 // Generate a simple unique ID
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
 
+// LLM Engine options - ordered by reliability per audit
+const LLM_ENGINES = [
+  { id: 'Auto', label: 'Auto Cascade', desc: 'All 6 in order', icon: '🔄' },
+  { id: 'claude-opus', label: 'Claude Opus', desc: '#1 Most Reliable', icon: '👑' },
+  { id: 'gpt', label: 'GPT-4', desc: '#2 Reliable', icon: '🤖' },
+  { id: 'grok', label: 'Grok', desc: '#3 + Web Search', icon: '⚡' },
+  { id: 'claude-sonnet', label: 'Claude Sonnet', desc: '#4 Fast', icon: '🎵' },
+  { id: 'copilot', label: 'Copilot', desc: '#5', icon: '✈️' },
+  { id: 'gemini', label: 'Gemini', desc: '#6', icon: '♊' },
+  { id: 'perplexity', label: 'Perplexity', desc: 'Web Search', icon: '🔍' },
+];
+
 export default function AddProperty() {
   const navigate = useNavigate();
   const { addProperty, addProperties } = usePropertyStore();
@@ -40,6 +52,7 @@ export default function AddProperty() {
   const [csvData, setCsvData] = useState<any[]>([]);
   const [propertyText, setPropertyText] = useState('');
   const [enrichWithAI, setEnrichWithAI] = useState(false);
+  const [cascadeStatus, setCascadeStatus] = useState<{llm: string; status: 'pending' | 'running' | 'complete' | 'error'; fieldsFound?: number}[]>([]);
 
   // Manual entry form state
   const [manualForm, setManualForm] = useState({
@@ -138,6 +151,16 @@ export default function AddProperty() {
       setStatus('scraping');
       setProgress(30);
 
+      // Map selected engine to API format
+      const getEngines = () => {
+        if (selectedEngine === 'Auto') {
+          // Full cascade order per reliability audit
+          return ['claude-opus', 'gpt', 'grok', 'claude-sonnet', 'copilot', 'gemini'];
+        }
+        // Single engine selected
+        return [selectedEngine]; // Already in correct format (e.g., 'claude-opus', 'gpt')
+      };
+
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -146,12 +169,10 @@ export default function AddProperty() {
         body: JSON.stringify({
           address: searchQuery,
           url: inputMode === 'url' ? url : undefined,
-          engines: selectedEngine === 'Grok' ? ['grok'] :
-                   selectedEngine === 'Perplexity' ? ['perplexity'] :
-                   selectedEngine === 'Both' ? ['grok', 'perplexity'] :
-                   ['grok', 'perplexity'], // default to both
-          useGrok: selectedEngine === 'Grok' || selectedEngine === 'Both',
-          usePerplexity: selectedEngine === 'Perplexity' || selectedEngine === 'Both',
+          engines: getEngines(),
+          useGrok: selectedEngine === 'Auto' || selectedEngine === 'grok',
+          usePerplexity: selectedEngine === 'perplexity',
+          useCascade: selectedEngine === 'Auto', // Only cascade on Auto
         }),
       });
 
@@ -168,6 +189,12 @@ export default function AddProperty() {
 
       // Extract property data from API response
       const fields = data.fields || {};
+      const fieldSources = data.field_sources || {}; // NEW: Track which LLMs provided each field
+      const conflicts = data.conflicts || []; // NEW: Track conflicting values
+
+      console.log('🔍 API Response:', data);
+      console.log('📊 Field Sources:', fieldSources);
+      console.log('⚠️  Conflicts:', conflicts);
 
       // Parse address components
       const fullAddress = fields['1_full_address']?.value || searchQuery;
@@ -198,7 +225,7 @@ export default function AddProperty() {
       };
 
       // Create full property object with all 110 fields if available
-      const fullPropertyData = convertApiResponseToFullProperty(fields, scrapedProperty.id);
+      const fullPropertyData = convertApiResponseToFullProperty(fields, scrapedProperty.id, fieldSources, conflicts);
 
       addProperty(scrapedProperty, fullPropertyData);
       setLastAddedId(scrapedProperty.id);
@@ -217,169 +244,187 @@ export default function AddProperty() {
   };
 
   // Convert API response to full Property object
-  const convertApiResponseToFullProperty = (fields: any, propertyId: string): Property => {
+  const convertApiResponseToFullProperty = (
+    fields: any,
+    propertyId: string,
+    fieldSources: Record<string, string[]> = {},
+    conflicts: Array<{ field: string; values: Array<{ source: string; value: any }> }> = []
+  ): Property => {
     const now = new Date().toISOString();
+
+    // Helper to get conflict data for a field
+    const getConflict = (fieldKey: string) => {
+      const conflict = conflicts.find(c => c.field === fieldKey);
+      return conflict ? { hasConflict: true, conflictValues: conflict.values } : { hasConflict: false, conflictValues: [] };
+    };
+
+    // Helper to create field with LLM metadata
+    const createFieldWithMetadata = <T,>(fieldKey: string, value: T | null, confidence: 'High' | 'Medium-High' | 'Medium' | 'Low' = 'Medium') => {
+      const llmSources = fieldSources[fieldKey] || [];
+      const { hasConflict, conflictValues } = getConflict(fieldKey);
+      return createDataField(value, confidence, llmSources, hasConflict, conflictValues);
+    };
 
     return {
       id: propertyId,
       createdAt: now,
       updatedAt: now,
       address: {
-        fullAddress: createDataField(fields['1_full_address']?.value),
-        mlsPrimary: createDataField(fields['2_mls_primary']?.value),
-        mlsSecondary: createDataField(fields['3_mls_secondary']?.value),
-        listingStatus: createDataField(fields['4_listing_status']?.value),
-        listingDate: createDataField(fields['5_listing_date']?.value),
-        listingPrice: createDataField(fields['7_listing_price']?.value),
-        pricePerSqft: createDataField(fields['8_price_per_sqft']?.value),
-        streetAddress: createDataField(fields['1_full_address']?.value?.split(',')[0]),
-        city: createDataField(fields['city']?.value),
-        state: createDataField(fields['state']?.value),
-        zipCode: createDataField(fields['zip']?.value),
-        county: createDataField(fields['28_county']?.value),
-        latitude: createDataField(fields['coordinates']?.value?.lat),
-        longitude: createDataField(fields['coordinates']?.value?.lon),
-        neighborhoodName: createDataField(fields['41_neighborhood_name']?.value),
+        fullAddress: createFieldWithMetadata('1_full_address', fields['1_full_address']?.value),
+        mlsPrimary: createFieldWithMetadata('2_mls_primary', fields['2_mls_primary']?.value),
+        mlsSecondary: createFieldWithMetadata('3_mls_secondary', fields['3_mls_secondary']?.value),
+        listingStatus: createFieldWithMetadata('4_listing_status', fields['4_listing_status']?.value),
+        listingDate: createFieldWithMetadata('5_listing_date', fields['5_listing_date']?.value),
+        listingPrice: createFieldWithMetadata('7_listing_price', fields['7_listing_price']?.value),
+        pricePerSqft: createFieldWithMetadata('8_price_per_sqft', fields['8_price_per_sqft']?.value),
+        streetAddress: createFieldWithMetadata('1_full_address', fields['1_full_address']?.value?.split(',')[0]),
+        city: createFieldWithMetadata('city', fields['city']?.value),
+        state: createFieldWithMetadata('state', fields['state']?.value),
+        zipCode: createFieldWithMetadata('zip', fields['zip']?.value),
+        county: createFieldWithMetadata('28_county', fields['28_county']?.value),
+        latitude: createFieldWithMetadata('coordinates', fields['coordinates']?.value?.lat),
+        longitude: createFieldWithMetadata('coordinates', fields['coordinates']?.value?.lon),
+        neighborhoodName: createFieldWithMetadata('41_neighborhood_name', fields['41_neighborhood_name']?.value),
       },
       details: {
-        bedrooms: createDataField(fields['12_bedrooms']?.value),
-        fullBathrooms: createDataField(fields['13_full_bathrooms']?.value),
-        halfBathrooms: createDataField(fields['14_half_bathrooms']?.value),
-        totalBathrooms: createDataField(fields['15_total_bathrooms']?.value),
-        livingSqft: createDataField(fields['16_living_sqft']?.value),
-        totalSqftUnderRoof: createDataField(fields['17_total_sqft_under_roof']?.value),
-        lotSizeSqft: createDataField(fields['18_lot_size_sqft']?.value),
-        lotSizeAcres: createDataField(fields['19_lot_size_acres']?.value),
-        yearBuilt: createDataField(fields['20_year_built']?.value),
-        propertyType: createDataField(fields['21_property_type']?.value),
-        stories: createDataField(fields['22_stories']?.value),
-        garageSpaces: createDataField(fields['23_garage_spaces']?.value),
-        parkingTotal: createDataField(fields['24_parking_total']?.value),
-        hoaYn: createDataField(fields['25_hoa_yn']?.value),
-        hoaFeeAnnual: createDataField(fields['26_hoa_fee_annual']?.value),
-        hoaName: createDataField(fields['70_hoa_name']?.value),
-        hoaIncludes: createDataField(fields['71_hoa_includes']?.value),
-        annualTaxes: createDataField(fields['29_annual_taxes']?.value),
-        taxYear: createDataField(fields['30_tax_year']?.value),
-        assessedValue: createDataField(fields['31_assessed_value']?.value),
-        marketValueEstimate: createDataField(fields['9_market_value_estimate']?.value),
-        lastSaleDate: createDataField(fields['10_last_sale_date']?.value),
-        lastSalePrice: createDataField(fields['11_last_sale_price']?.value),
-        ownershipType: createDataField(fields['27_ownership_type']?.value),
-        parcelId: createDataField(fields['6_parcel_id']?.value),
+        bedrooms: createFieldWithMetadata('12_bedrooms', fields['12_bedrooms']?.value),
+        fullBathrooms: createFieldWithMetadata('13_full_bathrooms', fields['13_full_bathrooms']?.value),
+        halfBathrooms: createFieldWithMetadata('14_half_bathrooms', fields['14_half_bathrooms']?.value),
+        totalBathrooms: createFieldWithMetadata('15_total_bathrooms', fields['15_total_bathrooms']?.value),
+        livingSqft: createFieldWithMetadata('16_living_sqft', fields['16_living_sqft']?.value),
+        totalSqftUnderRoof: createFieldWithMetadata('17_total_sqft_under_roof', fields['17_total_sqft_under_roof']?.value),
+        lotSizeSqft: createFieldWithMetadata('18_lot_size_sqft', fields['18_lot_size_sqft']?.value),
+        lotSizeAcres: createFieldWithMetadata('19_lot_size_acres', fields['19_lot_size_acres']?.value),
+        yearBuilt: createFieldWithMetadata('20_year_built', fields['20_year_built']?.value),
+        propertyType: createFieldWithMetadata('21_property_type', fields['21_property_type']?.value),
+        stories: createFieldWithMetadata('22_stories', fields['22_stories']?.value),
+        garageSpaces: createFieldWithMetadata('23_garage_spaces', fields['23_garage_spaces']?.value),
+        parkingTotal: createFieldWithMetadata('24_parking_total', fields['24_parking_total']?.value),
+        hoaYn: createFieldWithMetadata('25_hoa_yn', fields['25_hoa_yn']?.value),
+        hoaFeeAnnual: createFieldWithMetadata('26_hoa_fee_annual', fields['26_hoa_fee_annual']?.value),
+        hoaName: createFieldWithMetadata('70_hoa_name', fields['70_hoa_name']?.value),
+        hoaIncludes: createFieldWithMetadata('71_hoa_includes', fields['71_hoa_includes']?.value),
+        annualTaxes: createFieldWithMetadata('29_annual_taxes', fields['29_annual_taxes']?.value),
+        taxYear: createFieldWithMetadata('30_tax_year', fields['30_tax_year']?.value),
+        assessedValue: createFieldWithMetadata('31_assessed_value', fields['31_assessed_value']?.value),
+        marketValueEstimate: createFieldWithMetadata('9_market_value_estimate', fields['9_market_value_estimate']?.value),
+        lastSaleDate: createFieldWithMetadata('10_last_sale_date', fields['10_last_sale_date']?.value),
+        lastSalePrice: createFieldWithMetadata('11_last_sale_price', fields['11_last_sale_price']?.value),
+        ownershipType: createFieldWithMetadata('27_ownership_type', fields['27_ownership_type']?.value),
+        parcelId: createFieldWithMetadata('6_parcel_id', fields['6_parcel_id']?.value),
       },
       structural: {
-        roofType: createDataField(fields['36_roof_type']?.value),
-        roofAgeEst: createDataField(fields['37_roof_age_est']?.value),
-        exteriorMaterial: createDataField(fields['38_exterior_material']?.value),
-        foundation: createDataField(fields['39_foundation']?.value),
-        hvacType: createDataField(fields['40_hvac_type']?.value),
-        hvacAge: createDataField(fields['41_hvac_age']?.value),
-        waterHeaterType: createDataField(fields['30_water_heater_type']?.value),
-        garageType: createDataField(fields['31_garage_type']?.value),
-        flooringType: createDataField(fields['42_flooring_type']?.value),
-        kitchenFeatures: createDataField(fields['43_kitchen_features']?.value),
-        appliancesIncluded: createDataField(fields['44_appliances_included']?.value),
-        laundryType: createDataField(fields['39_laundry_type']?.value),
-        fireplaceYn: createDataField(fields['45_fireplace_yn']?.value),
-        fireplaceCount: createDataField(fields['38_fireplace_count']?.value),
-        poolYn: createDataField(fields['47_pool_yn']?.value),
-        poolType: createDataField(fields['48_pool_type']?.value),
-        deckPatio: createDataField(fields['49_deck_patio']?.value),
-        fence: createDataField(fields['50_fence']?.value),
-        landscaping: createDataField(fields['51_landscaping']?.value),
-        recentRenovations: createDataField(fields['52_recent_renovations']?.value),
-        permitHistoryRoof: createDataField(fields['53_permit_history_roof']?.value),
-        permitHistoryHvac: createDataField(fields['54_permit_history_hvac']?.value),
-        permitHistoryPoolAdditions: createDataField(fields['55_permit_history_other']?.value),
-        interiorCondition: createDataField(fields['46_interior_condition']?.value),
+        roofType: createFieldWithMetadata('36_roof_type', fields['36_roof_type']?.value),
+        roofAgeEst: createFieldWithMetadata('37_roof_age_est', fields['37_roof_age_est']?.value),
+        exteriorMaterial: createFieldWithMetadata('38_exterior_material', fields['38_exterior_material']?.value),
+        foundation: createFieldWithMetadata('39_foundation', fields['39_foundation']?.value),
+        hvacType: createFieldWithMetadata('40_hvac_type', fields['40_hvac_type']?.value),
+        hvacAge: createFieldWithMetadata('41_hvac_age', fields['41_hvac_age']?.value),
+        waterHeaterType: createFieldWithMetadata('30_water_heater_type', fields['30_water_heater_type']?.value),
+        garageType: createFieldWithMetadata('31_garage_type', fields['31_garage_type']?.value),
+        flooringType: createFieldWithMetadata('42_flooring_type', fields['42_flooring_type']?.value),
+        kitchenFeatures: createFieldWithMetadata('43_kitchen_features', fields['43_kitchen_features']?.value),
+        appliancesIncluded: createFieldWithMetadata('44_appliances_included', fields['44_appliances_included']?.value),
+        laundryType: createFieldWithMetadata('39_laundry_type', fields['39_laundry_type']?.value),
+        fireplaceYn: createFieldWithMetadata('45_fireplace_yn', fields['45_fireplace_yn']?.value),
+        fireplaceCount: createFieldWithMetadata('38_fireplace_count', fields['38_fireplace_count']?.value),
+        poolYn: createFieldWithMetadata('47_pool_yn', fields['47_pool_yn']?.value),
+        poolType: createFieldWithMetadata('48_pool_type', fields['48_pool_type']?.value),
+        deckPatio: createFieldWithMetadata('49_deck_patio', fields['49_deck_patio']?.value),
+        fence: createFieldWithMetadata('50_fence', fields['50_fence']?.value),
+        landscaping: createFieldWithMetadata('51_landscaping', fields['51_landscaping']?.value),
+        recentRenovations: createFieldWithMetadata('52_recent_renovations', fields['52_recent_renovations']?.value),
+        permitHistoryRoof: createFieldWithMetadata('53_permit_history_roof', fields['53_permit_history_roof']?.value),
+        permitHistoryHvac: createFieldWithMetadata('54_permit_history_hvac', fields['54_permit_history_hvac']?.value),
+        permitHistoryPoolAdditions: createFieldWithMetadata('55_permit_history_other', fields['55_permit_history_other']?.value),
+        interiorCondition: createFieldWithMetadata('46_interior_condition', fields['46_interior_condition']?.value),
       },
       location: {
-        assignedElementary: createDataField(fields['56_assigned_elementary']?.value),
-        elementaryRating: createDataField(fields['57_elementary_rating']?.value),
-        elementaryDistanceMiles: createDataField(fields['58_elementary_distance_miles']?.value),
-        assignedMiddle: createDataField(fields['59_assigned_middle']?.value),
-        middleRating: createDataField(fields['60_middle_rating']?.value),
-        middleDistanceMiles: createDataField(fields['61_middle_distance_miles']?.value),
-        assignedHigh: createDataField(fields['62_assigned_high']?.value),
-        highRating: createDataField(fields['63_high_rating']?.value),
-        highDistanceMiles: createDataField(fields['64_high_distance_miles']?.value),
-        schoolDistrictName: createDataField(fields['65_school_district_name']?.value),
-        elevationFeet: createDataField(fields['55_elevation_feet']?.value),
-        walkScore: createDataField(fields['65_walk_score']?.value),
-        transitScore: createDataField(fields['66_transit_score']?.value),
-        bikeScore: createDataField(fields['67_bike_score']?.value),
-        distanceGroceryMiles: createDataField(fields['73_distance_grocery_miles']?.value),
-        distanceHospitalMiles: createDataField(fields['74_distance_hospital_miles']?.value),
-        distanceAirportMiles: createDataField(fields['75_distance_airport_miles']?.value),
-        distanceParkMiles: createDataField(fields['76_distance_park_miles']?.value),
-        distanceBeachMiles: createDataField(fields['77_distance_beach_miles']?.value),
-        crimeIndexViolent: createDataField(fields['78_crime_index_violent']?.value),
-        crimeIndexProperty: createDataField(fields['79_crime_index_property']?.value),
-        neighborhoodSafetyRating: createDataField(fields['80_neighborhood_safety_rating']?.value),
-        noiseLevel: createDataField(fields['68_noise_level']?.value),
-        trafficLevel: createDataField(fields['69_traffic_level']?.value),
-        walkabilityDescription: createDataField(fields['70_walkability_description']?.value),
-        commuteTimeCityCenter: createDataField(fields['71_commute_time_city_center']?.value),
-        publicTransitAccess: createDataField(fields['72_public_transit_access']?.value),
+        assignedElementary: createFieldWithMetadata('56_assigned_elementary', fields['56_assigned_elementary']?.value),
+        elementaryRating: createFieldWithMetadata('57_elementary_rating', fields['57_elementary_rating']?.value),
+        elementaryDistanceMiles: createFieldWithMetadata('58_elementary_distance_miles', fields['58_elementary_distance_miles']?.value),
+        assignedMiddle: createFieldWithMetadata('59_assigned_middle', fields['59_assigned_middle']?.value),
+        middleRating: createFieldWithMetadata('60_middle_rating', fields['60_middle_rating']?.value),
+        middleDistanceMiles: createFieldWithMetadata('61_middle_distance_miles', fields['61_middle_distance_miles']?.value),
+        assignedHigh: createFieldWithMetadata('62_assigned_high', fields['62_assigned_high']?.value),
+        highRating: createFieldWithMetadata('63_high_rating', fields['63_high_rating']?.value),
+        highDistanceMiles: createFieldWithMetadata('64_high_distance_miles', fields['64_high_distance_miles']?.value),
+        schoolDistrictName: createFieldWithMetadata('65_school_district_name', fields['65_school_district_name']?.value),
+        elevationFeet: createFieldWithMetadata('55_elevation_feet', fields['55_elevation_feet']?.value),
+        walkScore: createFieldWithMetadata('65_walk_score', fields['65_walk_score']?.value),
+        transitScore: createFieldWithMetadata('66_transit_score', fields['66_transit_score']?.value),
+        bikeScore: createFieldWithMetadata('67_bike_score', fields['67_bike_score']?.value),
+        distanceGroceryMiles: createFieldWithMetadata('73_distance_grocery_miles', fields['73_distance_grocery_miles']?.value),
+        distanceHospitalMiles: createFieldWithMetadata('74_distance_hospital_miles', fields['74_distance_hospital_miles']?.value),
+        distanceAirportMiles: createFieldWithMetadata('75_distance_airport_miles', fields['75_distance_airport_miles']?.value),
+        distanceParkMiles: createFieldWithMetadata('76_distance_park_miles', fields['76_distance_park_miles']?.value),
+        distanceBeachMiles: createFieldWithMetadata('77_distance_beach_miles', fields['77_distance_beach_miles']?.value),
+        crimeIndexViolent: createFieldWithMetadata('78_crime_index_violent', fields['78_crime_index_violent']?.value),
+        crimeIndexProperty: createFieldWithMetadata('79_crime_index_property', fields['79_crime_index_property']?.value),
+        neighborhoodSafetyRating: createFieldWithMetadata('80_neighborhood_safety_rating', fields['80_neighborhood_safety_rating']?.value),
+        noiseLevel: createFieldWithMetadata('68_noise_level', fields['68_noise_level']?.value),
+        trafficLevel: createFieldWithMetadata('69_traffic_level', fields['69_traffic_level']?.value),
+        walkabilityDescription: createFieldWithMetadata('70_walkability_description', fields['70_walkability_description']?.value),
+        commuteTimeCityCenter: createFieldWithMetadata('71_commute_time_city_center', fields['71_commute_time_city_center']?.value),
+        publicTransitAccess: createFieldWithMetadata('72_public_transit_access', fields['72_public_transit_access']?.value),
       },
       financial: {
-        annualPropertyTax: createDataField(fields['76_annual_property_tax']?.value),
-        taxExemptions: createDataField(fields['32_tax_exemptions']?.value),
-        propertyTaxRate: createDataField(fields['33_property_tax_rate']?.value),
-        recentTaxPaymentHistory: createDataField(fields['34_recent_tax_history']?.value),
-        medianHomePriceNeighborhood: createDataField(fields['81_median_home_price_neighborhood']?.value),
-        pricePerSqftRecentAvg: createDataField(fields['82_price_per_sqft_recent_avg']?.value),
-        redfinEstimate: createDataField(fields['74_redfin_estimate']?.value),
-        priceToRentRatio: createDataField(fields['77_price_to_rent_ratio']?.value),
-        priceVsMedianPercent: createDataField(fields['79_price_vs_median_percent']?.value),
-        daysOnMarketAvg: createDataField(fields['83_days_on_market_avg']?.value),
-        inventorySurplus: createDataField(fields['84_inventory_surplus']?.value),
-        rentalEstimateMonthly: createDataField(fields['85_rental_estimate_monthly']?.value),
-        rentalYieldEst: createDataField(fields['86_rental_yield_est']?.value),
-        vacancyRateNeighborhood: createDataField(fields['87_vacancy_rate_neighborhood']?.value),
-        capRateEst: createDataField(fields['88_cap_rate_est']?.value),
-        insuranceEstAnnual: createDataField(fields['89_insurance_est_annual']?.value),
-        financingTerms: createDataField(fields['90_financing_terms']?.value),
-        comparableSalesLast3: createDataField(fields['91_comparable_sales']?.value),
+        annualPropertyTax: createFieldWithMetadata('76_annual_property_tax', fields['76_annual_property_tax']?.value),
+        taxExemptions: createFieldWithMetadata('32_tax_exemptions', fields['32_tax_exemptions']?.value),
+        propertyTaxRate: createFieldWithMetadata('33_property_tax_rate', fields['33_property_tax_rate']?.value),
+        recentTaxPaymentHistory: createFieldWithMetadata('34_recent_tax_history', fields['34_recent_tax_history']?.value),
+        medianHomePriceNeighborhood: createFieldWithMetadata('81_median_home_price_neighborhood', fields['81_median_home_price_neighborhood']?.value),
+        pricePerSqftRecentAvg: createFieldWithMetadata('82_price_per_sqft_recent_avg', fields['82_price_per_sqft_recent_avg']?.value),
+        redfinEstimate: createFieldWithMetadata('74_redfin_estimate', fields['74_redfin_estimate']?.value),
+        priceToRentRatio: createFieldWithMetadata('77_price_to_rent_ratio', fields['77_price_to_rent_ratio']?.value),
+        priceVsMedianPercent: createFieldWithMetadata('79_price_vs_median_percent', fields['79_price_vs_median_percent']?.value),
+        daysOnMarketAvg: createFieldWithMetadata('83_days_on_market_avg', fields['83_days_on_market_avg']?.value),
+        inventorySurplus: createFieldWithMetadata('84_inventory_surplus', fields['84_inventory_surplus']?.value),
+        rentalEstimateMonthly: createFieldWithMetadata('85_rental_estimate_monthly', fields['85_rental_estimate_monthly']?.value),
+        rentalYieldEst: createFieldWithMetadata('86_rental_yield_est', fields['86_rental_yield_est']?.value),
+        vacancyRateNeighborhood: createFieldWithMetadata('87_vacancy_rate_neighborhood', fields['87_vacancy_rate_neighborhood']?.value),
+        capRateEst: createFieldWithMetadata('88_cap_rate_est', fields['88_cap_rate_est']?.value),
+        insuranceEstAnnual: createFieldWithMetadata('89_insurance_est_annual', fields['89_insurance_est_annual']?.value),
+        financingTerms: createFieldWithMetadata('90_financing_terms', fields['90_financing_terms']?.value),
+        comparableSalesLast3: createFieldWithMetadata('91_comparable_sales', fields['91_comparable_sales']?.value),
       },
       utilities: {
-        electricProvider: createDataField(fields['92_electric_provider']?.value),
-        waterProvider: createDataField(fields['93_water_provider']?.value),
-        sewerProvider: createDataField(fields['94_sewer_provider']?.value),
-        naturalGas: createDataField(fields['95_natural_gas']?.value),
-        trashProvider: createDataField(fields['85_trash_provider']?.value),
-        internetProvidersTop3: createDataField(fields['96_internet_providers_top3']?.value),
-        maxInternetSpeed: createDataField(fields['97_max_internet_speed']?.value),
-        fiberAvailable: createDataField(fields['88_fiber_available']?.value),
-        cableTvProvider: createDataField(fields['98_cable_tv_provider']?.value),
-        avgElectricBill: createDataField(fields['90_avg_electric_bill']?.value),
-        avgWaterBill: createDataField(fields['91_avg_water_bill']?.value),
-        cellCoverageQuality: createDataField(fields['94_cell_coverage_quality']?.value),
-        emergencyServicesDistance: createDataField(fields['95_emergency_services_distance']?.value),
-        airQualityIndexCurrent: createDataField(fields['99_air_quality_index_current']?.value),
-        airQualityGrade: createDataField(fields['97_air_quality_grade']?.value),
-        floodZone: createDataField(fields['100_flood_zone']?.value),
-        floodRiskLevel: createDataField(fields['101_flood_risk_level']?.value),
-        climateRiskWildfireFlood: createDataField(fields['102_climate_risk_summary']?.value),
-        wildfireRisk: createDataField(fields['98_wildfire_risk']?.value),
-        earthquakeRisk: createDataField(fields['99_earthquake_risk']?.value),
-        hurricaneRisk: createDataField(fields['100_hurricane_risk']?.value),
-        tornadoRisk: createDataField(fields['101_tornado_risk']?.value),
-        radonRisk: createDataField(fields['102_radon_risk']?.value),
-        superfundNearby: createDataField(fields['103_superfund_nearby']?.value),
-        seaLevelRiseRisk: createDataField(fields['105_sea_level_rise_risk']?.value),
-        noiseLevelDbEst: createDataField(fields['103_noise_level_db_est']?.value),
-        solarPotential: createDataField(fields['104_solar_potential']?.value),
-        evChargingYn: createDataField(fields['105_ev_charging_yn']?.value),
-        smartHomeFeatures: createDataField(fields['106_smart_home_features']?.value),
-        accessibilityMods: createDataField(fields['107_accessibility_mods']?.value),
-        viewType: createDataField(fields['108_view_type']?.value),
-        lotFeatures: createDataField(fields['109_lot_features']?.value),
-        petPolicy: createDataField(fields['108_pet_policy']?.value),
-        ageRestrictions: createDataField(fields['109_age_restrictions']?.value),
-        specialAssessments: createDataField(fields['35_special_assessments']?.value),
-        notesConfidenceSummary: createDataField(fields['110_notes_confidence_summary']?.value),
+        electricProvider: createFieldWithMetadata('92_electric_provider', fields['92_electric_provider']?.value),
+        waterProvider: createFieldWithMetadata('93_water_provider', fields['93_water_provider']?.value),
+        sewerProvider: createFieldWithMetadata('94_sewer_provider', fields['94_sewer_provider']?.value),
+        naturalGas: createFieldWithMetadata('95_natural_gas', fields['95_natural_gas']?.value),
+        trashProvider: createFieldWithMetadata('85_trash_provider', fields['85_trash_provider']?.value),
+        internetProvidersTop3: createFieldWithMetadata('96_internet_providers_top3', fields['96_internet_providers_top3']?.value),
+        maxInternetSpeed: createFieldWithMetadata('97_max_internet_speed', fields['97_max_internet_speed']?.value),
+        fiberAvailable: createFieldWithMetadata('88_fiber_available', fields['88_fiber_available']?.value),
+        cableTvProvider: createFieldWithMetadata('98_cable_tv_provider', fields['98_cable_tv_provider']?.value),
+        avgElectricBill: createFieldWithMetadata('90_avg_electric_bill', fields['90_avg_electric_bill']?.value),
+        avgWaterBill: createFieldWithMetadata('91_avg_water_bill', fields['91_avg_water_bill']?.value),
+        cellCoverageQuality: createFieldWithMetadata('94_cell_coverage_quality', fields['94_cell_coverage_quality']?.value),
+        emergencyServicesDistance: createFieldWithMetadata('95_emergency_services_distance', fields['95_emergency_services_distance']?.value),
+        airQualityIndexCurrent: createFieldWithMetadata('99_air_quality_index_current', fields['99_air_quality_index_current']?.value),
+        airQualityGrade: createFieldWithMetadata('97_air_quality_grade', fields['97_air_quality_grade']?.value),
+        floodZone: createFieldWithMetadata('100_flood_zone', fields['100_flood_zone']?.value),
+        floodRiskLevel: createFieldWithMetadata('101_flood_risk_level', fields['101_flood_risk_level']?.value),
+        climateRiskWildfireFlood: createFieldWithMetadata('102_climate_risk_summary', fields['102_climate_risk_summary']?.value),
+        wildfireRisk: createFieldWithMetadata('98_wildfire_risk', fields['98_wildfire_risk']?.value),
+        earthquakeRisk: createFieldWithMetadata('99_earthquake_risk', fields['99_earthquake_risk']?.value),
+        hurricaneRisk: createFieldWithMetadata('100_hurricane_risk', fields['100_hurricane_risk']?.value),
+        tornadoRisk: createFieldWithMetadata('101_tornado_risk', fields['101_tornado_risk']?.value),
+        radonRisk: createFieldWithMetadata('102_radon_risk', fields['102_radon_risk']?.value),
+        superfundNearby: createFieldWithMetadata('103_superfund_nearby', fields['103_superfund_nearby']?.value),
+        seaLevelRiseRisk: createFieldWithMetadata('105_sea_level_rise_risk', fields['105_sea_level_rise_risk']?.value),
+        noiseLevelDbEst: createFieldWithMetadata('103_noise_level_db_est', fields['103_noise_level_db_est']?.value),
+        solarPotential: createFieldWithMetadata('104_solar_potential', fields['104_solar_potential']?.value),
+        evChargingYn: createFieldWithMetadata('105_ev_charging_yn', fields['105_ev_charging_yn']?.value),
+        smartHomeFeatures: createFieldWithMetadata('106_smart_home_features', fields['106_smart_home_features']?.value),
+        accessibilityMods: createFieldWithMetadata('107_accessibility_mods', fields['107_accessibility_mods']?.value),
+        viewType: createFieldWithMetadata('108_view_type', fields['108_view_type']?.value),
+        lotFeatures: createFieldWithMetadata('109_lot_features', fields['109_lot_features']?.value),
+        petPolicy: createFieldWithMetadata('108_pet_policy', fields['108_pet_policy']?.value),
+        ageRestrictions: createFieldWithMetadata('109_age_restrictions', fields['109_age_restrictions']?.value),
+        specialAssessments: createFieldWithMetadata('35_special_assessments', fields['35_special_assessments']?.value),
+        notesConfidenceSummary: createFieldWithMetadata('110_notes_confidence_summary', fields['110_notes_confidence_summary']?.value),
       },
       smartScore: 0,
       dataCompleteness: 0,
@@ -493,12 +538,21 @@ export default function AddProperty() {
   };
 
   // Helper to create a DataField with default values
-  const createDataField = <T,>(value: T | null, confidence: 'High' | 'Medium-High' | 'Medium' | 'Low' = 'Medium'): DataField<T> => ({
+  const createDataField = <T,>(
+    value: T | null,
+    confidence: 'High' | 'Medium-High' | 'Medium' | 'Low' = 'Medium',
+    llmSources: string[] = [],
+    hasConflict: boolean = false,
+    conflictValues: Array<{ source: string; value: any }> = []
+  ): DataField<T> => ({
     value,
     confidence,
-    notes: 'Imported from CSV',
-    sources: ['CSV Upload'],
+    notes: llmSources.length > 0 ? `Sourced from ${llmSources.join(', ')}` : 'Imported from CSV',
+    sources: llmSources.length > 0 ? llmSources : ['CSV Upload'],
     lastUpdated: new Date().toISOString(),
+    llmSources,
+    hasConflict,
+    conflictValues,
   });
 
   // Helper to parse price ranges - takes first number only
@@ -975,7 +1029,7 @@ export default function AddProperty() {
                   </div>
                 )}
 
-                {/* AI Enrichment Option */}
+                {/* AI Enrichment Option - OPTIONAL */}
                 <div className="mt-6 p-4 bg-quantum-cyan/5 border border-quantum-cyan/20 rounded-xl">
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input
@@ -987,13 +1041,35 @@ export default function AddProperty() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <Sparkles className="w-4 h-4 text-quantum-cyan" />
-                        <span className="text-white font-semibold">Enrich with AI after import</span>
+                        <span className="text-white font-semibold">Enhance with AI (Optional)</span>
                       </div>
                       <p className="text-xs text-gray-400 mt-1">
-                        Use Grok + Perplexity to fill missing fields and verify data accuracy
+                        Cascade: 👑 Opus → GPT → Grok → Sonnet → Copilot → Gemini (stops at 100%)
                       </p>
                     </div>
                   </label>
+
+                  {/* Show LLM selector when AI enrichment is enabled */}
+                  {enrichWithAI && (
+                    <div className="mt-4 pt-4 border-t border-quantum-cyan/20">
+                      <label className="block text-xs text-gray-400 mb-2">Select Engine</label>
+                      <div className="grid grid-cols-4 gap-2">
+                        {LLM_ENGINES.slice(0, 4).map((engine) => (
+                          <button
+                            key={engine.id}
+                            onClick={() => setSelectedEngine(engine.id)}
+                            className={`p-2 rounded-lg border text-xs transition-colors ${
+                              engine.id === selectedEngine
+                                ? 'border-quantum-cyan bg-quantum-cyan/10 text-quantum-cyan'
+                                : 'border-white/10 text-gray-400 hover:border-white/20'
+                            }`}
+                          >
+                            {engine.icon} {engine.label.split(' ')[0]}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <button
@@ -1185,23 +1261,27 @@ export default function AddProperty() {
               </div>
             </div>
 
-            {/* LLM Selection */}
+            {/* LLM Selection - Cascade Order per Reliability Audit */}
             <div className="mt-6">
               <label className="block text-sm text-gray-400 mb-2">
-                AI Engine
+                AI Engine <span className="text-quantum-cyan text-xs">(Reliability Order)</span>
               </label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {['Auto', 'Claude', 'GPT', 'Hybrid'].map((engine) => (
+              <p className="text-xs text-gray-500 mb-3">
+                Cascade: Opus → GPT → Grok → Sonnet → Copilot → Gemini
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {LLM_ENGINES.map((engine) => (
                   <button
-                    key={engine}
-                    onClick={() => setSelectedEngine(engine)}
-                    className={`p-3 rounded-xl border transition-colors ${
-                      engine === selectedEngine
+                    key={engine.id}
+                    onClick={() => setSelectedEngine(engine.id)}
+                    className={`p-2 rounded-xl border transition-colors text-left ${
+                      engine.id === selectedEngine
                         ? 'border-quantum-cyan bg-quantum-cyan/10 text-quantum-cyan'
                         : 'border-white/10 text-gray-400 hover:border-white/20'
                     }`}
                   >
-                    <span className="text-sm font-semibold">{engine}</span>
+                    <span className="text-sm font-semibold block">{engine.icon} {engine.label}</span>
+                    <span className="text-xs opacity-60">{engine.desc}</span>
                   </button>
                 ))}
               </div>
@@ -1246,23 +1326,27 @@ export default function AddProperty() {
               Supports: Zillow, Redfin, Trulia, Realtor.com, Compass, homes.com
             </p>
 
-            {/* LLM Selection */}
+            {/* LLM Selection - Cascade Order per Reliability Audit */}
             <div className="mt-6">
               <label className="block text-sm text-gray-400 mb-2">
-                AI Engine
+                AI Engine <span className="text-quantum-cyan text-xs">(Reliability Order)</span>
               </label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {['Auto', 'Claude', 'GPT', 'Hybrid'].map((engine) => (
+              <p className="text-xs text-gray-500 mb-3">
+                Cascade: Opus → GPT → Grok → Sonnet → Copilot → Gemini
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {LLM_ENGINES.map((engine) => (
                   <button
-                    key={engine}
-                    onClick={() => setSelectedEngine(engine)}
-                    className={`p-3 rounded-xl border transition-colors ${
-                      engine === selectedEngine
+                    key={engine.id}
+                    onClick={() => setSelectedEngine(engine.id)}
+                    className={`p-2 rounded-xl border transition-colors text-left ${
+                      engine.id === selectedEngine
                         ? 'border-quantum-cyan bg-quantum-cyan/10 text-quantum-cyan'
                         : 'border-white/10 text-gray-400 hover:border-white/20'
                     }`}
                   >
-                    <span className="text-sm font-semibold">{engine}</span>
+                    <span className="text-sm font-semibold block">{engine.icon} {engine.label}</span>
+                    <span className="text-xs opacity-60">{engine.desc}</span>
                   </button>
                 ))}
               </div>
@@ -1302,26 +1386,30 @@ Beautiful 3BR/2BA beach house at 290 41st Ave, St Pete Beach, FL 33706. Built in
               />
             </div>
             <p className="text-xs text-gray-500">
-              AI will extract all 110 property fields from your description using Grok + Perplexity web search
+              AI will extract all 110 property fields from your description
             </p>
 
-            {/* LLM Selection */}
+            {/* LLM Selection - Cascade Order per Reliability Audit */}
             <div className="mt-6">
               <label className="block text-sm text-gray-400 mb-2">
-                AI Engine
+                AI Engine <span className="text-quantum-cyan text-xs">(Reliability Order)</span>
               </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {['Grok', 'Perplexity', 'Both'].map((engine) => (
+              <p className="text-xs text-gray-500 mb-3">
+                Cascade: Opus → GPT → Grok → Sonnet → Copilot → Gemini
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {LLM_ENGINES.map((engine) => (
                   <button
-                    key={engine}
-                    onClick={() => setSelectedEngine(engine)}
-                    className={`p-3 rounded-xl border transition-colors ${
-                      engine === selectedEngine
+                    key={engine.id}
+                    onClick={() => setSelectedEngine(engine.id)}
+                    className={`p-2 rounded-xl border transition-colors text-left ${
+                      engine.id === selectedEngine
                         ? 'border-quantum-cyan bg-quantum-cyan/10 text-quantum-cyan'
                         : 'border-white/10 text-gray-400 hover:border-white/20'
                     }`}
                   >
-                    <span className="text-sm font-semibold">{engine}</span>
+                    <span className="text-sm font-semibold block">{engine.icon} {engine.label}</span>
+                    <span className="text-xs opacity-60">{engine.desc}</span>
                   </button>
                 ))}
               </div>

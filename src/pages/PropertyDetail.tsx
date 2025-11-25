@@ -36,6 +36,7 @@ import {
   Search,
 } from 'lucide-react';
 import { usePropertyStore } from '@/store/propertyStore';
+import { useIsAdmin } from '@/store/authStore';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -55,20 +56,132 @@ interface DataFieldProps {
   value: any;
   icon?: React.ReactNode;
   format?: 'currency' | 'number' | 'percent' | 'date' | 'text';
+  // LLM metadata for color coding (ADMIN ONLY)
+  confidence?: string;
+  llmSources?: string[];
+  hasConflict?: boolean;
+  conflictValues?: Array<{ source: string; value: any }>;
+  fieldKey?: string; // Field key for retry API calls
+  onRetry?: (fieldKey: string, llmName: string) => void;
+  isRetrying?: boolean;
+  isAdmin?: boolean; // Controls visibility of source info
 }
 
-const DataField = ({ label, value, icon, format = 'text' }: DataFieldProps) => {
-  if (value === null || value === undefined || value === '') return null;
+const DataField = ({ label, value, icon, format = 'text', confidence, llmSources, hasConflict, conflictValues, fieldKey, onRetry, isRetrying, isAdmin = false }: DataFieldProps) => {
+  const [showRetry, setShowRetry] = useState(false);
+
+  // Don't render if no value AND not explicitly showing missing data
+  const isMissing = value === null || value === undefined || value === '';
+  const needsRetry = isMissing || confidence === 'Low' || confidence === 'Unverified';
 
   const formattedValue = formatValue(value, format);
 
+  // Determine background color based on status (ADMIN ONLY - users see neutral styling)
+  let bgColor = 'bg-transparent';
+  let borderColor = 'border-white/5';
+  let statusBadge = null;
+
+  // Only show color coding and status badges to admins
+  if (isAdmin) {
+    if (hasConflict && conflictValues && conflictValues.length > 0) {
+      // 🟡 YELLOW: Conflicting data from multiple LLMs
+      bgColor = 'bg-yellow-500/10';
+      borderColor = 'border-yellow-500/30';
+      statusBadge = (
+        <div className="mt-2 p-2 bg-yellow-500/20 border border-yellow-500/30 rounded text-xs">
+          <div className="flex items-center gap-1 text-yellow-400 font-semibold mb-1">
+            <AlertCircle className="w-3 h-3" />
+            CONFLICT DETECTED
+          </div>
+          <div className="text-gray-300">
+            {conflictValues.map((cv, idx) => (
+              <div key={idx} className="ml-4">
+                • {cv.source}: {formatValue(cv.value, format)}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    } else if (isMissing) {
+      // ⚪ WHITE: Missing data (no LLM found it)
+      bgColor = 'bg-white/5';
+      borderColor = 'border-white/20';
+      statusBadge = (
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-gray-400 italic">Data not found by any source</div>
+          <button
+            onClick={() => setShowRetry(!showRetry)}
+            className="text-xs text-quantum-cyan hover:underline"
+          >
+            Retry with LLM
+          </button>
+        </div>
+      );
+    } else if (confidence === 'Low' || confidence === 'Unverified') {
+      // 🔴 RED: Suspected hallucination (low confidence)
+      bgColor = 'bg-red-500/10';
+      borderColor = 'border-red-500/30';
+      statusBadge = (
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-red-400 flex items-center gap-1">
+            <AlertCircle className="w-3 h-3" />
+            Low confidence - verify this data
+          </div>
+          <button
+            onClick={() => setShowRetry(!showRetry)}
+            className="text-xs text-quantum-cyan hover:underline"
+          >
+            Retry with LLM
+          </button>
+        </div>
+      );
+    } else if (confidence === 'High' && !hasConflict) {
+      // 🟢 GREEN: Good data (high confidence, no conflicts)
+      bgColor = 'bg-green-500/5';
+      borderColor = 'border-green-500/20';
+    }
+  }
+
   return (
-    <div className="flex items-start gap-3 py-2 border-b border-white/5 last:border-0">
-      {icon && <div className="text-quantum-cyan mt-0.5">{icon}</div>}
-      <div className="flex-1">
-        <span className="text-sm text-gray-400">{label}</span>
-        <p className="text-white font-medium">{formattedValue}</p>
+    <div className={`flex flex-col gap-2 py-3 px-3 rounded-lg border ${borderColor} ${bgColor} last:border-b-0`}>
+      <div className="flex items-start gap-3">
+        {icon && <div className="text-quantum-cyan mt-0.5">{icon}</div>}
+        <div className="flex-1">
+          <span className="text-sm text-gray-400">{label}</span>
+          <p className="text-white font-medium">
+            {isMissing ? <span className="text-gray-500 italic">Not available</span> : formattedValue}
+          </p>
+          {/* SOURCE INFO - ADMIN ONLY */}
+          {isAdmin && llmSources && llmSources.length > 0 && (
+            <div className="mt-1 text-xs text-gray-500">
+              Source: {llmSources.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')}
+            </div>
+          )}
+        </div>
       </div>
+      {/* STATUS BADGES - ADMIN ONLY */}
+      {isAdmin && statusBadge}
+
+      {/* Retry UI - ADMIN ONLY */}
+      {isAdmin && showRetry && needsRetry && fieldKey && onRetry && (
+        <div className="mt-2 p-3 bg-black/30 border border-quantum-cyan/20 rounded-lg">
+          <div className="text-xs text-gray-400 mb-2">
+            {isRetrying ? 'Fetching...' : 'Try fetching this field with:'}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {['Claude Opus', 'GPT', 'Grok', 'Claude Sonnet', 'Copilot', 'Gemini'].map((llm) => (
+              <button
+                key={llm}
+                onClick={() => onRetry(fieldKey, llm)}
+                disabled={isRetrying}
+                className={`px-3 py-1 text-xs rounded-full bg-quantum-cyan/10 hover:bg-quantum-cyan/20 text-quantum-cyan border border-quantum-cyan/30 transition-colors ${isRetrying ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {llm}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -94,6 +207,45 @@ const formatValue = (value: any, format: string): string => {
       if (Array.isArray(value)) return value.join(', ');
       return String(value);
   }
+};
+
+// Helper to extract DataField metadata for display
+interface DataFieldInput<T> {
+  value: T | null;
+  confidence?: string;
+  llmSources?: string[];
+  hasConflict?: boolean;
+  conflictValues?: Array<{ source: string; value: any }>;
+}
+
+// This will be set by the component
+let globalRetryHandler: ((fieldKey: string, llmName: string) => void) | undefined;
+let globalIsRetrying = false;
+let globalIsAdmin = false; // Controls source visibility (admin vs user view)
+
+const renderDataField = (
+  label: string,
+  field: DataFieldInput<any>,
+  format: 'currency' | 'number' | 'percent' | 'date' | 'text' = 'text',
+  icon?: React.ReactNode,
+  fieldKey?: string
+) => {
+  return (
+    <DataField
+      label={label}
+      value={field.value}
+      format={format}
+      icon={icon}
+      confidence={field.confidence}
+      llmSources={field.llmSources}
+      hasConflict={field.hasConflict}
+      conflictValues={field.conflictValues}
+      fieldKey={fieldKey}
+      onRetry={globalRetryHandler}
+      isRetrying={globalIsRetrying}
+      isAdmin={globalIsAdmin}
+    />
+  );
 };
 
 interface SectionProps {
@@ -139,10 +291,71 @@ const Section = ({ title, icon, children, defaultExpanded = true }: SectionProps
 export default function PropertyDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getPropertyById, getFullPropertyById, removeProperty } = usePropertyStore();
+  const { getPropertyById, getFullPropertyById, removeProperty, updateFullProperty } = usePropertyStore();
+  const [isRetrying, setIsRetrying] = useState(false);
+  const isAdmin = useIsAdmin(); // Check if current user is admin (agent/broker)
 
   const property = id ? getPropertyById(id) : undefined;
   const fullProperty = id ? getFullPropertyById(id) : undefined;
+
+  // Retry handler - calls API with specific LLM (ADMIN ONLY)
+  const handleRetryField = async (fieldKey: string, llmName: string) => {
+    globalIsRetrying = true;
+    if (!fullProperty || !id) return;
+
+    setIsRetrying(true);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || '/api/property/search';
+      const address = fullProperty.address.fullAddress.value;
+
+      // Map display names to engine IDs
+      const engineMap: Record<string, string> = {
+        'Claude Opus': 'claude-opus',
+        'GPT': 'gpt',
+        'Grok': 'grok',
+        'Claude Sonnet': 'claude-sonnet',
+        'Copilot': 'copilot',
+        'Gemini': 'gemini',
+        'Perplexity': 'perplexity',
+      };
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          address,
+          engines: [engineMap[llmName] || llmName.toLowerCase()],
+          skipLLMs: false,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const newFieldData = data.fields[fieldKey];
+
+        if (newFieldData) {
+          // Update the property with the new field value
+          alert(`✅ ${llmName} found data for ${fieldKey}: ${newFieldData.value}`);
+          // TODO: Update fullProperty in store with new field data
+        } else {
+          alert(`❌ ${llmName} could not find data for ${fieldKey}`);
+        }
+      } else {
+        alert(`Error calling ${llmName} API`);
+      }
+    } catch (error) {
+      console.error('Retry error:', error);
+      alert(`Failed to retry with ${llmName}: ${error}`);
+    } finally {
+      setIsRetrying(false);
+      globalIsRetrying = false;
+    }
+  };
+
+  // Set global handlers and admin state
+  globalRetryHandler = handleRetryField;
+  globalIsRetrying = isRetrying;
+  globalIsAdmin = isAdmin; // Pass admin state to renderDataField
 
   console.log('🔎 DETAIL PAGE: Property ID:', id);
   console.log('📇 Basic property:', property);
@@ -318,17 +531,17 @@ export default function PropertyDetail() {
             <Section title="Address & Identity" icon={<MapPin className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <DataField label="Full Address" value={fullProperty.address.fullAddress.value} />
-                  <DataField label="MLS Primary" value={fullProperty.address.mlsPrimary.value} />
-                  <DataField label="MLS Secondary" value={fullProperty.address.mlsSecondary.value} />
-                  <DataField label="Listing Status" value={fullProperty.address.listingStatus.value} />
+                  {renderDataField("Full Address", fullProperty.address.fullAddress)}
+                  {renderDataField("MLS Primary", fullProperty.address.mlsPrimary)}
+                  {renderDataField("MLS Secondary", fullProperty.address.mlsSecondary)}
+                  {renderDataField("Listing Status", fullProperty.address.listingStatus)}
                 </div>
                 <div>
-                  <DataField label="Listing Date" value={fullProperty.address.listingDate.value} format="date" />
-                  <DataField label="Neighborhood" value={fullProperty.address.neighborhoodName.value} />
-                  <DataField label="County" value={fullProperty.address.county.value} />
-                  <DataField label="ZIP Code" value={fullProperty.address.zipCode.value} />
-                  <DataField label="Parcel ID" value={fullProperty.details.parcelId.value} />
+                  {renderDataField("Listing Date", fullProperty.address.listingDate, 'date')}
+                  {renderDataField("Neighborhood", fullProperty.address.neighborhoodName)}
+                  {renderDataField("County", fullProperty.address.county)}
+                  {renderDataField("ZIP Code", fullProperty.address.zipCode)}
+                  {renderDataField("Parcel ID", fullProperty.details.parcelId)}
                 </div>
               </div>
             </Section>
@@ -337,15 +550,15 @@ export default function PropertyDetail() {
             <Section title="Pricing & Value" icon={<DollarSign className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <DataField label="Listing Price" value={fullProperty.address.listingPrice.value} format="currency" />
-                  <DataField label="Price Per Sq Ft" value={fullProperty.address.pricePerSqft.value} format="currency" />
-                  <DataField label="Market Value Estimate" value={fullProperty.details.marketValueEstimate.value} format="currency" />
+                  {renderDataField("Listing Price", fullProperty.address.listingPrice, 'currency')}
+                  {renderDataField("Price Per Sq Ft", fullProperty.address.pricePerSqft, 'currency')}
+                  {renderDataField("Market Value Estimate", fullProperty.details.marketValueEstimate, 'currency')}
                 </div>
                 <div>
-                  <DataField label="Last Sale Date" value={fullProperty.details.lastSaleDate.value} format="date" />
-                  <DataField label="Last Sale Price" value={fullProperty.details.lastSalePrice.value} format="currency" />
-                  <DataField label="Assessed Value" value={fullProperty.details.assessedValue.value} format="currency" />
-                  <DataField label="Redfin Estimate" value={fullProperty.financial.redfinEstimate.value} format="currency" />
+                  {renderDataField("Last Sale Date", fullProperty.details.lastSaleDate, 'date')}
+                  {renderDataField("Last Sale Price", fullProperty.details.lastSalePrice, 'currency')}
+                  {renderDataField("Assessed Value", fullProperty.details.assessedValue, 'currency')}
+                  {renderDataField("Redfin Estimate", fullProperty.financial.redfinEstimate, 'currency')}
                 </div>
               </div>
             </Section>
@@ -354,23 +567,23 @@ export default function PropertyDetail() {
             <Section title="Property Basics" icon={<Home className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <DataField label="Bedrooms" value={fullProperty.details.bedrooms.value} format="number" />
-                  <DataField label="Full Bathrooms" value={fullProperty.details.fullBathrooms.value} format="number" />
-                  <DataField label="Half Bathrooms" value={fullProperty.details.halfBathrooms.value} format="number" />
-                  <DataField label="Total Bathrooms" value={fullProperty.details.totalBathrooms.value} format="number" />
+                  {renderDataField("Bedrooms", fullProperty.details.bedrooms, "number")}
+                  {renderDataField("Full Bathrooms", fullProperty.details.fullBathrooms, "number")}
+                  {renderDataField("Half Bathrooms", fullProperty.details.halfBathrooms, "number")}
+                  {renderDataField("Total Bathrooms", fullProperty.details.totalBathrooms, "number")}
                 </div>
                 <div>
-                  <DataField label="Living Sq Ft" value={fullProperty.details.livingSqft.value} format="number" />
-                  <DataField label="Total Sq Ft Under Roof" value={fullProperty.details.totalSqftUnderRoof.value} format="number" />
-                  <DataField label="Lot Size (Sq Ft)" value={fullProperty.details.lotSizeSqft.value} format="number" />
-                  <DataField label="Lot Size (Acres)" value={fullProperty.details.lotSizeAcres.value} format="number" />
+                  {renderDataField("Living Sq Ft", fullProperty.details.livingSqft, "number")}
+                  {renderDataField("Total Sq Ft Under Roof", fullProperty.details.totalSqftUnderRoof, "number")}
+                  {renderDataField("Lot Size (Sq Ft)", fullProperty.details.lotSizeSqft, "number")}
+                  {renderDataField("Lot Size (Acres)", fullProperty.details.lotSizeAcres, "number")}
                 </div>
                 <div>
-                  <DataField label="Year Built" value={fullProperty.details.yearBuilt.value} />
-                  <DataField label="Property Type" value={fullProperty.details.propertyType.value} />
-                  <DataField label="Stories" value={fullProperty.details.stories.value} format="number" />
-                  <DataField label="Garage Spaces" value={fullProperty.details.garageSpaces.value} format="number" />
-                  <DataField label="Parking Total" value={fullProperty.details.parkingTotal.value} />
+                  {renderDataField("Year Built", fullProperty.details.yearBuilt)}
+                  {renderDataField("Property Type", fullProperty.details.propertyType)}
+                  {renderDataField("Stories", fullProperty.details.stories, "number")}
+                  {renderDataField("Garage Spaces", fullProperty.details.garageSpaces, "number")}
+                  {renderDataField("Parking Total", fullProperty.details.parkingTotal)}
                 </div>
               </div>
             </Section>
@@ -379,17 +592,17 @@ export default function PropertyDetail() {
             <Section title="HOA & Taxes" icon={<Shield className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <DataField label="HOA" value={fullProperty.details.hoaYn.value} />
-                  <DataField label="HOA Fee (Annual)" value={fullProperty.details.hoaFeeAnnual.value} format="currency" />
-                  <DataField label="HOA Name" value={fullProperty.details.hoaName.value} />
-                  <DataField label="HOA Includes" value={fullProperty.details.hoaIncludes.value} />
-                  <DataField label="Ownership Type" value={fullProperty.details.ownershipType.value} />
+                  {renderDataField("HOA", fullProperty.details.hoaYn)}
+                  {renderDataField("HOA Fee (Annual)", fullProperty.details.hoaFeeAnnual, "currency")}
+                  {renderDataField("HOA Name", fullProperty.details.hoaName)}
+                  {renderDataField("HOA Includes", fullProperty.details.hoaIncludes)}
+                  {renderDataField("Ownership Type", fullProperty.details.ownershipType)}
                 </div>
                 <div>
-                  <DataField label="Annual Taxes" value={fullProperty.details.annualTaxes.value} format="currency" />
-                  <DataField label="Tax Year" value={fullProperty.details.taxYear.value} />
-                  <DataField label="Property Tax Rate" value={fullProperty.financial.propertyTaxRate.value} format="percent" />
-                  <DataField label="Tax Exemptions" value={fullProperty.financial.taxExemptions.value} />
+                  {renderDataField("Annual Taxes", fullProperty.details.annualTaxes, "currency")}
+                  {renderDataField("Tax Year", fullProperty.details.taxYear)}
+                  {renderDataField("Property Tax Rate", fullProperty.financial.propertyTaxRate, "percent")}
+                  {renderDataField("Tax Exemptions", fullProperty.financial.taxExemptions)}
                 </div>
               </div>
             </Section>
@@ -398,18 +611,18 @@ export default function PropertyDetail() {
             <Section title="Structure & Systems" icon={<Building2 className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <DataField label="Roof Type" value={fullProperty.structural.roofType.value} />
-                  <DataField label="Roof Age (Est)" value={fullProperty.structural.roofAgeEst.value} />
-                  <DataField label="Exterior Material" value={fullProperty.structural.exteriorMaterial.value} />
-                  <DataField label="Foundation" value={fullProperty.structural.foundation.value} />
-                  <DataField label="Water Heater Type" value={fullProperty.structural.waterHeaterType.value} />
-                  <DataField label="Garage Type" value={fullProperty.structural.garageType.value} />
+                  {renderDataField("Roof Type", fullProperty.structural.roofType)}
+                  {renderDataField("Roof Age (Est)", fullProperty.structural.roofAgeEst)}
+                  {renderDataField("Exterior Material", fullProperty.structural.exteriorMaterial)}
+                  {renderDataField("Foundation", fullProperty.structural.foundation)}
+                  {renderDataField("Water Heater Type", fullProperty.structural.waterHeaterType)}
+                  {renderDataField("Garage Type", fullProperty.structural.garageType)}
                 </div>
                 <div>
-                  <DataField label="HVAC Type" value={fullProperty.structural.hvacType.value} />
-                  <DataField label="HVAC Age" value={fullProperty.structural.hvacAge.value} />
-                  <DataField label="Laundry Type" value={fullProperty.structural.laundryType.value} />
-                  <DataField label="Interior Condition" value={fullProperty.structural.interiorCondition.value} />
+                  {renderDataField("HVAC Type", fullProperty.structural.hvacType)}
+                  {renderDataField("HVAC Age", fullProperty.structural.hvacAge)}
+                  {renderDataField("Laundry Type", fullProperty.structural.laundryType)}
+                  {renderDataField("Interior Condition", fullProperty.structural.interiorCondition)}
                 </div>
               </div>
             </Section>
@@ -418,13 +631,13 @@ export default function PropertyDetail() {
             <Section title="Interior Features" icon={<Home className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <DataField label="Flooring Type" value={fullProperty.structural.flooringType.value} />
-                  <DataField label="Kitchen Features" value={fullProperty.structural.kitchenFeatures.value} />
-                  <DataField label="Appliances Included" value={fullProperty.structural.appliancesIncluded.value} />
+                  {renderDataField("Flooring Type", fullProperty.structural.flooringType)}
+                  {renderDataField("Kitchen Features", fullProperty.structural.kitchenFeatures)}
+                  {renderDataField("Appliances Included", fullProperty.structural.appliancesIncluded)}
                 </div>
                 <div>
-                  <DataField label="Fireplace" value={fullProperty.structural.fireplaceYn.value} />
-                  <DataField label="Fireplace Count" value={fullProperty.structural.fireplaceCount.value} format="number" />
+                  {renderDataField("Fireplace", fullProperty.structural.fireplaceYn)}
+                  {renderDataField("Fireplace Count", fullProperty.structural.fireplaceCount, "number")}
                 </div>
               </div>
             </Section>
@@ -433,13 +646,13 @@ export default function PropertyDetail() {
             <Section title="Exterior Features" icon={<Trees className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <DataField label="Pool" value={fullProperty.structural.poolYn.value} />
-                  <DataField label="Pool Type" value={fullProperty.structural.poolType.value} />
-                  <DataField label="Deck/Patio" value={fullProperty.structural.deckPatio.value} />
+                  {renderDataField("Pool", fullProperty.structural.poolYn)}
+                  {renderDataField("Pool Type", fullProperty.structural.poolType)}
+                  {renderDataField("Deck/Patio", fullProperty.structural.deckPatio)}
                 </div>
                 <div>
-                  <DataField label="Fence" value={fullProperty.structural.fence.value} />
-                  <DataField label="Landscaping" value={fullProperty.structural.landscaping.value} />
+                  {renderDataField("Fence", fullProperty.structural.fence)}
+                  {renderDataField("Landscaping", fullProperty.structural.landscaping)}
                 </div>
               </div>
             </Section>
@@ -448,12 +661,12 @@ export default function PropertyDetail() {
             <Section title="Permits & Renovations" icon={<Wrench className="w-6 h-6" />} defaultExpanded={false}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <DataField label="Recent Renovations" value={fullProperty.structural.recentRenovations.value} />
-                  <DataField label="Permit History - Roof" value={fullProperty.structural.permitHistoryRoof.value} />
+                  {renderDataField("Recent Renovations", fullProperty.structural.recentRenovations)}
+                  {renderDataField("Permit History - Roof", fullProperty.structural.permitHistoryRoof)}
                 </div>
                 <div>
-                  <DataField label="Permit History - HVAC" value={fullProperty.structural.permitHistoryHvac.value} />
-                  <DataField label="Permit History - Other" value={fullProperty.structural.permitHistoryPoolAdditions.value} />
+                  {renderDataField("Permit History - HVAC", fullProperty.structural.permitHistoryHvac)}
+                  {renderDataField("Permit History - Other", fullProperty.structural.permitHistoryPoolAdditions)}
                 </div>
               </div>
             </Section>
@@ -462,8 +675,8 @@ export default function PropertyDetail() {
             <Section title="Assigned Schools" icon={<School className="w-6 h-6" />}>
               <div className="space-y-4">
                 <div className="mb-4">
-                  <DataField label="School District" value={fullProperty.location.schoolDistrictName.value} />
-                  <DataField label="Elevation (feet)" value={fullProperty.location.elevationFeet.value} format="number" />
+                  {renderDataField("School District", fullProperty.location.schoolDistrictName)}
+                  {renderDataField("Elevation (feet)", fullProperty.location.elevationFeet, "number")}
                 </div>
                 {fullProperty.location.assignedElementary.value && (
                   <div className="glass-5d p-4 rounded-lg">
@@ -557,31 +770,31 @@ export default function PropertyDetail() {
                 </div>
               </div>
               <div className="mt-6 pt-6 border-t border-white/10 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <DataField label="Noise Level" value={fullProperty.location.noiseLevel.value} />
-                <DataField label="Traffic Level" value={fullProperty.location.trafficLevel.value} />
-                <DataField label="Walkability Description" value={fullProperty.location.walkabilityDescription.value} />
-                <DataField label="Public Transit Access" value={fullProperty.location.publicTransitAccess.value} />
-                <DataField label="Commute to City Center" value={fullProperty.location.commuteTimeCityCenter.value} />
+                {renderDataField("Noise Level", fullProperty.location.noiseLevel)}
+                {renderDataField("Traffic Level", fullProperty.location.trafficLevel)}
+                {renderDataField("Walkability Description", fullProperty.location.walkabilityDescription)}
+                {renderDataField("Public Transit Access", fullProperty.location.publicTransitAccess)}
+                {renderDataField("Commute to City Center", fullProperty.location.commuteTimeCityCenter)}
               </div>
             </Section>
 
             {/* Distances & Amenities */}
             <Section title="Distances & Amenities" icon={<MapPin className="w-6 h-6" />} defaultExpanded={false}>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <DataField label="Grocery" value={fullProperty.location.distanceGroceryMiles.value} format="number" icon={<span className="text-xs">mi</span>} />
-                <DataField label="Hospital" value={fullProperty.location.distanceHospitalMiles.value} format="number" icon={<span className="text-xs">mi</span>} />
-                <DataField label="Airport" value={fullProperty.location.distanceAirportMiles.value} format="number" icon={<span className="text-xs">mi</span>} />
-                <DataField label="Park" value={fullProperty.location.distanceParkMiles.value} format="number" icon={<span className="text-xs">mi</span>} />
-                <DataField label="Beach" value={fullProperty.location.distanceBeachMiles.value} format="number" icon={<span className="text-xs">mi</span>} />
+                {renderDataField("Grocery", fullProperty.location.distanceGroceryMiles, "number", <span className="text-xs">mi</span>)}
+                {renderDataField("Hospital", fullProperty.location.distanceHospitalMiles, "number", <span className="text-xs">mi</span>)}
+                {renderDataField("Airport", fullProperty.location.distanceAirportMiles, "number", <span className="text-xs">mi</span>)}
+                {renderDataField("Park", fullProperty.location.distanceParkMiles, "number", <span className="text-xs">mi</span>)}
+                {renderDataField("Beach", fullProperty.location.distanceBeachMiles, "number", <span className="text-xs">mi</span>)}
               </div>
             </Section>
 
             {/* Safety & Crime */}
             <Section title="Safety & Crime" icon={<Shield className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <DataField label="Violent Crime Index" value={fullProperty.location.crimeIndexViolent.value} />
-                <DataField label="Property Crime Index" value={fullProperty.location.crimeIndexProperty.value} />
-                <DataField label="Neighborhood Safety Rating" value={fullProperty.location.neighborhoodSafetyRating.value} />
+                {renderDataField("Violent Crime Index", fullProperty.location.crimeIndexViolent)}
+                {renderDataField("Property Crime Index", fullProperty.location.crimeIndexProperty)}
+                {renderDataField("Neighborhood Safety Rating", fullProperty.location.neighborhoodSafetyRating)}
               </div>
             </Section>
 
@@ -589,21 +802,21 @@ export default function PropertyDetail() {
             <Section title="Market & Investment Data" icon={<TrendingUp className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <DataField label="Median Home Price (Neighborhood)" value={fullProperty.financial.medianHomePriceNeighborhood.value} format="currency" />
-                  <DataField label="Price Per Sq Ft (Recent Avg)" value={fullProperty.financial.pricePerSqftRecentAvg.value} format="currency" />
-                  <DataField label="Price to Rent Ratio" value={fullProperty.financial.priceToRentRatio.value} format="number" />
-                  <DataField label="Price vs Median %" value={fullProperty.financial.priceVsMedianPercent.value} format="percent" />
-                  <DataField label="Days on Market (Avg)" value={fullProperty.financial.daysOnMarketAvg.value} format="number" />
-                  <DataField label="Inventory Surplus" value={fullProperty.financial.inventorySurplus.value} />
-                  <DataField label="Insurance Estimate (Annual)" value={fullProperty.financial.insuranceEstAnnual.value} format="currency" />
+                  {renderDataField("Median Home Price (Neighborhood)", fullProperty.financial.medianHomePriceNeighborhood, "currency")}
+                  {renderDataField("Price Per Sq Ft (Recent Avg)", fullProperty.financial.pricePerSqftRecentAvg, "currency")}
+                  {renderDataField("Price to Rent Ratio", fullProperty.financial.priceToRentRatio, "number")}
+                  {renderDataField("Price vs Median %", fullProperty.financial.priceVsMedianPercent, "percent")}
+                  {renderDataField("Days on Market (Avg)", fullProperty.financial.daysOnMarketAvg, "number")}
+                  {renderDataField("Inventory Surplus", fullProperty.financial.inventorySurplus)}
+                  {renderDataField("Insurance Estimate (Annual)", fullProperty.financial.insuranceEstAnnual, "currency")}
                 </div>
                 <div>
-                  <DataField label="Rental Estimate (Monthly)" value={fullProperty.financial.rentalEstimateMonthly.value} format="currency" />
-                  <DataField label="Rental Yield (Est)" value={fullProperty.financial.rentalYieldEst.value} format="percent" />
-                  <DataField label="Vacancy Rate (Neighborhood)" value={fullProperty.financial.vacancyRateNeighborhood.value} format="percent" />
-                  <DataField label="Cap Rate (Est)" value={fullProperty.financial.capRateEst.value} format="percent" />
-                  <DataField label="Financing Terms" value={fullProperty.financial.financingTerms.value} />
-                  <DataField label="Comparable Sales" value={fullProperty.financial.comparableSalesLast3.value} />
+                  {renderDataField("Rental Estimate (Monthly)", fullProperty.financial.rentalEstimateMonthly, "currency")}
+                  {renderDataField("Rental Yield (Est)", fullProperty.financial.rentalYieldEst, "percent")}
+                  {renderDataField("Vacancy Rate (Neighborhood)", fullProperty.financial.vacancyRateNeighborhood, "percent")}
+                  {renderDataField("Cap Rate (Est)", fullProperty.financial.capRateEst, "percent")}
+                  {renderDataField("Financing Terms", fullProperty.financial.financingTerms)}
+                  {renderDataField("Comparable Sales", fullProperty.financial.comparableSalesLast3)}
                 </div>
               </div>
             </Section>
@@ -612,21 +825,21 @@ export default function PropertyDetail() {
             <Section title="Utilities & Connectivity" icon={<Wifi className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <DataField label="Electric Provider" value={fullProperty.utilities.electricProvider.value} icon={<Zap className="w-4 h-4" />} />
-                  <DataField label="Avg Electric Bill" value={fullProperty.utilities.avgElectricBill.value} />
-                  <DataField label="Water Provider" value={fullProperty.utilities.waterProvider.value} />
-                  <DataField label="Avg Water Bill" value={fullProperty.utilities.avgWaterBill.value} />
-                  <DataField label="Sewer Provider" value={fullProperty.utilities.sewerProvider.value} />
-                  <DataField label="Natural Gas" value={fullProperty.utilities.naturalGas.value} />
-                  <DataField label="Trash Provider" value={fullProperty.utilities.trashProvider.value} />
+                  {renderDataField("Electric Provider", fullProperty.utilities.electricProvider, "text", <Zap className="w-4 h-4" />)}
+                  {renderDataField("Avg Electric Bill", fullProperty.utilities.avgElectricBill)}
+                  {renderDataField("Water Provider", fullProperty.utilities.waterProvider)}
+                  {renderDataField("Avg Water Bill", fullProperty.utilities.avgWaterBill)}
+                  {renderDataField("Sewer Provider", fullProperty.utilities.sewerProvider)}
+                  {renderDataField("Natural Gas", fullProperty.utilities.naturalGas)}
+                  {renderDataField("Trash Provider", fullProperty.utilities.trashProvider)}
                 </div>
                 <div>
-                  <DataField label="Internet Providers (Top 3)" value={fullProperty.utilities.internetProvidersTop3.value} />
-                  <DataField label="Max Internet Speed" value={fullProperty.utilities.maxInternetSpeed.value} />
-                  <DataField label="Fiber Available" value={fullProperty.utilities.fiberAvailable.value} />
-                  <DataField label="Cable TV Provider" value={fullProperty.utilities.cableTvProvider.value} />
-                  <DataField label="Cell Coverage Quality" value={fullProperty.utilities.cellCoverageQuality.value} />
-                  <DataField label="Emergency Services Distance" value={fullProperty.utilities.emergencyServicesDistance.value} />
+                  {renderDataField("Internet Providers (Top 3)", fullProperty.utilities.internetProvidersTop3)}
+                  {renderDataField("Max Internet Speed", fullProperty.utilities.maxInternetSpeed)}
+                  {renderDataField("Fiber Available", fullProperty.utilities.fiberAvailable)}
+                  {renderDataField("Cable TV Provider", fullProperty.utilities.cableTvProvider)}
+                  {renderDataField("Cell Coverage Quality", fullProperty.utilities.cellCoverageQuality)}
+                  {renderDataField("Emergency Services Distance", fullProperty.utilities.emergencyServicesDistance)}
                 </div>
               </div>
             </Section>
@@ -635,22 +848,22 @@ export default function PropertyDetail() {
             <Section title="Environment & Risk" icon={<Sun className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <DataField label="Air Quality Index" value={fullProperty.utilities.airQualityIndexCurrent.value} />
-                  <DataField label="Air Quality Grade" value={fullProperty.utilities.airQualityGrade.value} />
-                  <DataField label="Flood Zone" value={fullProperty.utilities.floodZone.value} />
-                  <DataField label="Flood Risk Level" value={fullProperty.utilities.floodRiskLevel.value} />
-                  <DataField label="Climate Risk" value={fullProperty.utilities.climateRiskWildfireFlood.value} />
-                  <DataField label="Wildfire Risk" value={fullProperty.utilities.wildfireRisk.value} />
-                  <DataField label="Earthquake Risk" value={fullProperty.utilities.earthquakeRisk.value} />
-                  <DataField label="Hurricane Risk" value={fullProperty.utilities.hurricaneRisk.value} />
+                  {renderDataField("Air Quality Index", fullProperty.utilities.airQualityIndexCurrent)}
+                  {renderDataField("Air Quality Grade", fullProperty.utilities.airQualityGrade)}
+                  {renderDataField("Flood Zone", fullProperty.utilities.floodZone)}
+                  {renderDataField("Flood Risk Level", fullProperty.utilities.floodRiskLevel)}
+                  {renderDataField("Climate Risk", fullProperty.utilities.climateRiskWildfireFlood)}
+                  {renderDataField("Wildfire Risk", fullProperty.utilities.wildfireRisk)}
+                  {renderDataField("Earthquake Risk", fullProperty.utilities.earthquakeRisk)}
+                  {renderDataField("Hurricane Risk", fullProperty.utilities.hurricaneRisk)}
                 </div>
                 <div>
-                  <DataField label="Tornado Risk" value={fullProperty.utilities.tornadoRisk.value} />
-                  <DataField label="Radon Risk" value={fullProperty.utilities.radonRisk.value} />
-                  <DataField label="Superfund Site Nearby" value={fullProperty.utilities.superfundNearby.value} />
-                  <DataField label="Sea Level Rise Risk" value={fullProperty.utilities.seaLevelRiseRisk.value} />
-                  <DataField label="Noise Level (dB Est)" value={fullProperty.utilities.noiseLevelDbEst.value} />
-                  <DataField label="Solar Potential" value={fullProperty.utilities.solarPotential.value} />
+                  {renderDataField("Tornado Risk", fullProperty.utilities.tornadoRisk)}
+                  {renderDataField("Radon Risk", fullProperty.utilities.radonRisk)}
+                  {renderDataField("Superfund Site Nearby", fullProperty.utilities.superfundNearby)}
+                  {renderDataField("Sea Level Rise Risk", fullProperty.utilities.seaLevelRiseRisk)}
+                  {renderDataField("Noise Level (dB Est)", fullProperty.utilities.noiseLevelDbEst)}
+                  {renderDataField("Solar Potential", fullProperty.utilities.solarPotential)}
                 </div>
               </div>
             </Section>
@@ -659,16 +872,16 @@ export default function PropertyDetail() {
             <Section title="Additional Features" icon={<Hammer className="w-6 h-6" />} defaultExpanded={false}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <DataField label="View Type" value={fullProperty.utilities.viewType.value} />
-                  <DataField label="Lot Features" value={fullProperty.utilities.lotFeatures.value} />
-                  <DataField label="EV Charging" value={fullProperty.utilities.evChargingYn.value} />
-                  <DataField label="Smart Home Features" value={fullProperty.utilities.smartHomeFeatures.value} />
-                  <DataField label="Accessibility Modifications" value={fullProperty.utilities.accessibilityMods.value} />
+                  {renderDataField("View Type", fullProperty.utilities.viewType)}
+                  {renderDataField("Lot Features", fullProperty.utilities.lotFeatures)}
+                  {renderDataField("EV Charging", fullProperty.utilities.evChargingYn)}
+                  {renderDataField("Smart Home Features", fullProperty.utilities.smartHomeFeatures)}
+                  {renderDataField("Accessibility Modifications", fullProperty.utilities.accessibilityMods)}
                 </div>
                 <div>
-                  <DataField label="Pet Policy" value={fullProperty.utilities.petPolicy.value} />
-                  <DataField label="Age Restrictions" value={fullProperty.utilities.ageRestrictions.value} />
-                  <DataField label="Special Assessments" value={fullProperty.utilities.specialAssessments.value} />
+                  {renderDataField("Pet Policy", fullProperty.utilities.petPolicy)}
+                  {renderDataField("Age Restrictions", fullProperty.utilities.ageRestrictions)}
+                  {renderDataField("Special Assessments", fullProperty.utilities.specialAssessments)}
                 </div>
               </div>
             </Section>

@@ -1031,7 +1031,50 @@ Only fill in fields where you have GENERAL KNOWLEDGE (counties, regions, typical
 For property-specific data, always return null with confidence "Unverified".`;
 
 // Claude API call
-async function callClaude(address: string): Promise<any> {
+// Claude Opus API call - MOST RELIABLE per audit
+async function callClaudeOpus(address: string): Promise<any> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return { error: 'ANTHROPIC_API_KEY not set', fields: {} };
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-20250514',
+        max_tokens: 8000,
+        system: SYSTEM_PROMPT,
+        messages: [
+          {
+            role: 'user',
+            content: `Extract all 110 property data fields for this address: ${address}
+
+Search thoroughly across all available web sources. Return the JSON response with all fields you can find.`,
+          },
+        ],
+      }),
+    });
+
+    const data = await response.json();
+    if (data.content && data.content[0]?.text) {
+      const text = data.content[0].text;
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return { ...JSON.parse(jsonMatch[0]), llm: 'Claude Opus' };
+      }
+    }
+    return { error: 'Failed to parse Claude Opus response', fields: {}, llm: 'Claude Opus' };
+  } catch (error) {
+    return { error: String(error), fields: {}, llm: 'Claude Opus' };
+  }
+}
+
+// Claude Sonnet API call - 4th in reliability per audit
+async function callClaudeSonnet(address: string): Promise<any> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return { error: 'ANTHROPIC_API_KEY not set', fields: {} };
 
@@ -1061,15 +1104,70 @@ Search thoroughly across all available web sources. Return the JSON response wit
     const data = await response.json();
     if (data.content && data.content[0]?.text) {
       const text = data.content[0].text;
-      // Extract JSON from response
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        return { ...JSON.parse(jsonMatch[0]), llm: 'Claude' };
+        return { ...JSON.parse(jsonMatch[0]), llm: 'Claude Sonnet' };
       }
     }
-    return { error: 'Failed to parse Claude response', fields: {}, llm: 'Claude' };
+    return { error: 'Failed to parse Claude Sonnet response', fields: {}, llm: 'Claude Sonnet' };
   } catch (error) {
-    return { error: String(error), fields: {}, llm: 'Claude' };
+    return { error: String(error), fields: {}, llm: 'Claude Sonnet' };
+  }
+}
+
+// GitHub Copilot API call - 5th in reliability per audit
+async function callCopilot(address: string): Promise<any> {
+  // Copilot uses Azure OpenAI or GitHub's API
+  const apiKey = process.env.GITHUB_COPILOT_API_KEY || process.env.AZURE_OPENAI_API_KEY;
+  const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
+
+  if (!apiKey) return { error: 'COPILOT/AZURE API key not set', fields: {} };
+
+  try {
+    // If using Azure OpenAI endpoint
+    const url = endpoint
+      ? `${endpoint}/openai/deployments/gpt-4/chat/completions?api-version=2024-02-15-preview`
+      : 'https://api.githubcopilot.com/chat/completions'; // GitHub Copilot API
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (endpoint) {
+      headers['api-key'] = apiKey;
+    } else {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        model: 'gpt-4',
+        max_tokens: 8000,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          {
+            role: 'user',
+            content: `Extract all 110 property data fields for this address: ${address}
+
+Search thoroughly across all available web sources. Return the JSON response with all fields you can find.`,
+          },
+        ],
+      }),
+    });
+
+    const data = await response.json();
+    if (data.choices && data.choices[0]?.message?.content) {
+      const text = data.choices[0].message.content;
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return { ...JSON.parse(jsonMatch[0]), llm: 'Copilot' };
+      }
+    }
+    return { error: 'Failed to parse Copilot response', fields: {}, llm: 'Copilot' };
+  } catch (error) {
+    return { error: String(error), fields: {}, llm: 'Copilot' };
   }
 }
 
@@ -1327,9 +1425,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // UPDATED STRATEGY: Grok + Perplexity as PRIMARY (both have web search)
-  // Claude/GPT/Gemini as FALLBACK (limited to general knowledge only)
-  const { address, url, engines = ['grok', 'perplexity'], skipLLMs = false, usePerplexity = true, useGrok = true } = req.body;
+  // CASCADE STRATEGY: Try all 6 LLMs in RELIABILITY order (per audit)
+  // 1. Claude Opus (KING), 2. GPT, 3. Grok, 4. Claude Sonnet, 5. Copilot, 6. Gemini
+  const {
+    address,
+    url,
+    engines = ['claude-opus', 'gpt', 'grok', 'claude-sonnet', 'copilot', 'gemini'],
+    skipLLMs = false,
+    usePerplexity = false, // Removed from default cascade - use engines array
+    useGrok = true,
+    useCascade = true // Enable cascade mode by default
+  } = req.body;
 
   if (!address && !url) {
     return res.status(400).json({ error: 'Address or URL required' });
@@ -1342,6 +1448,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('Address:', searchQuery);
     const sources_used: string[] = [];
     let allFields: Record<string, any> = {};
+    const fieldSources: Record<string, string[]> = {}; // Track which LLMs provided each field
+    const conflicts: Array<{field: string; values: Array<{source: string; value: any}>}> = []; // Track conflicts
 
     // SIMPLIFIED: Only run FAST sources to avoid timeout
     // Skip Realtor.com scraping (too slow), skip county scrapers (too slow)
@@ -1363,67 +1471,97 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.error('Free APIs enrichment failed:', e);
     }
 
-    // STEP 2: Call Grok (PRIMARY - has web search tools)
-    if (useGrok) {
-      console.log('Step 2: Calling Grok for real web search with tools...');
-      try {
-        const grokData = await callGrok(searchQuery);
-        if (grokData.fields && Object.keys(grokData.fields).length > 0) {
-          for (const [key, value] of Object.entries(grokData.fields)) {
-            if (!allFields[key]) {
-              allFields[key] = value;
-            }
-          }
-          sources_used.push('Grok Web Search');
-          console.log(`Added ${Object.keys(grokData.fields).length} fields from Grok`);
-        }
-      } catch (e) {
-        console.error('Grok call failed:', e);
-      }
-    }
+    // STEP 2-7: CASCADE through all 6 LLMs in RELIABILITY order (per audit)
+    // Claude Opus (KING) → GPT → Grok → Claude Sonnet → Copilot → Gemini
+    const llmCascade = [
+      { name: 'claude-opus', fn: callClaudeOpus, enabled: engines.includes('claude-opus') },
+      { name: 'gpt', fn: callGPT, enabled: engines.includes('gpt') },
+      { name: 'grok', fn: callGrok, enabled: useGrok || engines.includes('grok') },
+      { name: 'claude-sonnet', fn: callClaudeSonnet, enabled: engines.includes('claude-sonnet') },
+      { name: 'copilot', fn: callCopilot, enabled: engines.includes('copilot') },
+      { name: 'gemini', fn: callGemini, enabled: engines.includes('gemini') },
+      { name: 'perplexity', fn: callPerplexity, enabled: usePerplexity || engines.includes('perplexity') }, // Optional fallback
+    ];
 
-    // STEP 3: Call Perplexity (SECONDARY - also has web search)
-    if (usePerplexity) {
-      console.log('Step 3: Calling Perplexity for real web search...');
-      try {
-        const perplexityData = await callPerplexity(searchQuery);
-        if (Object.keys(perplexityData).length > 0) {
-          for (const [key, value] of Object.entries(perplexityData)) {
-            if (!allFields[key]) {
-              allFields[key] = value;
-            }
-          }
-          sources_used.push('Perplexity Web Search');
-          console.log(`Added ${Object.keys(perplexityData).length} fields from Perplexity`);
-        }
-      } catch (e) {
-        console.error('Perplexity call failed:', e);
-      }
-    }
-
-    // STEP 4: Use Claude/GPT/Gemini to fill remaining gaps (FALLBACK - no web access, general knowledge only)
     let llmResponses: any[] = [];
-    if (!skipLLMs && engines.length > 0) {
-      console.log('Step 4: Calling fallback LLMs for general knowledge...');
-      const promises: Promise<any>[] = [];
+    let currentCompletion = 0;
 
-      if (engines.includes('claude')) promises.push(callClaude(searchQuery));
-      if (engines.includes('gpt')) promises.push(callGPT(searchQuery));
-      if (engines.includes('gemini')) promises.push(callGemini(searchQuery));
+    for (const llm of llmCascade) {
+      if (!llm.enabled) continue;
 
-      const results = await Promise.all(promises);
-      const merged = mergeResults(results);
-      llmResponses = merged.llm_responses || [];
+      console.log(`\n=== Calling ${llm.name.toUpperCase()} ===`);
 
-      // Only add LLM fields that we don't already have from real sources
-      for (const [key, value] of Object.entries(merged.fields || {})) {
-        if (!allFields[key]) {
-          allFields[key] = value;
+      try {
+        const llmData = await llm.fn(searchQuery);
+        const llmFields = llmData.fields || llmData;
+
+        if (llmFields && Object.keys(llmFields).length > 0) {
+          sources_used.push(llm.name);
+          llmResponses.push({
+            llm: llm.name,
+            fields_found: Object.keys(llmFields).length,
+            success: true
+          });
+
+          // Add/merge fields with conflict detection
+          for (const [key, value] of Object.entries(llmFields)) {
+            const fieldValue = (value as any)?.value !== undefined ? (value as any).value : value;
+            const fieldSource = (value as any)?.source || llm.name;
+
+            // Track source
+            if (!fieldSources[key]) fieldSources[key] = [];
+            fieldSources[key].push(llm.name);
+
+            // Check for conflicts
+            if (allFields[key]) {
+              const existingValue = allFields[key].value !== undefined ? allFields[key].value : allFields[key];
+
+              // Values differ = CONFLICT
+              if (fieldValue !== existingValue && fieldValue !== null && existingValue !== null) {
+                const existing = conflicts.find(c => c.field === key);
+                if (existing) {
+                  existing.values.push({ source: llm.name, value: fieldValue });
+                } else {
+                  conflicts.push({
+                    field: key,
+                    values: [
+                      { source: fieldSources[key][0] || 'unknown', value: existingValue },
+                      { source: llm.name, value: fieldValue }
+                    ]
+                  });
+                }
+                console.log(`⚠️  CONFLICT on ${key}: ${existingValue} vs ${fieldValue}`);
+              }
+            } else {
+              // New field - add it
+              allFields[key] = value;
+            }
+          }
+
+          currentCompletion = Object.keys(allFields).length;
+          console.log(`✅ ${llm.name}: ${Object.keys(llmFields).length} fields | Total: ${currentCompletion}/110`);
+
+          // Stop if we have 100% completion (110 fields)
+          if (useCascade && currentCompletion >= 110) {
+            console.log(`🎯 100% completion reached! Stopping cascade at ${llm.name}`);
+            break;
+          }
+        } else {
+          llmResponses.push({
+            llm: llm.name,
+            fields_found: 0,
+            success: false,
+            error: 'No fields returned'
+          });
         }
-      }
-
-      if (merged.sources) {
-        sources_used.push(...merged.sources.filter((s: string) => !sources_used.includes(s)));
+      } catch (e) {
+        console.error(`❌ ${llm.name} failed:`, e);
+        llmResponses.push({
+          llm: llm.name,
+          fields_found: 0,
+          success: false,
+          error: String(e)
+        });
       }
     }
 
@@ -1445,9 +1583,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       completion_percentage,
       sources: sources_used,
       source_breakdown: sourceBreakdown,
+      field_sources: fieldSources, // NEW: Which LLMs provided each field
+      conflicts, // NEW: Fields where LLMs disagreed
       llm_responses: llmResponses,
-      strategy: 'grok-perplexity-primary',
-      note: 'NEW STRATEGY: Grok + Perplexity (both have web search) as PRIMARY sources. Free APIs for enrichment. Claude/GPT/Gemini as FALLBACK for general knowledge only (no hallucinations).'
+      strategy: 'cascade',
+      cascade_order: ['claude-opus', 'gpt', 'grok', 'claude-sonnet', 'copilot', 'gemini', 'perplexity'],
+      note: 'CASCADE STRATEGY (Reliability Order per Audit): Claude Opus (KING) → GPT → Grok → Claude Sonnet → Copilot → Gemini → Perplexity. Stops at 100% completion.'
     });
   } catch (error) {
     console.error('=== SEARCH ERROR ===');

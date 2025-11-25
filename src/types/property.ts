@@ -14,6 +14,10 @@ export interface DataField<T> {
   sources: string[];
   lastUpdated?: string;
   updatedBy?: string;
+  // NEW: LLM source tracking
+  llmSources?: string[]; // Which LLMs provided this field (e.g., ['grok', 'perplexity'])
+  hasConflict?: boolean; // True if multiple LLMs disagreed on this value
+  conflictValues?: Array<{ source: string; value: any }>; // Conflicting values from different LLMs
 }
 
 // Core Address Fields (1-10)
