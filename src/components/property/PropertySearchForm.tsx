@@ -152,6 +152,10 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
     return fieldDef?.key || null;
   };
 
+n  // Update source progress helper
+  const updateSource = (id: string, updates: Partial<SourceProgress>) => {
+    setSourcesProgress(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+  };
   const handleAddressSearch = async () => {
     if (!addressInput.trim()) return;
 
@@ -159,6 +163,9 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
     setSearchError('');
     setSearchProgress('Step 1: Scraping Realtor.com for real property data...');
     setShowSuggestions(false);
+    setShowProgressTracker(true);
+    setSourcesProgress(DEFAULT_SOURCES.map(s => ({ ...s, status: 'pending' as const, fieldsFound: 0 })));
+    updateSource('realtor', { status: 'searching' });
 
     try {
       // Update progress as we go
@@ -559,6 +566,17 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
           </div>
         )}
 
+n        {/* Real-time Progress Tracker */}
+        {showProgressTracker && (
+          <div className="mt-4">
+            <SearchProgressTracker
+              sources={sourcesProgress}
+              isSearching={isSearching}
+              totalFieldsFound={searchResults?.total_fields_found || 0}
+              completionPercentage={searchResults?.completion_percentage || 0}
+            />
+          </div>
+        )}
         {/* Search Results Summary */}
         {searchResults && !isSearching && (
           <div className="mt-4 p-3 bg-white/5 rounded-xl">
