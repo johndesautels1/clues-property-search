@@ -25,6 +25,7 @@ import {
   type DataSource,
   type FieldDefinition,
 } from '@/types/property-schema';
+import SearchProgressTracker, { type SourceProgress, DEFAULT_SOURCES } from './SearchProgressTracker';
 
 interface FieldValue {
   value: string | number | boolean | string[];
@@ -60,6 +61,8 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
   const [selectedEngines, setSelectedEngines] = useState(['claude', 'gpt', 'grok', 'gemini']);
   const [skipLLMs, setSkipLLMs] = useState(false);
   const [searchResults, setSearchResults] = useState<any>(null);
+  const [sourcesProgress, setSourcesProgress] = useState<SourceProgress[]>(DEFAULT_SOURCES);
+  const [showProgressTracker, setShowProgressTracker] = useState(false);
 
   // Initialize form data
   useEffect(() => {
