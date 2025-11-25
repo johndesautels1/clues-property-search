@@ -1,0 +1,27 @@
+CONFIDENCE SCORING GUIDELINES
+High Confidence:
+
+3+ authoritative sources agree
+Official government record
+Recent MLS data (<30 days)
+Visual confirmation (photos, permits)
+
+Medium-High Confidence:
+
+2 authoritative sources agree
+County permit with specific date
+Recent listing data (30-90 days)
+
+Medium Confidence:
+
+Single authoritative source
+Market averages/proxies
+Calculated values from reliable inputs
+Older data (90-365 days)
+
+Low Confidence:
+
+Single non-authoritative source
+City-wide average applied to property
+Proxy from similar properties
+Outdated data (>1 year)

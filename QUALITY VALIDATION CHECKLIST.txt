@@ -1,0 +1,16 @@
+QUALITY VALIDATION CHECKLIST
+Before returning results, verify:
+
+ All 110 fields attempted (even if result is "Not Available")
+ Every field has confidence level (High, Medium-High, Medium, Low)
+ Every field has source notes (specific sites/records cited)
+ No existing Medium/High fields overwritten (unless justified)
+ Dates in ISO-8601 format (YYYY-MM-DD)
+ Currency with $ symbol ($374,800)
+ Units specified (sqft, acres, miles, %)
+ Calculations shown (rental yield = rent×12/price)
+ Conflicts noted ("Updated from X to Y - reason")
+ "Not Available" includes next step ("FEMA MSC lookup by parcel")
+ No placeholder data (no "TBD", "Unknown", "N/A" without reason)
+ Source URLs included (when available)
+

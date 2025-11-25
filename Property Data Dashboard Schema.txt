@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Property Data 110-Field Schema",
+  "type": "object",
+  "required": ["address", "fields"],
+  "properties": {
+    "address": {
+      "type": "string",
+      "description": "Normalized property address"
+    },
+    "fields": {
+      "type": "object",
+      "required": ["full_address"],
+      "properties": {
+        "full_address": {
+          "type": "object",
+          "required": ["value", "confidence", "notes"],
+          "properties": {
+            "value": {"type": "string"},
+            "confidence": {"enum": ["High", "Medium-High", "Medium", "Low"]},
+            "notes": {"type": "string"},
+            "sources": {"type": "array", "items": {"type": "string"}},
+            "last_updated": {"type": "string", "format": "date"},
+            "updated_by": {"type": "string"}
+          }
+        },
+        "mls_primary": {
+          "type": "object",
+          "properties": {
+            "value": {"type": ["string", "null"]},
+            "confidence": {"enum": ["High", "Medium-High", "Medium", "Low"]},
+            "notes": {"type": "string"},
+            "sources": {"type": "array", "items": {"type": "string"}}
+          }
+        },
+        "listing_price": {
+          "type": "object",
+          "properties": {
+            "value": {"type": "string", "pattern": "^\\$[0-9,]+$"},
+            "confidence": {"enum": ["High", "Medium-High", "Medium", "Low"]},
+            "notes": {"type": "string"},
+            "sources": {"type": "array", "items": {"type": "string"}}
+          }
+        },
+        "bedrooms": {
+          "type": "object",
+          "properties": {
+            "value": {"type": "integer", "minimum": 0},
+            "confidence": {"enum": ["High", "Medium-High", "Medium", "Low"]},
+            "notes": {"type": "string"},
+            "sources": {"type": "array", "items": {"type": "string"}}
+          }
+        }
+      },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["value", "confidence", "notes"],
+        "properties": {
+          "value": {"type": ["string", "number", "boolean", "null"]},
+          "confidence": {"enum": ["High", "Medium-High", "Medium", "Low"]},
+          "notes": {"type": "string"},
+          "sources": {"type": "array", "items": {"type": "string"}},
+          "last_updated": {"type": "string", "format": "date"},
+          "updated_by": {"type": "string"}
+        }
+      }
+    },
+    "completion_stats": {
+      "type": "object",
+      "properties": {
+        "fields_completed": {"type": "integer"},
+        "fields_high_confidence": {"type": "integer"},
+        "fields_medium_confidence": {"type": "integer"},
+        "fields_low_confidence": {"type": "integer"},
+        "fields_missing": {"type": "integer"}
+      }
+    }
+  }
+}

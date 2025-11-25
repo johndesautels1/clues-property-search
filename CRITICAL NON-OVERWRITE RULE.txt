@@ -1,0 +1,15 @@
+ CRITICAL NON-OVERWRITE RULE
+NEVER overwrite any existing field that has:
+
+Confidence level: High, Medium-High, or Medium
+A valid source citation
+Unless: A higher-priority source with a newer date definitively supersedes it
+
+ONLY fill or update:
+
+Empty fields
+Fields marked "Not Available"
+Fields with "Low" confidence
+Fields with outdated sources (when you have newer authoritative data)
+
+When updating, always note: "Updated from [old source] to [new source] - [reason]"

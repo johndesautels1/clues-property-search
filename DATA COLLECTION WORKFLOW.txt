@@ -1,0 +1,115 @@
+ DATA COLLECTION WORKFLOW
+Phase 1: Core Property Data (Fields 1-30)
+Time: 4-6 minutes | Target: 98% completion
+Search Sequence:
+
+Zillow → [address] site:zillow.com
+
+Extract: Price, beds, baths, sqft, year, lot, listing history, Zestimate
+Check "Facts and Features" tab for amenities
+
+
+Redfin → [address] site:redfin.com
+
+Extract: Additional details, permit history, climate scores
+Schools tab for assignments and ratings
+
+
+Realtor.com → [address] site:realtor.com or [MLS#]
+
+Cross-reference listing details
+School info, property history
+
+
+County Property Appraiser → [county] property appraiser [address]
+
+Extract: Tax value, legal description, parcel ID
+Building details, ownership
+
+
+
+Phase 2: Structural Details (Fields 31-50)
+Time: 4-6 minutes | Target: 80% completion
+Visual Inspection:
+
+Google Street View → Observe exterior, roof, garage, fence
+Google Earth/Satellite → Identify pool, deck, lot boundaries
+Listing Photos → Analyze interior finishes, appliances
+
+Permit Records:
+
+Search: [county] building permits [address]
+Look for: Roof, HVAC, pool, additions, renovations
+Note permit dates for age calculations
+
+Phase 3: Location & Proximity (Fields 51-75)
+Time: 6-8 minutes | Target: 92% completion
+Schools:
+
+GreatSchools.org → Enter address for assigned schools, ratings
+Niche.com → Additional ratings, demographics
+District Site → Verify boundary assignments
+
+Proximity (Google Maps):
+
+Nearest grocery store (Publix, Kroger)
+Hospital/emergency room
+Airport (major hub)
+Parks/recreation
+Beach/water (if applicable)
+
+Safety & Walkability:
+
+WalkScore.com → Address lookup for Walk/Transit/Bike scores
+NeighborhoodScout → Crime data (paid for micro-level)
+FBI UCR → City-level crime rates
+Redfin Lifestyle → Local Logic scores for noise, quiet area
+
+Phase 4: Financial Data (Fields 76-90)
+Time: 4-6 minutes | Target: 85% completion
+Tax Information:
+
+[county] tax collector [address]
+Get annual taxes, exemptions, payment history
+
+Market Analysis:
+
+Search: [neighborhood] recent sales [bedrooms] bedroom
+Search: [zip code] price per square foot 2025
+Calculate averages from 3-5 comparable sales
+
+Rental Estimates (average 3+ sources):
+
+Zillow Rental Manager
+RentCafe
+Zumper
+Apartments.com (similar properties)
+
+Phase 5: Utilities & Technology (Fields 91-105)
+Time: 4 minutes | Target: 95% completion
+Internet/Utilities:
+
+BroadbandNow.com → Enter address for ISP availability
+Search: [city] water utility [address]
+Search: [city] electric provider [address]
+
+Environmental:
+
+IQAir.com or AirNow.gov → Current air quality
+FEMA MSC → Flood zone lookup by address
+RiskFactor.com or First Street → Climate risk factors
+
+Phase 6: Advanced Detective Work (Fields remaining)
+Time: 3-5 minutes
+Social Verification:
+
+Search: [address] OR [MLS#] on local real estate forums
+Check for agent posts or recent updates
+Review neighborhood Facebook groups if accessible
+
+Specialized Databases:
+
+Solar: Google Project Sunroof, Redfin sun exposure
+EV: PlugShare.com for nearby chargers
+HOA: Search HOA name for documents, fee schedules
+

@@ -1,0 +1,49 @@
+{
+  "batch_id": "abc123",
+  "processing_timestamp": "2025-11-23T14:30:00Z",
+  "llm_processor": "Claude Sonnet 4.5",
+  "results": [
+    {
+      "address": "2015 Hillwood Dr, Clearwater, FL 33763",
+      "completion_stats": {
+        "fields_completed": 98,
+        "fields_high_confidence": 82,
+        "fields_medium_confidence": 16,
+        "fields_low_confidence": 0,
+        "fields_missing": 12,
+        "fields_updated": 5
+      },
+      "fields": {
+        "full_address": {
+          "value": "2015 Hillwood Dr, Clearwater, FL 33763",
+          "confidence": "High",
+          "notes": "USPS verified; MLS confirmed",
+          "sources": [
+            "https://www.zillow.com/homedetails/...",
+            "https://www.redfin.com/FL/Clearwater/..."
+          ],
+          "last_updated": "2025-11-23",
+          "updated_by": "Claude Sonnet 4.5"
+        },
+        "mls_primary": {
+          "value": "TB8437491",
+          "confidence": "High",
+          "notes": "Active listing verified",
+          "sources": ["MLS via Zillow", "MLS via Redfin"],
+          "last_updated": "2025-11-23"
+        }
+        // ... remaining 108 fields in same format
+      },
+      "update_log": [
+        {
+          "field": "roof_age_est",
+          "action": "filled",
+          "previous_value": null,
+          "new_value": "~14 years (permit 2011-05-03)",
+          "reason": "Found county permit record",
+          "confidence": "Medium-High"
+        }
+      ]
+    }
+  ]
+}

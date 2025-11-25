@@ -1,0 +1,27 @@
+INPUT SPECIFICATIONS
+Preferred: JSON API Webhook
+Endpoint: POST /v1/property/complete
+Request Payload:
+json{
+  "batch_id": "unique_batch_identifier",
+  "addresses": [
+    "2015 Hillwood Dr, Clearwater, FL 33763",
+    "280 41st Ave, St. Pete Beach, FL 33706"
+  ],
+  "existing_data": {
+    "2015 Hillwood Dr, Clearwater, FL 33763": {
+      "roof_age_est": {
+        "value": "14 years",
+        "confidence": "Medium-High",
+        "notes": "2011 permit finalized",
+        "sources": ["Redfin permit history"]
+      }
+    }
+  },
+  "requirements": {
+    "overwrite_policy": "never_overwrite_medium_or_higher",
+    "fill_only_missing_or_low": true,
+    "max_addresses": 10,
+    "include_source_urls": true
+  }
+}

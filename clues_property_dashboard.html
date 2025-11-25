@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLUES™ Quantum Intelligence | Property Data Matrix</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;900&family=JetBrains+Mono:wght@300;400;600&family=Exo+2:wght@300;400;600;800&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --quantum-black: #0a0a0f;
+            --quantum-dark: #13141f;
+            --quantum-darker: #1a1b28;
+            --quantum-card: #1e1f2e;
+            --quantum-border: #2a2b3d;
+            --quantum-cyan: #00ffff;
+            --quantum-blue: #0080ff;
+            --quantum-purple: #8b5cf6;
+            --quantum-pink: #ff0080;
+            --quantum-green: #00ff88;
+            --quantum-gold: #ffd700;
+            --quantum-red: #ff0040;
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+            --text-tertiary: #64748b;
+            --gradient-quantum: linear-gradient(135deg, var(--quantum-cyan), var(--quantum-blue), var(--quantum-purple));
+            --gradient-glow: linear-gradient(45deg, rgba(0,255,255,0.1), rgba(139,92,246,0.1));
+        }
+
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: var(--quantum-black);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Quantum Background Effects */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(0, 128, 255, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            animation: quantumShift 20s ease-in-out infinite;
+        }
+
+        @keyframes quantumShift {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+
+        /* Grid Pattern Overlay */
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            animation: gridMove 10s linear infinite;
+            z-index: 1;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(180deg, var(--quantum-dark) 0%, rgba(19, 20, 31, 0.8) 100%);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--quantum-border);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            animation: slideDown 0.6s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            background: var(--gradient-quantum);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', monospace;
+            font-weight: 900;
+            font-size: 1.5rem;
+            color: var(--quantum-black);
+            position: relative;
+            animation: logoGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes logoGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 255, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(0, 255, 255, 0.8), 0 0 60px rgba(139, 92, 246, 0.5); }
+        }
+
+        .brand {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-name {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.8rem;
+            font-weight: 900;
+            background: var(--gradient-quantum);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+        }
+
+        .brand-tagline {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-top: 0.25rem;
+            font-weight: 300;
+        }
+
+        .nav-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .view-toggle {
+            display: flex;
+            background: var(--quantum-card);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--quantum-border);
+        }
+
+        .view-btn {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .view-btn.active {
+            background: var(--gradient-quantum);
+            color: var(--quantum-black);
+        }
+
+        .view-btn:hover:not(.active) {
+            color: var(--quantum-cyan);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .stat-card {
+            background: var(--quantum-card);
+            border: 1px solid var(--quantum-border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--gradient-quantum);
+            animation: scanLine 2s linear infinite;
+        }
+
+        @keyframes scanLine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--quantum-cyan);
+            box-shadow: 0 10px 30px rgba(0, 255, 255, 0.2);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 800;
+            font-family: 'Orbitron', monospace;
+            background: var(--gradient-quantum);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Property Cards Grid */
+        .property-grid {
+            display: grid;
+            gap: 1.5rem;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .property-card {
+            background: var(--quantum-card);
+            border: 1px solid var(--quantum-border);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .property-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent 30%, rgba(0, 255, 255, 0.1) 50%, transparent 70%);
+            animation: shimmer 3s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes shimmer {
+            0% { transform: rotate(0deg) translateX(-100%); }
+            100% { transform: rotate(0deg) translateX(100%); }
+        }
+
+        .property-header {
+            background: var(--gradient-quantum);
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        .property-address {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--quantum-black);
+            margin-bottom: 0.5rem;
+        }
+
+        .property-meta {
+            display: flex;
+            gap: 1rem;
+            color: rgba(0, 0, 0, 0.8);
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .property-body {
+            padding: 1.5rem;
+        }
+
+        .property-sections {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .section {
+            background: var(--quantum-darker);
+            border-radius: 12px;
+            padding: 1rem;
+            border: 1px solid rgba(0, 255, 255, 0.1);
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--quantum-cyan);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title::before {
+            content: '▸';
+            font-family: 'JetBrains Mono', monospace;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem;
+            background: rgba(0, 255, 255, 0.03);
+            border-radius: 6px;
+            border-left: 2px solid var(--quantum-cyan);
+            transition: all 0.2s;
+        }
+
+        .data-item:hover {
+            background: rgba(0, 255, 255, 0.08);
+            transform: translateX(5px);
+        }
+
+        .data-label {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .data-value {
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Score Displays */
+        .scores-section {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .score-card {
+            background: var(--quantum-darker);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .score-value {
+            font-size: 2rem;
+            font-weight: 900;
+            font-family: 'Orbitron', monospace;
+            margin: 0.5rem 0;
+        }
+
+        .score-excellent { color: var(--quantum-green); }
+        .score-good { color: var(--quantum-blue); }
+        .score-fair { color: var(--quantum-gold); }
+        .score-poor { color: var(--quantum-red); }
+
+        .score-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Progress Bars */
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--quantum-darker);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--gradient-quantum);
+            border-radius: 3px;
+            animation: progressGrow 1s ease-out;
+        }
+
+        @keyframes progressGrow {
+            from { width: 0; }
+        }
+
+        /* Comparison Table View */
+        .comparison-view {
+            overflow-x: auto;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .comparison-table {
+            width: 100%;
+            background: var(--quantum-card);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--quantum-border);
+        }
+
+        .comparison-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .comparison-table th {
+            background: var(--gradient-quantum);
+            color: var(--quantum-black);
+            padding: 1rem;
+            text-align: left;
+            font-weight: 800;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .comparison-table td {
+            padding: 0.875rem 1rem;
+            border-bottom: 1px solid var(--quantum-border);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .comparison-table tr {
+            transition: all 0.2s;
+        }
+
+        .comparison-table tbody tr:hover {
+            background: rgba(0, 255, 255, 0.05);
+        }
+
+        .comparison-table tbody tr:hover td {
+            color: var(--quantum-cyan);
+        }
+
+        .highlight-cell {
+            background: rgba(0, 255, 255, 0.1);
+            color: var(--quantum-cyan);
+            font-weight: 600;
+        }
+
+        /* Filter Bar */
+        .filter-bar {
+            background: var(--quantum-card);
+            border: 1px solid var(--quantum-border);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+            animation: fadeInUp 0.8s ease-out 0.3s both;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-tertiary);
+        }
+
+        .filter-input {
+            background: var(--quantum-darker);
+            border: 1px solid var(--quantum-border);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .filter-input:focus {
+            outline: none;
+            border-color: var(--quantum-cyan);
+            box-shadow: 0 0 0 3px rgba(0, 255, 255, 0.2);
+        }
+
+        .filter-input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        /* Export Button */
+        .export-btn {
+            margin-left: auto;
+            padding: 0.75rem 1.5rem;
+            background: var(--gradient-quantum);
+            border: none;
+            border-radius: 8px;
+            color: var(--quantum-black);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .export-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+
+        .export-btn:hover::after {
+            width: 100%;
+            height: 100%;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 255, 255, 0.3);
+        }
+
+        /* Loading Animation */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 15, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeOut 1s ease-out 2s forwards;
+        }
+
+        @keyframes fadeOut {
+            to { opacity: 0; pointer-events: none; }
+        }
+
+        .quantum-loader {
+            width: 100px;
+            height: 100px;
+            position: relative;
+        }
+
+        .quantum-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 3px solid transparent;
+            border-top: 3px solid var(--quantum-cyan);
+            border-radius: 50%;
+            animation: quantumSpin 1s linear infinite;
+        }
+
+        .quantum-ring:nth-child(2) {
+            width: 80%;
+            height: 80%;
+            top: 10%;
+            left: 10%;
+            border-top-color: var(--quantum-blue);
+            animation-duration: 0.8s;
+            animation-direction: reverse;
+        }
+
+        .quantum-ring:nth-child(3) {
+            width: 60%;
+            height: 60%;
+            top: 20%;
+            left: 20%;
+            border-top-color: var(--quantum-purple);
+            animation-duration: 0.6s;
+        }
+
+        @keyframes quantumSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-top: 2rem;
+            font-family: 'Orbitron', monospace;
+            font-size: 1rem;
+            color: var(--quantum-cyan);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            animation: loadingPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes loadingPulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .stats-bar {
+                grid-template-columns: 1fr;
+            }
+
+            .data-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .scores-section {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .export-btn {
+                margin-left: 0;
+                margin-top: 1rem;
+            }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--quantum-darker);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gradient-quantum);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--quantum-cyan);
+        }
+
+        /* SMART Score Badge */
+        .smart-score {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--quantum-black);
+            border: 2px solid var(--quantum-cyan);
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', monospace;
+            animation: smartPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes smartPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 255, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(0, 255, 255, 0.8); }
+        }
+
+        .smart-score-value {
+            font-size: 1.75rem;
+            font-weight: 900;
+            color: var(--quantum-cyan);
+        }
+
+        .smart-score-label {
+            font-size: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <!-- Grid Overlay Effect -->
+    <div class="grid-overlay"></div>
+
+    <!-- Loading Screen -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="quantum-loader">
+            <div class="quantum-ring"></div>
+            <div class="quantum-ring"></div>
+            <div class="quantum-ring"></div>
+        </div>
+        <div class="loading-text">Quantum Analysis Loading...</div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo">C</div>
+                <div class="brand">
+                    <div class="brand-name">CLUES™</div>
+                    <div class="brand-tagline">Quantum Intelligence Platform</div>
+                </div>
+            </div>
+            <div class="nav-controls">
+                <div class="view-toggle">
+                    <button class="view-btn active" onclick="toggleView('grid')">Property Grid</button>
+                    <button class="view-btn" onclick="toggleView('comparison')">Comparison Matrix</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-label">Properties Analyzed</div>
+                <div class="stat-value">3</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Data Completeness</div>
+                <div class="stat-value">77.1%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Market Value Range</div>
+                <div class="stat-value">$750K-1.2M</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Avg SMART Score™</div>
+                <div class="stat-value">92</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">AI Confidence</div>
+                <div class="stat-value">94.8%</div>
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <div class="filter-group">
+                <span class="filter-label">Price Range</span>
+                <input type="text" class="filter-input" placeholder="Min" style="width: 100px">
+                <input type="text" class="filter-input" placeholder="Max" style="width: 100px">
+            </div>
+            <div class="filter-group">
+                <span class="filter-label">Bedrooms</span>
+                <input type="text" class="filter-input" placeholder="Min" style="width: 60px">
+            </div>
+            <div class="filter-group">
+                <span class="filter-label">Location</span>
+                <input type="text" class="filter-input" placeholder="City or Zip" style="width: 150px">
+            </div>
+            <button class="export-btn" onclick="exportData()">Export Data</button>
+        </div>
+
+        <!-- Grid View -->
+        <div id="gridView" class="property-grid">
+            <!-- Property Card 1 -->
+            <div class="property-card">
+                <div class="property-header">
+                    <div class="property-address">280 41st Ave</div>
+                    <div class="property-meta">
+                        <span>St Pete Beach, FL 33706</span>
+                        <span>|</span>
+                        <span>MLS #TB8443855</span>
+                    </div>
+                    <div class="smart-score">
+                        <div class="smart-score-value">94</div>
+                        <div class="smart-score-label">SMART™</div>
+                    </div>
+                </div>
+                <div class="property-body">
+                    <div class="property-sections">
+                        <!-- Basic Info Section -->
+                        <div class="section">
+                            <div class="section-title">Core Metrics</div>
+                            <div class="data-grid">
+                                <div class="data-item">
+                                    <span class="data-label">Price</span>
+                                    <span class="data-value">$750,000</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">$/SqFt</span>
+                                    <span class="data-value">$434</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">Beds/Bath</span>
+                                    <span class="data-value">4 / 3</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">SqFt</span>
+                                    <span class="data-value">1,729</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">Year Built</span>
+                                    <span class="data-value">1973</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">Lot Size</span>
+                                    <span class="data-value">0.15 acres</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Location Intelligence -->
+                        <div class="section">
+                            <div class="section-title">Location Intelligence</div>
+                            <div class="scores-section">
+                                <div class="score-card">
+                                    <div class="score-label">Walk Score</div>
+                                    <div class="score-value score-good">72</div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 72%"></div>
+                                    </div>
+                                </div>
+                                <div class="score-card">
+                                    <div class="score-label">School Rating</div>
+                                    <div class="score-value score-excellent">9/10</div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 90%"></div>
+                                    </div>
+                                </div>
+                                <div class="score-card">
+                                    <div class="score-label">Safety Score</div>
+                                    <div class="score-value score-excellent">A+</div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 95%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Key Features -->
+                        <div class="section">
+                            <div class="section-title">Premium Features</div>
+                            <div class="data-grid">
+                                <div class="data-item">
+                                    <span class="data-label">Renovation</span>
+                                    <span class="data-value">2024 Complete</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">Kitchen</span>
+                                    <span class="data-value">Quartz/SS</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">Flooring</span>
+                                    <span class="data-value">Luxury Vinyl</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">HVAC</span>
+                                    <span class="data-value">Dual System</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">Fence</span>
+                                    <span class="data-value">Vinyl Privacy</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">Beach</span>
+                                    <span class="data-value">5 min walk</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Market Analysis -->
+                        <div class="section">
+                            <div class="section-title">Market Analysis</div>
+                            <div class="data-grid">
+                                <div class="data-item">
+                                    <span class="data-label">DOM</span>
+                                    <span class="data-value">12 days</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">Tax Value</span>
+                                    <span class="data-value">$494,611</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">Annual Tax</span>
+                                    <span class="data-value">$8,422</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">HOA</span>
+                                    <span class="data-value">None</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">Rent Est.</span>
+                                    <span class="data-value">$2,800/mo</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">Cap Rate</span>
+                                    <span class="data-value">3.2%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional property cards would go here -->
+        </div>
+
+        <!-- Comparison View (Hidden by default) -->
+        <div id="comparisonView" class="comparison-view" style="display: none;">
+            <div class="comparison-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Property Address</th>
+                            <th>Price</th>
+                            <th>$/SqFt</th>
+                            <th>Beds</th>
+                            <th>Baths</th>
+                            <th>SqFt</th>
+                            <th>Year</th>
+                            <th>SMART™</th>
+                            <th>Walk Score</th>
+                            <th>School</th>
+                            <th>DOM</th>
+                            <th>Rent Est.</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="highlight-cell">280 41st Ave, St Pete Beach</td>
+                            <td>$750,000</td>
+                            <td>$434</td>
+                            <td>4</td>
+                            <td>3</td>
+                            <td>1,729</td>
+                            <td>1973</td>
+                            <td class="highlight-cell">94</td>
+                            <td>72</td>
+                            <td>9/10</td>
+                            <td>12</td>
+                            <td>$2,800</td>
+                        </tr>
+                        <tr>
+                            <td>407 41st Ave, St Pete Beach</td>
+                            <td>$1,799,999</td>
+                            <td>$521</td>
+                            <td>5</td>
+                            <td>4</td>
+                            <td>3,456</td>
+                            <td>2019</td>
+                            <td>96</td>
+                            <td>74</td>
+                            <td>9/10</td>
+                            <td>8</td>
+                            <td>$5,500</td>
+                        </tr>
+                        <tr>
+                            <td>362 41st Ave, St Pete Beach</td>
+                            <td>$925,000</td>
+                            <td>$468</td>
+                            <td>3</td>
+                            <td>2.5</td>
+                            <td>1,976</td>
+                            <td>1985</td>
+                            <td>88</td>
+                            <td>70</td>
+                            <td>8/10</td>
+                            <td>21</td>
+                            <td>$3,200</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // View Toggle Function
+        function toggleView(view) {
+            const gridView = document.getElementById('gridView');
+            const comparisonView = document.getElementById('comparisonView');
+            const viewBtns = document.querySelectorAll('.view-btn');
+            
+            viewBtns.forEach(btn => btn.classList.remove('active'));
+            
+            if (view === 'grid') {
+                gridView.style.display = 'grid';
+                comparisonView.style.display = 'none';
+                viewBtns[0].classList.add('active');
+            } else {
+                gridView.style.display = 'none';
+                comparisonView.style.display = 'block';
+                viewBtns[1].classList.add('active');
+            }
+        }
+
+        // Export Data Function
+        function exportData() {
+            alert('Initiating Quantum Data Export...\nGenerating comprehensive property analysis report.');
+            // In production, this would generate CSV/PDF export
+        }
+
+        // Initialize on Load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Remove loading overlay after animation
+            setTimeout(() => {
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                loadingOverlay.style.display = 'none';
+            }, 3000);
+
+            // Add dynamic data updates
+            animateNumbers();
+        });
+
+        // Animate Numbers on Load
+        function animateNumbers() {
+            const statValues = document.querySelectorAll('.stat-value');
+            statValues.forEach(stat => {
+                const target = parseFloat(stat.innerText);
+                if (!isNaN(target)) {
+                    let current = 0;
+                    const increment = target / 50;
+                    const timer = setInterval(() => {
+                        current += increment;
+                        if (current >= target) {
+                            current = target;
+                            clearInterval(timer);
+                        }
+                        stat.innerText = Math.round(current);
+                    }, 20);
+                }
+            });
+        }
+
+        // Add Quantum Particles Effect
+        function createQuantumParticle() {
+            const particle = document.createElement('div');
+            particle.style.cssText = `
+                position: fixed;
+                width: 2px;
+                height: 2px;
+                background: rgba(0, 255, 255, 0.8);
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 0;
+            `;
+            particle.style.left = Math.random() * window.innerWidth + 'px';
+            particle.style.top = window.innerHeight + 'px';
+            document.body.appendChild(particle);
+
+            let position = window.innerHeight;
+            const speed = Math.random() * 2 + 1;
+            const drift = (Math.random() - 0.5) * 2;
+
+            const animate = () => {
+                position -= speed;
+                particle.style.top = position + 'px';
+                particle.style.left = parseFloat(particle.style.left) + drift + 'px';
+                particle.style.opacity = position / window.innerHeight;
+
+                if (position > -10) {
+                    requestAnimationFrame(animate);
+                } else {
+                    particle.remove();
+                }
+            };
+            animate();
+        }
+
+        // Generate particles periodically
+        setInterval(createQuantumParticle, 500);
+    </script>
+</body>
+</html>
