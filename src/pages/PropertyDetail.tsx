@@ -325,6 +325,7 @@ export default function PropertyDetail() {
                 </div>
                 <div>
                   <DataField label="Listing Date" value={fullProperty.address.listingDate.value} format="date" />
+                  <DataField label="Neighborhood" value={fullProperty.address.neighborhoodName.value} />
                   <DataField label="County" value={fullProperty.address.county.value} />
                   <DataField label="ZIP Code" value={fullProperty.address.zipCode.value} />
                   <DataField label="Parcel ID" value={fullProperty.details.parcelId.value} />
@@ -344,6 +345,7 @@ export default function PropertyDetail() {
                   <DataField label="Last Sale Date" value={fullProperty.details.lastSaleDate.value} format="date" />
                   <DataField label="Last Sale Price" value={fullProperty.details.lastSalePrice.value} format="currency" />
                   <DataField label="Assessed Value" value={fullProperty.details.assessedValue.value} format="currency" />
+                  <DataField label="Redfin Estimate" value={fullProperty.financial.redfinEstimate.value} format="currency" />
                 </div>
               </div>
             </Section>
@@ -379,6 +381,8 @@ export default function PropertyDetail() {
                 <div>
                   <DataField label="HOA" value={fullProperty.details.hoaYn.value} />
                   <DataField label="HOA Fee (Annual)" value={fullProperty.details.hoaFeeAnnual.value} format="currency" />
+                  <DataField label="HOA Name" value={fullProperty.details.hoaName.value} />
+                  <DataField label="HOA Includes" value={fullProperty.details.hoaIncludes.value} />
                   <DataField label="Ownership Type" value={fullProperty.details.ownershipType.value} />
                 </div>
                 <div>
@@ -398,10 +402,13 @@ export default function PropertyDetail() {
                   <DataField label="Roof Age (Est)" value={fullProperty.structural.roofAgeEst.value} />
                   <DataField label="Exterior Material" value={fullProperty.structural.exteriorMaterial.value} />
                   <DataField label="Foundation" value={fullProperty.structural.foundation.value} />
+                  <DataField label="Water Heater Type" value={fullProperty.structural.waterHeaterType.value} />
+                  <DataField label="Garage Type" value={fullProperty.structural.garageType.value} />
                 </div>
                 <div>
                   <DataField label="HVAC Type" value={fullProperty.structural.hvacType.value} />
                   <DataField label="HVAC Age" value={fullProperty.structural.hvacAge.value} />
+                  <DataField label="Laundry Type" value={fullProperty.structural.laundryType.value} />
                   <DataField label="Interior Condition" value={fullProperty.structural.interiorCondition.value} />
                 </div>
               </div>
@@ -417,6 +424,7 @@ export default function PropertyDetail() {
                 </div>
                 <div>
                   <DataField label="Fireplace" value={fullProperty.structural.fireplaceYn.value} />
+                  <DataField label="Fireplace Count" value={fullProperty.structural.fireplaceCount.value} format="number" />
                 </div>
               </div>
             </Section>
@@ -453,6 +461,10 @@ export default function PropertyDetail() {
             {/* Schools */}
             <Section title="Assigned Schools" icon={<School className="w-6 h-6" />}>
               <div className="space-y-4">
+                <div className="mb-4">
+                  <DataField label="School District" value={fullProperty.location.schoolDistrictName.value} />
+                  <DataField label="Elevation (feet)" value={fullProperty.location.elevationFeet.value} format="number" />
+                </div>
                 {fullProperty.location.assignedElementary.value && (
                   <div className="glass-5d p-4 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
@@ -579,6 +591,8 @@ export default function PropertyDetail() {
                 <div>
                   <DataField label="Median Home Price (Neighborhood)" value={fullProperty.financial.medianHomePriceNeighborhood.value} format="currency" />
                   <DataField label="Price Per Sq Ft (Recent Avg)" value={fullProperty.financial.pricePerSqftRecentAvg.value} format="currency" />
+                  <DataField label="Price to Rent Ratio" value={fullProperty.financial.priceToRentRatio.value} format="number" />
+                  <DataField label="Price vs Median %" value={fullProperty.financial.priceVsMedianPercent.value} format="percent" />
                   <DataField label="Days on Market (Avg)" value={fullProperty.financial.daysOnMarketAvg.value} format="number" />
                   <DataField label="Inventory Surplus" value={fullProperty.financial.inventorySurplus.value} />
                   <DataField label="Insurance Estimate (Annual)" value={fullProperty.financial.insuranceEstAnnual.value} format="currency" />
@@ -599,14 +613,20 @@ export default function PropertyDetail() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <DataField label="Electric Provider" value={fullProperty.utilities.electricProvider.value} icon={<Zap className="w-4 h-4" />} />
+                  <DataField label="Avg Electric Bill" value={fullProperty.utilities.avgElectricBill.value} />
                   <DataField label="Water Provider" value={fullProperty.utilities.waterProvider.value} />
+                  <DataField label="Avg Water Bill" value={fullProperty.utilities.avgWaterBill.value} />
                   <DataField label="Sewer Provider" value={fullProperty.utilities.sewerProvider.value} />
                   <DataField label="Natural Gas" value={fullProperty.utilities.naturalGas.value} />
+                  <DataField label="Trash Provider" value={fullProperty.utilities.trashProvider.value} />
                 </div>
                 <div>
                   <DataField label="Internet Providers (Top 3)" value={fullProperty.utilities.internetProvidersTop3.value} />
                   <DataField label="Max Internet Speed" value={fullProperty.utilities.maxInternetSpeed.value} />
+                  <DataField label="Fiber Available" value={fullProperty.utilities.fiberAvailable.value} />
                   <DataField label="Cable TV Provider" value={fullProperty.utilities.cableTvProvider.value} />
+                  <DataField label="Cell Coverage Quality" value={fullProperty.utilities.cellCoverageQuality.value} />
+                  <DataField label="Emergency Services Distance" value={fullProperty.utilities.emergencyServicesDistance.value} />
                 </div>
               </div>
             </Section>
@@ -616,11 +636,19 @@ export default function PropertyDetail() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <DataField label="Air Quality Index" value={fullProperty.utilities.airQualityIndexCurrent.value} />
+                  <DataField label="Air Quality Grade" value={fullProperty.utilities.airQualityGrade.value} />
                   <DataField label="Flood Zone" value={fullProperty.utilities.floodZone.value} />
                   <DataField label="Flood Risk Level" value={fullProperty.utilities.floodRiskLevel.value} />
                   <DataField label="Climate Risk" value={fullProperty.utilities.climateRiskWildfireFlood.value} />
+                  <DataField label="Wildfire Risk" value={fullProperty.utilities.wildfireRisk.value} />
+                  <DataField label="Earthquake Risk" value={fullProperty.utilities.earthquakeRisk.value} />
+                  <DataField label="Hurricane Risk" value={fullProperty.utilities.hurricaneRisk.value} />
                 </div>
                 <div>
+                  <DataField label="Tornado Risk" value={fullProperty.utilities.tornadoRisk.value} />
+                  <DataField label="Radon Risk" value={fullProperty.utilities.radonRisk.value} />
+                  <DataField label="Superfund Site Nearby" value={fullProperty.utilities.superfundNearby.value} />
+                  <DataField label="Sea Level Rise Risk" value={fullProperty.utilities.seaLevelRiseRisk.value} />
                   <DataField label="Noise Level (dB Est)" value={fullProperty.utilities.noiseLevelDbEst.value} />
                   <DataField label="Solar Potential" value={fullProperty.utilities.solarPotential.value} />
                 </div>
@@ -631,6 +659,8 @@ export default function PropertyDetail() {
             <Section title="Additional Features" icon={<Hammer className="w-6 h-6" />} defaultExpanded={false}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
+                  <DataField label="View Type" value={fullProperty.utilities.viewType.value} />
+                  <DataField label="Lot Features" value={fullProperty.utilities.lotFeatures.value} />
                   <DataField label="EV Charging" value={fullProperty.utilities.evChargingYn.value} />
                   <DataField label="Smart Home Features" value={fullProperty.utilities.smartHomeFeatures.value} />
                   <DataField label="Accessibility Modifications" value={fullProperty.utilities.accessibilityMods.value} />
