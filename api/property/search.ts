@@ -419,6 +419,7 @@ async function getDistances(lat: number, lon: number): Promise<Record<string, an
     console.log('GOOGLE_MAPS_API_KEY not set for distances');
     return {};
   }
+  console.log('getDistances: Starting for coords', lat, lon);
 
   const origin = `${lat},${lon}`;
   const fields: Record<string, any> = {};
@@ -437,6 +438,7 @@ async function getDistances(lat: number, lon: number): Promise<Record<string, an
       const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${origin}&rankby=distance&type=${place.type}&key=${apiKey}`;
       const searchRes = await fetch(searchUrl);
       const searchData = await searchRes.json();
+      console.log(`getDistances: ${place.name} status=${searchData.status} results=${searchData.results?.length || 0}`);
 
       if (searchData.results && searchData.results.length > 0) {
         const nearest = searchData.results[0];
@@ -465,6 +467,7 @@ async function getDistances(lat: number, lon: number): Promise<Record<string, an
     }
   }
 
+  console.log(`getDistances: Returning ${Object.keys(fields).length} distance fields:`, Object.keys(fields));
   return fields;
 }
 
@@ -1748,7 +1751,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               // New field - add it only if value is not null/empty
               const val = (value as any)?.value !== undefined ? (value as any).value : value;
               if (val !== null && val !== undefined && val !== '' && val !== 'Not available') {
-                allFields[key] = value;
+                // Add LLM source attribution
+                const existingSource = (value as any).source || llm.name;
+                allFields[key] = typeof value === 'object' && value !== null ? { ...value, source: existingSource.includes('via ') ? existingSource : existingSource + ' (via ' + llm.name + ')' } : { value: val, source: llm.name, confidence: 'Medium' };
               }
             }
           }
