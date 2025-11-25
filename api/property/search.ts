@@ -1449,7 +1449,7 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "7_listing
 // Grok API call (xAI) - #3 in reliability, HAS WEB SEARCH
 async function callGrok(address: string): Promise<any> {
   const apiKey = process.env.GROK_API_KEY;
-  if (!apiKey) return { error: 'GROK_API_KEY not set', fields: {} };
+  if (!apiKey) { console.log('❌ GROK_API_KEY not set'); return { error: 'GROK_API_KEY not set', fields: {} }; } console.log('✅ GROK_API_KEY found, calling Grok API...');
 
   // Grok-specific prompt with web search emphasis
   const grokSystemPrompt = `${PROMPT_GROK}
@@ -1468,7 +1468,7 @@ CITE YOUR SOURCES for every field you populate`;
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'grok-beta', // Use grok-4 for better tool calling, grok-beta for cost savings
+        model: 'grok-2-latest', // Use grok-4 for better tool calling, grok-beta for cost savings
         max_tokens: 8000,
         temperature: 0.1, // Low temperature for factual consistency
         messages: [
@@ -1480,16 +1480,6 @@ CITE YOUR SOURCES for every field you populate`;
 Search Zillow, Redfin, Realtor.com, county records, and other public sources. Return ONLY verified data you found from actual web searches. Include source URLs in your response.`,
           },
         ],
-        // Enable tool calling for web search
-        tools: [
-          {
-            type: 'function',
-            function: {
-              name: 'web_search',
-              description: 'Search the web for property data from real estate websites and public records'
-            }
-          }
-        ]
       }),
     });
 
@@ -1513,7 +1503,7 @@ Search Zillow, Redfin, Realtor.com, county records, and other public sources. Re
 // Gemini API call - #6 in reliability
 async function callGemini(address: string): Promise<any> {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return { error: 'GEMINI_API_KEY not set', fields: {} };
+  if (!apiKey) { console.log('❌ GEMINI_API_KEY not set'); return { error: 'GEMINI_API_KEY not set', fields: {} }; } console.log('✅ GEMINI_API_KEY found, calling Gemini API...');
 
   try {
     const response = await fetch(
@@ -1662,9 +1652,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const fieldSources: Record<string, string[]> = {}; // Track which LLMs provided each field
     const conflicts: Array<{field: string; values: Array<{source: string; value: any}>}> = []; // Track conflicts
 
-    // SIMPLIFIED: Only run FAST sources to avoid timeout
-    // Skip Realtor.com scraping (too slow), skip county scrapers (too slow)
-    // ONLY use APIs that respond quickly
+    // STEP 0: Try Realtor.com scraper first for best real data
+    console.log('Step 0: Scraping Realtor.com...');
+    try {
+      const realtorData = await scrapeRealtorData(searchQuery);
+      if (Object.keys(realtorData).length > 0) {
+        Object.assign(allFields, realtorData);
+        sources_used.push('Realtor.com');
+        console.log('Added ' + Object.keys(realtorData).length + ' fields from Realtor.com');
+      } else {
+        console.log('No data from Realtor.com scraper');
+      }
+    } catch (e) {
+      console.error('Realtor.com scrape failed:', e);
+    }
 
     // STEP 1: Enrich with free APIs (WalkScore, FEMA, AirNow) - FAST
     console.log('Step 1: Enriching with free APIs...');
