@@ -44,6 +44,7 @@ Copy `.env.example` to `.env.local` and configure.
 | **Perplexity** | `PERPLEXITY_API_KEY` | HAVE |
 | **Google AI** | `GOOGLE_AI_API_KEY` | HAVE |
 | **xAI** | `XAI_API_KEY` | HAVE |
+| **HowLoud** | `HOWLOUD_API_KEY` | HAVE |
 
 ### Free APIs (No Key Needed)
 
@@ -58,7 +59,7 @@ Copy `.env.example` to `.env.local` and configure.
 | API | Env Variable | Purpose |
 |-----|--------------|---------|
 | **AirDNA** | `AIRDNA_API_KEY` | STR rental estimates |
-| **HowLoud** | `HOWLOUD_API_KEY` | Noise scores |
+
 
 ### Data Sources That Need Code Fixes
 
@@ -85,6 +86,7 @@ FBI_CRIME_API_KEY="..."
 SCHOOLDIGGER_APP_ID="..."
 SCHOOLDIGGER_API_KEY="..."
 WEATHER_API_KEY="..."
+HOWLOUD_API_KEY="..."
 ```
 
 ## Scripts
