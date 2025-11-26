@@ -96,6 +96,140 @@ async function callPerplexity(address: string): Promise<{ fields: Record<string,
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) return { error: 'API key not set', fields: {} };
 
+  const systemPrompt = `You are a strict real-estate data extraction engine.
+Your only goal is to return a single, normalized JSON object for one residential property, with maximum accuracy and internal consistency.
+Use ONLY well-supported facts from the web. If sources conflict, apply these tie-break rules in order: (1) county property appraiser, (2) current MLS listing, (3) major portals (Redfin/Zillow/Realtor), (4) other sources. Prefer the most recent tax year and most recent list data when conflicts exist.
+
+CRITICAL RULES:
+- ONLY include fields you can verify with confidence. OMIT any field you cannot verify - do NOT include null, N/A, "unknown", or empty values.
+- Do NOT invent or infer values beyond what a professional appraiser or underwriter would accept as factual.
+- Return JSON ONLY, no commentary, no markdown, no backticks.
+
+Use this schema (include ONLY fields with verified data):
+
+{
+  "meta": {
+    "data_completeness_percent": <number 0-100>,
+    "fields_returned": <integer>,
+    "last_verified_source_name": "<string>"
+  },
+  "address_identity": {
+    "full_address": "<string>",
+    "street_address": "<string>",
+    "unit_number": "<string>",
+    "city": "<string>",
+    "state": "<string>",
+    "zip_code": "<string>",
+    "county": "<string>",
+    "neighborhood": "<string>",
+    "latitude": <number>,
+    "longitude": <number>,
+    "parcel_id": "<string>",
+    "mls_primary": "<string>"
+  },
+  "pricing_value": {
+    "listing_status": "<'Active' | 'Pending' | 'Closed' | 'OffMarket' | 'Expired'>",
+    "listing_price": <number>,
+    "price_per_sq_ft": <number>,
+    "listing_date": "<YYYY-MM-DD>",
+    "market_value_estimate": <number>,
+    "last_sale_date": "<YYYY-MM-DD>",
+    "last_sale_price": <number>,
+    "assessed_value": <number>,
+    "assessed_value_year": <integer>,
+    "redfin_estimate": <number>,
+    "zestimate": <number>
+  },
+  "property_basics": {
+    "property_type": "<'Single Family' | 'Condo' | 'Townhouse' | 'Multi-Family' | 'Vacant Land' | 'Other'>",
+    "ownership_type": "<'Condominium' | 'Fee Simple' | 'Co-op' | 'Leasehold'>",
+    "bedrooms": <number>,
+    "full_bathrooms": <number>,
+    "half_bathrooms": <number>,
+    "total_bathrooms": <number>,
+    "living_sq_ft": <number>,
+    "total_sq_ft_under_roof": <number>,
+    "lot_size_sq_ft": <number>,
+    "lot_size_acres": <number>,
+    "year_built": <number>,
+    "stories": <number>,
+    "floor_number": <number>,
+    "garage_spaces": <number>,
+    "parking_total": <number>
+  },
+  "hoa_taxes": {
+    "hoa": <true | false>,
+    "hoa_fee_annual": <number>,
+    "hoa_fee_monthly": <number>,
+    "hoa_name": "<string>",
+    "hoa_includes": "<string>",
+    "annual_taxes": <number>,
+    "tax_year": <number>,
+    "property_tax_rate_percent": <number>
+  },
+  "structure_systems": {
+    "roof_type": "<string>",
+    "exterior_material": "<string>",
+    "foundation": "<string>",
+    "hvac_type": "<string>",
+    "water_heater_type": "<string>",
+    "laundry_type": "<string>"
+  },
+  "interior_features": {
+    "flooring_type": "<string>",
+    "kitchen_features": "<string>",
+    "appliances_included": "<string>",
+    "fireplace": <true | false>,
+    "fireplace_count": <number>
+  },
+  "exterior_features": {
+    "pool": <true | false>,
+    "pool_type": "<string>",
+    "deck_patio": "<string>",
+    "waterfront": "<string>",
+    "view": "<string>"
+  },
+  "schools_scores": {
+    "school_district": "<string>",
+    "elementary_school_name": "<string>",
+    "elementary_school_rating": <number>,
+    "middle_school_name": "<string>",
+    "middle_school_rating": <number>,
+    "high_school_name": "<string>",
+    "high_school_rating": <number>,
+    "walk_score": <number>,
+    "transit_score": <number>,
+    "bike_score": <number>
+  },
+  "market_investment": {
+    "median_home_price_neighborhood": <number>,
+    "avg_days_on_market": <number>,
+    "insurance_estimate_annual": <number>,
+    "rental_estimate_monthly": <number>,
+    "rental_yield_percent": <number>,
+    "cap_rate_est_percent": <number>
+  },
+  "utilities_connectivity": {
+    "electric_provider": "<string>",
+    "water_provider": "<string>",
+    "internet_providers": "<string>",
+    "fiber_available": <true | false>
+  },
+  "environment_risk": {
+    "air_quality_index": <number>,
+    "flood_zone_code": "<string>",
+    "flood_risk_level": "<'Low' | 'Moderate' | 'High'>",
+    "hurricane_risk": "<'Low' | 'Moderate' | 'High'>",
+    "elevation_feet": <number>
+  }
+}
+
+Rules:
+- Use numeric types for all monetary/numeric fields (no $ or commas).
+- Ensure internal consistency: total_bathrooms = full_bathrooms + 0.5 * half_bathrooms.
+- If MLS and county conflict on bed/bath/sqft, prefer county for structure, MLS for interior.
+- OMIT any field you cannot verify. Never use null, N/A, unknown, or empty string.`;
+
   try {
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
@@ -106,8 +240,8 @@ async function callPerplexity(address: string): Promise<{ fields: Record<string,
       body: JSON.stringify({
         model: 'llama-3.1-sonar-large-128k-online',
         messages: [
-          { role: 'system', content: 'You are a real estate data researcher. Search the web for accurate property data. Return JSON with numbered field keys like "7_listing_price", "12_bedrooms", etc. Only include data you can verify from real sources.' },
-          { role: 'user', content: `Find accurate property data for: ${address}. Return JSON with verified data only.` }
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Identify and extract all available verified data for the residential property at: ${address}` }
         ],
         temperature: 0.1,
       }),
@@ -120,15 +254,24 @@ async function callPerplexity(address: string): Promise<{ fields: Record<string,
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         const fields: Record<string, any> = {};
-        for (const [key, value] of Object.entries(parsed.fields || parsed)) {
-          if (value !== null && value !== undefined && value !== '') {
-            fields[key] = {
-              value: (value as any)?.value !== undefined ? (value as any).value : value,
-              source: 'Perplexity (Web Search)',
-              confidence: 'Medium'
-            };
+
+        // Flatten nested structure into fields
+        const flattenObject = (obj: any, prefix = '') => {
+          for (const [key, value] of Object.entries(obj)) {
+            if (value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'unknown') {
+              if (typeof value === 'object' && !Array.isArray(value)) {
+                flattenObject(value, prefix + key + '_');
+              } else {
+                fields[prefix + key] = {
+                  value: value,
+                  source: 'Perplexity (Web Search)',
+                  confidence: 'Medium'
+                };
+              }
+            }
           }
-        }
+        };
+        flattenObject(parsed);
         return { fields };
       }
     }
@@ -343,43 +486,48 @@ Provide comprehensive property data with verified information from authoritative
 * **Insurance:** Estimate annual hazard + flood insurance for waterfront properties.
 * **Rental Yield:** Estimate monthly rental income for long-term vs. seasonal rental.
 
+**CRITICAL RULES:**
+- ONLY include fields you can verify or reasonably estimate. OMIT any field you cannot determine.
+- Do NOT include null, N/A, "unknown", or empty values - simply leave those fields out.
+- Return JSON ONLY, no markdown, no backticks, no explanation.
+
 **REQUIRED OUTPUT FORMAT:**
-Return ONLY a valid JSON object with this exact structure (no markdown, no explanation before/after):
+Return ONLY a valid JSON object. Include only fields with verified/estimated data:
 
 {
-  "7_listing_price": number or null,
-  "8_estimated_market_value": number or null,
-  "9_price_per_sqft": number or null,
-  "10_zestimate": number or null,
-  "12_bedrooms": number or null,
-  "13_bathrooms": number or null,
-  "14_sqft": number or null,
-  "15_lot_size_sqft": number or null,
-  "16_year_built": number or null,
-  "17_property_type": "string",
-  "18_building_name": "string or null",
-  "19_stories": number or null,
-  "20_construction": "string or null",
-  "21_roof_type": "string or null",
-  "22_exterior_material": "string or null",
-  "23_foundation": "string or null",
-  "30_tax_annual": number or null,
-  "31_tax_year": number or null,
-  "32_hoa_monthly": number or null,
-  "33_hoa_includes": "string or null",
-  "40_flood_zone": "string or null",
-  "41_flood_risk": "string (Low/Medium/High)",
-  "42_hurricane_risk": "string (Low/Medium/High)",
-  "50_est_insurance_annual": number or null,
-  "51_est_monthly_rent_longterm": number or null,
-  "52_est_monthly_rent_seasonal": number or null,
-  "53_cap_rate_percent": number or null,
-  "54_gross_rent_multiplier": number or null,
-  "60_pool": "string or null",
-  "61_parking": "string or null",
-  "62_waterfront": "string or null",
-  "63_view": "string or null",
-  "64_amenities": "string or null"
+  "7_listing_price": <number>,
+  "8_estimated_market_value": <number>,
+  "9_price_per_sqft": <number>,
+  "10_zestimate": <number>,
+  "12_bedrooms": <number>,
+  "13_bathrooms": <number>,
+  "14_sqft": <number>,
+  "15_lot_size_sqft": <number>,
+  "16_year_built": <number>,
+  "17_property_type": "<string>",
+  "18_building_name": "<string>",
+  "19_stories": <number>,
+  "20_construction": "<string>",
+  "21_roof_type": "<string>",
+  "22_exterior_material": "<string>",
+  "23_foundation": "<string>",
+  "30_tax_annual": <number>,
+  "31_tax_year": <number>,
+  "32_hoa_monthly": <number>,
+  "33_hoa_includes": "<string>",
+  "40_flood_zone": "<string>",
+  "41_flood_risk": "<'Low' | 'Medium' | 'High'>",
+  "42_hurricane_risk": "<'Low' | 'Medium' | 'High'>",
+  "50_est_insurance_annual": <number>,
+  "51_est_monthly_rent_longterm": <number>,
+  "52_est_monthly_rent_seasonal": <number>,
+  "53_cap_rate_percent": <number>,
+  "54_gross_rent_multiplier": <number>,
+  "60_pool": "<string>",
+  "61_parking": "<string>",
+  "62_waterfront": "<string>",
+  "63_view": "<string>",
+  "64_amenities": "<string>"
 }`;
 
   try {
@@ -403,7 +551,7 @@ Return ONLY a valid JSON object with this exact structure (no markdown, no expla
         const parsed = JSON.parse(jsonMatch[0]);
         const fields: Record<string, any> = {};
         for (const [key, value] of Object.entries(parsed)) {
-          if (value !== null && value !== undefined && value !== '') {
+          if (value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'unknown') {
             fields[key] = {
               value: value,
               source: 'Gemini (Real Estate Analyst)',
