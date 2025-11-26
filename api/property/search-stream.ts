@@ -249,8 +249,8 @@ Rules:
 
     const data = await response.json();
 
-    // Log Grok response for debugging
-    console.log('[GROK] Status:', response.status, '| Citations:', data.citations?.length || 0);
+    // Log Perplexity response for debugging
+    console.log('[PERPLEXITY] Status:', response.status, '| Citations:', data.citations?.length || 0, '| Error:', data.error || 'none');
 
     if (data.choices?.[0]?.message?.content) {
       const text = data.choices[0].message.content;
