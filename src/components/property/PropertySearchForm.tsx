@@ -58,7 +58,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
   const [addressInput, setAddressInput] = useState('');
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [selectedEngines, setSelectedEngines] = useState(['claude', 'gpt', 'grok', 'gemini']);
+  const [selectedEngines, setSelectedEngines] = useState(['grok', 'perplexity', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini']);
   const [skipLLMs, setSkipLLMs] = useState(false);
   const [searchResults, setSearchResults] = useState<any>(null);
   const [sourcesProgress, setSourcesProgress] = useState<SourceProgress[]>(DEFAULT_SOURCES);
@@ -638,9 +638,11 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
               <label className="block text-xs text-gray-500 mb-2">AI Engines to Fill Gaps (costs $):</label>
               <div className="flex flex-wrap gap-2">
                 {[
-                  { id: 'claude', name: 'Claude', color: 'orange' },
-                  { id: 'gpt', name: 'GPT-4o', color: 'green' },
                   { id: 'grok', name: 'Grok', color: 'blue' },
+                  { id: 'perplexity', name: 'Perplexity', color: 'cyan' },
+                  { id: 'claude-opus', name: 'Claude Opus', color: 'orange' },
+                  { id: 'gpt', name: 'GPT-5.1', color: 'green' },
+                  { id: 'claude-sonnet', name: 'Claude Sonnet', color: 'pink' },
                   { id: 'gemini', name: 'Gemini', color: 'purple' },
                 ].map(engine => (
                   <button

@@ -288,7 +288,7 @@ Rules:
 }
 
 async function callGrok(address: string): Promise<{ fields: Record<string, any>; error?: string }> {
-  const apiKey = process.env.GROK_API_KEY;
+  const apiKey = process.env.XAI_API_KEY;
   if (!apiKey) return { error: 'API key not set', fields: {} };
 
   const systemPrompt = `You are Grok, built by xAI, with access to advanced tools for web searching, browsing pages, and verifying real-time data. Your primary goal is accuracy—do not hallucinate, guess, or use outdated internal knowledge. Always use your tools to fetch and cross-verify data from multiple reliable sources. If data is unavailable or conflicting, note it explicitly. Prioritize official sources like county property appraisers, MLS listings via aggregators (Zillow, Redfin, Realtor.com), and government sites. Resolve conflicts by selecting the most consistent/recent value.
@@ -447,8 +447,8 @@ async function callGPT(address: string): Promise<{ fields: Record<string, any>; 
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
-        max_tokens: 8000,
+        model: 'gpt-5.1',
+        max_completion_tokens: 8000,
         messages: [
           { role: 'system', content: 'Extract VERIFIED property data. Return ONLY a JSON object. STRICT RULES: 1) Only include fields with REAL, VERIFIED values. 2) If you cannot find a data point, DO NOT include that field - no nulls, no "N/A", no "NaN", no "unknown". 3) An empty {} is better than fake data. 4) Never guess.' },
           { role: 'user', content: `Property: ${address}` }
@@ -599,7 +599,7 @@ Return ONLY a valid JSON object. Include only fields with verified/estimated dat
 
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
