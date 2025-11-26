@@ -33,6 +33,7 @@ import {
   type ApiField
 } from './free-apis';
 import { getFloridaLocalCrime } from './florida-crime-scraper';
+import { callHudFairMarketRent } from './free-apis';
 
 // Field type for storing values
 interface FieldValue {
@@ -469,6 +470,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     sendEvent(res, 'progress', { source: 'google-geocode', status: 'searching', message: 'Geocoding address...' });
     let lat: number | undefined;
     let lon: number | undefined;
+    let county = '';
+    let zip = '';
 
     try {
       const geoResult = await callGoogleGeocode(searchAddress);
@@ -477,7 +480,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       lat = geoResult.lat;
       lon = geoResult.lon;
-      const county = geoResult.county || '';
+      county = geoResult.county || '';
+      zip = geoResult.zip || '';
 
       sendEvent(res, 'progress', {
         source: 'google-geocode',
@@ -656,11 +660,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } catch (e) {
         sendEvent(res, 'progress', { source: 'crime', status: 'error', fieldsFound: 0, error: String(e) });
       }
+
+      // HUD Fair Market Rent (requires ZIP code from geocode)
+      sendEvent(res, 'progress', { source: 'hud-fmr', status: 'searching', message: 'Getting fair market rent data...' });
+      try {
+        const hudResult = await callHudFairMarketRent(zip);
+        const { newFields } = mergeFields(allFields, hudResult.fields, 15);
+        sendEvent(res, 'progress', {
+          source: 'hud-fmr',
+          status: hudResult.success ? 'complete' : 'error',
+          fieldsFound: newFields,
+          error: hudResult.error
+        });
+      } catch (e) {
+        sendEvent(res, 'progress', { source: 'hud-fmr', status: 'error', fieldsFound: 0, error: String(e) });
       }
+
 
     } else {
       // Skip location-dependent APIs
-      ['google-places', 'walkscore', 'fema', 'schooldigger', 'airdna', 'airnow', 'howloud', 'weather', 'broadband', 'crime'].forEach(src => {
+      ['google-places', 'walkscore', 'fema', 'schooldigger', 'airdna', 'airnow', 'howloud', 'weather', 'broadband', 'crime', 'hud-fmr'].forEach(src => {
         sendEvent(res, 'progress', { source: src, status: 'skipped', fieldsFound: 0, error: 'No coordinates available' });
       });
     }

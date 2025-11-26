@@ -32,7 +32,7 @@ function setField(
 // ============================================
 // GOOGLE GEOCODE API
 // ============================================
-export async function callGoogleGeocode(address: string): Promise<ApiResult & { lat?: number; lon?: number; county?: string }> {
+export async function callGoogleGeocode(address: string): Promise<ApiResult & { lat?: number; lon?: number; county?: string; zip?: string }> {
   const fields: Record<string, ApiField> = {};
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
@@ -93,7 +93,8 @@ export async function callGoogleGeocode(address: string): Promise<ApiResult & { 
       fields,
       lat: geometry?.location?.lat,
       lon: geometry?.location?.lng,
-      county
+      county,
+      zip
     };
 
   } catch (error) {
@@ -555,5 +556,57 @@ export async function callWeather(lat: number, lon: number): Promise<ApiResult> 
 
   } catch (error) {
     return { success: false, source: 'Weather.com', fields, error: String(error) };
+  }
+}
+
+// ============================================
+// HUD FAIR MARKET RENT API (Free Government Data)
+// Register for free token at: https://www.huduser.gov/hudapi/public/register
+// ============================================
+export async function callHudFairMarketRent(zip: string): Promise<ApiResult> {
+  const fields: Record<string, ApiField> = {};
+  const apiKey = process.env.HUD_API_KEY;
+
+  if (!apiKey) {
+    return { success: false, source: 'HUD FMR', fields, error: 'HUD_API_KEY not configured' };
+  }
+
+  try {
+    // HUD FMR API - get Fair Market Rent by ZIP code
+    const url = `https://www.huduser.gov/hudapi/public/fmr/data/${zip}`;
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      return { success: false, source: 'HUD FMR', fields, error: `HTTP ${response.status}` };
+    }
+
+    const data = await response.json();
+    const fmrData = data.data?.basicdata || data.basicdata || data;
+
+    // Extract rent by bedroom count
+    if (fmrData) {
+      setField(fields, '75_fmr_efficiency', fmrData.Efficiency || fmrData.efficiency, 'HUD FMR');
+      setField(fields, '76_fmr_1br', fmrData['One-Bedroom'] || fmrData.one_bedroom, 'HUD FMR');
+      setField(fields, '77_fmr_2br', fmrData['Two-Bedroom'] || fmrData.two_bedroom, 'HUD FMR');
+      setField(fields, '78_fmr_3br', fmrData['Three-Bedroom'] || fmrData.three_bedroom, 'HUD FMR');
+      setField(fields, '79_fmr_4br', fmrData['Four-Bedroom'] || fmrData.four_bedroom, 'HUD FMR');
+      setField(fields, '80_fmr_year', fmrData.year, 'HUD FMR');
+
+      // Get metro/county info if available
+      const metroName = data.data?.metroarea || data.data?.county_name;
+      if (metroName) {
+        setField(fields, '81_fmr_area_name', metroName, 'HUD FMR');
+      }
+    }
+
+    return { success: Object.keys(fields).length > 0, source: 'HUD FMR', fields };
+
+  } catch (error) {
+    return { success: false, source: 'HUD FMR', fields, error: String(error) };
   }
 }

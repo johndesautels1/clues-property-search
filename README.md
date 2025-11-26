@@ -58,7 +58,8 @@ Copy `.env.example` to `.env.local` and configure.
 
 | API | Env Variable | Purpose |
 |-----|--------------|---------|
-| **AirDNA** | `AIRDNA_API_KEY` | STR rental estimates |
+| **HUD FMR** | `HUD_API_KEY` | NEED | Free - register at huduser.gov |
+| **AirDNA** | `AIRDNA_API_KEY` | NEED | STR rental estimates |
 
 
 ### Data Sources That Need Code Fixes
