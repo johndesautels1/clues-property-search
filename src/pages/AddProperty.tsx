@@ -196,45 +196,128 @@ export default function AddProperty() {
     const fullAddress = `${manualForm.address}, ${manualForm.city}, ${manualForm.state}${manualForm.zip ? ' ' + manualForm.zip : ''}`;
 
     setStatus('searching');
-    setProgress(10);
+    setProgress(0);
+    setCascadeStatus([
+      { llm: 'Realtor.com', status: 'pending' },
+      { llm: 'Google Geocode', status: 'pending' },
+      { llm: 'WalkScore', status: 'pending' },
+      { llm: 'FEMA Flood', status: 'pending' },
+      { llm: 'Claude Opus', status: 'pending' },
+      { llm: 'GPT-4o', status: 'pending' },
+    ]);
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || '/api/property/search';
+      // Use SSE streaming for real-time progress
+      const apiUrl = import.meta.env.VITE_API_URL || '';
 
-      setStatus('scraping');
-      setProgress(30);
-
-      // Call the search API to get real property data
-      const response = await fetch(apiUrl, {
+      const response = await fetch(`${apiUrl}/api/property/search-stream`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           address: fullAddress,
           engines: ['claude-opus', 'gpt', 'grok', 'claude-sonnet'],
-          useGrok: true,
-          useCascade: true,
+          skipLLMs: false,
         }),
       });
-
-      setStatus('enriching');
-      setProgress(60);
 
       if (!response.ok) {
         throw new Error(`API Error: ${response.status}`);
       }
 
-      const data = await response.json();
-      setProgress(90);
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let finalData: any = null;
+      let currentFieldsFound = 0;
+
+      // Map source IDs to display names
+      const sourceNameMap: Record<string, string> = {
+        'realtor': 'Realtor.com',
+        'google-geocode': 'Google Geocode',
+        'google-places': 'Google Places',
+        'walkscore': 'WalkScore',
+        'fema': 'FEMA Flood',
+        'airnow': 'AirNow',
+        'perplexity': 'Perplexity',
+        'grok': 'Grok',
+        'claude-opus': 'Claude Opus',
+        'gpt': 'GPT-4o',
+        'claude-sonnet': 'Claude Sonnet',
+        'gemini': 'Gemini',
+      };
+
+      if (!reader) {
+        throw new Error('No response body');
+      }
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          if (!finalData) {
+            throw new Error('Stream ended without complete event');
+          }
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        let eventType = '';
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            eventType = line.slice(7).trim();
+          } else if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+
+              if (eventType === 'progress') {
+                // Update cascade status for summary display
+                const { source, status, fieldsFound } = data;
+                const displayName = sourceNameMap[source] || source;
+
+                setCascadeStatus(prev => {
+                  const existing = prev.find(s => s.llm === displayName);
+                  if (existing) {
+                    return prev.map(s => s.llm === displayName
+                      ? { ...s, status: status as 'pending' | 'running' | 'complete' | 'error', fieldsFound }
+                      : s
+                    );
+                  }
+                  return [...prev, { llm: displayName, status: status as 'pending' | 'running' | 'complete' | 'error', fieldsFound }];
+                });
+
+                // Update progress based on fields found
+                currentFieldsFound += fieldsFound || 0;
+                setProgress(Math.min(Math.round((currentFieldsFound / 110) * 100), 99));
+
+                // Update status message
+                if (status === 'searching') {
+                  setStatus('scraping');
+                }
+              } else if (eventType === 'complete') {
+                finalData = data;
+              } else if (eventType === 'error') {
+                throw new Error(data.error || 'Search error');
+              }
+            } catch (e) {
+              if (eventType === 'error') throw e;
+              console.error('Failed to parse SSE data:', e);
+            }
+          }
+        }
+      }
+
+      const data = finalData;
 
       // Extract property data from API response
       const fields = data.fields || {};
       const fieldSources = data.field_sources || {};
       const conflicts = data.conflicts || [];
 
-      console.log('🔍 Manual Entry API Response:', data);
-      console.log('📊 Field Sources:', fieldSources);
+      console.log('🔍 Manual Entry SSE Response:', data);
+      console.log('📊 Total Fields Found:', data.total_fields_found);
 
       // Parse address components from API or use form values as fallback
       const apiFullAddress = fields['1_full_address']?.value || fullAddress;
@@ -274,10 +357,9 @@ export default function AddProperty() {
       addProperty(scrapedProperty, fullPropertyData);
       setLastAddedId(scrapedProperty.id);
       setStatus('complete');
-      setProgress(100);
+      setProgress(data.completion_percentage || 100);
 
       console.log('✅ Property added from manual entry:', data);
-      console.log('📊 Fields found:', data.total_fields_found);
 
       // Reset form
       setManualForm({
@@ -1707,37 +1789,45 @@ Beautiful 3BR/2BA beach house at 290 41st Ave, St Pete Beach, FL 33706. Built in
             />
           </div>
 
-          {/* Field Categories Progress */}
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center gap-2">
-              <CheckCircle className={`w-4 h-4 ${progress >= 20 ? 'text-quantum-green' : 'text-gray-600'}`} />
-              <span className={progress >= 20 ? 'text-white' : 'text-gray-500'}>
-                Core Property Data (Fields 1-30)
-              </span>
+          {/* Real-time API Status */}
+          <div className="space-y-2">
+            <div className="text-xs text-gray-400 uppercase tracking-wider mb-2">Data Sources</div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {cascadeStatus.map((source) => (
+                <div
+                  key={source.llm}
+                  className={`flex items-center gap-2 p-2 rounded-lg text-xs ${
+                    source.status === 'complete' ? 'bg-quantum-green/10 border border-quantum-green/30' :
+                    source.status === 'running' || source.status === 'searching' as any ? 'bg-quantum-cyan/10 border border-quantum-cyan/30' :
+                    source.status === 'error' ? 'bg-red-500/10 border border-red-500/30' :
+                    'bg-white/5 border border-white/10'
+                  }`}
+                >
+                  {source.status === 'complete' ? (
+                    <CheckCircle className="w-3 h-3 text-quantum-green flex-shrink-0" />
+                  ) : source.status === 'running' || source.status === 'searching' as any ? (
+                    <Loader2 className="w-3 h-3 text-quantum-cyan animate-spin flex-shrink-0" />
+                  ) : source.status === 'error' ? (
+                    <AlertCircle className="w-3 h-3 text-red-400 flex-shrink-0" />
+                  ) : (
+                    <div className="w-3 h-3 rounded-full bg-gray-600 flex-shrink-0" />
+                  )}
+                  <span className={`truncate ${
+                    source.status === 'complete' ? 'text-quantum-green' :
+                    source.status === 'running' || source.status === 'searching' as any ? 'text-quantum-cyan' :
+                    source.status === 'error' ? 'text-red-400' :
+                    'text-gray-500'
+                  }`}>
+                    {source.llm}
+                  </span>
+                  {source.fieldsFound !== undefined && source.fieldsFound > 0 && (
+                    <span className="text-quantum-green text-[10px] ml-auto">+{source.fieldsFound}</span>
+                  )}
+                </div>
+              ))}
             </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className={`w-4 h-4 ${progress >= 40 ? 'text-quantum-green' : 'text-gray-600'}`} />
-              <span className={progress >= 40 ? 'text-white' : 'text-gray-500'}>
-                Structural Details (Fields 31-50)
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className={`w-4 h-4 ${progress >= 60 ? 'text-quantum-green' : 'text-gray-600'}`} />
-              <span className={progress >= 60 ? 'text-white' : 'text-gray-500'}>
-                Location & Schools (Fields 51-75)
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className={`w-4 h-4 ${progress >= 80 ? 'text-quantum-green' : 'text-gray-600'}`} />
-              <span className={progress >= 80 ? 'text-white' : 'text-gray-500'}>
-                Financial Data (Fields 76-90)
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className={`w-4 h-4 ${progress >= 100 ? 'text-quantum-green' : 'text-gray-600'}`} />
-              <span className={progress >= 100 ? 'text-white' : 'text-gray-500'}>
-                Utilities & Environment (Fields 91-110)
-              </span>
+            <div className="text-xs text-gray-500 mt-2">
+              {progress}% complete ({Math.round(progress * 1.1)} of 110 fields)
             </div>
           </div>
 
