@@ -400,15 +400,15 @@ export async function callHowLoud(lat: number, lon: number): Promise<ApiResult> 
 }
 
 // ============================================
-// BROADBAND NOW API - Internet Availability
+// ============================================
+// FCC MOBILE BROADBAND API (Free Government Data)
 // ============================================
 export async function callBroadbandNow(lat: number, lon: number, address: string): Promise<ApiResult> {
   const fields: Record<string, ApiField> = {};
 
   try {
-    // Note: BroadbandNow requires scraping or API partnership
-    // Using FCC Broadband Map API as alternative (free government data)
-    const url = `https://broadbandmap.fcc.gov/api/public/map/availability/json?latitude=${lat}&longitude=${lon}&version=1`;
+    // FCC VizMo API - Mobile Broadband data
+    const url = `http://vizmo.fcc.gov/api/carrier.json?lat=${lat}&lon=${lon}`;
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -416,26 +416,35 @@ export async function callBroadbandNow(lat: number, lon: number, address: string
     }
 
     const data = await response.json();
-    const providers = data.availability || [];
 
-    if (providers.length > 0) {
-      // Find fastest provider
-      const fastest = providers.reduce((max: any, p: any) =>
-        (p.max_down_speed || 0) > (max.max_down_speed || 0) ? p : max
-      , providers[0]);
+    // Extract carrier data
+    const carriers = [];
+    if (data.att) carriers.push({ name: "AT&T", ...data.att });
+    if (data.verizon) carriers.push({ name: "Verizon", ...data.verizon });
+    if (data.tmobile) carriers.push({ name: "T-Mobile", ...data.tmobile });
+    if (data.sprint) carriers.push({ name: "Sprint", ...data.sprint });
 
-      setField(fields, '103_internet_max_speed_mbps', fastest.max_down_speed, 'FCC Broadband');
-      setField(fields, '104_internet_providers_count', providers.length, 'FCC Broadband');
-      setField(fields, '105_fiber_available', providers.some((p: any) => p.technology === 'Fiber'), 'FCC Broadband');
+    if (carriers.length > 0) {
+      // Find best coverage
+      const bestCarrier = carriers.reduce((best, c) => 
+        (c.download_speed || 0) > (best.download_speed || 0) ? c : best
+      , carriers[0]);
+
+      setField(fields, '103_mobile_broadband_best_carrier', bestCarrier.name, 'FCC VizMo');
+      setField(fields, '104_mobile_broadband_download_mbps', bestCarrier.download_speed, 'FCC VizMo');
+      setField(fields, '105_mobile_carriers_available', carriers.length, 'FCC VizMo');
+
+      // Check for LTE/5G coverage
+      const has4G = carriers.some(c => c.lte_coverage);
+      setField(fields, '106_4g_lte_available', has4G, 'FCC VizMo');
     }
 
-    return { success: Object.keys(fields).length > 0, source: 'FCC Broadband', fields };
+    return { success: Object.keys(fields).length > 0, source: 'FCC VizMo', fields };
 
   } catch (error) {
     return { success: false, source: 'FCC Broadband', fields, error: String(error) };
   }
 }
-
 
 // ============================================
 // FBI CRIME DATA API (Free Government Data)
