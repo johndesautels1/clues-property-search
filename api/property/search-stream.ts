@@ -248,6 +248,10 @@ Rules:
     });
 
     const data = await response.json();
+
+    // Log Grok response for debugging
+    console.log('[GROK] Status:', response.status, '| Citations:', data.citations?.length || 0);
+
     if (data.choices?.[0]?.message?.content) {
       const text = data.choices[0].message.content;
       const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -343,16 +347,11 @@ Return a flat JSON object with these field names. Only include fields with verif
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'grok-2-latest',
+        model: 'grok-4-fast',
         max_tokens: 8000,
         temperature: 0.1,
         // Enable Live Search for real-time web data
-        search_parameters: {
-          mode: 'auto',
-          sources: [{ type: 'web' }, { type: 'news' }],
-          max_search_results: 20,
-          return_citations: true
-        },
+        tools: [{ type: 'web_search' }],
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Search and verify property data for: ${address}. Cross-reference multiple sources. Return JSON only.` }
@@ -361,6 +360,9 @@ Return a flat JSON object with these field names. Only include fields with verif
     });
 
     const data = await response.json();
+
+    // Log Grok response for debugging
+    console.log('[GROK] Status:', response.status, '| Citations:', data.citations?.length || 0, '| Error:', data.error || 'none');
     if (data.choices?.[0]?.message?.content) {
       const text = data.choices[0].message.content;
       const jsonMatch = text.match(/\{[\s\S]*\}/);
