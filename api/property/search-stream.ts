@@ -17,7 +17,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { scrapeZillow, scrapeRedfin, scrapeRealtor, type ScrapedField } from './scrapers';
+import { scrapeZillow, scrapeRedfin, scrapeRealtor, type ScrapedField } from './scrapers.js';
 import {
   callGoogleGeocode,
   callGooglePlaces,
@@ -31,9 +31,9 @@ import {
   callCrimeGrade,
   callWeather,
   type ApiField
-} from './free-apis';
-import { getFloridaLocalCrime } from './florida-crime-scraper';
-import { callHudFairMarketRent } from './free-apis';
+} from './free-apis.js';
+import { getFloridaLocalCrime } from './florida-crime-scraper.js';
+import { callHudFairMarketRent } from './free-apis.js';
 
 // Field type for storing values
 interface FieldValue {
@@ -238,7 +238,7 @@ Rules:
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'llama-3.1-sonar-large-128k-online',
+        model: 'sonar',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Identify and extract all available verified data for the residential property at: ${address}` }
