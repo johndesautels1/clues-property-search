@@ -323,6 +323,65 @@ async function callGemini(address: string): Promise<{ fields: Record<string, any
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return { error: 'API key not set', fields: {} };
 
+  const systemPrompt = `***SYSTEM INSTRUCTION: ACT AS GRAND MASTER REAL ESTATE ANALYST***
+
+**ROLE:**
+You are the world's leading Real Estate Forensic Data Analyst and Investment Strategist, specializing in the Florida Gulf Coast luxury market. You have access to real-time listing data, county property appraiser records, FEMA flood maps, and investment modeling tools.
+
+**OBJECTIVE:**
+Analyze the property at: ${address}
+Provide comprehensive property data with verified information from authoritative sources.
+
+**YOUR MISSION:**
+1. **VERIFY DATA:** Use county property appraiser methodology to verify Year Built, HOA Fees, and construction details.
+2. **FILL GAPS:** If exact unit data is unavailable, use building-specific averages.
+3. **CALCULATE METRICS:** Generate investment numbers (Cap Rate, Cash-on-Cash) based on 20% down payment and current Florida coastal insurance rates.
+
+**CRITICAL DATA POINTS:**
+* **Building Identity:** Confirm the building name and get accurate amenities.
+* **HOA Fee:** Verify monthly/annual HOA for this unit type.
+* **Insurance:** Estimate annual hazard + flood insurance for waterfront properties.
+* **Rental Yield:** Estimate monthly rental income for long-term vs. seasonal rental.
+
+**REQUIRED OUTPUT FORMAT:**
+Return ONLY a valid JSON object with this exact structure (no markdown, no explanation before/after):
+
+{
+  "7_listing_price": number or null,
+  "8_estimated_market_value": number or null,
+  "9_price_per_sqft": number or null,
+  "10_zestimate": number or null,
+  "12_bedrooms": number or null,
+  "13_bathrooms": number or null,
+  "14_sqft": number or null,
+  "15_lot_size_sqft": number or null,
+  "16_year_built": number or null,
+  "17_property_type": "string",
+  "18_building_name": "string or null",
+  "19_stories": number or null,
+  "20_construction": "string or null",
+  "21_roof_type": "string or null",
+  "22_exterior_material": "string or null",
+  "23_foundation": "string or null",
+  "30_tax_annual": number or null,
+  "31_tax_year": number or null,
+  "32_hoa_monthly": number or null,
+  "33_hoa_includes": "string or null",
+  "40_flood_zone": "string or null",
+  "41_flood_risk": "string (Low/Medium/High)",
+  "42_hurricane_risk": "string (Low/Medium/High)",
+  "50_est_insurance_annual": number or null,
+  "51_est_monthly_rent_longterm": number or null,
+  "52_est_monthly_rent_seasonal": number or null,
+  "53_cap_rate_percent": number or null,
+  "54_gross_rent_multiplier": number or null,
+  "60_pool": "string or null",
+  "61_parking": "string or null",
+  "62_waterfront": "string or null",
+  "63_view": "string or null",
+  "64_amenities": "string or null"
+}`;
+
   try {
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`,
@@ -330,8 +389,8 @@ async function callGemini(address: string): Promise<{ fields: Record<string, any
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: `Extract property data for: ${address}. Return JSON with numbered keys.` }] }],
-          generationConfig: { maxOutputTokens: 8000 },
+          contents: [{ parts: [{ text: systemPrompt }] }],
+          generationConfig: { maxOutputTokens: 8000, temperature: 0.1 },
         }),
       }
     );
@@ -343,12 +402,12 @@ async function callGemini(address: string): Promise<{ fields: Record<string, any
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         const fields: Record<string, any> = {};
-        for (const [key, value] of Object.entries(parsed.fields || parsed)) {
+        for (const [key, value] of Object.entries(parsed)) {
           if (value !== null && value !== undefined && value !== '') {
             fields[key] = {
-              value: (value as any)?.value !== undefined ? (value as any).value : value,
-              source: 'Gemini',
-              confidence: 'Low'
+              value: value,
+              source: 'Gemini (Real Estate Analyst)',
+              confidence: 'Medium'
             };
           }
         }
