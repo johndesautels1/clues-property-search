@@ -82,6 +82,11 @@ export async function scrapeZillow(address: string, zpid?: string): Promise<Scra
     if (zpid) {
       // Direct ZPID URL
       url = `https://www.zillow.com/homedetails/${zpid}_zpid/`;
+      const detailRes = await fetch(url, { headers: SCRAPER_HEADERS });
+      if (!detailRes.ok) {
+        return { success: false, source: 'Zillow', fields: {}, addressVerified: false, error: `HTTP ${detailRes.status}` };
+      }
+      html = await detailRes.text();
     } else {
       // Search by address
       const searchUrl = `https://www.zillow.com/homes/${encodeURIComponent(address)}_rb/`;
