@@ -4,7 +4,7 @@
  */
 
 import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   Bed,
   Bath,
@@ -25,10 +25,9 @@ interface PropertyCardProps {
 
 export default function PropertyCard({
   property,
-  variant = 'default',
+  variant: _variant = 'default',
   showDelete = true,
 }: PropertyCardProps) {
-  const navigate = useNavigate();
   const { removeProperty } = usePropertyStore();
 
   const handleDelete = (e: React.MouseEvent) => {

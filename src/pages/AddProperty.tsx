@@ -1107,7 +1107,7 @@ export default function AddProperty() {
               const enrichedFields = enrichData.fields || {};
 
               // Merge enriched data with CSV data (CSV takes precedence)
-              fullProperty = mergePropertyData(fullProperty, enrichedFields, propertyId);
+                fullProperty = mergePropertyData(fullProperty, enrichedFields);
 
               // Update completion percentage
               const totalFields = Object.keys(enrichedFields).length;
@@ -1168,7 +1168,7 @@ export default function AddProperty() {
   };
 
   // Merge enriched API data with existing CSV data (CSV takes precedence)
-  const mergePropertyData = (csvProperty: Property, apiFields: any, propertyId: string): Property => {
+  const mergePropertyData = (csvProperty: Property, apiFields: any): Property => {
     // For each field, only fill if CSV value is null/empty
     const merged = { ...csvProperty };
 
