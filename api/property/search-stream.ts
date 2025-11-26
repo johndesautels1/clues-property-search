@@ -258,7 +258,7 @@ Rules:
         // Flatten nested structure into fields
         const flattenObject = (obj: any, prefix = '') => {
           for (const [key, value] of Object.entries(obj)) {
-            if ((typeof value !== 'number' || !isNaN(value)) && value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'unknown') {
+            if ((typeof value !== 'number' || !isNaN(value)) && value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'NaN' && value !== 'unknown' && String(value).toLowerCase() !== 'nan') {
               if (typeof value === 'object' && !Array.isArray(value)) {
                 flattenObject(value, prefix + key + '_');
               } else {
@@ -359,7 +359,7 @@ Return a flat JSON object with these field names. Only include fields with verif
         const parsed = JSON.parse(jsonMatch[0]);
         const fields: Record<string, any> = {};
         for (const [key, value] of Object.entries(parsed)) {
-          if ((typeof value !== 'number' || !isNaN(value)) && value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'unknown') {
+          if ((typeof value !== 'number' || !isNaN(value)) && value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'NaN' && value !== 'unknown' && String(value).toLowerCase() !== 'nan') {
             fields[key] = {
               value: value,
               source: 'Grok (Web Search)',
@@ -403,7 +403,7 @@ async function callClaudeOpus(address: string): Promise<{ fields: Record<string,
         const parsed = JSON.parse(jsonMatch[0]);
         const fields: Record<string, any> = {};
         for (const [key, value] of Object.entries(parsed.fields || parsed)) {
-          if ((typeof value !== 'number' || !isNaN(value)) && value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'unknown') {
+          if ((typeof value !== 'number' || !isNaN(value)) && value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'NaN' && value !== 'unknown' && String(value).toLowerCase() !== 'nan') {
             fields[key] = {
               value: (value as any)?.value !== undefined ? (value as any).value : value,
               source: 'Claude Opus',
@@ -449,7 +449,7 @@ async function callGPT(address: string): Promise<{ fields: Record<string, any>; 
         const parsed = JSON.parse(jsonMatch[0]);
         const fields: Record<string, any> = {};
         for (const [key, value] of Object.entries(parsed.fields || parsed)) {
-          if ((typeof value !== 'number' || !isNaN(value)) && value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'unknown') {
+          if ((typeof value !== 'number' || !isNaN(value)) && value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'NaN' && value !== 'unknown' && String(value).toLowerCase() !== 'nan') {
             fields[key] = {
               value: (value as any)?.value !== undefined ? (value as any).value : value,
               source: 'GPT-4o',
@@ -493,7 +493,7 @@ async function callClaudeSonnet(address: string): Promise<{ fields: Record<strin
         const parsed = JSON.parse(jsonMatch[0]);
         const fields: Record<string, any> = {};
         for (const [key, value] of Object.entries(parsed.fields || parsed)) {
-          if ((typeof value !== 'number' || !isNaN(value)) && value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'unknown') {
+          if ((typeof value !== 'number' || !isNaN(value)) && value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'NaN' && value !== 'unknown' && String(value).toLowerCase() !== 'nan') {
             fields[key] = {
               value: (value as any)?.value !== undefined ? (value as any).value : value,
               source: 'Claude Sonnet',
@@ -599,7 +599,7 @@ Return ONLY a valid JSON object. Include only fields with verified/estimated dat
         const parsed = JSON.parse(jsonMatch[0]);
         const fields: Record<string, any> = {};
         for (const [key, value] of Object.entries(parsed)) {
-          if ((typeof value !== 'number' || !isNaN(value)) && value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'unknown') {
+          if ((typeof value !== 'number' || !isNaN(value)) && value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'NaN' && value !== 'unknown' && String(value).toLowerCase() !== 'nan') {
             fields[key] = {
               value: value,
               source: 'Gemini (Real Estate Analyst)',
