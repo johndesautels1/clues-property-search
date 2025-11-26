@@ -1,4 +1,0 @@
-[submodule "app"]
-	path = app
-	url = https://github.com/johndesautels1/clues-property-search.git
-	branch = main
