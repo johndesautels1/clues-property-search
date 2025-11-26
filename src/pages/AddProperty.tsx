@@ -235,7 +235,7 @@ export default function AddProperty() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           address: fullAddress,
-          engines: ['claude-opus', 'gpt', 'grok', 'claude-sonnet'],
+          engines: ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet'],
           skipLLMs: false,
         }),
       });
@@ -457,7 +457,7 @@ export default function AddProperty() {
       const getEngines = () => {
         if (selectedEngine === 'Auto') {
           // Full cascade order per reliability audit
-          return ['claude-opus', 'gpt', 'grok', 'claude-sonnet', 'copilot', 'gemini'];
+          return ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'];
         }
         // Single engine selected
         return [selectedEngine]; // Already in correct format (e.g., 'claude-opus', 'gpt')

@@ -258,7 +258,9 @@ Rules:
         // Flatten nested structure into fields
         const flattenObject = (obj: any, prefix = '') => {
           for (const [key, value] of Object.entries(obj)) {
-            if ((typeof value !== 'number' || !isNaN(value)) && value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'NaN' && value !== 'unknown' && String(value).toLowerCase() !== 'nan') {
+            const strVal = String(value).toLowerCase().trim();
+          const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'nan' || strVal === 'unknown' || strVal === 'not available' || strVal === 'not found' || strVal === 'none' || strVal === '-' || strVal === '--' || strVal === 'tbd' || strVal === 'n\a' || (typeof value === 'number' && isNaN(value));
+          if (!isBadValue) {
               if (typeof value === 'object' && !Array.isArray(value)) {
                 flattenObject(value, prefix + key + '_');
               } else {
@@ -359,7 +361,9 @@ Return a flat JSON object with these field names. Only include fields with verif
         const parsed = JSON.parse(jsonMatch[0]);
         const fields: Record<string, any> = {};
         for (const [key, value] of Object.entries(parsed)) {
-          if ((typeof value !== 'number' || !isNaN(value)) && value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'NaN' && value !== 'unknown' && String(value).toLowerCase() !== 'nan') {
+          const strVal = String(value).toLowerCase().trim();
+          const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'nan' || strVal === 'unknown' || strVal === 'not available' || strVal === 'not found' || strVal === 'none' || strVal === '-' || strVal === '--' || strVal === 'tbd' || strVal === 'n\a' || (typeof value === 'number' && isNaN(value));
+          if (!isBadValue) {
             fields[key] = {
               value: value,
               source: 'Grok (Web Search)',
@@ -391,7 +395,7 @@ async function callClaudeOpus(address: string): Promise<{ fields: Record<string,
       body: JSON.stringify({
         model: 'claude-opus-4-5-20251101',
         max_tokens: 8000,
-        messages: [{ role: 'user', content: `You are a real estate data analyst. Extract property data for: ${address}. Return ONLY a JSON object with numbered keys like "7_listing_price", "12_bedrooms", etc. CRITICAL: OMIT any field you cannot verify - do NOT include null, N/A, NaN, "unknown", or empty values. Simply leave unverified fields out entirely.` }],
+        messages: [{ role: 'user', content: `Extract VERIFIED property data for: ${address}. Return ONLY a JSON object. STRICT RULES: 1) Only include fields with REAL, VERIFIED values from actual data sources. 2) If you cannot find a specific data point, DO NOT include that field at all - no nulls, no "N/A", no "NaN", no "unknown", no estimates, no placeholders. 3) An empty {} is better than fake data. 4) Never guess or estimate values.` }],
       }),
     });
 
@@ -403,7 +407,9 @@ async function callClaudeOpus(address: string): Promise<{ fields: Record<string,
         const parsed = JSON.parse(jsonMatch[0]);
         const fields: Record<string, any> = {};
         for (const [key, value] of Object.entries(parsed.fields || parsed)) {
-          if ((typeof value !== 'number' || !isNaN(value)) && value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'NaN' && value !== 'unknown' && String(value).toLowerCase() !== 'nan') {
+          const strVal = String(value).toLowerCase().trim();
+          const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'nan' || strVal === 'unknown' || strVal === 'not available' || strVal === 'not found' || strVal === 'none' || strVal === '-' || strVal === '--' || strVal === 'tbd' || strVal === 'n\a' || (typeof value === 'number' && isNaN(value));
+          if (!isBadValue) {
             fields[key] = {
               value: (value as any)?.value !== undefined ? (value as any).value : value,
               source: 'Claude Opus',
@@ -435,7 +441,7 @@ async function callGPT(address: string): Promise<{ fields: Record<string, any>; 
         model: 'gpt-4o',
         max_tokens: 8000,
         messages: [
-          { role: 'system', content: 'You are a real estate data analyst. Return ONLY a JSON object with numbered keys like "7_listing_price". CRITICAL: OMIT any field you cannot verify - do NOT include null, N/A, NaN, "unknown", or empty values. Simply leave unverified fields out entirely.' },
+          { role: 'system', content: 'Extract VERIFIED property data. Return ONLY a JSON object. STRICT RULES: 1) Only include fields with REAL, VERIFIED values. 2) If you cannot find a data point, DO NOT include that field - no nulls, no "N/A", no "NaN", no "unknown". 3) An empty {} is better than fake data. 4) Never guess.' },
           { role: 'user', content: `Property: ${address}` }
         ],
       }),
@@ -449,7 +455,9 @@ async function callGPT(address: string): Promise<{ fields: Record<string, any>; 
         const parsed = JSON.parse(jsonMatch[0]);
         const fields: Record<string, any> = {};
         for (const [key, value] of Object.entries(parsed.fields || parsed)) {
-          if ((typeof value !== 'number' || !isNaN(value)) && value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'NaN' && value !== 'unknown' && String(value).toLowerCase() !== 'nan') {
+          const strVal = String(value).toLowerCase().trim();
+          const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'nan' || strVal === 'unknown' || strVal === 'not available' || strVal === 'not found' || strVal === 'none' || strVal === '-' || strVal === '--' || strVal === 'tbd' || strVal === 'n\a' || (typeof value === 'number' && isNaN(value));
+          if (!isBadValue) {
             fields[key] = {
               value: (value as any)?.value !== undefined ? (value as any).value : value,
               source: 'GPT-4o',
@@ -481,7 +489,7 @@ async function callClaudeSonnet(address: string): Promise<{ fields: Record<strin
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 8000,
-        messages: [{ role: 'user', content: `You are a real estate data analyst. Extract property data for: ${address}. Return ONLY a JSON object with numbered keys like "7_listing_price". CRITICAL: OMIT any field you cannot verify - do NOT include null, N/A, NaN, "unknown", or empty values. Simply leave unverified fields out entirely.` }],
+        messages: [{ role: 'user', content: `Extract VERIFIED property data for: ${address}. Return ONLY a JSON object. STRICT RULES: 1) Only include fields with REAL, VERIFIED values. 2) If you cannot find a data point, DO NOT include that field - no nulls, no "N/A", no "NaN", no estimates. 3) An empty {} is better than fake data.` }],
       }),
     });
 
@@ -493,7 +501,9 @@ async function callClaudeSonnet(address: string): Promise<{ fields: Record<strin
         const parsed = JSON.parse(jsonMatch[0]);
         const fields: Record<string, any> = {};
         for (const [key, value] of Object.entries(parsed.fields || parsed)) {
-          if ((typeof value !== 'number' || !isNaN(value)) && value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'NaN' && value !== 'unknown' && String(value).toLowerCase() !== 'nan') {
+          const strVal = String(value).toLowerCase().trim();
+          const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'nan' || strVal === 'unknown' || strVal === 'not available' || strVal === 'not found' || strVal === 'none' || strVal === '-' || strVal === '--' || strVal === 'tbd' || strVal === 'n\a' || (typeof value === 'number' && isNaN(value));
+          if (!isBadValue) {
             fields[key] = {
               value: (value as any)?.value !== undefined ? (value as any).value : value,
               source: 'Claude Sonnet',
@@ -599,7 +609,9 @@ Return ONLY a valid JSON object. Include only fields with verified/estimated dat
         const parsed = JSON.parse(jsonMatch[0]);
         const fields: Record<string, any> = {};
         for (const [key, value] of Object.entries(parsed)) {
-          if ((typeof value !== 'number' || !isNaN(value)) && value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'NaN' && value !== 'unknown' && String(value).toLowerCase() !== 'nan') {
+          const strVal = String(value).toLowerCase().trim();
+          const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'nan' || strVal === 'unknown' || strVal === 'not available' || strVal === 'not found' || strVal === 'none' || strVal === '-' || strVal === '--' || strVal === 'tbd' || strVal === 'n\a' || (typeof value === 'number' && isNaN(value));
+          if (!isBadValue) {
             fields[key] = {
               value: value,
               source: 'Gemini (Real Estate Analyst)',
