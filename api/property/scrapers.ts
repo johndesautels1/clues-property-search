@@ -659,7 +659,7 @@ export async function scrapeAllSources(address: string, zillowZpid?: string): Pr
   }
 
   // For each field, pick the most reliable source
-  for (const [key, values] of allFields) {
+  for (const [key, values] of Array.from(allFields.entries())) {
     if (values.length === 1) {
       // Only one source, use it
       combined[key] = {

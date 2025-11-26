@@ -227,7 +227,7 @@ async function scrapeCrimeMappingPage(
     const html = await response.text();
 
     // Look for embedded JSON data in the page
-    const dataMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*({.*?});/s);
+    const dataMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*({[\s\S]*?});/);
     if (dataMatch) {
       try {
         const state = JSON.parse(dataMatch[1]);
