@@ -32,6 +32,7 @@ import {
   callWeather,
   type ApiField
 } from './free-apis';
+import { getFloridaLocalCrime } from './florida-crime-scraper';
 
 // Field type for storing values
 interface FieldValue {
@@ -476,6 +477,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       lat = geoResult.lat;
       lon = geoResult.lon;
+      const county = geoResult.county || '';
 
       sendEvent(res, 'progress', {
         source: 'google-geocode',
@@ -632,10 +634,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         sendEvent(res, 'progress', { source: 'broadband', status: 'error', fieldsFound: 0, error: String(e) });
       }
 
-      // Crime
-      sendEvent(res, 'progress', { source: 'crime', status: 'searching', message: 'Getting crime data...' });
+      // Crime - Try local Florida data first, then FBI fallback
+      sendEvent(res, 'progress', { source: 'crime', status: 'searching', message: 'Getting local crime data...' });
       try {
-        const crimeResult = await callCrimeGrade(lat, lon, searchAddress);
+        // Try local Florida county crime scraper first
+        let crimeResult = await getFloridaLocalCrime(lat, lon, county);
+        
+        // If local fails, fall back to FBI state-level data
+        if (!crimeResult.success || Object.keys(crimeResult.fields).length === 0) {
+          sendEvent(res, 'progress', { source: 'crime', status: 'searching', message: 'Falling back to FBI data...' });
+          crimeResult = await callCrimeGrade(lat, lon, searchAddress);
+        }
+        
         const { newFields } = mergeFields(allFields, crimeResult.fields, 14);
         sendEvent(res, 'progress', {
           source: 'crime',
@@ -645,6 +655,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       } catch (e) {
         sendEvent(res, 'progress', { source: 'crime', status: 'error', fieldsFound: 0, error: String(e) });
+      }
       }
 
     } else {
