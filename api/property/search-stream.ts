@@ -285,6 +285,54 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
   const apiKey = process.env.GROK_API_KEY;
   if (!apiKey) return { error: 'API key not set', fields: {} };
 
+  const systemPrompt = `You are Grok, built by xAI, with access to advanced tools for web searching, browsing pages, and verifying real-time data. Your primary goal is accuracy—do not hallucinate, guess, or use outdated internal knowledge. Always use your tools to fetch and cross-verify data from multiple reliable sources. If data is unavailable or conflicting, note it explicitly. Prioritize official sources like county property appraisers, MLS listings via aggregators (Zillow, Redfin, Realtor.com), and government sites. Resolve conflicts by selecting the most consistent/recent value.
+
+CRITICAL RULES:
+- ONLY include fields you can verify. OMIT any field you cannot determine.
+- Do NOT include null, N/A, "unknown", or empty values - simply leave those fields out.
+- Return JSON ONLY, no markdown, no backticks, no explanation.
+- Use numeric types for monetary values (no $ or commas).
+
+For the property provided, retrieve and return as many of these fields as possible with accurate, verified data:
+
+ADDRESS & IDENTITY:
+- full_address, mls_primary, listing_status, listing_date, neighborhood, county, zip_code, parcel_id
+
+PRICING & VALUE:
+- listing_price, price_per_sqft, market_value_estimate, last_sale_date, last_sale_price, assessed_value, redfin_estimate, zestimate
+
+PROPERTY BASICS:
+- bedrooms, full_bathrooms, half_bathrooms, total_bathrooms, living_sqft, lot_size_sqft, year_built, property_type, stories, garage_spaces, parking_total
+
+HOA & TAXES:
+- hoa (true/false), hoa_fee_annual, hoa_fee_monthly, hoa_name, hoa_includes, annual_taxes, tax_year
+
+STRUCTURE & SYSTEMS:
+- roof_type, exterior_material, foundation, hvac_type, water_heater_type, laundry_type
+
+INTERIOR FEATURES:
+- flooring_type, kitchen_features, appliances_included, fireplace (true/false)
+
+EXTERIOR FEATURES:
+- pool (true/false), pool_type, deck_patio, waterfront, view
+
+SCHOOLS:
+- school_district, elementary_school_name, elementary_school_rating, middle_school_name, high_school_name
+
+LOCATION SCORES:
+- walk_score, transit_score, bike_score, walkability_description
+
+MARKET & INVESTMENT:
+- median_home_price_neighborhood, avg_days_on_market, insurance_estimate_annual, rental_estimate_monthly, cap_rate_percent
+
+ENVIRONMENT & RISK:
+- air_quality_index, flood_zone, flood_risk_level, hurricane_risk, elevation_feet
+
+UTILITIES:
+- electric_provider, water_provider, internet_providers, fiber_available (true/false)
+
+Return a flat JSON object with these field names. Only include fields with verified data.`;
+
   try {
     const response = await fetch('https://api.x.ai/v1/chat/completions', {
       method: 'POST',
@@ -297,8 +345,8 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
         max_tokens: 8000,
         temperature: 0.1,
         messages: [
-          { role: 'system', content: 'You are a real estate researcher with web search. Return JSON with property data using numbered keys like "7_listing_price". Only include verified data.' },
-          { role: 'user', content: `Search for property data: ${address}. Return JSON.` }
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Search and verify property data for: ${address}. Cross-reference multiple sources. Return JSON only.` }
         ],
       }),
     });
@@ -310,10 +358,10 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         const fields: Record<string, any> = {};
-        for (const [key, value] of Object.entries(parsed.fields || parsed)) {
-          if (value !== null && value !== undefined && value !== '') {
+        for (const [key, value] of Object.entries(parsed)) {
+          if (value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'unknown') {
             fields[key] = {
-              value: (value as any)?.value !== undefined ? (value as any).value : value,
+              value: value,
               source: 'Grok (Web Search)',
               confidence: 'Medium'
             };
