@@ -3,8 +3,8 @@
  * LLM-powered property scraping + Manual entry - CONNECTED TO STORE
  */
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -15,9 +15,18 @@ import {
   AlertCircle,
   PenLine,
   Upload,
+  MapPin,
 } from 'lucide-react';
 import { usePropertyStore } from '@/store/propertyStore';
 import type { PropertyCard, Property, DataField } from '@/types/property';
+
+// Autocomplete suggestion type
+interface AddressSuggestion {
+  description: string;
+  placeId: string;
+  mainText: string;
+  secondaryText: string;
+}
 
 type ScrapeStatus = 'idle' | 'searching' | 'scraping' | 'enriching' | 'complete' | 'error';
 type InputMode = 'address' | 'url' | 'manual' | 'csv' | 'text';
@@ -69,50 +78,228 @@ export default function AddProperty() {
     listingStatus: 'Active',
   });
 
-  const handleManualSubmit = () => {
-    if (!manualForm.address || !manualForm.city || !manualForm.price) {
-      alert('Please fill in at least address, city, and price');
+  // Autocomplete state for Manual tab
+  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [selectedSuggestion, setSelectedSuggestion] = useState<AddressSuggestion | null>(null);
+  const autocompleteRef = useRef<HTMLDivElement>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounced fetch for address autocomplete (8 FL counties only)
+  const fetchAddressSuggestions = useCallback(async (input: string) => {
+    if (input.length < 3) {
+      setSuggestions([]);
+      setShowSuggestions(false);
       return;
     }
 
-    const newProperty: PropertyCard = {
-      id: generateId(),
-      address: manualForm.address,
-      city: manualForm.city,
-      state: manualForm.state,
-      zip: manualForm.zip,
-      price: parseInt(manualForm.price) || 0,
-      pricePerSqft: manualForm.sqft && manualForm.price
-        ? Math.round(parseInt(manualForm.price) / parseInt(manualForm.sqft))
-        : 0,
-      bedrooms: parseInt(manualForm.bedrooms) || 0,
-      bathrooms: parseFloat(manualForm.bathrooms) || 0,
-      sqft: parseInt(manualForm.sqft) || 0,
-      yearBuilt: parseInt(manualForm.yearBuilt) || new Date().getFullYear(),
-      smartScore: Math.floor(Math.random() * 20) + 75, // Random 75-95 for demo
-      dataCompleteness: Object.values(manualForm).filter(v => v).length * 10,
-      listingStatus: manualForm.listingStatus as 'Active' | 'Pending' | 'Sold',
-      daysOnMarket: 0,
+    setIsLoadingSuggestions(true);
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/property/autocomplete?input=${encodeURIComponent(input)}`);
+
+      if (response.ok) {
+        const data = await response.json();
+        setSuggestions(data.suggestions || []);
+        setShowSuggestions(data.suggestions?.length > 0);
+      } else {
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+    } catch (error) {
+      console.error('Autocomplete error:', error);
+      setSuggestions([]);
+      setShowSuggestions(false);
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  }, []);
+
+  // Handle address input change with debounce
+  const handleAddressInputChange = (value: string) => {
+    setManualForm({ ...manualForm, address: value });
+    setSelectedSuggestion(null);
+
+    // Clear existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Set new debounce timer (300ms)
+    debounceTimerRef.current = setTimeout(() => {
+      fetchAddressSuggestions(value);
+    }, 300);
+  };
+
+  // Handle suggestion selection - parse address and fill form
+  const handleSelectSuggestion = (suggestion: AddressSuggestion) => {
+    setSelectedSuggestion(suggestion);
+    setShowSuggestions(false);
+    setSuggestions([]);
+
+    // Parse the suggestion to fill form fields
+    // Format: "123 Main St, City, FL 33706, USA"
+    const parts = suggestion.description.split(',').map(s => s.trim());
+
+    const streetAddress = suggestion.mainText || parts[0] || '';
+    const secondary = suggestion.secondaryText || '';
+
+    // Parse city, state, zip from secondary text
+    // Format: "City, FL 33706, USA" or "City, FL, USA"
+    const secondaryParts = secondary.split(',').map(s => s.trim());
+    const city = secondaryParts[0] || '';
+
+    // Extract state and zip from second part (e.g., "FL 33706")
+    const stateZipPart = secondaryParts[1] || '';
+    const stateMatch = stateZipPart.match(/([A-Z]{2})/);
+    const zipMatch = stateZipPart.match(/(\d{5})/);
+
+    setManualForm({
+      ...manualForm,
+      address: streetAddress,
+      city: city,
+      state: stateMatch?.[1] || 'FL',
+      zip: zipMatch?.[1] || '',
+    });
+  };
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (autocompleteRef.current && !autocompleteRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
     };
 
-    addProperty(newProperty);
-    setLastAddedId(newProperty.id);
-    setStatus('complete');
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-    // Reset form
-    setManualForm({
-      address: '',
-      city: '',
-      state: 'FL',
-      zip: '',
-      price: '',
-      bedrooms: '',
-      bathrooms: '',
-      sqft: '',
-      yearBuilt: '',
-      propertyType: 'Single Family',
-      listingStatus: 'Active',
-    });
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleManualSubmit = async () => {
+    if (!manualForm.address || !manualForm.city) {
+      alert('Please fill in at least address and city');
+      return;
+    }
+
+    // Construct full address for API search
+    const fullAddress = `${manualForm.address}, ${manualForm.city}, ${manualForm.state}${manualForm.zip ? ' ' + manualForm.zip : ''}`;
+
+    setStatus('searching');
+    setProgress(10);
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || '/api/property/search';
+
+      setStatus('scraping');
+      setProgress(30);
+
+      // Call the search API to get real property data
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          address: fullAddress,
+          engines: ['claude-opus', 'gpt', 'grok', 'claude-sonnet'],
+          useGrok: true,
+          useCascade: true,
+        }),
+      });
+
+      setStatus('enriching');
+      setProgress(60);
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setProgress(90);
+
+      // Extract property data from API response
+      const fields = data.fields || {};
+      const fieldSources = data.field_sources || {};
+      const conflicts = data.conflicts || [];
+
+      console.log('🔍 Manual Entry API Response:', data);
+      console.log('📊 Field Sources:', fieldSources);
+
+      // Parse address components from API or use form values as fallback
+      const apiFullAddress = fields['1_full_address']?.value || fullAddress;
+      const addressParts = apiFullAddress.split(',').map((s: string) => s.trim());
+      const street = addressParts[0] || manualForm.address;
+      const city = fields['city']?.value || manualForm.city;
+      const stateZip = addressParts[2] || '';
+      const stateMatch = stateZip.match(/([A-Z]{2})/);
+      const zipMatch = stateZip.match(/(\d{5})/);
+
+      // Create property card from API response with form fallbacks
+      const scrapedProperty: PropertyCard = {
+        id: generateId(),
+        address: street,
+        city,
+        state: stateMatch?.[1] || manualForm.state,
+        zip: zipMatch?.[1] || manualForm.zip,
+        price: fields['7_listing_price']?.value || parseInt(manualForm.price) || 0,
+        pricePerSqft: fields['8_price_per_sqft']?.value || (
+          manualForm.sqft && manualForm.price
+            ? Math.round(parseInt(manualForm.price) / parseInt(manualForm.sqft))
+            : 0
+        ),
+        bedrooms: fields['12_bedrooms']?.value || parseInt(manualForm.bedrooms) || 0,
+        bathrooms: fields['15_total_bathrooms']?.value || parseFloat(manualForm.bathrooms) || 0,
+        sqft: fields['16_living_sqft']?.value || parseInt(manualForm.sqft) || 0,
+        yearBuilt: fields['20_year_built']?.value || parseInt(manualForm.yearBuilt) || new Date().getFullYear(),
+        smartScore: data.completion_percentage || 75,
+        dataCompleteness: data.completion_percentage || 0,
+        listingStatus: fields['4_listing_status']?.value || manualForm.listingStatus as 'Active' | 'Pending' | 'Sold',
+        daysOnMarket: 0,
+      };
+
+      // Create full property object with all 110 fields if available
+      const fullPropertyData = convertApiResponseToFullProperty(fields, scrapedProperty.id, fieldSources, conflicts);
+
+      addProperty(scrapedProperty, fullPropertyData);
+      setLastAddedId(scrapedProperty.id);
+      setStatus('complete');
+      setProgress(100);
+
+      console.log('✅ Property added from manual entry:', data);
+      console.log('📊 Fields found:', data.total_fields_found);
+
+      // Reset form
+      setManualForm({
+        address: '',
+        city: '',
+        state: 'FL',
+        zip: '',
+        price: '',
+        bedrooms: '',
+        bathrooms: '',
+        sqft: '',
+        yearBuilt: '',
+        propertyType: 'Single Family',
+        listingStatus: 'Active',
+      });
+      setSelectedSuggestion(null);
+
+    } catch (error) {
+      console.error('Manual entry error:', error);
+      setStatus('error');
+      alert(`Failed to fetch property data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   const handleScrape = async () => {
@@ -1095,18 +1282,62 @@ export default function AddProperty() {
         ) : inputMode === 'manual' ? (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
+              {/* Address input with autocomplete */}
+              <div className="md:col-span-2 relative" ref={autocompleteRef}>
                 <label className="block text-sm text-gray-400 mb-2">
-                  Street Address *
+                  Street Address * <span className="text-quantum-cyan text-xs">(8 FL Counties)</span>
                 </label>
-                <input
-                  type="text"
-                  placeholder="280 41st Ave"
-                  value={manualForm.address}
-                  onChange={(e) => setManualForm({ ...manualForm, address: e.target.value })}
-                  className="input-glass"
-                />
+                <div className="relative">
+                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                  <input
+                    type="text"
+                    placeholder="Start typing address... (Pinellas, Pasco, Hillsborough, etc.)"
+                    value={manualForm.address}
+                    onChange={(e) => handleAddressInputChange(e.target.value)}
+                    onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                    className="input-glass pl-12"
+                    autoComplete="off"
+                  />
+                  {isLoadingSuggestions && (
+                    <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-quantum-cyan animate-spin" />
+                  )}
+                </div>
+
+                {/* Autocomplete dropdown */}
+                <AnimatePresence>
+                  {showSuggestions && suggestions.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute z-50 w-full mt-1 bg-gray-900 border border-quantum-cyan/30 rounded-xl shadow-lg overflow-hidden"
+                    >
+                      {suggestions.map((suggestion, index) => (
+                        <button
+                          key={suggestion.placeId || index}
+                          type="button"
+                          onClick={() => handleSelectSuggestion(suggestion)}
+                          className="w-full px-4 py-3 text-left hover:bg-quantum-cyan/10 transition-colors border-b border-white/5 last:border-b-0"
+                        >
+                          <div className="flex items-start gap-3">
+                            <MapPin className="w-4 h-4 text-quantum-cyan mt-0.5 flex-shrink-0" />
+                            <div>
+                              <p className="text-white font-medium text-sm">{suggestion.mainText}</p>
+                              <p className="text-gray-400 text-xs">{suggestion.secondaryText}</p>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Helper text */}
+                <p className="text-xs text-gray-500 mt-1">
+                  Covers: Pinellas, Pasco, Manatee, Sarasota, Polk, Hernando, Hillsborough, Citrus
+                </p>
               </div>
+
               <div>
                 <label className="block text-sm text-gray-400 mb-2">
                   City *
@@ -1117,6 +1348,7 @@ export default function AddProperty() {
                   value={manualForm.city}
                   onChange={(e) => setManualForm({ ...manualForm, city: e.target.value })}
                   className="input-glass"
+                  readOnly={!!selectedSuggestion}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -1237,10 +1469,20 @@ export default function AddProperty() {
 
             <button
               onClick={handleManualSubmit}
+              disabled={status !== 'idle' && status !== 'complete' && status !== 'error'}
               className="btn-quantum w-full mt-4"
             >
-              <CheckCircle className="w-5 h-5" />
-              Add Property
+              {status === 'idle' || status === 'complete' || status === 'error' ? (
+                <>
+                  <Sparkles className="w-5 h-5" />
+                  Search & Add Property
+                </>
+              ) : (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Fetching Real Property Data...
+                </>
+              )}
             </button>
           </div>
         ) : inputMode === 'address' ? (
@@ -1436,8 +1678,8 @@ Beautiful 3BR/2BA beach house at 290 41st Ave, St Pete Beach, FL 33706. Built in
         )}
       </div>
 
-      {/* Progress Display - for scraping modes */}
-      {status !== 'idle' && inputMode !== 'manual' && inputMode !== 'csv' && (
+      {/* Progress Display - for scraping modes including manual */}
+      {status !== 'idle' && status !== 'complete' && inputMode !== 'csv' && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1524,8 +1766,8 @@ Beautiful 3BR/2BA beach house at 290 41st Ave, St Pete Beach, FL 33706. Built in
         </motion.div>
       )}
 
-      {/* Success message for manual entry */}
-      {status === 'complete' && inputMode === 'manual' && (
+      {/* Success message for all modes */}
+      {status === 'complete' && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
