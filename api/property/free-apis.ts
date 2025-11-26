@@ -436,22 +436,57 @@ export async function callBroadbandNow(lat: number, lon: number, address: string
   }
 }
 
+
 // ============================================
-// CRIME GRADE API
+// FBI CRIME DATA API (Free Government Data)
 // ============================================
 export async function callCrimeGrade(lat: number, lon: number, address: string): Promise<ApiResult> {
   const fields: Record<string, ApiField> = {};
+  const apiKey = process.env.FBI_CRIME_API_KEY;
+
+  if (!apiKey) {
+    return { success: false, source: 'FBI Crime Data', fields, error: 'FBI_CRIME_API_KEY not configured' };
+  }
 
   try {
-    // Note: CrimeGrade.org doesn't have public API
-    // Using alternative: FBI UCR data or local police data
-    // This is a placeholder - would need scraping or data partnership
+    const stateMatch = address.match(/,s*([A-Z]{2})s*d{5}?/i) || address.match(/,s*([A-Z]{2})s*$/i);
+    if (!stateMatch) {
+      return { success: false, source: 'FBI Crime Data', fields, error: 'Could not extract state' };
+    }
 
-    // For now, return empty - this should be implemented with actual data source
-    return { success: false, source: 'CrimeGrade', fields, error: 'API not implemented - needs data partnership' };
+    const stateCode = stateMatch[1].toUpperCase();
+    const currentYear = new Date().getFullYear() - 1;
+    const url = 'https://api.usa.gov/crime/fbi/cde/summarized/state/' + stateCode + '/violent-crime?from=' + (currentYear - 1) + '&to=' + currentYear + '&API_KEY=' + apiKey;
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      return { success: false, source: 'FBI UCR', fields, error: 'HTTP ' + response.status };
+    }
+
+    const data = await response.json();
+
+    if (data.results && data.results.length > 0) {
+      const latest = data.results[data.results.length - 1];
+
+      if (latest.actual && latest.population) {
+        const crimeRate = Math.round((latest.actual / latest.population) * 100000);
+        setField(fields, '90_violent_crime_rate_per_100k', crimeRate, 'FBI UCR');
+
+        let grade = 'A';
+        if (crimeRate > 600) grade = 'F';
+        else if (crimeRate > 450) grade = 'D';
+        else if (crimeRate > 300) grade = 'C';
+        else if (crimeRate > 150) grade = 'B';
+
+        setField(fields, '91_crime_grade', grade, 'FBI UCR');
+        setField(fields, '92_crime_data_year', currentYear, 'FBI UCR');
+      }
+    }
+
+    return { success: Object.keys(fields).length > 0, source: 'FBI UCR', fields };
 
   } catch (error) {
-    return { success: false, source: 'CrimeGrade', fields, error: String(error) };
+    return { success: false, source: 'FBI Crime Data', fields, error: String(error) };
   }
 }
 
