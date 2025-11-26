@@ -44,8 +44,6 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-  const isAuthenticated = useIsAuthenticated();
-
   return (
     <AnimatePresence mode="wait">
       <Suspense fallback={<LoadingScreen />}>

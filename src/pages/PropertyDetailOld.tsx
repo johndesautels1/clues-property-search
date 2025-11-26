@@ -15,7 +15,6 @@ import {
   Ruler,
   Calendar,
   Trash2,
-  Edit,
   Zap,
   School,
   Wifi,

@@ -348,8 +348,6 @@ RESPOND WITH JSON ONLY`;
 
   private countPopulatedFields(data: PropertyScrapedData | null): number {
     if (!data) return 0;
-
-    let count = 0;
     const countObject = (obj: object): number => {
       let c = 0;
       for (const value of Object.values(obj)) {

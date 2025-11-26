@@ -38,7 +38,7 @@ export default function MobileNav() {
     if (Capacitor.isNativePlatform()) {
       try {
         await Haptics.impact({ style: ImpactStyle.Light });
-      } catch (e) {
+      } catch (_error) {
         // Haptics not available
       }
     }

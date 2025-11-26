@@ -3,7 +3,7 @@
  * Real-time visualization of all API and LLM data sources
  */
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Globe,
   Database,

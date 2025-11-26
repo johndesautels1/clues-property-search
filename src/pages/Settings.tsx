@@ -4,13 +4,11 @@
 
 import { motion } from 'framer-motion';
 import {
-  Settings as SettingsIcon,
   Database,
   Key,
   Palette,
   Bell,
   Link2,
-  ExternalLink,
   ChevronRight,
 } from 'lucide-react';
 

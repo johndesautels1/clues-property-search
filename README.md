@@ -96,6 +96,8 @@ HOWLOUD_API_KEY="..."
 |---------|-------------|
 | `npm run dev` | Start Vite dev server |
 | `npm run build` | Production build |
+| `npm run lint` | Run ESLint checks for TypeScript/React code |
+| `npm run lint:fix` | Auto-fix lint issues where possible |
 | `npm run db:generate` | Generate Prisma client |
 | `npm run db:push` | Push schema to database |
 | `npm run db:studio` | Open Prisma Studio |

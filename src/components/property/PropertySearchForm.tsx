@@ -157,63 +157,6 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
     setSourcesProgress(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
   };
 
-  // Map API response to progress tracker sources
-  const updateSourcesFromResponse = (data: any) => {
-    if (!data) return;
-
-    const sources = data.sources || [];
-    const sourceBreakdown = data.source_breakdown || {};
-    const llmResponses = data.llm_responses || [];
-
-    setSourcesProgress(prev => prev.map(source => {
-      // Check if this source was used
-      const sourceUsed = sources.some((s: string) =>
-        s.toLowerCase().includes(source.id.toLowerCase()) ||
-        source.name.toLowerCase().includes(s.toLowerCase())
-      );
-
-      // Check LLM responses
-      const llmResponse = llmResponses.find((r: any) =>
-        r.llm?.toLowerCase() === source.id.toLowerCase() ||
-        r.llm?.toLowerCase().includes(source.id.toLowerCase()) ||
-        source.id.toLowerCase().includes(r.llm?.toLowerCase() || '')
-      );
-
-      // Count fields from source_breakdown
-      let fieldsFound = 0;
-      for (const [key, count] of Object.entries(sourceBreakdown)) {
-        if (key.toLowerCase().includes(source.name.toLowerCase()) ||
-            key.toLowerCase().includes(source.id.toLowerCase())) {
-          fieldsFound += count as number;
-        }
-      }
-
-      // Handle LLM sources specially
-      if (source.type === 'llm') {
-        if (llmResponse) {
-          return {
-            ...source,
-            status: llmResponse.success ? 'complete' as const : 'error' as const,
-            fieldsFound: llmResponse.fields_found || 0,
-            error: llmResponse.error || undefined
-          };
-        }
-        // Check if this LLM was in the engines list but didn't respond
-        return { ...source, status: 'skipped' as const, fieldsFound: 0 };
-      }
-
-      // Handle scrapers and free APIs
-      if (sourceUsed || fieldsFound > 0) {
-        return {
-          ...source,
-          status: 'complete' as const,
-          fieldsFound: fieldsFound || 1
-        };
-      }
-
-      return { ...source, status: 'complete' as const, fieldsFound: 0 };
-    }));
-  };
   const handleAddressSearch = async () => {
     if (!addressInput.trim()) return;
 
@@ -478,7 +421,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
           </select>
         );
 
-      case 'multiselect':
+      case 'multiselect': {
         const selectedValues = Array.isArray(value) ? value : [];
         return (
           <div className="flex flex-wrap gap-2 py-1">
@@ -504,6 +447,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
             ))}
           </div>
         );
+      }
 
       case 'number':
       case 'currency':

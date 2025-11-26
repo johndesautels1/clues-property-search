@@ -25,7 +25,6 @@ import {
   Wifi,
   Sun,
   Zap,
-  CheckCircle,
   ChevronDown,
   ChevronRight,
   Building2,

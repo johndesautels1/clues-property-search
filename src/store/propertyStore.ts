@@ -5,7 +5,7 @@
  */
 
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import type { PropertyCard, Property, PropertyFilters, PropertySort } from '@/types/property';
 
 // Demo properties to start with

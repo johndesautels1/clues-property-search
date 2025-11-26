@@ -67,7 +67,7 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       currentUser: null,
       isAuthenticated: false,
-      users: demoUsers.map(({ password, ...user }) => user),
+      users: demoUsers.map(({ password: _password, ...user }) => user),
 
       login: (username, password, role) => {
         const storedPassword = passwordStore[username];

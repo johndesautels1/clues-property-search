@@ -3,7 +3,7 @@
  */
 
 import { motion } from 'framer-motion';
-import { Plus, X, Scale, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Plus, Scale, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 export default function Compare() {
   return (
