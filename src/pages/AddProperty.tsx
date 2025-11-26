@@ -197,13 +197,33 @@ export default function AddProperty() {
 
     setStatus('searching');
     setProgress(0);
+    // Initialize all 16+ data sources in reliability order
     setCascadeStatus([
+      // Tier 1: Scrapers
       { llm: 'Realtor.com', status: 'pending' },
+      { llm: 'Zillow', status: 'pending' },
+      { llm: 'Redfin', status: 'pending' },
+      // Tier 2: Google APIs
       { llm: 'Google Geocode', status: 'pending' },
+      { llm: 'Google Places', status: 'pending' },
+      // Tier 3: Reliable Free APIs
       { llm: 'WalkScore', status: 'pending' },
       { llm: 'FEMA Flood', status: 'pending' },
+      { llm: 'SchoolDigger', status: 'pending' },
+      { llm: 'AirDNA', status: 'pending' },
+      // Tier 4: Other Free APIs
+      { llm: 'AirNow', status: 'pending' },
+      { llm: 'HowLoud', status: 'pending' },
+      { llm: 'Weather', status: 'pending' },
+      { llm: 'Broadband', status: 'pending' },
+      { llm: 'Crime', status: 'pending' },
+      // Tier 5: LLMs (last resort)
+      { llm: 'Perplexity', status: 'pending' },
+      { llm: 'Grok', status: 'pending' },
       { llm: 'Claude Opus', status: 'pending' },
       { llm: 'GPT-4o', status: 'pending' },
+      { llm: 'Claude Sonnet', status: 'pending' },
+      { llm: 'Gemini', status: 'pending' },
     ]);
 
     try {
@@ -230,14 +250,27 @@ export default function AddProperty() {
       let finalData: any = null;
       let currentFieldsFound = 0;
 
-      // Map source IDs to display names
+      // Map source IDs to display names (all 20 sources)
       const sourceNameMap: Record<string, string> = {
+        // Tier 1: Scrapers
         'realtor': 'Realtor.com',
+        'zillow': 'Zillow',
+        'redfin': 'Redfin',
+        // Tier 2: Google APIs
         'google-geocode': 'Google Geocode',
         'google-places': 'Google Places',
+        // Tier 3: Reliable Free APIs
         'walkscore': 'WalkScore',
         'fema': 'FEMA Flood',
+        'schooldigger': 'SchoolDigger',
+        'airdna': 'AirDNA',
+        // Tier 4: Other Free APIs
         'airnow': 'AirNow',
+        'howloud': 'HowLoud',
+        'weather': 'Weather',
+        'broadband': 'Broadband',
+        'crime': 'Crime',
+        // Tier 5: LLMs
         'perplexity': 'Perplexity',
         'grok': 'Grok',
         'claude-opus': 'Claude Opus',

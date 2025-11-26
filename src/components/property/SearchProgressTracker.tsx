@@ -98,21 +98,29 @@ const textColorMap: Record<string, string> = {
 };
 
 export const DEFAULT_SOURCES: SourceProgress[] = [
-  // Scrapers
+  // Tier 1: Scrapers (Most Reliable)
   { id: 'realtor', name: 'Realtor.com', type: 'scraper', status: 'pending', fieldsFound: 0, icon: 'globe', color: 'cyan' },
+  { id: 'zillow', name: 'Zillow', type: 'scraper', status: 'pending', fieldsFound: 0, icon: 'globe', color: 'blue' },
+  { id: 'redfin', name: 'Redfin', type: 'scraper', status: 'pending', fieldsFound: 0, icon: 'globe', color: 'red' },
 
-  // Free APIs
+  // Tier 2: Google APIs
   { id: 'google-geocode', name: 'Google Geocode', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'mappin', color: 'blue' },
   { id: 'google-places', name: 'Google Places', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'mappin', color: 'blue' },
+
+  // Tier 3: Reliable Free APIs
   { id: 'walkscore', name: 'WalkScore', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'car', color: 'green' },
   { id: 'fema', name: 'FEMA Flood', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'shield', color: 'yellow' },
+  { id: 'schooldigger', name: 'SchoolDigger', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'school', color: 'purple' },
+  { id: 'airdna', name: 'AirDNA', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'database', color: 'pink' },
+
+  // Tier 4: Other Free APIs
   { id: 'airnow', name: 'AirNow', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'wind', color: 'green' },
   { id: 'howloud', name: 'HowLoud', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'volume', color: 'purple' },
-  { id: 'weather', name: 'Weather.com', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'sun', color: 'orange' },
-  { id: 'crime', name: 'CrimeGrade', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'alert', color: 'red' },
-  { id: 'broadband', name: 'BroadbandNow', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'wifi', color: 'indigo' },
+  { id: 'weather', name: 'Weather', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'sun', color: 'orange' },
+  { id: 'broadband', name: 'Broadband', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'wifi', color: 'indigo' },
+  { id: 'crime', name: 'Crime', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'alert', color: 'red' },
 
-  // LLMs
+  // Tier 5: LLMs (Last Resort - Hallucination Risk)
   { id: 'perplexity', name: 'Perplexity', type: 'llm', status: 'pending', fieldsFound: 0, icon: 'zap', color: 'cyan' },
   { id: 'grok', name: 'Grok', type: 'llm', status: 'pending', fieldsFound: 0, icon: 'brain', color: 'blue' },
   { id: 'claude-opus', name: 'Claude Opus', type: 'llm', status: 'pending', fieldsFound: 0, icon: 'brain', color: 'orange' },
