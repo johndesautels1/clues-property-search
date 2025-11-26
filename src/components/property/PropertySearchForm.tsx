@@ -25,7 +25,7 @@ import {
   type DataSource,
   type FieldDefinition,
 } from '@/types/property-schema';
-import SearchProgressTracker, { type SourceProgress, DEFAULT_SOURCES } from './SearchProgressTracker';
+import SearchProgressTracker, { type SourceProgress, type SourceStatus, DEFAULT_SOURCES } from './SearchProgressTracker';
 
 interface FieldValue {
   value: string | number | boolean | string[];
@@ -152,50 +152,167 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
     return fieldDef?.key || null;
   };
 
-n  // Update source progress helper
+  // Update source progress helper
   const updateSource = (id: string, updates: Partial<SourceProgress>) => {
     setSourcesProgress(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+  };
+
+  // Map API response to progress tracker sources
+  const updateSourcesFromResponse = (data: any) => {
+    if (!data) return;
+
+    const sources = data.sources || [];
+    const sourceBreakdown = data.source_breakdown || {};
+    const llmResponses = data.llm_responses || [];
+
+    setSourcesProgress(prev => prev.map(source => {
+      // Check if this source was used
+      const sourceUsed = sources.some((s: string) =>
+        s.toLowerCase().includes(source.id.toLowerCase()) ||
+        source.name.toLowerCase().includes(s.toLowerCase())
+      );
+
+      // Check LLM responses
+      const llmResponse = llmResponses.find((r: any) =>
+        r.llm?.toLowerCase() === source.id.toLowerCase() ||
+        r.llm?.toLowerCase().includes(source.id.toLowerCase()) ||
+        source.id.toLowerCase().includes(r.llm?.toLowerCase() || '')
+      );
+
+      // Count fields from source_breakdown
+      let fieldsFound = 0;
+      for (const [key, count] of Object.entries(sourceBreakdown)) {
+        if (key.toLowerCase().includes(source.name.toLowerCase()) ||
+            key.toLowerCase().includes(source.id.toLowerCase())) {
+          fieldsFound += count as number;
+        }
+      }
+
+      // Handle LLM sources specially
+      if (source.type === 'llm') {
+        if (llmResponse) {
+          return {
+            ...source,
+            status: llmResponse.success ? 'complete' as const : 'error' as const,
+            fieldsFound: llmResponse.fields_found || 0,
+            error: llmResponse.error || undefined
+          };
+        }
+        // Check if this LLM was in the engines list but didn't respond
+        return { ...source, status: 'skipped' as const, fieldsFound: 0 };
+      }
+
+      // Handle scrapers and free APIs
+      if (sourceUsed || fieldsFound > 0) {
+        return {
+          ...source,
+          status: 'complete' as const,
+          fieldsFound: fieldsFound || 1
+        };
+      }
+
+      return { ...source, status: 'complete' as const, fieldsFound: 0 };
+    }));
   };
   const handleAddressSearch = async () => {
     if (!addressInput.trim()) return;
 
     setIsSearching(true);
     setSearchError('');
-    setSearchProgress('Step 1: Scraping Realtor.com for real property data...');
+    setSearchProgress('Initializing search...');
     setShowSuggestions(false);
     setShowProgressTracker(true);
     setSourcesProgress(DEFAULT_SOURCES.map(s => ({ ...s, status: 'pending' as const, fieldsFound: 0 })));
-    updateSource('realtor', { status: 'searching' });
 
-    try {
-      // Update progress as we go
-      setTimeout(() => {
-        if (isSearching) setSearchProgress('Step 2: Calling free APIs (FEMA, WalkScore)...');
-      }, 2000);
-
-      if (!skipLLMs) {
-        setTimeout(() => {
-          if (isSearching) setSearchProgress(`Step 3: Filling gaps with ${selectedEngines.map(e => e.toUpperCase()).join(', ')}...`);
-        }, 4000);
-      }
-
-      const response = await fetch(`${API_BASE}/search`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+    // Use SSE streaming endpoint for real-time progress
+    const searchWithSSE = () => {
+      return new Promise<any>((resolve, reject) => {
+        // Create POST request body
+        const body = JSON.stringify({
           address: addressInput,
           engines: skipLLMs ? [] : selectedEngines,
           skipLLMs,
-        }),
+        });
+
+        // Use fetch with streaming for SSE (EventSource doesn't support POST)
+        fetch(`${API_BASE}/search-stream`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+        }).then(response => {
+          if (!response.ok) {
+            throw new Error('Search failed');
+          }
+
+          const reader = response.body?.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          let finalData: any = null;
+
+          const processStream = async () => {
+            if (!reader) {
+              reject(new Error('No response body'));
+              return;
+            }
+
+            while (true) {
+              const { done, value } = await reader.read();
+
+              if (done) {
+                if (finalData) {
+                  resolve(finalData);
+                } else {
+                  reject(new Error('Stream ended without complete event'));
+                }
+                break;
+              }
+
+              buffer += decoder.decode(value, { stream: true });
+
+              // Parse SSE events from buffer
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+              let eventType = '';
+              for (const line of lines) {
+                if (line.startsWith('event: ')) {
+                  eventType = line.slice(7).trim();
+                } else if (line.startsWith('data: ')) {
+                  const dataStr = line.slice(6);
+                  try {
+                    const data = JSON.parse(dataStr);
+
+                    if (eventType === 'progress') {
+                      // Update progress tracker in real-time
+                      const { source, status, fieldsFound, error, message } = data;
+                      updateSource(source, {
+                        status: status as SourceStatus,
+                        fieldsFound: fieldsFound || 0,
+                        error
+                      });
+                      if (message) {
+                        setSearchProgress(message);
+                      }
+                    } else if (eventType === 'complete') {
+                      finalData = data;
+                    } else if (eventType === 'error') {
+                      reject(new Error(data.error || 'Search error'));
+                    }
+                  } catch (e) {
+                    console.error('Failed to parse SSE data:', e);
+                  }
+                }
+              }
+            }
+          };
+
+          processStream().catch(reject);
+        }).catch(reject);
       });
+    };
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Search failed');
-      }
+    try {
+      const data = await searchWithSSE();
 
       setSearchResults(data);
       setSearchProgress(`Found ${data.total_fields_found || 0} of 110 fields (${data.completion_percentage || 0}%)`);

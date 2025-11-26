@@ -45,20 +45,20 @@ interface SearchProgressTrackerProps {
 }
 
 const iconMap: Record<string, React.ReactNode> = {
-  globe: <Globe className="w-5 h-5" />,
-  database: <Database className="w-5 h-5" />,
-  brain: <Brain className="w-5 h-5" />,
-  cloud: <Cloud className="w-5 h-5" />,
-  mappin: <MapPin className="w-5 h-5" />,
-  shield: <Shield className="w-5 h-5" />,
-  wind: <Wind className="w-5 h-5" />,
-  volume: <Volume2 className="w-5 h-5" />,
-  sun: <Sun className="w-5 h-5" />,
-  school: <School className="w-5 h-5" />,
-  car: <Car className="w-5 h-5" />,
-  alert: <AlertTriangle className="w-5 h-5" />,
-  wifi: <Wifi className="w-5 h-5" />,
-  zap: <Zap className="w-5 h-5" />,
+  globe: <Globe className="w-4 h-4 sm:w-5 sm:h-5" />,
+  database: <Database className="w-4 h-4 sm:w-5 sm:h-5" />,
+  brain: <Brain className="w-4 h-4 sm:w-5 sm:h-5" />,
+  cloud: <Cloud className="w-4 h-4 sm:w-5 sm:h-5" />,
+  mappin: <MapPin className="w-4 h-4 sm:w-5 sm:h-5" />,
+  shield: <Shield className="w-4 h-4 sm:w-5 sm:h-5" />,
+  wind: <Wind className="w-4 h-4 sm:w-5 sm:h-5" />,
+  volume: <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />,
+  sun: <Sun className="w-4 h-4 sm:w-5 sm:h-5" />,
+  school: <School className="w-4 h-4 sm:w-5 sm:h-5" />,
+  car: <Car className="w-4 h-4 sm:w-5 sm:h-5" />,
+  alert: <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5" />,
+  wifi: <Wifi className="w-4 h-4 sm:w-5 sm:h-5" />,
+  zap: <Zap className="w-4 h-4 sm:w-5 sm:h-5" />,
 };
 
 const colorMap: Record<string, string> = {
@@ -144,7 +144,7 @@ export default function SearchProgressTracker({
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: index * 0.05 }}
-        className={`relative p-3 rounded-xl border transition-all duration-300 ${
+        className={`relative p-2 sm:p-3 rounded-lg sm:rounded-xl border transition-all duration-300 ${
           isActive
             ? `${bgColorMap[source.color]} animate-pulse shadow-lg shadow-${source.color}-500/20`
             : isComplete
@@ -171,10 +171,10 @@ export default function SearchProgressTracker({
           />
         )}
 
-        <div className="relative flex items-center gap-3">
+        <div className="relative flex items-center gap-2 sm:gap-3">
           {/* Icon */}
           <div
-            className={`p-2 rounded-lg ${
+            className={`p-1.5 sm:p-2 rounded-md sm:rounded-lg ${
               isActive
                 ? `bg-gradient-to-br ${colorMap[source.color]} text-white`
                 : isComplete
@@ -185,27 +185,27 @@ export default function SearchProgressTracker({
             }`}
           >
             {isActive ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
             ) : isComplete ? (
-              <CheckCircle className="w-5 h-5" />
+              <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
             ) : isError ? (
-              <XCircle className="w-5 h-5" />
+              <XCircle className="w-4 h-4 sm:w-5 sm:h-5" />
             ) : (
-              iconMap[source.icon] || <Database className="w-5 h-5" />
+              iconMap[source.icon] || <Database className="w-4 h-4 sm:w-5 sm:h-5" />
             )}
           </div>
 
           {/* Name and Status */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className={`text-sm font-medium truncate ${
+            <div className="flex items-center gap-1 sm:gap-2">
+              <span className={`text-xs sm:text-sm font-medium truncate ${
                 isActive ? 'text-white' : isComplete ? 'text-green-400' : isError ? 'text-red-400' : 'text-gray-300'
               }`}>
                 {source.name}
               </span>
               {isActive && (
                 <motion.span
-                  className={`text-xs ${textColorMap[source.color]}`}
+                  className={`text-[10px] sm:text-xs hidden sm:inline ${textColorMap[source.color]}`}
                   animate={{ opacity: [1, 0.5, 1] }}
                   transition={{ duration: 1, repeat: Infinity }}
                 >
@@ -213,15 +213,15 @@ export default function SearchProgressTracker({
                 </motion.span>
               )}
             </div>
-            <div className="text-xs text-gray-500">
+            <div className="text-[10px] sm:text-xs text-gray-500">
               {isComplete && source.fieldsFound > 0 && (
-                <span className="text-green-400">{source.fieldsFound} fields found</span>
+                <span className="text-green-400">{source.fieldsFound} fields</span>
               )}
               {isComplete && source.fieldsFound === 0 && (
-                <span className="text-gray-400">No data found</span>
+                <span className="text-gray-400">No data</span>
               )}
               {isError && (
-                <span className="text-red-400">{source.error || 'Failed'}</span>
+                <span className="text-red-400 truncate">{source.error || 'Failed'}</span>
               )}
               {isSkipped && (
                 <span className="text-gray-500">Skipped</span>
@@ -237,7 +237,7 @@ export default function SearchProgressTracker({
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              className="px-2 py-1 bg-green-500/20 text-green-400 text-xs font-bold rounded-full"
+              className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-500/20 text-green-400 text-[10px] sm:text-xs font-bold rounded-full flex-shrink-0"
             >
               +{source.fieldsFound}
             </motion.div>
@@ -253,20 +253,20 @@ export default function SearchProgressTracker({
       animate={{ opacity: 1, y: 0 }}
       className="space-y-4"
     >
-      {/* Header with total progress */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-bold text-white flex items-center gap-2">
-          <Zap className="w-5 h-5 text-quantum-cyan" />
+      {/* Header with total progress - mobile optimized */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+          <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-quantum-cyan" />
           Data Source Progress
         </h3>
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <div className="text-2xl font-bold bg-gradient-to-r from-quantum-cyan to-quantum-green bg-clip-text text-transparent">
+        <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto justify-between sm:justify-end">
+          <div className="text-left sm:text-right">
+            <div className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-quantum-cyan to-quantum-green bg-clip-text text-transparent">
               {totalFieldsFound}
             </div>
             <div className="text-xs text-gray-500">fields found</div>
           </div>
-          <div className="w-20 h-20 relative">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 relative flex-shrink-0">
             {/* Circular progress */}
             <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
               <path
