@@ -524,7 +524,7 @@ async function scrapeTaxCollector(address: string, county: string, parcelId?: st
     }
 
     // Extract tax history (look for table rows with years/amounts)
-    const historyMatches = html.matchAll(/(\d{4})[^$]*\$?([\d,]+\.?\d*)/g);
+    const historyMatches = Array.from(html.matchAll(/(\d{4})[^$]*\$?([\d,]+\.?\d*)/g));
     const taxHistory: string[] = [];
     for (const match of historyMatches) {
       const year = parseInt(match[1]);
@@ -589,7 +589,7 @@ async function scrapePermits(address: string, county: string): Promise<Record<st
 
     // Look for roof permits
     const roofPermits: string[] = [];
-    const roofMatches = html.matchAll(/(?:Roof|Re-?roof)[^<]*?(\d{1,2}\/\d{1,2}\/\d{4}|\d{4})/gi);
+    const roofMatches = Array.from(html.matchAll(/(?:Roof|Re-?roof)[^<]*?(\d{1,2}\/\d{1,2}\/\d{4}|\d{4})/gi));
     for (const match of roofMatches) {
       roofPermits.push(match[0]);
     }
@@ -607,7 +607,7 @@ async function scrapePermits(address: string, county: string): Promise<Record<st
 
     // Look for HVAC permits
     const hvacPermits: string[] = [];
-    const hvacMatches = html.matchAll(/(?:HVAC|A\/C|Air Condition|Heat|Mechanical)[^<]*?(\d{1,2}\/\d{1,2}\/\d{4}|\d{4})/gi);
+    const hvacMatches = Array.from(html.matchAll(/(?:HVAC|A\/C|Air Condition|Heat|Mechanical)[^<]*?(\d{1,2}\/\d{1,2}\/\d{4}|\d{4})/gi));
     for (const match of hvacMatches) {
       hvacPermits.push(match[0]);
     }
@@ -625,7 +625,7 @@ async function scrapePermits(address: string, county: string): Promise<Record<st
 
     // Look for other permits (electrical, plumbing, additions)
     const otherPermits: string[] = [];
-    const otherMatches = html.matchAll(/(?:Electric|Plumb|Addition|Remodel|Renovat|Pool|Fence|Solar)[^<]*?(\d{1,2}\/\d{1,2}\/\d{4}|\d{4})/gi);
+    const otherMatches = Array.from(html.matchAll(/(?:Electric|Plumb|Addition|Remodel|Renovat|Pool|Fence|Solar)[^<]*?(\d{1,2}\/\d{1,2}\/\d{4}|\d{4})/gi));
     for (const match of otherMatches) {
       otherPermits.push(match[0]);
     }

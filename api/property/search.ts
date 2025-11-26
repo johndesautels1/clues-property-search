@@ -9,6 +9,49 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { scrapeFloridaCounty } from './florida-counties';
 
+
+// ============================================
+// SEMANTIC VALUE COMPARISON
+// Returns true if values are semantically equal (not a real conflict)
+// ============================================
+function valuesAreSemanticallySame(val1: any, val2: any): boolean {
+  // Handle null/undefined
+  if (val1 === null || val1 === undefined || val2 === null || val2 === undefined) {
+    return val1 === val2;
+  }
+
+  // Convert to strings for comparison
+  const str1 = String(val1).trim().toLowerCase();
+  const str2 = String(val2).trim().toLowerCase();
+
+  // Exact match after normalization
+  if (str1 === str2) return true;
+
+  // One contains the other (e.g., "Yes" vs "Yes - with details")
+  if (str1.includes(str2) || str2.includes(str1)) return true;
+
+  // Strip common suffixes/variations for comparison
+  const normalize = (s: string) => s
+    .replace(/\s*-\s*.*$/, '')  // Remove " - anything"
+    .replace(/\s*\(.*\)$/, '')   // Remove "(anything)"
+    .replace(/[,;].*$/, '')      // Remove after comma/semicolon
+    .trim();
+
+  if (normalize(str1) === normalize(str2)) return true;
+
+  // Handle numeric comparisons with tolerance
+  const num1 = parseFloat(str1.replace(/[^0-9.-]/g, ''));
+  const num2 = parseFloat(str2.replace(/[^0-9.-]/g, ''));
+  if (!isNaN(num1) && !isNaN(num2)) {
+    // Numbers within 1% are considered same
+    const diff = Math.abs(num1 - num2);
+    const avg = (Math.abs(num1) + Math.abs(num2)) / 2;
+    if (avg > 0 && diff / avg < 0.01) return true;
+  }
+
+  return false;
+}
+
 // ============================================
 // REALTOR.COM SCRAPER
 // ============================================
@@ -1593,7 +1636,7 @@ function mergeResults(results: any[]): any {
           ...field,
           source: `${field.source} (via ${result.llm})`,
         };
-      } else if (existing && existing.value !== field.value && newConfidence === existingConfidence) {
+      } else if (existing && !valuesAreSemanticallySame(existing.value, field.value) && newConfidence === existingConfidence) {
         // Conflict - same confidence, different values
         merged.conflicts.push({
           field: fieldKey,
@@ -1607,7 +1650,7 @@ function mergeResults(results: any[]): any {
   }
 
   // Dedupe sources
-  merged.sources = [...new Set(merged.sources)];
+  merged.sources = Array.from(new Set(merged.sources));
   merged.total_fields_found = Object.keys(merged.fields).length;
   merged.completion_percentage = Math.round((merged.total_fields_found / 110) * 100);
 
@@ -1732,7 +1775,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               const existingValue = allFields[key].value !== undefined ? allFields[key].value : allFields[key];
 
               // Values differ = CONFLICT
-              if (fieldValue !== existingValue && fieldValue !== null && existingValue !== null) {
+              if (!valuesAreSemanticallySame(fieldValue, existingValue) && fieldValue !== null && existingValue !== null) {
                 const existing = conflicts.find(c => c.field === key);
                 if (existing) {
                   existing.values.push({ source: llm.name, value: fieldValue });

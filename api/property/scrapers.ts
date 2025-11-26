@@ -64,7 +64,7 @@ function setField(
   source: string,
   confidence: 'High' | 'Medium' | 'Low' = 'High'
 ): void {
-  if (value !== null && value !== undefined && value !== '' && value !== 0) {
+  if ((typeof value === 'number' ? !isNaN(value) : true) && value !== null && value !== undefined && value !== '') {
     fields[key] = { value, source, confidence };
   }
 }

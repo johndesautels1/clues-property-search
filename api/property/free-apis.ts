@@ -24,7 +24,7 @@ function setField(
   source: string,
   confidence: 'High' | 'Medium' | 'Low' = 'High'
 ): void {
-  if (value !== null && value !== undefined && value !== '' && value !== 0) {
+  if ((typeof value === 'number' ? !isNaN(value) : true) && value !== null && value !== undefined && value !== '') {
     fields[key] = { value, source, confidence };
   }
 }
@@ -459,7 +459,7 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
   }
 
   try {
-    const stateMatch = address.match(/,s*([A-Z]{2})s*d{5}?/i) || address.match(/,s*([A-Z]{2})s*$/i);
+    const stateMatch = address.match(/,\s*([A-Z]{2})\s*\d{5}?/i) || address.match(/,\s*([A-Z]{2})\s*$/i);
     if (!stateMatch) {
       return { success: false, source: 'FBI Crime Data', fields, error: 'Could not extract state' };
     }
@@ -517,7 +517,7 @@ export async function callWeather(lat: number, lon: number): Promise<ApiResult> 
         const data = await response.json();
 
         if (data.current_weather) {
-          setField(fields, '106_current_temperature', data.current_weather.temperature, 'Open-Meteo');
+          setField(fields, '118_current_temperature', data.current_weather.temperature, 'Open-Meteo');
         }
 
         // Calculate averages from daily data
@@ -526,9 +526,9 @@ export async function callWeather(lat: number, lon: number): Promise<ApiResult> 
           const avgLow = data.daily.temperature_2m_min.reduce((a: number, b: number) => a + b, 0) / data.daily.temperature_2m_min.length;
           const totalPrecip = data.daily.precipitation_sum.reduce((a: number, b: number) => a + b, 0);
 
-          setField(fields, '107_avg_high_temp', Math.round(avgHigh), 'Open-Meteo');
-          setField(fields, '108_avg_low_temp', Math.round(avgLow), 'Open-Meteo');
-          setField(fields, '109_precipitation_7day_mm', Math.round(totalPrecip), 'Open-Meteo');
+          setField(fields, '119_avg_high_temp', Math.round(avgHigh), 'Open-Meteo');
+          setField(fields, '120_avg_low_temp', Math.round(avgLow), 'Open-Meteo');
+          setField(fields, '121_precipitation_7day_mm', Math.round(totalPrecip), 'Open-Meteo');
         }
 
         return { success: Object.keys(fields).length > 0, source: 'Open-Meteo', fields };
@@ -549,8 +549,8 @@ export async function callWeather(lat: number, lon: number): Promise<ApiResult> 
 
     const data = await response.json();
 
-    setField(fields, '106_current_temperature', data.temperature, 'Weather.com');
-    setField(fields, '110_humidity', data.relativeHumidity, 'Weather.com');
+    setField(fields, '118_current_temperature', data.temperature, 'Weather.com');
+    setField(fields, '122_humidity', data.relativeHumidity, 'Weather.com');
 
     return { success: Object.keys(fields).length > 0, source: 'Weather.com', fields };
 
@@ -590,17 +590,17 @@ export async function callHudFairMarketRent(zip: string): Promise<ApiResult> {
 
     // Extract rent by bedroom count
     if (fmrData) {
-      setField(fields, '75_fmr_efficiency', fmrData.Efficiency || fmrData.efficiency, 'HUD FMR');
-      setField(fields, '76_fmr_1br', fmrData['One-Bedroom'] || fmrData.one_bedroom, 'HUD FMR');
-      setField(fields, '77_fmr_2br', fmrData['Two-Bedroom'] || fmrData.two_bedroom, 'HUD FMR');
-      setField(fields, '78_fmr_3br', fmrData['Three-Bedroom'] || fmrData.three_bedroom, 'HUD FMR');
-      setField(fields, '79_fmr_4br', fmrData['Four-Bedroom'] || fmrData.four_bedroom, 'HUD FMR');
-      setField(fields, '80_fmr_year', fmrData.year, 'HUD FMR');
+      setField(fields, '111_fmr_efficiency', fmrData.Efficiency || fmrData.efficiency, 'HUD FMR');
+      setField(fields, '112_fmr_1br', fmrData['One-Bedroom'] || fmrData.one_bedroom, 'HUD FMR');
+      setField(fields, '113_fmr_2br', fmrData['Two-Bedroom'] || fmrData.two_bedroom, 'HUD FMR');
+      setField(fields, '114_fmr_3br', fmrData['Three-Bedroom'] || fmrData.three_bedroom, 'HUD FMR');
+      setField(fields, '115_fmr_4br', fmrData['Four-Bedroom'] || fmrData.four_bedroom, 'HUD FMR');
+      setField(fields, '116_fmr_year', fmrData.year, 'HUD FMR');
 
       // Get metro/county info if available
       const metroName = data.data?.metroarea || data.data?.county_name;
       if (metroName) {
-        setField(fields, '81_fmr_area_name', metroName, 'HUD FMR');
+        setField(fields, '117_fmr_area_name', metroName, 'HUD FMR');
       }
     }
 

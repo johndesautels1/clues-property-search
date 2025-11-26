@@ -258,7 +258,7 @@ Rules:
         // Flatten nested structure into fields
         const flattenObject = (obj: any, prefix = '') => {
           for (const [key, value] of Object.entries(obj)) {
-            if (value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'unknown') {
+            if ((typeof value !== 'number' || !isNaN(value)) && value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'unknown') {
               if (typeof value === 'object' && !Array.isArray(value)) {
                 flattenObject(value, prefix + key + '_');
               } else {
@@ -359,7 +359,7 @@ Return a flat JSON object with these field names. Only include fields with verif
         const parsed = JSON.parse(jsonMatch[0]);
         const fields: Record<string, any> = {};
         for (const [key, value] of Object.entries(parsed)) {
-          if (value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'unknown') {
+          if ((typeof value !== 'number' || !isNaN(value)) && value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'unknown') {
             fields[key] = {
               value: value,
               source: 'Grok (Web Search)',
@@ -391,7 +391,7 @@ async function callClaudeOpus(address: string): Promise<{ fields: Record<string,
       body: JSON.stringify({
         model: 'claude-opus-4-5-20251101',
         max_tokens: 8000,
-        messages: [{ role: 'user', content: `Extract any property data you know for: ${address}. Return JSON with numbered keys like "7_listing_price". Only include data you're confident about.` }],
+        messages: [{ role: 'user', content: `You are a real estate data analyst. Extract property data for: ${address}. Return ONLY a JSON object with numbered keys like "7_listing_price", "12_bedrooms", etc. CRITICAL: OMIT any field you cannot verify - do NOT include null, N/A, NaN, "unknown", or empty values. Simply leave unverified fields out entirely.` }],
       }),
     });
 
@@ -403,7 +403,7 @@ async function callClaudeOpus(address: string): Promise<{ fields: Record<string,
         const parsed = JSON.parse(jsonMatch[0]);
         const fields: Record<string, any> = {};
         for (const [key, value] of Object.entries(parsed.fields || parsed)) {
-          if (value !== null && value !== undefined && value !== '') {
+          if ((typeof value !== 'number' || !isNaN(value)) && value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'unknown') {
             fields[key] = {
               value: (value as any)?.value !== undefined ? (value as any).value : value,
               source: 'Claude Opus',
@@ -435,7 +435,7 @@ async function callGPT(address: string): Promise<{ fields: Record<string, any>; 
         model: 'gpt-4o',
         max_tokens: 8000,
         messages: [
-          { role: 'system', content: 'Extract property data and return JSON with numbered keys. Only include confident data.' },
+          { role: 'system', content: 'You are a real estate data analyst. Return ONLY a JSON object with numbered keys like "7_listing_price". CRITICAL: OMIT any field you cannot verify - do NOT include null, N/A, NaN, "unknown", or empty values. Simply leave unverified fields out entirely.' },
           { role: 'user', content: `Property: ${address}` }
         ],
       }),
@@ -449,7 +449,7 @@ async function callGPT(address: string): Promise<{ fields: Record<string, any>; 
         const parsed = JSON.parse(jsonMatch[0]);
         const fields: Record<string, any> = {};
         for (const [key, value] of Object.entries(parsed.fields || parsed)) {
-          if (value !== null && value !== undefined && value !== '') {
+          if ((typeof value !== 'number' || !isNaN(value)) && value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'unknown') {
             fields[key] = {
               value: (value as any)?.value !== undefined ? (value as any).value : value,
               source: 'GPT-4o',
@@ -481,7 +481,7 @@ async function callClaudeSonnet(address: string): Promise<{ fields: Record<strin
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 8000,
-        messages: [{ role: 'user', content: `Extract property data for: ${address}. Return JSON with numbered keys.` }],
+        messages: [{ role: 'user', content: `You are a real estate data analyst. Extract property data for: ${address}. Return ONLY a JSON object with numbered keys like "7_listing_price". CRITICAL: OMIT any field you cannot verify - do NOT include null, N/A, NaN, "unknown", or empty values. Simply leave unverified fields out entirely.` }],
       }),
     });
 
@@ -493,7 +493,7 @@ async function callClaudeSonnet(address: string): Promise<{ fields: Record<strin
         const parsed = JSON.parse(jsonMatch[0]);
         const fields: Record<string, any> = {};
         for (const [key, value] of Object.entries(parsed.fields || parsed)) {
-          if (value !== null && value !== undefined && value !== '') {
+          if ((typeof value !== 'number' || !isNaN(value)) && value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'unknown') {
             fields[key] = {
               value: (value as any)?.value !== undefined ? (value as any).value : value,
               source: 'Claude Sonnet',
@@ -599,7 +599,7 @@ Return ONLY a valid JSON object. Include only fields with verified/estimated dat
         const parsed = JSON.parse(jsonMatch[0]);
         const fields: Record<string, any> = {};
         for (const [key, value] of Object.entries(parsed)) {
-          if (value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'unknown') {
+          if ((typeof value !== 'number' || !isNaN(value)) && value !== null && value !== undefined && value !== '' && value !== 'N/A' && value !== 'unknown') {
             fields[key] = {
               value: value,
               source: 'Gemini (Real Estate Analyst)',
