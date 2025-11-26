@@ -34,16 +34,14 @@ type InputMode = 'address' | 'url' | 'manual' | 'csv' | 'text';
 // Generate a simple unique ID
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
 
-// LLM Engine options - ordered by reliability per audit
+// LLM Engine options - Perplexity & Grok first (they have web search)
 const LLM_ENGINES = [
-  { id: 'Auto', label: 'Auto Cascade', desc: 'All 6 in order', icon: '🔄' },
-  { id: 'claude-opus', label: 'Claude Opus', desc: '#1 Most Reliable', icon: '👑' },
-  { id: 'gpt', label: 'GPT-4', desc: '#2 Reliable', icon: '🤖' },
-  { id: 'grok', label: 'Grok', desc: '#3 + Web Search', icon: '⚡' },
-  { id: 'claude-sonnet', label: 'Claude Sonnet', desc: '#4 Fast', icon: '🎵' },
-  { id: 'copilot', label: 'Copilot', desc: '#5', icon: '✈️' },
-  { id: 'gemini', label: 'Gemini', desc: '#6', icon: '♊' },
+  { id: 'Auto', label: 'Auto Cascade', desc: 'All engines', icon: '🔄' },
   { id: 'perplexity', label: 'Perplexity', desc: 'Web Search', icon: '🔍' },
+  { id: 'grok', label: 'Grok', desc: 'Web Search', icon: '⚡' },
+  { id: 'claude-opus', label: 'Claude Opus', desc: 'No Web', icon: '👑' },
+  { id: 'gpt', label: 'GPT-4o', desc: 'No Web', icon: '🤖' },
+  { id: 'gemini', label: 'Gemini', desc: 'No Web', icon: '♊' },
 ];
 
 export default function AddProperty() {
