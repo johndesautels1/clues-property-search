@@ -736,7 +736,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const {
     address,
     url,
-    engines = ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'],  // All LLMs enabled
+    engines = ['perplexity', 'grok', 'gemini'],  // 3 fastest LLMs (under 60s total)
     skipLLMs = false
   } = req.body;
 
