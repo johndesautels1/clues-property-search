@@ -99,14 +99,67 @@ export function getSourceTier(sourceName: string): DataTier {
 
 export function getSourceReliability(sourceName: string): number {
   const sourceKey = sourceName.toLowerCase().replace(/\s+/g, '-');
-  
+
   for (const [key, config] of Object.entries(DATA_TIERS)) {
     if (sourceKey.includes(key) || key.includes(sourceKey)) {
       return config.reliability;
     }
   }
-  
+
   return 50;
+}
+
+// HIGH CONFIDENCE sources (normal color)
+const HIGH_CONFIDENCE_SOURCES = [
+  'perplexity',  // Has web citations
+  'grok',        // Has real-time data
+  'google',
+  'walkscore',
+  'fema',
+  'weather',
+  'schooldigger',
+  'airnow',
+  'stellar',
+  'mls',
+];
+
+// MEDIUM CONFIDENCE sources (yellow)
+const MEDIUM_CONFIDENCE_SOURCES = [
+  'claude-opus',
+  'opus',
+  'howloud',
+  'fbi',
+  'crime',
+];
+
+// LOW CONFIDENCE sources (red) - everything else including:
+// gpt, claude-sonnet, gemini
+
+export function getSourceConfidence(sourceName: string, hasCitations: boolean = false): 'High' | 'Medium' | 'Low' {
+  const sourceKey = sourceName.toLowerCase();
+
+  // Perplexity and Grok with citations = High
+  if ((sourceKey.includes('perplexity') || sourceKey.includes('grok')) && hasCitations) {
+    return 'High';
+  }
+
+  // Perplexity and Grok without citations = Medium
+  if (sourceKey.includes('perplexity') || sourceKey.includes('grok')) {
+    return 'Medium';
+  }
+
+  // Check high confidence sources
+  if (HIGH_CONFIDENCE_SOURCES.some(s => sourceKey.includes(s))) {
+    return 'High';
+  }
+
+  // Check medium confidence sources
+  if (MEDIUM_CONFIDENCE_SOURCES.some(s => sourceKey.includes(s))) {
+    return 'Medium';
+  }
+
+  // Everything else (GPT, Claude Sonnet, Gemini) = Low
+  return 'Low';
 }
 
 export interface ValidationRule {
@@ -240,7 +293,7 @@ export function arbitrateField(
     const newField: FieldValue = {
       value: newValue,
       source: newSource,
-      confidence: newTier <= 2 ? 'High' : newTier === 3 ? 'Medium' : 'Low',
+      confidence: getSourceConfidence(newSource, true), // Assume citations for Perplexity/Grok
       tier: newTier,
       timestamp,
       llmSources: newTier === 4 ? [newSource] : undefined,
@@ -263,7 +316,7 @@ export function arbitrateField(
     const overrideField: FieldValue = {
       value: newValue,
       source: newSource,
-      confidence: newTier <= 2 ? 'High' : 'Medium',
+      confidence: getSourceConfidence(newSource, true),
       tier: newTier,
       timestamp,
       hasConflict: JSON.stringify(existingField.value) !== JSON.stringify(newValue),
