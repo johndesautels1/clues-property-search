@@ -383,65 +383,8 @@ async function getNoiseData(lat: number, lon: number): Promise<Record<string, an
   }
 }
 
-// BroadbandNow Scraper - Internet providers (FREE - no API key)
-async function getInternetProviders(address: string): Promise<Record<string, any>> {
-  try {
-    const searchUrl = `https://broadbandnow.com/search?q=${encodeURIComponent(address)}`;
-    const response = await fetch(searchUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      }
-    });
-
-    if (!response.ok) return {};
-
-    const html = await response.text();
-    const fields: Record<string, any> = {};
-
-    // Extract provider names
-    const providerMatches = html.match(/class="provider-name[^"]*"[^>]*>([^<]+)</g);
-    if (providerMatches && providerMatches.length > 0) {
-      const providers = providerMatches
-        .slice(0, 3)
-        .map(m => m.match(/>([^<]+)</)?.[1])
-        .filter(Boolean);
-
-      if (providers.length > 0) {
-        fields['96_internet_providers_top3'] = {
-          value: providers.join(', '),
-          source: 'BroadbandNow',
-          confidence: 'High'
-        };
-      }
-    }
-
-    // Extract max speed
-    const speedMatch = html.match(/(\d+)\s*Mbps/i);
-    if (speedMatch) {
-      fields['97_max_internet_speed'] = {
-        value: `${speedMatch[1]} Mbps`,
-        source: 'BroadbandNow',
-        confidence: 'High'
-      };
-    }
-
-    // Extract cable provider
-    const cableMatch = html.match(/Cable[^<]*<[^>]*>([^<]+)</i);
-    if (cableMatch) {
-      fields['98_cable_tv_provider'] = {
-        value: cableMatch[1].trim(),
-        source: 'BroadbandNow',
-        confidence: 'Medium'
-      };
-    }
-
-    return fields;
-  } catch (e) {
-    console.error('BroadbandNow scrape error:', e);
-    return {};
-  }
-}
+// BroadbandNow REMOVED (2025-11-27) - Scraper was blocked and not wired
+// Internet provider data now comes from LLM cascade (fields 96-98)
 
 // Weather.com API - Climate data
 async function getClimateData(lat: number, lon: number): Promise<Record<string, any>> {
