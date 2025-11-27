@@ -312,11 +312,11 @@ Return a flat JSON object with these field names. Only include fields with verif
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'grok-4-1-fast-non-reasoning',
+        model: 'grok-3',
         max_tokens: 8000,
         temperature: 0.1,
         // Enable Live Search for real-time web data
-        search_parameters: { mode: 'auto' },
+        search_parameters: { mode: 'on', sources: ['web', 'x'] },
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Search and verify property data for: ${address}. Cross-reference multiple sources. Return JSON only.` }
