@@ -527,84 +527,79 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
 // ============================================
 export async function callWeather(lat: number, lon: number): Promise<ApiResult> {
   const fields: Record<string, ApiField> = {};
-  const apiKey = process.env.WEATHER_API_KEY || process.env.OPENWEATHERMAP_API_KEY;
+  const owmKey = process.env.OPENWEATHERMAP_API_KEY;
+  const weatherComKey = process.env.WEATHER_API_KEY;
 
-  if (!apiKey) {
-    // Try free alternative - Open-Meteo
+  // Try OpenWeatherMap first if key exists
+  if (owmKey) {
     try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=America%2FNew_York`;
+      const owmUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${owmKey}&units=imperial`;
+      const owmResponse = await fetch(owmUrl);
+
+      if (owmResponse.ok) {
+        const data = await owmResponse.json();
+
+        if (data.main) {
+          setField(fields, '118_current_temperature', Math.round(data.main.temp), 'OpenWeatherMap');
+          setField(fields, '122_humidity', data.main.humidity, 'OpenWeatherMap');
+          setField(fields, '119_feels_like', Math.round(data.main.feels_like), 'OpenWeatherMap');
+        }
+        if (data.weather?.[0]) {
+          setField(fields, '123_weather_description', data.weather[0].description, 'OpenWeatherMap');
+        }
+        if (data.wind) {
+          setField(fields, '124_wind_speed_mph', Math.round(data.wind.speed), 'OpenWeatherMap');
+        }
+
+        return { success: Object.keys(fields).length > 0, source: 'OpenWeatherMap', fields };
+      }
+    } catch (e) {
+      // OpenWeatherMap failed, try next option
+    }
+  }
+
+  // Try Weather.com if key exists
+  if (weatherComKey) {
+    try {
+      const url = `https://api.weather.com/v3/wx/conditions/current?geocode=${lat},${lon}&language=en-US&format=json&apiKey=${weatherComKey}`;
       const response = await fetch(url);
 
       if (response.ok) {
         const data = await response.json();
-
-        if (data.current_weather) {
-          setField(fields, '118_current_temperature', data.current_weather.temperature, 'Open-Meteo');
-        }
-
-        // Calculate averages from daily data
-        if (data.daily) {
-          const avgHigh = data.daily.temperature_2m_max.reduce((a: number, b: number) => a + b, 0) / data.daily.temperature_2m_max.length;
-          const avgLow = data.daily.temperature_2m_min.reduce((a: number, b: number) => a + b, 0) / data.daily.temperature_2m_min.length;
-          const totalPrecip = data.daily.precipitation_sum.reduce((a: number, b: number) => a + b, 0);
-
-          setField(fields, '119_avg_high_temp', Math.round(avgHigh), 'Open-Meteo');
-          setField(fields, '120_avg_low_temp', Math.round(avgLow), 'Open-Meteo');
-          setField(fields, '121_precipitation_7day_mm', Math.round(totalPrecip), 'Open-Meteo');
-        }
-
-        return { success: Object.keys(fields).length > 0, source: 'Open-Meteo', fields };
+        setField(fields, '118_current_temperature', data.temperature, 'Weather.com');
+        setField(fields, '122_humidity', data.relativeHumidity, 'Weather.com');
+        return { success: Object.keys(fields).length > 0, source: 'Weather.com', fields };
       }
-    } catch (e) {}
-
-    return { success: false, source: 'Weather', fields, error: 'WEATHER_API_KEY not configured' };
-  }
-
-  // Try OpenWeatherMap first (most common)
-  try {
-    const owmUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=imperial`;
-    const owmResponse = await fetch(owmUrl);
-
-    if (owmResponse.ok) {
-      const data = await owmResponse.json();
-
-      if (data.main) {
-        setField(fields, '118_current_temperature', Math.round(data.main.temp), 'OpenWeatherMap');
-        setField(fields, '122_humidity', data.main.humidity, 'OpenWeatherMap');
-        setField(fields, '119_feels_like', Math.round(data.main.feels_like), 'OpenWeatherMap');
-      }
-      if (data.weather?.[0]) {
-        setField(fields, '123_weather_description', data.weather[0].description, 'OpenWeatherMap');
-      }
-      if (data.wind) {
-        setField(fields, '124_wind_speed_mph', Math.round(data.wind.speed), 'OpenWeatherMap');
-      }
-
-      return { success: Object.keys(fields).length > 0, source: 'OpenWeatherMap', fields };
+    } catch (e) {
+      // Weather.com failed, try free fallback
     }
-  } catch (e) {
-    // If OpenWeatherMap fails, try Weather.com as fallback
   }
 
-  // Fallback to Weather.com API
+  // Fallback to free Open-Meteo (no API key needed)
   try {
-    const url = `https://api.weather.com/v3/wx/conditions/current?geocode=${lat},${lon}&language=en-US&format=json&apiKey=${apiKey}`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=America%2FNew_York`;
     const response = await fetch(url);
 
-    if (!response.ok) {
-      return { success: false, source: 'Weather.com', fields, error: `HTTP ${response.status}` };
+    if (response.ok) {
+      const data = await response.json();
+
+      if (data.current_weather) {
+        setField(fields, '118_current_temperature', data.current_weather.temperature, 'Open-Meteo');
+      }
+
+      if (data.daily) {
+        const avgHigh = data.daily.temperature_2m_max.reduce((a: number, b: number) => a + b, 0) / data.daily.temperature_2m_max.length;
+        const avgLow = data.daily.temperature_2m_min.reduce((a: number, b: number) => a + b, 0) / data.daily.temperature_2m_min.length;
+
+        setField(fields, '119_avg_high_temp', Math.round(avgHigh), 'Open-Meteo');
+        setField(fields, '120_avg_low_temp', Math.round(avgLow), 'Open-Meteo');
+      }
+
+      return { success: Object.keys(fields).length > 0, source: 'Open-Meteo', fields };
     }
+  } catch (e) {}
 
-    const data = await response.json();
-
-    setField(fields, '118_current_temperature', data.temperature, 'Weather.com');
-    setField(fields, '122_humidity', data.relativeHumidity, 'Weather.com');
-
-    return { success: Object.keys(fields).length > 0, source: 'Weather.com', fields };
-
-  } catch (error) {
-    return { success: false, source: 'Weather.com', fields, error: String(error) };
-  }
+  return { success: false, source: 'Weather', fields, error: 'No weather API keys configured or all failed' };
 }
 
 // ============================================
