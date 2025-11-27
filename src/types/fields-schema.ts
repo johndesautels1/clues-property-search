@@ -346,6 +346,68 @@ export const DATA_SOURCES = [
   'GPT',
   'Claude Sonnet',
   'Gemini',
+  'Other',
 ] as const;
 
 export type DataSource = typeof DATA_SOURCES[number];
+
+// ================================================================
+// COMPATIBLE EXPORTS FOR PropertySearchForm.tsx
+// These transform ALL_FIELDS into the format expected by the UI
+// ================================================================
+
+/**
+ * UI-compatible field definition interface
+ * Maps to PropertySearchForm expectations
+ */
+export interface UIFieldDefinition {
+  id: number;
+  key: string;
+  label: string;
+  group: string;
+  type: 'text' | 'number' | 'boolean' | 'select' | 'multiselect' | 'date' | 'currency' | 'percentage';
+  options?: string[];
+  required: boolean;
+  placeholder?: string;
+  helpText?: string;
+  autoPopulateSources?: DataSource[];
+}
+
+/**
+ * UI_FIELD_DEFINITIONS - UI-compatible format
+ * Transforms ALL_FIELDS (138) into format PropertySearchForm expects
+ */
+export const UI_FIELD_DEFINITIONS: UIFieldDefinition[] = ALL_FIELDS.map(f => ({
+  id: f.num,
+  key: f.key,
+  label: f.label,
+  group: f.group,
+  type: f.type,
+  options: f.options,
+  required: f.required,
+  placeholder: f.placeholder,
+  helpText: f.helpText,
+}));
+
+/**
+ * UI Field Groups with field ID arrays
+ * Groups for the 138-field schema
+ */
+export const UI_FIELD_GROUPS = [
+  { id: 'A', name: 'Address & Identity', fields: [1, 2, 3, 4, 5, 6, 7, 8, 9], color: 'cyan' },
+  { id: 'B', name: 'Pricing & Value', fields: [10, 11, 12, 13, 14, 15, 16], color: 'green' },
+  { id: 'C', name: 'Property Basics', fields: [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29], color: 'blue' },
+  { id: 'D', name: 'HOA & Taxes', fields: [30, 31, 32, 33, 34, 35, 36, 37, 38], color: 'purple' },
+  { id: 'E', name: 'Structure & Systems', fields: [39, 40, 41, 42, 43, 44, 45, 46, 47, 48], color: 'orange' },
+  { id: 'F', name: 'Interior Features', fields: [49, 50, 51, 52, 53], color: 'pink' },
+  { id: 'G', name: 'Exterior Features', fields: [54, 55, 56, 57, 58], color: 'teal' },
+  { id: 'H', name: 'Permits & Renovations', fields: [59, 60, 61, 62], color: 'indigo' },
+  { id: 'I', name: 'Assigned Schools', fields: [63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73], color: 'cyan' },
+  { id: 'J', name: 'Location Scores', fields: [74, 75, 76, 77, 78, 79, 80, 81, 82], color: 'green' },
+  { id: 'K', name: 'Distances & Amenities', fields: [83, 84, 85, 86, 87], color: 'blue' },
+  { id: 'L', name: 'Safety & Crime', fields: [88, 89, 90], color: 'red' },
+  { id: 'M', name: 'Market & Investment Data', fields: [91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103], color: 'green' },
+  { id: 'N', name: 'Utilities & Connectivity', fields: [104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116], color: 'yellow' },
+  { id: 'O', name: 'Environment & Risk', fields: [117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130], color: 'orange' },
+  { id: 'P', name: 'Additional Features', fields: [131, 132, 133, 134, 135, 136, 137, 138], color: 'purple' },
+];

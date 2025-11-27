@@ -817,7 +817,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Get final arbitration result with quorum voting and single-source detection
     const arbitrationResult = arbitrationPipeline.getResult();
     const totalFields = Object.keys(arbitrationResult.fields).length;
-    const completionPercentage = Math.round((totalFields / 110) * 100);
+    const completionPercentage = Math.round((totalFields / 138) * 100);
 
     // Send final complete event with all data including arbitration metadata
     sendEvent(res, 'complete', {

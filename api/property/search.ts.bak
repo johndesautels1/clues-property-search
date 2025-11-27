@@ -1,234 +1,145 @@
 /**
- * CLUES Property Search API (Non-Streaming Version)
- * 
- * DATA SOURCE ORDER (Most Reliable First):
- * Tier 1: Stellar MLS (when eKey obtained - future)
- * Tier 2: Google APIs (Geocode, Places)
- * Tier 3: Paid/Free APIs (WalkScore, SchoolDigger, AirNow, HowLoud, Weather, Crime, FEMA)
- * Tier 4: LLMs (Perplexity, Grok, Claude Opus, GPT, Claude Sonnet, Gemini)
- *
- * REMOVED (2025-11-27):
- * - Scrapers (Zillow, Redfin, Realtor) - blocked by anti-bot
- * - AirDNA - not wired
- * - Broadband - not wired
- * - HUD - geo-blocked outside US (disabled for now)
- *
- * RULES:
- * - Never store null values
- * - Most reliable source wins on conflicts
- * - Yellow warning for conflicts
- * - LLMs only fill gaps, never overwrite reliable data
+ * CLUES Property Search API
+ * Strategy:
+ * 1. First scrape Realtor.com for real property data
+ * 2. Then call free APIs (WalkScore, FEMA, Google Maps, AirNow)
+ * 3. Finally use LLMs only to fill gaps with web search
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { scrapeFloridaCounty } from './florida-counties';
 
-// Vercel serverless config - extend timeout for multi-API cascade
-export const config = {
-  maxDuration: 60, // 60 seconds max (Pro plan limit)
+// ============================================
+// REALTOR.COM SCRAPER
+// ============================================
+
+const SCRAPER_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9',
 };
-import { scrapeFloridaCounty } from './florida-counties.js';
-import { LLM_CASCADE_ORDER } from './llm-constants.js';
-import { createArbitrationPipeline, type FieldValue, type ArbitrationResult } from './arbitration.js';
 
-
-// ============================================
-// SEMANTIC VALUE COMPARISON
-// Returns true if values are semantically equal (not a real conflict)
-// ============================================
-function valuesAreSemanticallySame(val1: any, val2: any): boolean {
-  // Handle null/undefined
-  if (val1 === null || val1 === undefined || val2 === null || val2 === undefined) {
-    return val1 === val2;
-  }
-
-  // Convert to strings for comparison
-  const str1 = String(val1).trim().toLowerCase();
-  const str2 = String(val2).trim().toLowerCase();
-
-  // Exact match after normalization
-  if (str1 === str2) return true;
-
-  // One contains the other (e.g., "Yes" vs "Yes - with details")
-  if (str1.includes(str2) || str2.includes(str1)) return true;
-
-  // Strip common suffixes/variations for comparison
-  const normalize = (s: string) => s
-    .replace(/\s*-\s*.*$/, '')  // Remove " - anything"
-    .replace(/\s*\(.*\)$/, '')   // Remove "(anything)"
-    .replace(/[,;].*$/, '')      // Remove after comma/semicolon
-    .trim();
-
-  if (normalize(str1) === normalize(str2)) return true;
-
-  // Handle numeric comparisons with tolerance
-  const num1 = parseFloat(str1.replace(/[^0-9.-]/g, ''));
-  const num2 = parseFloat(str2.replace(/[^0-9.-]/g, ''));
-  if (!isNaN(num1) && !isNaN(num2)) {
-    // Numbers within 1% are considered same
-    const diff = Math.abs(num1 - num2);
-    const avg = (Math.abs(num1) + Math.abs(num2)) / 2;
-    if (avg > 0 && diff / avg < 0.01) return true;
-  }
-
-  return false;
+function addressToRealtorUrl(address: string): string {
+  const parts = address.split(',').map(p => p.trim());
+  if (parts.length < 3) return '';
+  const street = parts[0].replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+  const city = parts[1].replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+  const stateZip = parts[2].trim().split(' ');
+  const state = stateZip[0];
+  const zip = stateZip[1] || '';
+  return `https://www.realtor.com/realestateandhomes-detail/${street}_${city}_${state}_${zip}`;
 }
 
-// ============================================
-// CONVERT FLAT 110-FIELD TO NESTED STRUCTURE
-// Maps API field keys to nested PropertyDetail format
-// ============================================
-function convertFlatToNestedStructure(flatFields: Record<string, any>): any {
-  const fieldPathMap: Record<string, [string, string]> = {
-    // Address & Identity
-    '1_full_address': ['address', 'fullAddress'],
-    '2_mls_primary': ['address', 'mlsPrimary'],
-    '3_mls_secondary': ['address', 'mlsSecondary'],
-    '4_listing_status': ['address', 'listingStatus'],
-    '5_listing_date': ['address', 'listingDate'],
-    '6_parcel_id': ['details', 'parcelId'],
-    // Pricing
-    '7_listing_price': ['address', 'listingPrice'],
-    '8_price_per_sqft': ['address', 'pricePerSqft'],
-    '9_market_value_estimate': ['details', 'marketValueEstimate'],
-    '10_last_sale_date': ['details', 'lastSaleDate'],
-    '11_last_sale_price': ['details', 'lastSalePrice'],
-    // Property Basics
-    '12_bedrooms': ['details', 'bedrooms'],
-    '13_full_bathrooms': ['details', 'fullBathrooms'],
-    '14_half_bathrooms': ['details', 'halfBathrooms'],
-    '15_total_bathrooms': ['details', 'totalBathrooms'],
-    '16_living_sqft': ['details', 'livingSqft'],
-    '17_total_sqft_under_roof': ['details', 'totalSqftUnderRoof'],
-    '18_lot_size_sqft': ['details', 'lotSizeSqft'],
-    '19_lot_size_acres': ['details', 'lotSizeAcres'],
-    '20_year_built': ['details', 'yearBuilt'],
-    '21_property_type': ['details', 'propertyType'],
-    '22_stories': ['details', 'stories'],
-    '23_garage_spaces': ['details', 'garageSpaces'],
-    '24_parking_total': ['details', 'parkingTotal'],
-    // HOA & Ownership
-    '25_hoa_yn': ['details', 'hoaYn'],
-    '26_hoa_fee_annual': ['details', 'hoaFeeAnnual'],
-    '27_ownership_type': ['details', 'ownershipType'],
-    '28_county': ['address', 'county'],
-    // Taxes
-    '29_annual_taxes': ['details', 'annualTaxes'],
-    '30_tax_year': ['details', 'taxYear'],
-    '31_assessed_value': ['details', 'assessedValue'],
-    '32_tax_exemptions': ['financial', 'taxExemptions'],
-    '33_property_tax_rate': ['financial', 'propertyTaxRate'],
-    '34_recent_tax_history': ['financial', 'recentTaxHistory'],
-    '35_special_assessments': ['financial', 'specialAssessments'],
-    // Structure & Systems
-    '36_roof_type': ['structural', 'roofType'],
-    '37_roof_age_est': ['structural', 'roofAgeEst'],
-    '38_exterior_material': ['structural', 'exteriorMaterial'],
-    '39_foundation': ['structural', 'foundation'],
-    '40_hvac_type': ['structural', 'hvacType'],
-    '41_hvac_age': ['structural', 'hvacAge'],
-    '42_flooring_type': ['structural', 'flooringType'],
-    '43_kitchen_features': ['structural', 'kitchenFeatures'],
-    '44_appliances_included': ['structural', 'appliancesIncluded'],
-    '45_fireplace_yn': ['structural', 'fireplaceYn'],
-    '46_interior_condition': ['structural', 'interiorCondition'],
-    '47_pool_yn': ['structural', 'poolYn'],
-    '48_pool_type': ['structural', 'poolType'],
-    '49_deck_patio': ['structural', 'deckPatio'],
-    '50_fence': ['structural', 'fence'],
-    '51_landscaping': ['structural', 'landscaping'],
-    '52_recent_renovations': ['structural', 'recentRenovations'],
-    '53_permit_history_roof': ['structural', 'permitHistoryRoof'],
-    '54_permit_history_hvac': ['structural', 'permitHistoryHvac'],
-    '55_permit_history_other': ['structural', 'permitHistoryPoolAdditions'],
-    // Schools
-    '56_assigned_elementary': ['location', 'assignedElementary'],
-    '57_elementary_rating': ['location', 'elementaryRating'],
-    '58_elementary_distance_miles': ['location', 'elementaryDistanceMiles'],
-    '59_assigned_middle': ['location', 'assignedMiddle'],
-    '60_middle_rating': ['location', 'middleRating'],
-    '61_middle_distance_miles': ['location', 'middleDistanceMiles'],
-    '62_assigned_high': ['location', 'assignedHigh'],
-    '63_high_rating': ['location', 'highRating'],
-    '64_high_distance_miles': ['location', 'highDistanceMiles'],
-    // Location Scores
-    '65_walk_score': ['location', 'walkScore'],
-    '66_transit_score': ['location', 'transitScore'],
-    '67_bike_score': ['location', 'bikeScore'],
-    '68_noise_level': ['location', 'noiseLevel'],
-    '69_traffic_level': ['location', 'trafficLevel'],
-    '70_walkability_description': ['location', 'walkabilityDescription'],
-    '71_commute_time_city_center': ['location', 'commuteTimeCityCenter'],
-    '72_public_transit_access': ['location', 'publicTransitAccess'],
-    // Distances
-    '73_distance_grocery_miles': ['location', 'distanceGroceryMiles'],
-    '74_distance_hospital_miles': ['location', 'distanceHospitalMiles'],
-    '75_distance_airport_miles': ['location', 'distanceAirportMiles'],
-    '76_distance_park_miles': ['location', 'distanceParkMiles'],
-    '77_distance_beach_miles': ['location', 'distanceBeachMiles'],
-    // Safety & Crime
-    '78_crime_index_violent': ['location', 'crimeIndexViolent'],
-    '79_crime_index_property': ['location', 'crimeIndexProperty'],
-    '80_neighborhood_safety_rating': ['location', 'neighborhoodSafetyRating'],
-    // Market & Investment
-    '81_median_home_price_neighborhood': ['financial', 'medianHomePriceNeighborhood'],
-    '82_price_per_sqft_recent_avg': ['financial', 'pricePerSqftRecentAvg'],
-    '83_days_on_market_avg': ['financial', 'daysOnMarketAvg'],
-    '84_inventory_surplus': ['financial', 'inventorySurplus'],
-    '85_rental_estimate_monthly': ['financial', 'rentalEstimateMonthly'],
-    '86_rental_yield_est': ['financial', 'rentalYieldEst'],
-    '87_vacancy_rate_neighborhood': ['financial', 'vacancyRateNeighborhood'],
-    '88_cap_rate_est': ['financial', 'capRateEst'],
-    '89_insurance_est_annual': ['financial', 'insuranceEstAnnual'],
-    '90_financing_terms': ['financial', 'financingTerms'],
-    '91_comparable_sales': ['financial', 'comparableSalesLast3'],
-    // Utilities
-    '92_electric_provider': ['utilities', 'electricProvider'],
-    '93_water_provider': ['utilities', 'waterProvider'],
-    '94_sewer_provider': ['utilities', 'sewerProvider'],
-    '95_natural_gas': ['utilities', 'naturalGas'],
-    '96_internet_providers_top3': ['utilities', 'internetProvidersTop3'],
-    '97_max_internet_speed': ['utilities', 'maxInternetSpeed'],
-    '98_cable_tv_provider': ['utilities', 'cableTvProvider'],
-    // Environment & Risk
-    '99_air_quality_index_current': ['utilities', 'airQualityIndexCurrent'],
-    '100_flood_zone': ['utilities', 'floodZone'],
-    '101_flood_risk_level': ['utilities', 'floodRiskLevel'],
-    '102_climate_risk_summary': ['utilities', 'climateRiskWildfireFlood'],
-    '103_noise_level_db_est': ['utilities', 'noiseLevelDbEst'],
-    '104_solar_potential': ['utilities', 'solarPotential'],
-    // Additional Features
-    '105_ev_charging_yn': ['utilities', 'evChargingYn'],
-    '106_smart_home_features': ['utilities', 'smartHomeFeatures'],
-    '107_accessibility_mods': ['utilities', 'accessibilityMods'],
-    '108_pet_policy': ['utilities', 'petPolicy'],
-    '109_age_restrictions': ['utilities', 'ageRestrictions'],
-    '110_notes_confidence_summary': ['utilities', 'notesConfidenceSummary'],
-  };
+function extractNextData(html: string): any {
+  const match = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+  if (!match) return null;
+  try {
+    const data = JSON.parse(match[1]);
+    return data?.props?.pageProps?.initialReduxState || data?.props?.pageProps;
+  } catch (e) {
+    return null;
+  }
+}
 
-  const nested: Record<string, any> = {
-    address: {},
-    details: {},
-    structural: {},
-    location: {},
-    financial: {},
-    utilities: {},
-  };
+async function scrapeRealtorData(address: string): Promise<Record<string, any>> {
+  const directUrl = addressToRealtorUrl(address);
+  if (!directUrl) return {};
 
-  for (const [flatKey, fieldData] of Object.entries(flatFields)) {
-    const path = fieldPathMap[flatKey];
-    if (path && nested[path[0]]) {
-      nested[path[0]][path[1]] = fieldData;
+  try {
+    const response = await fetch(directUrl, { headers: SCRAPER_HEADERS });
+    if (!response.ok) return {};
+
+    const html = await response.text();
+    const data = extractNextData(html);
+    if (!data) return {};
+
+    const property = data?.propertyDetails?.listingDetail || data?.property || data;
+    const listing = property?.listing || property;
+    const location = property?.location || property?.address || {};
+    const description = property?.description || {};
+    const taxHistory = property?.tax_history || [];
+    const priceHistory = property?.price_history || [];
+
+    const fields: Record<string, any> = {};
+
+    // Address
+    const addr = location.address || location;
+    if (addr?.line) {
+      fields['1_full_address'] = {
+        value: `${addr.line}, ${addr.city}, ${addr.state_code} ${addr.postal_code}`,
+        source: 'Realtor.com',
+        confidence: 'High'
+      };
     }
+
+    // MLS & Status
+    fields['2_mls_primary'] = { value: listing?.mls?.id || property?.mls_id, source: 'Realtor.com', confidence: 'High' };
+    fields['4_listing_status'] = { value: property?.status || listing?.status, source: 'Realtor.com', confidence: 'High' };
+    fields['5_listing_date'] = { value: listing?.list_date || property?.list_date, source: 'Realtor.com', confidence: 'High' };
+    fields['6_parcel_id'] = { value: property?.property_id, source: 'Realtor.com', confidence: 'High' };
+
+    // Pricing
+    const price = listing?.list_price || property?.list_price || property?.price;
+    const sqft = description?.sqft || property?.sqft || property?.building_size?.size;
+    fields['7_listing_price'] = { value: price, source: 'Realtor.com', confidence: 'High' };
+    fields['8_price_per_sqft'] = { value: (price && sqft) ? Math.round(price / sqft) : null, source: 'Calculated', confidence: 'High' };
+
+    // Last sale from price history
+    if (priceHistory?.length > 0) {
+      const lastSale = priceHistory.find((h: any) => h.event_name === 'Sold');
+      if (lastSale) {
+        fields['10_last_sale_date'] = { value: lastSale.date, source: 'Realtor.com', confidence: 'High' };
+        fields['11_last_sale_price'] = { value: lastSale.price, source: 'Realtor.com', confidence: 'High' };
+      }
+    }
+
+    // Property Basics
+    fields['12_bedrooms'] = { value: description?.beds || property?.beds, source: 'Realtor.com', confidence: 'High' };
+    fields['13_full_bathrooms'] = { value: description?.baths_full || property?.baths_full, source: 'Realtor.com', confidence: 'High' };
+    fields['14_half_bathrooms'] = { value: description?.baths_half || property?.baths_half || 0, source: 'Realtor.com', confidence: 'High' };
+
+    const fullBaths = description?.baths_full || property?.baths_full || 0;
+    const halfBaths = description?.baths_half || property?.baths_half || 0;
+    fields['15_total_bathrooms'] = { value: fullBaths + (halfBaths * 0.5), source: 'Calculated', confidence: 'High' };
+
+    fields['16_living_sqft'] = { value: sqft, source: 'Realtor.com', confidence: 'High' };
+    fields['18_lot_size_sqft'] = { value: description?.lot_sqft || property?.lot_sqft, source: 'Realtor.com', confidence: 'High' };
+
+    const lotSqft = description?.lot_sqft || property?.lot_sqft;
+    fields['19_lot_size_acres'] = { value: lotSqft ? (lotSqft / 43560).toFixed(2) : null, source: 'Calculated', confidence: 'High' };
+
+    fields['20_year_built'] = { value: description?.year_built || property?.year_built, source: 'Realtor.com', confidence: 'High' };
+    fields['21_property_type'] = { value: description?.type || property?.prop_type || property?.type, source: 'Realtor.com', confidence: 'High' };
+    fields['22_stories'] = { value: description?.stories || property?.stories, source: 'Realtor.com', confidence: 'Medium' };
+    fields['23_garage_spaces'] = { value: description?.garage || property?.garage, source: 'Realtor.com', confidence: 'Medium' };
+
+    // HOA
+    const hoa = property?.hoa || listing?.hoa;
+    fields['25_hoa_yn'] = { value: hoa ? true : false, source: 'Realtor.com', confidence: 'Medium' };
+    if (hoa?.fee) {
+      fields['26_hoa_fee_annual'] = { value: hoa.fee * 12, source: 'Realtor.com', confidence: 'Medium' };
+    }
+
+    // County
+    fields['28_county'] = { value: location?.county?.name || location?.address?.county, source: 'Realtor.com', confidence: 'High' };
+
+    // Taxes
+    if (taxHistory?.length > 0) {
+      const latestTax = taxHistory[0];
+      fields['29_annual_taxes'] = { value: latestTax?.tax, source: 'Realtor.com', confidence: 'High' };
+      fields['30_tax_year'] = { value: latestTax?.year, source: 'Realtor.com', confidence: 'High' };
+      fields['31_assessed_value'] = { value: latestTax?.assessment?.total, source: 'Realtor.com', confidence: 'High' };
+    }
+
+    // Filter out null values
+    return Object.fromEntries(
+      Object.entries(fields).filter(([_, v]) => v.value !== null && v.value !== undefined)
+    );
+  } catch (e) {
+    console.error('Realtor scrape error:', e);
+    return {};
   }
-
-  return nested;
 }
-
-// ============================================
-// SCRAPERS REMOVED (2025-11-27)
-// Zillow/Redfin/Realtor blocked by anti-bot
-// Use MLS API when eKey is obtained
-// ============================================
 
 // ============================================
 // FREE API ENRICHMENT
@@ -388,8 +299,65 @@ async function getNoiseData(lat: number, lon: number): Promise<Record<string, an
   }
 }
 
-// BroadbandNow REMOVED (2025-11-27) - Scraper was blocked and not wired
-// Internet provider data now comes from LLM cascade (fields 96-98)
+// BroadbandNow Scraper - Internet providers (FREE - no API key)
+async function getInternetProviders(address: string): Promise<Record<string, any>> {
+  try {
+    const searchUrl = `https://broadbandnow.com/search?q=${encodeURIComponent(address)}`;
+    const response = await fetch(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      }
+    });
+
+    if (!response.ok) return {};
+
+    const html = await response.text();
+    const fields: Record<string, any> = {};
+
+    // Extract provider names
+    const providerMatches = html.match(/class="provider-name[^"]*"[^>]*>([^<]+)</g);
+    if (providerMatches && providerMatches.length > 0) {
+      const providers = providerMatches
+        .slice(0, 3)
+        .map(m => m.match(/>([^<]+)</)?.[1])
+        .filter(Boolean);
+
+      if (providers.length > 0) {
+        fields['96_internet_providers_top3'] = {
+          value: providers.join(', '),
+          source: 'BroadbandNow',
+          confidence: 'High'
+        };
+      }
+    }
+
+    // Extract max speed
+    const speedMatch = html.match(/(\d+)\s*Mbps/i);
+    if (speedMatch) {
+      fields['97_max_internet_speed'] = {
+        value: `${speedMatch[1]} Mbps`,
+        source: 'BroadbandNow',
+        confidence: 'High'
+      };
+    }
+
+    // Extract cable provider
+    const cableMatch = html.match(/Cable[^<]*<[^>]*>([^<]+)</i);
+    if (cableMatch) {
+      fields['98_cable_tv_provider'] = {
+        value: cableMatch[1].trim(),
+        source: 'BroadbandNow',
+        confidence: 'Medium'
+      };
+    }
+
+    return fields;
+  } catch (e) {
+    console.error('BroadbandNow scrape error:', e);
+    return {};
+  }
+}
 
 // Weather.com API - Climate data
 async function getClimateData(lat: number, lon: number): Promise<Record<string, any>> {
@@ -409,7 +377,7 @@ async function getClimateData(lat: number, lon: number): Promise<Record<string, 
 
     if (data) {
       // Current temperature and conditions
-      const conditions: string[] = [];
+      const conditions = [];
       if (data.temperature) conditions.push(`Current: ${data.temperature}°F`);
       if (data.temperatureFeelsLike) conditions.push(`Feels like: ${data.temperatureFeelsLike}°F`);
       if (data.relativeHumidity) conditions.push(`Humidity: ${data.relativeHumidity}%`);
@@ -897,7 +865,7 @@ CRITICAL RULES:
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'sonar-pro',
+        model: 'llama-3.1-sonar-large-128k-online',
         messages: [
           {
             role: 'system',
@@ -1481,10 +1449,10 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "7_listing
   }
 }
 
-// Grok API call (xAI) - #2 in reliability, HAS WEB SEARCH
+// Grok API call (xAI) - #3 in reliability, HAS WEB SEARCH
 async function callGrok(address: string): Promise<any> {
-  const apiKey = process.env.XAI_API_KEY;
-  if (!apiKey) { console.log('❌ XAI_API_KEY not set'); return { error: 'XAI_API_KEY not set', fields: {} }; } console.log('✅ XAI_API_KEY found, calling Grok API...');
+  const apiKey = process.env.GROK_API_KEY;
+  if (!apiKey) { console.log('❌ GROK_API_KEY not set'); return { error: 'GROK_API_KEY not set', fields: {} }; } console.log('✅ GROK_API_KEY found, calling Grok API...');
 
   // Grok-specific prompt with web search emphasis
   const grokSystemPrompt = `${PROMPT_GROK}
@@ -1503,7 +1471,7 @@ CITE YOUR SOURCES for every field you populate`;
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'grok-4.1',
+        model: 'grok-2-latest', // Use grok-4 for better tool calling, grok-beta for cost savings
         max_tokens: 8000,
         temperature: 0.1, // Low temperature for factual consistency
         messages: [
@@ -1625,7 +1593,7 @@ function mergeResults(results: any[]): any {
           ...field,
           source: `${field.source} (via ${result.llm})`,
         };
-      } else if (existing && !valuesAreSemanticallySame(existing.value, field.value) && newConfidence === existingConfidence) {
+      } else if (existing && existing.value !== field.value && newConfidence === existingConfidence) {
         // Conflict - same confidence, different values
         merged.conflicts.push({
           field: fieldKey,
@@ -1639,9 +1607,9 @@ function mergeResults(results: any[]): any {
   }
 
   // Dedupe sources
-  merged.sources = Array.from(new Set(merged.sources));
+  merged.sources = [...new Set(merged.sources)];
   merged.total_fields_found = Object.keys(merged.fields).length;
-  merged.completion_percentage = Math.round((merged.total_fields_found / 138) * 100);
+  merged.completion_percentage = Math.round((merged.total_fields_found / 110) * 100);
 
   return merged;
 }
@@ -1661,14 +1629,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // CASCADE STRATEGY: Try all 6 LLMs in RELIABILITY order
-  // Order: Perplexity → Grok → Claude Opus → GPT → Claude Sonnet → Gemini
-  // Web-search LLMs first (verify real data), then knowledge-based LLMs
+  // CASCADE STRATEGY: Try all 6 LLMs in RELIABILITY order (per audit)
+  // 1. Claude Opus (KING), 2. GPT, 3. Grok, 4. Claude Sonnet, 5. Copilot, 6. Gemini
   const {
     address,
     url,
-    engines = ['perplexity', 'grok'],  // Web-search LLMs with citations. Add back: [...LLM_CASCADE_ORDER] for all
+    engines = ['claude-opus', 'gpt', 'grok', 'claude-sonnet', 'copilot', 'gemini'],
     skipLLMs = false,
+    usePerplexity = false, // Removed from default cascade - use engines array
+    useGrok = true,
     useCascade = true // Enable cascade mode by default
   } = req.body;
 
@@ -1679,246 +1648,170 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const searchQuery = address || `property at URL: ${url}`;
 
   try {
-    console.log('=== STARTING PROPERTY SEARCH (with Arbitration Pipeline) ===');
+    console.log('=== STARTING PROPERTY SEARCH ===');
     console.log('Address:', searchQuery);
+    const sources_used: string[] = [];
+    let allFields: Record<string, any> = {};
+    const fieldSources: Record<string, string[]> = {}; // Track which LLMs provided each field
+    const conflicts: Array<{field: string; values: Array<{source: string; value: any}>}> = []; // Track conflicts
 
-    // Initialize arbitration pipeline with LLM quorum threshold of 2
-    const arbitrationPipeline = createArbitrationPipeline(2);
-    const llmResponses: any[] = [];
+    // STEP 0: Try Realtor.com scraper first for best real data
+    console.log('Step 0: Scraping Realtor.com...');
+    try {
+      const realtorData = await scrapeRealtorData(searchQuery);
+      if (Object.keys(realtorData).length > 0) {
+        Object.assign(allFields, realtorData);
+        sources_used.push('Realtor.com');
+        console.log('Added ' + Object.keys(realtorData).length + ' fields from Realtor.com');
+      } else {
+        console.log('No data from Realtor.com scraper');
+      }
+    } catch (e) {
+      console.error('Realtor.com scrape failed:', e);
+    }
 
-    // ========================================
-    // TIER 2 & 3: FREE APIs (Google, WalkScore, FEMA, etc.)
-    // ========================================
+    // STEP 1: Enrich with free APIs (WalkScore, FEMA, AirNow) - FAST
     console.log('Step 1: Enriching with free APIs...');
     try {
       const enrichedData = await enrichWithFreeAPIs(searchQuery);
       if (Object.keys(enrichedData).length > 0) {
-        // Separate Google fields from other API fields for proper tier assignment
-        const googleFields: Record<string, FieldValue> = {};
-        const apiFields: Record<string, FieldValue> = {};
-
-        for (const [key, value] of Object.entries(enrichedData)) {
-          const fieldData = value as any;
-          const source = fieldData?.source || 'Unknown';
-          const tier = source.includes('Google') ? 2 : 3;
-          const fieldValue: FieldValue = {
-            value: fieldData?.value !== undefined ? fieldData.value : fieldData,
-            source: source,
-            confidence: fieldData?.confidence || 'High',
-            tier: tier as 1 | 2 | 3 | 4
-          };
-
-          // Route to appropriate tier based on source
-          if (source.includes('Google')) {
-            googleFields[key] = fieldValue;
-          } else {
-            apiFields[key] = fieldValue;
-          }
-        }
-
-        // Add Google fields as Tier 2
-        if (Object.keys(googleFields).length > 0) {
-          const googleAdded = arbitrationPipeline.addFieldsFromSource(googleFields, 'Google Maps');
-          console.log(`Added ${googleAdded} fields from Google Maps (Tier 2)`);
-        }
-
-        // Add other API fields as Tier 3
-        if (Object.keys(apiFields).length > 0) {
-          // Group by source for proper tracking
-          const sourceGroups: Record<string, Record<string, FieldValue>> = {};
-          for (const [key, field] of Object.entries(apiFields)) {
-            const src = field.source;
-            if (!sourceGroups[src]) sourceGroups[src] = {};
-            sourceGroups[src][key] = field;
-          }
-
-          for (const [source, fields] of Object.entries(sourceGroups)) {
-            const added = arbitrationPipeline.addFieldsFromSource(fields, source);
-            console.log(`Added ${added} fields from ${source} (Tier 3)`);
-          }
-        }
+        Object.assign(allFields, enrichedData);
+        if (enrichedData['65_walk_score']) sources_used.push('WalkScore');
+        if (enrichedData['100_flood_zone']) sources_used.push('FEMA NFHL');
+        if (enrichedData['99_air_quality_index_current']) sources_used.push('AirNow');
+        if (enrichedData['28_county']) sources_used.push('Google Maps');
+        console.log(`Added ${Object.keys(enrichedData).length} fields from free APIs`);
       }
     } catch (e) {
       console.error('Free APIs enrichment failed:', e);
     }
 
-    // ========================================
-    // TIER 4: LLM CASCADE
-    // ========================================
-    if (!skipLLMs) {
-      const intermediateResult = arbitrationPipeline.getResult();
-      const currentFieldCount = Object.keys(intermediateResult.fields).length;
+    // STEP 2-7: CASCADE through all 6 LLMs in RELIABILITY order (per audit)
+    // Claude Opus (KING) → GPT → Grok → Claude Sonnet → Copilot → Gemini
+    const llmCascade = [
+      { name: 'claude-opus', fn: callClaudeOpus, enabled: engines.includes('claude-opus') },
+      { name: 'gpt', fn: callGPT, enabled: engines.includes('gpt') },
+      { name: 'grok', fn: callGrok, enabled: useGrok || engines.includes('grok') },
+      { name: 'claude-sonnet', fn: callClaudeSonnet, enabled: engines.includes('claude-sonnet') },
+      { name: 'copilot', fn: callCopilot, enabled: engines.includes('copilot') },
+      { name: 'gemini', fn: callGemini, enabled: engines.includes('gemini') },
+      { name: 'perplexity', fn: callPerplexity, enabled: usePerplexity || engines.includes('perplexity') }, // Optional fallback
+    ];
 
-      // Only call LLMs if we have gaps
-      if (currentFieldCount < 110) {
-        console.log(`\nStep 2: LLM Cascade (${currentFieldCount}/138 fields filled)...`);
+    let llmResponses: any[] = [];
+    let currentCompletion = 0;
 
-        const llmSourceNames: Record<string, string> = {
-          'perplexity': 'Perplexity',
-          'grok': 'Grok',
-          'claude-opus': 'Claude Opus',
-          'gpt': 'GPT',
-          'claude-sonnet': 'Claude Sonnet',
-          'gemini': 'Gemini'
-        };
+    for (const llm of llmCascade) {
+      if (!llm.enabled) continue;
 
-        const llmCascade = [
-          { id: 'perplexity', fn: callPerplexity, enabled: engines.includes('perplexity') },
-          { id: 'grok', fn: callGrok, enabled: engines.includes('grok') },
-          { id: 'claude-opus', fn: callClaudeOpus, enabled: engines.includes('claude-opus') },
-          { id: 'gpt', fn: callGPT, enabled: engines.includes('gpt') },
-          { id: 'claude-sonnet', fn: callClaudeSonnet, enabled: engines.includes('claude-sonnet') },
-          { id: 'gemini', fn: callGemini, enabled: engines.includes('gemini') },
-        ];
+      console.log(`\n=== Calling ${llm.name.toUpperCase()} ===`);
 
-        for (const llm of llmCascade) {
-          if (!llm.enabled) continue;
+      try {
+        const llmData = await llm.fn(searchQuery);
+        const llmFields = llmData.fields || llmData;
 
-          console.log(`\n=== Calling ${llm.id.toUpperCase()} ===`);
+        if (llmFields && Object.keys(llmFields).length > 0) {
+          sources_used.push(llm.name);
+          llmResponses.push({
+            llm: llm.name,
+            fields_found: Object.keys(llmFields).length,
+            success: true
+          });
 
-          try {
-            const llmData = await llm.fn(searchQuery);
-            const llmFields = llmData.fields || llmData;
+          // Add/merge fields with conflict detection
+          for (const [key, value] of Object.entries(llmFields)) {
+            const fieldValue = (value as any)?.value !== undefined ? (value as any).value : value;
+            const fieldSource = (value as any)?.source || llm.name;
 
-            if (llmFields && Object.keys(llmFields).length > 0) {
-              // Convert to FieldValue format for arbitration
-              const formattedFields: Record<string, FieldValue> = {};
-              for (const [key, value] of Object.entries(llmFields)) {
-                const fieldData = value as any;
-                const fieldValue = fieldData?.value !== undefined ? fieldData.value : value;
+            // Track source
+            if (!fieldSources[key]) fieldSources[key] = [];
+            fieldSources[key].push(llm.name);
 
-                // Skip null/empty responses
-                if (fieldValue === null || fieldValue === undefined || fieldValue === '' || fieldValue === 'Not available') {
-                  continue;
+            // Check for conflicts
+            if (allFields[key]) {
+              const existingValue = allFields[key].value !== undefined ? allFields[key].value : allFields[key];
+
+              // Values differ = CONFLICT
+              if (fieldValue !== existingValue && fieldValue !== null && existingValue !== null) {
+                const existing = conflicts.find(c => c.field === key);
+                if (existing) {
+                  existing.values.push({ source: llm.name, value: fieldValue });
+                } else {
+                  conflicts.push({
+                    field: key,
+                    values: [
+                      { source: fieldSources[key][0] || 'unknown', value: existingValue },
+                      { source: llm.name, value: fieldValue }
+                    ]
+                  });
                 }
-
-                formattedFields[key] = {
-                  value: fieldValue,
-                  source: llmSourceNames[llm.id],
-                  confidence: fieldData?.confidence || 'Medium',
-                  tier: 4 as const
-                };
-              }
-
-              const newFields = arbitrationPipeline.addFieldsFromSource(formattedFields, llmSourceNames[llm.id]);
-
-              llmResponses.push({
-                llm: llm.id,
-                fields_found: newFields,
-                success: true
-              });
-
-              console.log(`✅ ${llm.id}: ${Object.keys(llmFields).length} returned, ${newFields} new fields added`);
-
-              // Check if we've filled enough gaps
-              const updatedResult = arbitrationPipeline.getResult();
-              if (useCascade && Object.keys(updatedResult.fields).length >= 110) {
-                console.log(`🎯 100% completion reached! Stopping cascade at ${llm.id}`);
-                break;
+                console.log(`⚠️  CONFLICT on ${key}: ${existingValue} vs ${fieldValue}`);
               }
             } else {
-              llmResponses.push({
-                llm: llm.id,
-                fields_found: 0,
-                success: false,
-                error: 'No fields returned'
-              });
+              // New field - add it only if value is not null/empty
+              const val = (value as any)?.value !== undefined ? (value as any).value : value;
+              if (val !== null && val !== undefined && val !== '' && val !== 'Not available') {
+                allFields[key] = value;
+              }
             }
-          } catch (e) {
-            console.error(`❌ ${llm.id} failed:`, e);
-            llmResponses.push({
-              llm: llm.id,
-              fields_found: 0,
-              success: false,
-              error: String(e)
-            });
           }
+
+          // Count only fields with actual values
+          currentCompletion = Object.keys(allFields).length;
+          console.log(`✅ ${llm.name}: ${Object.keys(llmFields).length} fields returned | ${currentCompletion} stored with actual values`);
+
+          // Stop if we have 100% completion (110 fields with ACTUAL values)
+          if (useCascade && currentCompletion >= 110) {
+            console.log(`🎯 100% completion reached! Stopping cascade at ${llm.name}`);
+            break;
+          }
+        } else {
+          llmResponses.push({
+            llm: llm.name,
+            fields_found: 0,
+            success: false,
+            error: 'No fields returned'
+          });
         }
-      } else {
-        console.log('Skipping LLMs - sufficient data from reliable sources');
+      } catch (e) {
+        console.error(`❌ ${llm.name} failed:`, e);
+        llmResponses.push({
+          llm: llm.name,
+          fields_found: 0,
+          success: false,
+          error: String(e)
+        });
       }
     }
 
-    // ========================================
-    // GET FINAL ARBITRATION RESULT
-    // ========================================
-    const arbitrationResult = arbitrationPipeline.getResult();
-    const totalFields = Object.keys(arbitrationResult.fields).length;
-    const completionPercentage = Math.round((totalFields / 138) * 100);
+    // Only count fields with actual non-null values
+    const total_fields = Object.entries(allFields).filter(([_, field]) => {
+      const value = (field as any)?.value !== undefined ? (field as any).value : field;
+      return value !== null && value !== undefined && value !== '' && value !== 'Not available';
+    }).length;
+    const completion_percentage = Math.round((total_fields / 110) * 100);
 
-    // Build source breakdown from arbitration result
+    // Add breakdown by source
     const sourceBreakdown: Record<string, number> = {};
-    for (const [_, field] of Object.entries(arbitrationResult.fields)) {
-      const source = field.source || 'Unknown';
+    for (const [key, field] of Object.entries(allFields)) {
+      const source = (field as any).source || 'Unknown';
       sourceBreakdown[source] = (sourceBreakdown[source] || 0) + 1;
     }
-
-    // Convert arbitration fields to frontend DataField format
-    const convertedFields: Record<string, any> = {};
-    for (const [key, field] of Object.entries(arbitrationResult.fields)) {
-      let parsedValue = field.value;
-
-      // Parse dates if they look like date strings
-      if (typeof parsedValue === 'string' && /^\d{4}-\d{2}-\d{2}/.test(parsedValue)) {
-        try {
-          parsedValue = new Date(parsedValue).toISOString();
-        } catch {}
-      } else if (typeof parsedValue === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}/.test(parsedValue)) {
-        try {
-          const [m, d, y] = parsedValue.split('/');
-          parsedValue = new Date(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`).toISOString();
-        } catch {}
-      }
-
-      // Use validationStatus from the FieldValue (set by arbitration pipeline)
-      // or derive from singleSourceWarnings if not set
-      const hasConflict = arbitrationResult.conflicts.some(c => c.field === key);
-      const hasSingleSourceWarning = arbitrationResult.singleSourceWarnings.some(w => w.field === key);
-
-      // Prefer field's own validation status (set by arbitration pipeline)
-      // Fall back to recalculating from arrays for backwards compatibility
-      const validationStatus = field.validationStatus || 
-        (hasSingleSourceWarning ? 'warning' : 'passed');
-      const validationMessage = field.validationMessage || 
-        (hasSingleSourceWarning ? 'Single LLM source - verify independently' : undefined);
-
-      convertedFields[key] = {
-        value: parsedValue,
-        confidence: field.confidence || 'Medium',
-        notes: '',
-        sources: [field.source],
-        llmSources: field.llmSources,
-        hasConflict: hasConflict,
-        conflictValues: arbitrationResult.conflicts.find(c => c.field === key)?.values || [],
-        validationStatus,
-        validationMessage
-      };
-    }
-
-    // Transform flat fields to nested structure for PropertyDetail & other pages
-    const nestedFields = convertFlatToNestedStructure(convertedFields);
-
-    // Build sources list from unique sources in result
-    const sources = Array.from(new Set(
-      Object.values(arbitrationResult.fields).map(f => f.source)
-    ));
 
     return res.status(200).json({
       success: true,
       address: searchQuery,
-      fields: convertedFields,
-      nestedFields: nestedFields,
-      total_fields_found: totalFields,
-      completion_percentage: completionPercentage,
-      sources: sources,
+      fields: allFields,
+      total_fields_found: total_fields,
+      completion_percentage,
+      sources: sources_used,
       source_breakdown: sourceBreakdown,
-      conflicts: arbitrationResult.conflicts,
-      validation_failures: arbitrationResult.validationFailures,
-      llm_quorum_fields: arbitrationResult.llmQuorumFields,
-      single_source_warnings: arbitrationResult.singleSourceWarnings,
+      field_sources: fieldSources, // NEW: Which LLMs provided each field
+      conflicts, // NEW: Fields where LLMs disagreed
       llm_responses: llmResponses,
-      strategy: 'arbitration_pipeline',
-      cascade_order: ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini']
+      strategy: 'cascade',
+      cascade_order: ['claude-opus', 'gpt', 'grok', 'claude-sonnet', 'copilot', 'gemini', 'perplexity'],
+      note: 'CASCADE STRATEGY (Reliability Order per Audit): Claude Opus (KING) → GPT → Grok → Claude Sonnet → Copilot → Gemini → Perplexity. Stops at 100% completion.'
     });
   } catch (error) {
     console.error('=== SEARCH ERROR ===');

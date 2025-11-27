@@ -19,12 +19,12 @@ import {
 } from 'lucide-react';
 import { useIsAdmin } from '@/store/authStore';
 import {
-  FIELD_DEFINITIONS,
-  FIELD_GROUPS,
+  UI_FIELD_DEFINITIONS as FIELD_DEFINITIONS,
+  UI_FIELD_GROUPS as FIELD_GROUPS,
   DATA_SOURCES,
   type DataSource,
-  type FieldDefinition,
-} from '@/types/property-schema';
+  type UIFieldDefinition as FieldDefinition,
+} from '@/types/fields-schema';
 import SearchProgressTracker, { type SourceProgress, type SourceStatus, DEFAULT_SOURCES } from './SearchProgressTracker';
 
 interface FieldValue {
