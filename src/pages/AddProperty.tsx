@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { usePropertyStore } from '@/store/propertyStore';
 import type { PropertyCard, Property, DataField } from '@/types/property';
+import { LLM_CASCADE_ORDER, LLM_DISPLAY_NAMES } from '@/lib/llm-constants';
 
 // Autocomplete suggestion type
 interface AddressSuggestion {
@@ -34,14 +35,15 @@ type InputMode = 'address' | 'url' | 'manual' | 'csv' | 'text';
 // Generate a simple unique ID
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
 
-// LLM Engine options - Perplexity & Grok first (they have web search)
+// LLM Engine options - Use unified cascade order from constants (Perplexity & Grok first for web search)
 const LLM_ENGINES = [
-  { id: 'Auto', label: 'Auto Cascade', desc: 'All engines', icon: '🔄' },
-  { id: 'perplexity', label: 'Perplexity', desc: 'Web Search', icon: '🔍' },
-  { id: 'grok', label: 'Grok', desc: 'Web Search', icon: '⚡' },
-  { id: 'claude-opus', label: 'Claude Opus', desc: 'No Web', icon: '👑' },
-  { id: 'gpt', label: 'GPT-4o', desc: 'No Web', icon: '🤖' },
-  { id: 'gemini', label: 'Gemini', desc: 'No Web', icon: '♊' },
+  { id: 'Auto', label: 'Auto Cascade', desc: 'All 6 engines', icon: '🔄' },
+  { id: 'perplexity', label: LLM_DISPLAY_NAMES['perplexity'], desc: 'Web Search', icon: '🔍' },
+  { id: 'grok', label: LLM_DISPLAY_NAMES['grok'], desc: 'Web Search', icon: '⚡' },
+  { id: 'claude-opus', label: LLM_DISPLAY_NAMES['claude-opus'], desc: 'Knowledge', icon: '👑' },
+  { id: 'gpt', label: LLM_DISPLAY_NAMES['gpt'], desc: 'Knowledge', icon: '🤖' },
+  { id: 'claude-sonnet', label: LLM_DISPLAY_NAMES['claude-sonnet'], desc: 'Fallback', icon: '🧊' },
+  { id: 'gemini', label: LLM_DISPLAY_NAMES['gemini'], desc: 'Last resort', icon: '♊' },
 ];
 
 export default function AddProperty() {
