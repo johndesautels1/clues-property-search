@@ -22,6 +22,11 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+// Vercel serverless config - extend timeout for multi-API cascade
+export const config = {
+  maxDuration: 60, // 60 seconds max (Pro plan limit)
+};
 import { LLM_CASCADE_ORDER } from './llm-constants';
 import {
   callGoogleGeocode,

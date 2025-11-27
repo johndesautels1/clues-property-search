@@ -25,7 +25,7 @@ export const DATA_SOURCES: DataSource[] = [
     description: 'Authoritative MLS data (awaiting eKey)'
   },
 
-  // Tier 2: Google APIs - disabled until API key provided
+  // Tier 2: Google APIs
   { 
     id: 'google-geocode', 
     name: 'Google Geocode', 
@@ -33,8 +33,8 @@ export const DATA_SOURCES: DataSource[] = [
     tier: 2, 
     icon: 'mappin', 
     color: 'blue',
-    enabled: false,
-    description: 'Coordinates and address verification (needs GOOGLE_API_KEY)'
+    enabled: true,
+    description: 'Coordinates and address verification'
   },
   { 
     id: 'google-places', 
@@ -43,11 +43,11 @@ export const DATA_SOURCES: DataSource[] = [
     tier: 2, 
     icon: 'mappin', 
     color: 'blue',
-    enabled: false,
-    description: 'Nearby places and POIs (needs GOOGLE_API_KEY)'
+    enabled: true,
+    description: 'Nearby places and POIs'
   },
 
-  // Tier 3: Paid/Free APIs - disabled until API keys provided
+  // Tier 3: Paid/Free APIs ("Hard Truth")
   { 
     id: 'walkscore', 
     name: 'WalkScore', 
@@ -55,8 +55,8 @@ export const DATA_SOURCES: DataSource[] = [
     tier: 3, 
     icon: 'car', 
     color: 'green',
-    enabled: false,
-    description: 'Walk, transit, and bike scores (needs WALKSCORE_API_KEY)'
+    enabled: true,
+    description: 'Walk, transit, and bike scores'
   },
   { 
     id: 'schooldigger', 
@@ -65,8 +65,8 @@ export const DATA_SOURCES: DataSource[] = [
     tier: 3, 
     icon: 'school', 
     color: 'purple',
-    enabled: false,
-    description: 'School ratings (needs SCHOOLDIGGER_API_KEY)'
+    enabled: true,
+    description: 'School ratings and nearby schools'
   },
   { 
     id: 'fema', 
@@ -75,8 +75,8 @@ export const DATA_SOURCES: DataSource[] = [
     tier: 3, 
     icon: 'shield', 
     color: 'yellow',
-    enabled: false,
-    description: 'Flood zone data (needs FEMA_API_KEY)'
+    enabled: true,
+    description: 'Flood zone data'
   },
   { 
     id: 'airnow', 
@@ -85,8 +85,8 @@ export const DATA_SOURCES: DataSource[] = [
     tier: 3, 
     icon: 'wind', 
     color: 'green',
-    enabled: false,
-    description: 'Air quality index (needs AIRNOW_API_KEY)'
+    enabled: true,
+    description: 'Air quality index'
   },
   { 
     id: 'howloud', 
@@ -95,8 +95,8 @@ export const DATA_SOURCES: DataSource[] = [
     tier: 3, 
     icon: 'volume', 
     color: 'purple',
-    enabled: false,
-    description: 'Noise levels (needs HOWLOUD_API_KEY)'
+    enabled: true,
+    description: 'Noise levels'
   },
   { 
     id: 'weather', 
@@ -105,8 +105,8 @@ export const DATA_SOURCES: DataSource[] = [
     tier: 3, 
     icon: 'sun', 
     color: 'orange',
-    enabled: false,
-    description: 'Climate data (needs WEATHER_API_KEY)'
+    enabled: true,
+    description: 'Climate data'
   },
   { 
     id: 'crime', 
@@ -115,8 +115,8 @@ export const DATA_SOURCES: DataSource[] = [
     tier: 3, 
     icon: 'alert', 
     color: 'red',
-    enabled: false,
-    description: 'Crime statistics (needs FBI_API_KEY)'
+    enabled: true,
+    description: 'Crime statistics'
   },
 
   // Tier 4: LLMs (Fallback - with validation) - enabled, check keys at runtime
@@ -248,7 +248,7 @@ export interface CascadeStatus {
 }
 
 export function initializeCascadeStatus(): CascadeStatus[] {
-  return getEnabledSources().map(source => ({
+  return DATA_SOURCES.map(source => ({
     llm: source.name,
     status: 'pending' as const,
   }));
