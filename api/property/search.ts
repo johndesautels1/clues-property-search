@@ -1823,8 +1823,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // CASCADE STRATEGY: Try all 6 LLMs in RELIABILITY order (per audit)
-  // 1. Claude Opus (KING), 2. GPT, 3. Grok, 4. Claude Sonnet, 5. Copilot, 6. Gemini
+  // CASCADE STRATEGY: Try all 6 LLMs in RELIABILITY order
+  // Order: Perplexity → Grok → Claude Opus → GPT → Claude Sonnet → Gemini
+  // Web-search LLMs first (verify real data), then knowledge-based LLMs
   const {
     address,
     url,

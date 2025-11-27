@@ -353,9 +353,9 @@ export default function AddProperty() {
       console.log('🔍 Manual Entry SSE Response:', data);
       console.log('📊 Total Fields Found:', data.total_fields_found);
 
-      // Parse address components from API or use form values as fallback
-      const apiFullAddress = fields['1_full_address']?.value || fullAddress;
-      const addressParts = apiFullAddress.split(',').map((s: string) => s.trim());
+      // Parse address components from API or use form values as fallback (with safe guard for undefined)
+      const apiFullAddress = fields['1_full_address']?.value || fullAddress || '';
+      const addressParts = (apiFullAddress || '').split(',').map((s: string) => s.trim());
       const street = addressParts[0] || manualForm.address;
       const city = addressParts[1] || manualForm.city;
       const stateZip = addressParts[2] || '';
@@ -499,9 +499,9 @@ export default function AddProperty() {
       console.log('📊 Field Sources:', fieldSources);
       console.log('⚠️  Conflicts:', conflicts);
 
-      // Parse address components
-      const fullAddress = fields['1_full_address']?.value || searchQuery;
-      const addressParts = fullAddress.split(',').map((s: string) => s.trim());
+      // Parse address components (with safe guard for undefined)
+      const fullAddress = fields['1_full_address']?.value || searchQuery || '';
+      const addressParts = (fullAddress || '').split(',').map((s: string) => s.trim());
       const street = addressParts[0] || '';
       const city = addressParts[1] || 'Unknown';
       const stateZip = addressParts[2] || '';

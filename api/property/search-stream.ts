@@ -658,6 +658,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // LLM CASCADE ORDER: Perplexity → Grok → Claude Opus → GPT → Claude Sonnet → Gemini
+  // Web-search LLMs first (verify real data), then knowledge-based LLMs
   const {
     address,
     url,
