@@ -109,13 +109,16 @@ This dashboard can run standalone or be embedded in the CLUES Quantum Master App
 
 ## Recent Changes
 - **2025-11-27**: Imported from GitHub and configured for Replit
-  - Updated Vite config to use port 5000 with 0.0.0.0 host
-  - Configured workflow for automatic dev server startup
+  - Updated Vite config to use port 5000 with 0.0.0.0 host and allow all hosts for Replit proxy
+  - Configured workflow for automatic dev server startup with HMR over secure WebSocket
   - Configured deployment for static hosting (builds to dist/)
   - All dependencies installed and verified working
-  - Updated documentation to clarify API endpoint requirements
   - Fixed LLM integration with anti-hallucination validation layer
   - Added data sanitization for all LLM responses to ensure type-safe data
+  - Fixed backend API response format to match frontend DataField interface
+  - Added proper date parsing and type coercion for all API responses
+  - Enabled conflict tracking across multiple LLM sources
+  - Fixed Vite host validation to work with Replit's proxy system
 
 ## Deploying to Vercel
 
@@ -128,12 +131,13 @@ Your environment variables are already configured in Vercel. To deploy this app:
    This deploys both the frontend and the `/api` serverless functions with your configured env vars.
 
 2. **Update frontend config:**
-   In production, Vite will serve from your Vercel domain. No additional configuration needed—the API calls will work automatically.
+   In production, Vite will serve from your Vercel domain. No additional configuration needed—the API calls will work automatically with all 110-field mapping and LLM validation.
 
 3. **For local development in Replit:**
    - Frontend runs on port 5000 with `npm run dev`
-   - API endpoints won't work locally (they need Vercel)
-   - Test frontend features only, or deploy to Vercel to test full functionality
+   - Full 110-field UI is functional for manual data entry
+   - API endpoints won't work locally (they need Vercel) but frontend-only features are fully available
+   - Deploy to Vercel to test full LLM-powered data enrichment
 
 ## Notes
 - The project includes API endpoints in the `/api` directory designed for Vercel serverless functions
