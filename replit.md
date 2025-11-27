@@ -1,7 +1,7 @@
 # CLUES Property Dashboard - Replit Project
 
 ### Overview
-A mobile-first, 110-field real estate intelligence platform built with React, TypeScript, Vite, and PostgreSQL. Its purpose is to collect and analyze property data from tiered sources including Google APIs, paid/free APIs, and a multi-LLM cascade with robust validation. The project aims to provide comprehensive property insights with confidence scoring and source attribution for each data point, designed for both standalone use and integration with the CLUES Quantum Master App.
+A mobile-first, **138-field** real estate intelligence platform built with React, TypeScript, Vite, and PostgreSQL. Its purpose is to collect and analyze property data from tiered sources including Google APIs, paid/free APIs, and a multi-LLM cascade with robust validation. The project aims to provide comprehensive property insights with confidence scoring and source attribution for each data point, designed for both standalone use and integration with the CLUES Quantum Master App.
 
 ### User Preferences
 - I prefer simple language.
@@ -24,23 +24,34 @@ The project utilizes a Vite + React + TypeScript frontend with Tailwind CSS for 
 
 ### Recent Changes
 
-#### 2025-11-27 (Latest): ONE SOURCE OF TRUTH Schema Implementation
-**Created single authoritative schema file with automated integrity tests**:
-- **Created `src/types/fields-schema.ts`**:
-  - ALL 110 fields defined in ONE place with: num, key, label, group, type, required
+#### 2025-11-27 (Latest): EXPANDED to 138-Field Schema - ONE SOURCE OF TRUTH
+**Complete rewrite of schema to match ALL UI fields from user's document**:
+- **Updated `src/types/fields-schema.ts`**:
+  - **138 fields** extracted directly from user's UI document (expanded from 110)
+  - 16 field groups (matching UI sections exactly):
+    1. Address & Identity (9 fields: 1-9)
+    2. Pricing & Value (7 fields: 10-16)
+    3. Property Basics (13 fields: 17-29)
+    4. HOA & Taxes (9 fields: 30-38)
+    5. Structure & Systems (10 fields: 39-48)
+    6. Interior Features (5 fields: 49-53)
+    7. Exterior Features (5 fields: 54-58)
+    8. Permits & Renovations (4 fields: 59-62)
+    9. Assigned Schools (11 fields: 63-73)
+    10. Location Scores (9 fields: 74-82)
+    11. Distances & Amenities (5 fields: 83-87)
+    12. Safety & Crime (3 fields: 88-90)
+    13. Market & Investment Data (13 fields: 91-103)
+    14. Utilities & Connectivity (13 fields: 104-116)
+    15. Environment & Risk (14 fields: 117-130)
+    16. Additional Features (8 fields: 131-138)
+  - All fields sequentially numbered 1-138 with NO duplicates
   - Derived maps: FIELD_MAP, FIELD_BY_NUMBER, FIELD_BY_KEY
   - Helper functions: getFieldByNumber(), getFieldByKey(), getFieldByFullKey()
-  - Export: EXACT_FIELD_KEYS, FIELD_KEYS_ARRAY, FIELD_GROUPS
-  - DATA_SOURCES list aligned with arbitration tiers
-- **Created `tests/schema-integrity.test.ts`**:
-  - 14 automated tests that ALL PASS
-  - Tests: 110 fields exist, no duplicate numbers, no duplicate keys
-  - Tests: sequential numbering 1-110, required properties exist
-  - Tests: select fields have options, keys use snake_case
-  - Tests: all maps contain all fields, helper functions work
-  - Tests: all groups represented, specific field mappings correct
-- **Deleted BroadbandNow scraper** from api/property/search.ts (was blocked)
-- **RESOLVED CONFLICT**: Field #70 was crimeIndex in property-110-fields.ts but walkabilityDescription in property-schema.ts - now definitively walkability_description
+- **Updated `tests/schema-integrity.test.ts`**:
+  - 14 automated tests that ALL PASS with 138-field validation
+  - Tests: 138 fields exist, sequential 1-138, no duplicates
+  - All groups match UI exactly
 
 #### 2025-11-27 (Earlier): Complete Validation Metadata Pipeline
 **End-to-end validation flow from API arbitration to PropertyDetail UI**:
