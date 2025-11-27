@@ -690,7 +690,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
           </div>
         )}
 
-n        {/* Real-time Progress Tracker */}
+        {/* Real-time Progress Tracker */}
         {showProgressTracker && (
           <div className="mt-4">
             <SearchProgressTracker

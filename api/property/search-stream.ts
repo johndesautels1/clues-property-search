@@ -757,30 +757,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const currentFieldCount = Object.keys(intermediateResult.fields).length;
 
       if (currentFieldCount < 100) {
-        // Only use 2 fastest LLMs for Hobby plan (Perplexity + Gemini)
-        const fastLlms = [
+        // Pro plan: Use web-search LLMs (Perplexity + Grok) for best data
+        const enabledLlms = [
           { id: 'perplexity', fn: callPerplexity, name: 'Perplexity', enabled: engines.includes('perplexity') },
-          { id: 'gemini', fn: callGemini, name: 'Gemini', enabled: engines.includes('gemini') },
+          { id: 'grok', fn: callGrok, name: 'Grok', enabled: engines.includes('grok') },
         ].filter(l => l.enabled);
 
-        // Skip the slower LLMs on Hobby
-        ['grok', 'claude-opus', 'gpt', 'claude-sonnet'].forEach(id => {
-          sendEvent(res, 'progress', { source: id, status: 'skipped', fieldsFound: 0, message: 'Skipped for speed' });
+        // Skip the non-web-search LLMs for now
+        ['claude-opus', 'gpt', 'claude-sonnet', 'gemini'].forEach(id => {
+          if (!engines.includes(id)) {
+            sendEvent(res, 'progress', { source: id, status: 'skipped', fieldsFound: 0, message: 'Not enabled' });
+          }
         });
 
-        if (fastLlms.length > 0) {
-          fastLlms.forEach(llm => {
+        if (enabledLlms.length > 0) {
+          enabledLlms.forEach(llm => {
             sendEvent(res, 'progress', { source: llm.id, status: 'searching', message: `Querying ${llm.name}...` });
           });
 
           const llmResults = await Promise.allSettled(
-            fastLlms.map(llm =>
+            enabledLlms.map(llm =>
               withTimeout(llm.fn(searchAddress), LLM_TIMEOUT, { fields: {}, error: 'timeout' })
             )
           );
 
           llmResults.forEach((result, idx) => {
-            const llm = fastLlms[idx];
+            const llm = enabledLlms[idx];
             if (result.status === 'fulfilled') {
               const data = result.value;
               const newFields = arbitrationPipeline.addFieldsFromSource(data.fields || {}, llm.name);
