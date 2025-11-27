@@ -221,7 +221,7 @@ const DataField = ({ label, value, icon, format = 'text', confidence, llmSources
 };
 
 const formatValue = (value: any, format: string): string => {
-  if (value === null || value === undefined) return 'N/A';
+  if (value === null || value === undefined || value === 'null' || value === 'undefined' || value === '') return '';
 
   switch (format) {
     case 'currency':
