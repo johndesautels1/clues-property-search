@@ -233,7 +233,7 @@ export default function AddProperty() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           address: fullAddress,
-          engines: ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet'],
+          engines: ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'],
           skipLLMs: false,
         }),
       });
@@ -249,6 +249,7 @@ export default function AddProperty() {
       let currentFieldsFound = 0;
 
       // Map source IDs to display names (all 20 sources)
+      // LLM order: ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini']
       const sourceNameMap: Record<string, string> = {
         // Tier 1: Scrapers
         'realtor': 'Realtor.com',
@@ -268,7 +269,7 @@ export default function AddProperty() {
         'weather': 'Weather',
         'broadband': 'Broadband',
         'crime': 'Crime',
-        // Tier 5: LLMs
+        // Tier 5: LLMs (in order of reliability)
         'perplexity': 'Perplexity',
         'grok': 'Grok',
         'claude-opus': 'Claude Opus',
