@@ -23,6 +23,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { scrapeFloridaCounty } from './florida-counties';
 import { LLM_CASCADE_ORDER } from './llm-constants';
+import { createArbitrationPipeline, type FieldValue, type ArbitrationResult } from './arbitration';
 
 
 // ============================================
@@ -1720,8 +1721,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     url,
     engines = [...LLM_CASCADE_ORDER],
     skipLLMs = false,
-    usePerplexity = false, // Removed from default cascade - use engines array
-    useGrok = true,
     useCascade = true // Enable cascade mode by default
   } = req.body;
 
@@ -1732,198 +1731,245 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const searchQuery = address || `property at URL: ${url}`;
 
   try {
-    console.log('=== STARTING PROPERTY SEARCH ===');
+    console.log('=== STARTING PROPERTY SEARCH (with Arbitration Pipeline) ===');
     console.log('Address:', searchQuery);
-    const sources_used: string[] = [];
-    let allFields: Record<string, any> = {};
-    const fieldSources: Record<string, string[]> = {}; // Track which LLMs provided each field
-    const conflicts: Array<{field: string; values: Array<{source: string; value: any}>}> = []; // Track conflicts
 
-    // STEP 0: MLS would go here when eKey is obtained
-    // Scrapers removed (2025-11-27) - blocked by anti-bot
+    // Initialize arbitration pipeline with LLM quorum threshold of 2
+    const arbitrationPipeline = createArbitrationPipeline(2);
+    const llmResponses: any[] = [];
 
-    // STEP 1: Enrich with free APIs (WalkScore, FEMA, AirNow) - FAST
+    // ========================================
+    // TIER 2 & 3: FREE APIs (Google, WalkScore, FEMA, etc.)
+    // ========================================
     console.log('Step 1: Enriching with free APIs...');
     try {
       const enrichedData = await enrichWithFreeAPIs(searchQuery);
       if (Object.keys(enrichedData).length > 0) {
-        Object.assign(allFields, enrichedData);
-        if (enrichedData['65_walk_score']) sources_used.push('WalkScore');
-        if (enrichedData['100_flood_zone']) sources_used.push('FEMA NFHL');
-        if (enrichedData['99_air_quality_index_current']) sources_used.push('AirNow');
-        if (enrichedData['28_county']) sources_used.push('Google Maps');
-        console.log(`Added ${Object.keys(enrichedData).length} fields from free APIs`);
+        // Separate Google fields from other API fields for proper tier assignment
+        const googleFields: Record<string, FieldValue> = {};
+        const apiFields: Record<string, FieldValue> = {};
+
+        for (const [key, value] of Object.entries(enrichedData)) {
+          const fieldData = value as any;
+          const source = fieldData?.source || 'Unknown';
+          const tier = source.includes('Google') ? 2 : 3;
+          const fieldValue: FieldValue = {
+            value: fieldData?.value !== undefined ? fieldData.value : fieldData,
+            source: source,
+            confidence: fieldData?.confidence || 'High',
+            tier: tier as 1 | 2 | 3 | 4
+          };
+
+          // Route to appropriate tier based on source
+          if (source.includes('Google')) {
+            googleFields[key] = fieldValue;
+          } else {
+            apiFields[key] = fieldValue;
+          }
+        }
+
+        // Add Google fields as Tier 2
+        if (Object.keys(googleFields).length > 0) {
+          const googleAdded = arbitrationPipeline.addFieldsFromSource(googleFields, 'Google Maps');
+          console.log(`Added ${googleAdded} fields from Google Maps (Tier 2)`);
+        }
+
+        // Add other API fields as Tier 3
+        if (Object.keys(apiFields).length > 0) {
+          // Group by source for proper tracking
+          const sourceGroups: Record<string, Record<string, FieldValue>> = {};
+          for (const [key, field] of Object.entries(apiFields)) {
+            const src = field.source;
+            if (!sourceGroups[src]) sourceGroups[src] = {};
+            sourceGroups[src][key] = field;
+          }
+
+          for (const [source, fields] of Object.entries(sourceGroups)) {
+            const added = arbitrationPipeline.addFieldsFromSource(fields, source);
+            console.log(`Added ${added} fields from ${source} (Tier 3)`);
+          }
+        }
       }
     } catch (e) {
       console.error('Free APIs enrichment failed:', e);
     }
 
-    // STEP 2-7: CASCADE through all 6 LLMs in RELIABILITY order (per audit)
-    // NEW ORDER: Web-search LLMs FIRST (Perplexity, Grok), then knowledge-based
-    // Perplexity has REAL web search - best for verified data
-    const llmCascade = [
-      { name: 'perplexity', fn: callPerplexity, enabled: engines.includes('perplexity') },
-      { name: 'grok', fn: callGrok, enabled: engines.includes('grok') },
-      { name: 'claude-opus', fn: callClaudeOpus, enabled: engines.includes('claude-opus') },
-      { name: 'gpt', fn: callGPT, enabled: engines.includes('gpt') },
-      { name: 'claude-sonnet', fn: callClaudeSonnet, enabled: engines.includes('claude-sonnet') },
-      { name: 'gemini', fn: callGemini, enabled: engines.includes('gemini') },
-    ];
+    // ========================================
+    // TIER 4: LLM CASCADE
+    // ========================================
+    if (!skipLLMs) {
+      const intermediateResult = arbitrationPipeline.getResult();
+      const currentFieldCount = Object.keys(intermediateResult.fields).length;
 
-    let llmResponses: any[] = [];
-    let currentCompletion = 0;
+      // Only call LLMs if we have gaps
+      if (currentFieldCount < 110) {
+        console.log(`\nStep 2: LLM Cascade (${currentFieldCount}/110 fields filled)...`);
 
-    for (const llm of llmCascade) {
-      if (!llm.enabled) continue;
+        const llmSourceNames: Record<string, string> = {
+          'perplexity': 'Perplexity',
+          'grok': 'Grok',
+          'claude-opus': 'Claude Opus',
+          'gpt': 'GPT',
+          'claude-sonnet': 'Claude Sonnet',
+          'gemini': 'Gemini'
+        };
 
-      console.log(`\n=== Calling ${llm.name.toUpperCase()} ===`);
+        const llmCascade = [
+          { id: 'perplexity', fn: callPerplexity, enabled: engines.includes('perplexity') },
+          { id: 'grok', fn: callGrok, enabled: engines.includes('grok') },
+          { id: 'claude-opus', fn: callClaudeOpus, enabled: engines.includes('claude-opus') },
+          { id: 'gpt', fn: callGPT, enabled: engines.includes('gpt') },
+          { id: 'claude-sonnet', fn: callClaudeSonnet, enabled: engines.includes('claude-sonnet') },
+          { id: 'gemini', fn: callGemini, enabled: engines.includes('gemini') },
+        ];
 
-      try {
-        const llmData = await llm.fn(searchQuery);
-        const llmFields = llmData.fields || llmData;
+        for (const llm of llmCascade) {
+          if (!llm.enabled) continue;
 
-        if (llmFields && Object.keys(llmFields).length > 0) {
-          sources_used.push(llm.name);
-          llmResponses.push({
-            llm: llm.name,
-            fields_found: Object.keys(llmFields).length,
-            success: true
-          });
+          console.log(`\n=== Calling ${llm.id.toUpperCase()} ===`);
 
-          // Add/merge fields with conflict detection
-          for (const [key, value] of Object.entries(llmFields)) {
-            const fieldValue = (value as any)?.value !== undefined ? (value as any).value : value;
-            const fieldSource = (value as any)?.source || llm.name;
+          try {
+            const llmData = await llm.fn(searchQuery);
+            const llmFields = llmData.fields || llmData;
 
-            // Skip null/empty responses - let other LLMs try
-            if (fieldValue === null || fieldValue === undefined || fieldValue === '' || fieldValue === 'Not available') {
-              continue;
-            }
+            if (llmFields && Object.keys(llmFields).length > 0) {
+              // Convert to FieldValue format for arbitration
+              const formattedFields: Record<string, FieldValue> = {};
+              for (const [key, value] of Object.entries(llmFields)) {
+                const fieldData = value as any;
+                const fieldValue = fieldData?.value !== undefined ? fieldData.value : value;
 
-            // Track source
-            if (!fieldSources[key]) fieldSources[key] = [];
-            fieldSources[key].push(llm.name);
-
-            // Check if field already has a value
-            if (allFields[key]) {
-              const existingValue = allFields[key].value !== undefined ? allFields[key].value : allFields[key];
-
-              // Only check for conflicts if both values are non-null
-              if (existingValue !== null && !valuesAreSemanticallySame(fieldValue, existingValue)) {
-                const existing = conflicts.find(c => c.field === key);
-                if (existing) {
-                  existing.values.push({ source: llm.name, value: fieldValue });
-                } else {
-                  conflicts.push({
-                    field: key,
-                    values: [
-                      { source: fieldSources[key][0] || 'unknown', value: existingValue },
-                      { source: llm.name, value: fieldValue }
-                    ]
-                  });
+                // Skip null/empty responses
+                if (fieldValue === null || fieldValue === undefined || fieldValue === '' || fieldValue === 'Not available') {
+                  continue;
                 }
-                console.log(`⚠️  CONFLICT on ${key}: ${existingValue} vs ${fieldValue}`);
+
+                formattedFields[key] = {
+                  value: fieldValue,
+                  source: llmSourceNames[llm.id],
+                  confidence: fieldData?.confidence || 'Medium',
+                  tier: 4 as const
+                };
               }
-              // If existing is null/empty, replace with new value
-              else if (existingValue === null || existingValue === undefined || existingValue === '') {
-                const existingSource = (value as any).source || llm.name;
-                allFields[key] = typeof value === 'object' && value !== null ? { ...value, source: llm.name } : { value: fieldValue, source: llm.name, confidence: 'Medium' };
-                console.log(`✅ Filled ${key}: ${fieldValue} (from ${llm.name})`);
+
+              const newFields = arbitrationPipeline.addFieldsFromSource(formattedFields, llmSourceNames[llm.id]);
+
+              llmResponses.push({
+                llm: llm.id,
+                fields_found: newFields,
+                success: true
+              });
+
+              console.log(`✅ ${llm.id}: ${Object.keys(llmFields).length} returned, ${newFields} new fields added`);
+
+              // Check if we've filled enough gaps
+              const updatedResult = arbitrationPipeline.getResult();
+              if (useCascade && Object.keys(updatedResult.fields).length >= 110) {
+                console.log(`🎯 100% completion reached! Stopping cascade at ${llm.id}`);
+                break;
               }
             } else {
-              // New field - add it
-              const existingSource = (value as any).source || llm.name;
-              allFields[key] = typeof value === 'object' && value !== null ? { ...value, source: llm.name } : { value: fieldValue, source: llm.name, confidence: 'Medium' };
-              console.log(`✅ Added ${key}: ${fieldValue} (from ${llm.name})`);
+              llmResponses.push({
+                llm: llm.id,
+                fields_found: 0,
+                success: false,
+                error: 'No fields returned'
+              });
             }
+          } catch (e) {
+            console.error(`❌ ${llm.id} failed:`, e);
+            llmResponses.push({
+              llm: llm.id,
+              fields_found: 0,
+              success: false,
+              error: String(e)
+            });
           }
-
-          // Count only fields with actual values
-          currentCompletion = Object.keys(allFields).length;
-          console.log(`✅ ${llm.name}: ${Object.keys(llmFields).length} fields returned | ${currentCompletion} stored with actual values`);
-
-          // Stop if we have 100% completion (110 fields with ACTUAL values)
-          if (useCascade && currentCompletion >= 110) {
-            console.log(`🎯 100% completion reached! Stopping cascade at ${llm.name}`);
-            break;
-          }
-        } else {
-          llmResponses.push({
-            llm: llm.name,
-            fields_found: 0,
-            success: false,
-            error: 'No fields returned'
-          });
         }
-      } catch (e) {
-        console.error(`❌ ${llm.name} failed:`, e);
-        llmResponses.push({
-          llm: llm.name,
-          fields_found: 0,
-          success: false,
-          error: String(e)
-        });
+      } else {
+        console.log('Skipping LLMs - sufficient data from reliable sources');
       }
     }
 
-    // Only count fields with actual non-null values
-    const total_fields = Object.entries(allFields).filter(([_, field]) => {
-      const value = (field as any)?.value !== undefined ? (field as any).value : field;
-      return value !== null && value !== undefined && value !== '' && value !== 'Not available';
-    }).length;
-    const completion_percentage = Math.round((total_fields / 110) * 100);
+    // ========================================
+    // GET FINAL ARBITRATION RESULT
+    // ========================================
+    const arbitrationResult = arbitrationPipeline.getResult();
+    const totalFields = Object.keys(arbitrationResult.fields).length;
+    const completionPercentage = Math.round((totalFields / 110) * 100);
 
-    // Add breakdown by source
+    // Build source breakdown from arbitration result
     const sourceBreakdown: Record<string, number> = {};
-    for (const [key, field] of Object.entries(allFields)) {
-      const source = (field as any).source || 'Unknown';
+    for (const [_, field] of Object.entries(arbitrationResult.fields)) {
+      const source = field.source || 'Unknown';
       sourceBreakdown[source] = (sourceBreakdown[source] || 0) + 1;
     }
 
-    // Convert API response to match frontend DataField interface AND nested structure
+    // Convert arbitration fields to frontend DataField format
     const convertedFields: Record<string, any> = {};
-    for (const [key, field] of Object.entries(allFields)) {
-      const fieldData = field as any;
-      const value = fieldData?.value !== undefined ? fieldData.value : fieldData;
-      const source = fieldData?.source || 'Unknown';
-      
+    for (const [key, field] of Object.entries(arbitrationResult.fields)) {
+      let parsedValue = field.value;
+
       // Parse dates if they look like date strings
-      let parsedValue = value;
-      if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
-        parsedValue = new Date(value).toISOString();
-      } else if (typeof value === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}/.test(value)) {
-        const [m, d, y] = value.split('/');
-        parsedValue = new Date(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`).toISOString();
+      if (typeof parsedValue === 'string' && /^\d{4}-\d{2}-\d{2}/.test(parsedValue)) {
+        try {
+          parsedValue = new Date(parsedValue).toISOString();
+        } catch {}
+      } else if (typeof parsedValue === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}/.test(parsedValue)) {
+        try {
+          const [m, d, y] = parsedValue.split('/');
+          parsedValue = new Date(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`).toISOString();
+        } catch {}
       }
-      
-      // Convert to DataField format that frontend expects
+
+      // Use validationStatus from the FieldValue (set by arbitration pipeline)
+      // or derive from singleSourceWarnings if not set
+      const hasConflict = arbitrationResult.conflicts.some(c => c.field === key);
+      const hasSingleSourceWarning = arbitrationResult.singleSourceWarnings.some(w => w.field === key);
+
+      // Prefer field's own validation status (set by arbitration pipeline)
+      // Fall back to recalculating from arrays for backwards compatibility
+      const validationStatus = field.validationStatus || 
+        (hasSingleSourceWarning ? 'warning' : 'passed');
+      const validationMessage = field.validationMessage || 
+        (hasSingleSourceWarning ? 'Single LLM source - verify independently' : undefined);
+
       convertedFields[key] = {
         value: parsedValue,
-        confidence: fieldData?.confidence || 'Medium',
-        notes: fieldData?.notes || '',
-        sources: typeof source === 'string' ? [source] : (source || []),
-        llmSources: fieldSources[key] || [],
-        hasConflict: conflicts.some(c => c.field === key),
-        conflictValues: conflicts.find(c => c.field === key)?.values || []
+        confidence: field.confidence || 'Medium',
+        notes: '',
+        sources: [field.source],
+        llmSources: field.llmSources,
+        hasConflict: hasConflict,
+        conflictValues: arbitrationResult.conflicts.find(c => c.field === key)?.values || [],
+        validationStatus,
+        validationMessage
       };
     }
 
     // Transform flat fields to nested structure for PropertyDetail & other pages
     const nestedFields = convertFlatToNestedStructure(convertedFields);
 
+    // Build sources list from unique sources in result
+    const sources = Array.from(new Set(
+      Object.values(arbitrationResult.fields).map(f => f.source)
+    ));
+
     return res.status(200).json({
       success: true,
       address: searchQuery,
-      fields: convertedFields,  // Keep flat version for compatibility
-      nestedFields: nestedFields,  // Add nested version for PropertyDetail
-      total_fields_found: total_fields,
-      completion_percentage,
-      sources: sources_used,
+      fields: convertedFields,
+      nestedFields: nestedFields,
+      total_fields_found: totalFields,
+      completion_percentage: completionPercentage,
+      sources: sources,
       source_breakdown: sourceBreakdown,
-      field_sources: fieldSources,
-      conflicts,
+      conflicts: arbitrationResult.conflicts,
+      validation_failures: arbitrationResult.validationFailures,
+      llm_quorum_fields: arbitrationResult.llmQuorumFields,
+      single_source_warnings: arbitrationResult.singleSourceWarnings,
       llm_responses: llmResponses,
-      strategy: 'cascade',
+      strategy: 'arbitration_pipeline',
       cascade_order: ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini']
     });
   } catch (error) {

@@ -453,6 +453,8 @@ export function createArbitrationPipeline(minLLMQuorum: number = 2): {
         if (auditTrail.length > 0) {
           auditTrail[auditTrail.length - 1].field = fieldKey;
         }
+        // Mark field as validation passed since it got through validation gate
+        result.validationStatus = 'passed';
         fields[fieldKey] = result;
         
         if (action === 'conflict' && result.conflictValues) {
@@ -502,6 +504,14 @@ export function createArbitrationPipeline(minLLMQuorum: number = 2): {
     getResult(): ArbitrationResult {
       const { fields: votedFields, quorumFields } = applyLLMQuorumVoting(fields, minLLMQuorum);
       const singleSourceWarnings = detectSingleSourceHallucinations(votedFields);
+      
+      // Apply single-source warning status to fields for UI display
+      for (const warning of singleSourceWarnings) {
+        if (votedFields[warning.field]) {
+          votedFields[warning.field].validationStatus = 'warning';
+          votedFields[warning.field].validationMessage = `Only one LLM (${warning.source}) provided this data - potential hallucination`;
+        }
+      }
       
       return {
         fields: votedFields,

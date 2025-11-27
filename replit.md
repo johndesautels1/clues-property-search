@@ -1,29 +1,63 @@
 # CLUES Property Dashboard - Replit Project
 
-## Overview
-110-Field Real Estate Intelligence Platform built with React, TypeScript, Vite, and PostgreSQL. This is a mobile-first property data collection and analysis dashboard with tiered data sources: MLS (future), Google APIs, Paid/Free APIs, and LLM cascade with validation.
+### Overview
+A mobile-first, 110-field real estate intelligence platform built with React, TypeScript, Vite, and PostgreSQL. Its purpose is to collect and analyze property data from tiered sources including Google APIs, paid/free APIs, and a multi-LLM cascade with robust validation. The project aims to provide comprehensive property insights with confidence scoring and source attribution for each data point, designed for both standalone use and integration with the CLUES Quantum Master App.
 
-## Project Type
-- **Framework**: Vite + React + TypeScript
-- **UI Library**: Tailwind CSS with custom glassmorphic design
+### User Preferences
+- I prefer simple language.
+- I like functional programming.
+- I want iterative development.
+- Ask before making major changes.
+- I prefer detailed explanations.
+- Do not make changes to the folder Z.
+- Do not make changes to the file Y.
+
+### System Architecture
+The project utilizes a Vite + React + TypeScript frontend with Tailwind CSS for styling, featuring a custom 5D glassmorphic design with neon accents, mobile-first responsiveness, a dark theme, and quantum-inspired animations via Framer Motion. Data is managed using Zustand for state and persisted in a PostgreSQL database via Prisma ORM, adhering to a comprehensive 110-field property schema. The system supports multi-LLM integration (Claude, GPT, Grok, Gemini) for data enrichment and validation. A tiered data source architecture is implemented, prioritizing Stellar MLS (future), then Google APIs, various paid/free APIs (e.g., WalkScore, SchoolDigger), and finally a multi-LLM cascade with confidence scoring, conflict detection, and validation gates. The backend API endpoints are designed as Vercel serverless functions, enabling property scraping and enrichment. The system includes a `clues-bridge.ts` module for integration with the CLUES Quantum Master App via iframe communication.
+
+### External Dependencies
 - **Database**: PostgreSQL (via Prisma ORM)
-- **Mobile**: Capacitor-ready for iOS/Android builds
-- **LLM Integration**: Multi-LLM support (Claude, GPT, Grok, Gemini)
+- **LLM APIs**: Anthropic (Claude), OpenAI (GPT), Grok/xAI, Google (Gemini)
+- **Mapping/Location APIs**: Google APIs (Geocode, Places)
+- **Property Data APIs**: WalkScore, SchoolDigger, FEMA, AirNow, HowLoud, Weather, FBI Crime
+- **Deployment Platforms**: Vercel (for serverless functions), Capacitor (for iOS/Android builds)
 
-## Quick Start
-The project is pre-configured to run in Replit. The dev server starts automatically on port 5000.
+### Recent Changes
 
-### Development
-- **Run Command**: `npm run dev` (configured in workflow)
-- **Port**: 5000 (frontend)
-- **Host**: 0.0.0.0 (allows Replit proxy)
+#### 2025-11-27 (Latest): Complete Validation Metadata Pipeline
+**End-to-end validation flow from API arbitration to PropertyDetail UI**:
+- **API Layer (api/property/arbitration.ts)**:
+  - `addField()` now sets `validationStatus = 'passed'` when fields pass validation gate
+  - `getResult()` applies `validationStatus = 'warning'` and `validationMessage` to single-source LLM fields
+- **API Response (api/property/search.ts)**:
+  - Updated field conversion to preserve `validationStatus` and `validationMessage` from FieldValue
+  - Also preserves `llmSources` for source tracking
+- **Frontend Types (src/types/property.ts)**:
+  - Extended `DataField<T>` interface with `validationStatus` and `validationMessage` properties
+- **Field Normalizer (src/lib/field-normalizer.ts)**:
+  - Updated `FlatFieldData` interface to accept validation fields from API
+  - Updated `createDataField()` function to accept and return validation metadata
+  - Updated `normalizeToProperty()` to pass validation fields through pipeline
+- **UI Layer (src/pages/PropertyDetail.tsx)**:
+  - Updated `DataFieldInput` interface with validation properties
+  - Updated `renderDataField()` helper to map validation status to DataField component props
+  - DataField component receives `validationStatus`, `validationMessage`, `singleSourceWarning` props
+- **Validation Visual Indicators**:
+  - Fields with `validationStatus: 'failed'` display faint red highlight
+  - Fields with `validationStatus: 'warning'` (single-source LLM) display orange highlight
+  - Fields with `validationStatus: 'passed'` display normal (green confidence indicators)
+  - Priority hierarchy: validation failure > single-source > conflicts > missing > low confidence
 
-### Scripts
-- `npm run dev` - Start development server (Vite)
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
+#### 2025-11-27 (Earlier): Arbitration Service Integration
+- Created `api/property/arbitration.ts` with tier-based arbitration
+- Replaced `mergeFields` with `createArbitrationPipeline()` in search endpoints
+- All tier sources use `addFieldsFromSource()` for consistent field handling
+- LLM quorum voting (2+ LLMs agree = higher confidence)
+- Single-source hallucination detection
+- Validation gates (price 1K-100M, year 1700-future, coords, bathroom math, scores 0-100)
+- Full audit trail tracking with sources, confidence, and conflicts
 
-## Project Structure
+### Project Structure
 ```
 ├── src/
 │   ├── components/      # React components (UI, layout, property)
@@ -31,196 +65,9 @@ The project is pre-configured to run in Replit. The dev server starts automatica
 │   ├── lib/            # Utilities and CLUES bridge integration
 │   ├── store/          # Zustand state management
 │   ├── types/          # TypeScript type definitions (110-field schema)
-│   ├── api/            # API client utilities
 │   └── styles/         # Global CSS and Tailwind
 ├── api/                # Backend API endpoints (Vercel serverless)
 │   └── property/       # Property scraping and enrichment APIs
 ├── prisma/             # Database schema (110-field property model)
-├── public/             # Static assets
-└── index.html          # Entry HTML file
+└── public/             # Static assets
 ```
-
-## Key Features
-
-### 110-Field Property Schema
-Complete property data collection with confidence tracking for each field:
-- **Address & Listing** (Fields 1-7): MLS data, pricing, status
-- **Property Details** (Fields 8-30): Bedrooms, bathrooms, sqft, financials
-- **Structural** (Fields 31-50): Roof, HVAC, pool, renovations
-- **Location** (Fields 51-75): Schools, walkability, crime, distances
-- **Financial** (Fields 76-90): Taxes, rental estimates, market data
-- **Utilities & Environment** (Fields 91-110): Utilities, flood zones, air quality
-
-### Tiered Data Sources
-- **Tier 1**: Stellar MLS (awaiting eKey integration)
-- **Tier 2**: Google APIs (Geocode, Places)
-- **Tier 3**: Paid/Free APIs (WalkScore, SchoolDigger, FEMA, AirNow, HowLoud, Weather, FBI Crime)
-- **Tier 4**: LLM Cascade (Perplexity, Grok, Claude Opus, GPT, Claude Sonnet, Gemini)
-- Confidence scoring and source attribution for each data point
-- Conflict detection and validation gates
-
-### UI Design
-- 5D glassmorphic effects with neon accents
-- Mobile-first responsive design
-- Dark theme optimized for property viewing
-- Quantum-inspired animations with Framer Motion
-
-## Database Setup
-This project uses PostgreSQL with Prisma ORM. To set up the database:
-
-1. Create a PostgreSQL database in Replit (use the database tools)
-2. Set the `DATABASE_URL` environment variable
-3. Run Prisma migrations:
-   ```bash
-   npx prisma generate
-   npx prisma db push
-   ```
-
-## Environment Variables
-Required environment variables (see `.env.example`):
-
-### Database (Required)
-- `DATABASE_URL` - PostgreSQL connection string
-
-### LLM APIs (At least one required for scraping)
-- `ANTHROPIC_API_KEY` - Claude API key
-- `OPENAI_API_KEY` - GPT API key
-- `GROK_API_KEY` - Grok/xAI API key
-- `GEMINI_API_KEY` - Google Gemini API key
-
-### Optional APIs
-See README.md for complete list of supported APIs (Google Maps, WalkScore, FBI Crime, etc.)
-
-## Deployment
-Configured for Replit static deployment:
-- **Build**: `npm run build`
-- **Output Directory**: `dist/`
-- **Type**: Static (SPA)
-
-The app can also be deployed to:
-- Vercel (pre-configured with `vercel.json`) - Recommended for full API support
-- Any static hosting (Netlify, Cloudflare Pages, etc.)
-
-**Important**: The `/api` directory contains Vercel serverless functions that are NOT available in Replit's dev server by default. For full functionality:
-1. Deploy the API endpoints to Vercel separately, or
-2. Configure a Vite proxy to a running backend, or
-3. Use the app in frontend-only mode (some features will be unavailable)
-
-## CLUES Quantum Integration
-This dashboard can run standalone or be embedded in the CLUES Quantum Master App. The `clues-bridge.ts` module handles parent-child iframe communication for property data synchronization.
-
-## Recent Changes
-- **2025-11-27 (Latest)**: Arbitration Service Wired into Search Stream API
-  - **COMPLETED: Arbitration Integration in search-stream.ts**:
-    - Created `api/property/arbitration.ts` (API version of arbitration service)
-    - Replaced `mergeFields` function with `createArbitrationPipeline()`
-    - All tier sources (Google, WalkScore, FEMA, SchoolDigger, AirNow, HowLoud, Weather, FBI Crime, LLMs) now use `addFieldsFromSource()`
-    - API response now includes: `validation_failures`, `llm_quorum_fields`, `single_source_warnings`
-    - Tier precedence fully enforced: higher tier data cannot be overwritten by lower tier
-  - **Fixed Data Source Type Errors**:
-    - Updated `property-schema.ts` autoPopulateSources to use correct source names
-    - Fixed PropertySearchForm.tsx LLM source mapping (Claude Opus, Claude Sonnet, GPT, etc.)
-  - **Arbitration Features Active**:
-    - LLM quorum voting (2+ LLMs agree = higher confidence)
-    - Single-source hallucination detection (warns when only 1 LLM provides data)
-    - Validation gates (price 1K-100M, year 1700-future, coords, bathroom math, scores 0-100)
-    - Full audit trail tracking with sources, confidence, and conflicts
-
-- **2025-11-27 (Earlier)**: Tiered Arbitration Service & Dashboard Data Quality
-  - **NEW: Arbitration Service** (`src/lib/arbitration.ts`): Complete tier-based data arbitration
-    - Tier hierarchy: MLS (1) > Google (2) > APIs (3) > LLMs (4)
-    - Higher tier data ALWAYS wins over lower tier
-    - LLM quorum voting when multiple LLMs agree on a value
-    - Single-source hallucination detection
-    - Validation gates (price 1K-100M, year 1700-future, coords, bathroom math, scores 0-100)
-    - Full audit trail tracking with sources, confidence, and conflicts
-  - **Dashboard Real Data Quality**: Replaced hardcoded progress bars (98%, 92%, etc.) with computed metrics
-    - Added `computeDataQualityByRange()` utility in field-normalizer.ts
-    - Added `useFullProperties` hook to access full property data from store
-    - Shows "No properties yet" when empty; computes real percentages when data exists
-  - **UI Validation Highlighting**: PropertyDetail.tsx DataField component now supports:
-    - Faint red highlight for validation failures
-    - Orange highlight for single-source LLM warnings
-    - Priority: validation > single-source > conflicts > missing > low confidence
-  - **Stellar MLS Adapter Stub** (`api/property/stellar-mls.ts`): Ready for when eKey is obtained
-    - Full field mapping from MLS standard to 110-field schema
-    - Configuration check and stub implementation
-
-- **2025-11-27 (Earlier)**: Unified Data Sources Architecture & Scraper Removal
-  - **Created Unified Data Sources Manifest**: `src/lib/data-sources.ts` - single source of truth for all 16 data sources
-  - **Tiered Architecture**:
-    - Tier 1: Stellar MLS (awaiting eKey - future)
-    - Tier 2: Google APIs (Geocode, Places)
-    - Tier 3: Paid/Free APIs (WalkScore, SchoolDigger, FEMA, AirNow, HowLoud, Weather, FBI Crime)
-    - Tier 4: LLMs (Perplexity, Grok, Claude Opus, GPT, Claude Sonnet, Gemini)
-  - **Scrapers Deleted**: Removed Zillow/Redfin/Realtor scrapers entirely - they were blocked by anti-bot measures
-  - **Disabled Sources**: AirDNA and Broadband removed from active sources (never wired correctly)
-  - **UI Updates**: SearchProgressTracker.tsx and AddProperty.tsx now import from unified manifest
-  - **API Updates**: Cleaned up search.ts and search-stream.ts to remove scraper calls
-
-- **2025-11-27 (Earlier)**: CRITICAL FIX - API Key Mismatch Causing 100+ Fields to Fail
-  - **Root Cause Found**: FIELD_TO_PROPERTY_MAP had duplicate/conflicting apiKey entries that overwrote correct mappings
-  - **Conflicting Keys Removed**: Entries like `85_trash_provider`, `88_fiber_available`, `90_avg_electric_bill` were overwriting official API keys like `85_rental_estimate_monthly`, `88_cap_rate_est`, `90_financing_terms`
-  - **Spelling Fix**: Changed `96_internet_providers_top3` to match API's `96_internet_providers_top`
-  - **Fake HOA/Structural Fields Removed**: Removed `70_hoa_name`, `71_hoa_includes`, `30_water_heater_type`, `31_garage_type` which conflicted with official fields 70-71 (walkability/commute) and 30-31 (tax_year/assessed_value)
-  - **Result**: All 110 API fields now map correctly to Property interface
-
-- **2025-11-27 (Earlier)**: Unified Field Normalizer Architecture
-  - **Created `src/lib/field-normalizer.ts`**: Single source of truth for mapping ALL 110 API field keys to Property interface structure
-  - **Replaced 200+ line manual mapping**: AddProperty.tsx now uses unified normalizer instead of hardcoded field-by-field conversion
-  - **Validation & Type Coercion**: Built-in range validation (prices 1000-50M, years 1800-2030, lat -90 to 90, etc.)
-  - **Consistent Group Structure**: All field mappings use Property interface groups (address, details, structural, location, financial, utilities)
-  - **Automatic Address Parsing**: Extracts streetAddress, city, state, zipCode from composite `1_full_address` field
-  - **Coordinate Handling**: Properly extracts lat/lon from nested coordinate objects
-
-- **2025-11-27 (Earlier)**: Comprehensive API & schema consistency fixes
-  - **Removed Invalid Field References in API**: Fixed scrapers.ts and free-apis.ts which were setting non-existent `city`, `state`, `zip` fields - 110-field schema only has composite `1_full_address`
-  - **TypeScript Fixes**: Fixed LSP errors in free-apis.ts with proper CarrierData interface typing
-  - **Shared LLM Constants for API**: Created `api/property/llm-constants.ts` to mirror frontend constants - API endpoints now import from shared source
-  - **Safe Address Parsing**: Added null guards in AddProperty.tsx to prevent crashes when `1_full_address` is undefined
-  - **Fixed Misleading Comments**: Corrected cascade order comments in search.ts and search-stream.ts
-  
-- **2025-11-27 (Earlier)**: Codebase audit and critical bug fixes
-  - **Removed Invalid Field References**: Fixed `fields['city']`, `fields['state']`, `fields['zip']` which don't exist in 110-field schema - now parses from `1_full_address`
-  - **UI Cascade Text Corrected**: Changed from wrong "Opus → GPT → Grok" to correct "Perplexity → Grok → Claude Opus → GPT → Claude Sonnet → Gemini"
-  - **CSV Enrichment Fixed**: Now uses full 6-engine cascade instead of just 2 engines
-  - **Imported LLM Constants**: AddProperty.tsx now uses unified constants from `src/lib/llm-constants.ts`
-  
-- **2025-11-27 (Earlier)**: Fixed critical data consistency and hallucination issues
-  - **Field Mapping**: Fixed AddProperty API scrape misalignment (was using fields 6→7 instead of 7→7)
-  - **LLM Cascade Fix**: Fixed null blocking issue - LLMs can now cascade properly to fill empty fields
-  - **Nested Structure**: Added automatic flat→nested transformation so PropertyDetail pages display consistently
-  - **Unified LLM Order**: Created `src/lib/llm-constants.ts` with single source of truth
-    - Order: Perplexity → Grok → Claude Opus → GPT → Claude Sonnet → Gemini
-    - All pages (AddProperty, Dashboard, API) now use same reliable cascade
-  - **Anti-Hallucination Layers**:
-    1. Web-search LLMs first (Perplexity/Grok verify real data)
-    2. Proper cascade order (reliable models first, fallbacks last)
-    3. Range validation (prices, coordinates, years must be realistic)
-    4. Confidence scoring (High=verified, Medium=LLM, Low=potential hallucination)
-    5. Conflict detection (shows when LLMs disagree)
-    6. Source attribution (track every data point's origin)
-
-## Deploying to Vercel
-
-Your environment variables are already configured in Vercel. To deploy this app:
-
-1. **Deploy the API endpoints:**
-   ```bash
-   vercel --prod
-   ```
-   This deploys both the frontend and the `/api` serverless functions with your configured env vars.
-
-2. **Update frontend config:**
-   In production, Vite will serve from your Vercel domain. No additional configuration needed—the API calls will work automatically with all 110-field mapping and LLM validation.
-
-3. **For local development in Replit:**
-   - Frontend runs on port 5000 with `npm run dev`
-   - Full 110-field UI is functional for manual data entry
-   - API endpoints won't work locally (they need Vercel) but frontend-only features are fully available
-   - Deploy to Vercel to test full LLM-powered data enrichment
-
-## Notes
-- The project includes API endpoints in the `/api` directory designed for Vercel serverless functions
-- Capacitor is configured for mobile builds (iOS/Android) but not required for web deployment
-- The app includes extensive documentation files for field mapping, data collection workflows, and integration guides

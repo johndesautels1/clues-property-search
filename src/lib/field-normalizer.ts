@@ -15,6 +15,8 @@ export interface FlatFieldData {
   source?: string;
   confidence?: 'High' | 'Medium' | 'Low' | 'Unverified';
   llmSources?: string[];
+  validationStatus?: 'passed' | 'failed' | 'warning' | 'valid' | 'single_source_warning';
+  validationMessage?: string;
 }
 
 type GroupName = 'address' | 'details' | 'structural' | 'location' | 'financial' | 'utilities';
@@ -187,7 +189,9 @@ function createDataField<T>(
   source: string = 'Unknown',
   llmSources: string[] = [],
   hasConflict: boolean = false,
-  conflictValues: Array<{ source: string; value: any }> = []
+  conflictValues: Array<{ source: string; value: any }> = [],
+  validationStatus?: 'passed' | 'failed' | 'warning' | 'valid' | 'single_source_warning',
+  validationMessage?: string
 ): DataField<T> {
   return {
     value,
@@ -198,6 +202,8 @@ function createDataField<T>(
     hasConflict,
     conflictValues,
     lastUpdated: new Date().toISOString(),
+    validationStatus,
+    validationMessage,
   };
 }
 
@@ -485,7 +491,9 @@ export function normalizeToProperty(
       source,
       llmSources,
       hasConflict,
-      conflictValues
+      conflictValues,
+      fieldData.validationStatus,
+      fieldData.validationMessage
     );
 
     const group = property[mapping.group] as unknown as Record<string, DataField<any>>;

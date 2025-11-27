@@ -249,6 +249,8 @@ interface DataFieldInput<T> {
   llmSources?: string[];
   hasConflict?: boolean;
   conflictValues?: Array<{ source: string; value: any }>;
+  validationStatus?: 'passed' | 'failed' | 'warning' | 'valid' | 'single_source_warning';
+  validationMessage?: string;
 }
 
 // This will be set by the component
@@ -263,6 +265,11 @@ const renderDataField = (
   icon?: React.ReactNode,
   fieldKey?: string
 ) => {
+  // Map API validationStatus values to DataField prop format
+  const validationStatus = field.validationStatus === 'single_source_warning' ? undefined : 
+    (field.validationStatus === 'valid' ? 'passed' : field.validationStatus);
+  const singleSourceWarning = field.validationStatus === 'single_source_warning';
+
   return (
     <DataField
       label={label}
@@ -277,6 +284,9 @@ const renderDataField = (
       onRetry={globalRetryHandler}
       isRetrying={globalIsRetrying}
       isAdmin={globalIsAdmin}
+      validationStatus={validationStatus as 'passed' | 'failed' | 'warning' | undefined}
+      validationMessage={field.validationMessage}
+      singleSourceWarning={singleSourceWarning}
     />
   );
 };

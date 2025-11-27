@@ -18,6 +18,9 @@ export interface DataField<T> {
   llmSources?: string[]; // Which LLMs provided this field (e.g., ['grok', 'perplexity'])
   hasConflict?: boolean; // True if multiple LLMs disagreed on this value
   conflictValues?: Array<{ source: string; value: any }>; // Conflicting values from different LLMs
+  // NEW: Validation and arbitration metadata from API
+  validationStatus?: 'passed' | 'failed' | 'warning' | 'valid' | 'single_source_warning';
+  validationMessage?: string; // Human-readable description of validation issue
 }
 
 // Core Address Fields (1-10)
