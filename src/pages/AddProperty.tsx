@@ -357,7 +357,7 @@ export default function AddProperty() {
       const apiFullAddress = fields['1_full_address']?.value || fullAddress;
       const addressParts = apiFullAddress.split(',').map((s: string) => s.trim());
       const street = addressParts[0] || manualForm.address;
-      const city = fields['city']?.value || manualForm.city;
+      const city = addressParts[1] || manualForm.city;
       const stateZip = addressParts[2] || '';
       const stateMatch = stateZip.match(/([A-Z]{2})/);
       const zipMatch = stateZip.match(/(\d{5})/);
@@ -503,7 +503,7 @@ export default function AddProperty() {
       const fullAddress = fields['1_full_address']?.value || searchQuery;
       const addressParts = fullAddress.split(',').map((s: string) => s.trim());
       const street = addressParts[0] || '';
-      const city = fields['city']?.value || addressParts[1] || 'Unknown';
+      const city = addressParts[1] || 'Unknown';
       const stateZip = addressParts[2] || '';
       const stateMatch = stateZip.match(/([A-Z]{2})/);
       const zipMatch = stateZip.match(/(\d{5})/);
@@ -591,9 +591,9 @@ export default function AddProperty() {
         listingPrice: createFieldWithMetadata('7_listing_price', fields['7_listing_price']?.value),
         pricePerSqft: createFieldWithMetadata('8_price_per_sqft', fields['8_price_per_sqft']?.value),
         streetAddress: createFieldWithMetadata('1_full_address', fields['1_full_address']?.value?.split(',')[0]),
-        city: createFieldWithMetadata('city', fields['city']?.value),
-        state: createFieldWithMetadata('state', fields['state']?.value),
-        zipCode: createFieldWithMetadata('zip', fields['zip']?.value),
+        city: createFieldWithMetadata('1_full_address', fields['1_full_address']?.value?.split(',')[1]?.trim()),
+        state: createFieldWithMetadata('1_full_address', fields['1_full_address']?.value?.split(',')[2]?.trim()?.match(/([A-Z]{2})/)?.[1]),
+        zipCode: createFieldWithMetadata('1_full_address', fields['1_full_address']?.value?.split(',')[2]?.trim()?.match(/(\d{5})/)?.[1]),
         county: createFieldWithMetadata('28_county', fields['28_county']?.value),
         latitude: createFieldWithMetadata('coordinates', fields['coordinates']?.value?.lat),
         longitude: createFieldWithMetadata('coordinates', fields['coordinates']?.value?.lon),
@@ -1109,9 +1109,8 @@ export default function AddProperty() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 address: address,
-                engines: ['grok', 'perplexity'],
-                useGrok: true,
-                usePerplexity: true,
+                engines: ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'],
+                useCascade: true,
               }),
             });
 
@@ -1635,7 +1634,7 @@ export default function AddProperty() {
                 AI Engine <span className="text-quantum-cyan text-xs">(Reliability Order)</span>
               </label>
               <p className="text-xs text-gray-500 mb-3">
-                Cascade: Opus → GPT → Grok → Sonnet → Copilot → Gemini
+                Cascade: Perplexity → Grok → Claude Opus → GPT → Claude Sonnet → Gemini
               </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {LLM_ENGINES.map((engine) => (
@@ -1700,7 +1699,7 @@ export default function AddProperty() {
                 AI Engine <span className="text-quantum-cyan text-xs">(Reliability Order)</span>
               </label>
               <p className="text-xs text-gray-500 mb-3">
-                Cascade: Opus → GPT → Grok → Sonnet → Copilot → Gemini
+                Cascade: Perplexity → Grok → Claude Opus → GPT → Claude Sonnet → Gemini
               </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {LLM_ENGINES.map((engine) => (
@@ -1763,7 +1762,7 @@ Beautiful 3BR/2BA beach house at 290 41st Ave, St Pete Beach, FL 33706. Built in
                 AI Engine <span className="text-quantum-cyan text-xs">(Reliability Order)</span>
               </label>
               <p className="text-xs text-gray-500 mb-3">
-                Cascade: Opus → GPT → Grok → Sonnet → Copilot → Gemini
+                Cascade: Perplexity → Grok → Claude Opus → GPT → Claude Sonnet → Gemini
               </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {LLM_ENGINES.map((engine) => (
