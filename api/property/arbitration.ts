@@ -368,7 +368,9 @@ export function applyLLMQuorumVoting(
     let maxCount = 0;
     let winningEntry: { count: number; sources: string[]; value: any } | null = null;
     
-    for (const entry of valueCounts.values()) {
+    // Convert to array to avoid MapIterator compatibility issues
+    const entries = Array.from(valueCounts.values());
+    for (const entry of entries) {
       if (entry.count > maxCount) {
         maxCount = entry.count;
         winningEntry = entry;
