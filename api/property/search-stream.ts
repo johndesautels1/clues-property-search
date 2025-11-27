@@ -23,10 +23,18 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// Vercel serverless config - extend timeout for multi-API cascade
+// Vercel serverless config - optimized for Hobby plan (10s limit)
 export const config = {
-  maxDuration: 60, // 60 seconds max (Pro plan limit)
+  maxDuration: 10, // Hobby plan limit
 };
+
+// Timeout wrapper for API calls - prevents hanging
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))
+  ]);
+}
 import { LLM_CASCADE_ORDER } from './llm-constants';
 import {
   callGoogleGeocode,
@@ -643,30 +651,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // ========================================
-    // TIER 1: STELLAR MLS (Future - when eKey obtained)
-    // ========================================
-    // TODO: Add Stellar MLS integration here when eKey is available
-    // sendEvent(res, 'progress', { source: 'stellar-mls', status: 'skipped', message: 'Awaiting eKey...' });
-
-    // ========================================
-    // TIER 2: GOOGLE APIS
+    // OPTIMIZED FOR VERCEL HOBBY (10s limit)
+    // Parallel execution with per-call timeouts
     // ========================================
 
+    const API_TIMEOUT = 2000; // 2s per API call
+    const LLM_TIMEOUT = 3500; // 3.5s per LLM call
+    const startTime = Date.now();
+    const DEADLINE = 9000; // 9s hard deadline (leave 1s buffer)
+
+    // Helper to create timeout fallback with correct source
+    const createFallback = (source: string) => ({
+      fields: {},
+      success: false,
+      error: 'timeout',
+      source
+    });
+
+    // Check if we're running out of time
+    const hasTime = () => (Date.now() - startTime) < DEADLINE;
+
+    // ========================================
+    // TIER 2: GOOGLE GEOCODE (must run first for lat/lon)
+    // ========================================
     sendEvent(res, 'progress', { source: 'google-geocode', status: 'searching', message: 'Geocoding address...' });
     let lat: number | undefined;
     let lon: number | undefined;
-    let county = '';
-    let zip = '';
 
     try {
-      const geoResult = await callGoogleGeocode(searchAddress);
+      const geoResult = await withTimeout(
+        callGoogleGeocode(searchAddress),
+        API_TIMEOUT,
+        { ...createFallback('Google Geocode'), lat: undefined, lon: undefined, county: '', zip: '' }
+      );
       const newFields = arbitrationPipeline.addFieldsFromSource(geoResult.fields, 'Google Geocode');
-
       lat = geoResult.lat;
       lon = geoResult.lon;
-      county = geoResult.county || '';
-      zip = geoResult.zip || '';
-
       sendEvent(res, 'progress', {
         source: 'google-geocode',
         status: geoResult.success ? 'complete' : 'error',
@@ -677,211 +697,116 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sendEvent(res, 'progress', { source: 'google-geocode', status: 'error', fieldsFound: 0, error: String(e) });
     }
 
-    // Location-dependent APIs
-    if (lat && lon) {
-      // Google Places
-      sendEvent(res, 'progress', { source: 'google-places', status: 'searching', message: 'Finding nearby amenities...' });
-      try {
-        const placesResult = await callGooglePlaces(lat, lon);
-        const newFields = arbitrationPipeline.addFieldsFromSource(placesResult.fields, 'Google Places');
-        sendEvent(res, 'progress', {
-          source: 'google-places',
-          status: placesResult.success ? 'complete' : 'error',
-          fieldsFound: newFields,
-          error: placesResult.error
-        });
-      } catch (e) {
-        sendEvent(res, 'progress', { source: 'google-places', status: 'error', fieldsFound: 0, error: String(e) });
-      }
+    // ========================================
+    // TIER 2-3: PARALLEL API CALLS (if we have coordinates and time)
+    // ========================================
+    if (lat && lon && hasTime()) {
+      const tier23Sources = ['google-places', 'walkscore', 'fema', 'schooldigger', 'airnow', 'howloud', 'weather', 'crime'];
+      tier23Sources.forEach(src => {
+        sendEvent(res, 'progress', { source: src, status: 'searching', message: 'Fetching...' });
+      });
 
-      // ========================================
-      // TIER 3: RELIABLE FREE APIS
-      // ========================================
+      const apiCalls = [
+        { call: callGooglePlaces(lat, lon), source: 'google-places', name: 'Google Places' },
+        { call: callWalkScore(lat, lon, searchAddress), source: 'walkscore', name: 'WalkScore' },
+        { call: callFemaFlood(lat, lon), source: 'fema', name: 'FEMA' },
+        { call: callSchoolDigger(lat, lon), source: 'schooldigger', name: 'SchoolDigger' },
+        { call: callAirNow(lat, lon), source: 'airnow', name: 'AirNow' },
+        { call: callHowLoud(lat, lon), source: 'howloud', name: 'HowLoud' },
+        { call: callWeather(lat, lon), source: 'weather', name: 'Weather' },
+        { call: callCrimeGrade(lat, lon, searchAddress), source: 'crime', name: 'FBI Crime' },
+      ];
 
-      // WalkScore
-      sendEvent(res, 'progress', { source: 'walkscore', status: 'searching', message: 'Getting WalkScore...' });
-      try {
-        const walkResult = await callWalkScore(lat, lon, searchAddress);
-        const newFields = arbitrationPipeline.addFieldsFromSource(walkResult.fields, 'WalkScore');
-        sendEvent(res, 'progress', {
-          source: 'walkscore',
-          status: walkResult.success ? 'complete' : 'error',
-          fieldsFound: newFields,
-          error: walkResult.error
-        });
-      } catch (e) {
-        sendEvent(res, 'progress', { source: 'walkscore', status: 'error', fieldsFound: 0, error: String(e) });
-      }
+      const results = await Promise.allSettled(
+        apiCalls.map(({ call, name }) =>
+          withTimeout(call, API_TIMEOUT, createFallback(name))
+        )
+      );
 
-      // FEMA Flood
-      sendEvent(res, 'progress', { source: 'fema', status: 'searching', message: 'Checking flood zones...' });
-      try {
-        const femaResult = await callFemaFlood(lat, lon);
-        const newFields = arbitrationPipeline.addFieldsFromSource(femaResult.fields, 'FEMA');
-        sendEvent(res, 'progress', {
-          source: 'fema',
-          status: femaResult.success ? 'complete' : 'error',
-          fieldsFound: newFields,
-          error: femaResult.error
-        });
-      } catch (e) {
-        sendEvent(res, 'progress', { source: 'fema', status: 'error', fieldsFound: 0, error: String(e) });
-      }
+      results.forEach((result, idx) => {
+        const { source, name } = apiCalls[idx];
+        if (result.status === 'fulfilled') {
+          const data = result.value;
+          const newFields = arbitrationPipeline.addFieldsFromSource(data.fields || {}, name);
+          sendEvent(res, 'progress', {
+            source,
+            status: data.success ? 'complete' : 'error',
+            fieldsFound: newFields,
+            error: data.error
+          });
+        } else {
+          sendEvent(res, 'progress', { source, status: 'error', fieldsFound: 0, error: 'Failed' });
+        }
+      });
 
-      // SchoolDigger
-      sendEvent(res, 'progress', { source: 'schooldigger', status: 'searching', message: 'Getting school data...' });
-      try {
-        const schoolResult = await callSchoolDigger(lat, lon);
-        const newFields = arbitrationPipeline.addFieldsFromSource(schoolResult.fields, 'SchoolDigger');
-        sendEvent(res, 'progress', {
-          source: 'schooldigger',
-          status: schoolResult.success ? 'complete' : 'error',
-          fieldsFound: newFields,
-          error: schoolResult.error
-        });
-      } catch (e) {
-        sendEvent(res, 'progress', { source: 'schooldigger', status: 'error', fieldsFound: 0, error: String(e) });
-      }
-
-      // ========================================
-      // TIER 3 CONTINUED: OTHER PAID/FREE APIS
-      // ========================================
-
-      // AirNow
-      sendEvent(res, 'progress', { source: 'airnow', status: 'searching', message: 'Getting air quality...' });
-      try {
-        const airResult = await callAirNow(lat, lon);
-        const newFields = arbitrationPipeline.addFieldsFromSource(airResult.fields, 'AirNow');
-        sendEvent(res, 'progress', {
-          source: 'airnow',
-          status: airResult.success ? 'complete' : 'error',
-          fieldsFound: newFields,
-          error: airResult.error
-        });
-      } catch (e) {
-        sendEvent(res, 'progress', { source: 'airnow', status: 'error', fieldsFound: 0, error: String(e) });
-      }
-
-      // HowLoud
-      sendEvent(res, 'progress', { source: 'howloud', status: 'searching', message: 'Checking noise levels...' });
-      try {
-        const noiseResult = await callHowLoud(lat, lon);
-        const newFields = arbitrationPipeline.addFieldsFromSource(noiseResult.fields, 'HowLoud');
-        sendEvent(res, 'progress', {
-          source: 'howloud',
-          status: noiseResult.success ? 'complete' : 'error',
-          fieldsFound: newFields,
-          error: noiseResult.error
-        });
-      } catch (e) {
-        sendEvent(res, 'progress', { source: 'howloud', status: 'error', fieldsFound: 0, error: String(e) });
-      }
-
-      // Weather
-      sendEvent(res, 'progress', { source: 'weather', status: 'searching', message: 'Getting weather data...' });
-      try {
-        const weatherResult = await callWeather(lat, lon);
-        const newFields = arbitrationPipeline.addFieldsFromSource(weatherResult.fields, 'Weather');
-        sendEvent(res, 'progress', {
-          source: 'weather',
-          status: weatherResult.success ? 'complete' : 'error',
-          fieldsFound: newFields,
-          error: weatherResult.error
-        });
-      } catch (e) {
-        sendEvent(res, 'progress', { source: 'weather', status: 'error', fieldsFound: 0, error: String(e) });
-      }
-
-      // Crime - FBI data
-      sendEvent(res, 'progress', { source: 'crime', status: 'searching', message: 'Getting crime data...' });
-      try {
-        const crimeResult = await callCrimeGrade(lat, lon, searchAddress);
-        const newFields = arbitrationPipeline.addFieldsFromSource(crimeResult.fields, 'FBI Crime');
-        sendEvent(res, 'progress', {
-          source: 'crime',
-          status: crimeResult.success ? 'complete' : 'error',
-          fieldsFound: newFields,
-          error: crimeResult.error
-        });
-      } catch (e) {
-        sendEvent(res, 'progress', { source: 'crime', status: 'error', fieldsFound: 0, error: String(e) });
-      }
-
-      // HUD Fair Market Rent - DISABLED (geo-blocked outside US)
-      // TODO: Re-enable when deployed to US-based server (Vercel)
-      // sendEvent(res, 'progress', { source: 'hud-fmr', status: 'skipped', message: 'Disabled - geo-blocked' });
-
-    } else {
-      // Skip location-dependent APIs
+    } else if (!lat || !lon) {
       ['google-places', 'walkscore', 'fema', 'schooldigger', 'airnow', 'howloud', 'weather', 'crime'].forEach(src => {
-        sendEvent(res, 'progress', { source: src, status: 'skipped', fieldsFound: 0, error: 'No coordinates available' });
+        sendEvent(res, 'progress', { source: src, status: 'skipped', fieldsFound: 0, error: 'No coordinates' });
+      });
+    } else {
+      ['google-places', 'walkscore', 'fema', 'schooldigger', 'airnow', 'howloud', 'weather', 'crime'].forEach(src => {
+        sendEvent(res, 'progress', { source: src, status: 'skipped', fieldsFound: 0, error: 'Time limit' });
       });
     }
 
     // ========================================
-    // TIER 4: LLMs (Last Resort - Fill Gaps Only)
+    // TIER 4: LLMs - PARALLEL (2 fastest only for Hobby plan)
     // ========================================
-    if (!skipLLMs) {
+    if (!skipLLMs && hasTime()) {
       const intermediateResult = arbitrationPipeline.getResult();
       const currentFieldCount = Object.keys(intermediateResult.fields).length;
 
-      // Only call LLMs if we have gaps
-      if (currentFieldCount < 110) {
-        const llmSourceNames: Record<string, string> = {
-          'perplexity': 'Perplexity',
-          'grok': 'Grok',
-          'claude-opus': 'Claude Opus',
-          'gpt': 'GPT',
-          'claude-sonnet': 'Claude Sonnet',
-          'gemini': 'Gemini'
-        };
-        const llmCascade = [
-          { id: 'perplexity', fn: callPerplexity, enabled: engines.includes('perplexity') },
-          { id: 'grok', fn: callGrok, enabled: engines.includes('grok') },
-          { id: 'claude-opus', fn: callClaudeOpus, enabled: engines.includes('claude-opus') },
-          { id: 'gpt', fn: callGPT, enabled: engines.includes('gpt') },
-          { id: 'claude-sonnet', fn: callClaudeSonnet, enabled: engines.includes('claude-sonnet') },
-          { id: 'gemini', fn: callGemini, enabled: engines.includes('gemini') },
-        ];
+      if (currentFieldCount < 100) {
+        // Only use 2 fastest LLMs for Hobby plan (Perplexity + Gemini)
+        const fastLlms = [
+          { id: 'perplexity', fn: callPerplexity, name: 'Perplexity', enabled: engines.includes('perplexity') },
+          { id: 'gemini', fn: callGemini, name: 'Gemini', enabled: engines.includes('gemini') },
+        ].filter(l => l.enabled);
 
-        for (const llm of llmCascade) {
-          if (!llm.enabled) {
-            sendEvent(res, 'progress', { source: llm.id, status: 'skipped', fieldsFound: 0 });
-            continue;
-          }
+        // Skip the slower LLMs on Hobby
+        ['grok', 'claude-opus', 'gpt', 'claude-sonnet'].forEach(id => {
+          sendEvent(res, 'progress', { source: id, status: 'skipped', fieldsFound: 0, message: 'Skipped for speed' });
+        });
 
-          sendEvent(res, 'progress', { source: llm.id, status: 'searching', message: `Querying ${llm.id}...` });
+        if (fastLlms.length > 0) {
+          fastLlms.forEach(llm => {
+            sendEvent(res, 'progress', { source: llm.id, status: 'searching', message: `Querying ${llm.name}...` });
+          });
 
-          try {
-            const result = await llm.fn(searchAddress);
-            const newFields = arbitrationPipeline.addFieldsFromSource(result.fields, llmSourceNames[llm.id]);
+          const llmResults = await Promise.allSettled(
+            fastLlms.map(llm =>
+              withTimeout(llm.fn(searchAddress), LLM_TIMEOUT, { fields: {}, error: 'timeout' })
+            )
+          );
 
-            llmResponses.push({ llm: llm.id, fields_found: newFields, success: !result.error });
-            sendEvent(res, 'progress', {
-              source: llm.id,
-              status: result.error ? 'error' : 'complete',
-              fieldsFound: newFields,
-              error: result.error
-            });
-
-            // Check if we've filled enough gaps
-            const updatedResult = arbitrationPipeline.getResult();
-            if (Object.keys(updatedResult.fields).length >= 110) {
-              break;
+          llmResults.forEach((result, idx) => {
+            const llm = fastLlms[idx];
+            if (result.status === 'fulfilled') {
+              const data = result.value;
+              const newFields = arbitrationPipeline.addFieldsFromSource(data.fields || {}, llm.name);
+              llmResponses.push({ llm: llm.id, fields_found: newFields, success: !data.error });
+              sendEvent(res, 'progress', {
+                source: llm.id,
+                status: data.error ? 'error' : 'complete',
+                fieldsFound: newFields,
+                error: data.error
+              });
+            } else {
+              sendEvent(res, 'progress', { source: llm.id, status: 'error', fieldsFound: 0, error: 'Failed' });
+              llmResponses.push({ llm: llm.id, fields_found: 0, success: false });
             }
-          } catch (e) {
-            sendEvent(res, 'progress', { source: llm.id, status: 'error', fieldsFound: 0, error: String(e) });
-            llmResponses.push({ llm: llm.id, fields_found: 0, success: false, error: String(e) });
-          }
+          });
         }
       } else {
-        // Skip all LLMs - we have enough data
         ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'].forEach(id => {
-          sendEvent(res, 'progress', { source: id, status: 'skipped', fieldsFound: 0, message: 'Sufficient data from reliable sources' });
+          sendEvent(res, 'progress', { source: id, status: 'skipped', fieldsFound: 0, message: 'Sufficient data' });
         });
       }
+    } else if (!hasTime()) {
+      ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'].forEach(id => {
+        sendEvent(res, 'progress', { source: id, status: 'skipped', fieldsFound: 0, message: 'Time limit' });
+      });
     } else {
-      // Mark all LLMs as skipped
       ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'].forEach(id => {
         sendEvent(res, 'progress', { source: id, status: 'skipped', fieldsFound: 0 });
       });
