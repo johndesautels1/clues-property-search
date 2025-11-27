@@ -312,7 +312,7 @@ Return a flat JSON object with these field names. Only include fields with verif
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'grok-4-1-fast-non-reasoning',
+        model: 'grok-4-1-fast-reasoning',
         max_tokens: 8000,
         temperature: 0.1,
         // Enable Live Search for real-time web data
@@ -362,10 +362,10 @@ Return a flat JSON object with these field names. Only include fields with verif
           return { error: `JSON parse error: ${parseError}`, fields: {} };
         }
       } else {
-        console.log('[GROK] No JSON match found in response');
+        return { error: `No JSON. Preview: ${text.slice(0, 200)}`, fields: {} };
       }
     } else {
-      console.log('[GROK] No content in response');
+        return { error: `No content. Keys: ${Object.keys(data.choices?.[0]?.message || {}).join(",")}`, fields: {} };
     }
     return { error: 'Failed to parse response', fields: {} };
   } catch (error) {
