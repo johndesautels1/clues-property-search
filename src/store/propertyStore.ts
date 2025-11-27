@@ -256,6 +256,7 @@ export const usePropertyStore = create<PropertyState>()(
 
 // Selector hooks for optimized re-renders
 export const useProperties = () => usePropertyStore((state) => state.properties);
+export const useFullProperties = () => usePropertyStore((state) => state.fullProperties);
 export const useSelectedProperty = () => usePropertyStore((state) => state.selectedPropertyId);
 export const useFilters = () => usePropertyStore((state) => state.filters);
 export const useSort = () => usePropertyStore((state) => state.sort);

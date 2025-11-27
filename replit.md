@@ -110,7 +110,31 @@ The app can also be deployed to:
 This dashboard can run standalone or be embedded in the CLUES Quantum Master App. The `clues-bridge.ts` module handles parent-child iframe communication for property data synchronization.
 
 ## Recent Changes
-- **2025-11-27 (Latest)**: Unified Data Sources Architecture & Scraper Removal
+- **2025-11-27 (Latest)**: Tiered Arbitration Service & Dashboard Data Quality
+  - **NEW: Arbitration Service** (`src/lib/arbitration.ts`): Complete tier-based data arbitration
+    - Tier hierarchy: MLS (1) > Google (2) > APIs (3) > LLMs (4)
+    - Higher tier data ALWAYS wins over lower tier
+    - LLM quorum voting when multiple LLMs agree on a value
+    - Single-source hallucination detection
+    - Validation gates (price 1K-100M, year 1700-future, coords, bathroom math, scores 0-100)
+    - Full audit trail tracking with sources, confidence, and conflicts
+  - **Dashboard Real Data Quality**: Replaced hardcoded progress bars (98%, 92%, etc.) with computed metrics
+    - Added `computeDataQualityByRange()` utility in field-normalizer.ts
+    - Added `useFullProperties` hook to access full property data from store
+    - Shows "No properties yet" when empty; computes real percentages when data exists
+  - **UI Validation Highlighting**: PropertyDetail.tsx DataField component now supports:
+    - Faint red highlight for validation failures
+    - Orange highlight for single-source LLM warnings
+    - Priority: validation > single-source > conflicts > missing > low confidence
+  - **Stellar MLS Adapter Stub** (`api/property/stellar-mls.ts`): Ready for when eKey is obtained
+    - Full field mapping from MLS standard to 110-field schema
+    - Configuration check and stub implementation
+  - **NEXT STEPS** (foundational modules complete, integration needed):
+    1. Wire arbitration service into search.ts/search-stream.ts to replace current mergeFields
+    2. Ensure Property objects from API include validationStatus metadata
+    3. Connect UI props to arbitration results for real-time validation display
+
+- **2025-11-27 (Earlier)**: Unified Data Sources Architecture & Scraper Removal
   - **Created Unified Data Sources Manifest**: `src/lib/data-sources.ts` - single source of truth for all 16 data sources
   - **Tiered Architecture**:
     - Tier 1: Stellar MLS (awaiting eKey - future)

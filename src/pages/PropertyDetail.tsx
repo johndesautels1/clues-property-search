@@ -65,9 +65,14 @@ interface DataFieldProps {
   onRetry?: (fieldKey: string, llmName: string) => void;
   isRetrying?: boolean;
   isAdmin?: boolean; // Controls visibility of source info
+  // Validation status from arbitration service
+  validationStatus?: 'passed' | 'failed' | 'warning';
+  validationMessage?: string;
+  // Single-source hallucination warning
+  singleSourceWarning?: boolean;
 }
 
-const DataField = ({ label, value, icon, format = 'text', confidence, llmSources, hasConflict, conflictValues, fieldKey, onRetry, isRetrying, isAdmin = false }: DataFieldProps) => {
+const DataField = ({ label, value, icon, format = 'text', confidence, llmSources, hasConflict, conflictValues, fieldKey, onRetry, isRetrying, isAdmin = false, validationStatus, validationMessage, singleSourceWarning }: DataFieldProps) => {
   const [showRetry, setShowRetry] = useState(false);
 
   // Don't render if no value AND not explicitly showing missing data
@@ -83,7 +88,35 @@ const DataField = ({ label, value, icon, format = 'text', confidence, llmSources
 
   // Only show color coding and status badges to admins
   if (isAdmin) {
-    if (hasConflict && conflictValues && conflictValues.length > 0) {
+    // VALIDATION FAILURES get highest priority - faint red highlight
+    if (validationStatus === 'failed') {
+      bgColor = 'bg-red-500/15';
+      borderColor = 'border-red-500/40';
+      statusBadge = (
+        <div className="mt-2 p-2 bg-red-500/20 border border-red-500/30 rounded text-xs">
+          <div className="flex items-center gap-1 text-red-400 font-semibold">
+            <AlertCircle className="w-3 h-3" />
+            VALIDATION FAILED
+          </div>
+          {validationMessage && (
+            <div className="text-red-300 mt-1">{validationMessage}</div>
+          )}
+        </div>
+      );
+    } else if (singleSourceWarning) {
+      // Single-source hallucination warning - faint orange highlight
+      bgColor = 'bg-orange-500/10';
+      borderColor = 'border-orange-500/30';
+      statusBadge = (
+        <div className="mt-2 p-2 bg-orange-500/20 border border-orange-500/30 rounded text-xs">
+          <div className="flex items-center gap-1 text-orange-400 font-semibold">
+            <AlertCircle className="w-3 h-3" />
+            SINGLE SOURCE WARNING
+          </div>
+          <div className="text-orange-300 mt-1">This data came from only one LLM source - verify independently</div>
+        </div>
+      );
+    } else if (hasConflict && conflictValues && conflictValues.length > 0) {
       // 🟡 YELLOW: Conflicting data from multiple LLMs
       bgColor = 'bg-yellow-500/10';
       borderColor = 'border-yellow-500/30';

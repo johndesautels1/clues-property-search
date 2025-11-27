@@ -552,3 +552,107 @@ export function getFieldMappingByNumber(fieldNumber: number): FieldPathMapping |
 export function getAllApiKeys(): string[] {
   return FIELD_TO_PROPERTY_MAP.map(m => m.apiKey);
 }
+
+/**
+ * Data quality range definitions for Dashboard display
+ * Each range corresponds to a field group in the 110-field schema
+ */
+export const DATA_QUALITY_RANGES = [
+  { label: 'Core Fields (1-30)', min: 1, max: 30, colorClass: 'text-quantum-green' },
+  { label: 'Structural (31-50)', min: 31, max: 50, colorClass: 'text-quantum-cyan' },
+  { label: 'Location (51-75)', min: 51, max: 75, colorClass: 'text-quantum-blue' },
+  { label: 'Financial (76-90)', min: 76, max: 90, colorClass: 'text-quantum-purple' },
+  { label: 'Utilities (91-110)', min: 91, max: 110, colorClass: 'text-quantum-gold' },
+] as const;
+
+/**
+ * Get fields within a specific number range
+ */
+export function getFieldsInRange(minField: number, maxField: number): FieldPathMapping[] {
+  return FIELD_TO_PROPERTY_MAP.filter(
+    mapping => mapping.fieldNumber >= minField && mapping.fieldNumber <= maxField
+  );
+}
+
+/**
+ * Check if a DataField has a populated (non-null, non-empty) value
+ */
+function isFieldPopulated(field: DataField<any> | undefined): boolean {
+  if (!field) return false;
+  const val = field.value;
+  if (val === null || val === undefined) return false;
+  if (typeof val === 'string' && val.trim() === '') return false;
+  if (Array.isArray(val) && val.length === 0) return false;
+  return true;
+}
+
+/**
+ * Compute data quality percentage for a specific field range within a single property
+ */
+export function computeRangeQuality(
+  property: Property,
+  minField: number,
+  maxField: number
+): number {
+  const fieldsInRange = getFieldsInRange(minField, maxField);
+  if (fieldsInRange.length === 0) return 0;
+
+  let populatedCount = 0;
+
+  for (const mapping of fieldsInRange) {
+    const group = property[mapping.group as keyof Property];
+    if (group && typeof group === 'object') {
+      const field = (group as Record<string, any>)[mapping.propName];
+      if (isFieldPopulated(field)) {
+        populatedCount++;
+      }
+    }
+  }
+
+  return Math.round((populatedCount / fieldsInRange.length) * 100);
+}
+
+export interface DataQualityMetrics {
+  label: string;
+  percentage: number;
+  colorClass: string;
+  populatedFields: number;
+  totalFields: number;
+}
+
+/**
+ * Compute data quality metrics for all ranges across all properties
+ * Returns averaged percentages when multiple properties exist
+ */
+export function computeDataQualityByRange(properties: Property[]): DataQualityMetrics[] {
+  if (properties.length === 0) {
+    return DATA_QUALITY_RANGES.map(range => ({
+      label: range.label,
+      percentage: 0,
+      colorClass: range.colorClass,
+      populatedFields: 0,
+      totalFields: getFieldsInRange(range.min, range.max).length,
+    }));
+  }
+
+  return DATA_QUALITY_RANGES.map(range => {
+    const totalFields = getFieldsInRange(range.min, range.max).length;
+    let totalPopulated = 0;
+
+    for (const property of properties) {
+      const rangeQuality = computeRangeQuality(property, range.min, range.max);
+      totalPopulated += Math.round((rangeQuality / 100) * totalFields);
+    }
+
+    const avgPopulated = Math.round(totalPopulated / properties.length);
+    const percentage = totalFields > 0 ? Math.round((avgPopulated / totalFields) * 100) : 0;
+
+    return {
+      label: range.label,
+      percentage,
+      colorClass: range.colorClass,
+      populatedFields: avgPopulated,
+      totalFields,
+    };
+  });
+}

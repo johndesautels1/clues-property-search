@@ -1,6 +1,8 @@
 /**
  * CLUES Property Dashboard - Home Dashboard
  * Mobile-first overview with key metrics
+ * 
+ * Data Quality metrics are computed from REAL property data using field-normalizer
  */
 
 import { useMemo } from 'react';
@@ -16,7 +18,8 @@ import {
   Zap,
 } from 'lucide-react';
 import PropertyCard from '@/components/property/PropertyCard';
-import { useFilteredProperties, useProperties } from '@/store/propertyStore';
+import { useFilteredProperties, useProperties, useFullProperties } from '@/store/propertyStore';
+import { computeDataQualityByRange } from '@/lib/field-normalizer';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -35,7 +38,13 @@ const itemVariants = {
 
 export default function Dashboard() {
   const properties = useProperties();
+  const fullPropertiesMap = useFullProperties();
   const filteredProperties = useFilteredProperties();
+
+  // Convert Map to array for data quality calculation
+  const fullPropertiesArray = useMemo(() => {
+    return Array.from(fullPropertiesMap.values());
+  }, [fullPropertiesMap]);
 
   // Calculate real stats from store data
   const stats = useMemo(() => {
@@ -60,6 +69,11 @@ export default function Dashboard() {
       { label: 'Data Complete', value: `${avgDataComplete}%`, icon: BarChart3, color: 'blue' },
     ];
   }, [properties]);
+
+  // Compute REAL data quality metrics from full property data
+  const dataQualityMetrics = useMemo(() => {
+    return computeDataQualityByRange(fullPropertiesArray);
+  }, [fullPropertiesArray]);
 
   // Get recent properties (up to 3)
   const recentProperties = filteredProperties.slice(0, 3);
@@ -157,64 +171,37 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
-      {/* Data Quality Overview */}
+      {/* Data Quality Overview - REAL metrics from property data */}
       <motion.div variants={itemVariants} className="mt-8">
         <div className="glass-5d p-6 rounded-2xl">
           <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
             <Zap className="w-5 h-5 text-quantum-cyan" />
             Data Quality Overview
+            {fullPropertiesArray.length === 0 && (
+              <span className="text-xs text-gray-500 ml-2">(No properties yet)</span>
+            )}
           </h3>
 
           <div className="space-y-4">
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-400">Core Fields (1-30)</span>
-                <span className="text-quantum-green">98%</span>
+            {dataQualityMetrics.map((metric) => (
+              <div key={metric.label}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-400">{metric.label}</span>
+                  <span className={metric.colorClass}>{metric.percentage}%</span>
+                </div>
+                <div className="progress-quantum">
+                  <div 
+                    className="progress-quantum-fill" 
+                    style={{ width: `${metric.percentage}%` }} 
+                  />
+                </div>
+                {fullPropertiesArray.length > 0 && (
+                  <div className="text-xs text-gray-500 mt-0.5">
+                    {metric.populatedFields}/{metric.totalFields} fields
+                  </div>
+                )}
               </div>
-              <div className="progress-quantum">
-                <div className="progress-quantum-fill" style={{ width: '98%' }} />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-400">Structural (31-50)</span>
-                <span className="text-quantum-cyan">92%</span>
-              </div>
-              <div className="progress-quantum">
-                <div className="progress-quantum-fill" style={{ width: '92%' }} />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-400">Location (51-75)</span>
-                <span className="text-quantum-blue">96%</span>
-              </div>
-              <div className="progress-quantum">
-                <div className="progress-quantum-fill" style={{ width: '96%' }} />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-400">Financial (76-90)</span>
-                <span className="text-quantum-purple">88%</span>
-              </div>
-              <div className="progress-quantum">
-                <div className="progress-quantum-fill" style={{ width: '88%' }} />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-400">Utilities (91-110)</span>
-                <span className="text-quantum-gold">94%</span>
-              </div>
-              <div className="progress-quantum">
-                <div className="progress-quantum-fill" style={{ width: '94%' }} />
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </motion.div>
