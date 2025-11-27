@@ -327,26 +327,45 @@ Return a flat JSON object with these field names. Only include fields with verif
     const data = await response.json();
 
     // Log Grok response for debugging
-    console.log('[GROK] Status:', response.status, '| Citations:', data.citations?.length || 0, '| Error:', data.error || 'none');
+    console.log('[GROK] Status:', response.status);
+    console.log('[GROK] Full response:', JSON.stringify(data).slice(0, 1000));
+
+    if (data.error) {
+      console.log('[GROK] API Error:', data.error);
+      return { error: `Grok API error: ${JSON.stringify(data.error)}`, fields: {} };
+    }
+
     if (data.choices?.[0]?.message?.content) {
       const text = data.choices[0].message.content;
+      console.log('[GROK] Content (first 500 chars):', text.slice(0, 500));
+
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        const fields: Record<string, any> = {};
-        for (const [key, value] of Object.entries(parsed)) {
-          const strVal = String(value).toLowerCase().trim();
-          const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'nan' || strVal === 'unknown' || strVal === 'not available' || strVal === 'not found' || strVal === 'none' || strVal === '-' || strVal === '--' || strVal === 'tbd' || strVal === 'n\a' || (typeof value === 'number' && isNaN(value));
-          if (!isBadValue) {
-            fields[key] = {
-              value: value,
-              source: 'Grok (Web Search)',
-              confidence: 'Medium'
-            };
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          const fields: Record<string, any> = {};
+          for (const [key, value] of Object.entries(parsed)) {
+            const strVal = String(value).toLowerCase().trim();
+            const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'nan' || strVal === 'unknown' || strVal === 'not available' || strVal === 'not found' || strVal === 'none' || strVal === '-' || strVal === '--' || strVal === 'tbd' || strVal === 'n\a' || (typeof value === 'number' && isNaN(value));
+            if (!isBadValue) {
+              fields[key] = {
+                value: value,
+                source: 'Grok (Web Search)',
+                confidence: 'Medium'
+              };
+            }
           }
+          console.log('[GROK] Fields found:', Object.keys(fields).length);
+          return { fields };
+        } catch (parseError) {
+          console.log('[GROK] JSON parse error:', parseError);
+          return { error: `JSON parse error: ${parseError}`, fields: {} };
         }
-        return { fields };
+      } else {
+        console.log('[GROK] No JSON match found in response');
       }
+    } else {
+      console.log('[GROK] No content in response');
     }
     return { error: 'Failed to parse response', fields: {} };
   } catch (error) {
