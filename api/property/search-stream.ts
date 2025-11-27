@@ -356,6 +356,9 @@ Return a flat JSON object with these field names. Only include fields with verif
             }
           }
           console.log('[GROK] Fields found:', Object.keys(fields).length);
+          if (Object.keys(fields).length === 0 && Object.keys(parsed).length > 0) {
+            return { error: `All ${Object.keys(parsed).length} fields filtered. Sample: ${JSON.stringify(Object.entries(parsed).slice(0,3))}`, fields: {} };
+          }
           return { fields };
         } catch (parseError) {
           console.log('[GROK] JSON parse error:', parseError);
