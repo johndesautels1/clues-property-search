@@ -22,7 +22,6 @@ The project is pre-configured to run in Replit. The dev server starts automatica
 - `npm run dev` - Start development server (Vite)
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
 
 ## Project Structure
 ```
@@ -91,14 +90,19 @@ Required environment variables (see `.env.example`):
 See README.md for complete list of supported APIs (Google Maps, WalkScore, FBI Crime, etc.)
 
 ## Deployment
-Configured for Replit autoscale deployment:
+Configured for Replit static deployment:
 - **Build**: `npm run build`
-- **Run**: `npm run dev`
-- **Output**: `dist/` directory
+- **Output Directory**: `dist/`
+- **Type**: Static (SPA)
 
 The app can also be deployed to:
-- Vercel (pre-configured with `vercel.json`)
+- Vercel (pre-configured with `vercel.json`) - Recommended for full API support
 - Any static hosting (Netlify, Cloudflare Pages, etc.)
+
+**Important**: The `/api` directory contains Vercel serverless functions that are NOT available in Replit's dev server by default. For full functionality:
+1. Deploy the API endpoints to Vercel separately, or
+2. Configure a Vite proxy to a running backend, or
+3. Use the app in frontend-only mode (some features will be unavailable)
 
 ## CLUES Quantum Integration
 This dashboard can run standalone or be embedded in the CLUES Quantum Master App. The `clues-bridge.ts` module handles parent-child iframe communication for property data synchronization.
@@ -107,8 +111,9 @@ This dashboard can run standalone or be embedded in the CLUES Quantum Master App
 - **2025-11-27**: Imported from GitHub and configured for Replit
   - Updated Vite config to use port 5000 with 0.0.0.0 host
   - Configured workflow for automatic dev server startup
-  - Set up deployment configuration for autoscale
+  - Configured deployment for static hosting (builds to dist/)
   - All dependencies installed and verified working
+  - Updated documentation to clarify API endpoint requirements
 
 ## Notes
 - The project includes API endpoints in the `/api` directory designed for Vercel serverless functions
