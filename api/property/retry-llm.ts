@@ -127,11 +127,29 @@ async function callClaudeOpus(address: string): Promise<{ fields: Record<string,
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return { error: 'API key not set', fields: {} };
 
-  const prompt = `You are a real estate data assistant. Return a JSON object with property data estimates for: ${address}
+  const prompt = `You are a real estate data assistant. Based on your knowledge, provide property data estimates for this address: ${address}
 
-Include fields like: property_type, city, state, county, neighborhood, zip_code, median_home_price_neighborhood, school_district, flood_risk_level, hurricane_risk, rental_estimate_monthly, insurance_estimate_annual, property_tax_rate_percent
+Return a JSON object with any of these fields you can reasonably estimate based on the location, city, neighborhood patterns, and typical property characteristics for the area:
 
-Only include fields you have reasonable confidence about. Return ONLY the JSON object, no explanation.`;
+{
+  "property_type": "Single Family | Condo | Townhouse | Multi-Family",
+  "city": "city name",
+  "state": "FL",
+  "county": "county name",
+  "neighborhood": "neighborhood name if known",
+  "zip_code": "ZIP code",
+  "median_home_price_neighborhood": estimated median home price for the area,
+  "avg_days_on_market": typical days on market for the area,
+  "school_district": "school district name",
+  "flood_risk_level": "Low | Moderate | High",
+  "hurricane_risk": "Low | Moderate | High",
+  "walkability_description": "description of walkability",
+  "rental_estimate_monthly": estimated monthly rent for similar properties,
+  "insurance_estimate_annual": estimated annual insurance,
+  "property_tax_rate_percent": typical tax rate for the area
+}
+
+Only include fields you have reasonable confidence about based on the location. Return ONLY the JSON object, no explanation.`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -155,9 +173,16 @@ Only include fields you have reasonable confidence about. Return ONLY the JSON o
       if (jsonStr) {
         const parsed = JSON.parse(jsonStr);
         const fields: Record<string, any> = {};
-        for (const [key, value] of Object.entries(parsed)) {
-          if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
-            fields[key] = { value, source: 'Claude Opus', confidence: 'Low' };
+        // Handle both parsed.fields (wrapped) and parsed directly
+        for (const [key, value] of Object.entries(parsed.fields || parsed)) {
+          const strVal = String(value).toLowerCase().trim();
+          const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'unknown' || strVal === 'not available' || strVal === 'none';
+          if (!isBadValue) {
+            fields[key] = {
+              value: (value as any)?.value !== undefined ? (value as any).value : value,
+              source: 'Claude Opus',
+              confidence: 'Low'
+            };
           }
         }
         return { fields };
@@ -218,11 +243,29 @@ async function callClaudeSonnet(address: string): Promise<{ fields: Record<strin
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return { error: 'API key not set', fields: {} };
 
-  const prompt = `You are a real estate data assistant. Return a JSON object with property data estimates for: ${address}
+  const prompt = `You are a real estate data assistant. Based on your knowledge, provide property data estimates for this address: ${address}
 
-Include fields like: property_type, city, state, county, neighborhood, zip_code, median_home_price_neighborhood, school_district, flood_risk_level, hurricane_risk, rental_estimate_monthly, insurance_estimate_annual, property_tax_rate_percent
+Return a JSON object with any of these fields you can reasonably estimate based on the location, city, neighborhood patterns, and typical property characteristics for the area:
 
-Only include fields you have reasonable confidence about. Return ONLY the JSON object, no explanation.`;
+{
+  "property_type": "Single Family | Condo | Townhouse | Multi-Family",
+  "city": "city name",
+  "state": "FL",
+  "county": "county name",
+  "neighborhood": "neighborhood name if known",
+  "zip_code": "ZIP code",
+  "median_home_price_neighborhood": estimated median home price for the area,
+  "avg_days_on_market": typical days on market for the area,
+  "school_district": "school district name",
+  "flood_risk_level": "Low | Moderate | High",
+  "hurricane_risk": "Low | Moderate | High",
+  "walkability_description": "description of walkability",
+  "rental_estimate_monthly": estimated monthly rent for similar properties,
+  "insurance_estimate_annual": estimated annual insurance,
+  "property_tax_rate_percent": typical tax rate for the area
+}
+
+Only include fields you have reasonable confidence about based on the location. Return ONLY the JSON object, no explanation.`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -246,9 +289,16 @@ Only include fields you have reasonable confidence about. Return ONLY the JSON o
       if (jsonStr) {
         const parsed = JSON.parse(jsonStr);
         const fields: Record<string, any> = {};
-        for (const [key, value] of Object.entries(parsed)) {
-          if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
-            fields[key] = { value, source: 'Claude Sonnet', confidence: 'Low' };
+        // Handle both parsed.fields (wrapped) and parsed directly
+        for (const [key, value] of Object.entries(parsed.fields || parsed)) {
+          const strVal = String(value).toLowerCase().trim();
+          const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'unknown' || strVal === 'not available' || strVal === 'none';
+          if (!isBadValue) {
+            fields[key] = {
+              value: (value as any)?.value !== undefined ? (value as any).value : value,
+              source: 'Claude Sonnet',
+              confidence: 'Low'
+            };
           }
         }
         return { fields };
