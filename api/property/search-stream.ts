@@ -452,6 +452,30 @@ async function callClaudeSonnet(address: string): Promise<{ fields: Record<strin
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return { error: 'API key not set', fields: {} };
 
+  const prompt = `You are a real estate data assistant. Based on your knowledge, provide property data estimates for this address: ${address}
+
+Return a JSON object with any of these fields you can reasonably estimate based on the location, city, neighborhood patterns, and typical property characteristics for the area:
+
+{
+  "property_type": "Single Family | Condo | Townhouse | Multi-Family",
+  "city": "city name",
+  "state": "FL",
+  "county": "county name",
+  "neighborhood": "neighborhood name if known",
+  "zip_code": "ZIP code",
+  "median_home_price_neighborhood": estimated median home price for the area,
+  "avg_days_on_market": typical days on market for the area,
+  "school_district": "school district name",
+  "flood_risk_level": "Low | Moderate | High",
+  "hurricane_risk": "Low | Moderate | High",
+  "walkability_description": "description of walkability",
+  "rental_estimate_monthly": estimated monthly rent for similar properties,
+  "insurance_estimate_annual": estimated annual insurance,
+  "property_tax_rate_percent": typical tax rate for the area
+}
+
+Only include fields you have reasonable confidence about based on the location. Return ONLY the JSON object, no explanation.`;
+
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -462,14 +486,17 @@ async function callClaudeSonnet(address: string): Promise<{ fields: Record<strin
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 8000,
-        messages: [{ role: 'user', content: `Extract VERIFIED property data for: ${address}. Return ONLY a JSON object. STRICT RULES: 1) Only include fields with REAL, VERIFIED values. 2) If you cannot find a data point, DO NOT include that field - no nulls, no "N/A", no "NaN", no estimates. 3) An empty {} is better than fake data.` }],
+        max_tokens: 4000,
+        messages: [{ role: 'user', content: prompt }],
       }),
     });
 
     const data = await response.json();
+    console.log('[CLAUDE SONNET] Status:', response.status, '| Response:', JSON.stringify(data).slice(0, 500));
+
     if (data.content?.[0]?.text) {
       const text = data.content[0].text;
+      console.log('[CLAUDE SONNET] Text:', text.slice(0, 500));
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
@@ -485,11 +512,13 @@ async function callClaudeSonnet(address: string): Promise<{ fields: Record<strin
             };
           }
         }
+        console.log('[CLAUDE SONNET] Fields found:', Object.keys(fields).length);
         return { fields };
       }
     }
     return { error: 'Failed to parse response', fields: {} };
   } catch (error) {
+    console.log('[CLAUDE SONNET] Error:', String(error));
     return { error: String(error), fields: {} };
   }
 }
