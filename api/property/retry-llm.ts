@@ -13,6 +13,18 @@ export const config = {
   maxDuration: 30, // 30s should be enough for single LLM call
 };
 
+// Helper to extract JSON from markdown code blocks or raw text
+function extractJSON(text: string): string | null {
+  // First try to extract from markdown code blocks
+  const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch) {
+    return codeBlockMatch[1].trim();
+  }
+  // Fall back to finding raw JSON object
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  return jsonMatch ? jsonMatch[0] : null;
+}
+
 // LLM Call Functions (copied from search-stream.ts for isolation)
 async function callPerplexity(address: string): Promise<{ fields: Record<string, any>; error?: string }> {
   const apiKey = process.env.PERPLEXITY_API_KEY;
@@ -139,9 +151,9 @@ Only include fields you have reasonable confidence about. Return ONLY the JSON o
     const data = await response.json();
     if (data.content?.[0]?.text) {
       const text = data.content[0].text;
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
+      const jsonStr = extractJSON(text);
+      if (jsonStr) {
+        const parsed = JSON.parse(jsonStr);
         const fields: Record<string, any> = {};
         for (const [key, value] of Object.entries(parsed)) {
           if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
@@ -230,9 +242,9 @@ Only include fields you have reasonable confidence about. Return ONLY the JSON o
     const data = await response.json();
     if (data.content?.[0]?.text) {
       const text = data.content[0].text;
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
+      const jsonStr = extractJSON(text);
+      if (jsonStr) {
+        const parsed = JSON.parse(jsonStr);
         const fields: Record<string, any> = {};
         for (const [key, value] of Object.entries(parsed)) {
           if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
