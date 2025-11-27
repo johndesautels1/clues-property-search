@@ -63,7 +63,7 @@ export default function AddProperty() {
   const [csvData, setCsvData] = useState<any[]>([]);
   const [propertyText, setPropertyText] = useState('');
   const [enrichWithAI, setEnrichWithAI] = useState(false);
-  const [cascadeStatus, setCascadeStatus] = useState<{llm: string; status: 'pending' | 'running' | 'complete' | 'error'; fieldsFound?: number}[]>([]);
+  const [cascadeStatus, setCascadeStatus] = useState<{llm: string; status: 'pending' | 'running' | 'complete' | 'error' | 'skipped'; fieldsFound?: number}[]>([]);
 
   // Manual entry form state
   const [manualForm, setManualForm] = useState({
