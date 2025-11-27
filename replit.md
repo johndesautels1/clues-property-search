@@ -108,17 +108,20 @@ The app can also be deployed to:
 This dashboard can run standalone or be embedded in the CLUES Quantum Master App. The `clues-bridge.ts` module handles parent-child iframe communication for property data synchronization.
 
 ## Recent Changes
-- **2025-11-27**: Imported from GitHub and configured for Replit
-  - Updated Vite config to use port 5000 with 0.0.0.0 host and allow all hosts for Replit proxy
-  - Configured workflow for automatic dev server startup with HMR over secure WebSocket
-  - Configured deployment for static hosting (builds to dist/)
-  - All dependencies installed and verified working
-  - Fixed LLM integration with anti-hallucination validation layer
-  - Added data sanitization for all LLM responses to ensure type-safe data
-  - Fixed backend API response format to match frontend DataField interface
-  - Added proper date parsing and type coercion for all API responses
-  - Enabled conflict tracking across multiple LLM sources
-  - Fixed Vite host validation to work with Replit's proxy system
+- **2025-11-27**: Fixed critical data consistency and hallucination issues
+  - **Field Mapping**: Fixed AddProperty API scrape misalignment (was using fields 6→7 instead of 7→7)
+  - **LLM Cascade Fix**: Fixed null blocking issue - LLMs can now cascade properly to fill empty fields
+  - **Nested Structure**: Added automatic flat→nested transformation so PropertyDetail pages display consistently
+  - **Unified LLM Order**: Created `src/lib/llm-constants.ts` with single source of truth
+    - Order: Perplexity → Grok → Claude Opus → GPT → Claude Sonnet → Gemini
+    - All pages (AddProperty, Dashboard, API) now use same reliable cascade
+  - **Anti-Hallucination Layers**:
+    1. Web-search LLMs first (Perplexity/Grok verify real data)
+    2. Proper cascade order (reliable models first, fallbacks last)
+    3. Range validation (prices, coordinates, years must be realistic)
+    4. Confidence scoring (High=verified, Medium=LLM, Low=potential hallucination)
+    5. Conflict detection (shows when LLMs disagree)
+    6. Source attribution (track every data point's origin)
 
 ## Deploying to Vercel
 
