@@ -385,9 +385,9 @@ export async function callHowLoud(lat: number, lon: number): Promise<ApiResult> 
     }
 
     const data = await response.json();
-    console.log('[HowLoud] Response:', JSON.stringify(data));
 
-    const result = data.result || data; // v2 nests in result, v1 is flat
+    // v2 API returns result as an array
+    const result = Array.isArray(data.result) ? data.result[0] : (data.result || data);
 
     if (result.score !== undefined) {
       setField(fields, '96_noise_score', result.score, 'HowLoud');
