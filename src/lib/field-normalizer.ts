@@ -43,6 +43,9 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
   { fieldNumber: 7, apiKey: '7_listing_price', group: 'address', propName: 'listingPrice', type: 'number', validation: (v) => v > 0 && v < 1000000000 },
   { fieldNumber: 8, apiKey: '8_price_per_sqft', group: 'address', propName: 'pricePerSqft', type: 'number', validation: (v) => v > 0 && v < 50000 },
   { fieldNumber: 28, apiKey: '28_county', group: 'address', propName: 'county', type: 'string' },
+  // Note: streetAddress, city, state, zipCode are DERIVED from 1_full_address via parsing (see end of normalizeToProperty)
+  // Note: latitude, longitude are DERIVED from 'coordinates' field via parsing (see end of normalizeToProperty)
+  // These are not separate API fields - they are parsed from composite fields
 
   // ========== GROUP: details (PropertyDetails in property.ts) ==========
   { fieldNumber: 6, apiKey: '6_parcel_id', group: 'details', propName: 'parcelId', type: 'string' },
@@ -65,19 +68,19 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
   { fieldNumber: 25, apiKey: '25_hoa_yn', group: 'details', propName: 'hoaYn', type: 'boolean' },
   { fieldNumber: 26, apiKey: '26_hoa_fee_annual', group: 'details', propName: 'hoaFeeAnnual', type: 'number', validation: (v) => v >= 0 && v < 500000 },
   { fieldNumber: 27, apiKey: '27_ownership_type', group: 'details', propName: 'ownershipType', type: 'string' },
-  // HOA Details (moved from old incorrect field numbers)
-  { fieldNumber: 70, apiKey: '70_hoa_name', group: 'details', propName: 'hoaName', type: 'string' },
-  { fieldNumber: 71, apiKey: '71_hoa_includes', group: 'details', propName: 'hoaIncludes', type: 'string' },
+  // HOA Details - using 1007/1008 to avoid duplicate with location fields 70/71
+  { fieldNumber: 1007, apiKey: '70_hoa_name', group: 'details', propName: 'hoaName', type: 'string' },
+  { fieldNumber: 1008, apiKey: '71_hoa_includes', group: 'details', propName: 'hoaIncludes', type: 'string' },
   { fieldNumber: 29, apiKey: '29_annual_taxes', group: 'details', propName: 'annualTaxes', type: 'number', validation: (v) => v >= 0 && v < 200000 },
   { fieldNumber: 30, apiKey: '30_tax_year', group: 'details', propName: 'taxYear', type: 'number', validation: (v) => v >= 1900 && v <= new Date().getFullYear() + 1 },
   { fieldNumber: 31, apiKey: '31_assessed_value', group: 'details', propName: 'assessedValue', type: 'number', validation: (v) => v > 0 && v < 1000000000 },
 
   // ========== GROUP: structural (StructuralDetails in property.ts) ==========
   // Additional structural fields from property.ts
-  { fieldNumber: 30.1, apiKey: '30_water_heater_type', group: 'structural', propName: 'waterHeaterType', type: 'string' },
-  { fieldNumber: 31.1, apiKey: '31_garage_type', group: 'structural', propName: 'garageType', type: 'string' },
-  { fieldNumber: 39.1, apiKey: '39_laundry_type', group: 'structural', propName: 'laundryType', type: 'string' },
-  { fieldNumber: 38.1, apiKey: '38_fireplace_count', group: 'structural', propName: 'fireplaceCount', type: 'number', validation: (v) => v >= 0 && v <= 20 },
+  { fieldNumber: 1010, apiKey: '30_water_heater_type', group: 'structural', propName: 'waterHeaterType', type: 'string' },
+  { fieldNumber: 1011, apiKey: '31_garage_type', group: 'structural', propName: 'garageType', type: 'string' },
+  { fieldNumber: 1012, apiKey: '39_laundry_type', group: 'structural', propName: 'laundryType', type: 'string' },
+  { fieldNumber: 1013, apiKey: '38_fireplace_count', group: 'structural', propName: 'fireplaceCount', type: 'number', validation: (v) => v >= 0 && v <= 20 },
   { fieldNumber: 36, apiKey: '36_roof_type', group: 'structural', propName: 'roofType', type: 'string' },
   { fieldNumber: 37, apiKey: '37_roof_age_est', group: 'structural', propName: 'roofAgeEst', type: 'string' },
   { fieldNumber: 38, apiKey: '38_exterior_material', group: 'structural', propName: 'exteriorMaterial', type: 'string' },
@@ -164,32 +167,32 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
   { fieldNumber: 109, apiKey: '109_age_restrictions', group: 'utilities', propName: 'ageRestrictions', type: 'string' },
   { fieldNumber: 110, apiKey: '110_notes_confidence_summary', group: 'utilities', propName: 'notesConfidenceSummary', type: 'string' },
   // Additional utilities fields from property.ts (unmapped in 110-field spec)
-  { fieldNumber: 85.1, apiKey: '85_trash_provider', group: 'utilities', propName: 'trashProvider', type: 'string' },
-  { fieldNumber: 88.1, apiKey: '88_fiber_available', group: 'utilities', propName: 'fiberAvailable', type: 'boolean' },
-  { fieldNumber: 90.1, apiKey: '90_avg_electric_bill', group: 'utilities', propName: 'avgElectricBill', type: 'string' },
-  { fieldNumber: 91.1, apiKey: '91_avg_water_bill', group: 'utilities', propName: 'avgWaterBill', type: 'string' },
-  { fieldNumber: 94.1, apiKey: '94_cell_coverage_quality', group: 'utilities', propName: 'cellCoverageQuality', type: 'string' },
-  { fieldNumber: 95.1, apiKey: '95_emergency_services_distance', group: 'utilities', propName: 'emergencyServicesDistance', type: 'string' },
-  { fieldNumber: 97.1, apiKey: '97_air_quality_grade', group: 'utilities', propName: 'airQualityGrade', type: 'string' },
-  { fieldNumber: 98.1, apiKey: '98_wildfire_risk', group: 'utilities', propName: 'wildfireRisk', type: 'string' },
-  { fieldNumber: 99.1, apiKey: '99_earthquake_risk', group: 'utilities', propName: 'earthquakeRisk', type: 'string' },
-  { fieldNumber: 100.1, apiKey: '100_hurricane_risk', group: 'utilities', propName: 'hurricaneRisk', type: 'string' },
-  { fieldNumber: 101.1, apiKey: '101_tornado_risk', group: 'utilities', propName: 'tornadoRisk', type: 'string' },
-  { fieldNumber: 102.1, apiKey: '102_radon_risk', group: 'utilities', propName: 'radonRisk', type: 'string' },
-  { fieldNumber: 103.1, apiKey: '103_superfund_nearby', group: 'utilities', propName: 'superfundNearby', type: 'boolean' },
-  { fieldNumber: 105.1, apiKey: '105_sea_level_rise_risk', group: 'utilities', propName: 'seaLevelRiseRisk', type: 'string' },
-  { fieldNumber: 108.1, apiKey: '108_view_type', group: 'utilities', propName: 'viewType', type: 'string' },
-  { fieldNumber: 109.1, apiKey: '109_lot_features', group: 'utilities', propName: 'lotFeatures', type: 'string' },
+  { fieldNumber: 1020, apiKey: '85_trash_provider', group: 'utilities', propName: 'trashProvider', type: 'string' },
+  { fieldNumber: 1021, apiKey: '88_fiber_available', group: 'utilities', propName: 'fiberAvailable', type: 'boolean' },
+  { fieldNumber: 1022, apiKey: '90_avg_electric_bill', group: 'utilities', propName: 'avgElectricBill', type: 'string' },
+  { fieldNumber: 1023, apiKey: '91_avg_water_bill', group: 'utilities', propName: 'avgWaterBill', type: 'string' },
+  { fieldNumber: 1024, apiKey: '94_cell_coverage_quality', group: 'utilities', propName: 'cellCoverageQuality', type: 'string' },
+  { fieldNumber: 1025, apiKey: '95_emergency_services_distance', group: 'utilities', propName: 'emergencyServicesDistance', type: 'string' },
+  { fieldNumber: 1026, apiKey: '97_air_quality_grade', group: 'utilities', propName: 'airQualityGrade', type: 'string' },
+  { fieldNumber: 1027, apiKey: '98_wildfire_risk', group: 'utilities', propName: 'wildfireRisk', type: 'string' },
+  { fieldNumber: 1028, apiKey: '99_earthquake_risk', group: 'utilities', propName: 'earthquakeRisk', type: 'string' },
+  { fieldNumber: 1029, apiKey: '100_hurricane_risk', group: 'utilities', propName: 'hurricaneRisk', type: 'string' },
+  { fieldNumber: 1030, apiKey: '101_tornado_risk', group: 'utilities', propName: 'tornadoRisk', type: 'string' },
+  { fieldNumber: 1031, apiKey: '102_radon_risk', group: 'utilities', propName: 'radonRisk', type: 'string' },
+  { fieldNumber: 1032, apiKey: '103_superfund_nearby', group: 'utilities', propName: 'superfundNearby', type: 'boolean' },
+  { fieldNumber: 1033, apiKey: '105_sea_level_rise_risk', group: 'utilities', propName: 'seaLevelRiseRisk', type: 'string' },
+  { fieldNumber: 1034, apiKey: '108_view_type', group: 'utilities', propName: 'viewType', type: 'string' },
+  { fieldNumber: 1035, apiKey: '109_lot_features', group: 'utilities', propName: 'lotFeatures', type: 'string' },
   // Financial fields from property.ts (unmapped in 110-field spec)
-  { fieldNumber: 76.1, apiKey: '76_annual_property_tax', group: 'financial', propName: 'annualPropertyTax', type: 'number' },
-  { fieldNumber: 74.1, apiKey: '74_redfin_estimate', group: 'financial', propName: 'redfinEstimate', type: 'number' },
-  { fieldNumber: 77.1, apiKey: '77_price_to_rent_ratio', group: 'financial', propName: 'priceToRentRatio', type: 'number' },
-  { fieldNumber: 79.1, apiKey: '79_price_vs_median_percent', group: 'financial', propName: 'priceVsMedianPercent', type: 'number' },
+  { fieldNumber: 1040, apiKey: '76_annual_property_tax', group: 'financial', propName: 'annualPropertyTax', type: 'number' },
+  { fieldNumber: 1041, apiKey: '74_redfin_estimate', group: 'financial', propName: 'redfinEstimate', type: 'number' },
+  { fieldNumber: 1042, apiKey: '77_price_to_rent_ratio', group: 'financial', propName: 'priceToRentRatio', type: 'number' },
+  { fieldNumber: 1043, apiKey: '79_price_vs_median_percent', group: 'financial', propName: 'priceVsMedianPercent', type: 'number' },
   // Location fields from property.ts
-  { fieldNumber: 65.1, apiKey: '65_school_district_name', group: 'location', propName: 'schoolDistrictName', type: 'string' },
-  { fieldNumber: 55.1, apiKey: '55_elevation_feet', group: 'location', propName: 'elevationFeet', type: 'number' },
+  { fieldNumber: 1050, apiKey: '65_school_district_name', group: 'location', propName: 'schoolDistrictName', type: 'string' },
+  { fieldNumber: 1051, apiKey: '55_elevation_feet', group: 'location', propName: 'elevationFeet', type: 'number' },
   // Address fields from property.ts
-  { fieldNumber: 41.1, apiKey: '41_neighborhood_name', group: 'address', propName: 'neighborhoodName', type: 'string' },
+  { fieldNumber: 1060, apiKey: '41_neighborhood_name', group: 'address', propName: 'neighborhoodName', type: 'string' },
 ];
 
 const apiKeyToMappingMap = new Map<string, FieldPathMapping>();
