@@ -20,9 +20,9 @@ import {
 
 describe('Schema Integrity Tests', () => {
   
-  test('Has exactly 110 fields', () => {
-    expect(TOTAL_FIELDS).toBe(110);
-    expect(ALL_FIELDS.length).toBe(110);
+  test('Has exactly 138 fields', () => {
+    expect(TOTAL_FIELDS).toBe(138);
+    expect(ALL_FIELDS.length).toBe(138);
   });
 
   test('No duplicate field numbers', () => {
@@ -49,7 +49,7 @@ describe('Schema Integrity Tests', () => {
     expect(uniqueKeys.size).toBe(keys.length);
   });
 
-  test('Field numbers are sequential from 1 to 110', () => {
+  test('Field numbers are sequential from 1 to 138', () => {
     const numbers = ALL_FIELDS.map(f => f.num).sort((a, b) => a - b);
     
     for (let i = 0; i < numbers.length; i++) {
@@ -98,7 +98,7 @@ describe('Schema Integrity Tests', () => {
   });
 
   test('FIELD_MAP contains all fields', () => {
-    expect(FIELD_MAP.size).toBe(110);
+    expect(FIELD_MAP.size).toBe(138);
     
     ALL_FIELDS.forEach(field => {
       const key = `${field.num}_${field.key}`;
@@ -108,7 +108,7 @@ describe('Schema Integrity Tests', () => {
   });
 
   test('FIELD_BY_NUMBER contains all fields', () => {
-    expect(FIELD_BY_NUMBER.size).toBe(110);
+    expect(FIELD_BY_NUMBER.size).toBe(138);
     
     ALL_FIELDS.forEach(field => {
       expect(FIELD_BY_NUMBER.has(field.num)).toBe(true);
@@ -117,7 +117,7 @@ describe('Schema Integrity Tests', () => {
   });
 
   test('FIELD_BY_KEY contains all fields', () => {
-    expect(FIELD_BY_KEY.size).toBe(110);
+    expect(FIELD_BY_KEY.size).toBe(138);
     
     ALL_FIELDS.forEach(field => {
       expect(FIELD_BY_KEY.has(field.key)).toBe(true);
@@ -126,36 +126,35 @@ describe('Schema Integrity Tests', () => {
   });
 
   test('Helper functions work correctly', () => {
-    const field7 = getFieldByNumber(7);
-    expect(field7).toBeDefined();
-    expect(field7?.key).toBe('listing_price');
+    const field10 = getFieldByNumber(10);
+    expect(field10).toBeDefined();
+    expect(field10?.key).toBe('listing_price');
     
     const fieldByKey = getFieldByKey('listing_price');
     expect(fieldByKey).toBeDefined();
-    expect(fieldByKey?.num).toBe(7);
+    expect(fieldByKey?.num).toBe(10);
     
-    const fieldByFullKey = getFieldByFullKey('7_listing_price');
+    const fieldByFullKey = getFieldByFullKey('10_listing_price');
     expect(fieldByFullKey).toBeDefined();
-    expect(fieldByFullKey?.num).toBe(7);
+    expect(fieldByFullKey?.num).toBe(10);
   });
 
   test('All groups are represented', () => {
     const expectedGroups = [
       'Address & Identity',
-      'Pricing',
+      'Pricing & Value',
       'Property Basics',
-      'HOA & Ownership',
-      'Taxes & Assessments',
+      'HOA & Taxes',
       'Structure & Systems',
       'Interior Features',
       'Exterior Features',
       'Permits & Renovations',
-      'Schools',
+      'Assigned Schools',
       'Location Scores',
       'Distances & Amenities',
       'Safety & Crime',
-      'Market & Investment',
-      'Utilities',
+      'Market & Investment Data',
+      'Utilities & Connectivity',
       'Environment & Risk',
       'Additional Features'
     ];
@@ -173,13 +172,14 @@ describe('Schema Integrity Tests', () => {
   });
 
   test('Specific field mappings are correct (regression test)', () => {
-    expect(getFieldByNumber(7)?.key).toBe('listing_price');
-    expect(getFieldByNumber(12)?.key).toBe('bedrooms');
-    expect(getFieldByNumber(20)?.key).toBe('year_built');
-    expect(getFieldByNumber(30)?.key).toBe('tax_year');
-    expect(getFieldByNumber(70)?.key).toBe('walkability_description');
-    expect(getFieldByNumber(85)?.key).toBe('rental_estimate_monthly');
-    expect(getFieldByNumber(100)?.key).toBe('flood_zone');
-    expect(getFieldByNumber(110)?.key).toBe('notes_confidence_summary');
+    expect(getFieldByNumber(1)?.key).toBe('full_address');
+    expect(getFieldByNumber(10)?.key).toBe('listing_price');
+    expect(getFieldByNumber(17)?.key).toBe('bedrooms');
+    expect(getFieldByNumber(25)?.key).toBe('year_built');
+    expect(getFieldByNumber(35)?.key).toBe('annual_taxes');
+    expect(getFieldByNumber(74)?.key).toBe('walk_score');
+    expect(getFieldByNumber(98)?.key).toBe('rental_estimate_monthly');
+    expect(getFieldByNumber(119)?.key).toBe('flood_zone');
+    expect(getFieldByNumber(138)?.key).toBe('special_assessments');
   });
 });
