@@ -1,6 +1,7 @@
 /**
  * CLUES Property Dashboard - Comprehensive Property Detail Page
- * Displays all 110 fields organized by category with data quality indicators
+ * Displays all 138 fields organized by category with data quality indicators
+ * Uses schema from src/types/fields-schema.ts as single source of truth
  */
 
 import { useParams, Link, useNavigate } from 'react-router-dom';
@@ -379,128 +380,160 @@ export default function PropertyDetail() {
         if (newFieldData && newFieldData.value != null) {
           const updated = JSON.parse(JSON.stringify(fullProperty));
           const paths: Record<string, [string, string]> = {
-            // Address & Identity
+            // GROUP 1: Address & Identity (1-9)
             '1_full_address': ['address', 'fullAddress'],
             '2_mls_primary': ['address', 'mlsPrimary'],
             '3_mls_secondary': ['address', 'mlsSecondary'],
             '4_listing_status': ['address', 'listingStatus'],
             '5_listing_date': ['address', 'listingDate'],
-            '6_parcel_id': ['details', 'parcelId'],
-            // Pricing
-            '7_listing_price': ['address', 'listingPrice'],
-            '8_price_per_sqft': ['address', 'pricePerSqft'],
-            '9_market_value_estimate': ['details', 'marketValueEstimate'],
-            '10_last_sale_date': ['details', 'lastSaleDate'],
-            '11_last_sale_price': ['details', 'lastSalePrice'],
-            // Property Basics
-            '12_bedrooms': ['details', 'bedrooms'],
-            '13_full_bathrooms': ['details', 'fullBathrooms'],
-            '14_half_bathrooms': ['details', 'halfBathrooms'],
-            '15_total_bathrooms': ['details', 'totalBathrooms'],
-            '16_living_sqft': ['details', 'livingSqft'],
-            '17_total_sqft_under_roof': ['details', 'totalSqftUnderRoof'],
-            '18_lot_size_sqft': ['details', 'lotSizeSqft'],
-            '19_lot_size_acres': ['details', 'lotSizeAcres'],
-            '20_year_built': ['details', 'yearBuilt'],
-            '21_property_type': ['details', 'propertyType'],
-            '22_stories': ['details', 'stories'],
-            '23_garage_spaces': ['details', 'garageSpaces'],
-            '24_parking_total': ['details', 'parkingTotal'],
-            // HOA & Ownership
-            '25_hoa_yn': ['details', 'hoaYn'],
-            '26_hoa_fee_annual': ['details', 'hoaFeeAnnual'],
-            '27_ownership_type': ['details', 'ownershipType'],
-            '28_county': ['address', 'county'],
-            // Taxes
-            '29_annual_taxes': ['details', 'annualTaxes'],
-            '30_tax_year': ['details', 'taxYear'],
-            '31_assessed_value': ['details', 'assessedValue'],
-            '32_tax_exemptions': ['financial', 'taxExemptions'],
-            '33_property_tax_rate': ['financial', 'propertyTaxRate'],
-            // Structure
-            '36_roof_type': ['structural', 'roofType'],
-            '37_roof_age_est': ['structural', 'roofAgeEst'],
-            '38_exterior_material': ['structural', 'exteriorMaterial'],
-            '39_foundation': ['structural', 'foundation'],
-            '40_hvac_type': ['structural', 'hvacType'],
-            '41_hvac_age': ['structural', 'hvacAge'],
-            '42_flooring_type': ['structural', 'flooringType'],
-            '43_kitchen_features': ['structural', 'kitchenFeatures'],
-            '44_appliances_included': ['structural', 'appliancesIncluded'],
-            '45_fireplace_yn': ['structural', 'fireplaceYn'],
-            '46_interior_condition': ['structural', 'interiorCondition'],
-            '47_pool_yn': ['structural', 'poolYn'],
-            '48_pool_type': ['structural', 'poolType'],
-            '49_deck_patio': ['structural', 'deckPatio'],
-            '50_fence': ['structural', 'fence'],
-            '51_landscaping': ['structural', 'landscaping'],
-            '52_recent_renovations': ['structural', 'recentRenovations'],
-            '53_permit_history_roof': ['structural', 'permitHistoryRoof'],
-            '54_permit_history_hvac': ['structural', 'permitHistoryHvac'],
-            '55_permit_history_other': ['structural', 'permitHistoryPoolAdditions'],
-            // Schools
-            '56_assigned_elementary': ['location', 'assignedElementary'],
-            '57_elementary_rating': ['location', 'elementaryRating'],
-            '58_elementary_distance_miles': ['location', 'elementaryDistanceMiles'],
-            '59_assigned_middle': ['location', 'assignedMiddle'],
-            '60_middle_rating': ['location', 'middleRating'],
-            '61_middle_distance_miles': ['location', 'middleDistanceMiles'],
-            '62_assigned_high': ['location', 'assignedHigh'],
-            '63_high_rating': ['location', 'highRating'],
-            '64_high_distance_miles': ['location', 'highDistanceMiles'],
-            // Location Scores
-            '65_walk_score': ['location', 'walkScore'],
-            '66_transit_score': ['location', 'transitScore'],
-            '67_bike_score': ['location', 'bikeScore'],
-            '68_noise_level': ['location', 'noiseLevel'],
-            '69_traffic_level': ['location', 'trafficLevel'],
-            '70_walkability_description': ['location', 'walkabilityDescription'],
-            '71_commute_time_city_center': ['location', 'commuteTimeCityCenter'],
-            '72_public_transit_access': ['location', 'publicTransitAccess'],
-            // Distances
-            '73_distance_grocery_miles': ['location', 'distanceGroceryMiles'],
-            '74_distance_hospital_miles': ['location', 'distanceHospitalMiles'],
-            '75_distance_airport_miles': ['location', 'distanceAirportMiles'],
-            '76_distance_park_miles': ['location', 'distanceParkMiles'],
-            '77_distance_beach_miles': ['location', 'distanceBeachMiles'],
-            // Safety
-            '78_crime_index_violent': ['location', 'crimeIndexViolent'],
-            '79_crime_index_property': ['location', 'crimeIndexProperty'],
-            '80_neighborhood_safety_rating': ['location', 'neighborhoodSafetyRating'],
-            // Market & Investment
-            '81_median_home_price_neighborhood': ['financial', 'medianHomePriceNeighborhood'],
-            '82_price_per_sqft_recent_avg': ['financial', 'pricePerSqftRecentAvg'],
-            '83_days_on_market_avg': ['financial', 'daysOnMarketAvg'],
-            '84_inventory_surplus': ['financial', 'inventorySurplus'],
-            '85_rental_estimate_monthly': ['financial', 'rentalEstimateMonthly'],
-            '86_rental_yield_est': ['financial', 'rentalYieldEst'],
-            '87_vacancy_rate_neighborhood': ['financial', 'vacancyRateNeighborhood'],
-            '88_cap_rate_est': ['financial', 'capRateEst'],
-            '89_insurance_est_annual': ['financial', 'insuranceEstAnnual'],
-            '90_financing_terms': ['financial', 'financingTerms'],
-            '91_comparable_sales': ['financial', 'comparableSalesLast3'],
-            // Utilities
-            '92_electric_provider': ['utilities', 'electricProvider'],
-            '93_water_provider': ['utilities', 'waterProvider'],
-            '94_sewer_provider': ['utilities', 'sewerProvider'],
-            '95_natural_gas': ['utilities', 'naturalGas'],
-            '96_internet_providers_top3': ['utilities', 'internetProvidersTop3'],
-            '97_max_internet_speed': ['utilities', 'maxInternetSpeed'],
-            '98_cable_tv_provider': ['utilities', 'cableTvProvider'],
-            // Environment & Risk
-            '99_air_quality_index_current': ['utilities', 'airQualityIndexCurrent'],
-            '100_flood_zone': ['utilities', 'floodZone'],
-            '101_flood_risk_level': ['utilities', 'floodRiskLevel'],
-            '102_climate_risk_summary': ['utilities', 'climateRiskWildfireFlood'],
-            '103_noise_level_db_est': ['utilities', 'noiseLevelDbEst'],
-            '104_solar_potential': ['utilities', 'solarPotential'],
-            // Additional Features
-            '105_ev_charging_yn': ['utilities', 'evChargingYn'],
-            '106_smart_home_features': ['utilities', 'smartHomeFeatures'],
-            '107_accessibility_mods': ['utilities', 'accessibilityMods'],
-            '108_pet_policy': ['utilities', 'petPolicy'],
-            '109_age_restrictions': ['utilities', 'ageRestrictions'],
-            '110_notes_confidence_summary': ['utilities', 'notesConfidenceSummary'],
+            '6_neighborhood': ['address', 'neighborhoodName'],
+            '7_county': ['address', 'county'],
+            '8_zip_code': ['address', 'zipCode'],
+            '9_parcel_id': ['details', 'parcelId'],
+            // GROUP 2: Pricing & Value (10-16)
+            '10_listing_price': ['address', 'listingPrice'],
+            '11_price_per_sqft': ['address', 'pricePerSqft'],
+            '12_market_value_estimate': ['details', 'marketValueEstimate'],
+            '13_last_sale_date': ['details', 'lastSaleDate'],
+            '14_last_sale_price': ['details', 'lastSalePrice'],
+            '15_assessed_value': ['details', 'assessedValue'],
+            '16_redfin_estimate': ['financial', 'redfinEstimate'],
+            // GROUP 3: Property Basics (17-29)
+            '17_bedrooms': ['details', 'bedrooms'],
+            '18_full_bathrooms': ['details', 'fullBathrooms'],
+            '19_half_bathrooms': ['details', 'halfBathrooms'],
+            '20_total_bathrooms': ['details', 'totalBathrooms'],
+            '21_living_sqft': ['details', 'livingSqft'],
+            '22_total_sqft_under_roof': ['details', 'totalSqftUnderRoof'],
+            '23_lot_size_sqft': ['details', 'lotSizeSqft'],
+            '24_lot_size_acres': ['details', 'lotSizeAcres'],
+            '25_year_built': ['details', 'yearBuilt'],
+            '26_property_type': ['details', 'propertyType'],
+            '27_stories': ['details', 'stories'],
+            '28_garage_spaces': ['details', 'garageSpaces'],
+            '29_parking_total': ['details', 'parkingTotal'],
+            // GROUP 4: HOA & Taxes (30-38)
+            '30_hoa_yn': ['details', 'hoaYn'],
+            '31_hoa_fee_annual': ['details', 'hoaFeeAnnual'],
+            '32_hoa_name': ['details', 'hoaName'],
+            '33_hoa_includes': ['details', 'hoaIncludes'],
+            '34_ownership_type': ['details', 'ownershipType'],
+            '35_annual_taxes': ['details', 'annualTaxes'],
+            '36_tax_year': ['details', 'taxYear'],
+            '37_property_tax_rate': ['financial', 'propertyTaxRate'],
+            '38_tax_exemptions': ['financial', 'taxExemptions'],
+            // GROUP 5: Structure & Systems (39-48)
+            '39_roof_type': ['structural', 'roofType'],
+            '40_roof_age_est': ['structural', 'roofAgeEst'],
+            '41_exterior_material': ['structural', 'exteriorMaterial'],
+            '42_foundation': ['structural', 'foundation'],
+            '43_water_heater_type': ['structural', 'waterHeaterType'],
+            '44_garage_type': ['structural', 'garageType'],
+            '45_hvac_type': ['structural', 'hvacType'],
+            '46_hvac_age': ['structural', 'hvacAge'],
+            '47_laundry_type': ['structural', 'laundryType'],
+            '48_interior_condition': ['structural', 'interiorCondition'],
+            // GROUP 6: Interior Features (49-53)
+            '49_flooring_type': ['structural', 'flooringType'],
+            '50_kitchen_features': ['structural', 'kitchenFeatures'],
+            '51_appliances_included': ['structural', 'appliancesIncluded'],
+            '52_fireplace_yn': ['structural', 'fireplaceYn'],
+            '53_fireplace_count': ['structural', 'fireplaceCount'],
+            // GROUP 7: Exterior Features (54-58)
+            '54_pool_yn': ['structural', 'poolYn'],
+            '55_pool_type': ['structural', 'poolType'],
+            '56_deck_patio': ['structural', 'deckPatio'],
+            '57_fence': ['structural', 'fence'],
+            '58_landscaping': ['structural', 'landscaping'],
+            // GROUP 8: Permits & Renovations (59-62)
+            '59_recent_renovations': ['structural', 'recentRenovations'],
+            '60_permit_history_roof': ['structural', 'permitHistoryRoof'],
+            '61_permit_history_hvac': ['structural', 'permitHistoryHvac'],
+            '62_permit_history_other': ['structural', 'permitHistoryPoolAdditions'],
+            // GROUP 9: Assigned Schools (63-73)
+            '63_school_district': ['location', 'schoolDistrictName'],
+            '64_elevation_feet': ['location', 'elevationFeet'],
+            '65_elementary_school': ['location', 'assignedElementary'],
+            '66_elementary_rating': ['location', 'elementaryRating'],
+            '67_elementary_distance_mi': ['location', 'elementaryDistanceMiles'],
+            '68_middle_school': ['location', 'assignedMiddle'],
+            '69_middle_rating': ['location', 'middleRating'],
+            '70_middle_distance_mi': ['location', 'middleDistanceMiles'],
+            '71_high_school': ['location', 'assignedHigh'],
+            '72_high_rating': ['location', 'highRating'],
+            '73_high_distance_mi': ['location', 'highDistanceMiles'],
+            // GROUP 10: Location Scores (74-82)
+            '74_walk_score': ['location', 'walkScore'],
+            '75_transit_score': ['location', 'transitScore'],
+            '76_bike_score': ['location', 'bikeScore'],
+            '77_safety_score': ['location', 'neighborhoodSafetyRating'],
+            '78_noise_level': ['location', 'noiseLevel'],
+            '79_traffic_level': ['location', 'trafficLevel'],
+            '80_walkability_description': ['location', 'walkabilityDescription'],
+            '81_public_transit_access': ['location', 'publicTransitAccess'],
+            '82_commute_to_city_center': ['location', 'commuteTimeCityCenter'],
+            // GROUP 11: Distances & Amenities (83-87)
+            '83_distance_grocery_mi': ['location', 'distanceGroceryMiles'],
+            '84_distance_hospital_mi': ['location', 'distanceHospitalMiles'],
+            '85_distance_airport_mi': ['location', 'distanceAirportMiles'],
+            '86_distance_park_mi': ['location', 'distanceParkMiles'],
+            '87_distance_beach_mi': ['location', 'distanceBeachMiles'],
+            // GROUP 12: Safety & Crime (88-90)
+            '88_violent_crime_index': ['location', 'crimeIndexViolent'],
+            '89_property_crime_index': ['location', 'crimeIndexProperty'],
+            '90_neighborhood_safety_rating': ['location', 'neighborhoodSafetyRating'],
+            // GROUP 13: Market & Investment Data (91-103)
+            '91_median_home_price_neighborhood': ['financial', 'medianHomePriceNeighborhood'],
+            '92_price_per_sqft_recent_avg': ['financial', 'pricePerSqftRecentAvg'],
+            '93_price_to_rent_ratio': ['financial', 'priceToRentRatio'],
+            '94_price_vs_median_percent': ['financial', 'priceVsMedianPercent'],
+            '95_days_on_market_avg': ['financial', 'daysOnMarketAvg'],
+            '96_inventory_surplus': ['financial', 'inventorySurplus'],
+            '97_insurance_est_annual': ['financial', 'insuranceEstAnnual'],
+            '98_rental_estimate_monthly': ['financial', 'rentalEstimateMonthly'],
+            '99_rental_yield_est': ['financial', 'rentalYieldEst'],
+            '100_vacancy_rate_neighborhood': ['financial', 'vacancyRateNeighborhood'],
+            '101_cap_rate_est': ['financial', 'capRateEst'],
+            '102_financing_terms': ['financial', 'financingTerms'],
+            '103_comparable_sales': ['financial', 'comparableSalesLast3'],
+            // GROUP 14: Utilities & Connectivity (104-116)
+            '104_electric_provider': ['utilities', 'electricProvider'],
+            '105_avg_electric_bill': ['utilities', 'avgElectricBill'],
+            '106_water_provider': ['utilities', 'waterProvider'],
+            '107_avg_water_bill': ['utilities', 'avgWaterBill'],
+            '108_sewer_provider': ['utilities', 'sewerProvider'],
+            '109_natural_gas': ['utilities', 'naturalGas'],
+            '110_trash_provider': ['utilities', 'trashProvider'],
+            '111_internet_providers_top3': ['utilities', 'internetProvidersTop3'],
+            '112_max_internet_speed': ['utilities', 'maxInternetSpeed'],
+            '113_fiber_available': ['utilities', 'fiberAvailable'],
+            '114_cable_tv_provider': ['utilities', 'cableTvProvider'],
+            '115_cell_coverage_quality': ['utilities', 'cellCoverageQuality'],
+            '116_emergency_services_distance': ['utilities', 'emergencyServicesDistance'],
+            // GROUP 15: Environment & Risk (117-130)
+            '117_air_quality_index': ['utilities', 'airQualityIndexCurrent'],
+            '118_air_quality_grade': ['utilities', 'airQualityGrade'],
+            '119_flood_zone': ['utilities', 'floodZone'],
+            '120_flood_risk_level': ['utilities', 'floodRiskLevel'],
+            '121_climate_risk': ['utilities', 'climateRiskWildfireFlood'],
+            '122_wildfire_risk': ['utilities', 'wildfireRisk'],
+            '123_earthquake_risk': ['utilities', 'earthquakeRisk'],
+            '124_hurricane_risk': ['utilities', 'hurricaneRisk'],
+            '125_tornado_risk': ['utilities', 'tornadoRisk'],
+            '126_radon_risk': ['utilities', 'radonRisk'],
+            '127_superfund_site_nearby': ['utilities', 'superfundSiteNearby'],
+            '128_sea_level_rise_risk': ['utilities', 'seaLevelRiseRisk'],
+            '129_noise_level_db_est': ['utilities', 'noiseLevelDbEst'],
+            '130_solar_potential': ['utilities', 'solarPotential'],
+            // GROUP 16: Additional Features (131-138)
+            '131_view_type': ['utilities', 'viewType'],
+            '132_lot_features': ['utilities', 'lotFeatures'],
+            '133_ev_charging': ['utilities', 'evChargingYn'],
+            '134_smart_home_features': ['utilities', 'smartHomeFeatures'],
+            '135_accessibility_modifications': ['utilities', 'accessibilityMods'],
+            '136_pet_policy': ['utilities', 'petPolicy'],
+            '137_age_restrictions': ['utilities', 'ageRestrictions'],
+            '138_special_assessments': ['utilities', 'specialAssessments'],
           };
           const path = paths[fieldKey];
           if (path && updated[path[0]]) {
@@ -663,7 +696,7 @@ export default function PropertyDetail() {
               {property.listingStatus}
             </span>
             <span className="text-sm text-gray-400">
-              {property.dataCompleteness}% Data Complete ({Math.round(property.dataCompleteness * 1.1)}/110 fields)
+              {property.dataCompleteness}% Data Complete ({Math.round(property.dataCompleteness * 1.38)}/138 fields)
             </span>
           </div>
         </motion.div>
@@ -698,7 +731,7 @@ export default function PropertyDetail() {
         {/* Full Property Data Sections */}
         {fullProperty ? (
           <div className="space-y-6">
-            {/* Address & Identity */}
+            {/* Address & Identity (Fields 1-9) */}
             <Section title="Address & Identity" icon={<MapPin className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -706,148 +739,148 @@ export default function PropertyDetail() {
                   {renderDataField("MLS Primary", fullProperty.address.mlsPrimary, "text", undefined, "2_mls_primary")}
                   {renderDataField("MLS Secondary", fullProperty.address.mlsSecondary, "text", undefined, "3_mls_secondary")}
                   {renderDataField("Listing Status", fullProperty.address.listingStatus, "text", undefined, "4_listing_status")}
+                  {renderDataField("Listing Date", fullProperty.address.listingDate, 'date', undefined, "5_listing_date")}
                 </div>
                 <div>
-                  {renderDataField("Listing Date", fullProperty.address.listingDate, 'date', undefined, "5_listing_date")}
-                  {renderDataField("Neighborhood", fullProperty.address.neighborhoodName, "text", undefined, "41_neighborhood_name")}
-                  {renderDataField("County", fullProperty.address.county, "text", undefined, "28_county")}
-                  {renderDataField("ZIP Code", fullProperty.address.zipCode, "text", undefined, "zip")}
-                  {renderDataField("Parcel ID", fullProperty.details.parcelId, "text", undefined, "6_parcel_id")}
+                  {renderDataField("Neighborhood", fullProperty.address.neighborhoodName, "text", undefined, "6_neighborhood")}
+                  {renderDataField("County", fullProperty.address.county, "text", undefined, "7_county")}
+                  {renderDataField("ZIP Code", fullProperty.address.zipCode, "text", undefined, "8_zip_code")}
+                  {renderDataField("Parcel ID", fullProperty.details.parcelId, "text", undefined, "9_parcel_id")}
                 </div>
               </div>
             </Section>
 
-            {/* Pricing */}
+            {/* Pricing & Value (Fields 10-16) */}
             <Section title="Pricing & Value" icon={<DollarSign className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  {renderDataField("Listing Price", fullProperty.address.listingPrice, 'currency', undefined, "7_listing_price")}
-                  {renderDataField("Price Per Sq Ft", fullProperty.address.pricePerSqft, 'currency', undefined, "8_price_per_sqft")}
-                  {renderDataField("Market Value Estimate", fullProperty.details.marketValueEstimate, 'currency', undefined, "9_market_value_estimate")}
+                  {renderDataField("Listing Price", fullProperty.address.listingPrice, 'currency', undefined, "10_listing_price")}
+                  {renderDataField("Price Per Sq Ft", fullProperty.address.pricePerSqft, 'currency', undefined, "11_price_per_sqft")}
+                  {renderDataField("Market Value Estimate", fullProperty.details.marketValueEstimate, 'currency', undefined, "12_market_value_estimate")}
+                  {renderDataField("Last Sale Date", fullProperty.details.lastSaleDate, 'date', undefined, "13_last_sale_date")}
                 </div>
                 <div>
-                  {renderDataField("Last Sale Date", fullProperty.details.lastSaleDate, 'date', undefined, "10_last_sale_date")}
-                  {renderDataField("Last Sale Price", fullProperty.details.lastSalePrice, 'currency', undefined, "11_last_sale_price")}
-                  {renderDataField("Assessed Value", fullProperty.details.assessedValue, 'currency', undefined, "31_assessed_value")}
-                  {renderDataField("Redfin Estimate", fullProperty.financial.redfinEstimate, 'currency', undefined, "74_redfin_estimate")}
+                  {renderDataField("Last Sale Price", fullProperty.details.lastSalePrice, 'currency', undefined, "14_last_sale_price")}
+                  {renderDataField("Assessed Value", fullProperty.details.assessedValue, 'currency', undefined, "15_assessed_value")}
+                  {renderDataField("Redfin Estimate", fullProperty.financial.redfinEstimate, 'currency', undefined, "16_redfin_estimate")}
                 </div>
               </div>
             </Section>
 
-            {/* Property Basics */}
+            {/* Property Basics (Fields 17-29) */}
             <Section title="Property Basics" icon={<Home className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  {renderDataField("Bedrooms", fullProperty.details.bedrooms, "number", undefined, "12_bedrooms")}
-                  {renderDataField("Full Bathrooms", fullProperty.details.fullBathrooms, "number", undefined, "13_full_bathrooms")}
-                  {renderDataField("Half Bathrooms", fullProperty.details.halfBathrooms, "number", undefined, "14_half_bathrooms")}
-                  {renderDataField("Total Bathrooms", fullProperty.details.totalBathrooms, "number", undefined, "15_total_bathrooms")}
+                  {renderDataField("Bedrooms", fullProperty.details.bedrooms, "number", undefined, "17_bedrooms")}
+                  {renderDataField("Full Bathrooms", fullProperty.details.fullBathrooms, "number", undefined, "18_full_bathrooms")}
+                  {renderDataField("Half Bathrooms", fullProperty.details.halfBathrooms, "number", undefined, "19_half_bathrooms")}
+                  {renderDataField("Total Bathrooms", fullProperty.details.totalBathrooms, "number", undefined, "20_total_bathrooms")}
                 </div>
                 <div>
-                  {renderDataField("Living Sq Ft", fullProperty.details.livingSqft, "number", undefined, "16_living_sqft")}
-                  {renderDataField("Total Sq Ft Under Roof", fullProperty.details.totalSqftUnderRoof, "number", undefined, "17_total_sqft_under_roof")}
-                  {renderDataField("Lot Size (Sq Ft)", fullProperty.details.lotSizeSqft, "number", undefined, "18_lot_size_sqft")}
-                  {renderDataField("Lot Size (Acres)", fullProperty.details.lotSizeAcres, "number", undefined, "19_lot_size_acres")}
+                  {renderDataField("Living Sq Ft", fullProperty.details.livingSqft, "number", undefined, "21_living_sqft")}
+                  {renderDataField("Total Sq Ft Under Roof", fullProperty.details.totalSqftUnderRoof, "number", undefined, "22_total_sqft_under_roof")}
+                  {renderDataField("Lot Size (Sq Ft)", fullProperty.details.lotSizeSqft, "number", undefined, "23_lot_size_sqft")}
+                  {renderDataField("Lot Size (Acres)", fullProperty.details.lotSizeAcres, "number", undefined, "24_lot_size_acres")}
                 </div>
                 <div>
-                  {renderDataField("Year Built", fullProperty.details.yearBuilt, "text", undefined, "20_year_built")}
-                  {renderDataField("Property Type", fullProperty.details.propertyType, "text", undefined, "21_property_type")}
-                  {renderDataField("Stories", fullProperty.details.stories, "number", undefined, "22_stories")}
-                  {renderDataField("Garage Spaces", fullProperty.details.garageSpaces, "number", undefined, "23_garage_spaces")}
-                  {renderDataField("Parking Total", fullProperty.details.parkingTotal, "text", undefined, "24_parking_total")}
+                  {renderDataField("Year Built", fullProperty.details.yearBuilt, "text", undefined, "25_year_built")}
+                  {renderDataField("Property Type", fullProperty.details.propertyType, "text", undefined, "26_property_type")}
+                  {renderDataField("Stories", fullProperty.details.stories, "number", undefined, "27_stories")}
+                  {renderDataField("Garage Spaces", fullProperty.details.garageSpaces, "number", undefined, "28_garage_spaces")}
+                  {renderDataField("Parking Total", fullProperty.details.parkingTotal, "text", undefined, "29_parking_total")}
                 </div>
               </div>
             </Section>
 
-            {/* HOA & Taxes */}
+            {/* HOA & Taxes (Fields 30-38) */}
             <Section title="HOA & Taxes" icon={<Shield className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  {renderDataField("HOA", fullProperty.details.hoaYn, "text", undefined, "25_hoa_yn")}
-                  {renderDataField("HOA Fee (Annual)", fullProperty.details.hoaFeeAnnual, "currency", undefined, "26_hoa_fee_annual")}
-                  {renderDataField("HOA Name", fullProperty.details.hoaName, "text", undefined, "70_hoa_name")}
-                  {renderDataField("HOA Includes", fullProperty.details.hoaIncludes, "text", undefined, "71_hoa_includes")}
-                  {renderDataField("Ownership Type", fullProperty.details.ownershipType, "text", undefined, "27_ownership_type")}
+                  {renderDataField("HOA", fullProperty.details.hoaYn, "text", undefined, "30_hoa_yn")}
+                  {renderDataField("HOA Fee (Annual)", fullProperty.details.hoaFeeAnnual, "currency", undefined, "31_hoa_fee_annual")}
+                  {renderDataField("HOA Name", fullProperty.details.hoaName, "text", undefined, "32_hoa_name")}
+                  {renderDataField("HOA Includes", fullProperty.details.hoaIncludes, "text", undefined, "33_hoa_includes")}
+                  {renderDataField("Ownership Type", fullProperty.details.ownershipType, "text", undefined, "34_ownership_type")}
                 </div>
                 <div>
-                  {renderDataField("Annual Taxes", fullProperty.details.annualTaxes, "currency", undefined, "29_annual_taxes")}
-                  {renderDataField("Tax Year", fullProperty.details.taxYear, "text", undefined, "30_tax_year")}
-                  {renderDataField("Property Tax Rate", fullProperty.financial.propertyTaxRate, "percent", undefined, "33_property_tax_rate")}
-                  {renderDataField("Tax Exemptions", fullProperty.financial.taxExemptions, "text", undefined, "32_tax_exemptions")}
+                  {renderDataField("Annual Taxes", fullProperty.details.annualTaxes, "currency", undefined, "35_annual_taxes")}
+                  {renderDataField("Tax Year", fullProperty.details.taxYear, "text", undefined, "36_tax_year")}
+                  {renderDataField("Property Tax Rate", fullProperty.financial.propertyTaxRate, "percent", undefined, "37_property_tax_rate")}
+                  {renderDataField("Tax Exemptions", fullProperty.financial.taxExemptions, "text", undefined, "38_tax_exemptions")}
                 </div>
               </div>
             </Section>
 
-            {/* Structure & Systems */}
+            {/* Structure & Systems (Fields 39-48) */}
             <Section title="Structure & Systems" icon={<Building2 className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  {renderDataField("Roof Type", fullProperty.structural.roofType, "text", undefined, "36_roof_type")}
-                  {renderDataField("Roof Age (Est)", fullProperty.structural.roofAgeEst, "text", undefined, "37_roof_age_est")}
-                  {renderDataField("Exterior Material", fullProperty.structural.exteriorMaterial, "text", undefined, "38_exterior_material")}
-                  {renderDataField("Foundation", fullProperty.structural.foundation, "text", undefined, "39_foundation")}
-                  {renderDataField("Water Heater Type", fullProperty.structural.waterHeaterType, "text", undefined, "30_water_heater_type")}
-                  {renderDataField("Garage Type", fullProperty.structural.garageType, "text", undefined, "31_garage_type")}
+                  {renderDataField("Roof Type", fullProperty.structural.roofType, "text", undefined, "39_roof_type")}
+                  {renderDataField("Roof Age (Est)", fullProperty.structural.roofAgeEst, "text", undefined, "40_roof_age_est")}
+                  {renderDataField("Exterior Material", fullProperty.structural.exteriorMaterial, "text", undefined, "41_exterior_material")}
+                  {renderDataField("Foundation", fullProperty.structural.foundation, "text", undefined, "42_foundation")}
+                  {renderDataField("Water Heater Type", fullProperty.structural.waterHeaterType, "text", undefined, "43_water_heater_type")}
                 </div>
                 <div>
-                  {renderDataField("HVAC Type", fullProperty.structural.hvacType, "text", undefined, "40_hvac_type")}
-                  {renderDataField("HVAC Age", fullProperty.structural.hvacAge, "text", undefined, "41_hvac_age")}
-                  {renderDataField("Laundry Type", fullProperty.structural.laundryType, "text", undefined, "39_laundry_type")}
-                  {renderDataField("Interior Condition", fullProperty.structural.interiorCondition, "text", undefined, "46_interior_condition")}
+                  {renderDataField("Garage Type", fullProperty.structural.garageType, "text", undefined, "44_garage_type")}
+                  {renderDataField("HVAC Type", fullProperty.structural.hvacType, "text", undefined, "45_hvac_type")}
+                  {renderDataField("HVAC Age", fullProperty.structural.hvacAge, "text", undefined, "46_hvac_age")}
+                  {renderDataField("Laundry Type", fullProperty.structural.laundryType, "text", undefined, "47_laundry_type")}
+                  {renderDataField("Interior Condition", fullProperty.structural.interiorCondition, "text", undefined, "48_interior_condition")}
                 </div>
               </div>
             </Section>
 
-            {/* Interior Features */}
+            {/* Interior Features (Fields 49-53) */}
             <Section title="Interior Features" icon={<Home className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  {renderDataField("Flooring Type", fullProperty.structural.flooringType, "text", undefined, "42_flooring_type")}
-                  {renderDataField("Kitchen Features", fullProperty.structural.kitchenFeatures, "text", undefined, "43_kitchen_features")}
-                  {renderDataField("Appliances Included", fullProperty.structural.appliancesIncluded, "text", undefined, "44_appliances_included")}
+                  {renderDataField("Flooring Type", fullProperty.structural.flooringType, "text", undefined, "49_flooring_type")}
+                  {renderDataField("Kitchen Features", fullProperty.structural.kitchenFeatures, "text", undefined, "50_kitchen_features")}
+                  {renderDataField("Appliances Included", fullProperty.structural.appliancesIncluded, "text", undefined, "51_appliances_included")}
                 </div>
                 <div>
-                  {renderDataField("Fireplace", fullProperty.structural.fireplaceYn, "text", undefined, "45_fireplace_yn")}
-                  {renderDataField("Fireplace Count", fullProperty.structural.fireplaceCount, "number", undefined, "38_fireplace_count")}
+                  {renderDataField("Fireplace", fullProperty.structural.fireplaceYn, "text", undefined, "52_fireplace_yn")}
+                  {renderDataField("Fireplace Count", fullProperty.structural.fireplaceCount, "number", undefined, "53_fireplace_count")}
                 </div>
               </div>
             </Section>
 
-            {/* Exterior Features */}
+            {/* Exterior Features (Fields 54-58) */}
             <Section title="Exterior Features" icon={<Trees className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  {renderDataField("Pool", fullProperty.structural.poolYn, "text", undefined, "47_pool_yn")}
-                  {renderDataField("Pool Type", fullProperty.structural.poolType, "text", undefined, "48_pool_type")}
-                  {renderDataField("Deck/Patio", fullProperty.structural.deckPatio, "text", undefined, "49_deck_patio")}
+                  {renderDataField("Pool", fullProperty.structural.poolYn, "text", undefined, "54_pool_yn")}
+                  {renderDataField("Pool Type", fullProperty.structural.poolType, "text", undefined, "55_pool_type")}
+                  {renderDataField("Deck/Patio", fullProperty.structural.deckPatio, "text", undefined, "56_deck_patio")}
                 </div>
                 <div>
-                  {renderDataField("Fence", fullProperty.structural.fence, "text", undefined, "50_fence")}
-                  {renderDataField("Landscaping", fullProperty.structural.landscaping, "text", undefined, "51_landscaping")}
+                  {renderDataField("Fence", fullProperty.structural.fence, "text", undefined, "57_fence")}
+                  {renderDataField("Landscaping", fullProperty.structural.landscaping, "text", undefined, "58_landscaping")}
                 </div>
               </div>
             </Section>
 
-            {/* Permits & Renovations */}
+            {/* Permits & Renovations (Fields 59-62) */}
             <Section title="Permits & Renovations" icon={<Wrench className="w-6 h-6" />} defaultExpanded={false}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  {renderDataField("Recent Renovations", fullProperty.structural.recentRenovations, "text", undefined, "52_recent_renovations")}
-                  {renderDataField("Permit History - Roof", fullProperty.structural.permitHistoryRoof, "text", undefined, "53_permit_history_roof")}
+                  {renderDataField("Recent Renovations", fullProperty.structural.recentRenovations, "text", undefined, "59_recent_renovations")}
+                  {renderDataField("Permit History - Roof", fullProperty.structural.permitHistoryRoof, "text", undefined, "60_permit_history_roof")}
                 </div>
                 <div>
-                  {renderDataField("Permit History - HVAC", fullProperty.structural.permitHistoryHvac, "text", undefined, "54_permit_history_hvac")}
-                  {renderDataField("Permit History - Other", fullProperty.structural.permitHistoryPoolAdditions, "text", undefined, "55_permit_history_other")}
+                  {renderDataField("Permit History - HVAC", fullProperty.structural.permitHistoryHvac, "text", undefined, "61_permit_history_hvac")}
+                  {renderDataField("Permit History - Other", fullProperty.structural.permitHistoryPoolAdditions, "text", undefined, "62_permit_history_other")}
                 </div>
               </div>
             </Section>
 
-            {/* Schools */}
+            {/* Assigned Schools (Fields 63-73) */}
             <Section title="Assigned Schools" icon={<School className="w-6 h-6" />}>
               <div className="space-y-4">
                 <div className="mb-4">
-                  {renderDataField("School District", fullProperty.location.schoolDistrictName, "text", undefined, "65_school_district_name")}
-                  {renderDataField("Elevation (feet)", fullProperty.location.elevationFeet, "number", undefined, "55_elevation_feet")}
+                  {renderDataField("School District", fullProperty.location.schoolDistrictName, "text", undefined, "63_school_district")}
+                  {renderDataField("Elevation (feet)", fullProperty.location.elevationFeet, "number", undefined, "64_elevation_feet")}
                 </div>
                 {fullProperty.location.assignedElementary.value && (
                   <div className="glass-5d p-4 rounded-lg">
@@ -894,7 +927,7 @@ export default function PropertyDetail() {
               </div>
             </Section>
 
-            {/* Location Scores */}
+            {/* Location Scores (Fields 74-82) */}
             <Section title="Location Scores" icon={<Target className="w-6 h-6" />}>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div className="text-center">
@@ -941,118 +974,118 @@ export default function PropertyDetail() {
                 </div>
               </div>
               <div className="mt-6 pt-6 border-t border-white/10 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {renderDataField("Noise Level", fullProperty.location.noiseLevel, "text", undefined, "68_noise_level")}
-                {renderDataField("Traffic Level", fullProperty.location.trafficLevel, "text", undefined, "69_traffic_level")}
-                {renderDataField("Walkability Description", fullProperty.location.walkabilityDescription, "text", undefined, "70_walkability_description")}
-                {renderDataField("Public Transit Access", fullProperty.location.publicTransitAccess, "text", undefined, "72_public_transit_access")}
-                {renderDataField("Commute to City Center", fullProperty.location.commuteTimeCityCenter, "text", undefined, "71_commute_time_city_center")}
+                {renderDataField("Noise Level", fullProperty.location.noiseLevel, "text", undefined, "78_noise_level")}
+                {renderDataField("Traffic Level", fullProperty.location.trafficLevel, "text", undefined, "79_traffic_level")}
+                {renderDataField("Walkability Description", fullProperty.location.walkabilityDescription, "text", undefined, "80_walkability_description")}
+                {renderDataField("Public Transit Access", fullProperty.location.publicTransitAccess, "text", undefined, "81_public_transit_access")}
+                {renderDataField("Commute to City Center", fullProperty.location.commuteTimeCityCenter, "text", undefined, "82_commute_to_city_center")}
               </div>
             </Section>
 
-            {/* Distances & Amenities */}
+            {/* Distances & Amenities (Fields 83-87) */}
             <Section title="Distances & Amenities" icon={<MapPin className="w-6 h-6" />} defaultExpanded={false}>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {renderDataField("Grocery", fullProperty.location.distanceGroceryMiles, "number", <span className="text-xs">mi</span>, "73_distance_grocery_miles")}
-                {renderDataField("Hospital", fullProperty.location.distanceHospitalMiles, "number", <span className="text-xs">mi</span>, "74_distance_hospital_miles")}
-                {renderDataField("Airport", fullProperty.location.distanceAirportMiles, "number", <span className="text-xs">mi</span>, "75_distance_airport_miles")}
-                {renderDataField("Park", fullProperty.location.distanceParkMiles, "number", <span className="text-xs">mi</span>, "76_distance_park_miles")}
-                {renderDataField("Beach", fullProperty.location.distanceBeachMiles, "number", <span className="text-xs">mi</span>, "77_distance_beach_miles")}
+                {renderDataField("Distance to Grocery", fullProperty.location.distanceGroceryMiles, "number", <span className="text-xs">mi</span>, "83_distance_grocery_mi")}
+                {renderDataField("Distance to Hospital", fullProperty.location.distanceHospitalMiles, "number", <span className="text-xs">mi</span>, "84_distance_hospital_mi")}
+                {renderDataField("Distance to Airport", fullProperty.location.distanceAirportMiles, "number", <span className="text-xs">mi</span>, "85_distance_airport_mi")}
+                {renderDataField("Distance to Park", fullProperty.location.distanceParkMiles, "number", <span className="text-xs">mi</span>, "86_distance_park_mi")}
+                {renderDataField("Distance to Beach", fullProperty.location.distanceBeachMiles, "number", <span className="text-xs">mi</span>, "87_distance_beach_mi")}
               </div>
             </Section>
 
-            {/* Safety & Crime */}
+            {/* Safety & Crime (Fields 88-90) */}
             <Section title="Safety & Crime" icon={<Shield className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {renderDataField("Violent Crime Index", fullProperty.location.crimeIndexViolent, "text", undefined, "78_crime_index_violent")}
-                {renderDataField("Property Crime Index", fullProperty.location.crimeIndexProperty, "text", undefined, "79_crime_index_property")}
-                {renderDataField("Neighborhood Safety Rating", fullProperty.location.neighborhoodSafetyRating, "text", undefined, "80_neighborhood_safety_rating")}
+                {renderDataField("Violent Crime Index", fullProperty.location.crimeIndexViolent, "text", undefined, "88_violent_crime_index")}
+                {renderDataField("Property Crime Index", fullProperty.location.crimeIndexProperty, "text", undefined, "89_property_crime_index")}
+                {renderDataField("Neighborhood Safety Rating", fullProperty.location.neighborhoodSafetyRating, "text", undefined, "90_neighborhood_safety_rating")}
               </div>
             </Section>
 
-            {/* Market & Investment */}
+            {/* Market & Investment Data (Fields 91-103) */}
             <Section title="Market & Investment Data" icon={<TrendingUp className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  {renderDataField("Median Home Price (Neighborhood)", fullProperty.financial.medianHomePriceNeighborhood, "currency", undefined, "81_median_home_price_neighborhood")}
-                  {renderDataField("Price Per Sq Ft (Recent Avg)", fullProperty.financial.pricePerSqftRecentAvg, "currency", undefined, "82_price_per_sqft_recent_avg")}
-                  {renderDataField("Price to Rent Ratio", fullProperty.financial.priceToRentRatio, "number", undefined, "77_price_to_rent_ratio")}
-                  {renderDataField("Price vs Median %", fullProperty.financial.priceVsMedianPercent, "percent", undefined, "79_price_vs_median_percent")}
-                  {renderDataField("Days on Market (Avg)", fullProperty.financial.daysOnMarketAvg, "number", undefined, "83_days_on_market_avg")}
-                  {renderDataField("Inventory Surplus", fullProperty.financial.inventorySurplus, "text", undefined, "84_inventory_surplus")}
-                  {renderDataField("Insurance Estimate (Annual)", fullProperty.financial.insuranceEstAnnual, "currency", undefined, "89_insurance_est_annual")}
+                  {renderDataField("Median Home Price (Neighborhood)", fullProperty.financial.medianHomePriceNeighborhood, "currency", undefined, "91_median_home_price_neighborhood")}
+                  {renderDataField("Price Per Sq Ft (Recent Avg)", fullProperty.financial.pricePerSqftRecentAvg, "currency", undefined, "92_price_per_sqft_recent_avg")}
+                  {renderDataField("Price to Rent Ratio", fullProperty.financial.priceToRentRatio, "number", undefined, "93_price_to_rent_ratio")}
+                  {renderDataField("Price vs Median %", fullProperty.financial.priceVsMedianPercent, "percent", undefined, "94_price_vs_median_percent")}
+                  {renderDataField("Days on Market (Avg)", fullProperty.financial.daysOnMarketAvg, "number", undefined, "95_days_on_market_avg")}
+                  {renderDataField("Inventory Surplus", fullProperty.financial.inventorySurplus, "text", undefined, "96_inventory_surplus")}
+                  {renderDataField("Insurance Estimate (Annual)", fullProperty.financial.insuranceEstAnnual, "currency", undefined, "97_insurance_est_annual")}
                 </div>
                 <div>
-                  {renderDataField("Rental Estimate (Monthly)", fullProperty.financial.rentalEstimateMonthly, "currency", undefined, "85_rental_estimate_monthly")}
-                  {renderDataField("Rental Yield (Est)", fullProperty.financial.rentalYieldEst, "percent", undefined, "86_rental_yield_est")}
-                  {renderDataField("Vacancy Rate (Neighborhood)", fullProperty.financial.vacancyRateNeighborhood, "percent", undefined, "87_vacancy_rate_neighborhood")}
-                  {renderDataField("Cap Rate (Est)", fullProperty.financial.capRateEst, "percent", undefined, "88_cap_rate_est")}
-                  {renderDataField("Financing Terms", fullProperty.financial.financingTerms, "text", undefined, "90_financing_terms")}
-                  {renderDataField("Comparable Sales", fullProperty.financial.comparableSalesLast3)}
+                  {renderDataField("Rental Estimate (Monthly)", fullProperty.financial.rentalEstimateMonthly, "currency", undefined, "98_rental_estimate_monthly")}
+                  {renderDataField("Rental Yield (Est)", fullProperty.financial.rentalYieldEst, "percent", undefined, "99_rental_yield_est")}
+                  {renderDataField("Vacancy Rate (Neighborhood)", fullProperty.financial.vacancyRateNeighborhood, "percent", undefined, "100_vacancy_rate_neighborhood")}
+                  {renderDataField("Cap Rate (Est)", fullProperty.financial.capRateEst, "percent", undefined, "101_cap_rate_est")}
+                  {renderDataField("Financing Terms", fullProperty.financial.financingTerms, "text", undefined, "102_financing_terms")}
+                  {renderDataField("Comparable Sales", fullProperty.financial.comparableSalesLast3, "text", undefined, "103_comparable_sales")}
                 </div>
               </div>
             </Section>
 
-            {/* Utilities */}
+            {/* Utilities & Connectivity (Fields 104-116) */}
             <Section title="Utilities & Connectivity" icon={<Wifi className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  {renderDataField("Electric Provider", fullProperty.utilities.electricProvider, "text", <Zap className="w-4 h-4" />, "92_electric_provider")}
-                  {renderDataField("Avg Electric Bill", fullProperty.utilities.avgElectricBill, "text", undefined, "90_avg_electric_bill")}
-                  {renderDataField("Water Provider", fullProperty.utilities.waterProvider, "text", undefined, "93_water_provider")}
-                  {renderDataField("Avg Water Bill", fullProperty.utilities.avgWaterBill, "text", undefined, "91_avg_water_bill")}
-                  {renderDataField("Sewer Provider", fullProperty.utilities.sewerProvider, "text", undefined, "94_sewer_provider")}
-                  {renderDataField("Natural Gas", fullProperty.utilities.naturalGas, "text", undefined, "95_natural_gas")}
-                  {renderDataField("Trash Provider", fullProperty.utilities.trashProvider, "text", undefined, "85_trash_provider")}
+                  {renderDataField("Electric Provider", fullProperty.utilities.electricProvider, "text", <Zap className="w-4 h-4" />, "104_electric_provider")}
+                  {renderDataField("Avg Electric Bill", fullProperty.utilities.avgElectricBill, "text", undefined, "105_avg_electric_bill")}
+                  {renderDataField("Water Provider", fullProperty.utilities.waterProvider, "text", undefined, "106_water_provider")}
+                  {renderDataField("Avg Water Bill", fullProperty.utilities.avgWaterBill, "text", undefined, "107_avg_water_bill")}
+                  {renderDataField("Sewer Provider", fullProperty.utilities.sewerProvider, "text", undefined, "108_sewer_provider")}
+                  {renderDataField("Natural Gas", fullProperty.utilities.naturalGas, "text", undefined, "109_natural_gas")}
+                  {renderDataField("Trash Provider", fullProperty.utilities.trashProvider, "text", undefined, "110_trash_provider")}
                 </div>
                 <div>
-                  {renderDataField("Internet Providers (Top 3)", fullProperty.utilities.internetProvidersTop3)}
-                  {renderDataField("Max Internet Speed", fullProperty.utilities.maxInternetSpeed, "text", undefined, "97_max_internet_speed")}
-                  {renderDataField("Fiber Available", fullProperty.utilities.fiberAvailable, "text", undefined, "88_fiber_available")}
-                  {renderDataField("Cable TV Provider", fullProperty.utilities.cableTvProvider, "text", undefined, "98_cable_tv_provider")}
-                  {renderDataField("Cell Coverage Quality", fullProperty.utilities.cellCoverageQuality, "text", undefined, "94_cell_coverage_quality")}
-                  {renderDataField("Emergency Services Distance", fullProperty.utilities.emergencyServicesDistance, "text", undefined, "95_emergency_services_distance")}
+                  {renderDataField("Internet Providers (Top 3)", fullProperty.utilities.internetProvidersTop3, "text", undefined, "111_internet_providers_top3")}
+                  {renderDataField("Max Internet Speed", fullProperty.utilities.maxInternetSpeed, "text", undefined, "112_max_internet_speed")}
+                  {renderDataField("Fiber Available", fullProperty.utilities.fiberAvailable, "text", undefined, "113_fiber_available")}
+                  {renderDataField("Cable TV Provider", fullProperty.utilities.cableTvProvider, "text", undefined, "114_cable_tv_provider")}
+                  {renderDataField("Cell Coverage Quality", fullProperty.utilities.cellCoverageQuality, "text", undefined, "115_cell_coverage_quality")}
+                  {renderDataField("Emergency Services Distance", fullProperty.utilities.emergencyServicesDistance, "text", undefined, "116_emergency_services_distance")}
                 </div>
               </div>
             </Section>
 
-            {/* Environment & Risk */}
+            {/* Environment & Risk (Fields 117-130) */}
             <Section title="Environment & Risk" icon={<Sun className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  {renderDataField("Air Quality Index", fullProperty.utilities.airQualityIndexCurrent, "text", undefined, "99_air_quality_index_current")}
-                  {renderDataField("Air Quality Grade", fullProperty.utilities.airQualityGrade, "text", undefined, "97_air_quality_grade")}
-                  {renderDataField("Flood Zone", fullProperty.utilities.floodZone, "text", undefined, "100_flood_zone")}
-                  {renderDataField("Flood Risk Level", fullProperty.utilities.floodRiskLevel, "text", undefined, "101_flood_risk_level")}
-                  {renderDataField("Climate Risk", fullProperty.utilities.climateRiskWildfireFlood, "text", undefined, "102_climate_risk_summary")}
-                  {renderDataField("Wildfire Risk", fullProperty.utilities.wildfireRisk, "text", undefined, "98_wildfire_risk")}
-                  {renderDataField("Earthquake Risk", fullProperty.utilities.earthquakeRisk, "text", undefined, "99_earthquake_risk")}
-                  {renderDataField("Hurricane Risk", fullProperty.utilities.hurricaneRisk, "text", undefined, "100_hurricane_risk")}
+                  {renderDataField("Air Quality Index", fullProperty.utilities.airQualityIndexCurrent, "text", undefined, "117_air_quality_index")}
+                  {renderDataField("Air Quality Grade", fullProperty.utilities.airQualityGrade, "text", undefined, "118_air_quality_grade")}
+                  {renderDataField("Flood Zone", fullProperty.utilities.floodZone, "text", undefined, "119_flood_zone")}
+                  {renderDataField("Flood Risk Level", fullProperty.utilities.floodRiskLevel, "text", undefined, "120_flood_risk_level")}
+                  {renderDataField("Climate Risk", fullProperty.utilities.climateRiskWildfireFlood, "text", undefined, "121_climate_risk")}
+                  {renderDataField("Wildfire Risk", fullProperty.utilities.wildfireRisk, "text", undefined, "122_wildfire_risk")}
+                  {renderDataField("Earthquake Risk", fullProperty.utilities.earthquakeRisk, "text", undefined, "123_earthquake_risk")}
                 </div>
                 <div>
-                  {renderDataField("Tornado Risk", fullProperty.utilities.tornadoRisk, "text", undefined, "101_tornado_risk")}
-                  {renderDataField("Radon Risk", fullProperty.utilities.radonRisk, "text", undefined, "102_radon_risk")}
-                  {renderDataField("Superfund Site Nearby", fullProperty.utilities.superfundNearby, "text", undefined, "103_superfund_nearby")}
-                  {renderDataField("Sea Level Rise Risk", fullProperty.utilities.seaLevelRiseRisk, "text", undefined, "105_sea_level_rise_risk")}
-                  {renderDataField("Noise Level (dB Est)", fullProperty.utilities.noiseLevelDbEst, "text", undefined, "103_noise_level_db_est")}
-                  {renderDataField("Solar Potential", fullProperty.utilities.solarPotential, "text", undefined, "104_solar_potential")}
+                  {renderDataField("Hurricane Risk", fullProperty.utilities.hurricaneRisk, "text", undefined, "124_hurricane_risk")}
+                  {renderDataField("Tornado Risk", fullProperty.utilities.tornadoRisk, "text", undefined, "125_tornado_risk")}
+                  {renderDataField("Radon Risk", fullProperty.utilities.radonRisk, "text", undefined, "126_radon_risk")}
+                  {renderDataField("Superfund Site Nearby", fullProperty.utilities.superfundNearby, "text", undefined, "127_superfund_site_nearby")}
+                  {renderDataField("Sea Level Rise Risk", fullProperty.utilities.seaLevelRiseRisk, "text", undefined, "128_sea_level_rise_risk")}
+                  {renderDataField("Noise Level (dB Est)", fullProperty.utilities.noiseLevelDbEst, "text", undefined, "129_noise_level_db_est")}
+                  {renderDataField("Solar Potential", fullProperty.utilities.solarPotential, "text", undefined, "130_solar_potential")}
                 </div>
               </div>
             </Section>
 
-            {/* Additional Features */}
+            {/* Additional Features (Fields 131-138) */}
             <Section title="Additional Features" icon={<Hammer className="w-6 h-6" />} defaultExpanded={false}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  {renderDataField("View Type", fullProperty.utilities.viewType, "text", undefined, "108_view_type")}
-                  {renderDataField("Lot Features", fullProperty.utilities.lotFeatures, "text", undefined, "109_lot_features")}
-                  {renderDataField("EV Charging", fullProperty.utilities.evChargingYn, "text", undefined, "105_ev_charging_yn")}
-                  {renderDataField("Smart Home Features", fullProperty.utilities.smartHomeFeatures, "text", undefined, "106_smart_home_features")}
-                  {renderDataField("Accessibility Modifications", fullProperty.utilities.accessibilityMods, "text", undefined, "107_accessibility_mods")}
+                  {renderDataField("View Type", fullProperty.utilities.viewType, "text", undefined, "131_view_type")}
+                  {renderDataField("Lot Features", fullProperty.utilities.lotFeatures, "text", undefined, "132_lot_features")}
+                  {renderDataField("EV Charging", fullProperty.utilities.evChargingYn, "text", undefined, "133_ev_charging")}
+                  {renderDataField("Smart Home Features", fullProperty.utilities.smartHomeFeatures, "text", undefined, "134_smart_home_features")}
                 </div>
                 <div>
-                  {renderDataField("Pet Policy", fullProperty.utilities.petPolicy, "text", undefined, "108_pet_policy")}
-                  {renderDataField("Age Restrictions", fullProperty.utilities.ageRestrictions, "text", undefined, "109_age_restrictions")}
-                  {renderDataField("Special Assessments", fullProperty.financial.specialAssessments)}
+                  {renderDataField("Accessibility Modifications", fullProperty.utilities.accessibilityMods, "text", undefined, "135_accessibility_modifications")}
+                  {renderDataField("Pet Policy", fullProperty.utilities.petPolicy, "text", undefined, "136_pet_policy")}
+                  {renderDataField("Age Restrictions", fullProperty.utilities.ageRestrictions, "text", undefined, "137_age_restrictions")}
+                  {renderDataField("Special Assessments", fullProperty.financial.specialAssessments, "text", undefined, "138_special_assessments")}
                 </div>
               </div>
             </Section>
@@ -1062,7 +1095,7 @@ export default function PropertyDetail() {
             <AlertCircle className="w-16 h-16 text-quantum-gold mx-auto mb-4" />
             <h3 className="text-xl font-bold text-white mb-2">Limited Data Available</h3>
             <p className="text-gray-400 mb-6">
-              This property only has basic information. Upload a complete CSV or use the Search Property page to add full 110-field data.
+              This property only has basic information. Upload a complete CSV or use the Search Property page to add full 138-field data.
             </p>
             <Link to="/search" className="btn-quantum inline-flex items-center gap-2">
               <Search className="w-5 h-5" />
