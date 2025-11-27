@@ -757,14 +757,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const currentFieldCount = Object.keys(intermediateResult.fields).length;
 
       if (currentFieldCount < 100) {
-        // Pro plan: Use web-search LLMs (Perplexity + Grok) for best data
+        // Pro plan: Use ALL selected LLMs
         const enabledLlms = [
           { id: 'perplexity', fn: callPerplexity, name: 'Perplexity', enabled: engines.includes('perplexity') },
           { id: 'grok', fn: callGrok, name: 'Grok', enabled: engines.includes('grok') },
+          { id: 'claude-opus', fn: callClaudeOpus, name: 'Claude Opus', enabled: engines.includes('claude-opus') },
+          { id: 'gpt', fn: callGPT, name: 'GPT', enabled: engines.includes('gpt') },
+          { id: 'claude-sonnet', fn: callClaudeSonnet, name: 'Claude Sonnet', enabled: engines.includes('claude-sonnet') },
+          { id: 'gemini', fn: callGemini, name: 'Gemini', enabled: engines.includes('gemini') },
         ].filter(l => l.enabled);
 
-        // Skip the non-web-search LLMs for now
-        ['claude-opus', 'gpt', 'claude-sonnet', 'gemini'].forEach(id => {
+        // Report skipped LLMs
+        ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'].forEach(id => {
           if (!engines.includes(id)) {
             sendEvent(res, 'progress', { source: id, status: 'skipped', fieldsFound: 0, message: 'Not enabled' });
           }
