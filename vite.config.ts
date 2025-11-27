@@ -22,13 +22,8 @@ export default defineConfig({
     port: 5000,
     host: '0.0.0.0',
     strictPort: true,
-    allowedHosts: true, // Allow all hosts (required for Replit proxy)
-    hmr: {
-      protocol: 'wss',
-      host: undefined, // Uses the request origin
-      port: 443,
-    },
-    middlewareMode: false,
+    allowedHosts: true,
+    hmr: false, // Disable HMR for Replit - use manual refresh instead
   },
   build: {
     outDir: 'dist',
