@@ -411,3 +411,15 @@ export const UI_FIELD_GROUPS = [
   { id: 'O', name: 'Environment & Risk', fields: [117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130], color: 'orange' },
   { id: 'P', name: 'Additional Features', fields: [131, 132, 133, 134, 135, 136, 137, 138], color: 'purple' },
 ];
+
+// Source-based color coding for data reliability
+// GREEN: Perplexity/Grok with citations, paid APIs, official sources
+// YELLOW: Claude Opus/Sonnet - needs verification
+// RED: GPT, Gemini, Other - may be hallucinated
+export const getSourceColor = (source: DataSource): { bg: string; text: string; label: string } => {
+  const trusted: DataSource[] = ['Perplexity', 'Grok', 'Stellar MLS', 'County Assessor', 'County Tax Collector', 'County Clerk', 'County Permits', 'Google Geocode', 'Google Places', 'Google Maps', 'WalkScore', 'SchoolDigger', 'GreatSchools', 'Niche', 'NeighborhoodScout', 'FBI Crime', 'FEMA', 'First Street', 'AirNow', 'IQAir', 'HowLoud', 'Weather', 'RentCafe', 'Zumper', 'Census', 'Redfin', 'Manual Entry'];
+  const caution: DataSource[] = ['Claude Opus', 'Claude Sonnet'];
+  if (trusted.includes(source)) return { bg: 'bg-green-500/20', text: 'text-green-400', label: 'Verified' };
+  if (caution.includes(source)) return { bg: 'bg-yellow-500/20', text: 'text-yellow-400', label: 'Review' };
+  return { bg: 'bg-red-500/20', text: 'text-red-400', label: 'Unverified' };
+};

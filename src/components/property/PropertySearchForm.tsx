@@ -22,6 +22,7 @@ import {
   UI_FIELD_DEFINITIONS as FIELD_DEFINITIONS,
   UI_FIELD_GROUPS as FIELD_GROUPS,
   DATA_SOURCES,
+  getSourceColor,
   type DataSource,
   type UIFieldDefinition as FieldDefinition,
 } from '@/types/fields-schema';
@@ -405,13 +406,10 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
                 <Info className="w-3 h-3 inline" />
               </span>
             )}
-            {confidence && (
-              <span className={`ml-2 text-xs px-1.5 py-0.5 rounded ${
-                confidence === 'High' ? 'bg-green-500/20 text-green-400' :
-                confidence === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                'bg-red-500/20 text-red-400'
-              }`}>
-                {confidence}
+            {/* Source-based color coding for data reliability */}
+            {source && source !== 'Manual Entry' && (
+              <span className={`ml-2 text-xs px-1.5 py-0.5 rounded ${getSourceColor(source).bg} ${getSourceColor(source).text}`}>
+                {getSourceColor(source).label}
               </span>
             )}
           </label>
