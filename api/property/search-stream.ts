@@ -736,7 +736,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const {
     address,
     url,
-    engines = ['perplexity', 'grok', 'gemini'],  // 3 fastest LLMs (under 60s total)
+    engines = ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'],  // All 6 LLMs in parallel
     skipLLMs = false
   } = req.body;
 
@@ -763,8 +763,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Parallel execution with per-call timeouts
     // ========================================
 
-    const API_TIMEOUT = 10000; // 10s per API call
-    const LLM_TIMEOUT = 55000; // 20s per LLM call
+    const API_TIMEOUT = 8000; // 8s per API call
+    const LLM_TIMEOUT = 25000; // 25s per LLM call (all run in parallel, slowest wins)
     const startTime = Date.now();
     const DEADLINE = 59000; // 59s hard deadline (Vercel Pro allows 60s)
 
