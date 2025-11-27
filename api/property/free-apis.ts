@@ -515,11 +515,11 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
 }
 
 // ============================================
-// WEATHER.COM API
+// WEATHER API - Supports OpenWeatherMap or Weather.com
 // ============================================
 export async function callWeather(lat: number, lon: number): Promise<ApiResult> {
   const fields: Record<string, ApiField> = {};
-  const apiKey = process.env.WEATHER_API_KEY;
+  const apiKey = process.env.WEATHER_API_KEY || process.env.OPENWEATHERMAP_API_KEY;
 
   if (!apiKey) {
     // Try free alternative - Open-Meteo
@@ -552,8 +552,34 @@ export async function callWeather(lat: number, lon: number): Promise<ApiResult> 
     return { success: false, source: 'Weather', fields, error: 'WEATHER_API_KEY not configured' };
   }
 
+  // Try OpenWeatherMap first (most common)
   try {
-    // Weather.com API
+    const owmUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=imperial`;
+    const owmResponse = await fetch(owmUrl);
+
+    if (owmResponse.ok) {
+      const data = await owmResponse.json();
+
+      if (data.main) {
+        setField(fields, '118_current_temperature', Math.round(data.main.temp), 'OpenWeatherMap');
+        setField(fields, '122_humidity', data.main.humidity, 'OpenWeatherMap');
+        setField(fields, '119_feels_like', Math.round(data.main.feels_like), 'OpenWeatherMap');
+      }
+      if (data.weather?.[0]) {
+        setField(fields, '123_weather_description', data.weather[0].description, 'OpenWeatherMap');
+      }
+      if (data.wind) {
+        setField(fields, '124_wind_speed_mph', Math.round(data.wind.speed), 'OpenWeatherMap');
+      }
+
+      return { success: Object.keys(fields).length > 0, source: 'OpenWeatherMap', fields };
+    }
+  } catch (e) {
+    // If OpenWeatherMap fails, try Weather.com as fallback
+  }
+
+  // Fallback to Weather.com API
+  try {
     const url = `https://api.weather.com/v3/wx/conditions/current?geocode=${lat},${lon}&language=en-US&format=json&apiKey=${apiKey}`;
     const response = await fetch(url);
 
