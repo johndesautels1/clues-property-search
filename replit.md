@@ -114,6 +114,26 @@ This dashboard can run standalone or be embedded in the CLUES Quantum Master App
   - Configured deployment for static hosting (builds to dist/)
   - All dependencies installed and verified working
   - Updated documentation to clarify API endpoint requirements
+  - Fixed LLM integration with anti-hallucination validation layer
+  - Added data sanitization for all LLM responses to ensure type-safe data
+
+## Deploying to Vercel
+
+Your environment variables are already configured in Vercel. To deploy this app:
+
+1. **Deploy the API endpoints:**
+   ```bash
+   vercel --prod
+   ```
+   This deploys both the frontend and the `/api` serverless functions with your configured env vars.
+
+2. **Update frontend config:**
+   In production, Vite will serve from your Vercel domain. No additional configuration needed—the API calls will work automatically.
+
+3. **For local development in Replit:**
+   - Frontend runs on port 5000 with `npm run dev`
+   - API endpoints won't work locally (they need Vercel)
+   - Test frontend features only, or deploy to Vercel to test full functionality
 
 ## Notes
 - The project includes API endpoints in the `/api` directory designed for Vercel serverless functions

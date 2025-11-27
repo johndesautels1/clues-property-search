@@ -420,7 +420,7 @@ async function getClimateData(lat: number, lon: number): Promise<Record<string, 
 
     if (data) {
       // Current temperature and conditions
-      const conditions = [];
+      const conditions: string[] = [];
       if (data.temperature) conditions.push(`Current: ${data.temperature}°F`);
       if (data.temperatureFeelsLike) conditions.push(`Feels like: ${data.temperatureFeelsLike}°F`);
       if (data.relativeHumidity) conditions.push(`Humidity: ${data.relativeHumidity}%`);
