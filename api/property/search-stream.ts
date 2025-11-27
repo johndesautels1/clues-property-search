@@ -35,7 +35,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
     new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))
   ]);
 }
-import { LLM_CASCADE_ORDER } from './llm-constants';
+import { LLM_CASCADE_ORDER } from './llm-constants.js';
 import {
   callGoogleGeocode,
   callGooglePlaces,
@@ -47,8 +47,8 @@ import {
   callCrimeGrade,
   callWeather,
   type ApiField
-} from './free-apis';
-import { createArbitrationPipeline, type FieldValue, type ArbitrationResult } from './arbitration';
+} from './free-apis.js';
+import { createArbitrationPipeline, type FieldValue, type ArbitrationResult } from './arbitration.js';
 
 // SSE helper to send events
 function sendEvent(res: VercelResponse, event: string, data: any) {

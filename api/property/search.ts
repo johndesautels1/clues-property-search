@@ -26,9 +26,9 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 export const config = {
   maxDuration: 60, // 60 seconds max (Pro plan limit)
 };
-import { scrapeFloridaCounty } from './florida-counties';
-import { LLM_CASCADE_ORDER } from './llm-constants';
-import { createArbitrationPipeline, type FieldValue, type ArbitrationResult } from './arbitration';
+import { scrapeFloridaCounty } from './florida-counties.js';
+import { LLM_CASCADE_ORDER } from './llm-constants.js';
+import { createArbitrationPipeline, type FieldValue, type ArbitrationResult } from './arbitration.js';
 
 
 // ============================================
