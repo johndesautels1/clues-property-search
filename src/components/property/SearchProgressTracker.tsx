@@ -23,19 +23,13 @@ import {
   Loader2,
   Zap,
 } from 'lucide-react';
+import { 
+  initializeSourceProgress, 
+  SourceProgress, 
+  SourceStatus 
+} from '../../lib/data-sources';
 
-export type SourceStatus = 'pending' | 'searching' | 'complete' | 'error' | 'skipped';
-
-export interface SourceProgress {
-  id: string;
-  name: string;
-  type: 'scraper' | 'free-api' | 'llm';
-  status: SourceStatus;
-  fieldsFound: number;
-  icon: string;
-  color: string;
-  error?: string;
-}
+export type { SourceProgress, SourceStatus };
 
 interface SearchProgressTrackerProps {
   sources: SourceProgress[];
@@ -97,37 +91,7 @@ const textColorMap: Record<string, string> = {
   indigo: 'text-indigo-400',
 };
 
-export const DEFAULT_SOURCES: SourceProgress[] = [
-  // Tier 1: Scrapers (Most Reliable)
-  { id: 'realtor', name: 'Realtor.com', type: 'scraper', status: 'pending', fieldsFound: 0, icon: 'globe', color: 'cyan' },
-  { id: 'zillow', name: 'Zillow', type: 'scraper', status: 'pending', fieldsFound: 0, icon: 'globe', color: 'blue' },
-  { id: 'redfin', name: 'Redfin', type: 'scraper', status: 'pending', fieldsFound: 0, icon: 'globe', color: 'red' },
-
-  // Tier 2: Google APIs
-  { id: 'google-geocode', name: 'Google Geocode', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'mappin', color: 'blue' },
-  { id: 'google-places', name: 'Google Places', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'mappin', color: 'blue' },
-
-  // Tier 3: Reliable Free APIs
-  { id: 'walkscore', name: 'WalkScore', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'car', color: 'green' },
-  { id: 'fema', name: 'FEMA Flood', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'shield', color: 'yellow' },
-  { id: 'schooldigger', name: 'SchoolDigger', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'school', color: 'purple' },
-  { id: 'airdna', name: 'AirDNA', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'database', color: 'pink' },
-
-  // Tier 4: Other Free APIs
-  { id: 'airnow', name: 'AirNow', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'wind', color: 'green' },
-  { id: 'howloud', name: 'HowLoud', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'volume', color: 'purple' },
-  { id: 'weather', name: 'Weather', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'sun', color: 'orange' },
-  { id: 'broadband', name: 'Broadband', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'wifi', color: 'indigo' },
-  { id: 'crime', name: 'Crime', type: 'free-api', status: 'pending', fieldsFound: 0, icon: 'alert', color: 'red' },
-
-  // Tier 5: LLMs (Last Resort - Hallucination Risk)
-  { id: 'perplexity', name: 'Perplexity', type: 'llm', status: 'pending', fieldsFound: 0, icon: 'zap', color: 'cyan' },
-  { id: 'grok', name: 'Grok', type: 'llm', status: 'pending', fieldsFound: 0, icon: 'brain', color: 'blue' },
-  { id: 'claude-opus', name: 'Claude Opus', type: 'llm', status: 'pending', fieldsFound: 0, icon: 'brain', color: 'orange' },
-  { id: 'gpt', name: 'GPT-4o', type: 'llm', status: 'pending', fieldsFound: 0, icon: 'brain', color: 'green' },
-  { id: 'claude-sonnet', name: 'Claude Sonnet', type: 'llm', status: 'pending', fieldsFound: 0, icon: 'brain', color: 'orange' },
-  { id: 'gemini', name: 'Gemini', type: 'llm', status: 'pending', fieldsFound: 0, icon: 'brain', color: 'purple' },
-];
+export const DEFAULT_SOURCES: SourceProgress[] = initializeSourceProgress();
 
 export default function SearchProgressTracker({
   sources,
@@ -135,7 +99,7 @@ export default function SearchProgressTracker({
   totalFieldsFound,
   completionPercentage,
 }: SearchProgressTrackerProps) {
-  const scrapers = sources.filter(s => s.type === 'scraper');
+  const mlsSources = sources.filter(s => s.type === 'mls');
   const freeApis = sources.filter(s => s.type === 'free-api');
   const llms = sources.filter(s => s.type === 'llm');
 
@@ -311,28 +275,28 @@ export default function SearchProgressTracker({
         </div>
       </div>
 
-      {/* Scrapers Section */}
-      {scrapers.length > 0 && (
+      {/* MLS Section */}
+      {mlsSources.length > 0 && (
         <div className="space-y-2">
           <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-            <Globe className="w-4 h-4" />
-            Web Scrapers
+            <Database className="w-4 h-4" />
+            MLS Data
           </h4>
           <div className="grid grid-cols-1 gap-2">
-            {scrapers.map((source, idx) => renderSourceCard(source, idx))}
+            {mlsSources.map((source, idx) => renderSourceCard(source, idx))}
           </div>
         </div>
       )}
 
-      {/* Free APIs Section */}
+      {/* APIs Section */}
       {freeApis.length > 0 && (
         <div className="space-y-2">
           <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-            <Database className="w-4 h-4" />
-            Free APIs
+            <Globe className="w-4 h-4" />
+            Paid/Free APIs
           </h4>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {freeApis.map((source, idx) => renderSourceCard(source, idx + scrapers.length))}
+            {freeApis.map((source, idx) => renderSourceCard(source, idx + mlsSources.length))}
           </div>
         </div>
       )}
@@ -345,7 +309,7 @@ export default function SearchProgressTracker({
             AI Language Models
           </h4>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {llms.map((source, idx) => renderSourceCard(source, idx + scrapers.length + freeApis.length))}
+            {llms.map((source, idx) => renderSourceCard(source, idx + mlsSources.length + freeApis.length))}
           </div>
         </div>
       )}

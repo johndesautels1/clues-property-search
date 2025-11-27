@@ -3,11 +3,16 @@
  * Real-time progress updates via Server-Sent Events
  *
  * DATA SOURCE ORDER (Most Reliable First):
- * Tier 1: Scrapers (Realtor.com, Zillow, Redfin)
+ * Tier 1: Stellar MLS (when eKey obtained - future)
  * Tier 2: Google APIs (Geocode, Places)
- * Tier 3: Free Reliable APIs (WalkScore, FEMA, SchoolDigger, AirDNA)
- * Tier 4: Other Free APIs (AirNow, HowLoud, Weather, Broadband, Crime)
- * Tier 5: LLMs (Perplexity, Grok, Claude, GPT, Gemini) - LAST RESORT
+ * Tier 3: Paid/Free APIs (WalkScore, SchoolDigger, AirNow, HowLoud, Weather, Crime, FEMA)
+ * Tier 4: LLMs (Perplexity, Grok, Claude Opus, GPT, Claude Sonnet, Gemini)
+ *
+ * REMOVED (2025-11-27):
+ * - Scrapers (Zillow, Redfin, Realtor) - blocked by anti-bot
+ * - AirDNA - not wired
+ * - Broadband - not wired
+ * - HUD - geo-blocked outside US (disabled for now)
  *
  * RULES:
  * - Never store null values
@@ -17,8 +22,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { scrapeZillow, scrapeRedfin, scrapeRealtor, type ScrapedField } from './scrapers.js';
-import { LLM_CASCADE_ORDER } from './llm-constants.js';
+import { LLM_CASCADE_ORDER } from './llm-constants';
 import {
   callGoogleGeocode,
   callGooglePlaces,
@@ -26,15 +30,18 @@ import {
   callFemaFlood,
   callAirNow,
   callSchoolDigger,
-  callAirDNA,
   callHowLoud,
-  callBroadbandNow,
   callCrimeGrade,
   callWeather,
   type ApiField
-} from './free-apis.js';
-import { getFloridaLocalCrime } from './florida-crime-scraper.js';
-import { callHudFairMarketRent } from './free-apis.js';
+} from './free-apis';
+
+// ScrapedField type for compatibility (scrapers removed - they were blocked)
+interface ScrapedField {
+  value: string | number | boolean | null;
+  source: string;
+  confidence: 'High' | 'Medium' | 'Low';
+}
 
 // Field type for storing values
 interface FieldValue {
@@ -688,59 +695,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // ========================================
-    // TIER 1: WEB SCRAPERS (Most Reliable)
+    // TIER 1: STELLAR MLS (Future - when eKey obtained)
     // ========================================
-
-    // 1a. Realtor.com
-    sendEvent(res, 'progress', { source: 'realtor', status: 'searching', message: 'Scraping Realtor.com...' });
-    try {
-      const realtorResult = await scrapeRealtor(searchAddress);
-      const { newFields, conflicts } = mergeFields(allFields, realtorResult.fields, 1);
-      conflicts.forEach(c => allConflicts.push({ field: c.field, values: [c.existing, c.new] }));
-      sendEvent(res, 'progress', {
-        source: 'realtor',
-        status: realtorResult.success ? 'complete' : 'error',
-        fieldsFound: newFields,
-        addressVerified: realtorResult.addressVerified,
-        error: realtorResult.error
-      });
-    } catch (e) {
-      sendEvent(res, 'progress', { source: 'realtor', status: 'error', fieldsFound: 0, error: String(e) });
-    }
-
-    // 1b. Zillow
-    sendEvent(res, 'progress', { source: 'zillow', status: 'searching', message: 'Scraping Zillow...' });
-    try {
-      const zillowResult = await scrapeZillow(searchAddress, zpid);
-      const { newFields, conflicts } = mergeFields(allFields, zillowResult.fields, 2);
-      conflicts.forEach(c => allConflicts.push({ field: c.field, values: [c.existing, c.new] }));
-      sendEvent(res, 'progress', {
-        source: 'zillow',
-        status: zillowResult.success ? 'complete' : 'error',
-        fieldsFound: newFields,
-        addressVerified: zillowResult.addressVerified,
-        error: zillowResult.error
-      });
-    } catch (e) {
-      sendEvent(res, 'progress', { source: 'zillow', status: 'error', fieldsFound: 0, error: String(e) });
-    }
-
-    // 1c. Redfin
-    sendEvent(res, 'progress', { source: 'redfin', status: 'searching', message: 'Scraping Redfin...' });
-    try {
-      const redfinResult = await scrapeRedfin(searchAddress);
-      const { newFields, conflicts } = mergeFields(allFields, redfinResult.fields, 3);
-      conflicts.forEach(c => allConflicts.push({ field: c.field, values: [c.existing, c.new] }));
-      sendEvent(res, 'progress', {
-        source: 'redfin',
-        status: redfinResult.success ? 'complete' : 'error',
-        fieldsFound: newFields,
-        addressVerified: redfinResult.addressVerified,
-        error: redfinResult.error
-      });
-    } catch (e) {
-      sendEvent(res, 'progress', { source: 'redfin', status: 'error', fieldsFound: 0, error: String(e) });
-    }
+    // TODO: Add Stellar MLS integration here when eKey is available
+    // sendEvent(res, 'progress', { source: 'stellar-mls', status: 'skipped', message: 'Awaiting eKey...' });
 
     // ========================================
     // TIER 2: GOOGLE APIS
@@ -838,23 +796,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         sendEvent(res, 'progress', { source: 'schooldigger', status: 'error', fieldsFound: 0, error: String(e) });
       }
 
-      // AirDNA
-      sendEvent(res, 'progress', { source: 'airdna', status: 'searching', message: 'Getting rental data...' });
-      try {
-        const airdnaResult = await callAirDNA(lat, lon, searchAddress);
-        const { newFields } = mergeFields(allFields, airdnaResult.fields, 9);
-        sendEvent(res, 'progress', {
-          source: 'airdna',
-          status: airdnaResult.success ? 'complete' : 'error',
-          fieldsFound: newFields,
-          error: airdnaResult.error
-        });
-      } catch (e) {
-        sendEvent(res, 'progress', { source: 'airdna', status: 'error', fieldsFound: 0, error: String(e) });
-      }
-
       // ========================================
-      // TIER 4: OTHER FREE APIS
+      // TIER 3 CONTINUED: OTHER PAID/FREE APIS
       // ========================================
 
       // AirNow
@@ -902,34 +845,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         sendEvent(res, 'progress', { source: 'weather', status: 'error', fieldsFound: 0, error: String(e) });
       }
 
-      // Broadband
-      sendEvent(res, 'progress', { source: 'broadband', status: 'searching', message: 'Checking internet availability...' });
+      // Crime - FBI data
+      sendEvent(res, 'progress', { source: 'crime', status: 'searching', message: 'Getting crime data...' });
       try {
-        const bbResult = await callBroadbandNow(lat, lon, searchAddress);
-        const { newFields } = mergeFields(allFields, bbResult.fields, 13);
-        sendEvent(res, 'progress', {
-          source: 'broadband',
-          status: bbResult.success ? 'complete' : 'error',
-          fieldsFound: newFields,
-          error: bbResult.error
-        });
-      } catch (e) {
-        sendEvent(res, 'progress', { source: 'broadband', status: 'error', fieldsFound: 0, error: String(e) });
-      }
-
-      // Crime - Try local Florida data first, then FBI fallback
-      sendEvent(res, 'progress', { source: 'crime', status: 'searching', message: 'Getting local crime data...' });
-      try {
-        // Try local Florida county crime scraper first
-        let crimeResult = await getFloridaLocalCrime(lat, lon, county);
-        
-        // If local fails, fall back to FBI state-level data
-        if (!crimeResult.success || Object.keys(crimeResult.fields).length === 0) {
-          sendEvent(res, 'progress', { source: 'crime', status: 'searching', message: 'Falling back to FBI data...' });
-          crimeResult = await callCrimeGrade(lat, lon, searchAddress);
-        }
-        
-        const { newFields } = mergeFields(allFields, crimeResult.fields, 14);
+        const crimeResult = await callCrimeGrade(lat, lon, searchAddress);
+        const { newFields } = mergeFields(allFields, crimeResult.fields, 9);
         sendEvent(res, 'progress', {
           source: 'crime',
           status: crimeResult.success ? 'complete' : 'error',
@@ -940,25 +860,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         sendEvent(res, 'progress', { source: 'crime', status: 'error', fieldsFound: 0, error: String(e) });
       }
 
-      // HUD Fair Market Rent (requires ZIP code from geocode)
-      sendEvent(res, 'progress', { source: 'hud-fmr', status: 'searching', message: 'Getting fair market rent data...' });
-      try {
-        const hudResult = await callHudFairMarketRent(zip);
-        const { newFields } = mergeFields(allFields, hudResult.fields, 15);
-        sendEvent(res, 'progress', {
-          source: 'hud-fmr',
-          status: hudResult.success ? 'complete' : 'error',
-          fieldsFound: newFields,
-          error: hudResult.error
-        });
-      } catch (e) {
-        sendEvent(res, 'progress', { source: 'hud-fmr', status: 'error', fieldsFound: 0, error: String(e) });
-      }
-
+      // HUD Fair Market Rent - DISABLED (geo-blocked outside US)
+      // TODO: Re-enable when deployed to US-based server (Vercel)
+      // sendEvent(res, 'progress', { source: 'hud-fmr', status: 'skipped', message: 'Disabled - geo-blocked' });
 
     } else {
       // Skip location-dependent APIs
-      ['google-places', 'walkscore', 'fema', 'schooldigger', 'airdna', 'airnow', 'howloud', 'weather', 'broadband', 'crime', 'hud-fmr'].forEach(src => {
+      ['google-places', 'walkscore', 'fema', 'schooldigger', 'airnow', 'howloud', 'weather', 'crime'].forEach(src => {
         sendEvent(res, 'progress', { source: src, status: 'skipped', fieldsFound: 0, error: 'No coordinates available' });
       });
     }

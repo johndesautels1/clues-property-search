@@ -1,9 +1,23 @@
 /**
- * CLUES Property Search API
- * Strategy:
- * 1. First scrape Realtor.com for real property data
- * 2. Then call free APIs (WalkScore, FEMA, Google Maps, AirNow)
- * 3. Finally use LLMs only to fill gaps with web search
+ * CLUES Property Search API (Non-Streaming Version)
+ * 
+ * DATA SOURCE ORDER (Most Reliable First):
+ * Tier 1: Stellar MLS (when eKey obtained - future)
+ * Tier 2: Google APIs (Geocode, Places)
+ * Tier 3: Paid/Free APIs (WalkScore, SchoolDigger, AirNow, HowLoud, Weather, Crime, FEMA)
+ * Tier 4: LLMs (Perplexity, Grok, Claude Opus, GPT, Claude Sonnet, Gemini)
+ *
+ * REMOVED (2025-11-27):
+ * - Scrapers (Zillow, Redfin, Realtor) - blocked by anti-bot
+ * - AirDNA - not wired
+ * - Broadband - not wired
+ * - HUD - geo-blocked outside US (disabled for now)
+ *
+ * RULES:
+ * - Never store null values
+ * - Most reliable source wins on conflicts
+ * - Yellow warning for conflicts
+ * - LLMs only fill gaps, never overwrite reliable data
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -205,136 +219,10 @@ function convertFlatToNestedStructure(flatFields: Record<string, any>): any {
 }
 
 // ============================================
-// REALTOR.COM SCRAPER
+// SCRAPERS REMOVED (2025-11-27)
+// Zillow/Redfin/Realtor blocked by anti-bot
+// Use MLS API when eKey is obtained
 // ============================================
-
-const SCRAPER_HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-  'Accept-Language': 'en-US,en;q=0.9',
-};
-
-function addressToRealtorUrl(address: string): string {
-  const parts = address.split(',').map(p => p.trim());
-  if (parts.length < 3) return '';
-  const street = parts[0].replace(/\s+/g, '-').replace(/[^\w-]/g, '');
-  const city = parts[1].replace(/\s+/g, '-').replace(/[^\w-]/g, '');
-  const stateZip = parts[2].trim().split(' ');
-  const state = stateZip[0];
-  const zip = stateZip[1] || '';
-  return `https://www.realtor.com/realestateandhomes-detail/${street}_${city}_${state}_${zip}`;
-}
-
-function extractNextData(html: string): any {
-  const match = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
-  if (!match) return null;
-  try {
-    const data = JSON.parse(match[1]);
-    return data?.props?.pageProps?.initialReduxState || data?.props?.pageProps;
-  } catch (e) {
-    return null;
-  }
-}
-
-async function scrapeRealtorData(address: string): Promise<Record<string, any>> {
-  const directUrl = addressToRealtorUrl(address);
-  if (!directUrl) return {};
-
-  try {
-    const response = await fetch(directUrl, { headers: SCRAPER_HEADERS });
-    if (!response.ok) return {};
-
-    const html = await response.text();
-    const data = extractNextData(html);
-    if (!data) return {};
-
-    const property = data?.propertyDetails?.listingDetail || data?.property || data;
-    const listing = property?.listing || property;
-    const location = property?.location || property?.address || {};
-    const description = property?.description || {};
-    const taxHistory = property?.tax_history || [];
-    const priceHistory = property?.price_history || [];
-
-    const fields: Record<string, any> = {};
-
-    // Address
-    const addr = location.address || location;
-    if (addr?.line) {
-      fields['1_full_address'] = {
-        value: `${addr.line}, ${addr.city}, ${addr.state_code} ${addr.postal_code}`,
-        source: 'Realtor.com',
-        confidence: 'High'
-      };
-    }
-
-    // MLS & Status
-    fields['2_mls_primary'] = { value: listing?.mls?.id || property?.mls_id, source: 'Realtor.com', confidence: 'High' };
-    fields['4_listing_status'] = { value: property?.status || listing?.status, source: 'Realtor.com', confidence: 'High' };
-    fields['5_listing_date'] = { value: listing?.list_date || property?.list_date, source: 'Realtor.com', confidence: 'High' };
-    fields['6_parcel_id'] = { value: property?.property_id, source: 'Realtor.com', confidence: 'High' };
-
-    // Pricing
-    const price = listing?.list_price || property?.list_price || property?.price;
-    const sqft = description?.sqft || property?.sqft || property?.building_size?.size;
-    fields['7_listing_price'] = { value: price, source: 'Realtor.com', confidence: 'High' };
-    fields['8_price_per_sqft'] = { value: (price && sqft) ? Math.round(price / sqft) : null, source: 'Calculated', confidence: 'High' };
-
-    // Last sale from price history
-    if (priceHistory?.length > 0) {
-      const lastSale = priceHistory.find((h: any) => h.event_name === 'Sold');
-      if (lastSale) {
-        fields['10_last_sale_date'] = { value: lastSale.date, source: 'Realtor.com', confidence: 'High' };
-        fields['11_last_sale_price'] = { value: lastSale.price, source: 'Realtor.com', confidence: 'High' };
-      }
-    }
-
-    // Property Basics
-    fields['12_bedrooms'] = { value: description?.beds || property?.beds, source: 'Realtor.com', confidence: 'High' };
-    fields['13_full_bathrooms'] = { value: description?.baths_full || property?.baths_full, source: 'Realtor.com', confidence: 'High' };
-    fields['14_half_bathrooms'] = { value: description?.baths_half || property?.baths_half || 0, source: 'Realtor.com', confidence: 'High' };
-
-    const fullBaths = description?.baths_full || property?.baths_full || 0;
-    const halfBaths = description?.baths_half || property?.baths_half || 0;
-    fields['15_total_bathrooms'] = { value: fullBaths + (halfBaths * 0.5), source: 'Calculated', confidence: 'High' };
-
-    fields['16_living_sqft'] = { value: sqft, source: 'Realtor.com', confidence: 'High' };
-    fields['18_lot_size_sqft'] = { value: description?.lot_sqft || property?.lot_sqft, source: 'Realtor.com', confidence: 'High' };
-
-    const lotSqft = description?.lot_sqft || property?.lot_sqft;
-    fields['19_lot_size_acres'] = { value: lotSqft ? (lotSqft / 43560).toFixed(2) : null, source: 'Calculated', confidence: 'High' };
-
-    fields['20_year_built'] = { value: description?.year_built || property?.year_built, source: 'Realtor.com', confidence: 'High' };
-    fields['21_property_type'] = { value: description?.type || property?.prop_type || property?.type, source: 'Realtor.com', confidence: 'High' };
-    fields['22_stories'] = { value: description?.stories || property?.stories, source: 'Realtor.com', confidence: 'Medium' };
-    fields['23_garage_spaces'] = { value: description?.garage || property?.garage, source: 'Realtor.com', confidence: 'Medium' };
-
-    // HOA
-    const hoa = property?.hoa || listing?.hoa;
-    fields['25_hoa_yn'] = { value: hoa ? true : false, source: 'Realtor.com', confidence: 'Medium' };
-    if (hoa?.fee) {
-      fields['26_hoa_fee_annual'] = { value: hoa.fee * 12, source: 'Realtor.com', confidence: 'Medium' };
-    }
-
-    // County
-    fields['28_county'] = { value: location?.county?.name || location?.address?.county, source: 'Realtor.com', confidence: 'High' };
-
-    // Taxes
-    if (taxHistory?.length > 0) {
-      const latestTax = taxHistory[0];
-      fields['29_annual_taxes'] = { value: latestTax?.tax, source: 'Realtor.com', confidence: 'High' };
-      fields['30_tax_year'] = { value: latestTax?.year, source: 'Realtor.com', confidence: 'High' };
-      fields['31_assessed_value'] = { value: latestTax?.assessment?.total, source: 'Realtor.com', confidence: 'High' };
-    }
-
-    // Filter out null values
-    return Object.fromEntries(
-      Object.entries(fields).filter(([_, v]) => v.value !== null && v.value !== undefined)
-    );
-  } catch (e) {
-    console.error('Realtor scrape error:', e);
-    return {};
-  }
-}
 
 // ============================================
 // FREE API ENRICHMENT
@@ -1644,10 +1532,10 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "7_listing
   }
 }
 
-// Grok API call (xAI) - #3 in reliability, HAS WEB SEARCH
+// Grok API call (xAI) - #2 in reliability, HAS WEB SEARCH
 async function callGrok(address: string): Promise<any> {
-  const apiKey = process.env.GROK_API_KEY;
-  if (!apiKey) { console.log('❌ GROK_API_KEY not set'); return { error: 'GROK_API_KEY not set', fields: {} }; } console.log('✅ GROK_API_KEY found, calling Grok API...');
+  const apiKey = process.env.XAI_API_KEY;
+  if (!apiKey) { console.log('❌ XAI_API_KEY not set'); return { error: 'XAI_API_KEY not set', fields: {} }; } console.log('✅ XAI_API_KEY found, calling Grok API...');
 
   // Grok-specific prompt with web search emphasis
   const grokSystemPrompt = `${PROMPT_GROK}
@@ -1851,20 +1739,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const fieldSources: Record<string, string[]> = {}; // Track which LLMs provided each field
     const conflicts: Array<{field: string; values: Array<{source: string; value: any}>}> = []; // Track conflicts
 
-    // STEP 0: Try Realtor.com scraper first for best real data
-    console.log('Step 0: Scraping Realtor.com...');
-    try {
-      const realtorData = await scrapeRealtorData(searchQuery);
-      if (Object.keys(realtorData).length > 0) {
-        Object.assign(allFields, realtorData);
-        sources_used.push('Realtor.com');
-        console.log('Added ' + Object.keys(realtorData).length + ' fields from Realtor.com');
-      } else {
-        console.log('No data from Realtor.com scraper');
-      }
-    } catch (e) {
-      console.error('Realtor.com scrape failed:', e);
-    }
+    // STEP 0: MLS would go here when eKey is obtained
+    // Scrapers removed (2025-11-27) - blocked by anti-bot
 
     // STEP 1: Enrich with free APIs (WalkScore, FEMA, AirNow) - FAST
     console.log('Step 1: Enriching with free APIs...');

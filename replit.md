@@ -1,7 +1,7 @@
 # CLUES Property Dashboard - Replit Project
 
 ## Overview
-110-Field Real Estate Intelligence Platform built with React, TypeScript, Vite, and PostgreSQL. This is a mobile-first property data collection and analysis dashboard with AI-powered web scraping capabilities.
+110-Field Real Estate Intelligence Platform built with React, TypeScript, Vite, and PostgreSQL. This is a mobile-first property data collection and analysis dashboard with tiered data sources: MLS (future), Google APIs, Paid/Free APIs, and LLM cascade with validation.
 
 ## Project Type
 - **Framework**: Vite + React + TypeScript
@@ -51,11 +51,13 @@ Complete property data collection with confidence tracking for each field:
 - **Financial** (Fields 76-90): Taxes, rental estimates, market data
 - **Utilities & Environment** (Fields 91-110): Utilities, flood zones, air quality
 
-### Multi-LLM Web Scraping
-- Supports Claude (Anthropic), GPT (OpenAI), Grok (xAI), Gemini (Google)
-- Hybrid mode for cross-validation
-- Confidence scoring system
-- Source attribution for each data point
+### Tiered Data Sources
+- **Tier 1**: Stellar MLS (awaiting eKey integration)
+- **Tier 2**: Google APIs (Geocode, Places)
+- **Tier 3**: Paid/Free APIs (WalkScore, SchoolDigger, FEMA, AirNow, HowLoud, Weather, FBI Crime)
+- **Tier 4**: LLM Cascade (Perplexity, Grok, Claude Opus, GPT, Claude Sonnet, Gemini)
+- Confidence scoring and source attribution for each data point
+- Conflict detection and validation gates
 
 ### UI Design
 - 5D glassmorphic effects with neon accents
@@ -108,7 +110,19 @@ The app can also be deployed to:
 This dashboard can run standalone or be embedded in the CLUES Quantum Master App. The `clues-bridge.ts` module handles parent-child iframe communication for property data synchronization.
 
 ## Recent Changes
-- **2025-11-27 (Latest)**: CRITICAL FIX - API Key Mismatch Causing 100+ Fields to Fail
+- **2025-11-27 (Latest)**: Unified Data Sources Architecture & Scraper Removal
+  - **Created Unified Data Sources Manifest**: `src/lib/data-sources.ts` - single source of truth for all 16 data sources
+  - **Tiered Architecture**:
+    - Tier 1: Stellar MLS (awaiting eKey - future)
+    - Tier 2: Google APIs (Geocode, Places)
+    - Tier 3: Paid/Free APIs (WalkScore, SchoolDigger, FEMA, AirNow, HowLoud, Weather, FBI Crime)
+    - Tier 4: LLMs (Perplexity, Grok, Claude Opus, GPT, Claude Sonnet, Gemini)
+  - **Scrapers Deleted**: Removed Zillow/Redfin/Realtor scrapers entirely - they were blocked by anti-bot measures
+  - **Disabled Sources**: AirDNA and Broadband removed from active sources (never wired correctly)
+  - **UI Updates**: SearchProgressTracker.tsx and AddProperty.tsx now import from unified manifest
+  - **API Updates**: Cleaned up search.ts and search-stream.ts to remove scraper calls
+
+- **2025-11-27 (Earlier)**: CRITICAL FIX - API Key Mismatch Causing 100+ Fields to Fail
   - **Root Cause Found**: FIELD_TO_PROPERTY_MAP had duplicate/conflicting apiKey entries that overwrote correct mappings
   - **Conflicting Keys Removed**: Entries like `85_trash_provider`, `88_fiber_available`, `90_avg_electric_bill` were overwriting official API keys like `85_rental_estimate_monthly`, `88_cap_rate_est`, `90_financing_terms`
   - **Spelling Fix**: Changed `96_internet_providers_top3` to match API's `96_internet_providers_top`
