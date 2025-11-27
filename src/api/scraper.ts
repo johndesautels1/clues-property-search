@@ -305,20 +305,19 @@ class PropertyScraper {
   private buildExtractionPrompt(input: string): string {
     const isUrl = input.startsWith('http');
 
-    return `You are a real estate data extraction API. Your response MUST be valid JSON only.
+    return `You are a real estate data extraction API. Extract property data ONLY if you have reliable information.
+Your response MUST be valid JSON only with NO explanations or markdown.
 
-${isUrl ? `Visit this URL and extract property data: ${input}` : `Search for and extract property data for this address: ${input}`}
+${isUrl ? `For this listing URL, extract property data if available: ${input}. If you cannot access or verify the URL, respond with all null/empty values.` : `For this address, extract property data from your knowledge: ${input}. Only include data you are confident about.`}
 
-CRITICAL INSTRUCTIONS:
-1. Extract all available data from the property listing
-2. Return ONLY the JSON object below - NO explanations, NO markdown
-3. If you cannot find a value, use null for numbers or empty string "" for text
-4. Your entire response must be parseable by JSON.parse()
-
-Return this exact JSON structure:
+CRITICAL RULES:
+1. ONLY include data you are confident about - hallucinations will break the system
+2. If uncertain about ANY value, use null for numbers or empty string "" for text
+3. DO NOT guess or invent data - missing data is better than wrong data
+4. Return EXACTLY this JSON structure with NO additional fields:
 {"address":{"full_address":"","street":"","city":"","state":"","zip":"","county":"","latitude":null,"longitude":null},"price":{"current":null,"original":null,"per_sqft":null,"tax_assessed":null},"property":{"bedrooms":null,"bathrooms":null,"sqft":null,"lot_size":null,"year_built":null,"property_type":"","stories":null,"garage":null,"pool":false,"hoa":null},"listing":{"status":"","days_on_market":null,"mls_number":"","listing_agent":"","listing_brokerage":""}}
 
-RESPOND WITH JSON ONLY`;
+Return ONLY the JSON object, nothing else.`;
   }
 
   private parseResponse(content: unknown): PropertyScrapedData | null {
@@ -340,10 +339,67 @@ RESPOND WITH JSON ONLY`;
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) return null;
 
-      return JSON.parse(jsonMatch[0]) as PropertyScrapedData;
+      const parsed = JSON.parse(jsonMatch[0]) as PropertyScrapedData;
+      
+      // Validate and sanitize the response to prevent hallucinations
+      return this.sanitizePropertyData(parsed);
     } catch {
       return null;
     }
+  }
+
+  private sanitizePropertyData(data: PropertyScrapedData): PropertyScrapedData {
+    // Validate address
+    if (data.address) {
+      data.address.latitude = this.validateNumber(data.address.latitude, -90, 90) || null;
+      data.address.longitude = this.validateNumber(data.address.longitude, -180, 180) || null;
+    }
+
+    // Validate price
+    if (data.price) {
+      data.price.current = this.validatePrice(data.price.current);
+      data.price.original = this.validatePrice(data.price.original);
+      data.price.per_sqft = this.validatePrice(data.price.per_sqft);
+      data.price.tax_assessed = this.validatePrice(data.price.tax_assessed);
+    }
+
+    // Validate property details
+    if (data.property) {
+      data.property.bedrooms = this.validatePositiveInt(data.property.bedrooms);
+      data.property.bathrooms = this.validatePositiveInt(data.property.bathrooms);
+      data.property.sqft = this.validatePositiveInt(data.property.sqft);
+      data.property.lot_size = this.validatePositiveInt(data.property.lot_size);
+      data.property.year_built = this.validateYear(data.property.year_built);
+      data.property.stories = this.validatePositiveInt(data.property.stories);
+      data.property.garage = this.validatePositiveInt(data.property.garage);
+    }
+
+    return data;
+  }
+
+  private validateNumber(val: any, min: number, max: number): number | null {
+    const num = typeof val === 'number' ? val : parseFloat(String(val));
+    if (isNaN(num) || num < min || num > max) return null;
+    return num;
+  }
+
+  private validatePrice(val: any): number | null {
+    const num = typeof val === 'number' ? val : parseFloat(String(val));
+    if (isNaN(num) || num < 0 || num > 1000000000) return null;
+    return Math.round(num * 100) / 100;
+  }
+
+  private validatePositiveInt(val: any): number | null {
+    const num = typeof val === 'number' ? val : parseInt(String(val), 10);
+    if (isNaN(num) || num < 0 || num > 100000) return null;
+    return num;
+  }
+
+  private validateYear(val: any): number | null {
+    const num = typeof val === 'number' ? val : parseInt(String(val), 10);
+    const currentYear = new Date().getFullYear();
+    if (isNaN(num) || num < 1800 || num > currentYear + 1) return null;
+    return num;
   }
 
   private countPopulatedFields(data: PropertyScrapedData | null): number {
