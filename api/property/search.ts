@@ -1843,20 +1843,47 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sourceBreakdown[source] = (sourceBreakdown[source] || 0) + 1;
     }
 
+    // Convert API response to match frontend DataField interface
+    const convertedFields: Record<string, any> = {};
+    for (const [key, field] of Object.entries(allFields)) {
+      const fieldData = field as any;
+      const value = fieldData?.value !== undefined ? fieldData.value : fieldData;
+      const source = fieldData?.source || 'Unknown';
+      
+      // Parse dates if they look like date strings
+      let parsedValue = value;
+      if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+        parsedValue = new Date(value).toISOString();
+      } else if (typeof value === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}/.test(value)) {
+        const [m, d, y] = value.split('/');
+        parsedValue = new Date(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`).toISOString();
+      }
+      
+      // Convert to DataField format that frontend expects
+      convertedFields[key] = {
+        value: parsedValue,
+        confidence: fieldData?.confidence || 'Medium',
+        notes: fieldData?.notes || '',
+        sources: typeof source === 'string' ? [source] : (source || []),
+        llmSources: fieldSources[key] || [],
+        hasConflict: conflicts.some(c => c.field === key),
+        conflictValues: conflicts.find(c => c.field === key)?.values || []
+      };
+    }
+
     return res.status(200).json({
       success: true,
       address: searchQuery,
-      fields: allFields,
+      fields: convertedFields,
       total_fields_found: total_fields,
       completion_percentage,
       sources: sources_used,
       source_breakdown: sourceBreakdown,
-      field_sources: fieldSources, // NEW: Which LLMs provided each field
-      conflicts, // NEW: Fields where LLMs disagreed
+      field_sources: fieldSources,
+      conflicts,
       llm_responses: llmResponses,
       strategy: 'cascade',
-      cascade_order: ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'],
-      note: 'CASCADE STRATEGY (Reliability Order per Audit): Claude Opus (KING) → GPT → Grok → Claude Sonnet → Copilot → Gemini → Perplexity. Stops at 100% completion.'
+      cascade_order: ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini']
     });
   } catch (error) {
     console.error('=== SEARCH ERROR ===');

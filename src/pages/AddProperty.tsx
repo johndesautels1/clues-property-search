@@ -505,22 +505,32 @@ export default function AddProperty() {
       const stateMatch = stateZip.match(/([A-Z]{2})/);
       const zipMatch = stateZip.match(/(\d{5})/);
 
-      // Create property card from API response
+      // Create property card from API response with type coercion
+      const getFieldValue = (field: any): any => {
+        if (!field) return null;
+        return field.value !== undefined ? field.value : field;
+      };
+
+      const parseNumber = (val: any): number => {
+        const num = typeof val === 'number' ? val : parseFloat(String(val));
+        return !isNaN(num) ? num : 0;
+      };
+
       const scrapedProperty: PropertyCard = {
         id: generateId(),
         address: street || fullAddress,
         city,
         state: stateMatch?.[1] || 'FL',
         zip: zipMatch?.[1] || '',
-        price: fields['7_listing_price']?.value || 0,
-        pricePerSqft: fields['8_price_per_sqft']?.value || 0,
-        bedrooms: fields['12_bedrooms']?.value || 0,
-        bathrooms: fields['15_total_bathrooms']?.value || 0,
-        sqft: fields['16_living_sqft']?.value || 0,
-        yearBuilt: fields['20_year_built']?.value || new Date().getFullYear(),
+        price: parseNumber(getFieldValue(fields['6_listing_price'])),
+        pricePerSqft: parseNumber(getFieldValue(fields['7_price_per_sqft'])),
+        bedrooms: parseNumber(getFieldValue(fields['12_bedrooms'])),
+        bathrooms: parseNumber(getFieldValue(fields['15_total_bathrooms'])),
+        sqft: parseNumber(getFieldValue(fields['16_living_sqft'])),
+        yearBuilt: parseNumber(getFieldValue(fields['20_year_built'])) || new Date().getFullYear(),
         smartScore: data.completion_percentage || 75,
         dataCompleteness: data.completion_percentage || 0,
-        listingStatus: fields['4_listing_status']?.value || 'Active',
+        listingStatus: (getFieldValue(fields['4_listing_status']) || 'Active') as 'Active' | 'Pending' | 'Sold',
         daysOnMarket: 0,
       };
 
