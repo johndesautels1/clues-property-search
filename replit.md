@@ -13,7 +13,7 @@ A mobile-first, **138-field** real estate intelligence platform built with React
 - Do not make changes to the file Y.
 
 ### System Architecture
-The project utilizes a Vite + React + TypeScript frontend with Tailwind CSS for styling, featuring a custom 5D glassmorphic design with neon accents, mobile-first responsiveness, a dark theme, and quantum-inspired animations via Framer Motion. Data is managed using Zustand for state and persisted in a PostgreSQL database via Prisma ORM, adhering to a comprehensive 110-field property schema. The system supports multi-LLM integration (Claude, GPT, Grok, Gemini) for data enrichment and validation. A tiered data source architecture is implemented, prioritizing Stellar MLS (future), then Google APIs, various paid/free APIs (e.g., WalkScore, SchoolDigger), and finally a multi-LLM cascade with confidence scoring, conflict detection, and validation gates. The backend API endpoints are designed as Vercel serverless functions, enabling property scraping and enrichment. The system includes a `clues-bridge.ts` module for integration with the CLUES Quantum Master App via iframe communication.
+The project utilizes a Vite + React + TypeScript frontend with Tailwind CSS for styling, featuring a custom 5D glassmorphic design with neon accents, mobile-first responsiveness, a dark theme, and quantum-inspired animations via Framer Motion. Data is managed using Zustand for state and persisted in a PostgreSQL database via Prisma ORM, adhering to a comprehensive 138-field property schema. The system supports multi-LLM integration (Claude, GPT, Grok, Gemini) for data enrichment and validation. A tiered data source architecture is implemented, prioritizing Stellar MLS (future), then Google APIs, various paid/free APIs (e.g., WalkScore, SchoolDigger), and finally a multi-LLM cascade with confidence scoring, conflict detection, and validation gates. The backend API endpoints are designed as Vercel serverless functions, enabling property scraping and enrichment. The system includes a `clues-bridge.ts` module for integration with the CLUES Quantum Master App via iframe communication.
 
 ### External Dependencies
 - **Database**: PostgreSQL (via Prisma ORM)
@@ -93,10 +93,10 @@ The project utilizes a Vite + React + TypeScript frontend with Tailwind CSS for 
 │   ├── pages/          # Route pages (Dashboard, PropertyList, etc.)
 │   ├── lib/            # Utilities and CLUES bridge integration
 │   ├── store/          # Zustand state management
-│   ├── types/          # TypeScript type definitions (110-field schema)
+│   ├── types/          # TypeScript type definitions (138-field schema)
 │   └── styles/         # Global CSS and Tailwind
 ├── api/                # Backend API endpoints (Vercel serverless)
 │   └── property/       # Property scraping and enrichment APIs
-├── prisma/             # Database schema (110-field property model)
+├── prisma/             # Database schema (138-field property model)
 └── public/             # Static assets
 ```

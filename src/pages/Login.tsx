@@ -136,7 +136,7 @@ export default function Login() {
                   </div>
                 </div>
                 <p className="text-gray-500 text-xs mt-3 text-left">
-                  Full access to all 110 fields, data sources, and analytics
+                  Full access to all 138 fields, data sources, and analytics
                 </p>
               </motion.button>
 
@@ -157,7 +157,7 @@ export default function Login() {
                   </div>
                 </div>
                 <p className="text-gray-500 text-xs mt-3 text-left">
-                  Search properties and view all 110 data fields
+                  Search properties and view all 138 data fields
                 </p>
               </motion.button>
             </motion.div>

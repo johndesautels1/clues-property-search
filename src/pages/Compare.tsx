@@ -17,7 +17,7 @@ export default function Compare() {
           Compare Properties
         </h1>
         <p className="text-gray-400">
-          Side-by-side 110-field comparison
+          Side-by-side 138-field comparison
         </p>
       </div>
 
@@ -44,7 +44,7 @@ export default function Compare() {
         </div>
 
         <div className="text-center text-gray-500 py-12">
-          Select 2-3 properties to compare all 110 fields
+          Select 2-3 properties to compare all 138 fields
         </div>
 
         {/* Legend */}

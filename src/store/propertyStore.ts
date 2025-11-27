@@ -66,7 +66,7 @@ const initialProperties: PropertyCard[] = [
 interface PropertyState {
   // Properties data
   properties: PropertyCard[];
-  fullProperties: Map<string, Property>; // Store full 110-field properties separately
+  fullProperties: Map<string, Property>; // Store full 138-field properties separately
   selectedPropertyId: string | null;
   isLoading: boolean;
   error: string | null;

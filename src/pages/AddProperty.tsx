@@ -272,7 +272,7 @@ export default function AddProperty() {
 
                 // Update progress based on fields found
                 currentFieldsFound += fieldsFound || 0;
-                setProgress(Math.min(Math.round((currentFieldsFound / 110) * 100), 99));
+                setProgress(Math.min(Math.round((currentFieldsFound / 138) * 100), 99));
 
                 // Update status message
                 if (status === 'searching') {
@@ -333,7 +333,7 @@ export default function AddProperty() {
         daysOnMarket: 0,
       };
 
-      // Create full property object with all 110 fields if available
+      // Create full property object with all 138 fields if available
       const fullPropertyData = convertApiResponseToFullProperty(fields, scrapedProperty.id, fieldSources, conflicts);
 
       addProperty(scrapedProperty, fullPropertyData);
@@ -485,7 +485,7 @@ export default function AddProperty() {
         daysOnMarket: 0,
       };
 
-      // Create full property object with all 110 fields if available
+      // Create full property object with all 138 fields if available
       const fullPropertyData = convertApiResponseToFullProperty(fields, scrapedProperty.id, fieldSources, conflicts);
 
       addProperty(scrapedProperty, fullPropertyData);
@@ -522,7 +522,7 @@ export default function AddProperty() {
       case 'searching':
         return 'Finding property listings...';
       case 'scraping':
-        return 'Extracting 110 fields with AI...';
+        return 'Extracting 138 fields with AI...';
       case 'enriching':
         return 'Enriching with Walk Score, Crime, Schools...';
       case 'complete':
@@ -642,7 +642,7 @@ export default function AddProperty() {
     return firstNumber ? parseFloat(firstNumber) : null;
   };
 
-  // Convert CSV row with 110 fields to full Property object
+  // Convert CSV row with 138 fields to full Property object
   const convertCsvToFullProperty = (row: any, propertyId: string): Property => {
     const now = new Date().toISOString();
 
@@ -831,7 +831,7 @@ export default function AddProperty() {
         // Generate ID for this property
         const propertyId = generateId();
 
-        // Try to extract address from 110-field format or standard format
+        // Try to extract address from 138-field format or standard format
         const address = row['1_full_address'] || row['address'] || row['Address'] || '';
         const city = row['city'] || row['City'] || '';
         const state = row['state'] || row['State'] || 'FL';
@@ -856,9 +856,9 @@ export default function AddProperty() {
 
         // Count non-empty fields for data completeness
         const filledFieldsCount = Object.values(row).filter(v => v && v !== '').length;
-        const dataCompleteness = Math.round((filledFieldsCount / 110) * 100);
+        const dataCompleteness = Math.round((filledFieldsCount / 138) * 100);
 
-        // Create full property with all 110 fields from CSV
+        // Create full property with all 138 fields from CSV
         let fullProperty = convertCsvToFullProperty(row, propertyId);
 
         // ENRICHMENT: Call LLM APIs to fill missing fields if enabled
@@ -969,7 +969,7 @@ export default function AddProperty() {
     merged.location.transitScore = mergeField(merged.location.transitScore, '66_transit_score');
     merged.utilities.floodZone = mergeField(merged.utilities.floodZone, '100_flood_zone');
 
-    // Could merge all 110 fields here, but for now just key ones
+    // Could merge all 138 fields here, but for now just key ones
     return merged;
   };
 
@@ -1519,7 +1519,7 @@ Beautiful 3BR/2BA beach house at 290 41st Ave, St Pete Beach, FL 33706. Built in
               />
             </div>
             <p className="text-xs text-gray-500">
-              AI will extract all 110 property fields from your description
+              AI will extract all 138 property fields from your description
             </p>
 
             {/* LLM Selection - Cascade Order per Reliability Audit */}
@@ -1636,7 +1636,7 @@ Beautiful 3BR/2BA beach house at 290 41st Ave, St Pete Beach, FL 33706. Built in
               ))}
             </div>
             <div className="text-xs text-gray-500 mt-2">
-              {progress}% complete ({Math.round(progress * 1.1)} of 110 fields)
+              {progress}% complete ({Math.round(progress * 1.38)} of 138 fields)
             </div>
           </div>
 

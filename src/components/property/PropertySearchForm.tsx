@@ -1,6 +1,6 @@
 /**
  * CLUES Property Dashboard - Property Search Form
- * 110-field form with real LLM-powered address search
+ * 138-field form with real LLM-powered address search
  * Sources visible to admin only
  */
 
@@ -315,7 +315,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
       const data = await searchWithSSE();
 
       setSearchResults(data);
-      setSearchProgress(`Found ${data.total_fields_found || 0} of 110 fields (${data.completion_percentage || 0}%)`);
+      setSearchProgress(`Found ${data.total_fields_found || 0} of 138 fields (${data.completion_percentage || 0}%)`);
 
       // Map API response to form data
       const newFormData: Record<string, FieldValue> = {
@@ -749,7 +749,7 @@ n        {/* Real-time Progress Tracker */}
       {/* Expand/Collapse Controls */}
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-white">
-          All 110 Property Fields
+          All 138 Property Fields
         </h3>
         <div className="flex gap-2">
           <button
@@ -853,7 +853,7 @@ n        {/* Real-time Progress Tracker */}
           {Object.keys(formData).filter(k => {
             const val = formData[k]?.value;
             return val !== undefined && val !== '' && val !== null;
-          }).length} / 110 fields completed
+          }).length} / 138 fields completed
         </div>
         <button
           type="submit"

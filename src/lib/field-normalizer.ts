@@ -1,7 +1,7 @@
 /**
  * CLUES Property Dashboard - Unified Field Normalizer
  * 
- * SINGLE SOURCE OF TRUTH for mapping flat 110-field API keys to the nested Property interface.
+ * SINGLE SOURCE OF TRUTH for mapping flat 138-field API keys to the nested Property interface.
  * This MUST be the only place where field→path mapping is defined.
  * 
  * API returns: { "7_listing_price": { value: 450000, source: "Zillow" } }
@@ -31,7 +31,7 @@ interface FieldPathMapping {
 }
 
 /**
- * Complete 110-field mapping to Property interface structure
+ * Complete 138-field mapping to Property interface structure
  * group = the top-level object in Property (address, details, structural, location, financial, utilities)
  * propName = the property name within that group
  */
@@ -70,14 +70,14 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
   { fieldNumber: 25, apiKey: '25_hoa_yn', group: 'details', propName: 'hoaYn', type: 'boolean' },
   { fieldNumber: 26, apiKey: '26_hoa_fee_annual', group: 'details', propName: 'hoaFeeAnnual', type: 'number', validation: (v) => v >= 0 && v < 500000 },
   { fieldNumber: 27, apiKey: '27_ownership_type', group: 'details', propName: 'ownershipType', type: 'string' },
-  // Note: hoaName and hoaIncludes are not in the API's 110-field schema
+  // Note: hoaName and hoaIncludes are not in the API's 138-field schema
   // If needed, they should be derived from other HOA fields or added manually
   { fieldNumber: 29, apiKey: '29_annual_taxes', group: 'details', propName: 'annualTaxes', type: 'number', validation: (v) => v >= 0 && v < 200000 },
   { fieldNumber: 30, apiKey: '30_tax_year', group: 'details', propName: 'taxYear', type: 'number', validation: (v) => v >= 1900 && v <= new Date().getFullYear() + 1 },
   { fieldNumber: 31, apiKey: '31_assessed_value', group: 'details', propName: 'assessedValue', type: 'number', validation: (v) => v > 0 && v < 1000000000 },
 
   // ========== GROUP: structural (StructuralDetails in property.ts) ==========
-  // Note: waterHeaterType, garageType, laundryType, fireplaceCount are not in API's 110-field schema
+  // Note: waterHeaterType, garageType, laundryType, fireplaceCount are not in API's 138-field schema
   // They would conflict with official fields 30, 31, 38, 39 which have different meanings
   { fieldNumber: 36, apiKey: '36_roof_type', group: 'structural', propName: 'roofType', type: 'string' },
   { fieldNumber: 37, apiKey: '37_roof_age_est', group: 'structural', propName: 'roofAgeEst', type: 'string' },
@@ -164,9 +164,9 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
   { fieldNumber: 108, apiKey: '108_pet_policy', group: 'utilities', propName: 'petPolicy', type: 'string' },
   { fieldNumber: 109, apiKey: '109_age_restrictions', group: 'utilities', propName: 'ageRestrictions', type: 'string' },
   { fieldNumber: 110, apiKey: '110_notes_confidence_summary', group: 'utilities', propName: 'notesConfidenceSummary', type: 'string' },
-  // NOTE: Do NOT add entries with apiKeys that conflict with official 110-field schema!
+  // NOTE: Do NOT add entries with apiKeys that conflict with official 138-field schema!
   // The apiKeyToMappingMap will overwrite earlier entries with later ones.
-  // Fields like trashProvider, fiberAvailable, etc. that aren't in the API's 110-field
+  // Fields like trashProvider, fiberAvailable, etc. that aren't in the API's 138-field
   // schema should be handled separately, NOT by reusing existing field numbers.
 ];
 
@@ -273,7 +273,7 @@ function validateAndCoerce(value: any, mapping: FieldPathMapping): { valid: bool
 /**
  * Normalize flat API fields to nested Property structure
  * 
- * @param flatFields - API response with flat 110-field keys like { "7_listing_price": { value: 450000, source: "Zillow" } }
+ * @param flatFields - API response with flat 138-field keys like { "10_listing_price": { value: 450000, source: "Zillow" } }
  * @param propertyId - Unique ID for this property
  * @param fieldSources - Optional map of field key to LLM sources that provided it
  * @param conflicts - Optional array of field conflicts between LLMs
@@ -534,7 +534,7 @@ export function normalizeToProperty(
     }
   }
 
-  property.dataCompleteness = Math.round((fieldsPopulated / 110) * 100);
+  property.dataCompleteness = Math.round((fieldsPopulated / 138) * 100);
   property.smartScore = Math.min(100, fieldsPopulated + 20);
 
   return property;
@@ -563,14 +563,14 @@ export function getAllApiKeys(): string[] {
 
 /**
  * Data quality range definitions for Dashboard display
- * Each range corresponds to a field group in the 110-field schema
+ * Each range corresponds to a field group in the 138-field schema
  */
 export const DATA_QUALITY_RANGES = [
-  { label: 'Core Fields (1-30)', min: 1, max: 30, colorClass: 'text-quantum-green' },
-  { label: 'Structural (31-50)', min: 31, max: 50, colorClass: 'text-quantum-cyan' },
-  { label: 'Location (51-75)', min: 51, max: 75, colorClass: 'text-quantum-blue' },
-  { label: 'Financial (76-90)', min: 76, max: 90, colorClass: 'text-quantum-purple' },
-  { label: 'Utilities (91-110)', min: 91, max: 110, colorClass: 'text-quantum-gold' },
+  { label: 'Core Fields (1-38)', min: 1, max: 38, colorClass: 'text-quantum-green' },
+  { label: 'Structural (39-62)', min: 39, max: 62, colorClass: 'text-quantum-cyan' },
+  { label: 'Location (63-90)', min: 63, max: 90, colorClass: 'text-quantum-blue' },
+  { label: 'Financial (91-116)', min: 91, max: 116, colorClass: 'text-quantum-purple' },
+  { label: 'Environment (117-138)', min: 117, max: 138, colorClass: 'text-quantum-gold' },
 ] as const;
 
 /**

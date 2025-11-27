@@ -18,7 +18,7 @@ export interface FieldMapping {
 }
 
 /**
- * Complete 110-field mapping table
+ * Complete 138-field mapping table
  * This ensures API responses map correctly to frontend state
  */
 export const FIELD_MAPPINGS: FieldMapping[] = [

@@ -1,6 +1,6 @@
 /**
  * CLUES Property Dashboard - Search Property Page
- * Full 110-field property search/entry form
+ * Full 138-field property search/entry form
  * Sources visible to admin only
  */
 
@@ -66,8 +66,8 @@ export default function SearchProperty() {
     setSavedPropertyId(newProperty.id);
     setShowSuccess(true);
 
-    // Also save full 110-field data (would go to separate store/DB in production)
-    console.log('Full 110-field data:', formData);
+    // Also save full 138-field data (would go to separate store/DB in production)
+    console.log('Full 138-field data:', formData);
   };
 
   // Calculate SMART score based on data quality
@@ -102,7 +102,7 @@ export default function SearchProperty() {
 
   // Calculate data completeness percentage
   const calculateCompleteness = (formData: Record<string, { value: any; source: string }>) => {
-    const totalFields = 110;
+    const totalFields = 138;
     const filledFields = Object.values(formData).filter(f => {
       const val = f.value;
       return val !== undefined && val !== '' && val !== null &&
@@ -174,7 +174,7 @@ export default function SearchProperty() {
             Search for Property
           </h1>
           <p className="text-gray-400 mt-1">
-            Enter address to auto-populate or fill in all 110 fields manually
+            Enter address to auto-populate or fill in all 138 fields manually
           </p>
         </div>
       </div>
