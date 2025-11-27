@@ -23,9 +23,9 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// Vercel serverless config - optimized for Hobby plan (10s limit)
+// Vercel serverless config - Pro plan allows 60s
 export const config = {
-  maxDuration: 10, // Hobby plan limit
+  maxDuration: 60, // Pro plan limit
 };
 
 // Timeout wrapper for API calls - prevents hanging
