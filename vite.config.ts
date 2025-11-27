@@ -19,8 +19,13 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
-    host: true, // Needed for Capacitor
+    port: 5000,
+    host: '0.0.0.0',
+    strictPort: true,
+    hmr: {
+      clientPort: 443,
+      protocol: 'wss',
+    },
   },
   build: {
     outDir: 'dist',
