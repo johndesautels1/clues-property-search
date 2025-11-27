@@ -1503,7 +1503,7 @@ CITE YOUR SOURCES for every field you populate`;
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'grok-2-latest', // Use grok-4 for better tool calling, grok-beta for cost savings
+        model: 'grok-4.1',
         max_tokens: 8000,
         temperature: 0.1, // Low temperature for factual consistency
         messages: [
