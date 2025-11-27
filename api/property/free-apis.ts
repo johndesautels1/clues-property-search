@@ -78,9 +78,7 @@ export async function callGoogleGeocode(address: string): Promise<ApiResult & { 
 
     setField(fields, '28_county', county, 'Google Maps');
     setField(fields, '27_neighborhood', neighborhood, 'Google Maps');
-    setField(fields, 'city', city, 'Google Maps');
-    setField(fields, 'state', state, 'Google Maps');
-    setField(fields, 'zip', zip, 'Google Maps');
+    // Note: city/state/zip are parsed from 1_full_address when needed (no separate fields in 110-field schema)
     setField(fields, '1_full_address', result.formatted_address, 'Google Maps');
 
     if (geometry?.location) {
@@ -418,8 +416,14 @@ export async function callBroadbandNow(lat: number, lon: number, address: string
 
     const data = await response.json();
 
-    // Extract carrier data
-    const carriers = [];
+    // Extract carrier data with proper typing
+    interface CarrierData {
+      name: string;
+      download_speed?: number;
+      lte_coverage?: boolean;
+      [key: string]: any;
+    }
+    const carriers: CarrierData[] = [];
     if (data.att) carriers.push({ name: "AT&T", ...data.att });
     if (data.verizon) carriers.push({ name: "Verizon", ...data.verizon });
     if (data.tmobile) carriers.push({ name: "T-Mobile", ...data.tmobile });

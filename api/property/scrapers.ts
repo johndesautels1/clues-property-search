@@ -209,12 +209,10 @@ export async function scrapeZillow(address: string, zpid?: string): Promise<Scra
     setField(fields, '4_listing_status', data.homeStatus || data.listingStatus, 'Zillow');
     setField(fields, '5_listing_date', data.datePosted || data.listingDateOnZillow, 'Zillow');
 
-    // Location
-    setField(fields, 'city', city, 'Zillow');
-    setField(fields, 'state', state, 'Zillow');
-    setField(fields, 'zip', zipcode, 'Zillow');
+    // Location - latitude/longitude stored if available (no separate city/state/zip in 110-field schema)
     if (data.latitude && data.longitude) {
-      setField(fields, 'coordinates', { lat: data.latitude, lon: data.longitude }, 'Zillow');
+      setField(fields, '51_latitude', data.latitude, 'Zillow');
+      setField(fields, '52_longitude', data.longitude, 'Zillow');
     }
 
     // Tax info
@@ -529,11 +527,8 @@ export async function scrapeRealtor(address: string): Promise<ScrapeResult> {
       console.warn(`Realtor.com address mismatch: searched "${address}", got "${fullAddr}"`);
     }
 
-    // Set fields only if we have values
+    // Set fields only if we have values (no separate city/state/zip in 110-field schema - extracted from 1_full_address when needed)
     if (fullAddr) setField(fields, '1_full_address', fullAddr, 'Realtor.com');
-    setField(fields, 'city', city, 'Realtor.com');
-    setField(fields, 'state', stateCode, 'Realtor.com');
-    setField(fields, 'zip', zipcode, 'Realtor.com');
 
     setField(fields, '2_mls_primary', listing?.mls?.id || property?.mls_id, 'Realtor.com');
     setField(fields, '4_listing_status', property?.status || listing?.status, 'Realtor.com');
