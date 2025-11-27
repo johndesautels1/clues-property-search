@@ -1766,16 +1766,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const fieldValue = (value as any)?.value !== undefined ? (value as any).value : value;
             const fieldSource = (value as any)?.source || llm.name;
 
+            // Skip null/empty responses - let other LLMs try
+            if (fieldValue === null || fieldValue === undefined || fieldValue === '' || fieldValue === 'Not available') {
+              continue;
+            }
+
             // Track source
             if (!fieldSources[key]) fieldSources[key] = [];
             fieldSources[key].push(llm.name);
 
-            // Check for conflicts
+            // Check if field already has a value
             if (allFields[key]) {
               const existingValue = allFields[key].value !== undefined ? allFields[key].value : allFields[key];
 
-              // Values differ = CONFLICT
-              if (!valuesAreSemanticallySame(fieldValue, existingValue) && fieldValue !== null && existingValue !== null) {
+              // Only check for conflicts if both values are non-null
+              if (existingValue !== null && !valuesAreSemanticallySame(fieldValue, existingValue)) {
                 const existing = conflicts.find(c => c.field === key);
                 if (existing) {
                   existing.values.push({ source: llm.name, value: fieldValue });
@@ -1790,14 +1795,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 }
                 console.log(`⚠️  CONFLICT on ${key}: ${existingValue} vs ${fieldValue}`);
               }
-            } else {
-              // New field - add it only if value is not null/empty
-              const val = (value as any)?.value !== undefined ? (value as any).value : value;
-              if (val !== null && val !== undefined && val !== '' && val !== 'Not available') {
-                // Add LLM source attribution
+              // If existing is null/empty, replace with new value
+              else if (existingValue === null || existingValue === undefined || existingValue === '') {
                 const existingSource = (value as any).source || llm.name;
-                allFields[key] = typeof value === 'object' && value !== null ? { ...value, source: existingSource.includes('via ') ? existingSource : existingSource + ' (via ' + llm.name + ')' } : { value: val, source: llm.name, confidence: 'Medium' };
+                allFields[key] = typeof value === 'object' && value !== null ? { ...value, source: llm.name } : { value: fieldValue, source: llm.name, confidence: 'Medium' };
+                console.log(`✅ Filled ${key}: ${fieldValue} (from ${llm.name})`);
               }
+            } else {
+              // New field - add it
+              const existingSource = (value as any).source || llm.name;
+              allFields[key] = typeof value === 'object' && value !== null ? { ...value, source: llm.name } : { value: fieldValue, source: llm.name, confidence: 'Medium' };
+              console.log(`✅ Added ${key}: ${fieldValue} (from ${llm.name})`);
             }
           }
 
