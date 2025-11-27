@@ -3,7 +3,7 @@
  * LLM-powered property scraping + Manual entry - CONNECTED TO STORE
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, startTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -197,10 +197,15 @@ export default function AddProperty() {
     // Construct full address for API search
     const fullAddress = `${manualForm.address}, ${manualForm.city}, ${manualForm.state}${manualForm.zip ? ' ' + manualForm.zip : ''}`;
 
-    setStatus('searching');
-    setProgress(0);
-    // Initialize data sources from unified manifest
-    setCascadeStatus(initializeCascadeStatus());
+    // Use startTransition for non-urgent UI updates to improve INP
+    startTransition(() => {
+      setStatus('searching');
+      setProgress(0);
+      setCascadeStatus(initializeCascadeStatus());
+    });
+
+    // Allow browser to paint before heavy async work
+    await new Promise(resolve => requestAnimationFrame(resolve));
 
     try {
       // Use SSE streaming for real-time progress
@@ -255,29 +260,31 @@ export default function AddProperty() {
               const data = JSON.parse(line.slice(6));
 
               if (eventType === 'progress') {
-                // Update cascade status for summary display
-                const { source, status, fieldsFound } = data;
+                // Update cascade status for summary display - use startTransition for non-blocking updates
+                const { source, status: sourceStatus, fieldsFound } = data;
                 const displayName = getSourceName(source);
 
-                setCascadeStatus(prev => {
-                  const existing = prev.find(s => s.llm === displayName);
-                  if (existing) {
-                    return prev.map(s => s.llm === displayName
-                      ? { ...s, status: status as 'pending' | 'running' | 'complete' | 'error', fieldsFound }
-                      : s
-                    );
+                startTransition(() => {
+                  setCascadeStatus(prev => {
+                    const existing = prev.find(s => s.llm === displayName);
+                    if (existing) {
+                      return prev.map(s => s.llm === displayName
+                        ? { ...s, status: sourceStatus as 'pending' | 'running' | 'complete' | 'error', fieldsFound }
+                        : s
+                      );
+                    }
+                    return [...prev, { llm: displayName, status: sourceStatus as 'pending' | 'running' | 'complete' | 'error', fieldsFound }];
+                  });
+
+                  // Update progress based on fields found
+                  currentFieldsFound += fieldsFound || 0;
+                  setProgress(Math.min(Math.round((currentFieldsFound / 138) * 100), 99));
+
+                  // Update status message
+                  if (sourceStatus === 'searching') {
+                    setStatus('scraping');
                   }
-                  return [...prev, { llm: displayName, status: status as 'pending' | 'running' | 'complete' | 'error', fieldsFound }];
                 });
-
-                // Update progress based on fields found
-                currentFieldsFound += fieldsFound || 0;
-                setProgress(Math.min(Math.round((currentFieldsFound / 138) * 100), 99));
-
-                // Update status message
-                if (status === 'searching') {
-                  setStatus('scraping');
-                }
               } else if (eventType === 'complete') {
                 finalData = data;
               } else if (eventType === 'error') {

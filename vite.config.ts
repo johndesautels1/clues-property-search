@@ -24,6 +24,12 @@ export default defineConfig({
     strictPort: true,
     allowedHosts: true,
     hmr: false, // Disable HMR for Replit - use manual refresh instead
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+    },
   },
   build: {
     outDir: 'dist',
