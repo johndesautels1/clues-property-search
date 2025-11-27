@@ -8,6 +8,7 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { scrapeFloridaCounty } from './florida-counties';
+import { LLM_CASCADE_ORDER } from './llm-constants';
 
 
 // ============================================
@@ -1829,7 +1830,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const {
     address,
     url,
-    engines = ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'],
+    engines = [...LLM_CASCADE_ORDER],
     skipLLMs = false,
     usePerplexity = false, // Removed from default cascade - use engines array
     useGrok = true,

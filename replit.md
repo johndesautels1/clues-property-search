@@ -108,7 +108,14 @@ The app can also be deployed to:
 This dashboard can run standalone or be embedded in the CLUES Quantum Master App. The `clues-bridge.ts` module handles parent-child iframe communication for property data synchronization.
 
 ## Recent Changes
-- **2025-11-27 (Latest)**: Codebase audit and critical bug fixes
+- **2025-11-27 (Latest)**: Comprehensive API & schema consistency fixes
+  - **Removed Invalid Field References in API**: Fixed scrapers.ts and free-apis.ts which were setting non-existent `city`, `state`, `zip` fields - 110-field schema only has composite `1_full_address`
+  - **TypeScript Fixes**: Fixed LSP errors in free-apis.ts with proper CarrierData interface typing
+  - **Shared LLM Constants for API**: Created `api/property/llm-constants.ts` to mirror frontend constants - API endpoints now import from shared source
+  - **Safe Address Parsing**: Added null guards in AddProperty.tsx to prevent crashes when `1_full_address` is undefined
+  - **Fixed Misleading Comments**: Corrected cascade order comments in search.ts and search-stream.ts
+  
+- **2025-11-27 (Earlier)**: Codebase audit and critical bug fixes
   - **Removed Invalid Field References**: Fixed `fields['city']`, `fields['state']`, `fields['zip']` which don't exist in 110-field schema - now parses from `1_full_address`
   - **UI Cascade Text Corrected**: Changed from wrong "Opus → GPT → Grok" to correct "Perplexity → Grok → Claude Opus → GPT → Claude Sonnet → Gemini"
   - **CSV Enrichment Fixed**: Now uses full 6-engine cascade instead of just 2 engines

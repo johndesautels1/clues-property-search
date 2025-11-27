@@ -18,6 +18,7 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { scrapeZillow, scrapeRedfin, scrapeRealtor, type ScrapedField } from './scrapers.js';
+import { LLM_CASCADE_ORDER } from './llm-constants.js';
 import {
   callGoogleGeocode,
   callGooglePlaces,
@@ -663,7 +664,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const {
     address,
     url,
-    engines = ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'],
+    engines = [...LLM_CASCADE_ORDER],
     skipLLMs = false
   } = req.body;
 
