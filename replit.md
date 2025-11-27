@@ -24,7 +24,25 @@ The project utilizes a Vite + React + TypeScript frontend with Tailwind CSS for 
 
 ### Recent Changes
 
-#### 2025-11-27 (Latest): Complete Validation Metadata Pipeline
+#### 2025-11-27 (Latest): ONE SOURCE OF TRUTH Schema Implementation
+**Created single authoritative schema file with automated integrity tests**:
+- **Created `src/types/fields-schema.ts`**:
+  - ALL 110 fields defined in ONE place with: num, key, label, group, type, required
+  - Derived maps: FIELD_MAP, FIELD_BY_NUMBER, FIELD_BY_KEY
+  - Helper functions: getFieldByNumber(), getFieldByKey(), getFieldByFullKey()
+  - Export: EXACT_FIELD_KEYS, FIELD_KEYS_ARRAY, FIELD_GROUPS
+  - DATA_SOURCES list aligned with arbitration tiers
+- **Created `tests/schema-integrity.test.ts`**:
+  - 14 automated tests that ALL PASS
+  - Tests: 110 fields exist, no duplicate numbers, no duplicate keys
+  - Tests: sequential numbering 1-110, required properties exist
+  - Tests: select fields have options, keys use snake_case
+  - Tests: all maps contain all fields, helper functions work
+  - Tests: all groups represented, specific field mappings correct
+- **Deleted BroadbandNow scraper** from api/property/search.ts (was blocked)
+- **RESOLVED CONFLICT**: Field #70 was crimeIndex in property-110-fields.ts but walkabilityDescription in property-schema.ts - now definitively walkability_description
+
+#### 2025-11-27 (Earlier): Complete Validation Metadata Pipeline
 **End-to-end validation flow from API arbitration to PropertyDetail UI**:
 - **API Layer (api/property/arbitration.ts)**:
   - `addField()` now sets `validationStatus = 'passed'` when fields pass validation gate
