@@ -146,7 +146,7 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
   { fieldNumber: 91, apiKey: '91_comparable_sales', group: 'financial', propName: 'comparableSalesLast3', type: 'array' },
 
   // ========== GROUP: utilities (UtilitiesData in property.ts) ==========
-  { fieldNumber: 35, apiKey: '35_special_assessments', group: 'utilities', propName: 'specialAssessments', type: 'string' },
+  { fieldNumber: 35, apiKey: '35_special_assessments', group: 'financial', propName: 'specialAssessments', type: 'string' },
   { fieldNumber: 92, apiKey: '92_electric_provider', group: 'utilities', propName: 'electricProvider', type: 'string' },
   { fieldNumber: 93, apiKey: '93_water_provider', group: 'utilities', propName: 'waterProvider', type: 'string' },
   { fieldNumber: 94, apiKey: '94_sewer_provider', group: 'utilities', propName: 'sewerProvider', type: 'string' },
@@ -440,6 +440,7 @@ export function normalizeToProperty(
       insuranceEstAnnual: emptyDataField(),
       financingTerms: emptyDataField(),
       comparableSalesLast3: emptyDataField(),
+      specialAssessments: emptyDataField(),
     },
     utilities: {
       electricProvider: emptyDataField(),
@@ -476,7 +477,6 @@ export function normalizeToProperty(
       lotFeatures: emptyDataField(),
       petPolicy: emptyDataField(),
       ageRestrictions: emptyDataField(),
-      specialAssessments: emptyDataField(),
       notesConfidenceSummary: emptyDataField(),
     },
   };
