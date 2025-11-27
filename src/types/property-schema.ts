@@ -4,32 +4,34 @@
  * Sources visible to admin only, hidden from user
  */
 
-// All possible data sources
+// All possible data sources (aligned with unified data-sources.ts manifest)
+// REMOVED (2025-11-27): Zillow, Redfin, Realtor.com (scrapers blocked), BroadbandNow (not wired)
 export const DATA_SOURCES = [
   'Manual Entry',
-  'MLS',
-  'Zillow',
-  'Redfin',
-  'Realtor.com',
+  'Stellar MLS',
   'County Assessor',
   'County Tax Collector',
   'County Clerk',
   'County Permits',
   'USPS',
+  'Google Geocode',
+  'Google Places',
   'Google Maps',
   'Google Street View',
   'Google Earth',
   'Google Sunroof',
   'WalkScore',
+  'SchoolDigger',
   'GreatSchools',
   'Niche',
   'NeighborhoodScout',
-  'FBI UCR',
-  'FEMA MSC',
+  'FBI Crime',
+  'FEMA',
   'First Street',
   'IQAir',
   'AirNow',
-  'BroadbandNow',
+  'HowLoud',
+  'Weather',
   'Duke Energy',
   'TECO',
   'City Utility',
@@ -40,8 +42,12 @@ export const DATA_SOURCES = [
   'Listing Photos',
   'Local Logic',
   'Transit Maps',
-  'Claude AI',
-  'GPT AI',
+  'Perplexity',
+  'Grok',
+  'Claude Opus',
+  'GPT',
+  'Claude Sonnet',
+  'Gemini',
   'Other',
 ] as const;
 
@@ -333,31 +339,31 @@ export interface FieldDefinition {
 export const FIELD_DEFINITIONS: FieldDefinition[] = [
   // GROUP A: Address & Identity (1-6)
   { id: 1, key: 'addressIdentity.fullAddress', label: 'Full Address', group: 'Address & Identity', type: 'text', required: true, placeholder: '123 Main St, City, FL 33701' },
-  { id: 2, key: 'addressIdentity.mlsPrimary', label: 'MLS # (Primary)', group: 'Address & Identity', type: 'text', required: false, placeholder: 'TB8437491', autoPopulateSources: ['MLS', 'Zillow', 'Redfin'] },
+  { id: 2, key: 'addressIdentity.mlsPrimary', label: 'MLS # (Primary)', group: 'Address & Identity', type: 'text', required: false, placeholder: 'TB8437491', autoPopulateSources: ['Stellar MLS'] },
   { id: 3, key: 'addressIdentity.mlsSecondary', label: 'MLS # (Secondary)', group: 'Address & Identity', type: 'text', required: false },
-  { id: 4, key: 'addressIdentity.listingStatus', label: 'Listing Status', group: 'Address & Identity', type: 'select', options: ['Active', 'Pending', 'Sold', 'Off-Market'], required: false, autoPopulateSources: ['MLS', 'Zillow'] },
+  { id: 4, key: 'addressIdentity.listingStatus', label: 'Listing Status', group: 'Address & Identity', type: 'select', options: ['Active', 'Pending', 'Sold', 'Off-Market'], required: false, autoPopulateSources: ['Stellar MLS'] },
   { id: 5, key: 'addressIdentity.listingDate', label: 'Listing Date', group: 'Address & Identity', type: 'date', required: false },
   { id: 6, key: 'addressIdentity.parcelId', label: 'Parcel ID', group: 'Address & Identity', type: 'text', required: false, autoPopulateSources: ['County Assessor'] },
 
   // GROUP B: Pricing (7-11)
-  { id: 7, key: 'pricing.listingPrice', label: 'Listing Price', group: 'Pricing', type: 'currency', required: false, autoPopulateSources: ['MLS', 'Zillow'] },
+  { id: 7, key: 'pricing.listingPrice', label: 'Listing Price', group: 'Pricing', type: 'currency', required: false, autoPopulateSources: ['Stellar MLS'] },
   { id: 8, key: 'pricing.pricePerSqft', label: 'Price per Sq Ft', group: 'Pricing', type: 'currency', required: false, helpText: 'Auto-calculated from price/sqft' },
-  { id: 9, key: 'pricing.marketValueEstimate', label: 'Market Value Estimate', group: 'Pricing', type: 'currency', required: false, autoPopulateSources: ['Zillow', 'Redfin'] },
-  { id: 10, key: 'pricing.lastSaleDate', label: 'Last Sale Date', group: 'Pricing', type: 'date', required: false, autoPopulateSources: ['County Clerk', 'MLS'] },
-  { id: 11, key: 'pricing.lastSalePrice', label: 'Last Sale Price', group: 'Pricing', type: 'currency', required: false, autoPopulateSources: ['County Clerk', 'MLS'] },
+  { id: 9, key: 'pricing.marketValueEstimate', label: 'Market Value Estimate', group: 'Pricing', type: 'currency', required: false, autoPopulateSources: ['County Assessor', 'Perplexity'] },
+  { id: 10, key: 'pricing.lastSaleDate', label: 'Last Sale Date', group: 'Pricing', type: 'date', required: false, autoPopulateSources: ['County Clerk', 'Stellar MLS'] },
+  { id: 11, key: 'pricing.lastSalePrice', label: 'Last Sale Price', group: 'Pricing', type: 'currency', required: false, autoPopulateSources: ['County Clerk', 'Stellar MLS'] },
 
   // GROUP C: Property Basics (12-24)
-  { id: 12, key: 'propertyBasics.bedrooms', label: 'Bedrooms', group: 'Property Basics', type: 'number', required: true, autoPopulateSources: ['MLS', 'Zillow', 'Redfin'] },
-  { id: 13, key: 'propertyBasics.fullBathrooms', label: 'Full Bathrooms', group: 'Property Basics', type: 'number', required: true, autoPopulateSources: ['MLS', 'Zillow'] },
-  { id: 14, key: 'propertyBasics.halfBathrooms', label: 'Half Bathrooms', group: 'Property Basics', type: 'number', required: true, autoPopulateSources: ['MLS', 'Zillow'] },
+  { id: 12, key: 'propertyBasics.bedrooms', label: 'Bedrooms', group: 'Property Basics', type: 'number', required: true, autoPopulateSources: ['Stellar MLS', 'County Assessor'] },
+  { id: 13, key: 'propertyBasics.fullBathrooms', label: 'Full Bathrooms', group: 'Property Basics', type: 'number', required: true, autoPopulateSources: ['Stellar MLS', 'County Assessor'] },
+  { id: 14, key: 'propertyBasics.halfBathrooms', label: 'Half Bathrooms', group: 'Property Basics', type: 'number', required: true, autoPopulateSources: ['Stellar MLS', 'County Assessor'] },
   { id: 15, key: 'propertyBasics.totalBathrooms', label: 'Total Bathrooms', group: 'Property Basics', type: 'number', required: false, helpText: 'Calculated: full + (half × 0.5)' },
-  { id: 16, key: 'propertyBasics.livingSqft', label: 'Living Sq Ft', group: 'Property Basics', type: 'number', required: true, autoPopulateSources: ['MLS', 'County Assessor'] },
+  { id: 16, key: 'propertyBasics.livingSqft', label: 'Living Sq Ft', group: 'Property Basics', type: 'number', required: true, autoPopulateSources: ['Stellar MLS', 'County Assessor'] },
   { id: 17, key: 'propertyBasics.totalSqftUnderRoof', label: 'Total Sq Ft Under Roof', group: 'Property Basics', type: 'number', required: false },
-  { id: 18, key: 'propertyBasics.lotSizeSqft', label: 'Lot Size (Sq Ft)', group: 'Property Basics', type: 'number', required: false, autoPopulateSources: ['County Assessor', 'MLS'] },
+  { id: 18, key: 'propertyBasics.lotSizeSqft', label: 'Lot Size (Sq Ft)', group: 'Property Basics', type: 'number', required: false, autoPopulateSources: ['County Assessor', 'Stellar MLS'] },
   { id: 19, key: 'propertyBasics.lotSizeAcres', label: 'Lot Size (Acres)', group: 'Property Basics', type: 'number', required: false, helpText: 'Calculated from sq ft' },
-  { id: 20, key: 'propertyBasics.yearBuilt', label: 'Year Built', group: 'Property Basics', type: 'number', required: true, autoPopulateSources: ['County Assessor', 'MLS'] },
+  { id: 20, key: 'propertyBasics.yearBuilt', label: 'Year Built', group: 'Property Basics', type: 'number', required: true, autoPopulateSources: ['County Assessor', 'Stellar MLS'] },
   { id: 21, key: 'propertyBasics.propertyType', label: 'Property Type', group: 'Property Basics', type: 'select', options: ['Single Family', 'Condo', 'Townhouse', 'Multi-Family', 'Land', 'Commercial'], required: true },
-  { id: 22, key: 'propertyBasics.stories', label: 'Stories', group: 'Property Basics', type: 'number', required: false, autoPopulateSources: ['MLS'] },
+  { id: 22, key: 'propertyBasics.stories', label: 'Stories', group: 'Property Basics', type: 'number', required: false, autoPopulateSources: ['Stellar MLS'] },
   { id: 23, key: 'propertyBasics.garageSpaces', label: 'Garage Spaces', group: 'Property Basics', type: 'number', required: false },
   { id: 24, key: 'propertyBasics.parkingTotal', label: 'Parking Description', group: 'Property Basics', type: 'text', required: false, placeholder: '2 car garage + driveway' },
 
@@ -405,7 +411,7 @@ export const FIELD_DEFINITIONS: FieldDefinition[] = [
   { id: 55, key: 'permitsRenovations.permitHistoryOther', label: 'Permit History - Other', group: 'Permits & Renovations', type: 'text', required: false, autoPopulateSources: ['County Permits'] },
 
   // GROUP J: Schools (56-64)
-  { id: 56, key: 'schools.assignedElementary', label: 'Assigned Elementary', group: 'Schools', type: 'text', required: false, autoPopulateSources: ['GreatSchools', 'Redfin'] },
+  { id: 56, key: 'schools.assignedElementary', label: 'Assigned Elementary', group: 'Schools', type: 'text', required: false, autoPopulateSources: ['SchoolDigger', 'GreatSchools'] },
   { id: 57, key: 'schools.elementaryRating', label: 'Elementary Rating', group: 'Schools', type: 'text', required: false, placeholder: '8/10', autoPopulateSources: ['GreatSchools', 'Niche'] },
   { id: 58, key: 'schools.elementaryDistanceMiles', label: 'Elementary Distance (mi)', group: 'Schools', type: 'number', required: false, autoPopulateSources: ['Google Maps'] },
   { id: 59, key: 'schools.assignedMiddle', label: 'Assigned Middle', group: 'Schools', type: 'text', required: false },
@@ -433,16 +439,16 @@ export const FIELD_DEFINITIONS: FieldDefinition[] = [
   { id: 77, key: 'distancesAmenities.distanceBeachMiles', label: 'Distance to Beach (mi)', group: 'Distances & Amenities', type: 'number', required: false, autoPopulateSources: ['Google Maps'] },
 
   // GROUP M: Safety & Crime (78-80)
-  { id: 78, key: 'safetyCrime.crimeIndexViolent', label: 'Violent Crime Index', group: 'Safety & Crime', type: 'text', required: false, autoPopulateSources: ['FBI UCR', 'NeighborhoodScout'] },
-  { id: 79, key: 'safetyCrime.crimeIndexProperty', label: 'Property Crime Index', group: 'Safety & Crime', type: 'text', required: false, autoPopulateSources: ['FBI UCR', 'NeighborhoodScout'] },
+  { id: 78, key: 'safetyCrime.crimeIndexViolent', label: 'Violent Crime Index', group: 'Safety & Crime', type: 'text', required: false, autoPopulateSources: ['FBI Crime', 'NeighborhoodScout'] },
+  { id: 79, key: 'safetyCrime.crimeIndexProperty', label: 'Property Crime Index', group: 'Safety & Crime', type: 'text', required: false, autoPopulateSources: ['FBI Crime', 'NeighborhoodScout'] },
   { id: 80, key: 'safetyCrime.neighborhoodSafetyRating', label: 'Neighborhood Safety Rating', group: 'Safety & Crime', type: 'text', required: false, autoPopulateSources: ['NeighborhoodScout'] },
 
   // GROUP N: Market & Investment (81-91)
-  { id: 81, key: 'marketInvestment.medianHomePriceNeighborhood', label: 'Median Home Price (Area)', group: 'Market & Investment', type: 'currency', required: false, autoPopulateSources: ['Zillow', 'Redfin'] },
+  { id: 81, key: 'marketInvestment.medianHomePriceNeighborhood', label: 'Median Home Price (Area)', group: 'Market & Investment', type: 'currency', required: false, autoPopulateSources: ['Perplexity', 'Grok'] },
   { id: 82, key: 'marketInvestment.pricePerSqftRecentAvg', label: 'Avg $/SqFt (Recent Sales)', group: 'Market & Investment', type: 'currency', required: false },
   { id: 83, key: 'marketInvestment.daysOnMarketAvg', label: 'Avg Days on Market (Area)', group: 'Market & Investment', type: 'number', required: false },
   { id: 84, key: 'marketInvestment.inventorySurplus', label: 'Inventory Surplus', group: 'Market & Investment', type: 'text', required: false },
-  { id: 85, key: 'marketInvestment.rentalEstimateMonthly', label: 'Rental Estimate (Monthly)', group: 'Market & Investment', type: 'currency', required: false, autoPopulateSources: ['Zillow', 'RentCafe', 'Zumper'] },
+  { id: 85, key: 'marketInvestment.rentalEstimateMonthly', label: 'Rental Estimate (Monthly)', group: 'Market & Investment', type: 'currency', required: false, autoPopulateSources: ['RentCafe', 'Zumper', 'Perplexity'] },
   { id: 86, key: 'marketInvestment.rentalYieldEst', label: 'Rental Yield Est. (%)', group: 'Market & Investment', type: 'percentage', required: false, helpText: 'Calculated: (rent×12)/price' },
   { id: 87, key: 'marketInvestment.vacancyRateNeighborhood', label: 'Vacancy Rate (Area %)', group: 'Market & Investment', type: 'percentage', required: false, autoPopulateSources: ['Census'] },
   { id: 88, key: 'marketInvestment.capRateEst', label: 'Cap Rate Est. (%)', group: 'Market & Investment', type: 'percentage', required: false },
@@ -455,14 +461,14 @@ export const FIELD_DEFINITIONS: FieldDefinition[] = [
   { id: 93, key: 'utilities.waterProvider', label: 'Water Provider', group: 'Utilities', type: 'text', required: false },
   { id: 94, key: 'utilities.sewerProvider', label: 'Sewer Provider', group: 'Utilities', type: 'text', required: false },
   { id: 95, key: 'utilities.naturalGas', label: 'Natural Gas', group: 'Utilities', type: 'text', required: false, placeholder: 'Available / Not Available' },
-  { id: 96, key: 'utilities.internetProvidersTop3', label: 'Internet Providers', group: 'Utilities', type: 'multiselect', options: ['Spectrum', 'AT&T', 'Frontier', 'Xfinity', 'T-Mobile Home', 'Starlink'], required: false, autoPopulateSources: ['BroadbandNow'] },
+  { id: 96, key: 'utilities.internetProvidersTop3', label: 'Internet Providers', group: 'Utilities', type: 'multiselect', options: ['Spectrum', 'AT&T', 'Frontier', 'Xfinity', 'T-Mobile Home', 'Starlink'], required: false, autoPopulateSources: ['Perplexity', 'Grok'] },
   { id: 97, key: 'utilities.maxInternetSpeed', label: 'Max Internet Speed', group: 'Utilities', type: 'text', required: false, placeholder: '1 Gbps fiber' },
   { id: 98, key: 'utilities.cableTvProvider', label: 'Cable TV Provider', group: 'Utilities', type: 'text', required: false },
 
   // GROUP P: Environment & Risk (99-104)
   { id: 99, key: 'environmentRisk.airQualityIndexCurrent', label: 'Air Quality Index', group: 'Environment & Risk', type: 'text', required: false, autoPopulateSources: ['IQAir', 'AirNow'] },
-  { id: 100, key: 'environmentRisk.floodZone', label: 'FEMA Flood Zone', group: 'Environment & Risk', type: 'select', options: ['Zone X (Minimal)', 'Zone A', 'Zone AE', 'Zone V', 'Zone VE'], required: false, autoPopulateSources: ['FEMA MSC'] },
-  { id: 101, key: 'environmentRisk.floodRiskLevel', label: 'Flood Risk Level', group: 'Environment & Risk', type: 'select', options: ['Minimal', 'Low', 'Moderate', 'High', 'Extreme'], required: false, autoPopulateSources: ['First Street', 'FEMA MSC'] },
+  { id: 100, key: 'environmentRisk.floodZone', label: 'FEMA Flood Zone', group: 'Environment & Risk', type: 'select', options: ['Zone X (Minimal)', 'Zone A', 'Zone AE', 'Zone V', 'Zone VE'], required: false, autoPopulateSources: ['FEMA'] },
+  { id: 101, key: 'environmentRisk.floodRiskLevel', label: 'Flood Risk Level', group: 'Environment & Risk', type: 'select', options: ['Minimal', 'Low', 'Moderate', 'High', 'Extreme'], required: false, autoPopulateSources: ['First Street', 'FEMA'] },
   { id: 102, key: 'environmentRisk.climateRiskSummary', label: 'Climate Risk Summary', group: 'Environment & Risk', type: 'text', required: false, autoPopulateSources: ['First Street'] },
   { id: 103, key: 'environmentRisk.noiseLevelDbEst', label: 'Noise Level (dB Est.)', group: 'Environment & Risk', type: 'text', required: false },
   { id: 104, key: 'environmentRisk.solarPotential', label: 'Solar Potential', group: 'Environment & Risk', type: 'select', options: ['Poor', 'Fair', 'Good', 'Excellent'], required: false, autoPopulateSources: ['Google Sunroof'] },

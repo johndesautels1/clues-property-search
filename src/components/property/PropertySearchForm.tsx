@@ -341,8 +341,13 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
             }
 
             // Handle LLM sources
-            if (sourceStr.includes('Claude')) source = 'Claude AI';
-            else if (sourceStr.includes('GPT')) source = 'GPT AI';
+            if (sourceStr.includes('Claude') && sourceStr.includes('Opus')) source = 'Claude Opus';
+            else if (sourceStr.includes('Claude') && sourceStr.includes('Sonnet')) source = 'Claude Sonnet';
+            else if (sourceStr.includes('Claude')) source = 'Claude Opus';
+            else if (sourceStr.includes('GPT')) source = 'GPT';
+            else if (sourceStr.includes('Gemini')) source = 'Gemini';
+            else if (sourceStr.includes('Perplexity')) source = 'Perplexity';
+            else if (sourceStr.includes('Grok')) source = 'Grok';
 
             newFormData[formKey] = {
               value: field.value,
@@ -615,7 +620,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
           <div className="flex items-center justify-between">
             <div>
               <label className="text-sm text-white font-medium">Free Data Only (Fast)</label>
-              <p className="text-xs text-gray-500">Realtor.com + FEMA + WalkScore only - no AI costs</p>
+              <p className="text-xs text-gray-500">Google APIs + FEMA + WalkScore + AirNow - no AI costs</p>
             </div>
             <button
               type="button"
@@ -736,8 +741,8 @@ n        {/* Real-time Progress Tracker */}
 
         <p className="text-xs text-gray-500 mt-3">
           {skipLLMs
-            ? '📊 Free sources: Realtor.com scraping, FEMA flood maps, WalkScore, AirNow'
-            : '🔍 Real data from Realtor.com + free APIs, then AI fills remaining gaps'}
+            ? '📊 Free sources: Google APIs, FEMA flood maps, WalkScore, AirNow, HowLoud'
+            : '🔍 Data from Google + APIs first, then AI fills remaining gaps'}
         </p>
       </div>
 

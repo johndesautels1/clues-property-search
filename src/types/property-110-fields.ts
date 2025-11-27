@@ -347,35 +347,35 @@ export const FIELD_CATEGORIES = {
   },
 } as const;
 
-// Data sources by phase
-export const DATA_SOURCES = {
+// Data sources by phase (updated 2025-11-27)
+// REMOVED: Zillow, Redfin, Realtor.com (scrapers blocked), BroadbandNow (not wired)
+// NOTE: See src/lib/data-sources.ts for the unified data source manifest
+export const DATA_SOURCES_BY_PHASE = {
   phase1: [
-    { name: 'Zillow', url: 'zillow.com', fields: ['price', 'beds', 'baths', 'sqft', 'zestimate'] },
-    { name: 'Redfin', url: 'redfin.com', fields: ['climate', 'permits', 'schools'] },
-    { name: 'Realtor.com', url: 'realtor.com', fields: ['listing', 'history'] },
+    { name: 'Stellar MLS', fields: ['listing', 'price', 'beds', 'baths', 'sqft', 'status'] },
     { name: 'County Appraiser', fields: ['tax', 'parcel', 'legal'] },
+    { name: 'Google Geocode', fields: ['coordinates', 'address'] },
   ],
   phase2: [
+    { name: 'Google Places', fields: ['nearby', 'amenities'] },
     { name: 'Google Street View', fields: ['exterior', 'roof', 'garage'] },
-    { name: 'Google Earth', fields: ['pool', 'deck', 'lot'] },
     { name: 'Permit Records', fields: ['roof_age', 'hvac_age', 'renovations'] },
   ],
   phase3: [
-    { name: 'GreatSchools.org', fields: ['schools', 'ratings'] },
-    { name: 'WalkScore.com', fields: ['walk', 'transit', 'bike'] },
+    { name: 'SchoolDigger', fields: ['schools', 'ratings'] },
+    { name: 'WalkScore', fields: ['walk', 'transit', 'bike'] },
     { name: 'Google Maps', fields: ['distances', 'proximity'] },
-    { name: 'NeighborhoodScout', fields: ['crime'] },
+    { name: 'FBI Crime', fields: ['crime_rate'] },
   ],
   phase4: [
     { name: 'County Tax Collector', fields: ['taxes', 'exemptions'] },
-    { name: 'Zillow Rental Manager', fields: ['rent_estimate'] },
-    { name: 'Zumper', fields: ['rent_data'] },
-    { name: 'RentCafe', fields: ['rent_data'] },
+    { name: 'HowLoud', fields: ['noise_score'] },
+    { name: 'Weather', fields: ['climate'] },
+    { name: 'LLM Cascade', fields: ['rent_estimate', 'market_data'] },
   ],
   phase5: [
-    { name: 'BroadbandNow.com', fields: ['internet', 'speed'] },
-    { name: 'FEMA MSC', fields: ['flood_zone'] },
-    { name: 'IQAir.com', fields: ['air_quality'] },
-    { name: 'PlugShare', fields: ['ev_chargers'] },
+    { name: 'FEMA', fields: ['flood_zone'] },
+    { name: 'AirNow', fields: ['air_quality'] },
+    { name: 'LLM Cascade', fields: ['utilities', 'additional'] },
   ],
 } as const;
