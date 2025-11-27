@@ -349,7 +349,7 @@ export default function PropertyDetail() {
 
     setIsRetrying(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || '/api/property/search';
+      const apiUrl = '/api/property/retry-llm';
       const address = fullProperty.address.fullAddress.value;
 
       // Map display names to engine IDs
