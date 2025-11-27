@@ -24,7 +24,24 @@ The project utilizes a Vite + React + TypeScript frontend with Tailwind CSS for 
 
 ### Recent Changes
 
-#### 2025-11-27 (Latest): EXPANDED to 138-Field Schema - ONE SOURCE OF TRUTH
+#### 2025-11-27 (Latest): Vercel Hobby 10-Second Optimization
+**Optimized API cascade to complete within Vercel Hobby's 10-second limit**:
+- **Updated `api/property/search-stream.ts`**:
+  - Changed maxDuration from 60 to 10 seconds
+  - Added `withTimeout()` wrapper function for all API calls
+  - Per-call timeouts: 2s for APIs, 3.5s for LLMs
+  - Global 9-second deadline guard with `hasTime()` check
+  - Per-call fallbacks with `createFallback(source)` to preserve correct source names for arbitration
+- **Parallel Tier 2-3 API calls**:
+  - Google Places, WalkScore, FEMA, SchoolDigger, AirNow, HowLoud, Weather, Crime run in parallel
+  - Uses `Promise.allSettled()` for resilient error handling
+- **Reduced LLM cascade for Hobby plan**:
+  - Only 2 fastest LLMs (Perplexity + Gemini) run in parallel
+  - Slower LLMs (Grok, Claude Opus, GPT, Claude Sonnet) are skipped with "Skipped for speed" message
+- **Timing budget**: Geocode ~2s + Parallel APIs ~2s + Parallel LLMs ~3.5s = ~7.5s (under 9s deadline)
+- **Fixed SSE issues**: Events only sent after Promise.allSettled resolves (no duplicate events)
+
+#### 2025-11-27 (Earlier): EXPANDED to 138-Field Schema - ONE SOURCE OF TRUTH
 **Complete rewrite of schema to match ALL UI fields from user's document**:
 - **Updated `src/types/fields-schema.ts`**:
   - **138 fields** extracted directly from user's UI document (expanded from 110)
