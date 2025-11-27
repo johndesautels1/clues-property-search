@@ -385,6 +385,8 @@ export async function callHowLoud(lat: number, lon: number): Promise<ApiResult> 
     }
 
     const data = await response.json();
+    console.log('[HowLoud] Response:', JSON.stringify(data));
+
     const result = data.result || data; // v2 nests in result, v1 is flat
 
     if (result.score !== undefined) {
@@ -402,7 +404,12 @@ export async function callHowLoud(lat: number, lon: number): Promise<ApiResult> 
       setField(fields, '95_airport_noise', result.airports, 'HowLoud');
     }
 
-    return { success: Object.keys(fields).length > 0, source: 'HowLoud', fields };
+    // If still no fields, try alternate field names
+    if (Object.keys(fields).length === 0 && data.soundscore !== undefined) {
+      setField(fields, '96_noise_score', data.soundscore, 'HowLoud');
+    }
+
+    return { success: Object.keys(fields).length > 0, source: 'HowLoud', fields, error: Object.keys(fields).length === 0 ? `No score in response: ${JSON.stringify(data).slice(0, 200)}` : undefined };
 
   } catch (error) {
     return { success: false, source: 'HowLoud', fields, error: String(error) };
