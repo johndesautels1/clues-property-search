@@ -1667,7 +1667,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const {
     address,
     url,
-    engines = [...LLM_CASCADE_ORDER],
+    engines = ['perplexity'],  // TEMP: Only Perplexity to avoid timeout. Add back: [...LLM_CASCADE_ORDER]
     skipLLMs = false,
     useCascade = true // Enable cascade mode by default
   } = req.body;
