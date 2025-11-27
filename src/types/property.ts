@@ -147,6 +147,7 @@ export interface FinancialData {
   insuranceEstAnnual: DataField<number>; // #88
   financingTerms: DataField<string>;     // #89
   comparableSalesLast3: DataField<string[]>; // #90
+  specialAssessments: DataField<string>; // #35
 }
 
 // Utilities & Environment (91-110)
@@ -185,7 +186,6 @@ export interface UtilitiesData {
   lotFeatures: DataField<string>;        // #109
   petPolicy: DataField<string>;          // #107
   ageRestrictions: DataField<string>;    // #108
-  specialAssessments: DataField<string>; // #109
   notesConfidenceSummary: DataField<string>; // #110
 }
 

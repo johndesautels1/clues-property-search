@@ -1009,7 +1009,7 @@ export default function PropertyDetail() {
                 <div>
                   {renderDataField("Pet Policy", fullProperty.utilities.petPolicy, "text", undefined, "108_pet_policy")}
                   {renderDataField("Age Restrictions", fullProperty.utilities.ageRestrictions, "text", undefined, "109_age_restrictions")}
-                  {renderDataField("Special Assessments", fullProperty.utilities.specialAssessments)}
+                  {renderDataField("Special Assessments", fullProperty.financial.specialAssessments)}
                 </div>
               </div>
             </Section>

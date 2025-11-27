@@ -821,6 +821,7 @@ export default function AddProperty() {
         insuranceEstAnnual: createDataField(parsePrice(row['80_insurance_estimate_annual'])),
         financingTerms: createDataField(''),
         comparableSalesLast3: createDataField([]),
+        specialAssessments: createDataField(row['72_special_assessments'] || ''),
       },
       utilities: {
         electricProvider: createDataField(row['81_electric_provider'] || ''),
@@ -857,7 +858,6 @@ export default function AddProperty() {
         lotFeatures: createDataField(row['109_lot_features'] || ''),
         petPolicy: createDataField(''),
         ageRestrictions: createDataField(''),
-        specialAssessments: createDataField(row['72_special_assessments'] || ''),
         notesConfidenceSummary: createDataField(row['110_notes_and_confidence'] || ''),
       },
     };
