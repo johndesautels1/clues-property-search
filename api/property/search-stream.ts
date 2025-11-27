@@ -761,7 +761,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ========================================
 
     const API_TIMEOUT = 10000; // 10s per API call
-    const LLM_TIMEOUT = 20000; // 20s per LLM call
+    const LLM_TIMEOUT = 55000; // 20s per LLM call
     const startTime = Date.now();
     const DEADLINE = 59000; // 59s hard deadline (Vercel Pro allows 60s)
 
