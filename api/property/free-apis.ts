@@ -385,20 +385,21 @@ export async function callHowLoud(lat: number, lon: number): Promise<ApiResult> 
     }
 
     const data = await response.json();
+    const result = data.result || data; // v2 nests in result, v1 is flat
 
-    if (data.score !== undefined) {
-      setField(fields, '96_noise_score', data.score, 'HowLoud');
-      setField(fields, '97_noise_category', data.category || (data.score > 70 ? 'Noisy' : data.score > 50 ? 'Moderate' : 'Quiet'), 'HowLoud');
+    if (result.score !== undefined) {
+      setField(fields, '96_noise_score', result.score, 'HowLoud');
+      setField(fields, '97_noise_category', result.scoretext || (result.score > 70 ? 'Quiet' : result.score > 50 ? 'Moderate' : 'Noisy'), 'HowLoud');
     }
 
     // Traffic noise
-    if (data.traffic_score !== undefined) {
-      setField(fields, '94_traffic_noise', data.traffic_score, 'HowLoud');
+    if (result.traffic !== undefined) {
+      setField(fields, '94_traffic_noise', result.traffic, 'HowLoud');
     }
 
     // Airport noise
-    if (data.airport_score !== undefined) {
-      setField(fields, '95_airport_noise', data.airport_score, 'HowLoud');
+    if (result.airports !== undefined) {
+      setField(fields, '95_airport_noise', result.airports, 'HowLoud');
     }
 
     return { success: Object.keys(fields).length > 0, source: 'HowLoud', fields };
