@@ -487,8 +487,8 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
     }
 
     const stateCode = stateMatch[1].toUpperCase();
-    const currentYear = new Date().getFullYear() - 1;
-    const url = 'https://api.usa.gov/crime/fbi/cde/summarized/state/' + stateCode + '/violent-crime?from=' + (currentYear - 1) + '&to=' + currentYear + '&API_KEY=' + apiKey;
+    // Use 2022 data (most complete available) with MM-YYYY format
+    const url = `https://api.usa.gov/crime/fbi/cde/summarized/state/${stateCode}/violent-crime?from=01-2022&to=12-2022&API_KEY=${apiKey}`;
 
     const response = await fetch(url);
     if (!response.ok) {
@@ -497,21 +497,35 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
 
     const data = await response.json();
 
-    if (data.results && data.results.length > 0) {
-      const latest = data.results[data.results.length - 1];
+    // New API format returns monthly rates in offenses.rates[State]
+    if (data.offenses?.rates?.[stateCode] || data.offenses?.rates?.Florida) {
+      const stateRates = data.offenses.rates[stateCode] || data.offenses.rates.Florida;
+      const usRates = data.offenses.rates['United States'];
 
-      if (latest.actual && latest.population) {
-        const crimeRate = Math.round((latest.actual / latest.population) * 100000);
-        setField(fields, '90_violent_crime_rate_per_100k', crimeRate, 'FBI UCR');
+      // Calculate annual average from monthly rates
+      const monthlyRates = Object.values(stateRates).filter((v): v is number => typeof v === 'number');
+      if (monthlyRates.length > 0) {
+        // Sum monthly rates for annual rate (rates are per 100k per month)
+        const annualRate = Math.round(monthlyRates.reduce((a, b) => a + b, 0));
+        setField(fields, '90_violent_crime_rate_per_100k', annualRate, 'FBI UCR');
 
+        // Grade based on annual violent crime rate per 100k
         let grade = 'A';
-        if (crimeRate > 600) grade = 'F';
-        else if (crimeRate > 450) grade = 'D';
-        else if (crimeRate > 300) grade = 'C';
-        else if (crimeRate > 150) grade = 'B';
+        if (annualRate > 500) grade = 'F';
+        else if (annualRate > 400) grade = 'D';
+        else if (annualRate > 300) grade = 'C';
+        else if (annualRate > 200) grade = 'B';
 
         setField(fields, '91_crime_grade', grade, 'FBI UCR');
-        setField(fields, '92_crime_data_year', currentYear, 'FBI UCR');
+        setField(fields, '92_crime_data_year', 2022, 'FBI UCR');
+
+        // Compare to US average
+        if (usRates) {
+          const usMonthlyRates = Object.values(usRates).filter((v): v is number => typeof v === 'number');
+          const usAnnualRate = Math.round(usMonthlyRates.reduce((a, b) => a + b, 0));
+          const vsNational = Math.round((annualRate / usAnnualRate - 1) * 100);
+          setField(fields, '93_crime_vs_national_percent', vsNational, 'FBI UCR');
+        }
       }
     }
 
