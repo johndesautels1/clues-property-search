@@ -167,29 +167,43 @@ Only include fields you have reasonable confidence about based on the location. 
     });
 
     const data = await response.json();
+    console.log('[CLAUDE OPUS] Status:', response.status, '| Response:', JSON.stringify(data).slice(0, 500));
+
     if (data.content?.[0]?.text) {
       const text = data.content[0].text;
+      console.log('[CLAUDE OPUS] Text:', text.slice(0, 500));
       const jsonStr = extractJSON(text);
+      console.log('[CLAUDE OPUS] Extracted JSON:', jsonStr?.slice(0, 300) || 'null');
       if (jsonStr) {
-        const parsed = JSON.parse(jsonStr);
-        const fields: Record<string, any> = {};
-        // Handle both parsed.fields (wrapped) and parsed directly
-        for (const [key, value] of Object.entries(parsed.fields || parsed)) {
-          const strVal = String(value).toLowerCase().trim();
-          const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'unknown' || strVal === 'not available' || strVal === 'none';
-          if (!isBadValue) {
-            fields[key] = {
-              value: (value as any)?.value !== undefined ? (value as any).value : value,
-              source: 'Claude Opus',
-              confidence: 'Low'
-            };
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const fields: Record<string, any> = {};
+          // Handle both parsed.fields (wrapped) and parsed directly
+          for (const [key, value] of Object.entries(parsed.fields || parsed)) {
+            const strVal = String(value).toLowerCase().trim();
+            const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'unknown' || strVal === 'not available' || strVal === 'none';
+            if (!isBadValue) {
+              fields[key] = {
+                value: (value as any)?.value !== undefined ? (value as any).value : value,
+                source: 'Claude Opus',
+                confidence: 'Low'
+              };
+            }
           }
+          console.log('[CLAUDE OPUS] Fields found:', Object.keys(fields).length);
+          return { fields };
+        } catch (parseError) {
+          console.log('[CLAUDE OPUS] JSON.parse error:', String(parseError));
+          return { error: `JSON parse error: ${String(parseError)}`, fields: {} };
         }
-        return { fields };
       }
+    } else if (data.error) {
+      console.log('[CLAUDE OPUS] API Error:', JSON.stringify(data.error));
+      return { error: `API Error: ${data.error?.message || JSON.stringify(data.error)}`, fields: {} };
     }
     return { error: 'Failed to parse response', fields: {} };
   } catch (error) {
+    console.log('[CLAUDE OPUS] Exception:', String(error));
     return { error: String(error), fields: {} };
   }
 }
