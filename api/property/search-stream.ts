@@ -35,68 +35,12 @@ import {
   callWeather,
   type ApiField
 } from './free-apis';
-
-// ScrapedField type for compatibility (scrapers removed - they were blocked)
-interface ScrapedField {
-  value: string | number | boolean | null;
-  source: string;
-  confidence: 'High' | 'Medium' | 'Low';
-}
-
-// Field type for storing values
-interface FieldValue {
-  value: any;
-  source: string;
-  confidence: 'High' | 'Medium' | 'Low';
-}
+import { createArbitrationPipeline, type FieldValue, type ArbitrationResult } from './arbitration';
 
 // SSE helper to send events
 function sendEvent(res: VercelResponse, event: string, data: any) {
   res.write(`event: ${event}\n`);
   res.write(`data: ${JSON.stringify(data)}\n\n`);
-}
-
-// Merge fields with reliability ordering - NEVER overwrite with less reliable source
-function mergeFields(
-  target: Record<string, FieldValue>,
-  source: Record<string, FieldValue | ScrapedField | ApiField>,
-  sourceReliability: number
-): { newFields: number; conflicts: Array<{ field: string; existing: any; new: any }> } {
-  let newFields = 0;
-  const conflicts: Array<{ field: string; existing: any; new: any }> = [];
-
-  for (const [key, field] of Object.entries(source)) {
-    // Skip null/undefined/empty values - CRITICAL
-    if (field.value === null || field.value === undefined || field.value === '') {
-      continue;
-    }
-
-    if (!target[key]) {
-      // Field doesn't exist - add it
-      target[key] = {
-        value: field.value,
-        source: field.source,
-        confidence: field.confidence as 'High' | 'Medium' | 'Low'
-      };
-      newFields++;
-    } else {
-      // Field exists - check for conflict
-      const existingValue = JSON.stringify(target[key].value);
-      const newValue = JSON.stringify(field.value);
-
-      if (existingValue !== newValue) {
-        // Conflict detected
-        conflicts.push({
-          field: key,
-          existing: { value: target[key].value, source: target[key].source },
-          new: { value: field.value, source: field.source }
-        });
-        // Don't overwrite - keep more reliable source
-      }
-    }
-  }
-
-  return { newFields, conflicts };
 }
 
 // LLM Call Functions
@@ -685,8 +629,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no');
 
-  const allFields: Record<string, FieldValue> = {};
-  const allConflicts: Array<{ field: string; values: Array<{ source: string; value: any }> }> = [];
+  const arbitrationPipeline = createArbitrationPipeline(2);
   const llmResponses: any[] = [];
 
   // Extract ZPID if Zillow URL provided
@@ -712,8 +655,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     try {
       const geoResult = await callGoogleGeocode(searchAddress);
-      const { newFields, conflicts } = mergeFields(allFields, geoResult.fields, 4);
-      conflicts.forEach(c => allConflicts.push({ field: c.field, values: [c.existing, c.new] }));
+      const newFields = arbitrationPipeline.addFieldsFromSource(geoResult.fields, 'Google Geocode');
 
       lat = geoResult.lat;
       lon = geoResult.lon;
@@ -736,7 +678,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sendEvent(res, 'progress', { source: 'google-places', status: 'searching', message: 'Finding nearby amenities...' });
       try {
         const placesResult = await callGooglePlaces(lat, lon);
-        const { newFields } = mergeFields(allFields, placesResult.fields, 5);
+        const newFields = arbitrationPipeline.addFieldsFromSource(placesResult.fields, 'Google Places');
         sendEvent(res, 'progress', {
           source: 'google-places',
           status: placesResult.success ? 'complete' : 'error',
@@ -755,7 +697,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sendEvent(res, 'progress', { source: 'walkscore', status: 'searching', message: 'Getting WalkScore...' });
       try {
         const walkResult = await callWalkScore(lat, lon, searchAddress);
-        const { newFields } = mergeFields(allFields, walkResult.fields, 6);
+        const newFields = arbitrationPipeline.addFieldsFromSource(walkResult.fields, 'WalkScore');
         sendEvent(res, 'progress', {
           source: 'walkscore',
           status: walkResult.success ? 'complete' : 'error',
@@ -770,7 +712,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sendEvent(res, 'progress', { source: 'fema', status: 'searching', message: 'Checking flood zones...' });
       try {
         const femaResult = await callFemaFlood(lat, lon);
-        const { newFields } = mergeFields(allFields, femaResult.fields, 7);
+        const newFields = arbitrationPipeline.addFieldsFromSource(femaResult.fields, 'FEMA');
         sendEvent(res, 'progress', {
           source: 'fema',
           status: femaResult.success ? 'complete' : 'error',
@@ -785,7 +727,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sendEvent(res, 'progress', { source: 'schooldigger', status: 'searching', message: 'Getting school data...' });
       try {
         const schoolResult = await callSchoolDigger(lat, lon);
-        const { newFields } = mergeFields(allFields, schoolResult.fields, 8);
+        const newFields = arbitrationPipeline.addFieldsFromSource(schoolResult.fields, 'SchoolDigger');
         sendEvent(res, 'progress', {
           source: 'schooldigger',
           status: schoolResult.success ? 'complete' : 'error',
@@ -804,7 +746,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sendEvent(res, 'progress', { source: 'airnow', status: 'searching', message: 'Getting air quality...' });
       try {
         const airResult = await callAirNow(lat, lon);
-        const { newFields } = mergeFields(allFields, airResult.fields, 10);
+        const newFields = arbitrationPipeline.addFieldsFromSource(airResult.fields, 'AirNow');
         sendEvent(res, 'progress', {
           source: 'airnow',
           status: airResult.success ? 'complete' : 'error',
@@ -819,7 +761,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sendEvent(res, 'progress', { source: 'howloud', status: 'searching', message: 'Checking noise levels...' });
       try {
         const noiseResult = await callHowLoud(lat, lon);
-        const { newFields } = mergeFields(allFields, noiseResult.fields, 11);
+        const newFields = arbitrationPipeline.addFieldsFromSource(noiseResult.fields, 'HowLoud');
         sendEvent(res, 'progress', {
           source: 'howloud',
           status: noiseResult.success ? 'complete' : 'error',
@@ -834,7 +776,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sendEvent(res, 'progress', { source: 'weather', status: 'searching', message: 'Getting weather data...' });
       try {
         const weatherResult = await callWeather(lat, lon);
-        const { newFields } = mergeFields(allFields, weatherResult.fields, 12);
+        const newFields = arbitrationPipeline.addFieldsFromSource(weatherResult.fields, 'Weather');
         sendEvent(res, 'progress', {
           source: 'weather',
           status: weatherResult.success ? 'complete' : 'error',
@@ -849,7 +791,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sendEvent(res, 'progress', { source: 'crime', status: 'searching', message: 'Getting crime data...' });
       try {
         const crimeResult = await callCrimeGrade(lat, lon, searchAddress);
-        const { newFields } = mergeFields(allFields, crimeResult.fields, 9);
+        const newFields = arbitrationPipeline.addFieldsFromSource(crimeResult.fields, 'FBI Crime');
         sendEvent(res, 'progress', {
           source: 'crime',
           status: crimeResult.success ? 'complete' : 'error',
@@ -872,13 +814,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // ========================================
-    // TIER 5: LLMs (Last Resort - Fill Gaps Only)
+    // TIER 4: LLMs (Last Resort - Fill Gaps Only)
     // ========================================
     if (!skipLLMs) {
-      const currentFieldCount = Object.keys(allFields).length;
+      const intermediateResult = arbitrationPipeline.getResult();
+      const currentFieldCount = Object.keys(intermediateResult.fields).length;
 
       // Only call LLMs if we have gaps
       if (currentFieldCount < 110) {
+        const llmSourceNames: Record<string, string> = {
+          'perplexity': 'Perplexity',
+          'grok': 'Grok',
+          'claude-opus': 'Claude Opus',
+          'gpt': 'GPT',
+          'claude-sonnet': 'Claude Sonnet',
+          'gemini': 'Gemini'
+        };
         const llmCascade = [
           { id: 'perplexity', fn: callPerplexity, enabled: engines.includes('perplexity') },
           { id: 'grok', fn: callGrok, enabled: engines.includes('grok') },
@@ -898,7 +849,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
           try {
             const result = await llm.fn(searchAddress);
-            const { newFields } = mergeFields(allFields, result.fields, 100 + llmCascade.indexOf(llm));
+            const newFields = arbitrationPipeline.addFieldsFromSource(result.fields, llmSourceNames[llm.id]);
 
             llmResponses.push({ llm: llm.id, fields_found: newFields, success: !result.error });
             sendEvent(res, 'progress', {
@@ -909,7 +860,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             });
 
             // Check if we've filled enough gaps
-            if (Object.keys(allFields).length >= 110) {
+            const updatedResult = arbitrationPipeline.getResult();
+            if (Object.keys(updatedResult.fields).length >= 110) {
               break;
             }
           } catch (e) {
@@ -930,19 +882,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Calculate final stats
-    const totalFields = Object.keys(allFields).length;
+    // Get final arbitration result with quorum voting and single-source detection
+    const arbitrationResult = arbitrationPipeline.getResult();
+    const totalFields = Object.keys(arbitrationResult.fields).length;
     const completionPercentage = Math.round((totalFields / 110) * 100);
 
-    // Send final complete event with all data
+    // Send final complete event with all data including arbitration metadata
     sendEvent(res, 'complete', {
       success: true,
       address: searchAddress,
-      fields: allFields,
+      fields: arbitrationResult.fields,
       total_fields_found: totalFields,
       completion_percentage: completionPercentage,
       llm_responses: llmResponses,
-      conflicts: allConflicts
+      conflicts: arbitrationResult.conflicts,
+      validation_failures: arbitrationResult.validationFailures,
+      llm_quorum_fields: arbitrationResult.llmQuorumFields,
+      single_source_warnings: arbitrationResult.singleSourceWarnings
     });
 
   } catch (error) {

@@ -110,7 +110,23 @@ The app can also be deployed to:
 This dashboard can run standalone or be embedded in the CLUES Quantum Master App. The `clues-bridge.ts` module handles parent-child iframe communication for property data synchronization.
 
 ## Recent Changes
-- **2025-11-27 (Latest)**: Tiered Arbitration Service & Dashboard Data Quality
+- **2025-11-27 (Latest)**: Arbitration Service Wired into Search Stream API
+  - **COMPLETED: Arbitration Integration in search-stream.ts**:
+    - Created `api/property/arbitration.ts` (API version of arbitration service)
+    - Replaced `mergeFields` function with `createArbitrationPipeline()`
+    - All tier sources (Google, WalkScore, FEMA, SchoolDigger, AirNow, HowLoud, Weather, FBI Crime, LLMs) now use `addFieldsFromSource()`
+    - API response now includes: `validation_failures`, `llm_quorum_fields`, `single_source_warnings`
+    - Tier precedence fully enforced: higher tier data cannot be overwritten by lower tier
+  - **Fixed Data Source Type Errors**:
+    - Updated `property-schema.ts` autoPopulateSources to use correct source names
+    - Fixed PropertySearchForm.tsx LLM source mapping (Claude Opus, Claude Sonnet, GPT, etc.)
+  - **Arbitration Features Active**:
+    - LLM quorum voting (2+ LLMs agree = higher confidence)
+    - Single-source hallucination detection (warns when only 1 LLM provides data)
+    - Validation gates (price 1K-100M, year 1700-future, coords, bathroom math, scores 0-100)
+    - Full audit trail tracking with sources, confidence, and conflicts
+
+- **2025-11-27 (Earlier)**: Tiered Arbitration Service & Dashboard Data Quality
   - **NEW: Arbitration Service** (`src/lib/arbitration.ts`): Complete tier-based data arbitration
     - Tier hierarchy: MLS (1) > Google (2) > APIs (3) > LLMs (4)
     - Higher tier data ALWAYS wins over lower tier
@@ -129,10 +145,6 @@ This dashboard can run standalone or be embedded in the CLUES Quantum Master App
   - **Stellar MLS Adapter Stub** (`api/property/stellar-mls.ts`): Ready for when eKey is obtained
     - Full field mapping from MLS standard to 110-field schema
     - Configuration check and stub implementation
-  - **NEXT STEPS** (foundational modules complete, integration needed):
-    1. Wire arbitration service into search.ts/search-stream.ts to replace current mergeFields
-    2. Ensure Property objects from API include validationStatus metadata
-    3. Connect UI props to arbitration results for real-time validation display
 
 - **2025-11-27 (Earlier)**: Unified Data Sources Architecture & Scraper Removal
   - **Created Unified Data Sources Manifest**: `src/lib/data-sources.ts` - single source of truth for all 16 data sources
