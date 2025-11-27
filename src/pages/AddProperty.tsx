@@ -20,6 +20,7 @@ import {
 import { usePropertyStore } from '@/store/propertyStore';
 import type { PropertyCard, Property, DataField } from '@/types/property';
 import { LLM_CASCADE_ORDER, LLM_DISPLAY_NAMES } from '@/lib/llm-constants';
+import { normalizeToProperty } from '@/lib/field-normalizer';
 
 // Autocomplete suggestion type
 interface AddressSuggestion {
@@ -556,199 +557,17 @@ export default function AddProperty() {
     }
   };
 
-  // Convert API response to full Property object
+  /**
+   * Convert API response to full Property object using unified normalizer
+   * This ensures consistent field mapping across the entire application
+   */
   const convertApiResponseToFullProperty = (
     fields: any,
     propertyId: string,
     fieldSources: Record<string, string[]> = {},
     conflicts: Array<{ field: string; values: Array<{ source: string; value: any }> }> = []
   ): Property => {
-    const now = new Date().toISOString();
-
-    // Helper to get conflict data for a field
-    const getConflict = (fieldKey: string) => {
-      const conflict = conflicts.find(c => c.field === fieldKey);
-      return conflict ? { hasConflict: true, conflictValues: conflict.values } : { hasConflict: false, conflictValues: [] };
-    };
-
-    // Helper to create field with LLM metadata
-    const createFieldWithMetadata = <T,>(fieldKey: string, value: T | null, confidence: 'High' | 'Medium-High' | 'Medium' | 'Low' = 'Medium') => {
-      const llmSources = fieldSources[fieldKey] || [];
-      const { hasConflict, conflictValues } = getConflict(fieldKey);
-      return createDataField(value, confidence, llmSources, hasConflict, conflictValues);
-    };
-
-    return {
-      id: propertyId,
-      createdAt: now,
-      updatedAt: now,
-      address: {
-        fullAddress: createFieldWithMetadata('1_full_address', fields['1_full_address']?.value),
-        mlsPrimary: createFieldWithMetadata('2_mls_primary', fields['2_mls_primary']?.value),
-        mlsSecondary: createFieldWithMetadata('3_mls_secondary', fields['3_mls_secondary']?.value),
-        listingStatus: createFieldWithMetadata('4_listing_status', fields['4_listing_status']?.value),
-        listingDate: createFieldWithMetadata('5_listing_date', fields['5_listing_date']?.value),
-        listingPrice: createFieldWithMetadata('7_listing_price', fields['7_listing_price']?.value),
-        pricePerSqft: createFieldWithMetadata('8_price_per_sqft', fields['8_price_per_sqft']?.value),
-        streetAddress: createFieldWithMetadata('1_full_address', fields['1_full_address']?.value?.split(',')[0]),
-        city: createFieldWithMetadata('1_full_address', fields['1_full_address']?.value?.split(',')[1]?.trim()),
-        state: createFieldWithMetadata('1_full_address', fields['1_full_address']?.value?.split(',')[2]?.trim()?.match(/([A-Z]{2})/)?.[1]),
-        zipCode: createFieldWithMetadata('1_full_address', fields['1_full_address']?.value?.split(',')[2]?.trim()?.match(/(\d{5})/)?.[1]),
-        county: createFieldWithMetadata('28_county', fields['28_county']?.value),
-        latitude: createFieldWithMetadata('coordinates', fields['coordinates']?.value?.lat),
-        longitude: createFieldWithMetadata('coordinates', fields['coordinates']?.value?.lon),
-        neighborhoodName: createFieldWithMetadata('41_neighborhood_name', fields['41_neighborhood_name']?.value),
-      },
-      details: {
-        bedrooms: createFieldWithMetadata('12_bedrooms', fields['12_bedrooms']?.value),
-        fullBathrooms: createFieldWithMetadata('13_full_bathrooms', fields['13_full_bathrooms']?.value),
-        halfBathrooms: createFieldWithMetadata('14_half_bathrooms', fields['14_half_bathrooms']?.value),
-        totalBathrooms: createFieldWithMetadata('15_total_bathrooms', fields['15_total_bathrooms']?.value),
-        livingSqft: createFieldWithMetadata('16_living_sqft', fields['16_living_sqft']?.value),
-        totalSqftUnderRoof: createFieldWithMetadata('17_total_sqft_under_roof', fields['17_total_sqft_under_roof']?.value),
-        lotSizeSqft: createFieldWithMetadata('18_lot_size_sqft', fields['18_lot_size_sqft']?.value),
-        lotSizeAcres: createFieldWithMetadata('19_lot_size_acres', fields['19_lot_size_acres']?.value),
-        yearBuilt: createFieldWithMetadata('20_year_built', fields['20_year_built']?.value),
-        propertyType: createFieldWithMetadata('21_property_type', fields['21_property_type']?.value),
-        stories: createFieldWithMetadata('22_stories', fields['22_stories']?.value),
-        garageSpaces: createFieldWithMetadata('23_garage_spaces', fields['23_garage_spaces']?.value),
-        parkingTotal: createFieldWithMetadata('24_parking_total', fields['24_parking_total']?.value),
-        hoaYn: createFieldWithMetadata('25_hoa_yn', fields['25_hoa_yn']?.value),
-        hoaFeeAnnual: createFieldWithMetadata('26_hoa_fee_annual', fields['26_hoa_fee_annual']?.value),
-        hoaName: createFieldWithMetadata('70_hoa_name', fields['70_hoa_name']?.value),
-        hoaIncludes: createFieldWithMetadata('71_hoa_includes', fields['71_hoa_includes']?.value),
-        annualTaxes: createFieldWithMetadata('29_annual_taxes', fields['29_annual_taxes']?.value),
-        taxYear: createFieldWithMetadata('30_tax_year', fields['30_tax_year']?.value),
-        assessedValue: createFieldWithMetadata('31_assessed_value', fields['31_assessed_value']?.value),
-        marketValueEstimate: createFieldWithMetadata('9_market_value_estimate', fields['9_market_value_estimate']?.value),
-        lastSaleDate: createFieldWithMetadata('10_last_sale_date', fields['10_last_sale_date']?.value),
-        lastSalePrice: createFieldWithMetadata('11_last_sale_price', fields['11_last_sale_price']?.value),
-        ownershipType: createFieldWithMetadata('27_ownership_type', fields['27_ownership_type']?.value),
-        parcelId: createFieldWithMetadata('6_parcel_id', fields['6_parcel_id']?.value),
-      },
-      structural: {
-        roofType: createFieldWithMetadata('36_roof_type', fields['36_roof_type']?.value),
-        roofAgeEst: createFieldWithMetadata('37_roof_age_est', fields['37_roof_age_est']?.value),
-        exteriorMaterial: createFieldWithMetadata('38_exterior_material', fields['38_exterior_material']?.value),
-        foundation: createFieldWithMetadata('39_foundation', fields['39_foundation']?.value),
-        hvacType: createFieldWithMetadata('40_hvac_type', fields['40_hvac_type']?.value),
-        hvacAge: createFieldWithMetadata('41_hvac_age', fields['41_hvac_age']?.value),
-        waterHeaterType: createFieldWithMetadata('30_water_heater_type', fields['30_water_heater_type']?.value),
-        garageType: createFieldWithMetadata('31_garage_type', fields['31_garage_type']?.value),
-        flooringType: createFieldWithMetadata('42_flooring_type', fields['42_flooring_type']?.value),
-        kitchenFeatures: createFieldWithMetadata('43_kitchen_features', fields['43_kitchen_features']?.value),
-        appliancesIncluded: createFieldWithMetadata('44_appliances_included', fields['44_appliances_included']?.value),
-        laundryType: createFieldWithMetadata('39_laundry_type', fields['39_laundry_type']?.value),
-        fireplaceYn: createFieldWithMetadata('45_fireplace_yn', fields['45_fireplace_yn']?.value),
-        fireplaceCount: createFieldWithMetadata('38_fireplace_count', fields['38_fireplace_count']?.value),
-        poolYn: createFieldWithMetadata('47_pool_yn', fields['47_pool_yn']?.value),
-        poolType: createFieldWithMetadata('48_pool_type', fields['48_pool_type']?.value),
-        deckPatio: createFieldWithMetadata('49_deck_patio', fields['49_deck_patio']?.value),
-        fence: createFieldWithMetadata('50_fence', fields['50_fence']?.value),
-        landscaping: createFieldWithMetadata('51_landscaping', fields['51_landscaping']?.value),
-        recentRenovations: createFieldWithMetadata('52_recent_renovations', fields['52_recent_renovations']?.value),
-        permitHistoryRoof: createFieldWithMetadata('53_permit_history_roof', fields['53_permit_history_roof']?.value),
-        permitHistoryHvac: createFieldWithMetadata('54_permit_history_hvac', fields['54_permit_history_hvac']?.value),
-        permitHistoryPoolAdditions: createFieldWithMetadata('55_permit_history_other', fields['55_permit_history_other']?.value),
-        interiorCondition: createFieldWithMetadata('46_interior_condition', fields['46_interior_condition']?.value),
-      },
-      location: {
-        assignedElementary: createFieldWithMetadata('56_assigned_elementary', fields['56_assigned_elementary']?.value),
-        elementaryRating: createFieldWithMetadata('57_elementary_rating', fields['57_elementary_rating']?.value),
-        elementaryDistanceMiles: createFieldWithMetadata('58_elementary_distance_miles', fields['58_elementary_distance_miles']?.value),
-        assignedMiddle: createFieldWithMetadata('59_assigned_middle', fields['59_assigned_middle']?.value),
-        middleRating: createFieldWithMetadata('60_middle_rating', fields['60_middle_rating']?.value),
-        middleDistanceMiles: createFieldWithMetadata('61_middle_distance_miles', fields['61_middle_distance_miles']?.value),
-        assignedHigh: createFieldWithMetadata('62_assigned_high', fields['62_assigned_high']?.value),
-        highRating: createFieldWithMetadata('63_high_rating', fields['63_high_rating']?.value),
-        highDistanceMiles: createFieldWithMetadata('64_high_distance_miles', fields['64_high_distance_miles']?.value),
-        schoolDistrictName: createFieldWithMetadata('65_school_district_name', fields['65_school_district_name']?.value),
-        elevationFeet: createFieldWithMetadata('55_elevation_feet', fields['55_elevation_feet']?.value),
-        walkScore: createFieldWithMetadata('65_walk_score', fields['65_walk_score']?.value),
-        transitScore: createFieldWithMetadata('66_transit_score', fields['66_transit_score']?.value),
-        bikeScore: createFieldWithMetadata('67_bike_score', fields['67_bike_score']?.value),
-        distanceGroceryMiles: createFieldWithMetadata('73_distance_grocery_miles', fields['73_distance_grocery_miles']?.value),
-        distanceHospitalMiles: createFieldWithMetadata('74_distance_hospital_miles', fields['74_distance_hospital_miles']?.value),
-        distanceAirportMiles: createFieldWithMetadata('75_distance_airport_miles', fields['75_distance_airport_miles']?.value),
-        distanceParkMiles: createFieldWithMetadata('76_distance_park_miles', fields['76_distance_park_miles']?.value),
-        distanceBeachMiles: createFieldWithMetadata('77_distance_beach_miles', fields['77_distance_beach_miles']?.value),
-        crimeIndexViolent: createFieldWithMetadata('78_crime_index_violent', fields['78_crime_index_violent']?.value),
-        crimeIndexProperty: createFieldWithMetadata('79_crime_index_property', fields['79_crime_index_property']?.value),
-        neighborhoodSafetyRating: createFieldWithMetadata('80_neighborhood_safety_rating', fields['80_neighborhood_safety_rating']?.value),
-        noiseLevel: createFieldWithMetadata('68_noise_level', fields['68_noise_level']?.value),
-        trafficLevel: createFieldWithMetadata('69_traffic_level', fields['69_traffic_level']?.value),
-        walkabilityDescription: createFieldWithMetadata('70_walkability_description', fields['70_walkability_description']?.value),
-        commuteTimeCityCenter: createFieldWithMetadata('71_commute_time_city_center', fields['71_commute_time_city_center']?.value),
-        publicTransitAccess: createFieldWithMetadata('72_public_transit_access', fields['72_public_transit_access']?.value),
-      },
-      financial: {
-        annualPropertyTax: createFieldWithMetadata('76_annual_property_tax', fields['76_annual_property_tax']?.value),
-        taxExemptions: createFieldWithMetadata('32_tax_exemptions', fields['32_tax_exemptions']?.value),
-        propertyTaxRate: createFieldWithMetadata('33_property_tax_rate', fields['33_property_tax_rate']?.value),
-        recentTaxPaymentHistory: createFieldWithMetadata('34_recent_tax_history', fields['34_recent_tax_history']?.value),
-        medianHomePriceNeighborhood: createFieldWithMetadata('81_median_home_price_neighborhood', fields['81_median_home_price_neighborhood']?.value),
-        pricePerSqftRecentAvg: createFieldWithMetadata('82_price_per_sqft_recent_avg', fields['82_price_per_sqft_recent_avg']?.value),
-        redfinEstimate: createFieldWithMetadata('74_redfin_estimate', fields['74_redfin_estimate']?.value),
-        priceToRentRatio: createFieldWithMetadata('77_price_to_rent_ratio', fields['77_price_to_rent_ratio']?.value),
-        priceVsMedianPercent: createFieldWithMetadata('79_price_vs_median_percent', fields['79_price_vs_median_percent']?.value),
-        daysOnMarketAvg: createFieldWithMetadata('83_days_on_market_avg', fields['83_days_on_market_avg']?.value),
-        inventorySurplus: createFieldWithMetadata('84_inventory_surplus', fields['84_inventory_surplus']?.value),
-        rentalEstimateMonthly: createFieldWithMetadata('85_rental_estimate_monthly', fields['85_rental_estimate_monthly']?.value),
-        rentalYieldEst: createFieldWithMetadata('86_rental_yield_est', fields['86_rental_yield_est']?.value),
-        vacancyRateNeighborhood: createFieldWithMetadata('87_vacancy_rate_neighborhood', fields['87_vacancy_rate_neighborhood']?.value),
-        capRateEst: createFieldWithMetadata('88_cap_rate_est', fields['88_cap_rate_est']?.value),
-        insuranceEstAnnual: createFieldWithMetadata('89_insurance_est_annual', fields['89_insurance_est_annual']?.value),
-        financingTerms: createFieldWithMetadata('90_financing_terms', fields['90_financing_terms']?.value),
-        comparableSalesLast3: createFieldWithMetadata('91_comparable_sales', fields['91_comparable_sales']?.value),
-      },
-      utilities: {
-        electricProvider: createFieldWithMetadata('92_electric_provider', fields['92_electric_provider']?.value),
-        waterProvider: createFieldWithMetadata('93_water_provider', fields['93_water_provider']?.value),
-        sewerProvider: createFieldWithMetadata('94_sewer_provider', fields['94_sewer_provider']?.value),
-        naturalGas: createFieldWithMetadata('95_natural_gas', fields['95_natural_gas']?.value),
-        trashProvider: createFieldWithMetadata('85_trash_provider', fields['85_trash_provider']?.value),
-        internetProvidersTop3: createFieldWithMetadata('96_internet_providers_top3', fields['96_internet_providers_top3']?.value),
-        maxInternetSpeed: createFieldWithMetadata('97_max_internet_speed', fields['97_max_internet_speed']?.value),
-        fiberAvailable: createFieldWithMetadata('88_fiber_available', fields['88_fiber_available']?.value),
-        cableTvProvider: createFieldWithMetadata('98_cable_tv_provider', fields['98_cable_tv_provider']?.value),
-        avgElectricBill: createFieldWithMetadata('90_avg_electric_bill', fields['90_avg_electric_bill']?.value),
-        avgWaterBill: createFieldWithMetadata('91_avg_water_bill', fields['91_avg_water_bill']?.value),
-        cellCoverageQuality: createFieldWithMetadata('94_cell_coverage_quality', fields['94_cell_coverage_quality']?.value),
-        emergencyServicesDistance: createFieldWithMetadata('95_emergency_services_distance', fields['95_emergency_services_distance']?.value),
-        airQualityIndexCurrent: createFieldWithMetadata('99_air_quality_index_current', fields['99_air_quality_index_current']?.value),
-        airQualityGrade: createFieldWithMetadata('97_air_quality_grade', fields['97_air_quality_grade']?.value),
-        floodZone: createFieldWithMetadata('100_flood_zone', fields['100_flood_zone']?.value),
-        floodRiskLevel: createFieldWithMetadata('101_flood_risk_level', fields['101_flood_risk_level']?.value),
-        climateRiskWildfireFlood: createFieldWithMetadata('102_climate_risk_summary', fields['102_climate_risk_summary']?.value),
-        wildfireRisk: createFieldWithMetadata('98_wildfire_risk', fields['98_wildfire_risk']?.value),
-        earthquakeRisk: createFieldWithMetadata('99_earthquake_risk', fields['99_earthquake_risk']?.value),
-        hurricaneRisk: createFieldWithMetadata('100_hurricane_risk', fields['100_hurricane_risk']?.value),
-        tornadoRisk: createFieldWithMetadata('101_tornado_risk', fields['101_tornado_risk']?.value),
-        radonRisk: createFieldWithMetadata('102_radon_risk', fields['102_radon_risk']?.value),
-        superfundNearby: createFieldWithMetadata('103_superfund_nearby', fields['103_superfund_nearby']?.value),
-        seaLevelRiseRisk: createFieldWithMetadata('105_sea_level_rise_risk', fields['105_sea_level_rise_risk']?.value),
-        noiseLevelDbEst: createFieldWithMetadata('103_noise_level_db_est', fields['103_noise_level_db_est']?.value),
-        solarPotential: createFieldWithMetadata('104_solar_potential', fields['104_solar_potential']?.value),
-        evChargingYn: createFieldWithMetadata('105_ev_charging_yn', fields['105_ev_charging_yn']?.value),
-        smartHomeFeatures: createFieldWithMetadata('106_smart_home_features', fields['106_smart_home_features']?.value),
-        accessibilityMods: createFieldWithMetadata('107_accessibility_mods', fields['107_accessibility_mods']?.value),
-        viewType: createFieldWithMetadata('108_view_type', fields['108_view_type']?.value),
-        lotFeatures: createFieldWithMetadata('109_lot_features', fields['109_lot_features']?.value),
-        petPolicy: createFieldWithMetadata('108_pet_policy', fields['108_pet_policy']?.value),
-        ageRestrictions: createFieldWithMetadata('109_age_restrictions', fields['109_age_restrictions']?.value),
-        specialAssessments: createFieldWithMetadata('35_special_assessments', fields['35_special_assessments']?.value),
-        notesConfidenceSummary: createFieldWithMetadata('110_notes_confidence_summary', fields['110_notes_confidence_summary']?.value),
-      },
-      smartScore: 0,
-      dataCompleteness: 0,
-      aiConfidence: 0,
-      llmSources: {
-        grok: !!fields.some?.((f: any) => f?.source?.includes('Grok')),
-        claude: !!fields.some?.((f: any) => f?.source?.includes('Claude')),
-        gpt: !!fields.some?.((f: any) => f?.source?.includes('GPT')),
-        gemini: !!fields.some?.((f: any) => f?.source?.includes('Gemini')),
-      },
-    };
+    return normalizeToProperty(fields, propertyId, fieldSources, conflicts);
   };
 
   const getStatusMessage = () => {

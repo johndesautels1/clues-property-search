@@ -108,7 +108,15 @@ The app can also be deployed to:
 This dashboard can run standalone or be embedded in the CLUES Quantum Master App. The `clues-bridge.ts` module handles parent-child iframe communication for property data synchronization.
 
 ## Recent Changes
-- **2025-11-27 (Latest)**: Comprehensive API & schema consistency fixes
+- **2025-11-27 (Latest)**: Unified Field Normalizer Architecture
+  - **Created `src/lib/field-normalizer.ts`**: Single source of truth for mapping ALL 110 API field keys to Property interface structure
+  - **Replaced 200+ line manual mapping**: AddProperty.tsx now uses unified normalizer instead of hardcoded field-by-field conversion
+  - **Validation & Type Coercion**: Built-in range validation (prices 1000-50M, years 1800-2030, lat -90 to 90, etc.)
+  - **Consistent Group Structure**: All field mappings use Property interface groups (address, details, structural, location, financial, utilities)
+  - **Automatic Address Parsing**: Extracts streetAddress, city, state, zipCode from composite `1_full_address` field
+  - **Coordinate Handling**: Properly extracts lat/lon from nested coordinate objects
+
+- **2025-11-27 (Earlier)**: Comprehensive API & schema consistency fixes
   - **Removed Invalid Field References in API**: Fixed scrapers.ts and free-apis.ts which were setting non-existent `city`, `state`, `zip` fields - 110-field schema only has composite `1_full_address`
   - **TypeScript Fixes**: Fixed LSP errors in free-apis.ts with proper CarrierData interface typing
   - **Shared LLM Constants for API**: Created `api/property/llm-constants.ts` to mirror frontend constants - API endpoints now import from shared source
