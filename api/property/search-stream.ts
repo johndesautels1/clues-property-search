@@ -628,7 +628,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const {
     address,
     url,
-    engines = ['perplexity'],  // TEMP: Only Perplexity to avoid timeout. Add back: [...LLM_CASCADE_ORDER]
+    engines = ['perplexity', 'grok'],  // Web-search LLMs with citations. Add back: [...LLM_CASCADE_ORDER] for all
     skipLLMs = false
   } = req.body;
 
