@@ -363,11 +363,21 @@ export async function callAirDNA(lat: number, lon: number, address: string): Pro
 // HOWLOUD API - Noise Levels
 // ============================================
 export async function callHowLoud(lat: number, lon: number): Promise<ApiResult> {
+  const apiKey = process.env.HOWLOUD_API_KEY;
+  const clientId = process.env.HOWLOUD_CLIENT_ID;
+
+  if (!apiKey) {
+    return { success: false, source: 'HowLoud', fields: {}, error: 'HOWLOUD_API_KEY not configured' };
+  }
+
   const fields: Record<string, ApiField> = {};
 
   try {
     // HowLoud API endpoint
-    const url = `https://api.howloud.com/score?lat=${lat}&lng=${lon}`;
+    let url = `https://api.howloud.com/score?lat=${lat}&lng=${lon}&key=${apiKey}`;
+    if (clientId) {
+      url += `&client_id=${clientId}`;
+    }
     const response = await fetch(url);
 
     if (!response.ok) {
