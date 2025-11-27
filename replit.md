@@ -108,7 +108,14 @@ The app can also be deployed to:
 This dashboard can run standalone or be embedded in the CLUES Quantum Master App. The `clues-bridge.ts` module handles parent-child iframe communication for property data synchronization.
 
 ## Recent Changes
-- **2025-11-27 (Latest)**: Unified Field Normalizer Architecture
+- **2025-11-27 (Latest)**: CRITICAL FIX - API Key Mismatch Causing 100+ Fields to Fail
+  - **Root Cause Found**: FIELD_TO_PROPERTY_MAP had duplicate/conflicting apiKey entries that overwrote correct mappings
+  - **Conflicting Keys Removed**: Entries like `85_trash_provider`, `88_fiber_available`, `90_avg_electric_bill` were overwriting official API keys like `85_rental_estimate_monthly`, `88_cap_rate_est`, `90_financing_terms`
+  - **Spelling Fix**: Changed `96_internet_providers_top3` to match API's `96_internet_providers_top`
+  - **Fake HOA/Structural Fields Removed**: Removed `70_hoa_name`, `71_hoa_includes`, `30_water_heater_type`, `31_garage_type` which conflicted with official fields 70-71 (walkability/commute) and 30-31 (tax_year/assessed_value)
+  - **Result**: All 110 API fields now map correctly to Property interface
+
+- **2025-11-27 (Earlier)**: Unified Field Normalizer Architecture
   - **Created `src/lib/field-normalizer.ts`**: Single source of truth for mapping ALL 110 API field keys to Property interface structure
   - **Replaced 200+ line manual mapping**: AddProperty.tsx now uses unified normalizer instead of hardcoded field-by-field conversion
   - **Validation & Type Coercion**: Built-in range validation (prices 1000-50M, years 1800-2030, lat -90 to 90, etc.)
