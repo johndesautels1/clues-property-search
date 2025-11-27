@@ -53,6 +53,157 @@ function valuesAreSemanticallySame(val1: any, val2: any): boolean {
 }
 
 // ============================================
+// CONVERT FLAT 110-FIELD TO NESTED STRUCTURE
+// Maps API field keys to nested PropertyDetail format
+// ============================================
+function convertFlatToNestedStructure(flatFields: Record<string, any>): any {
+  const fieldPathMap: Record<string, [string, string]> = {
+    // Address & Identity
+    '1_full_address': ['address', 'fullAddress'],
+    '2_mls_primary': ['address', 'mlsPrimary'],
+    '3_mls_secondary': ['address', 'mlsSecondary'],
+    '4_listing_status': ['address', 'listingStatus'],
+    '5_listing_date': ['address', 'listingDate'],
+    '6_parcel_id': ['details', 'parcelId'],
+    // Pricing
+    '7_listing_price': ['address', 'listingPrice'],
+    '8_price_per_sqft': ['address', 'pricePerSqft'],
+    '9_market_value_estimate': ['details', 'marketValueEstimate'],
+    '10_last_sale_date': ['details', 'lastSaleDate'],
+    '11_last_sale_price': ['details', 'lastSalePrice'],
+    // Property Basics
+    '12_bedrooms': ['details', 'bedrooms'],
+    '13_full_bathrooms': ['details', 'fullBathrooms'],
+    '14_half_bathrooms': ['details', 'halfBathrooms'],
+    '15_total_bathrooms': ['details', 'totalBathrooms'],
+    '16_living_sqft': ['details', 'livingSqft'],
+    '17_total_sqft_under_roof': ['details', 'totalSqftUnderRoof'],
+    '18_lot_size_sqft': ['details', 'lotSizeSqft'],
+    '19_lot_size_acres': ['details', 'lotSizeAcres'],
+    '20_year_built': ['details', 'yearBuilt'],
+    '21_property_type': ['details', 'propertyType'],
+    '22_stories': ['details', 'stories'],
+    '23_garage_spaces': ['details', 'garageSpaces'],
+    '24_parking_total': ['details', 'parkingTotal'],
+    // HOA & Ownership
+    '25_hoa_yn': ['details', 'hoaYn'],
+    '26_hoa_fee_annual': ['details', 'hoaFeeAnnual'],
+    '27_ownership_type': ['details', 'ownershipType'],
+    '28_county': ['address', 'county'],
+    // Taxes
+    '29_annual_taxes': ['details', 'annualTaxes'],
+    '30_tax_year': ['details', 'taxYear'],
+    '31_assessed_value': ['details', 'assessedValue'],
+    '32_tax_exemptions': ['financial', 'taxExemptions'],
+    '33_property_tax_rate': ['financial', 'propertyTaxRate'],
+    '34_recent_tax_history': ['financial', 'recentTaxHistory'],
+    '35_special_assessments': ['financial', 'specialAssessments'],
+    // Structure & Systems
+    '36_roof_type': ['structural', 'roofType'],
+    '37_roof_age_est': ['structural', 'roofAgeEst'],
+    '38_exterior_material': ['structural', 'exteriorMaterial'],
+    '39_foundation': ['structural', 'foundation'],
+    '40_hvac_type': ['structural', 'hvacType'],
+    '41_hvac_age': ['structural', 'hvacAge'],
+    '42_flooring_type': ['structural', 'flooringType'],
+    '43_kitchen_features': ['structural', 'kitchenFeatures'],
+    '44_appliances_included': ['structural', 'appliancesIncluded'],
+    '45_fireplace_yn': ['structural', 'fireplaceYn'],
+    '46_interior_condition': ['structural', 'interiorCondition'],
+    '47_pool_yn': ['structural', 'poolYn'],
+    '48_pool_type': ['structural', 'poolType'],
+    '49_deck_patio': ['structural', 'deckPatio'],
+    '50_fence': ['structural', 'fence'],
+    '51_landscaping': ['structural', 'landscaping'],
+    '52_recent_renovations': ['structural', 'recentRenovations'],
+    '53_permit_history_roof': ['structural', 'permitHistoryRoof'],
+    '54_permit_history_hvac': ['structural', 'permitHistoryHvac'],
+    '55_permit_history_other': ['structural', 'permitHistoryPoolAdditions'],
+    // Schools
+    '56_assigned_elementary': ['location', 'assignedElementary'],
+    '57_elementary_rating': ['location', 'elementaryRating'],
+    '58_elementary_distance_miles': ['location', 'elementaryDistanceMiles'],
+    '59_assigned_middle': ['location', 'assignedMiddle'],
+    '60_middle_rating': ['location', 'middleRating'],
+    '61_middle_distance_miles': ['location', 'middleDistanceMiles'],
+    '62_assigned_high': ['location', 'assignedHigh'],
+    '63_high_rating': ['location', 'highRating'],
+    '64_high_distance_miles': ['location', 'highDistanceMiles'],
+    // Location Scores
+    '65_walk_score': ['location', 'walkScore'],
+    '66_transit_score': ['location', 'transitScore'],
+    '67_bike_score': ['location', 'bikeScore'],
+    '68_noise_level': ['location', 'noiseLevel'],
+    '69_traffic_level': ['location', 'trafficLevel'],
+    '70_walkability_description': ['location', 'walkabilityDescription'],
+    '71_commute_time_city_center': ['location', 'commuteTimeCityCenter'],
+    '72_public_transit_access': ['location', 'publicTransitAccess'],
+    // Distances
+    '73_distance_grocery_miles': ['location', 'distanceGroceryMiles'],
+    '74_distance_hospital_miles': ['location', 'distanceHospitalMiles'],
+    '75_distance_airport_miles': ['location', 'distanceAirportMiles'],
+    '76_distance_park_miles': ['location', 'distanceParkMiles'],
+    '77_distance_beach_miles': ['location', 'distanceBeachMiles'],
+    // Safety & Crime
+    '78_crime_index_violent': ['location', 'crimeIndexViolent'],
+    '79_crime_index_property': ['location', 'crimeIndexProperty'],
+    '80_neighborhood_safety_rating': ['location', 'neighborhoodSafetyRating'],
+    // Market & Investment
+    '81_median_home_price_neighborhood': ['financial', 'medianHomePriceNeighborhood'],
+    '82_price_per_sqft_recent_avg': ['financial', 'pricePerSqftRecentAvg'],
+    '83_days_on_market_avg': ['financial', 'daysOnMarketAvg'],
+    '84_inventory_surplus': ['financial', 'inventorySurplus'],
+    '85_rental_estimate_monthly': ['financial', 'rentalEstimateMonthly'],
+    '86_rental_yield_est': ['financial', 'rentalYieldEst'],
+    '87_vacancy_rate_neighborhood': ['financial', 'vacancyRateNeighborhood'],
+    '88_cap_rate_est': ['financial', 'capRateEst'],
+    '89_insurance_est_annual': ['financial', 'insuranceEstAnnual'],
+    '90_financing_terms': ['financial', 'financingTerms'],
+    '91_comparable_sales': ['financial', 'comparableSalesLast3'],
+    // Utilities
+    '92_electric_provider': ['utilities', 'electricProvider'],
+    '93_water_provider': ['utilities', 'waterProvider'],
+    '94_sewer_provider': ['utilities', 'sewerProvider'],
+    '95_natural_gas': ['utilities', 'naturalGas'],
+    '96_internet_providers_top3': ['utilities', 'internetProvidersTop3'],
+    '97_max_internet_speed': ['utilities', 'maxInternetSpeed'],
+    '98_cable_tv_provider': ['utilities', 'cableTvProvider'],
+    // Environment & Risk
+    '99_air_quality_index_current': ['utilities', 'airQualityIndexCurrent'],
+    '100_flood_zone': ['utilities', 'floodZone'],
+    '101_flood_risk_level': ['utilities', 'floodRiskLevel'],
+    '102_climate_risk_summary': ['utilities', 'climateRiskWildfireFlood'],
+    '103_noise_level_db_est': ['utilities', 'noiseLevelDbEst'],
+    '104_solar_potential': ['utilities', 'solarPotential'],
+    // Additional Features
+    '105_ev_charging_yn': ['utilities', 'evChargingYn'],
+    '106_smart_home_features': ['utilities', 'smartHomeFeatures'],
+    '107_accessibility_mods': ['utilities', 'accessibilityMods'],
+    '108_pet_policy': ['utilities', 'petPolicy'],
+    '109_age_restrictions': ['utilities', 'ageRestrictions'],
+    '110_notes_confidence_summary': ['utilities', 'notesConfidenceSummary'],
+  };
+
+  const nested: Record<string, any> = {
+    address: {},
+    details: {},
+    structural: {},
+    location: {},
+    financial: {},
+    utilities: {},
+  };
+
+  for (const [flatKey, fieldData] of Object.entries(flatFields)) {
+    const path = fieldPathMap[flatKey];
+    if (path && nested[path[0]]) {
+      nested[path[0]][path[1]] = fieldData;
+    }
+  }
+
+  return nested;
+}
+
+// ============================================
 // REALTOR.COM SCRAPER
 // ============================================
 
@@ -1851,7 +2002,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sourceBreakdown[source] = (sourceBreakdown[source] || 0) + 1;
     }
 
-    // Convert API response to match frontend DataField interface
+    // Convert API response to match frontend DataField interface AND nested structure
     const convertedFields: Record<string, any> = {};
     for (const [key, field] of Object.entries(allFields)) {
       const fieldData = field as any;
@@ -1879,10 +2030,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       };
     }
 
+    // Transform flat fields to nested structure for PropertyDetail & other pages
+    const nestedFields = convertFlatToNestedStructure(convertedFields);
+
     return res.status(200).json({
       success: true,
       address: searchQuery,
-      fields: convertedFields,
+      fields: convertedFields,  // Keep flat version for compatibility
+      nestedFields: nestedFields,  // Add nested version for PropertyDetail
       total_fields_found: total_fields,
       completion_percentage,
       sources: sources_used,
