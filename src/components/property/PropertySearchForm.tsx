@@ -64,6 +64,8 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
   const [searchResults, setSearchResults] = useState<any>(null);
   const [sourcesProgress, setSourcesProgress] = useState<SourceProgress[]>(DEFAULT_SOURCES);
   const [showProgressTracker, setShowProgressTracker] = useState(false);
+  const [liveFieldsFound, setLiveFieldsFound] = useState(0);
+  const [liveCompletionPct, setLiveCompletionPct] = useState(0);
 
   // Initialize form data
   useEffect(() => {
@@ -224,6 +226,8 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
     setShowSuggestions(false);
     setShowProgressTracker(true);
     setSourcesProgress(DEFAULT_SOURCES.map(s => ({ ...s, status: 'pending' as const, fieldsFound: 0 })));
+    setLiveFieldsFound(0);
+    setLiveCompletionPct(0);
 
     // Use SSE streaming endpoint for real-time progress
     const searchWithSSE = () => {
@@ -285,7 +289,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
 
                     if (eventType === 'progress') {
                       // Update progress tracker in real-time
-                      const { source, status, fieldsFound, error, message } = data;
+                      const { source, status, fieldsFound, error, message, newUniqueFields } = data;
                       updateSource(source, {
                         status: status as SourceStatus,
                         fieldsFound: fieldsFound || 0,
@@ -293,6 +297,16 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
                       });
                       if (message) {
                         setSearchProgress(message);
+                      }
+                      // Accumulate live totals from completed sources
+                      // Use newUniqueFields if available (LLMs), otherwise fieldsFound (APIs)
+                      if (status === 'complete' && (newUniqueFields > 0 || fieldsFound > 0)) {
+                        const increment = typeof newUniqueFields === 'number' ? newUniqueFields : (fieldsFound || 0);
+                        setLiveFieldsFound(prev => {
+                          const newTotal = prev + increment;
+                          setLiveCompletionPct(Math.round((newTotal / 138) * 100));
+                          return newTotal;
+                        });
                       }
                     } else if (eventType === 'complete') {
                       finalData = data;
@@ -694,8 +708,8 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
             <SearchProgressTracker
               sources={sourcesProgress}
               isSearching={isSearching}
-              totalFieldsFound={searchResults?.total_fields_found || 0}
-              completionPercentage={searchResults?.completion_percentage || 0}
+              totalFieldsFound={liveFieldsFound}
+              completionPercentage={liveCompletionPct}
             />
           </div>
         )}
