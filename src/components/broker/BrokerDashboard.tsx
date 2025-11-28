@@ -2,13 +2,15 @@
  * Broker Dashboard
  *
  * Main glassmorphic dashboard page integrating all visualization components
- * Calls /api/broker-dashboard with properties from database
+ * NOW READS FROM ZUSTAND STORE - Real data from property searches
  * Displays Executive KPIs, Property Comparison, Risk Analysis, ROI Projections
+ *
+ * HONESTY PRINCIPLE: Shows actual data or "No data" - never fake defaults
  */
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard,
@@ -16,6 +18,7 @@ import {
   Filter,
   Download,
   AlertCircle,
+  Database,
 } from 'lucide-react';
 
 import ExecutiveKPICards from './ExecutiveKPICards';
@@ -34,7 +37,12 @@ import SpaceDistributionChart from './SpaceDistributionChart';
 import SchoolProximityCards from './SchoolProximityCards';
 import CommuteTimeChart from './CommuteTimeChart';
 
-// Test data for development/demo
+// Property store for real data
+import { usePropertyStore, useFullProperties } from '@/store/propertyStore';
+import { mapPropertyToChart, mapPropertiesToChart, type ChartProperty } from './propertyToChartMapper';
+import type { Property } from '@/types/property';
+
+// Test data for demo mode only
 import { TEST_PROPERTIES } from '../analytics/exampleData';
 
 interface Filters {
@@ -184,6 +192,39 @@ export default function BrokerDashboard({ initialProperties, demoMode = false }:
   const [filters, setFilters] = useState<Filters>({});
   const [showFilters, setShowFilters] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | number | 'all'>('all');
+  const [dataSource, setDataSource] = useState<'store' | 'demo'>('store');
+
+  // Get properties from Zustand store
+  const fullPropertiesMap = useFullProperties();
+  const propertyCards = usePropertyStore(state => state.properties);
+
+  // Convert store properties to chart format
+  const storeChartProperties = useMemo(() => {
+    const fullPropsArray = Array.from(fullPropertiesMap.values());
+    console.log('[BrokerDashboard] Full properties from store:', fullPropsArray.length);
+
+    if (fullPropsArray.length === 0) {
+      return [];
+    }
+
+    // Map each full property to chart format
+    return fullPropsArray.map(fp => mapPropertyToChart(fp));
+  }, [fullPropertiesMap]);
+
+  // Decide which properties to use
+  const chartProperties = useMemo(() => {
+    if (demoMode) {
+      return TEST_PROPERTIES;
+    }
+    if (initialProperties && initialProperties.length > 0) {
+      return initialProperties;
+    }
+    if (storeChartProperties.length > 0) {
+      return storeChartProperties;
+    }
+    // No data - show empty state (not fake data)
+    return [];
+  }, [demoMode, initialProperties, storeChartProperties]);
 
   // Process dashboard data (client-side, no API needed)
   const processDashboard = (properties: any[], appliedFilters: Filters = {}) => {
@@ -212,62 +253,32 @@ export default function BrokerDashboard({ initialProperties, demoMode = false }:
     }
   };
 
-  // Load properties on mount
+  // Load properties on mount and when store changes
   useEffect(() => {
-    if (demoMode) {
-      // Use test properties for demo
-      processDashboard(TEST_PROPERTIES, filters);
-    } else if (initialProperties && initialProperties.length > 0) {
-      // Use provided properties
-      processDashboard(initialProperties, filters);
+    if (chartProperties.length > 0) {
+      setDataSource(demoMode ? 'demo' : 'store');
+      processDashboard(chartProperties, filters);
     } else {
-      // Fetch from database or fallback to demo
-      fetchPropertiesFromDB();
+      setLoading(false);
+      setDataSource('store');
     }
-  }, [demoMode, initialProperties]);
-
-  // Fetch properties from database (falls back to demo data)
-  const fetchPropertiesFromDB = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/properties');
-      if (!response.ok) throw new Error('Failed to fetch properties');
-      const properties = await response.json();
-
-      if (properties.length === 0) {
-        // Fall back to demo mode if no properties
-        processDashboard(TEST_PROPERTIES, filters);
-      } else {
-        processDashboard(properties, filters);
-      }
-    } catch (err) {
-      console.error('[BrokerDashboard] DB fetch error, using demo data:', err);
-      // Fall back to demo data
-      processDashboard(TEST_PROPERTIES, filters);
-    }
-  };
+  }, [chartProperties, demoMode]);
 
   // Handle filter changes
   const applyFilters = () => {
-    processDashboard(TEST_PROPERTIES, filters);
+    processDashboard(chartProperties, filters);
     setShowFilters(false);
   };
 
   // Clear filters
   const clearFilters = () => {
     setFilters({});
-    processDashboard(TEST_PROPERTIES, {});
+    processDashboard(chartProperties, {});
   };
 
   // Refresh data
   const refresh = () => {
-    if (demoMode) {
-      processDashboard(TEST_PROPERTIES, filters);
-    } else if (initialProperties) {
-      processDashboard(initialProperties, filters);
-    } else {
-      fetchPropertiesFromDB();
-    }
+    processDashboard(chartProperties, filters);
   };
 
   return (
@@ -285,9 +296,10 @@ export default function BrokerDashboard({ initialProperties, demoMode = false }:
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white">Broker Dashboard</h1>
-            <p className="text-gray-500 text-sm">
-              {demoMode ? 'Demo Mode' : 'Live Data'} •
-              {dashboardData ? ` ${dashboardData.totalFiltered} properties` : ' Loading...'}
+            <p className="text-gray-500 text-sm flex items-center gap-2">
+              <Database className="w-3 h-3" />
+              {dataSource === 'demo' ? 'Demo Mode' : 'Real Property Data'} •
+              {dashboardData ? ` ${dashboardData.totalFiltered} properties` : chartProperties.length === 0 ? ' No properties saved' : ' Loading...'}
             </p>
           </div>
         </div>
@@ -431,8 +443,47 @@ export default function BrokerDashboard({ initialProperties, demoMode = false }:
         </div>
       )}
 
+      {/* Empty State - No Properties */}
+      {!loading && !error && chartProperties.length === 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-center py-20"
+        >
+          <div className="flex flex-col items-center gap-6 text-center max-w-lg">
+            <div className="p-6 rounded-full bg-cyan-500/10">
+              <Database className="w-16 h-16 text-cyan-400" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-2">No Properties Yet</h2>
+              <p className="text-gray-400">
+                Search for a property address to populate the dashboard with real data.
+                All charts will display actual values from your property searches.
+              </p>
+            </div>
+            <div className="flex gap-4">
+              <a
+                href="/search"
+                className="px-6 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-white font-medium transition-colors"
+              >
+                Search Property
+              </a>
+              <button
+                onClick={() => {
+                  setDataSource('demo');
+                  processDashboard(TEST_PROPERTIES, filters);
+                }}
+                className="px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-gray-300 font-medium transition-colors"
+              >
+                View Demo Data
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Dashboard Content */}
-      {!loading && !error && dashboardData && (
+      {!loading && !error && dashboardData && dashboardData.properties.length > 0 && (
         <div className="space-y-8">
           {/* Property Selector - Toggle between single property and compare all */}
           <section>
