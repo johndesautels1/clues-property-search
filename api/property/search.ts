@@ -1513,7 +1513,7 @@ CITE YOUR SOURCES for every field you populate`;
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'grok-4.1',
+        model: 'grok-4',
         max_tokens: 8000,
         temperature: 0.1, // Low temperature for factual consistency
         messages: [
@@ -1552,7 +1552,7 @@ async function callGemini(address: string): Promise<any> {
 
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: {
