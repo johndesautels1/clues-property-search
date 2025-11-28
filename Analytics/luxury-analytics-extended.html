@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luxury Property Analytics - Extended Suite | 2003 Gulf Way</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --platinum: #E5E4E2;
+            --champagne: #F7E7CE;
+            --navy: #1C2951;
+            --hunter: #2C5F2D;
+            --burgundy: #800020;
+            --amber: #FFBF00;
+            --crimson: #DC143C;
+            --frost: #F8F9FA;
+            --charcoal: #36454F;
+            --emerald: #50C878;
+            --sapphire: #0F52BA;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 50%, #1a1a2e 100%);
+            color: var(--frost);
+            min-height: 100vh;
+            padding: 40px 20px;
+            overflow-x: hidden;
+        }
+        
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 50px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .dashboard-header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 3em;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--champagne), var(--platinum));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+        
+        .suite-title {
+            font-size: 1.2em;
+            color: var(--amber);
+            font-weight: 400;
+            margin-top: 10px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+        
+        .property-title {
+            font-size: 1.5em;
+            color: var(--platinum);
+            font-weight: 300;
+            margin-bottom: 5px;
+        }
+        
+        .price-tag {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5em;
+            color: var(--champagne);
+            font-weight: 600;
+            margin-top: 15px;
+        }
+        
+        .dashboard-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+        }
+        
+        .chart-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .chart-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--champagne), var(--platinum));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .chart-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .chart-card:hover::before {
+            opacity: 1;
+        }
+        
+        .chart-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.4em;
+            margin-bottom: 20px;
+            color: var(--champagne);
+            text-align: center;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        
+        .chart-canvas {
+            position: relative;
+            height: 350px;
+        }
+        
+        .chart-card.featured {
+            grid-column: span 2;
+        }
+        
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .metric-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .metric-value {
+            font-size: 1.8em;
+            font-weight: 600;
+            color: var(--champagne);
+            font-family: 'Playfair Display', serif;
+        }
+        
+        .metric-label {
+            font-size: 0.85em;
+            color: var(--platinum);
+            margin-top: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .timeline-container {
+            position: relative;
+            height: 200px;
+            margin-top: 20px;
+        }
+        
+        .timeline-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--champagne), var(--platinum));
+            border-radius: 2px;
+            box-shadow: 0 0 20px rgba(247, 231, 206, 0.3);
+        }
+        
+        .timeline-event {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            text-align: center;
+        }
+        
+        .timeline-marker {
+            width: 20px;
+            height: 20px;
+            background: var(--champagne);
+            border: 3px solid var(--navy);
+            border-radius: 50%;
+            margin: 0 auto 10px;
+            box-shadow: 0 0 15px rgba(247, 231, 206, 0.6);
+        }
+        
+        .timeline-label {
+            font-size: 0.75em;
+            color: var(--platinum);
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .timeline-value {
+            font-size: 1.2em;
+            color: var(--champagne);
+            font-family: 'Playfair Display', serif;
+            font-weight: 600;
+        }
+        
+        .stacked-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding: 20px 0;
+        }
+        
+        .stacked-bar-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .bar-label {
+            min-width: 150px;
+            font-size: 0.9em;
+            color: var(--platinum);
+            font-weight: 500;
+        }
+        
+        .bar-track {
+            flex: 1;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .bar-fill {
+            height: 100%;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            font-size: 0.85em;
+            font-weight: 600;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .bar-value {
+            min-width: 100px;
+            text-align: right;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.1em;
+            color: var(--champagne);
+            font-weight: 600;
+        }
+        
+        .risk-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .risk-low {
+            background: rgba(44, 95, 45, 0.3);
+            border: 1px solid var(--hunter);
+            color: var(--emerald);
+        }
+        
+        .risk-moderate {
+            background: rgba(255, 191, 0, 0.3);
+            border: 1px solid var(--amber);
+            color: var(--amber);
+        }
+        
+        .risk-high {
+            background: rgba(220, 20, 60, 0.3);
+            border: 1px solid var(--crimson);
+            color: var(--crimson);
+        }
+        
+        .elevation-viz {
+            position: relative;
+            height: 250px;
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+        
+        .elevation-layer {
+            width: 100%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin: 3px 0;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .layer-label {
+            flex: 1;
+            font-weight: 500;
+        }
+        
+        .layer-value {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--champagne);
+        }
+        
+        .school-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 4px solid var(--amber);
+        }
+        
+        .school-name {
+            font-size: 1.1em;
+            color: var(--champagne);
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .school-info {
+            display: flex;
+            justify-content: space-between;
+            color: var(--platinum);
+            font-size: 0.9em;
+        }
+        
+        .cost-breakdown {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .cost-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+        
+        .cost-amount {
+            font-size: 2em;
+            font-family: 'Playfair Display', serif;
+            font-weight: 700;
+            color: var(--champagne);
+            margin-bottom: 5px;
+        }
+        
+        .cost-label {
+            font-size: 0.9em;
+            color: var(--platinum);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .cost-period {
+            font-size: 0.75em;
+            color: rgba(229, 228, 226, 0.6);
+            margin-top: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-container {
+                grid-template-columns: 1fr;
+            }
+            .chart-card.featured {
+                grid-column: span 1;
+            }
+            .dashboard-header h1 {
+                font-size: 2em;
+            }
+            .cost-breakdown {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @keyframes shimmer {
+            0% {
+                background-position: -1000px 0;
+            }
+            100% {
+                background-position: 1000px 0;
+            }
+        }
+        
+        .shimmer {
+            background: linear-gradient(90deg, 
+                rgba(255,255,255,0.0) 0%,
+                rgba(255,255,255,0.1) 50%,
+                rgba(255,255,255,0.0) 100%);
+            background-size: 1000px 100%;
+            animation: shimmer 3s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-header">
+        <h1>EXTENDED ANALYTICS SUITE</h1>
+        <div class="suite-title">Charts 11-30</div>
+        <div class="property-title">2003 Gulf Way, St Pete Beach, FL 33706</div>
+        <div class="price-tag">$3,750,000</div>
+    </div>
+    
+    <div class="dashboard-container">
+        <!-- Chart 11: Spatial Efficiency Sundial -->
+        <div class="chart-card">
+            <h2 class="chart-title">SPATIAL EFFICIENCY SUNDIAL</h2>
+            <div class="chart-canvas">
+                <canvas id="spatialSundial"></canvas>
+            </div>
+            <div class="metric-grid">
+                <div class="metric-item">
+                    <div class="metric-value">3,428</div>
+                    <div class="metric-label">Living Sq Ft</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">3,800</div>
+                    <div class="metric-label">Total Sq Ft</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">90%</div>
+                    <div class="metric-label">Efficiency</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chart 12: Room Distribution Donut -->
+        <div class="chart-card">
+            <h2 class="chart-title">ROOM DISTRIBUTION</h2>
+            <div class="chart-canvas">
+                <canvas id="roomDonut"></canvas>
+            </div>
+        </div>
+        
+        <!-- Chart 13: Schools Radar Hexagon -->
+        <div class="chart-card">
+            <h2 class="chart-title">SCHOOLS ACCESSIBILITY</h2>
+            <div class="chart-canvas">
+                <canvas id="schoolsRadar"></canvas>
+            </div>
+        </div>
+        
+        <!-- Chart 14: Neighborhood Pulse Vitals -->
+        <div class="chart-card featured">
+            <h2 class="chart-title">NEIGHBORHOOD MARKET PULSE</h2>
+            <div class="chart-canvas">
+                <canvas id="neighborhoodPulse"></canvas>
+            </div>
+            <div class="metric-grid">
+                <div class="metric-item">
+                    <div class="metric-value">$1.25M</div>
+                    <div class="metric-label">Median Price</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">45</div>
+                    <div class="metric-label">Avg Days on Market</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">LOW</div>
+                    <div class="metric-label">Inventory</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chart 15: Commute Time Spiral -->
+        <div class="chart-card">
+            <h2 class="chart-title">COMMUTE TIME SPIRAL</h2>
+            <div class="chart-canvas">
+                <canvas id="commuteSpiral"></canvas>
+            </div>
+        </div>
+        
+        <!-- Chart 16: Noise & Traffic Heat Gradient -->
+        <div class="chart-card">
+            <h2 class="chart-title">NOISE & TRAFFIC LEVELS</h2>
+            <div class="stacked-bars">
+                <div class="stacked-bar-item">
+                    <div class="bar-label">Noise Level</div>
+                    <div class="bar-track">
+                        <div class="bar-fill" style="width: 52%; background: linear-gradient(90deg, var(--hunter), var(--amber));">
+                            52 dB
+                        </div>
+                    </div>
+                    <div class="bar-value">Moderate</div>
+                </div>
+                <div class="stacked-bar-item">
+                    <div class="bar-label">Traffic Level</div>
+                    <div class="bar-track">
+                        <div class="bar-fill" style="width: 60%; background: linear-gradient(90deg, var(--hunter), var(--amber));">
+                            Moderate
+                        </div>
+                    </div>
+                    <div class="bar-value">60%</div>
+                </div>
+            </div>
+            <div style="margin-top: 30px; text-align: center;">
+                <div class="risk-badge risk-moderate">ACCEPTABLE LEVELS</div>
+            </div>
+        </div>
+        
+        <!-- Chart 17: Elevation & Flood Defense -->
+        <div class="chart-card">
+            <h2 class="chart-title">ELEVATION & FLOOD DEFENSE</h2>
+            <div class="elevation-viz">
+                <div class="elevation-layer" style="background: rgba(44, 95, 45, 0.2); height: 25%;">
+                    <span class="layer-label">Property Elevation</span>
+                    <span class="layer-value">7 ft</span>
+                </div>
+                <div class="elevation-layer" style="background: rgba(255, 191, 0, 0.2); height: 20%;">
+                    <span class="layer-label">100-Year Flood</span>
+                    <span class="layer-value">~6 ft</span>
+                </div>
+                <div class="elevation-layer" style="background: rgba(28, 41, 81, 0.2); height: 15%;">
+                    <span class="layer-label">Sea Level</span>
+                    <span class="layer-value">0 ft</span>
+                </div>
+            </div>
+            <div style="margin-top: 20px; text-align: center;">
+                <div class="risk-badge risk-high">FLOOD ZONE: AE (High Risk)</div>
+            </div>
+        </div>
+        
+        <!-- Chart 18: Insurance Cost Stack -->
+        <div class="chart-card">
+            <h2 class="chart-title">ANNUAL INSURANCE BREAKDOWN</h2>
+            <div class="chart-canvas">
+                <canvas id="insuranceStack"></canvas>
+            </div>
+            <div class="metric-grid">
+                <div class="metric-item">
+                    <div class="metric-value">$2,100</div>
+                    <div class="metric-label">Base Premium</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">$1,800</div>
+                    <div class="metric-label">Flood Insurance</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">$300</div>
+                    <div class="metric-label">Wind/Hurricane</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chart 19: Environmental Quality Extended -->
+        <div class="chart-card">
+            <h2 class="chart-title">UTILITY COST METER</h2>
+            <div class="chart-canvas">
+                <canvas id="utilityMeter"></canvas>
+            </div>
+            <div class="metric-grid">
+                <div class="metric-item">
+                    <div class="metric-value">$220</div>
+                    <div class="metric-label">Electric/Month</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">$85</div>
+                    <div class="metric-label">Water/Month</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">$405</div>
+                    <div class="metric-label">Total/Month</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chart 20: Natural Hazard Timeline -->
+        <div class="chart-card featured">
+            <h2 class="chart-title">NATURAL HAZARD TIMELINE</h2>
+            <div class="timeline-container">
+                <div class="timeline-line"></div>
+                <div class="timeline-event" style="left: 20%;">
+                    <div class="timeline-marker" style="background: var(--hunter);"></div>
+                    <div class="timeline-label">Past 50 Years</div>
+                    <div class="timeline-value">3 Hurricanes</div>
+                </div>
+                <div class="timeline-event" style="left: 50%;">
+                    <div class="timeline-marker" style="background: var(--amber);"></div>
+                    <div class="timeline-label">Current</div>
+                    <div class="timeline-value">2025</div>
+                </div>
+                <div class="timeline-event" style="left: 80%;">
+                    <div class="timeline-marker" style="background: var(--burgundy);"></div>
+                    <div class="timeline-label">Next 30 Years</div>
+                    <div class="timeline-value">Moderate Risk</div>
+                </div>
+            </div>
+            <div class="metric-grid" style="margin-top: 60px;">
+                <div class="metric-item">
+                    <div class="risk-badge risk-moderate">Hurricane: Moderate</div>
+                </div>
+                <div class="metric-item">
+                    <div class="risk-badge risk-moderate">Sea Level: Moderate</div>
+                </div>
+                <div class="metric-item">
+                    <div class="risk-badge risk-low">Earthquake: Very Low</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chart 21: Market Velocity Speedometer -->
+        <div class="chart-card">
+            <h2 class="chart-title">MARKET VELOCITY</h2>
+            <div class="chart-canvas">
+                <canvas id="marketVelocity"></canvas>
+            </div>
+            <div class="metric-grid">
+                <div class="metric-item">
+                    <div class="metric-value">2</div>
+                    <div class="metric-label">Days on Market</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">45</div>
+                    <div class="metric-label">Neighborhood Avg</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">LOW</div>
+                    <div class="metric-label">Inventory</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chart 22: Price History Candlestick -->
+        <div class="chart-card">
+            <h2 class="chart-title">PRICE HISTORY</h2>
+            <div class="chart-canvas">
+                <canvas id="priceHistory"></canvas>
+            </div>
+        </div>
+        
+        <!-- Chart 23: Comparable Sales Network -->
+        <div class="chart-card">
+            <h2 class="chart-title">COMPARABLE SALES</h2>
+            <div class="school-card">
+                <div class="school-name">129 Gulf Way</div>
+                <div class="school-info">
+                    <span>Sold 2024</span>
+                    <span style="color: var(--champagne); font-weight: 600;">$3,200,000</span>
+                </div>
+            </div>
+            <div class="school-card">
+                <div class="school-name">145 Gulf Way</div>
+                <div class="school-info">
+                    <span>Sold 2023</span>
+                    <span style="color: var(--champagne); font-weight: 600;">$3,400,000</span>
+                </div>
+            </div>
+            <div style="margin-top: 30px; text-align: center;">
+                <div class="metric-value">$3.75M</div>
+                <div class="metric-label">This Property (Current Ask)</div>
+            </div>
+        </div>
+        
+        <!-- Chart 24: ROI Projection Mountain -->
+        <div class="chart-card featured">
+            <h2 class="chart-title">ROI PROJECTION MOUNTAIN</h2>
+            <div class="chart-canvas">
+                <canvas id="roiMountain"></canvas>
+            </div>
+            <div class="metric-grid">
+                <div class="metric-item">
+                    <div class="metric-value">$5.2M</div>
+                    <div class="metric-label">5-Year Projection</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">$7.1M</div>
+                    <div class="metric-label">10-Year Projection</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">89%</div>
+                    <div class="metric-label">10-Yr Appreciation</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chart 25: Property Age & Condition -->
+        <div class="chart-card">
+            <h2 class="chart-title">PROPERTY AGE & CONDITION</h2>
+            <div class="chart-canvas">
+                <canvas id="ageCondition"></canvas>
+            </div>
+            <div class="metric-grid">
+                <div class="metric-item">
+                    <div class="metric-value">1977</div>
+                    <div class="metric-label">Year Built</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">48</div>
+                    <div class="metric-label">Years Old</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">GOOD</div>
+                    <div class="metric-label">Condition</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chart 26: Schools Detail -->
+        <div class="chart-card">
+            <h2 class="chart-title">SCHOOL DISTRICT PROFILE</h2>
+            <div class="school-card">
+                <div class="school-name">Azalea Elementary</div>
+                <div class="school-info">
+                    <span>0.3 miles</span>
+                    <span>Pinellas County</span>
+                </div>
+            </div>
+            <div class="school-card">
+                <div class="school-name">Bay Point Middle</div>
+                <div class="school-info">
+                    <span>6.3 miles</span>
+                    <span>Pinellas County</span>
+                </div>
+            </div>
+            <div class="school-card">
+                <div class="school-name">Boca Ciega High</div>
+                <div class="school-info">
+                    <span>6.3 miles</span>
+                    <span>Pinellas County</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chart 27: Financial Costs Overview -->
+        <div class="chart-card featured">
+            <h2 class="chart-title">ANNUAL COST OVERVIEW</h2>
+            <div class="cost-breakdown">
+                <div class="cost-item">
+                    <div class="cost-amount">$15,392</div>
+                    <div class="cost-label">Property Tax</div>
+                    <div class="cost-period">Annual (2024)</div>
+                </div>
+                <div class="cost-item">
+                    <div class="cost-amount">$4,200</div>
+                    <div class="cost-label">Insurance</div>
+                    <div class="cost-period">Annual Estimate</div>
+                </div>
+                <div class="cost-item">
+                    <div class="cost-amount">$1,200</div>
+                    <div class="cost-label">HOA Fee</div>
+                    <div class="cost-period">Annual</div>
+                </div>
+                <div class="cost-item">
+                    <div class="cost-amount">$4,860</div>
+                    <div class="cost-label">Utilities</div>
+                    <div class="cost-period">Annual Estimate</div>
+                </div>
+            </div>
+            <div style="margin-top: 30px; text-align: center;">
+                <div class="metric-value" style="font-size: 2.5em;">$25,652</div>
+                <div class="metric-label" style="font-size: 1.1em;">Total Annual Costs</div>
+            </div>
+        </div>
+        
+        <!-- Chart 28: Property Features Constellation -->
+        <div class="chart-card">
+            <h2 class="chart-title">LUXURY FEATURES</h2>
+            <div class="chart-canvas">
+                <canvas id="featuresRadar"></canvas>
+            </div>
+        </div>
+        
+        <!-- Chart 29: Technology & Infrastructure -->
+        <div class="chart-card">
+            <h2 class="chart-title">TECH & INFRASTRUCTURE</h2>
+            <div class="stacked-bars">
+                <div class="stacked-bar-item">
+                    <div class="bar-label">Internet Speed</div>
+                    <div class="bar-track">
+                        <div class="bar-fill" style="width: 100%; background: linear-gradient(90deg, var(--sapphire), var(--champagne));">
+                            1000 Mbps
+                        </div>
+                    </div>
+                    <div class="bar-value">Fiber</div>
+                </div>
+                <div class="stacked-bar-item">
+                    <div class="bar-label">Cell Coverage</div>
+                    <div class="bar-track">
+                        <div class="bar-fill" style="width: 85%; background: linear-gradient(90deg, var(--hunter), var(--emerald));">
+                            Good
+                        </div>
+                    </div>
+                    <div class="bar-value">85%</div>
+                </div>
+                <div class="stacked-bar-item">
+                    <div class="bar-label">Smart Home</div>
+                    <div class="bar-track">
+                        <div class="bar-fill" style="width: 75%; background: linear-gradient(90deg, var(--navy), var(--sapphire));">
+                            Equipped
+                        </div>
+                    </div>
+                    <div class="bar-value">75%</div>
+                </div>
+                <div class="stacked-bar-item">
+                    <div class="bar-label">EV Charging</div>
+                    <div class="bar-track">
+                        <div class="bar-fill" style="width: 100%; background: linear-gradient(90deg, var(--hunter), var(--emerald));">
+                            240V Ready
+                        </div>
+                    </div>
+                    <div class="bar-value">Yes</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chart 30: Location Score Summary -->
+        <div class="chart-card featured">
+            <h2 class="chart-title">LOCATION EXCELLENCE SCORE</h2>
+            <div class="chart-canvas">
+                <canvas id="locationScore"></canvas>
+            </div>
+            <div class="metric-grid">
+                <div class="metric-item">
+                    <div class="metric-value">88/100</div>
+                    <div class="metric-label">Overall Score</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">PRIME</div>
+                    <div class="metric-label">Location Rating</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">5★</div>
+                    <div class="metric-label">Beachfront</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        Chart.defaults.color = '#E5E4E2';
+        Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        
+        const chartColors = {
+            platinum: '#E5E4E2',
+            champagne: '#F7E7CE',
+            navy: '#1C2951',
+            hunter: '#2C5F2D',
+            burgundy: '#800020',
+            amber: '#FFBF00',
+            crimson: '#DC143C',
+            emerald: '#50C878',
+            sapphire: '#0F52BA'
+        };
+        
+        // Chart 11: Spatial Efficiency Sundial
+        new Chart(document.getElementById('spatialSundial').getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Living Space', 'Garage/Storage', 'Covered Areas'],
+                datasets: [{
+                    data: [3428, 372, 5663],
+                    backgroundColor: [
+                        'rgba(247, 231, 206, 0.6)',
+                        'rgba(28, 41, 81, 0.6)',
+                        'rgba(44, 95, 45, 0.3)'
+                    ],
+                    borderColor: [
+                        'rgba(247, 231, 206, 1)',
+                        'rgba(28, 41, 81, 1)',
+                        'rgba(44, 95, 45, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: chartColors.platinum, padding: 15 }
+                    }
+                }
+            }
+        });
+        
+        // Chart 12: Room Distribution Donut
+        new Chart(document.getElementById('roomDonut').getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['4 Bedrooms', '4 Bathrooms', 'Living Areas', 'Garage/Storage'],
+                datasets: [{
+                    data: [35, 28, 22, 15],
+                    backgroundColor: [
+                        'rgba(15, 82, 186, 0.6)',
+                        'rgba(229, 228, 226, 0.6)',
+                        'rgba(247, 231, 206, 0.6)',
+                        'rgba(28, 41, 81, 0.6)'
+                    ],
+                    borderColor: [
+                        'rgba(15, 82, 186, 1)',
+                        'rgba(229, 228, 226, 1)',
+                        'rgba(247, 231, 206, 1)',
+                        'rgba(28, 41, 81, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: chartColors.platinum, padding: 12, font: { size: 11 } }
+                    }
+                }
+            }
+        });
+        
+        // Chart 13: Schools Radar
+        new Chart(document.getElementById('schoolsRadar').getContext('2d'), {
+            type: 'radar',
+            data: {
+                labels: ['Elementary Distance', 'Middle Distance', 'High Distance', 'District Rating'],
+                datasets: [{
+                    label: 'School Accessibility',
+                    data: [98, 35, 35, 75],
+                    backgroundColor: 'rgba(255, 191, 0, 0.2)',
+                    borderColor: 'rgba(255, 191, 0, 0.8)',
+                    borderWidth: 2,
+                    pointBackgroundColor: chartColors.amber,
+                    pointBorderColor: '#fff',
+                    pointRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        min: 0,
+                        max: 100,
+                        ticks: { color: chartColors.platinum },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        pointLabels: { color: chartColors.champagne, font: { size: 10 } }
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+        
+        // Chart 14: Neighborhood Pulse
+        new Chart(document.getElementById('neighborhoodPulse').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: ['2020', '2021', '2022', '2023', '2024', '2025'],
+                datasets: [{
+                    label: 'Median Home Price',
+                    data: [850000, 950000, 1100000, 1200000, 1250000, 1250000],
+                    borderColor: chartColors.champagne,
+                    backgroundColor: 'rgba(247, 231, 206, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 5,
+                    pointBackgroundColor: chartColors.champagne
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        ticks: {
+                            color: chartColors.platinum,
+                            callback: function(value) {
+                                return '$' + (value / 1000000).toFixed(1) + 'M';
+                            }
+                        },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    },
+                    x: {
+                        ticks: { color: chartColors.platinum },
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+        
+        // Chart 15: Commute Spiral
+        new Chart(document.getElementById('commuteSpiral').getContext('2d'), {
+            type: 'radar',
+            data: {
+                labels: ['City Center (16 min)', 'Elementary (0.3 mi)', 'Transit Hub (1 mi)', 'Emergency (1.2 mi)'],
+                datasets: [{
+                    data: [84, 99, 95, 92],
+                    backgroundColor: 'rgba(80, 200, 120, 0.2)',
+                    borderColor: 'rgba(80, 200, 120, 0.8)',
+                    borderWidth: 2,
+                    pointBackgroundColor: chartColors.emerald,
+                    pointRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        min: 0,
+                        max: 100,
+                        ticks: { display: false },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        pointLabels: { color: chartColors.platinum, font: { size: 10 } }
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+        
+        // Chart 18: Insurance Stack
+        new Chart(document.getElementById('insuranceStack').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['Base', 'Flood', 'Wind/Hurricane'],
+                datasets: [{
+                    data: [2100, 1800, 300],
+                    backgroundColor: [
+                        'rgba(44, 95, 45, 0.6)',
+                        'rgba(220, 20, 60, 0.6)',
+                        'rgba(255, 191, 0, 0.6)'
+                    ],
+                    borderColor: [
+                        'rgba(44, 95, 45, 1)',
+                        'rgba(220, 20, 60, 1)',
+                        'rgba(255, 191, 0, 1)'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        ticks: {
+                            color: chartColors.platinum,
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    },
+                    x: {
+                        ticks: { color: chartColors.champagne },
+                        grid: { display: false }
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+        
+        // Chart 19: Utility Meter
+        new Chart(document.getElementById('utilityMeter').getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Electric $220', 'Water $85', 'Internet ~$100'],
+                datasets: [{
+                    data: [220, 85, 100],
+                    backgroundColor: [
+                        'rgba(255, 191, 0, 0.6)',
+                        'rgba(28, 41, 81, 0.6)',
+                        'rgba(15, 82, 186, 0.6)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 191, 0, 1)',
+                        'rgba(28, 41, 81, 1)',
+                        'rgba(15, 82, 186, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: chartColors.platinum, padding: 12 }
+                    }
+                }
+            }
+        });
+        
+        // Chart 21: Market Velocity
+        new Chart(document.getElementById('marketVelocity').getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                datasets: [{
+                    data: [2, 98],
+                    backgroundColor: [
+                        'rgba(44, 95, 45, 0.8)',
+                        'rgba(255, 255, 255, 0.05)'
+                    ],
+                    borderColor: [
+                        'rgba(44, 95, 45, 1)',
+                        'rgba(255, 255, 255, 0.1)'
+                    ],
+                    borderWidth: 2,
+                    circumference: 180,
+                    rotation: 270
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { enabled: false } }
+            }
+        });
+        
+        // Chart 22: Price History
+        new Chart(document.getElementById('priceHistory').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: ['2018 Sale', '2024 Assessment', '2025 List', 'Market Est.'],
+                datasets: [{
+                    data: [1850000, 2100000, 3750000, 3333254],
+                    borderColor: chartColors.champagne,
+                    backgroundColor: 'rgba(247, 231, 206, 0.2)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 8,
+                    pointBackgroundColor: chartColors.champagne,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        ticks: {
+                            color: chartColors.platinum,
+                            callback: function(value) {
+                                return '$' + (value / 1000000).toFixed(2) + 'M';
+                            }
+                        },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    },
+                    x: {
+                        ticks: { color: chartColors.champagne, font: { size: 10 } },
+                        grid: { display: false }
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+        
+        // Chart 24: ROI Mountain
+        new Chart(document.getElementById('roiMountain').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: ['Today', '1 Yr', '2 Yr', '3 Yr', '4 Yr', '5 Yr', '7 Yr', '10 Yr'],
+                datasets: [{
+                    label: 'Property Value',
+                    data: [3750000, 4125000, 4500000, 4875000, 5050000, 5200000, 5950000, 7100000],
+                    borderColor: chartColors.champagne,
+                    backgroundColor: 'rgba(247, 231, 206, 0.3)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 6,
+                    pointBackgroundColor: chartColors.champagne
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        ticks: {
+                            color: chartColors.platinum,
+                            callback: function(value) {
+                                return '$' + (value / 1000000).toFixed(1) + 'M';
+                            }
+                        },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    },
+                    x: {
+                        ticks: { color: chartColors.platinum },
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+        
+        // Chart 25: Age & Condition
+        new Chart(document.getElementById('ageCondition').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['Roof (8 yrs)', 'HVAC (6 yrs)', 'Kitchen (Remodeled 2019)', 'Overall Condition'],
+                datasets: [{
+                    data: [80, 85, 95, 85],
+                    backgroundColor: [
+                        'rgba(44, 95, 45, 0.6)',
+                        'rgba(44, 95, 45, 0.6)',
+                        'rgba(247, 231, 206, 0.6)',
+                        'rgba(80, 200, 120, 0.6)'
+                    ],
+                    borderColor: [
+                        'rgba(44, 95, 45, 1)',
+                        'rgba(44, 95, 45, 1)',
+                        'rgba(247, 231, 206, 1)',
+                        'rgba(80, 200, 120, 1)'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 100,
+                        ticks: { color: chartColors.platinum },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    },
+                    x: {
+                        ticks: { color: chartColors.platinum, font: { size: 10 } },
+                        grid: { display: false }
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+        
+        // Chart 28: Features Radar
+        new Chart(document.getElementById('featuresRadar').getContext('2d'), {
+            type: 'radar',
+            data: {
+                labels: ['Pool', 'Deck', 'Smart Home', 'Fireplace', 'EV Charging', 'Beach Access'],
+                datasets: [{
+                    data: [100, 95, 75, 80, 100, 100],
+                    backgroundColor: 'rgba(247, 231, 206, 0.3)',
+                    borderColor: 'rgba(247, 231, 206, 1)',
+                    borderWidth: 3,
+                    pointBackgroundColor: chartColors.champagne,
+                    pointRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        min: 0,
+                        max: 100,
+                        ticks: { color: chartColors.platinum },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        pointLabels: { color: chartColors.champagne, font: { size: 11 } }
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+        
+        // Chart 30: Location Score
+        new Chart(document.getElementById('locationScore').getContext('2d'), {
+            type: 'radar',
+            data: {
+                labels: ['Beach Access', 'School Proximity', 'Transit Access', 'Safety', 'Walkability', 'Commute'],
+                datasets: [{
+                    data: [100, 90, 65, 70, 50, 84],
+                    backgroundColor: 'rgba(247, 231, 206, 0.3)',
+                    borderColor: 'rgba(247, 231, 206, 1)',
+                    borderWidth: 3,
+                    pointBackgroundColor: chartColors.champagne,
+                    pointBorderColor: '#fff',
+                    pointRadius: 8,
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        min: 0,
+                        max: 100,
+                        ticks: { color: chartColors.platinum },
+                        grid: { color: 'rgba(255, 255, 255, 0.15)' },
+                        pointLabels: { color: chartColors.champagne, font: { size: 12, weight: '600' } }
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    </script>
+</body>
+</html>
