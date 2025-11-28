@@ -418,6 +418,7 @@ export function detectSingleSourceHallucinations(
 export function createArbitrationPipeline(minLLMQuorum: number = 2): {
   addField: (fieldKey: string, value: any, source: string) => void;
   addFieldsFromSource: (sourceFields: Record<string, any>, sourceName: string) => number;
+  getFieldCount: () => number;
   getResult: () => ArbitrationResult;
 } {
   const fields: Record<string, FieldValue> = {};
@@ -502,7 +503,11 @@ export function createArbitrationPipeline(minLLMQuorum: number = 2): {
       }
       return addedCount;
     },
-    
+
+    getFieldCount(): number {
+      return Object.keys(fields).length;
+    },
+
     getResult(): ArbitrationResult {
       const { fields: votedFields, quorumFields } = applyLLMQuorumVoting(fields, minLLMQuorum);
       const singleSourceWarnings = detectSingleSourceHallucinations(votedFields);

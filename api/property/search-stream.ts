@@ -903,6 +903,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           source: 'google-geocode',
           status: geoResult.success ? 'complete' : 'error',
           fieldsFound: newFields,
+          totalFieldsSoFar: arbitrationPipeline.getFieldCount(),
           error: geoResult.error
         });
       } catch (e) {
@@ -949,10 +950,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             source,
             status: data.success ? 'complete' : 'error',
             fieldsFound: newFields,
+            totalFieldsSoFar: arbitrationPipeline.getFieldCount(),
             error: data.error
           });
         } else {
-          sendEvent(res, 'progress', { source, status: 'error', fieldsFound: 0, error: 'Failed' });
+          sendEvent(res, 'progress', { source, status: 'error', fieldsFound: 0, totalFieldsSoFar: arbitrationPipeline.getFieldCount(), error: 'Failed' });
         }
       });
 
@@ -1029,10 +1031,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 status: data.error ? 'error' : 'complete',
                 fieldsFound: rawFieldCount,  // Show actual fields returned
                 newUniqueFields: newUniqueFields,  // Also show new unique count
+                totalFieldsSoFar: arbitrationPipeline.getFieldCount(),
                 error: data.error
               });
             } else {
-              sendEvent(res, 'progress', { source: llm.id, status: 'error', fieldsFound: 0, newUniqueFields: 0, error: 'Failed' });
+              sendEvent(res, 'progress', { source: llm.id, status: 'error', fieldsFound: 0, newUniqueFields: 0, totalFieldsSoFar: arbitrationPipeline.getFieldCount(), error: 'Failed' });
               llmResponses.push({ llm: llm.id, fields_found: 0, new_unique_fields: 0, success: false });
             }
           });

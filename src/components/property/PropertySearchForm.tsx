@@ -303,7 +303,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
 
                       if (eventType === 'progress') {
                         // Update progress tracker in real-time
-                        const { source, status, fieldsFound, error, message, newUniqueFields, fields } = data;
+                        const { source, status, fieldsFound, error, message, newUniqueFields, fields, totalFieldsSoFar } = data;
                         updateSource(source, {
                           status: status as SourceStatus,
                           fieldsFound: fieldsFound || 0,
@@ -312,9 +312,13 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
                         if (message) {
                           setSearchProgress(message);
                         }
-                        // Accumulate live totals from completed sources
-                        // Use newUniqueFields if available (LLMs), otherwise fieldsFound (APIs)
-                        if (status === 'complete' && (newUniqueFields > 0 || fieldsFound > 0)) {
+                        // Use totalFieldsSoFar from backend if available (most accurate)
+                        // Otherwise accumulate live totals from completed sources
+                        if (typeof totalFieldsSoFar === 'number') {
+                          setLiveFieldsFound(totalFieldsSoFar);
+                          setLiveCompletionPct(Math.round((totalFieldsSoFar / 138) * 100));
+                        } else if (status === 'complete' && (newUniqueFields > 0 || fieldsFound > 0)) {
+                          // Fallback: accumulate incrementally
                           const increment = typeof newUniqueFields === 'number' ? newUniqueFields : (fieldsFound || 0);
                           setLiveFieldsFound(prev => {
                             const newTotal = prev + increment;
