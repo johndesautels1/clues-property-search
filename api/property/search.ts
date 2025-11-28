@@ -26,6 +26,16 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 export const config = {
   maxDuration: 60, // 60 seconds max (Pro plan limit)
 };
+
+// Timeout wrapper for API/LLM calls - prevents hanging
+const LLM_TIMEOUT = 55000; // 55 seconds per LLM call
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))
+  ]);
+}
+
 import { scrapeFloridaCounty } from './florida-counties.js';
 import { LLM_CASCADE_ORDER } from './llm-constants.js';
 import { createArbitrationPipeline, type FieldValue, type ArbitrationResult } from './arbitration.js';
@@ -1771,68 +1781,83 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           { id: 'gemini', fn: callGemini, enabled: engines.includes('gemini') },
         ];
 
-        for (const llm of llmCascade) {
-          if (!llm.enabled) continue;
+        // Filter to enabled LLMs only
+        const enabledLlms = llmCascade.filter(llm => llm.enabled);
 
-          console.log(`\n=== Calling ${llm.id.toUpperCase()} ===`);
+        if (enabledLlms.length > 0) {
+          console.log(`\n=== Calling ${enabledLlms.length} LLMs in PARALLEL with ${LLM_TIMEOUT}ms timeout ===`);
 
-          try {
-            const llmData = await llm.fn(searchQuery);
-            const llmFields = llmData.fields || llmData;
+          // Run ALL enabled LLMs in parallel with timeout wrapper
+          const llmResults = await Promise.allSettled(
+            enabledLlms.map(llm =>
+              withTimeout(
+                llm.fn(searchQuery),
+                LLM_TIMEOUT,
+                { fields: {}, error: 'timeout' }
+              )
+            )
+          );
 
-            if (llmFields && Object.keys(llmFields).length > 0) {
-              // Convert to FieldValue format for arbitration
-              const formattedFields: Record<string, FieldValue> = {};
-              for (const [key, value] of Object.entries(llmFields)) {
-                const fieldData = value as any;
-                const fieldValue = fieldData?.value !== undefined ? fieldData.value : value;
+          // Process results
+          llmResults.forEach((result, idx) => {
+            const llm = enabledLlms[idx];
 
-                // Skip null/empty responses
-                if (fieldValue === null || fieldValue === undefined || fieldValue === '' || fieldValue === 'Not available') {
-                  continue;
+            if (result.status === 'fulfilled') {
+              const llmData = result.value;
+              const llmFields = llmData.fields || llmData;
+              const rawFieldCount = Object.keys(llmFields || {}).length;
+
+              if (llmFields && rawFieldCount > 0) {
+                // Convert to FieldValue format for arbitration
+                const formattedFields: Record<string, FieldValue> = {};
+                for (const [key, value] of Object.entries(llmFields)) {
+                  const fieldData = value as any;
+                  const fieldValue = fieldData?.value !== undefined ? fieldData.value : value;
+
+                  // Skip null/empty responses
+                  if (fieldValue === null || fieldValue === undefined || fieldValue === '' || fieldValue === 'Not available') {
+                    continue;
+                  }
+
+                  formattedFields[key] = {
+                    value: fieldValue,
+                    source: llmSourceNames[llm.id],
+                    confidence: fieldData?.confidence || 'Medium',
+                    tier: 4 as const
+                  };
                 }
 
-                formattedFields[key] = {
-                  value: fieldValue,
-                  source: llmSourceNames[llm.id],
-                  confidence: fieldData?.confidence || 'Medium',
-                  tier: 4 as const
-                };
-              }
+                const newUniqueFields = arbitrationPipeline.addFieldsFromSource(formattedFields, llmSourceNames[llm.id]);
 
-              const newFields = arbitrationPipeline.addFieldsFromSource(formattedFields, llmSourceNames[llm.id]);
+                llmResponses.push({
+                  llm: llm.id,
+                  fields_found: rawFieldCount,  // Actual fields returned by LLM
+                  new_unique_fields: newUniqueFields,  // Fields not already found
+                  success: !(llmData as any).error
+                });
 
-              llmResponses.push({
-                llm: llm.id,
-                fields_found: newFields,
-                success: true
-              });
-
-              console.log(`✅ ${llm.id}: ${Object.keys(llmFields).length} returned, ${newFields} new fields added`);
-
-              // Check if we've filled enough gaps
-              const updatedResult = arbitrationPipeline.getResult();
-              if (useCascade && Object.keys(updatedResult.fields).length >= 110) {
-                console.log(`🎯 100% completion reached! Stopping cascade at ${llm.id}`);
-                break;
+                console.log(`✅ ${llm.id}: ${rawFieldCount} returned, ${newUniqueFields} new unique fields added`);
+              } else {
+                llmResponses.push({
+                  llm: llm.id,
+                  fields_found: 0,
+                  new_unique_fields: 0,
+                  success: false,
+                  error: (llmData as any).error || 'No fields returned'
+                });
+                console.log(`⚠️ ${llm.id}: No fields returned`);
               }
             } else {
+              console.error(`❌ ${llm.id} failed:`, result.reason);
               llmResponses.push({
                 llm: llm.id,
                 fields_found: 0,
+                new_unique_fields: 0,
                 success: false,
-                error: 'No fields returned'
+                error: String(result.reason)
               });
             }
-          } catch (e) {
-            console.error(`❌ ${llm.id} failed:`, e);
-            llmResponses.push({
-              llm: llm.id,
-              fields_found: 0,
-              success: false,
-              error: String(e)
-            });
-          }
+          });
         }
       } else {
         console.log('Skipping LLMs - sufficient data from reliable sources');

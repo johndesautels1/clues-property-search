@@ -764,7 +764,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ========================================
 
     const API_TIMEOUT = 8000; // 8s per API call
-    const LLM_TIMEOUT = 25000; // 25s per LLM call (all run in parallel, slowest wins)
+    const LLM_TIMEOUT = 55000; // 55s per LLM call (all run in parallel, within 60s Vercel Pro limit)
     const startTime = Date.now();
     const DEADLINE = 59000; // 59s hard deadline (Vercel Pro allows 60s)
 
@@ -897,17 +897,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const llm = enabledLlms[idx];
             if (result.status === 'fulfilled') {
               const data = result.value;
-              const newFields = arbitrationPipeline.addFieldsFromSource(data.fields || {}, llm.name);
-              llmResponses.push({ llm: llm.id, fields_found: newFields, success: !data.error });
+              // Count raw fields returned by this LLM (before deduplication)
+              const rawFieldCount = Object.keys(data.fields || {}).length;
+              // Count new unique fields added to the pipeline
+              const newUniqueFields = arbitrationPipeline.addFieldsFromSource(data.fields || {}, llm.name);
+              llmResponses.push({
+                llm: llm.id,
+                fields_found: rawFieldCount,  // Actual fields returned by LLM
+                new_unique_fields: newUniqueFields,  // Fields not already found
+                success: !data.error
+              });
               sendEvent(res, 'progress', {
                 source: llm.id,
                 status: data.error ? 'error' : 'complete',
-                fieldsFound: newFields,
+                fieldsFound: rawFieldCount,  // Show actual fields returned
+                newUniqueFields: newUniqueFields,  // Also show new unique count
                 error: data.error
               });
             } else {
-              sendEvent(res, 'progress', { source: llm.id, status: 'error', fieldsFound: 0, error: 'Failed' });
-              llmResponses.push({ llm: llm.id, fields_found: 0, success: false });
+              sendEvent(res, 'progress', { source: llm.id, status: 'error', fieldsFound: 0, newUniqueFields: 0, error: 'Failed' });
+              llmResponses.push({ llm: llm.id, fields_found: 0, new_unique_fields: 0, success: false });
             }
           });
         }
@@ -946,7 +955,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
   } catch (error) {
-    sendEvent(res, 'error', { error: String(error) });
+    // Even on error/timeout, send whatever data was collected
+    try {
+      const partialResult = arbitrationPipeline.getResult();
+      const partialFields = Object.keys(partialResult.fields).length;
+
+      if (partialFields > 0) {
+        // Send partial data with error flag so frontend knows it's incomplete
+        sendEvent(res, 'complete', {
+          success: false,
+          partial: true,
+          error: String(error),
+          address: searchAddress,
+          fields: partialResult.fields,
+          total_fields_found: partialFields,
+          completion_percentage: Math.round((partialFields / 138) * 100),
+          llm_responses: llmResponses,
+          conflicts: partialResult.conflicts,
+          validation_failures: partialResult.validationFailures,
+          llm_quorum_fields: partialResult.llmQuorumFields,
+          single_source_warnings: partialResult.singleSourceWarnings
+        });
+      } else {
+        sendEvent(res, 'error', { error: String(error) });
+      }
+    } catch (e) {
+      sendEvent(res, 'error', { error: String(error) });
+    }
   }
 
   res.end();

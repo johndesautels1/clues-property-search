@@ -261,7 +261,9 @@ export default function AddProperty() {
 
               if (eventType === 'progress') {
                 // Update cascade status for summary display - use startTransition for non-blocking updates
-                const { source, status: sourceStatus, fieldsFound } = data;
+                // fieldsFound = actual raw fields returned by source
+                // newUniqueFields = fields that weren't already found (for dedup tracking)
+                const { source, status: sourceStatus, fieldsFound, newUniqueFields } = data;
                 const displayName = getSourceName(source);
 
                 startTransition(() => {
@@ -276,8 +278,13 @@ export default function AddProperty() {
                     return [...prev, { llm: displayName, status: sourceStatus as 'pending' | 'running' | 'complete' | 'error', fieldsFound }];
                   });
 
-                  // Update progress based on fields found
-                  currentFieldsFound += fieldsFound || 0;
+                  // Update progress based on NEW UNIQUE fields (not raw count to avoid double counting)
+                  if (newUniqueFields !== undefined) {
+                    currentFieldsFound += newUniqueFields;
+                  } else {
+                    // Fallback for non-LLM sources that don't send newUniqueFields
+                    currentFieldsFound += fieldsFound || 0;
+                  }
                   setProgress(Math.min(Math.round((currentFieldsFound / 138) * 100), 99));
 
                   // Update status message
@@ -287,6 +294,10 @@ export default function AddProperty() {
                 });
               } else if (eventType === 'complete') {
                 finalData = data;
+                // Handle partial data (timeout with some data retrieved)
+                if (data.partial) {
+                  console.warn('⚠️ Partial data received due to timeout:', data.error);
+                }
               } else if (eventType === 'error') {
                 throw new Error(data.error || 'Search error');
               }
