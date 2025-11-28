@@ -348,10 +348,10 @@ Return a JSON object with this EXACT nested structure (include only fields with 
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'grok-3-fast',
+        model: 'grok-4',
         max_tokens: 8000,
         temperature: 0.1,
-        search_parameters: { mode: 'auto' },
+        search_parameters: { mode: 'auto' },  // Enable live web search
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Search and verify property data for: ${address}. Cross-reference multiple sources. Return JSON only.` }
@@ -475,18 +475,18 @@ Return ONLY the JSON object, no explanation.`;
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
+        model: 'claude-opus-4-5-20251101',
+        max_tokens: 8000,
         messages: [{ role: 'user', content: prompt }],
       }),
     });
 
     const data = await response.json();
-    console.log('[CLAUDE OPUS] Status:', response.status, '| Response:', JSON.stringify(data).slice(0, 500));
+    console.log('[CLAUDE OPUS 4.5] Status:', response.status, '| Response:', JSON.stringify(data).slice(0, 500));
 
     if (data.content?.[0]?.text) {
       const text = data.content[0].text;
-      console.log('[CLAUDE OPUS] Text:', text.slice(0, 500));
+      console.log('[CLAUDE OPUS 4.5] Text:', text.slice(0, 500));
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
@@ -503,8 +503,8 @@ Return ONLY the JSON object, no explanation.`;
               } else {
                 fields[prefix + key] = {
                   value: value,
-                  source: 'Claude Opus',
-                  confidence: 'Low'
+                  source: 'Claude Opus 4.5',
+                  confidence: 'Medium'
                 };
               }
             }
@@ -512,13 +512,13 @@ Return ONLY the JSON object, no explanation.`;
         };
         flattenObject(parsed);
 
-        console.log('[CLAUDE OPUS] Fields found:', Object.keys(fields).length);
+        console.log('[CLAUDE OPUS 4.5] Fields found:', Object.keys(fields).length);
         return { fields };
       }
     }
     return { error: 'Failed to parse response', fields: {} };
   } catch (error) {
-    console.log('[CLAUDE OPUS] Error:', String(error));
+    console.log('[CLAUDE OPUS 4.5] Error:', String(error));
     return { error: String(error), fields: {} };
   }
 }
@@ -792,46 +792,68 @@ Return a JSON object with this EXACT nested structure. Only include fields you h
     );
 
     const data = await response.json();
+    console.log('[GEMINI] Status:', response.status);
+    console.log('[GEMINI] Response keys:', Object.keys(data));
+
+    if (data.error) {
+      console.log('[GEMINI] API Error:', JSON.stringify(data.error));
+      return { error: `Gemini API error: ${JSON.stringify(data.error)}`, fields: {} };
+    }
+
     if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
       const text = data.candidates[0].content.parts[0].text;
+      console.log('[GEMINI] Text (first 500 chars):', text.slice(0, 500));
+
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        const fields: Record<string, any> = {};
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          const fields: Record<string, any> = {};
 
-        // Flatten nested structure into fields with category_fieldname format
-        // This matches the format used by Perplexity, Grok, and Opus
-        const flattenObject = (obj: any, prefix = '') => {
-          for (const [key, value] of Object.entries(obj)) {
-            if (value === null || value === undefined) continue;
+          // Flatten nested structure into fields with category_fieldname format
+          // This matches the format used by Perplexity, Grok, and Opus
+          const flattenObject = (obj: any, prefix = '') => {
+            for (const [key, value] of Object.entries(obj)) {
+              if (value === null || value === undefined) continue;
 
-            if (typeof value === 'object' && !Array.isArray(value)) {
-              flattenObject(value, prefix + key + '_');
-            } else {
-              const strVal = String(value).toLowerCase().trim();
-              const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' ||
-                strVal === 'n/a' || strVal === 'na' || strVal === 'nan' || strVal === 'unknown' ||
-                strVal === 'not available' || strVal === 'not found' || strVal === 'none' ||
-                strVal === '-' || strVal === '--' || strVal === 'tbd' ||
-                (typeof value === 'number' && isNaN(value));
+              if (typeof value === 'object' && !Array.isArray(value)) {
+                flattenObject(value, prefix + key + '_');
+              } else {
+                const strVal = String(value).toLowerCase().trim();
+                const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' ||
+                  strVal === 'n/a' || strVal === 'na' || strVal === 'nan' || strVal === 'unknown' ||
+                  strVal === 'not available' || strVal === 'not found' || strVal === 'none' ||
+                  strVal === '-' || strVal === '--' || strVal === 'tbd' ||
+                  (typeof value === 'number' && isNaN(value));
 
-              if (!isBadValue) {
-                fields[prefix + key] = {
-                  value: value,
-                  source: 'Gemini (Real Estate Analyst)',
-                  confidence: 'Medium'
-                };
+                if (!isBadValue) {
+                  fields[prefix + key] = {
+                    value: value,
+                    source: 'Gemini (Real Estate Analyst)',
+                    confidence: 'Medium'
+                  };
+                }
               }
             }
-          }
-        };
+          };
 
-        flattenObject(parsed);
-        return { fields };
+          flattenObject(parsed);
+          console.log('[GEMINI] Fields found:', Object.keys(fields).length);
+          return { fields };
+        } catch (parseError) {
+          console.log('[GEMINI] JSON parse error:', parseError);
+          return { error: `JSON parse error: ${parseError}`, fields: {} };
+        }
+      } else {
+        console.log('[GEMINI] No JSON found in response');
+        return { error: `No JSON found. Preview: ${text.slice(0, 200)}`, fields: {} };
       }
+    } else {
+      console.log('[GEMINI] No candidates in response:', JSON.stringify(data).slice(0, 500));
+      return { error: 'No response content from Gemini', fields: {} };
     }
-    return { error: 'Failed to parse response', fields: {} };
   } catch (error) {
+    console.log('[GEMINI] Error:', String(error));
     return { error: String(error), fields: {} };
   }
 }
