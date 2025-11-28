@@ -1758,9 +1758,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!skipLLMs) {
       const intermediateResult = arbitrationPipeline.getResult();
       const currentFieldCount = Object.keys(intermediateResult.fields).length;
+      console.log(`[LLM GATE] Current field count before LLMs: ${currentFieldCount}`);
 
-      // Only call LLMs if we have gaps
-      if (currentFieldCount < 110) {
+      // ALWAYS call selected LLMs - removed the "skip if 110+ fields" logic
+      // LLMs provide valuable additional data even if APIs returned some fields
+      if (true) {  // Always run LLMs if enabled
         console.log(`\nStep 2: LLM Cascade (${currentFieldCount}/138 fields filled)...`);
 
         const llmSourceNames: Record<string, string> = {
@@ -1859,9 +1861,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
           });
         }
-      } else {
-        console.log('Skipping LLMs - sufficient data from reliable sources');
       }
+      // Removed "Sufficient data" skip logic - LLMs always run if enabled
     }
 
     // ========================================

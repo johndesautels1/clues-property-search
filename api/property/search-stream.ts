@@ -858,13 +858,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // ========================================
-    // TIER 4: LLMs - PARALLEL (2 fastest only for Hobby plan)
+    // TIER 4: LLMs - PARALLEL (all selected LLMs)
     // ========================================
     if (!skipLLMs && hasTime()) {
       const intermediateResult = arbitrationPipeline.getResult();
       const currentFieldCount = Object.keys(intermediateResult.fields).length;
+      console.log(`[LLM GATE] Current field count before LLMs: ${currentFieldCount}`);
 
-      if (currentFieldCount < 100) {
+      // ALWAYS call selected LLMs - removed the "skip if 100+ fields" logic
+      // LLMs provide valuable additional data even if APIs returned some fields
+      if (true) {  // Always run LLMs if enabled and time permits
         // Pro plan: Use ALL selected LLMs
         const enabledLlms = [
           { id: 'perplexity', fn: callPerplexity, name: 'Perplexity', enabled: engines.includes('perplexity') },
@@ -920,11 +923,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
           });
         }
-      } else {
-        ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'].forEach(id => {
-          sendEvent(res, 'progress', { source: id, status: 'skipped', fieldsFound: 0, message: 'Sufficient data' });
-        });
       }
+      // Removed "Sufficient data" skip logic - LLMs always run if enabled
     } else if (!hasTime()) {
       ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'].forEach(id => {
         sendEvent(res, 'progress', { source: id, status: 'skipped', fieldsFound: 0, message: 'Time limit' });

@@ -57,6 +57,7 @@ export default function AddProperty() {
   const [inputMode, setInputMode] = useState<InputMode>('manual');
   const [status, setStatus] = useState<ScrapeStatus>('idle');
   const [progress, setProgress] = useState(0);
+  const [totalFieldsFound, setTotalFieldsFound] = useState(0);  // Actual field count from backend
   const [selectedEngine, setSelectedEngine] = useState('Auto');
   const [lastAddedId, setLastAddedId] = useState<string | null>(null);
   const [csvFile, setCsvFile] = useState<File | null>(null);
@@ -201,6 +202,7 @@ export default function AddProperty() {
     startTransition(() => {
       setStatus('searching');
       setProgress(0);
+      setTotalFieldsFound(0);  // Reset field count for new search
       setCascadeStatus(initializeCascadeStatus());
     });
 
@@ -294,6 +296,10 @@ export default function AddProperty() {
                 });
               } else if (eventType === 'complete') {
                 finalData = data;
+                // Set actual total fields found from backend
+                if (data.total_fields_found !== undefined) {
+                  setTotalFieldsFound(data.total_fields_found);
+                }
                 // Handle partial data (timeout with some data retrieved)
                 if (data.partial) {
                   console.warn('⚠️ Partial data received due to timeout:', data.error);
@@ -1654,7 +1660,7 @@ Beautiful 3BR/2BA beach house at 290 41st Ave, St Pete Beach, FL 33706. Built in
               ))}
             </div>
             <div className="text-xs text-gray-500 mt-2">
-              {progress}% complete ({Math.round(progress * 1.38)} of 138 fields)
+              {progress}% complete ({totalFieldsFound || Math.round(progress * 1.38)} of 138 fields)
             </div>
           </div>
 
