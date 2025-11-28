@@ -22,10 +22,10 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { path: '/', icon: Home, label: 'Home' },
-  { path: '/properties', icon: Building2, label: 'Properties' },
+  { path: '/', icon: Home, label: 'Home/Property Analytics' },
+  { path: '/properties', icon: Building2, label: 'My Saved Properties' },
   { path: '/search', icon: Search, label: 'Search' },
-  { path: '/compare', icon: GitCompare, label: 'Compare' },
+  { path: '/compare', icon: GitCompare, label: 'Advanced Comparison Analytics' },
   { path: '/settings', icon: User, label: 'Account' },
 ];
 

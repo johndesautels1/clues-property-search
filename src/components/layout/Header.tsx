@@ -19,11 +19,11 @@ import {
 import { useAuthStore, useCurrentUser, useIsAdmin } from '@/store/authStore';
 
 const navItems = [
-  { path: '/', icon: Home, label: 'Dashboard' },
-  { path: '/properties', icon: Building2, label: 'Properties' },
+  { path: '/', icon: Home, label: 'Home/Property Analytics' },
+  { path: '/properties', icon: Building2, label: 'My Saved Properties' },
   { path: '/search', icon: Search, label: 'Search Property' },
-  { path: '/add', icon: PlusCircle, label: 'Quick Add' },
-  { path: '/compare', icon: GitCompare, label: 'Compare' },
+  { path: '/add', icon: PlusCircle, label: 'Add Property' },
+  { path: '/compare', icon: GitCompare, label: 'Advanced Comparison Analytics' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];
 
