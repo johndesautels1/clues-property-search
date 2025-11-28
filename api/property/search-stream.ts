@@ -256,89 +256,8 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
   const apiKey = process.env.XAI_API_KEY;
   if (!apiKey) return { error: 'API key not set', fields: {} };
 
-  const systemPrompt = `You are Grok, built by xAI, with access to advanced tools for web searching, browsing pages, and verifying real-time data. Your primary goal is accuracy—do not hallucinate, guess, or use outdated internal knowledge. Always use your tools to fetch and cross-verify data from multiple reliable sources. Prioritize official sources like county property appraisers, MLS listings via aggregators (Zillow, Redfin, Realtor.com), and government sites.
-
-CRITICAL RULES:
-- ONLY include fields you can verify. OMIT any field you cannot determine.
-- Do NOT include null, N/A, "unknown", or empty values - simply leave those fields out.
-- Return JSON ONLY, no markdown, no backticks, no explanation.
-- Use numeric types for monetary values (no $ or commas).
-
-Return a JSON object with this EXACT nested structure (include only fields with verified data):
-
-{
-  "address_identity": {
-    "full_address": "<string>",
-    "city": "<string>",
-    "state": "<string>",
-    "zip_code": "<string>",
-    "county": "<string>",
-    "neighborhood": "<string>",
-    "parcel_id": "<string>",
-    "mls_primary": "<string>"
-  },
-  "pricing_value": {
-    "listing_status": "<Active|Pending|Closed|OffMarket>",
-    "listing_price": <number>,
-    "price_per_sq_ft": <number>,
-    "listing_date": "<YYYY-MM-DD>",
-    "market_value_estimate": <number>,
-    "last_sale_date": "<YYYY-MM-DD>",
-    "last_sale_price": <number>,
-    "assessed_value": <number>,
-    "zestimate": <number>
-  },
-  "property_basics": {
-    "property_type": "<Single Family|Condo|Townhouse|Multi-Family>",
-    "bedrooms": <number>,
-    "full_bathrooms": <number>,
-    "half_bathrooms": <number>,
-    "total_bathrooms": <number>,
-    "living_sq_ft": <number>,
-    "lot_size_sq_ft": <number>,
-    "year_built": <number>,
-    "stories": <number>,
-    "garage_spaces": <number>
-  },
-  "hoa_taxes": {
-    "hoa": <true|false>,
-    "hoa_fee_annual": <number>,
-    "annual_taxes": <number>,
-    "tax_year": <number>
-  },
-  "structure_systems": {
-    "roof_type": "<string>",
-    "exterior_material": "<string>",
-    "foundation": "<string>",
-    "hvac_type": "<string>"
-  },
-  "exterior_features": {
-    "pool": <true|false>,
-    "pool_type": "<string>",
-    "waterfront": "<string>",
-    "view": "<string>"
-  },
-  "schools_scores": {
-    "school_district": "<string>",
-    "elementary_school_name": "<string>",
-    "elementary_school_rating": <number>,
-    "walk_score": <number>,
-    "transit_score": <number>,
-    "bike_score": <number>
-  },
-  "market_investment": {
-    "median_home_price_neighborhood": <number>,
-    "avg_days_on_market": <number>,
-    "insurance_estimate_annual": <number>,
-    "rental_estimate_monthly": <number>
-  },
-  "environment_risk": {
-    "flood_zone_code": "<string>",
-    "flood_risk_level": "<Low|Moderate|High>",
-    "hurricane_risk": "<Low|Moderate|High>",
-    "elevation_feet": <number>
-  }
-}`;
+  // Simple prompt that returns flat field names (matches working retry-llm.ts)
+  const systemPrompt = `You are a real estate data assistant with web search capabilities. Return ONLY a JSON object with property data. Do NOT include null, N/A, or unknown values - simply omit fields you cannot verify. Return JSON only.`;
 
   try {
     const response = await fetch('https://api.x.ai/v1/chat/completions', {
@@ -348,69 +267,37 @@ Return a JSON object with this EXACT nested structure (include only fields with 
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'grok-4',
-        max_tokens: 8000,
+        model: 'grok-3-fast',
+        max_tokens: 4000,
         temperature: 0.1,
-        search_parameters: { mode: 'auto' },  // Enable live web search
+        search_parameters: { mode: 'auto' },
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Search and verify property data for: ${address}. Cross-reference multiple sources. Return JSON only.` }
+          { role: 'user', content: `Search and return property data for: ${address}. Return JSON only.` }
         ],
       }),
     });
 
     const data = await response.json();
-
     console.log('[GROK] Status:', response.status);
-    console.log('[GROK] Full response:', JSON.stringify(data).slice(0, 1000));
-
-    if (data.error) {
-      console.log('[GROK] API Error:', data.error);
-      return { error: `Grok API error: ${JSON.stringify(data.error)}`, fields: {} };
-    }
 
     if (data.choices?.[0]?.message?.content) {
       const text = data.choices[0].message.content;
-      console.log('[GROK] Content (first 500 chars):', text.slice(0, 500));
-
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        try {
-          const parsed = JSON.parse(jsonMatch[0]);
-          const fields: Record<string, any> = {};
-
-          // Flatten nested structure into fields (same as Perplexity)
-          const flattenObject = (obj: any, prefix = '') => {
-            for (const [key, value] of Object.entries(obj)) {
-              const strVal = String(value).toLowerCase().trim();
-              const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'nan' || strVal === 'unknown' || strVal === 'not available' || strVal === 'not found' || strVal === 'none' || strVal === '-' || strVal === '--' || strVal === 'tbd' || (typeof value === 'number' && isNaN(value));
-              if (!isBadValue) {
-                if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-                  flattenObject(value, prefix + key + '_');
-                } else {
-                  fields[prefix + key] = {
-                    value: value,
-                    source: 'Grok (Web Search)',
-                    confidence: 'Medium'
-                  };
-                }
-              }
-            }
-          };
-          flattenObject(parsed);
-
-          console.log('[GROK] Fields found:', Object.keys(fields).length);
-          return { fields };
-        } catch (parseError) {
-          console.log('[GROK] JSON parse error:', parseError);
-          return { error: `JSON parse error: ${parseError}`, fields: {} };
+        const parsed = JSON.parse(jsonMatch[0]);
+        const fields: Record<string, any> = {};
+        // Flat field parsing - no nested prefix (matches working retry-llm.ts)
+        for (const [key, value] of Object.entries(parsed)) {
+          if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
+            fields[key] = { value, source: 'Grok', confidence: 'Medium' };
+          }
         }
-      } else {
-        return { error: `No JSON. Preview: ${text.slice(0, 200)}`, fields: {} };
+        console.log('[GROK] Fields found:', Object.keys(fields).length);
+        return { fields };
       }
-    } else {
-      return { error: `No content. Keys: ${Object.keys(data.choices?.[0]?.message || {}).join(",")}`, fields: {} };
     }
+    return { error: 'Failed to parse response', fields: {} };
   } catch (error) {
     return { error: String(error), fields: {} };
   }
@@ -420,51 +307,30 @@ async function callClaudeOpus(address: string): Promise<{ fields: Record<string,
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return { error: 'API key not set', fields: {} };
 
+  // Simple flat field prompt (matches working retry-llm.ts)
   const prompt = `You are a real estate data assistant. Based on your knowledge, provide property data estimates for this address: ${address}
 
-CRITICAL: Return JSON with this EXACT nested structure. Only include fields you have reasonable confidence about. OMIT any field you cannot estimate. Use numeric types for numbers (no $ or commas).
+Return a JSON object with any of these fields you can reasonably estimate based on the location, city, neighborhood patterns, and typical property characteristics for the area:
 
 {
-  "address_identity": {
-    "full_address": "<string>",
-    "city": "<string>",
-    "state": "<string>",
-    "zip_code": "<string>",
-    "county": "<string>",
-    "neighborhood": "<string>"
-  },
-  "pricing_value": {
-    "market_value_estimate": <number>,
-    "assessed_value": <number>
-  },
-  "property_basics": {
-    "property_type": "<Single Family|Condo|Townhouse|Multi-Family>",
-    "bedrooms": <number>,
-    "total_bathrooms": <number>,
-    "living_sq_ft": <number>,
-    "year_built": <number>
-  },
-  "hoa_taxes": {
-    "annual_taxes": <number>,
-    "property_tax_rate_percent": <number>
-  },
-  "schools_scores": {
-    "school_district": "<string>",
-    "walk_score": <number>
-  },
-  "market_investment": {
-    "median_home_price_neighborhood": <number>,
-    "avg_days_on_market": <number>,
-    "insurance_estimate_annual": <number>,
-    "rental_estimate_monthly": <number>
-  },
-  "environment_risk": {
-    "flood_risk_level": "<Low|Moderate|High>",
-    "hurricane_risk": "<Low|Moderate|High>"
-  }
+  "property_type": "Single Family | Condo | Townhouse | Multi-Family",
+  "city": "city name",
+  "state": "FL",
+  "county": "county name",
+  "neighborhood": "neighborhood name if known",
+  "zip_code": "ZIP code",
+  "median_home_price_neighborhood": estimated median home price for the area,
+  "avg_days_on_market": typical days on market for the area,
+  "school_district": "school district name",
+  "flood_risk_level": "Low | Moderate | High",
+  "hurricane_risk": "Low | Moderate | High",
+  "walkability_description": "description of walkability",
+  "rental_estimate_monthly": estimated monthly rent for similar properties,
+  "insurance_estimate_annual": estimated annual insurance,
+  "property_tax_rate_percent": typical tax rate for the area
 }
 
-Return ONLY the JSON object, no explanation.`;
+Only include fields you have reasonable confidence about based on the location. Return ONLY the JSON object, no explanation.`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -476,49 +342,42 @@ Return ONLY the JSON object, no explanation.`;
       },
       body: JSON.stringify({
         model: 'claude-opus-4-5-20251101',
-        max_tokens: 8000,
+        max_tokens: 4000,
         messages: [{ role: 'user', content: prompt }],
       }),
     });
 
     const data = await response.json();
-    console.log('[CLAUDE OPUS 4.5] Status:', response.status, '| Response:', JSON.stringify(data).slice(0, 500));
+    console.log('[CLAUDE OPUS] Status:', response.status);
 
     if (data.content?.[0]?.text) {
       const text = data.content[0].text;
-      console.log('[CLAUDE OPUS 4.5] Text:', text.slice(0, 500));
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
+      // Extract JSON from markdown code blocks or raw text
+      const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+      const jsonStr = codeBlockMatch ? codeBlockMatch[1].trim() : text.match(/\{[\s\S]*\}/)?.[0];
+
+      if (jsonStr) {
+        const parsed = JSON.parse(jsonStr);
         const fields: Record<string, any> = {};
-
-        // Flatten nested structure into fields (same as Perplexity)
-        const flattenObject = (obj: any, prefix = '') => {
-          for (const [key, value] of Object.entries(obj)) {
-            const strVal = String(value).toLowerCase().trim();
-            const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'nan' || strVal === 'unknown' || strVal === 'not available' || strVal === 'not found' || strVal === 'none' || strVal === '-' || strVal === '--' || strVal === 'tbd' || (typeof value === 'number' && isNaN(value));
-            if (!isBadValue) {
-              if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-                flattenObject(value, prefix + key + '_');
-              } else {
-                fields[prefix + key] = {
-                  value: value,
-                  source: 'Claude Opus 4.5',
-                  confidence: 'Medium'
-                };
-              }
-            }
+        // Flat field parsing - no nested prefix (matches working retry-llm.ts)
+        for (const [key, value] of Object.entries(parsed.fields || parsed)) {
+          const strVal = String(value).toLowerCase().trim();
+          const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'unknown' || strVal === 'not available' || strVal === 'none';
+          if (!isBadValue) {
+            fields[key] = {
+              value: (value as any)?.value !== undefined ? (value as any).value : value,
+              source: 'Claude Opus',
+              confidence: 'Low'
+            };
           }
-        };
-        flattenObject(parsed);
-
-        console.log('[CLAUDE OPUS 4.5] Fields found:', Object.keys(fields).length);
+        }
+        console.log('[CLAUDE OPUS] Fields found:', Object.keys(fields).length);
         return { fields };
       }
     }
     return { error: 'Failed to parse response', fields: {} };
   } catch (error) {
-    console.log('[CLAUDE OPUS 4.5] Error:', String(error));
+    console.log('[CLAUDE OPUS] Error:', String(error));
     return { error: String(error), fields: {} };
   }
 }
@@ -678,180 +537,51 @@ async function callGemini(address: string): Promise<{ fields: Record<string, any
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return { error: 'API key not set', fields: {} };
 
-  const systemPrompt = `***SYSTEM INSTRUCTION: ACT AS GRAND MASTER REAL ESTATE ANALYST***
+  // Simple flat field prompt (matches working retry-llm.ts)
+  const prompt = `You are a real estate analyst. Return ONLY a JSON object with property data for: ${address}
 
-**ROLE:**
-You are the world's leading Real Estate Forensic Data Analyst and Investment Strategist, specializing in the Florida Gulf Coast luxury market. You have access to real-time listing data, county property appraiser records, FEMA flood maps, and investment modeling tools.
+Include any of these fields you can reasonably estimate:
+- property_type, bedrooms, bathrooms, sqft, year_built
+- listing_price, market_value_estimate, price_per_sqft
+- hoa_monthly, tax_annual, insurance_annual
+- flood_zone, flood_risk, hurricane_risk
+- rental_estimate_monthly, cap_rate_percent
 
-**OBJECTIVE:**
-Analyze the property at: ${address}
-Provide comprehensive property data with verified information from authoritative sources.
-
-**YOUR MISSION:**
-1. **VERIFY DATA:** Use county property appraiser methodology to verify Year Built, HOA Fees, and construction details.
-2. **FILL GAPS:** If exact unit data is unavailable, use building-specific averages.
-3. **CALCULATE METRICS:** Generate investment numbers (Cap Rate, Cash-on-Cash) based on 20% down payment and current Florida coastal insurance rates.
-
-**CRITICAL DATA POINTS:**
-* **Building Identity:** Confirm the building name and get accurate amenities.
-* **HOA Fee:** Verify monthly/annual HOA for this unit type.
-* **Insurance:** Estimate annual hazard + flood insurance for waterfront properties.
-* **Rental Yield:** Estimate monthly rental income for long-term vs. seasonal rental.
-
-**CRITICAL RULES:**
-- ONLY include fields you can verify or reasonably estimate. OMIT any field you cannot determine.
-- Do NOT include null, N/A, "unknown", or empty values - simply leave those fields out.
-- Return JSON ONLY, no markdown, no backticks, no explanation.
-
-**REQUIRED OUTPUT FORMAT:**
-Return a JSON object with this EXACT nested structure. Only include fields you have data for:
-
-{
-  "address_identity": {
-    "full_address": "<string>",
-    "city": "<string>",
-    "state": "<string>",
-    "zip": "<string>",
-    "county": "<string>",
-    "neighborhood": "<string>"
-  },
-  "pricing_value": {
-    "listing_status": "<Active|Pending|Closed|OffMarket>",
-    "listing_price": <number>,
-    "estimated_market_value": <number>,
-    "price_per_sqft": <number>,
-    "zestimate": <number>,
-    "redfin_estimate": <number>
-  },
-  "property_basics": {
-    "property_type": "<Single Family|Condo|Townhouse|Multi-Family>",
-    "bedrooms": <number>,
-    "bathrooms": <number>,
-    "sqft": <number>,
-    "lot_size_sqft": <number>,
-    "year_built": <number>,
-    "stories": <number>
-  },
-  "building_construction": {
-    "building_name": "<string>",
-    "construction_type": "<string>",
-    "roof_type": "<string>",
-    "exterior_material": "<string>",
-    "foundation": "<string>",
-    "parking_type": "<string>",
-    "garage_spaces": <number>
-  },
-  "tax_financial": {
-    "tax_annual": <number>,
-    "tax_year": <number>,
-    "hoa_monthly": <number>,
-    "hoa_includes": "<string>",
-    "cdd_fee": <number>,
-    "special_assessments": "<string>"
-  },
-  "risk_environmental": {
-    "flood_zone": "<string>",
-    "flood_risk": "<Low|Medium|High>",
-    "hurricane_risk": "<Low|Medium|High>",
-    "sinkhole_risk": "<Low|Medium|High>",
-    "elevation_ft": <number>
-  },
-  "investment_metrics": {
-    "est_insurance_annual": <number>,
-    "est_monthly_rent_longterm": <number>,
-    "est_monthly_rent_seasonal": <number>,
-    "cap_rate_percent": <number>,
-    "gross_rent_multiplier": <number>,
-    "cash_on_cash_return": <number>,
-    "monthly_cash_flow": <number>
-  },
-  "features_amenities": {
-    "pool": "<string>",
-    "waterfront": "<string>",
-    "water_access": "<string>",
-    "view": "<string>",
-    "amenities": "<string>",
-    "appliances": "<string>",
-    "flooring": "<string>",
-    "cooling": "<string>",
-    "heating": "<string>"
-  }
-}`;
+Do NOT include null, N/A, or unknown values. Return JSON only, no markdown.`;
 
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: systemPrompt }] }],
-          generationConfig: { maxOutputTokens: 8000, temperature: 0.1 },
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 4000, temperature: 0.1 },
         }),
       }
     );
 
     const data = await response.json();
     console.log('[GEMINI] Status:', response.status);
-    console.log('[GEMINI] Response keys:', Object.keys(data));
-
-    if (data.error) {
-      console.log('[GEMINI] API Error:', JSON.stringify(data.error));
-      return { error: `Gemini API error: ${JSON.stringify(data.error)}`, fields: {} };
-    }
 
     if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
       const text = data.candidates[0].content.parts[0].text;
-      console.log('[GEMINI] Text (first 500 chars):', text.slice(0, 500));
-
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        try {
-          const parsed = JSON.parse(jsonMatch[0]);
-          const fields: Record<string, any> = {};
-
-          // Flatten nested structure into fields with category_fieldname format
-          // This matches the format used by Perplexity, Grok, and Opus
-          const flattenObject = (obj: any, prefix = '') => {
-            for (const [key, value] of Object.entries(obj)) {
-              if (value === null || value === undefined) continue;
-
-              if (typeof value === 'object' && !Array.isArray(value)) {
-                flattenObject(value, prefix + key + '_');
-              } else {
-                const strVal = String(value).toLowerCase().trim();
-                const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' ||
-                  strVal === 'n/a' || strVal === 'na' || strVal === 'nan' || strVal === 'unknown' ||
-                  strVal === 'not available' || strVal === 'not found' || strVal === 'none' ||
-                  strVal === '-' || strVal === '--' || strVal === 'tbd' ||
-                  (typeof value === 'number' && isNaN(value));
-
-                if (!isBadValue) {
-                  fields[prefix + key] = {
-                    value: value,
-                    source: 'Gemini (Real Estate Analyst)',
-                    confidence: 'Medium'
-                  };
-                }
-              }
-            }
-          };
-
-          flattenObject(parsed);
-          console.log('[GEMINI] Fields found:', Object.keys(fields).length);
-          return { fields };
-        } catch (parseError) {
-          console.log('[GEMINI] JSON parse error:', parseError);
-          return { error: `JSON parse error: ${parseError}`, fields: {} };
+        const parsed = JSON.parse(jsonMatch[0]);
+        const fields: Record<string, any> = {};
+        // Flat field parsing - no nested prefix (matches working retry-llm.ts)
+        for (const [key, value] of Object.entries(parsed)) {
+          if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
+            fields[key] = { value, source: 'Gemini', confidence: 'Medium' };
+          }
         }
-      } else {
-        console.log('[GEMINI] No JSON found in response');
-        return { error: `No JSON found. Preview: ${text.slice(0, 200)}`, fields: {} };
+        console.log('[GEMINI] Fields found:', Object.keys(fields).length);
+        return { fields };
       }
-    } else {
-      console.log('[GEMINI] No candidates in response:', JSON.stringify(data).slice(0, 500));
-      return { error: 'No response content from Gemini', fields: {} };
     }
+    return { error: 'Failed to parse response', fields: {} };
   } catch (error) {
     console.log('[GEMINI] Error:', String(error));
     return { error: String(error), fields: {} };
