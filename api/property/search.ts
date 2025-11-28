@@ -335,56 +335,59 @@ async function getAirQuality(lat: number, lon: number): Promise<Record<string, a
 // HowLoud API - Noise levels
 async function getNoiseData(lat: number, lon: number): Promise<Record<string, any>> {
   const apiKey = process.env.HOWLOUD_API_KEY;
-  const clientId = process.env.HOWLOUD_CLIENT_ID;
   if (!apiKey) {
     console.log('HOWLOUD_API_KEY not set');
     return {};
   }
 
   try {
-    // Include client_id if provided
-    let url = `https://api.howloud.com/score?lat=${lat}&lng=${lon}&key=${apiKey}`;
-    if (clientId) {
-      url += `&client_id=${clientId}`;
-    }
-    const response = await fetch(url);
+    // Use x-api-key header as per HowLoud API docs
+    const url = `https://api.howloud.com/score?lat=${lat}&lng=${lon}`;
+    const response = await fetch(url, {
+      headers: {
+        'x-api-key': apiKey
+      }
+    });
     const data = await response.json();
 
     const fields: Record<string, any> = {};
 
-    if (data && data.score !== undefined) {
+    // Response structure: { status: "OK", result: { score, traffic, local, airports, ... } }
+    const result = data.result || data;
+
+    if (result && result.score !== undefined) {
       // HowLoud score: 0-100 (higher = quieter)
       let noiseLevel = 'High Noise';
-      if (data.score >= 80) noiseLevel = 'Very Quiet';
-      else if (data.score >= 60) noiseLevel = 'Quiet';
-      else if (data.score >= 40) noiseLevel = 'Moderate';
-      else if (data.score >= 20) noiseLevel = 'Noisy';
+      if (result.score >= 80) noiseLevel = 'Very Quiet';
+      else if (result.score >= 60) noiseLevel = 'Quiet';
+      else if (result.score >= 40) noiseLevel = 'Moderate';
+      else if (result.score >= 20) noiseLevel = 'Noisy';
 
       fields['68_noise_level'] = {
-        value: `${noiseLevel} (Score: ${data.score}/100)`,
+        value: `${noiseLevel} (Score: ${result.score}/100)`,
         source: 'HowLoud',
         confidence: 'High'
       };
 
       // Traffic noise component if available
-      if (data.traffic !== undefined) {
+      if (result.traffic !== undefined) {
         let trafficLevel = 'Heavy';
-        if (data.traffic >= 80) trafficLevel = 'Very Light';
-        else if (data.traffic >= 60) trafficLevel = 'Light';
-        else if (data.traffic >= 40) trafficLevel = 'Moderate';
-        else if (data.traffic >= 20) trafficLevel = 'Heavy';
+        if (result.traffic >= 80) trafficLevel = 'Very Light';
+        else if (result.traffic >= 60) trafficLevel = 'Light';
+        else if (result.traffic >= 40) trafficLevel = 'Moderate';
+        else if (result.traffic >= 20) trafficLevel = 'Heavy';
 
         fields['69_traffic_level'] = {
-          value: `${trafficLevel} (Score: ${data.traffic}/100)`,
+          value: `${trafficLevel} (Score: ${result.traffic}/100)`,
           source: 'HowLoud',
           confidence: 'High'
         };
       }
 
-      // Estimated noise in decibels if available
-      if (data.decibels !== undefined) {
+      // Local noise component if available
+      if (result.local !== undefined) {
         fields['103_noise_level_db_est'] = {
-          value: `${data.decibels} dB`,
+          value: `Local noise score: ${result.local}/100 - ${result.localtext || 'N/A'}`,
           source: 'HowLoud',
           confidence: 'High'
         };

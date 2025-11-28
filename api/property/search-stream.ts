@@ -925,7 +925,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Parallel execution with per-call timeouts
     // ========================================
 
-    const API_TIMEOUT = 8000; // 8s per API call
+    const API_TIMEOUT = 30000; // 30s per API call (HowLoud can be slow)
     const LLM_TIMEOUT = 55000; // 55s per LLM call (all run in parallel, within 60s Vercel Pro limit)
     const startTime = Date.now();
     const DEADLINE = 59000; // 59s hard deadline (Vercel Pro allows 60s)
