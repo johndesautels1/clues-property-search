@@ -256,7 +256,7 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
   const apiKey = process.env.XAI_API_KEY;
   if (!apiKey) return { error: 'API key not set', fields: {} };
 
-  const systemPrompt = `You are Grok, built by xAI, with access to advanced tools for web searching, browsing pages, and verifying real-time data. Your primary goal is accuracy—do not hallucinate, guess, or use outdated internal knowledge. Always use your tools to fetch and cross-verify data from multiple reliable sources. If data is unavailable or conflicting, note it explicitly. Prioritize official sources like county property appraisers, MLS listings via aggregators (Zillow, Redfin, Realtor.com), and government sites. Resolve conflicts by selecting the most consistent/recent value.
+  const systemPrompt = `You are Grok, built by xAI, with access to advanced tools for web searching, browsing pages, and verifying real-time data. Your primary goal is accuracy—do not hallucinate, guess, or use outdated internal knowledge. Always use your tools to fetch and cross-verify data from multiple reliable sources. Prioritize official sources like county property appraisers, MLS listings via aggregators (Zillow, Redfin, Realtor.com), and government sites.
 
 CRITICAL RULES:
 - ONLY include fields you can verify. OMIT any field you cannot determine.
@@ -264,45 +264,81 @@ CRITICAL RULES:
 - Return JSON ONLY, no markdown, no backticks, no explanation.
 - Use numeric types for monetary values (no $ or commas).
 
-For the property provided, retrieve and return as many of these fields as possible with accurate, verified data:
+Return a JSON object with this EXACT nested structure (include only fields with verified data):
 
-ADDRESS & IDENTITY:
-- full_address, mls_primary, listing_status, listing_date, neighborhood, county, zip_code, parcel_id
-
-PRICING & VALUE:
-- listing_price, price_per_sqft, market_value_estimate, last_sale_date, last_sale_price, assessed_value, redfin_estimate, zestimate
-
-PROPERTY BASICS:
-- bedrooms, full_bathrooms, half_bathrooms, total_bathrooms, living_sqft, lot_size_sqft, year_built, property_type, stories, garage_spaces, parking_total
-
-HOA & TAXES:
-- hoa (true/false), hoa_fee_annual, hoa_fee_monthly, hoa_name, hoa_includes, annual_taxes, tax_year
-
-STRUCTURE & SYSTEMS:
-- roof_type, exterior_material, foundation, hvac_type, water_heater_type, laundry_type
-
-INTERIOR FEATURES:
-- flooring_type, kitchen_features, appliances_included, fireplace (true/false)
-
-EXTERIOR FEATURES:
-- pool (true/false), pool_type, deck_patio, waterfront, view
-
-SCHOOLS:
-- school_district, elementary_school_name, elementary_school_rating, middle_school_name, high_school_name
-
-LOCATION SCORES:
-- walk_score, transit_score, bike_score, walkability_description
-
-MARKET & INVESTMENT:
-- median_home_price_neighborhood, avg_days_on_market, insurance_estimate_annual, rental_estimate_monthly, cap_rate_percent
-
-ENVIRONMENT & RISK:
-- air_quality_index, flood_zone, flood_risk_level, hurricane_risk, elevation_feet
-
-UTILITIES:
-- electric_provider, water_provider, internet_providers, fiber_available (true/false)
-
-Return a flat JSON object with these field names. Only include fields with verified data.`;
+{
+  "address_identity": {
+    "full_address": "<string>",
+    "city": "<string>",
+    "state": "<string>",
+    "zip_code": "<string>",
+    "county": "<string>",
+    "neighborhood": "<string>",
+    "parcel_id": "<string>",
+    "mls_primary": "<string>"
+  },
+  "pricing_value": {
+    "listing_status": "<Active|Pending|Closed|OffMarket>",
+    "listing_price": <number>,
+    "price_per_sq_ft": <number>,
+    "listing_date": "<YYYY-MM-DD>",
+    "market_value_estimate": <number>,
+    "last_sale_date": "<YYYY-MM-DD>",
+    "last_sale_price": <number>,
+    "assessed_value": <number>,
+    "zestimate": <number>
+  },
+  "property_basics": {
+    "property_type": "<Single Family|Condo|Townhouse|Multi-Family>",
+    "bedrooms": <number>,
+    "full_bathrooms": <number>,
+    "half_bathrooms": <number>,
+    "total_bathrooms": <number>,
+    "living_sq_ft": <number>,
+    "lot_size_sq_ft": <number>,
+    "year_built": <number>,
+    "stories": <number>,
+    "garage_spaces": <number>
+  },
+  "hoa_taxes": {
+    "hoa": <true|false>,
+    "hoa_fee_annual": <number>,
+    "annual_taxes": <number>,
+    "tax_year": <number>
+  },
+  "structure_systems": {
+    "roof_type": "<string>",
+    "exterior_material": "<string>",
+    "foundation": "<string>",
+    "hvac_type": "<string>"
+  },
+  "exterior_features": {
+    "pool": <true|false>,
+    "pool_type": "<string>",
+    "waterfront": "<string>",
+    "view": "<string>"
+  },
+  "schools_scores": {
+    "school_district": "<string>",
+    "elementary_school_name": "<string>",
+    "elementary_school_rating": <number>,
+    "walk_score": <number>,
+    "transit_score": <number>,
+    "bike_score": <number>
+  },
+  "market_investment": {
+    "median_home_price_neighborhood": <number>,
+    "avg_days_on_market": <number>,
+    "insurance_estimate_annual": <number>,
+    "rental_estimate_monthly": <number>
+  },
+  "environment_risk": {
+    "flood_zone_code": "<string>",
+    "flood_risk_level": "<Low|Moderate|High>",
+    "hurricane_risk": "<Low|Moderate|High>",
+    "elevation_feet": <number>
+  }
+}`;
 
   try {
     const response = await fetch('https://api.x.ai/v1/chat/completions', {
@@ -312,10 +348,9 @@ Return a flat JSON object with these field names. Only include fields with verif
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'grok-4-1-fast-reasoning',
+        model: 'grok-3-fast',
         max_tokens: 8000,
         temperature: 0.1,
-        // Enable Live Search for real-time web data
         search_parameters: { mode: 'auto' },
         messages: [
           { role: 'system', content: systemPrompt },
@@ -326,7 +361,6 @@ Return a flat JSON object with these field names. Only include fields with verif
 
     const data = await response.json();
 
-    // Log Grok response for debugging
     console.log('[GROK] Status:', response.status);
     console.log('[GROK] Full response:', JSON.stringify(data).slice(0, 1000));
 
@@ -344,21 +378,28 @@ Return a flat JSON object with these field names. Only include fields with verif
         try {
           const parsed = JSON.parse(jsonMatch[0]);
           const fields: Record<string, any> = {};
-          for (const [key, value] of Object.entries(parsed)) {
-            const strVal = String(value).toLowerCase().trim();
-            const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'nan' || strVal === 'unknown' || strVal === 'not available' || strVal === 'not found' || strVal === 'none' || strVal === '-' || strVal === '--' || strVal === 'tbd' || strVal === 'n\a' || (typeof value === 'number' && isNaN(value));
-            if (!isBadValue) {
-              fields[key] = {
-                value: value,
-                source: 'Grok (Web Search)',
-                confidence: 'Medium'
-              };
+
+          // Flatten nested structure into fields (same as Perplexity)
+          const flattenObject = (obj: any, prefix = '') => {
+            for (const [key, value] of Object.entries(obj)) {
+              const strVal = String(value).toLowerCase().trim();
+              const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'nan' || strVal === 'unknown' || strVal === 'not available' || strVal === 'not found' || strVal === 'none' || strVal === '-' || strVal === '--' || strVal === 'tbd' || (typeof value === 'number' && isNaN(value));
+              if (!isBadValue) {
+                if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                  flattenObject(value, prefix + key + '_');
+                } else {
+                  fields[prefix + key] = {
+                    value: value,
+                    source: 'Grok (Web Search)',
+                    confidence: 'Medium'
+                  };
+                }
+              }
             }
-          }
+          };
+          flattenObject(parsed);
+
           console.log('[GROK] Fields found:', Object.keys(fields).length);
-          if (Object.keys(fields).length === 0 && Object.keys(parsed).length > 0) {
-            return { error: `All ${Object.keys(parsed).length} fields filtered. Sample: ${JSON.stringify(Object.entries(parsed).slice(0,3))}`, fields: {} };
-          }
           return { fields };
         } catch (parseError) {
           console.log('[GROK] JSON parse error:', parseError);
@@ -368,9 +409,8 @@ Return a flat JSON object with these field names. Only include fields with verif
         return { error: `No JSON. Preview: ${text.slice(0, 200)}`, fields: {} };
       }
     } else {
-        return { error: `No content. Keys: ${Object.keys(data.choices?.[0]?.message || {}).join(",")}`, fields: {} };
+      return { error: `No content. Keys: ${Object.keys(data.choices?.[0]?.message || {}).join(",")}`, fields: {} };
     }
-    return { error: 'Failed to parse response', fields: {} };
   } catch (error) {
     return { error: String(error), fields: {} };
   }
@@ -382,27 +422,49 @@ async function callClaudeOpus(address: string): Promise<{ fields: Record<string,
 
   const prompt = `You are a real estate data assistant. Based on your knowledge, provide property data estimates for this address: ${address}
 
-Return a JSON object with any of these fields you can reasonably estimate based on the location, city, neighborhood patterns, and typical property characteristics for the area:
+CRITICAL: Return JSON with this EXACT nested structure. Only include fields you have reasonable confidence about. OMIT any field you cannot estimate. Use numeric types for numbers (no $ or commas).
 
 {
-  "property_type": "Single Family | Condo | Townhouse | Multi-Family",
-  "city": "city name",
-  "state": "FL",
-  "county": "county name",
-  "neighborhood": "neighborhood name if known",
-  "zip_code": "ZIP code",
-  "median_home_price_neighborhood": estimated median home price for the area,
-  "avg_days_on_market": typical days on market for the area,
-  "school_district": "school district name",
-  "flood_risk_level": "Low | Moderate | High",
-  "hurricane_risk": "Low | Moderate | High",
-  "walkability_description": "description of walkability",
-  "rental_estimate_monthly": estimated monthly rent for similar properties,
-  "insurance_estimate_annual": estimated annual insurance,
-  "property_tax_rate_percent": typical tax rate for the area
+  "address_identity": {
+    "full_address": "<string>",
+    "city": "<string>",
+    "state": "<string>",
+    "zip_code": "<string>",
+    "county": "<string>",
+    "neighborhood": "<string>"
+  },
+  "pricing_value": {
+    "market_value_estimate": <number>,
+    "assessed_value": <number>
+  },
+  "property_basics": {
+    "property_type": "<Single Family|Condo|Townhouse|Multi-Family>",
+    "bedrooms": <number>,
+    "total_bathrooms": <number>,
+    "living_sq_ft": <number>,
+    "year_built": <number>
+  },
+  "hoa_taxes": {
+    "annual_taxes": <number>,
+    "property_tax_rate_percent": <number>
+  },
+  "schools_scores": {
+    "school_district": "<string>",
+    "walk_score": <number>
+  },
+  "market_investment": {
+    "median_home_price_neighborhood": <number>,
+    "avg_days_on_market": <number>,
+    "insurance_estimate_annual": <number>,
+    "rental_estimate_monthly": <number>
+  },
+  "environment_risk": {
+    "flood_risk_level": "<Low|Moderate|High>",
+    "hurricane_risk": "<Low|Moderate|High>"
+  }
 }
 
-Only include fields you have reasonable confidence about based on the location. Return ONLY the JSON object, no explanation.`;
+Return ONLY the JSON object, no explanation.`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -413,7 +475,7 @@ Only include fields you have reasonable confidence about based on the location. 
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-opus-4-5-20251101',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
         messages: [{ role: 'user', content: prompt }],
       }),
@@ -429,17 +491,27 @@ Only include fields you have reasonable confidence about based on the location. 
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         const fields: Record<string, any> = {};
-        for (const [key, value] of Object.entries(parsed.fields || parsed)) {
-          const strVal = String(value).toLowerCase().trim();
-          const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'nan' || strVal === 'unknown' || strVal === 'not available' || strVal === 'not found' || strVal === 'none' || strVal === '-' || strVal === '--' || strVal === 'tbd' || strVal === 'n\a' || (typeof value === 'number' && isNaN(value));
-          if (!isBadValue) {
-            fields[key] = {
-              value: (value as any)?.value !== undefined ? (value as any).value : value,
-              source: 'Claude Opus',
-              confidence: 'Low'
-            };
+
+        // Flatten nested structure into fields (same as Perplexity)
+        const flattenObject = (obj: any, prefix = '') => {
+          for (const [key, value] of Object.entries(obj)) {
+            const strVal = String(value).toLowerCase().trim();
+            const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'nan' || strVal === 'unknown' || strVal === 'not available' || strVal === 'not found' || strVal === 'none' || strVal === '-' || strVal === '--' || strVal === 'tbd' || (typeof value === 'number' && isNaN(value));
+            if (!isBadValue) {
+              if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                flattenObject(value, prefix + key + '_');
+              } else {
+                fields[prefix + key] = {
+                  value: value,
+                  source: 'Claude Opus',
+                  confidence: 'Low'
+                };
+              }
+            }
           }
-        }
+        };
+        flattenObject(parsed);
+
         console.log('[CLAUDE OPUS] Fields found:', Object.keys(fields).length);
         return { fields };
       }
@@ -632,42 +704,78 @@ Provide comprehensive property data with verified information from authoritative
 - Return JSON ONLY, no markdown, no backticks, no explanation.
 
 **REQUIRED OUTPUT FORMAT:**
-Return ONLY a valid JSON object. Include only fields with verified/estimated data:
+Return a JSON object with this EXACT nested structure. Only include fields you have data for:
 
 {
-  "7_listing_price": <number>,
-  "8_estimated_market_value": <number>,
-  "9_price_per_sqft": <number>,
-  "10_zestimate": <number>,
-  "12_bedrooms": <number>,
-  "13_bathrooms": <number>,
-  "14_sqft": <number>,
-  "15_lot_size_sqft": <number>,
-  "16_year_built": <number>,
-  "17_property_type": "<string>",
-  "18_building_name": "<string>",
-  "19_stories": <number>,
-  "20_construction": "<string>",
-  "21_roof_type": "<string>",
-  "22_exterior_material": "<string>",
-  "23_foundation": "<string>",
-  "30_tax_annual": <number>,
-  "31_tax_year": <number>,
-  "32_hoa_monthly": <number>,
-  "33_hoa_includes": "<string>",
-  "40_flood_zone": "<string>",
-  "41_flood_risk": "<'Low' | 'Medium' | 'High'>",
-  "42_hurricane_risk": "<'Low' | 'Medium' | 'High'>",
-  "50_est_insurance_annual": <number>,
-  "51_est_monthly_rent_longterm": <number>,
-  "52_est_monthly_rent_seasonal": <number>,
-  "53_cap_rate_percent": <number>,
-  "54_gross_rent_multiplier": <number>,
-  "60_pool": "<string>",
-  "61_parking": "<string>",
-  "62_waterfront": "<string>",
-  "63_view": "<string>",
-  "64_amenities": "<string>"
+  "address_identity": {
+    "full_address": "<string>",
+    "city": "<string>",
+    "state": "<string>",
+    "zip": "<string>",
+    "county": "<string>",
+    "neighborhood": "<string>"
+  },
+  "pricing_value": {
+    "listing_status": "<Active|Pending|Closed|OffMarket>",
+    "listing_price": <number>,
+    "estimated_market_value": <number>,
+    "price_per_sqft": <number>,
+    "zestimate": <number>,
+    "redfin_estimate": <number>
+  },
+  "property_basics": {
+    "property_type": "<Single Family|Condo|Townhouse|Multi-Family>",
+    "bedrooms": <number>,
+    "bathrooms": <number>,
+    "sqft": <number>,
+    "lot_size_sqft": <number>,
+    "year_built": <number>,
+    "stories": <number>
+  },
+  "building_construction": {
+    "building_name": "<string>",
+    "construction_type": "<string>",
+    "roof_type": "<string>",
+    "exterior_material": "<string>",
+    "foundation": "<string>",
+    "parking_type": "<string>",
+    "garage_spaces": <number>
+  },
+  "tax_financial": {
+    "tax_annual": <number>,
+    "tax_year": <number>,
+    "hoa_monthly": <number>,
+    "hoa_includes": "<string>",
+    "cdd_fee": <number>,
+    "special_assessments": "<string>"
+  },
+  "risk_environmental": {
+    "flood_zone": "<string>",
+    "flood_risk": "<Low|Medium|High>",
+    "hurricane_risk": "<Low|Medium|High>",
+    "sinkhole_risk": "<Low|Medium|High>",
+    "elevation_ft": <number>
+  },
+  "investment_metrics": {
+    "est_insurance_annual": <number>,
+    "est_monthly_rent_longterm": <number>,
+    "est_monthly_rent_seasonal": <number>,
+    "cap_rate_percent": <number>,
+    "gross_rent_multiplier": <number>,
+    "cash_on_cash_return": <number>,
+    "monthly_cash_flow": <number>
+  },
+  "features_amenities": {
+    "pool": "<string>",
+    "waterfront": "<string>",
+    "water_access": "<string>",
+    "view": "<string>",
+    "amenities": "<string>",
+    "appliances": "<string>",
+    "flooring": "<string>",
+    "cooling": "<string>",
+    "heating": "<string>"
+  }
 }`;
 
   try {
@@ -690,17 +798,35 @@ Return ONLY a valid JSON object. Include only fields with verified/estimated dat
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         const fields: Record<string, any> = {};
-        for (const [key, value] of Object.entries(parsed)) {
-          const strVal = String(value).toLowerCase().trim();
-          const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'nan' || strVal === 'unknown' || strVal === 'not available' || strVal === 'not found' || strVal === 'none' || strVal === '-' || strVal === '--' || strVal === 'tbd' || strVal === 'n\a' || (typeof value === 'number' && isNaN(value));
-          if (!isBadValue) {
-            fields[key] = {
-              value: value,
-              source: 'Gemini (Real Estate Analyst)',
-              confidence: 'Medium'
-            };
+
+        // Flatten nested structure into fields with category_fieldname format
+        // This matches the format used by Perplexity, Grok, and Opus
+        const flattenObject = (obj: any, prefix = '') => {
+          for (const [key, value] of Object.entries(obj)) {
+            if (value === null || value === undefined) continue;
+
+            if (typeof value === 'object' && !Array.isArray(value)) {
+              flattenObject(value, prefix + key + '_');
+            } else {
+              const strVal = String(value).toLowerCase().trim();
+              const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' ||
+                strVal === 'n/a' || strVal === 'na' || strVal === 'nan' || strVal === 'unknown' ||
+                strVal === 'not available' || strVal === 'not found' || strVal === 'none' ||
+                strVal === '-' || strVal === '--' || strVal === 'tbd' ||
+                (typeof value === 'number' && isNaN(value));
+
+              if (!isBadValue) {
+                fields[prefix + key] = {
+                  value: value,
+                  source: 'Gemini (Real Estate Analyst)',
+                  confidence: 'Medium'
+                };
+              }
+            }
           }
-        }
+        };
+
+        flattenObject(parsed);
         return { fields };
       }
     }
