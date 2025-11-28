@@ -253,6 +253,9 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
           const decoder = new TextDecoder();
           let buffer = '';
           let finalData: any = null;
+          // Track partial fields as they arrive (for 504 recovery)
+          let lastKnownFields: Record<string, any> = {};
+          let lastFieldCount = 0;
 
           const processStream = async () => {
             if (!reader) {
@@ -260,63 +263,105 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
               return;
             }
 
-            while (true) {
-              const { done, value } = await reader.read();
+            try {
+              while (true) {
+                const { done, value } = await reader.read();
 
-              if (done) {
-                if (finalData) {
-                  resolve(finalData);
-                } else {
-                  reject(new Error('Stream ended without complete event'));
+                if (done) {
+                  if (finalData) {
+                    resolve(finalData);
+                  } else if (lastFieldCount > 0) {
+                    // Stream ended without complete event but we have partial data
+                    resolve({
+                      partial: true,
+                      streamDied: true,
+                      fields: lastKnownFields,
+                      total_fields_found: lastFieldCount,
+                      completion_percentage: Math.round((lastFieldCount / 138) * 100),
+                      error: 'Connection lost - showing partial results'
+                    });
+                  } else {
+                    reject(new Error('Stream ended without complete event'));
+                  }
+                  break;
                 }
-                break;
-              }
 
-              buffer += decoder.decode(value, { stream: true });
+                buffer += decoder.decode(value, { stream: true });
 
-              // Parse SSE events from buffer
-              const lines = buffer.split('\n');
-              buffer = lines.pop() || ''; // Keep incomplete line in buffer
+                // Parse SSE events from buffer
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || ''; // Keep incomplete line in buffer
 
-              let eventType = '';
-              for (const line of lines) {
-                if (line.startsWith('event: ')) {
-                  eventType = line.slice(7).trim();
-                } else if (line.startsWith('data: ')) {
-                  const dataStr = line.slice(6);
-                  try {
-                    const data = JSON.parse(dataStr);
+                let eventType = '';
+                for (const line of lines) {
+                  if (line.startsWith('event: ')) {
+                    eventType = line.slice(7).trim();
+                  } else if (line.startsWith('data: ')) {
+                    const dataStr = line.slice(6);
+                    try {
+                      const data = JSON.parse(dataStr);
 
-                    if (eventType === 'progress') {
-                      // Update progress tracker in real-time
-                      const { source, status, fieldsFound, error, message, newUniqueFields } = data;
-                      updateSource(source, {
-                        status: status as SourceStatus,
-                        fieldsFound: fieldsFound || 0,
-                        error
-                      });
-                      if (message) {
-                        setSearchProgress(message);
-                      }
-                      // Accumulate live totals from completed sources
-                      // Use newUniqueFields if available (LLMs), otherwise fieldsFound (APIs)
-                      if (status === 'complete' && (newUniqueFields > 0 || fieldsFound > 0)) {
-                        const increment = typeof newUniqueFields === 'number' ? newUniqueFields : (fieldsFound || 0);
-                        setLiveFieldsFound(prev => {
-                          const newTotal = prev + increment;
-                          setLiveCompletionPct(Math.round((newTotal / 138) * 100));
-                          return newTotal;
+                      if (eventType === 'progress') {
+                        // Update progress tracker in real-time
+                        const { source, status, fieldsFound, error, message, newUniqueFields, fields } = data;
+                        updateSource(source, {
+                          status: status as SourceStatus,
+                          fieldsFound: fieldsFound || 0,
+                          error
                         });
+                        if (message) {
+                          setSearchProgress(message);
+                        }
+                        // Accumulate live totals from completed sources
+                        // Use newUniqueFields if available (LLMs), otherwise fieldsFound (APIs)
+                        if (status === 'complete' && (newUniqueFields > 0 || fieldsFound > 0)) {
+                          const increment = typeof newUniqueFields === 'number' ? newUniqueFields : (fieldsFound || 0);
+                          setLiveFieldsFound(prev => {
+                            const newTotal = prev + increment;
+                            setLiveCompletionPct(Math.round((newTotal / 138) * 100));
+                            return newTotal;
+                          });
+                        }
+                        // Track cumulative fields for 504 recovery (if backend sends them)
+                        if (fields && typeof fields === 'object') {
+                          lastKnownFields = { ...lastKnownFields, ...fields };
+                          lastFieldCount = Object.keys(lastKnownFields).length;
+                        }
+                      } else if (eventType === 'complete') {
+                        finalData = data;
+                      } else if (eventType === 'error') {
+                        // On error, still resolve with partial data if available
+                        if (lastFieldCount > 0) {
+                          resolve({
+                            partial: true,
+                            fields: lastKnownFields,
+                            total_fields_found: lastFieldCount,
+                            completion_percentage: Math.round((lastFieldCount / 138) * 100),
+                            error: data.error || 'Search error'
+                          });
+                        } else {
+                          reject(new Error(data.error || 'Search error'));
+                        }
                       }
-                    } else if (eventType === 'complete') {
-                      finalData = data;
-                    } else if (eventType === 'error') {
-                      reject(new Error(data.error || 'Search error'));
+                    } catch (e) {
+                      console.error('Failed to parse SSE data:', e);
                     }
-                  } catch (e) {
-                    console.error('Failed to parse SSE data:', e);
                   }
                 }
+              }
+            } catch (streamError) {
+              // Stream read error (504 gateway timeout, network disconnect, etc.)
+              if (lastFieldCount > 0) {
+                resolve({
+                  partial: true,
+                  streamDied: true,
+                  fields: lastKnownFields,
+                  total_fields_found: lastFieldCount,
+                  completion_percentage: Math.round((lastFieldCount / 138) * 100),
+                  error: 'Connection timeout - showing partial results'
+                });
+              } else {
+                reject(streamError);
               }
             }
           };
@@ -330,9 +375,16 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
       const data = await searchWithSSE();
 
       setSearchResults(data);
-      setSearchProgress(`Found ${data.total_fields_found || 0} of 138 fields (${data.completion_percentage || 0}%)`);
 
-      // Map API response to form data
+      // Show appropriate message based on partial vs complete results
+      if (data.partial) {
+        setSearchError(`Partial results: ${data.error || 'Some sources failed'}. You can still view and edit the data received.`);
+        setSearchProgress(`Found ${data.total_fields_found || 0} of 138 fields (${data.completion_percentage || 0}%) - PARTIAL`);
+      } else {
+        setSearchProgress(`Found ${data.total_fields_found || 0} of 138 fields (${data.completion_percentage || 0}%)`);
+      }
+
+      // Map API response to form data (works for both partial and complete)
       const newFormData: Record<string, FieldValue> = {
         'addressIdentity.fullAddress': { value: addressInput, source: 'Manual Entry' },
       };
@@ -375,7 +427,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
 
       setFormData(prev => ({ ...prev, ...newFormData }));
 
-      // Expand all groups to show results
+      // Expand all groups to show results (including partial)
       expandAllGroups();
 
     } catch (error) {
