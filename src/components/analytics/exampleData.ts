@@ -1,453 +1,399 @@
 /**
- * Example Property Data for Testing
- * 
- * This file contains 3 fully populated Property objects you can use
- * to test the PropertyComparisonAnalytics component immediately.
+ * Test Property Data for 32-Chart Analytics
+ *
+ * 3 Florida beachfront properties with all 138 fields populated
+ * Generated from CSV test data for reliable chart visualization testing
  */
 
 import type { Property } from './types';
 
 export const PROPERTY_1: Property = {
   id: '1',
-  address: '2003 Gulf Way, St Pete Beach, FL 33706',
-  price: 3750000,
-  sqft: 3428,
+  address: '123 Gulf Blvd, St Pete Beach, FL 33706',
+  price: 3500000,
+  sqft: 3200,
   bedrooms: 4,
   bathrooms: 3,
-  lotSize: 5663,
+  lotSize: 10000,
   yearBuilt: 2015,
-  
-  listPrice: 3750000,
-  marketEstimate: 3333254,
-  redfinEstimate: 3200000,
-  assessedValue: 2100000,
-  
-  appreciation5yr: 102.7,
-  capRate: 3.5,
-  rentalYield: 2.7,
-  priceToRent: 22,
-  propertyTax: 15400,
-  insurance: 4200,
-  insuranceBase: 2100,
-  insuranceFlood: 1800,
-  insuranceWind: 300,
-  hoaFees: 100,
-  utilities: 405,
-  utilitiesElectric: 220,
-  utilitiesWater: 85,
+  listPrice: 3500000,
+  marketEstimate: 3550000,
+  redfinEstimate: 3480000,
+  assessedValue: 3000000,
+  appreciation5yr: 5.2,
+  capRate: 4.5,
+  rentalYield: 3.8,
+  priceToRent: 25,
+  propertyTax: 2500,
+  insurance: 5000,
+  insuranceBase: 2000,
+  insuranceFlood: 1500,
+  insuranceWind: 1500,
+  hoaFees: 0,
+  utilities: 300,
+  utilitiesElectric: 150,
+  utilitiesWater: 50,
   utilitiesInternet: 100,
-  maintenance: 425,
-  rentalIncome: 8500,
-  
+  maintenance: 200,
+  rentalIncome: 8000,
   pricingHistory: {
-    salePriceDate: '2018 Sale',
-    salePrice: 1850000,
-    assessmentDate: '2024 Assessment',
-    assessmentPrice: 2100000,
-    currentListPrice: 3750000,
-    marketEstimatePrice: 3333254
+    salePriceDate: '2020-05-15',
+    salePrice: 2800000,
+    assessmentDate: '2024-01-01',
+    assessmentPrice: 3000000,
+    currentListPrice: 3500000,
+    marketEstimatePrice: 3550000
   },
-  
   roiProjection: {
-    today: 3750000,
-    year1: 4125000,
-    year2: 4500000,
-    year3: 4875000,
-    year4: 5050000,
-    year5: 5200000,
-    year7: 5950000,
-    year10: 7100000
+    today: 3500000,
+    year1: 3675000,
+    year2: 3858750,
+    year3: 4051687,
+    year4: 4254272,
+    year5: 4466985,
+    year7: 4924690,
+    year10: 5724265
   },
-  
-  walkScore: 50,
-  transitScore: 35,
-  bikeScore: 48,
-  
+  walkScore: 80,
+  transitScore: 40,
+  bikeScore: 60,
   commute: {
-    cityCenter: 84,
-    elementary: 99,
-    transitHub: 95,
-    emergency: 92
+    cityCenter: 20,
+    elementary: 5,
+    transitHub: 15,
+    emergency: 10
   },
-  
-  safetyScore: 70,
-  violentCrime: 'MOD',
+  safetyScore: 85,
+  violentCrime: 'LOW',
   propertyCrime: 'MOD',
-  
   floodRisk: 8,
-  hurricaneRisk: 6,
-  seaLevelRisk: 6,
-  wildfireRisk: 2,
+  hurricaneRisk: 9,
+  seaLevelRisk: 8,
+  wildfireRisk: 1,
   earthquakeRisk: 1,
-  tornadoRisk: 2,
-  airQualityRisk: 3,
-  radonRisk: 2,
-  
-  airQuality: 85,
-  solarPotential: 85,
-  waterQuality: 95,
+  tornadoRisk: 4,
+  airQualityRisk: 2,
+  radonRisk: 1,
+  airQuality: 90,
+  solarPotential: 95,
+  waterQuality: 85,
   foundationStability: 90,
-  
   investmentScore: {
-    financialHealth: 82,
-    locationValue: 88,
-    propertyCondition: 78,
-    riskProfile: 65,
-    marketPosition: 85,
-    growthPotential: 79
+    financialHealth: 85,
+    locationValue: 95,
+    propertyCondition: 90,
+    riskProfile: 70,
+    marketPosition: 90,
+    growthPotential: 88
   },
-  
   pricePerSqft: 1093.75,
-  daysOnMarket: 2,
-  neighborhoodMedianPrice: 1250000,
-  marketVelocityDays: 2,
-  
+  daysOnMarket: 45,
+  neighborhoodMedianPrice: 2500000,
+  marketVelocityDays: 30,
   neighborhoodPulse: {
-    year2020: 850000,
-    year2021: 950000,
-    year2022: 1100000,
-    year2023: 1200000,
-    year2024: 1250000,
-    year2025: 1250000
+    year2020: 2000000,
+    year2021: 2200000,
+    year2022: 2500000,
+    year2023: 2800000,
+    year2024: 3000000,
+    year2025: 3200000
   },
-  
-  livingSpace: 3428,
-  garageStorage: 372,
-  coveredAreas: 5663,
-  
+  livingSpace: 2800,
+  garageStorage: 400,
+  coveredAreas: 600,
   roomDistribution: {
-    bedrooms: 35,
-    bathrooms: 28,
-    livingAreas: 22,
-    storage: 15
+    bedrooms: 30,
+    bathrooms: 10,
+    livingAreas: 50,
+    storage: 10
   },
-  
   schools: {
-    elementaryDistance: 98,
-    middleDistance: 35,
-    highDistance: 35,
-    districtRating: 75
+    elementaryDistance: 95,
+    middleDistance: 80,
+    highDistance: 75,
+    districtRating: 80
   },
-  
   condition: {
-    roof: 80,
-    hvac: 85,
+    roof: 95,
+    hvac: 90,
     kitchen: 95,
-    overall: 85
+    overall: 93
   },
-  
   features: {
     pool: 100,
-    deck: 95,
-    smartHome: 75,
-    fireplace: 80,
+    deck: 100,
+    smartHome: 100,
+    fireplace: 100,
     evCharging: 100,
     beachAccess: 100
   },
-  
   locationExcellence: {
     beachAccess: 100,
-    schoolProximity: 90,
-    transitAccess: 65,
-    safety: 70,
-    walkability: 50,
-    commute: 84
+    schoolProximity: 80,
+    transitAccess: 50,
+    safety: 85,
+    walkability: 80,
+    commute: 70
   }
 };
 
 export const PROPERTY_2: Property = {
   id: '2',
-  address: '129 Gulf Way, St Pete Beach, FL 33706',
-  price: 3200000,
-  sqft: 3200,
+  address: '456 Bay Ave, Clearwater Beach, FL 33767',
+  price: 2800000,
+  sqft: 2200,
   bedrooms: 3,
-  bathrooms: 3,
-  lotSize: 4800,
-  yearBuilt: 2018,
-  
-  listPrice: 3200000,
-  marketEstimate: 2950000,
-  redfinEstimate: 2900000,
-  assessedValue: 1850000,
-  
-  appreciation5yr: 89.5,
-  capRate: 3.8,
-  rentalYield: 2.9,
-  priceToRent: 20,
-  propertyTax: 13200,
-  insurance: 3800,
-  insuranceBase: 1900,
-  insuranceFlood: 1600,
-  insuranceWind: 300,
-  hoaFees: 150,
-  utilities: 385,
-  utilitiesElectric: 200,
-  utilitiesWater: 80,
-  utilitiesInternet: 105,
-  maintenance: 400,
-  rentalIncome: 7800,
-  
+  bathrooms: 2,
+  lotSize: 0,
+  yearBuilt: 2020,
+  listPrice: 2800000,
+  marketEstimate: 2850000,
+  redfinEstimate: 2780000,
+  assessedValue: 2500000,
+  appreciation5yr: 6,
+  capRate: 4.2,
+  rentalYield: 3.5,
+  priceToRent: 28,
+  propertyTax: 2000,
+  insurance: 4000,
+  insuranceBase: 1500,
+  insuranceFlood: 1200,
+  insuranceWind: 1300,
+  hoaFees: 800,
+  utilities: 250,
+  utilitiesElectric: 120,
+  utilitiesWater: 40,
+  utilitiesInternet: 90,
+  maintenance: 150,
+  rentalIncome: 6000,
   pricingHistory: {
-    salePriceDate: '2019 Sale',
-    salePrice: 1690000,
-    assessmentDate: '2024 Assessment',
-    assessmentPrice: 1850000,
-    currentListPrice: 3200000,
-    marketEstimatePrice: 2950000
+    salePriceDate: '2021-03-20',
+    salePrice: 2200000,
+    assessmentDate: '2024-01-01',
+    assessmentPrice: 2500000,
+    currentListPrice: 2800000,
+    marketEstimatePrice: 2850000
   },
-  
   roiProjection: {
-    today: 3200000,
-    year1: 3520000,
-    year2: 3840000,
-    year3: 4160000,
-    year4: 4320000,
-    year5: 4450000,
-    year7: 5100000,
-    year10: 6000000
+    today: 2800000,
+    year1: 2940000,
+    year2: 3087000,
+    year3: 3241350,
+    year4: 3403417,
+    year5: 3573588,
+    year7: 3939400,
+    year10: 4581412
   },
-  
-  walkScore: 52,
-  transitScore: 38,
-  bikeScore: 45,
-  
+  walkScore: 85,
+  transitScore: 45,
+  bikeScore: 65,
   commute: {
-    cityCenter: 82,
-    elementary: 95,
-    transitHub: 90,
-    emergency: 88
+    cityCenter: 15,
+    elementary: 4,
+    transitHub: 10,
+    emergency: 8
   },
-  
-  safetyScore: 72,
-  violentCrime: 'MOD',
+  safetyScore: 88,
+  violentCrime: 'LOW',
   propertyCrime: 'LOW',
-  
   floodRisk: 7,
-  hurricaneRisk: 6,
-  seaLevelRisk: 5,
-  wildfireRisk: 2,
+  hurricaneRisk: 9,
+  seaLevelRisk: 9,
+  wildfireRisk: 1,
   earthquakeRisk: 1,
-  tornadoRisk: 2,
-  airQualityRisk: 3,
-  radonRisk: 2,
-  
-  airQuality: 87,
-  solarPotential: 82,
-  waterQuality: 93,
+  tornadoRisk: 3,
+  airQualityRisk: 2,
+  radonRisk: 1,
+  airQuality: 92,
+  solarPotential: 96,
+  waterQuality: 87,
   foundationStability: 92,
-  
   investmentScore: {
-    financialHealth: 78,
-    locationValue: 85,
-    propertyCondition: 82,
-    riskProfile: 68,
-    marketPosition: 80,
-    growthPotential: 75
+    financialHealth: 88,
+    locationValue: 96,
+    propertyCondition: 95,
+    riskProfile: 75,
+    marketPosition: 92,
+    growthPotential: 90
   },
-  
-  pricePerSqft: 1000,
-  daysOnMarket: 5,
-  neighborhoodMedianPrice: 1200000,
-  marketVelocityDays: 5,
-  
+  pricePerSqft: 1272.73,
+  daysOnMarket: 30,
+  neighborhoodMedianPrice: 2000000,
+  marketVelocityDays: 25,
   neighborhoodPulse: {
-    year2020: 820000,
-    year2021: 920000,
-    year2022: 1050000,
-    year2023: 1150000,
-    year2024: 1200000,
-    year2025: 1200000
+    year2020: 1500000,
+    year2021: 1700000,
+    year2022: 1900000,
+    year2023: 2100000,
+    year2024: 2300000,
+    year2025: 2500000
   },
-  
-  livingSpace: 3200,
-  garageStorage: 350,
-  coveredAreas: 4800,
-  
+  livingSpace: 2000,
+  garageStorage: 200,
+  coveredAreas: 200,
   roomDistribution: {
-    bedrooms: 32,
-    bathrooms: 30,
-    livingAreas: 25,
-    storage: 13
+    bedrooms: 35,
+    bathrooms: 10,
+    livingAreas: 45,
+    storage: 10
   },
-  
   schools: {
-    elementaryDistance: 92,
-    middleDistance: 40,
-    highDistance: 38,
-    districtRating: 75
+    elementaryDistance: 98,
+    middleDistance: 85,
+    highDistance: 80,
+    districtRating: 90
   },
-  
   condition: {
-    roof: 85,
-    hvac: 88,
-    kitchen: 90,
-    overall: 88
+    roof: 98,
+    hvac: 95,
+    kitchen: 98,
+    overall: 96
   },
-  
   features: {
     pool: 100,
-    deck: 90,
-    smartHome: 80,
+    deck: 100,
+    smartHome: 100,
     fireplace: 0,
-    evCharging: 80,
+    evCharging: 100,
     beachAccess: 100
   },
-  
   locationExcellence: {
     beachAccess: 100,
-    schoolProximity: 88,
-    transitAccess: 68,
-    safety: 72,
-    walkability: 52,
-    commute: 82
+    schoolProximity: 85,
+    transitAccess: 60,
+    safety: 88,
+    walkability: 85,
+    commute: 80
   }
 };
 
 export const PROPERTY_3: Property = {
   id: '3',
-  address: '145 Gulf Way, St Pete Beach, FL 33706',
-  price: 3400000,
-  sqft: 3600,
-  bedrooms: 4,
+  address: '789 Ocean Dr, Siesta Key, FL 34242',
+  price: 4200000,
+  sqft: 4500,
+  bedrooms: 5,
   bathrooms: 4,
-  lotSize: 5200,
-  yearBuilt: 2020,
-  
-  listPrice: 3400000,
-  marketEstimate: 3150000,
-  redfinEstimate: 3100000,
-  assessedValue: 2000000,
-  
-  appreciation5yr: 65.0,
-  capRate: 4.2,
-  rentalYield: 3.1,
-  priceToRent: 18,
-  propertyTax: 14000,
-  insurance: 3900,
-  insuranceBase: 2000,
-  insuranceFlood: 1600,
-  insuranceWind: 300,
-  hoaFees: 125,
-  utilities: 395,
-  utilitiesElectric: 210,
-  utilitiesWater: 80,
-  utilitiesInternet: 105,
-  maintenance: 410,
-  rentalIncome: 8200,
-  
+  lotSize: 15000,
+  yearBuilt: 2018,
+  listPrice: 4200000,
+  marketEstimate: 4300000,
+  redfinEstimate: 4150000,
+  assessedValue: 3800000,
+  appreciation5yr: 4.8,
+  capRate: 4,
+  rentalYield: 3.2,
+  priceToRent: 30,
+  propertyTax: 3000,
+  insurance: 6000,
+  insuranceBase: 2500,
+  insuranceFlood: 1800,
+  insuranceWind: 1700,
+  hoaFees: 0,
+  utilities: 350,
+  utilitiesElectric: 180,
+  utilitiesWater: 60,
+  utilitiesInternet: 110,
+  maintenance: 250,
+  rentalIncome: 10000,
   pricingHistory: {
-    salePriceDate: '2020 Sale',
-    salePrice: 2060000,
-    assessmentDate: '2024 Assessment',
-    assessmentPrice: 2000000,
-    currentListPrice: 3400000,
-    marketEstimatePrice: 3150000
+    salePriceDate: '2019-07-10',
+    salePrice: 3500000,
+    assessmentDate: '2024-01-01',
+    assessmentPrice: 3800000,
+    currentListPrice: 4200000,
+    marketEstimatePrice: 4300000
   },
-  
   roiProjection: {
-    today: 3400000,
-    year1: 3740000,
-    year2: 4080000,
-    year3: 4420000,
-    year4: 4590000,
-    year5: 4730000,
-    year7: 5440000,
-    year10: 6500000
+    today: 4200000,
+    year1: 4386000,
+    year2: 4580370,
+    year3: 4784486,
+    year4: 4997793,
+    year5: 5222693,
+    year7: 5707249,
+    year10: 6533548
   },
-  
-  walkScore: 48,
-  transitScore: 40,
-  bikeScore: 50,
-  
+  walkScore: 75,
+  transitScore: 35,
+  bikeScore: 55,
   commute: {
-    cityCenter: 86,
-    elementary: 97,
-    transitHub: 93,
-    emergency: 90
+    cityCenter: 25,
+    elementary: 6,
+    transitHub: 20,
+    emergency: 12
   },
-  
-  safetyScore: 75,
+  safetyScore: 82,
   violentCrime: 'LOW',
-  propertyCrime: 'LOW',
-  
-  floodRisk: 6,
-  hurricaneRisk: 5,
-  seaLevelRisk: 5,
-  wildfireRisk: 1,
+  propertyCrime: 'MOD',
+  floodRisk: 9,
+  hurricaneRisk: 10,
+  seaLevelRisk: 9,
+  wildfireRisk: 2,
   earthquakeRisk: 1,
-  tornadoRisk: 2,
-  airQualityRisk: 2,
-  radonRisk: 1,
-  
+  tornadoRisk: 5,
+  airQualityRisk: 3,
+  radonRisk: 2,
   airQuality: 88,
-  solarPotential: 90,
-  waterQuality: 95,
-  foundationStability: 95,
-  
+  solarPotential: 94,
+  waterQuality: 84,
+  foundationStability: 88,
   investmentScore: {
-    financialHealth: 85,
-    locationValue: 90,
+    financialHealth: 82,
+    locationValue: 94,
     propertyCondition: 92,
-    riskProfile: 72,
+    riskProfile: 65,
     marketPosition: 88,
-    growthPotential: 82
+    growthPotential: 85
   },
-  
-  pricePerSqft: 944.44,
-  daysOnMarket: 3,
-  neighborhoodMedianPrice: 1280000,
-  marketVelocityDays: 3,
-  
+  pricePerSqft: 933.33,
+  daysOnMarket: 60,
+  neighborhoodMedianPrice: 3000000,
+  marketVelocityDays: 35,
   neighborhoodPulse: {
-    year2020: 880000,
-    year2021: 980000,
-    year2022: 1120000,
-    year2023: 1220000,
-    year2024: 1280000,
-    year2025: 1280000
+    year2020: 2500000,
+    year2021: 2700000,
+    year2022: 3000000,
+    year2023: 3300000,
+    year2024: 3500000,
+    year2025: 3700000
   },
-  
-  livingSpace: 3600,
-  garageStorage: 400,
-  coveredAreas: 5200,
-  
+  livingSpace: 3800,
+  garageStorage: 500,
+  coveredAreas: 800,
   roomDistribution: {
-    bedrooms: 33,
-    bathrooms: 30,
-    livingAreas: 24,
-    storage: 13
+    bedrooms: 35,
+    bathrooms: 15,
+    livingAreas: 40,
+    storage: 10
   },
-  
   schools: {
-    elementaryDistance: 95,
-    middleDistance: 38,
-    highDistance: 36,
-    districtRating: 78
+    elementaryDistance: 90,
+    middleDistance: 75,
+    highDistance: 70,
+    districtRating: 70
   },
-  
   condition: {
-    roof: 95,
-    hvac: 95,
-    kitchen: 98,
-    overall: 95
+    roof: 96,
+    hvac: 92,
+    kitchen: 96,
+    overall: 94
   },
-  
   features: {
     pool: 100,
     deck: 100,
-    smartHome: 90,
+    smartHome: 100,
     fireplace: 100,
     evCharging: 100,
     beachAccess: 100
   },
-  
   locationExcellence: {
     beachAccess: 100,
-    schoolProximity: 92,
-    transitAccess: 70,
-    safety: 75,
-    walkability: 48,
-    commute: 86
+    schoolProximity: 75,
+    transitAccess: 45,
+    safety: 82,
+    walkability: 75,
+    commute: 65
   }
 };
 
