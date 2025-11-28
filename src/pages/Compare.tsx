@@ -1,6 +1,7 @@
 /**
  * CLUES Property Dashboard - Advanced Comparison Analytics Page
  * Full 138-field comparison with property dropdown selectors
+ * Plus 32 hi-tech visual chart comparisons
  */
 
 import { useState, useMemo } from 'react';
@@ -9,10 +10,249 @@ import {
   Plus, X, Scale, TrendingUp, TrendingDown, Minus,
   ChevronDown, Search, Home, DollarSign, Ruler, Calendar,
   MapPin, Building, Zap, Shield, BarChart3, Eye, RefreshCw,
-  AlertTriangle, CheckCircle, Info
+  AlertTriangle, CheckCircle, Info, PieChart, Table2
 } from 'lucide-react';
 import { usePropertyStore } from '@/store/propertyStore';
 import type { PropertyCard, Property } from '@/types/property';
+import { PropertyComparisonAnalytics, type Property as AnalyticsProperty } from '@/components/analytics';
+
+// View modes for comparison
+type CompareViewMode = 'table' | 'visual';
+
+// Helper to extract value from DataField
+function getFieldValue<T>(field: any): T | null {
+  if (!field) return null;
+  if (typeof field === 'object' && 'value' in field) {
+    return field.value;
+  }
+  return field as T;
+}
+
+// Convert app Property to analytics Property format
+function mapToAnalyticsProperty(cardProp: PropertyCard, fullProp?: Property): AnalyticsProperty {
+  // Helper to parse risk levels to 0-10 scale
+  const parseRiskLevel = (level: string | null | undefined): number => {
+    if (!level) return 5;
+    const lower = level.toLowerCase();
+    if (lower.includes('very low') || lower.includes('minimal')) return 1;
+    if (lower.includes('low')) return 3;
+    if (lower.includes('moderate') || lower.includes('medium')) return 5;
+    if (lower.includes('high')) return 7;
+    if (lower.includes('very high') || lower.includes('severe')) return 9;
+    return 5;
+  };
+
+  // Helper to parse crime level
+  const parseCrimeLevel = (level: string | null | undefined): 'LOW' | 'MOD' | 'HIGH' => {
+    if (!level) return 'MOD';
+    const lower = level.toLowerCase();
+    if (lower.includes('low')) return 'LOW';
+    if (lower.includes('high')) return 'HIGH';
+    return 'MOD';
+  };
+
+  // Get values from full property or use defaults
+  const price = cardProp.price || 0;
+  const yearBuilt = cardProp.yearBuilt || 2000;
+  const currentYear = new Date().getFullYear();
+  const propertyAge = currentYear - yearBuilt;
+
+  // Extract values from full property if available
+  const walkScore = fullProp ? getFieldValue<number>(fullProp.location?.walkScore) : null;
+  const transitScore = fullProp ? getFieldValue<number>(fullProp.location?.transitScore) : null;
+  const bikeScore = fullProp ? getFieldValue<number>(fullProp.location?.bikeScore) : null;
+  const assessedValue = fullProp ? getFieldValue<number>(fullProp.details?.assessedValue) : null;
+  const marketEstimate = fullProp ? getFieldValue<number>(fullProp.details?.marketValueEstimate) : null;
+  const rentalEstimate = fullProp ? getFieldValue<number>(fullProp.financial?.rentalEstimateMonthly) : null;
+  const capRate = fullProp ? getFieldValue<number>(fullProp.financial?.capRateEst) : null;
+  const rentalYield = fullProp ? getFieldValue<number>(fullProp.financial?.rentalYieldEst) : null;
+  const annualTaxes = fullProp ? getFieldValue<number>(fullProp.details?.annualTaxes) : null;
+  const hoaFees = fullProp ? getFieldValue<number>(fullProp.details?.hoaFeeAnnual) : null;
+  const insuranceAnnual = fullProp ? getFieldValue<number>(fullProp.financial?.insuranceEstAnnual) : null;
+
+  // Risk values
+  const floodRisk = fullProp ? getFieldValue<string>(fullProp.utilities?.floodRiskLevel) : null;
+  const hurricaneRisk = fullProp ? getFieldValue<string>(fullProp.utilities?.hurricaneRisk) : null;
+  const wildfireRisk = fullProp ? getFieldValue<string>(fullProp.utilities?.wildfireRisk) : null;
+  const earthquakeRisk = fullProp ? getFieldValue<string>(fullProp.utilities?.earthquakeRisk) : null;
+  const tornadoRisk = fullProp ? getFieldValue<string>(fullProp.utilities?.tornadoRisk) : null;
+  const radonRisk = fullProp ? getFieldValue<string>(fullProp.utilities?.radonRisk) : null;
+  const seaLevelRisk = fullProp ? getFieldValue<string>(fullProp.utilities?.seaLevelRiseRisk) : null;
+  const crimeViolent = fullProp ? getFieldValue<string>(fullProp.location?.crimeIndexViolent) : null;
+  const crimeProperty = fullProp ? getFieldValue<string>(fullProp.location?.crimeIndexProperty) : null;
+  const safetyRating = fullProp ? getFieldValue<string>(fullProp.location?.neighborhoodSafetyRating) : null;
+
+  // Calculate some derived values
+  const appreciationEst = ((marketEstimate || price) / (assessedValue || price) - 1) * 100;
+
+  return {
+    id: cardProp.id,
+    address: `${cardProp.address}, ${cardProp.city}`,
+    price: price,
+    sqft: cardProp.sqft || 2000,
+    bedrooms: cardProp.bedrooms || 3,
+    bathrooms: cardProp.bathrooms || 2,
+    lotSize: fullProp ? getFieldValue<number>(fullProp.details?.lotSizeSqft) || 5000 : 5000,
+    yearBuilt: yearBuilt,
+
+    // Valuation
+    listPrice: price,
+    marketEstimate: marketEstimate || price * 0.95,
+    redfinEstimate: fullProp ? getFieldValue<number>(fullProp.financial?.redfinEstimate) || price * 0.92 : price * 0.92,
+    assessedValue: assessedValue || price * 0.7,
+
+    // Financial
+    appreciation5yr: appreciationEst > 0 ? appreciationEst : 25,
+    capRate: capRate || 3.5,
+    rentalYield: rentalYield || 2.8,
+    priceToRent: rentalEstimate ? Math.round(price / (rentalEstimate * 12)) : 20,
+    propertyTax: annualTaxes || Math.round(price * 0.01),
+    insurance: insuranceAnnual || Math.round(price * 0.003),
+    insuranceBase: insuranceAnnual ? Math.round(insuranceAnnual * 0.5) : Math.round(price * 0.0015),
+    insuranceFlood: insuranceAnnual ? Math.round(insuranceAnnual * 0.4) : Math.round(price * 0.001),
+    insuranceWind: insuranceAnnual ? Math.round(insuranceAnnual * 0.1) : Math.round(price * 0.0005),
+    hoaFees: hoaFees ? Math.round(hoaFees / 12) : 100,
+    utilities: 400,
+    utilitiesElectric: 220,
+    utilitiesWater: 80,
+    utilitiesInternet: 100,
+    maintenance: 400,
+    rentalIncome: rentalEstimate || Math.round(price * 0.005),
+
+    // Pricing History
+    pricingHistory: {
+      salePriceDate: `${yearBuilt + Math.min(5, propertyAge)} Sale`,
+      salePrice: Math.round(price * 0.6),
+      assessmentDate: `${currentYear} Assessment`,
+      assessmentPrice: assessedValue || Math.round(price * 0.7),
+      currentListPrice: price,
+      marketEstimatePrice: marketEstimate || Math.round(price * 0.95),
+    },
+
+    // ROI Projections (5% annual appreciation estimate)
+    roiProjection: {
+      today: price,
+      year1: Math.round(price * 1.05),
+      year2: Math.round(price * 1.10),
+      year3: Math.round(price * 1.16),
+      year4: Math.round(price * 1.22),
+      year5: Math.round(price * 1.28),
+      year7: Math.round(price * 1.40),
+      year10: Math.round(price * 1.63),
+    },
+
+    // Location Scores
+    walkScore: walkScore || 50,
+    transitScore: transitScore || 35,
+    bikeScore: bikeScore || 45,
+
+    // Commute
+    commute: {
+      cityCenter: 80,
+      elementary: 90,
+      transitHub: 85,
+      emergency: 88,
+    },
+
+    // Safety
+    safetyScore: safetyRating ? (safetyRating.toLowerCase().includes('safe') ? 75 : 60) : 70,
+    violentCrime: parseCrimeLevel(crimeViolent),
+    propertyCrime: parseCrimeLevel(crimeProperty),
+
+    // Climate Risks (0-10 scale)
+    floodRisk: parseRiskLevel(floodRisk),
+    hurricaneRisk: parseRiskLevel(hurricaneRisk),
+    seaLevelRisk: parseRiskLevel(seaLevelRisk),
+    wildfireRisk: parseRiskLevel(wildfireRisk),
+    earthquakeRisk: parseRiskLevel(earthquakeRisk),
+    tornadoRisk: parseRiskLevel(tornadoRisk),
+    airQualityRisk: 3,
+    radonRisk: parseRiskLevel(radonRisk),
+
+    // Environmental Quality
+    airQuality: 85,
+    solarPotential: 85,
+    waterQuality: 90,
+    foundationStability: 90,
+
+    // Investment Scores
+    investmentScore: {
+      financialHealth: cardProp.smartScore || 75,
+      locationValue: walkScore ? Math.min(100, Math.round((walkScore + (transitScore || 50)) / 2)) : 75,
+      propertyCondition: propertyAge < 10 ? 90 : propertyAge < 20 ? 80 : 70,
+      riskProfile: 70,
+      marketPosition: 80,
+      growthPotential: 78,
+    },
+
+    // Market Data
+    pricePerSqft: cardProp.pricePerSqft || Math.round(price / (cardProp.sqft || 2000)),
+    daysOnMarket: cardProp.daysOnMarket || 10,
+    neighborhoodMedianPrice: fullProp ? getFieldValue<number>(fullProp.financial?.medianHomePriceNeighborhood) || price * 0.8 : price * 0.8,
+    marketVelocityDays: cardProp.daysOnMarket || 10,
+
+    // Neighborhood Pulse (simulated 5-year trend)
+    neighborhoodPulse: {
+      year2020: Math.round(price * 0.65),
+      year2021: Math.round(price * 0.72),
+      year2022: Math.round(price * 0.82),
+      year2023: Math.round(price * 0.90),
+      year2024: Math.round(price * 0.95),
+      year2025: price,
+    },
+
+    // Space Distribution
+    livingSpace: cardProp.sqft || 2000,
+    garageStorage: 350,
+    coveredAreas: fullProp ? getFieldValue<number>(fullProp.details?.lotSizeSqft) || 5000 : 5000,
+
+    // Room Distribution (percentages)
+    roomDistribution: {
+      bedrooms: 33,
+      bathrooms: 28,
+      livingAreas: 25,
+      storage: 14,
+    },
+
+    // Schools
+    schools: {
+      elementaryDistance: 90,
+      middleDistance: 40,
+      highDistance: 38,
+      districtRating: 75,
+    },
+
+    // Property Condition
+    condition: {
+      roof: propertyAge < 15 ? 85 : 70,
+      hvac: propertyAge < 10 ? 90 : 75,
+      kitchen: propertyAge < 5 ? 95 : 80,
+      overall: propertyAge < 10 ? 88 : propertyAge < 20 ? 78 : 68,
+    },
+
+    // Luxury Features
+    features: {
+      pool: fullProp && getFieldValue<boolean>(fullProp.structural?.poolYn) ? 100 : 0,
+      deck: fullProp && getFieldValue<string>(fullProp.structural?.deckPatio) ? 80 : 50,
+      smartHome: 70,
+      fireplace: fullProp && getFieldValue<boolean>(fullProp.structural?.fireplaceYn) ? 100 : 0,
+      evCharging: 50,
+      beachAccess: fullProp && getFieldValue<number>(fullProp.location?.distanceBeachMiles) &&
+                   getFieldValue<number>(fullProp.location?.distanceBeachMiles)! < 1 ? 100 : 30,
+    },
+
+    // Location Excellence
+    locationExcellence: {
+      beachAccess: fullProp && getFieldValue<number>(fullProp.location?.distanceBeachMiles) ?
+                   Math.max(0, 100 - (getFieldValue<number>(fullProp.location?.distanceBeachMiles)! * 20)) : 50,
+      schoolProximity: 85,
+      transitAccess: transitScore || 60,
+      safety: safetyRating ? (safetyRating.toLowerCase().includes('safe') ? 75 : 60) : 70,
+      walkability: walkScore || 50,
+      commute: 80,
+    },
+  };
+}
 
 // Comparison field categories
 const fieldCategories = [
@@ -440,6 +680,8 @@ export default function Compare() {
   const [selectedIds, setSelectedIds] = useState<(string | null)[]>([null, null, null]);
   const [activeCategory, setActiveCategory] = useState('overview');
   const [showAllFields, setShowAllFields] = useState(false);
+  const [viewMode, setViewMode] = useState<CompareViewMode>('table');
+  const [showVisualAnalytics, setShowVisualAnalytics] = useState(false);
 
   const selectedProperties = useMemo(() => {
     return selectedIds
@@ -454,6 +696,16 @@ export default function Compare() {
       .map(id => fullProperties.get(id))
       .filter((p): p is Property => p !== undefined);
   }, [selectedIds, fullProperties]);
+
+  // Convert selected properties to analytics format
+  const analyticsProperties = useMemo((): [AnalyticsProperty, AnalyticsProperty, AnalyticsProperty] | null => {
+    if (selectedProperties.length < 3) return null;
+
+    return selectedProperties.slice(0, 3).map((cardProp, index) => {
+      const fullProp = fullProperties.get(cardProp.id);
+      return mapToAnalyticsProperty(cardProp, fullProp);
+    }) as [AnalyticsProperty, AnalyticsProperty, AnalyticsProperty];
+  }, [selectedProperties, fullProperties]);
 
   const handleSelect = (slot: number, id: string) => {
     const newIds = [...selectedIds];
@@ -478,12 +730,44 @@ export default function Compare() {
       animate={{ opacity: 1 }}
     >
       <div className="mb-8">
-        <h1 className="font-orbitron text-2xl md:text-3xl font-bold text-gradient-quantum mb-2">
-          Advanced Comparison Analytics
-        </h1>
-        <p className="text-gray-400">
-          Select up to 3 properties for side-by-side 138-field comparison
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="font-orbitron text-2xl md:text-3xl font-bold text-gradient-quantum mb-2">
+              Advanced Comparison Analytics
+            </h1>
+            <p className="text-gray-400">
+              Select up to 3 properties for side-by-side comparison
+            </p>
+          </div>
+
+          {/* View Mode Toggle */}
+          {selectedProperties.length >= 2 && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setViewMode('table')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                  viewMode === 'table'
+                    ? 'bg-quantum-cyan/20 text-quantum-cyan border border-quantum-cyan/30'
+                    : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-transparent'
+                }`}
+              >
+                <Table2 className="w-4 h-4" />
+                Table View
+              </button>
+              <button
+                onClick={() => setViewMode('visual')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                  viewMode === 'visual'
+                    ? 'bg-quantum-purple/20 text-quantum-purple border border-quantum-purple/30'
+                    : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-transparent'
+                }`}
+              >
+                <PieChart className="w-4 h-4" />
+                32 Visual Charts
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Property Selection */}
@@ -509,30 +793,60 @@ export default function Compare() {
         />
       )}
 
-      {/* Category Tabs */}
-      {selectedProperties.length >= 2 && (
-        <div className="flex flex-wrap gap-2 mb-6">
-          {fieldCategories.map((cat) => {
-            const Icon = cat.icon;
-            return (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                  activeCategory === cat.id
-                    ? 'bg-quantum-cyan/20 text-quantum-cyan border border-quantum-cyan/30'
-                    : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-transparent'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {cat.label}
-              </button>
-            );
-          })}
+      {/* Visual Analytics Mode */}
+      {viewMode === 'visual' && selectedProperties.length >= 3 && analyticsProperties && (
+        <div className="mb-6">
+          <PropertyComparisonAnalytics
+            properties={analyticsProperties}
+            onClose={() => setViewMode('table')}
+          />
         </div>
       )}
 
-      {/* Comparison Table */}
+      {/* Visual Analytics - Need 3 properties message */}
+      {viewMode === 'visual' && selectedProperties.length >= 2 && selectedProperties.length < 3 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="glass-card p-8 text-center mb-6"
+        >
+          <PieChart className="w-16 h-16 mx-auto mb-4 text-quantum-purple opacity-50" />
+          <h3 className="text-xl font-semibold text-white mb-2">Select 3 Properties</h3>
+          <p className="text-gray-400">
+            The 32 visual chart comparisons require exactly 3 properties selected.
+            <br />
+            Please select one more property above.
+          </p>
+        </motion.div>
+      )}
+
+      {/* Table View Content */}
+      {viewMode === 'table' && (
+        <>
+          {/* Category Tabs */}
+          {selectedProperties.length >= 2 && (
+            <div className="flex flex-wrap gap-2 mb-6">
+              {fieldCategories.map((cat) => {
+                const Icon = cat.icon;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setActiveCategory(cat.id)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                      activeCategory === cat.id
+                        ? 'bg-quantum-cyan/20 text-quantum-cyan border border-quantum-cyan/30'
+                        : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-transparent'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {cat.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Comparison Table */}
       <div className="glass-5d p-6 rounded-2xl">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
@@ -678,6 +992,8 @@ export default function Compare() {
           </div>
         </div>
       </div>
+        </>
+      )}
 
       {/* Data completeness warning */}
       {selectedFullProperties.length < selectedProperties.length && selectedProperties.length > 0 && (
