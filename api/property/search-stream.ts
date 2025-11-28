@@ -737,7 +737,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     address,
     url,
     engines = ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'],  // All 6 LLMs in parallel
-    skipLLMs = false
+    skipLLMs = false,
+    existingFields = {},  // Previously accumulated fields from prior LLM calls
+    skipApis = false,  // Skip free APIs if we already have their data
   } = req.body;
 
   if (!address && !url) {
@@ -752,6 +754,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const arbitrationPipeline = createArbitrationPipeline(2);
   const llmResponses: any[] = [];
+
+  // Pre-load existing fields into the pipeline (from previous LLM calls)
+  if (existingFields && Object.keys(existingFields).length > 0) {
+    console.log(`[ACCUMULATE] Loading ${Object.keys(existingFields).length} existing fields into pipeline`);
+    arbitrationPipeline.addFieldsFromSource(existingFields, 'Previous Session');
+    sendEvent(res, 'progress', {
+      source: 'existing-data',
+      status: 'complete',
+      fieldsFound: Object.keys(existingFields).length,
+      message: 'Loaded existing data'
+    });
+  }
 
   // Extract ZPID if Zillow URL provided
   const zpid = url ? extractZpidFromUrl(url) : undefined;
@@ -781,34 +795,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ========================================
     // TIER 2: GOOGLE GEOCODE (must run first for lat/lon)
+    // Skip if we already have API data from previous session
     // ========================================
-    sendEvent(res, 'progress', { source: 'google-geocode', status: 'searching', message: 'Geocoding address...' });
     let lat: number | undefined;
     let lon: number | undefined;
 
-    try {
-      const geoResult = await withTimeout(
-        callGoogleGeocode(searchAddress),
-        API_TIMEOUT,
-        { ...createFallback('Google Geocode'), lat: undefined, lon: undefined, county: '', zip: '' }
-      );
-      const newFields = arbitrationPipeline.addFieldsFromSource(geoResult.fields, 'Google Geocode');
-      lat = geoResult.lat;
-      lon = geoResult.lon;
-      sendEvent(res, 'progress', {
-        source: 'google-geocode',
-        status: geoResult.success ? 'complete' : 'error',
-        fieldsFound: newFields,
-        error: geoResult.error
-      });
-    } catch (e) {
-      sendEvent(res, 'progress', { source: 'google-geocode', status: 'error', fieldsFound: 0, error: String(e) });
+    if (!skipApis) {
+      sendEvent(res, 'progress', { source: 'google-geocode', status: 'searching', message: 'Geocoding address...' });
+
+      try {
+        const geoResult = await withTimeout(
+          callGoogleGeocode(searchAddress),
+          API_TIMEOUT,
+          { ...createFallback('Google Geocode'), lat: undefined, lon: undefined, county: '', zip: '' }
+        );
+        const newFields = arbitrationPipeline.addFieldsFromSource(geoResult.fields, 'Google Geocode');
+        lat = geoResult.lat;
+        lon = geoResult.lon;
+        sendEvent(res, 'progress', {
+          source: 'google-geocode',
+          status: geoResult.success ? 'complete' : 'error',
+          fieldsFound: newFields,
+          error: geoResult.error
+        });
+      } catch (e) {
+        sendEvent(res, 'progress', { source: 'google-geocode', status: 'error', fieldsFound: 0, error: String(e) });
+      }
+    } else {
+      // Skip APIs - mark as skipped
+      sendEvent(res, 'progress', { source: 'google-geocode', status: 'skipped', fieldsFound: 0, message: 'Using cached data' });
     }
 
     // ========================================
     // TIER 2-3: PARALLEL API CALLS (if we have coordinates and time)
+    // Skip if we're only adding LLM data to existing session
     // ========================================
-    if (lat && lon && hasTime()) {
+    if (!skipApis && lat && lon && hasTime()) {
       const tier23Sources = ['google-places', 'walkscore', 'fema', 'schooldigger', 'airnow', 'howloud', 'weather', 'crime'];
       tier23Sources.forEach(src => {
         sendEvent(res, 'progress', { source: src, status: 'searching', message: 'Fetching...' });
@@ -847,6 +869,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       });
 
+    } else if (skipApis) {
+      // Skip all APIs when adding LLM data to existing session
+      ['google-places', 'walkscore', 'fema', 'schooldigger', 'airnow', 'howloud', 'weather', 'crime'].forEach(src => {
+        sendEvent(res, 'progress', { source: src, status: 'skipped', fieldsFound: 0, message: 'Using cached data' });
+      });
     } else if (!lat || !lon) {
       ['google-places', 'walkscore', 'fema', 'schooldigger', 'airnow', 'howloud', 'weather', 'crime'].forEach(src => {
         sendEvent(res, 'progress', { source: src, status: 'skipped', fieldsFound: 0, error: 'No coordinates' });

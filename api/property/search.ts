@@ -1679,7 +1679,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     url,
     engines = ['perplexity', 'grok'],  // Web-search LLMs with citations. Add back: [...LLM_CASCADE_ORDER] for all
     skipLLMs = false,
-    useCascade = true // Enable cascade mode by default
+    useCascade = true, // Enable cascade mode by default
+    existingFields = {},  // Previously accumulated fields from prior LLM calls
+    skipApis = false,  // Skip free APIs if we already have their data
   } = req.body;
 
   if (!address && !url) {
@@ -1696,12 +1698,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const arbitrationPipeline = createArbitrationPipeline(2);
     const llmResponses: any[] = [];
 
+    // Pre-load existing fields into the pipeline (from previous LLM calls)
+    if (existingFields && Object.keys(existingFields).length > 0) {
+      console.log(`[ACCUMULATE] Loading ${Object.keys(existingFields).length} existing fields into pipeline`);
+      arbitrationPipeline.addFieldsFromSource(existingFields, 'Previous Session');
+    }
+
     // ========================================
     // TIER 2 & 3: FREE APIs (Google, WalkScore, FEMA, etc.)
+    // Skip if we're only adding LLM data to existing session
     // ========================================
-    console.log('Step 1: Enriching with free APIs...');
-    try {
-      const enrichedData = await enrichWithFreeAPIs(searchQuery);
+    if (!skipApis) {
+      console.log('Step 1: Enriching with free APIs...');
+      try {
+        const enrichedData = await enrichWithFreeAPIs(searchQuery);
       if (Object.keys(enrichedData).length > 0) {
         // Separate Google fields from other API fields for proper tier assignment
         const googleFields: Record<string, FieldValue> = {};
@@ -1748,8 +1758,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
         }
       }
-    } catch (e) {
-      console.error('Free APIs enrichment failed:', e);
+      } catch (e) {
+        console.error('Free APIs enrichment failed:', e);
+      }
+    } else {
+      console.log('Skipping free APIs - using cached data from previous session');
     }
 
     // ========================================

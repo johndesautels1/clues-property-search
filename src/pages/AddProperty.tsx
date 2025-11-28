@@ -60,6 +60,8 @@ export default function AddProperty() {
   const [totalFieldsFound, setTotalFieldsFound] = useState(0);  // Actual field count from backend
   const [selectedEngine, setSelectedEngine] = useState('Auto');
   const [lastAddedId, setLastAddedId] = useState<string | null>(null);
+  const [accumulatedFields, setAccumulatedFields] = useState<Record<string, any>>({});  // Accumulated fields across LLM calls
+  const [currentAddress, setCurrentAddress] = useState('');  // Track address for accumulation
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvData, setCsvData] = useState<any[]>([]);
   const [propertyText, setPropertyText] = useState('');
@@ -198,11 +200,21 @@ export default function AddProperty() {
     // Construct full address for API search
     const fullAddress = `${manualForm.address}, ${manualForm.city}, ${manualForm.state}${manualForm.zip ? ' ' + manualForm.zip : ''}`;
 
+    // Check if this is a new address or continuing with same address
+    const isNewAddress = fullAddress !== currentAddress;
+    const hasExistingData = Object.keys(accumulatedFields).length > 0;
+    const shouldAccumulate = !isNewAddress && hasExistingData;
+
     // Use startTransition for non-urgent UI updates to improve INP
     startTransition(() => {
       setStatus('searching');
-      setProgress(0);
-      setTotalFieldsFound(0);  // Reset field count for new search
+      if (isNewAddress) {
+        // New address - reset everything
+        setProgress(0);
+        setTotalFieldsFound(0);
+        setAccumulatedFields({});
+        setCurrentAddress(fullAddress);
+      }
       setCascadeStatus(initializeCascadeStatus());
     });
 
@@ -213,13 +225,23 @@ export default function AddProperty() {
       // Use SSE streaming for real-time progress
       const apiUrl = import.meta.env.VITE_API_URL || '';
 
+      // Determine which engines to use based on selection
+      const getEngines = () => {
+        if (selectedEngine === 'Auto') {
+          return ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'];
+        }
+        return [selectedEngine];
+      };
+
       const response = await fetch(`${apiUrl}/api/property/search-stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           address: fullAddress,
-          engines: ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'],
+          engines: getEngines(),
           skipLLMs: false,
+          existingFields: shouldAccumulate ? accumulatedFields : {},  // Send existing fields for accumulation
+          skipApis: shouldAccumulate,  // Skip APIs if we already have data from this address
         }),
       });
 
@@ -299,6 +321,11 @@ export default function AddProperty() {
                 // Set actual total fields found from backend
                 if (data.total_fields_found !== undefined) {
                   setTotalFieldsFound(data.total_fields_found);
+                }
+                // Store accumulated fields for next LLM call
+                if (data.fields) {
+                  setAccumulatedFields(data.fields);
+                  console.log('💾 Accumulated fields saved:', Object.keys(data.fields).length);
                 }
                 // Handle partial data (timeout with some data retrieved)
                 if (data.partial) {
@@ -405,20 +432,33 @@ export default function AddProperty() {
       return;
     }
 
+    // Determine which input to use
+    let searchQuery = '';
+    if (inputMode === 'address') {
+      searchQuery = address;
+    } else if (inputMode === 'url') {
+      searchQuery = url;
+    } else if (inputMode === 'text') {
+      // Extract address from text if possible, or use full text
+      searchQuery = propertyText;
+    }
+
+    // Check if this is a new address or continuing with same address
+    const isNewAddress = searchQuery !== currentAddress;
+    const hasExistingData = Object.keys(accumulatedFields).length > 0;
+    const shouldAccumulate = !isNewAddress && hasExistingData;
+
+    if (isNewAddress) {
+      // New address - reset accumulation
+      setAccumulatedFields({});
+      setCurrentAddress(searchQuery);
+      setTotalFieldsFound(0);
+    }
+
     setStatus('searching');
     setProgress(10);
 
     try {
-      // Determine which input to use
-      let searchQuery = '';
-      if (inputMode === 'address') {
-        searchQuery = address;
-      } else if (inputMode === 'url') {
-        searchQuery = url;
-      } else if (inputMode === 'text') {
-        // Extract address from text if possible, or use full text
-        searchQuery = propertyText;
-      }
 
       // Call the backend API
       const apiUrl = import.meta.env.VITE_API_URL || '/api/property/search';
@@ -448,6 +488,8 @@ export default function AddProperty() {
           useGrok: selectedEngine === 'Auto' || selectedEngine === 'grok',
           usePerplexity: selectedEngine === 'perplexity',
           useCascade: selectedEngine === 'Auto', // Only cascade on Auto
+          existingFields: shouldAccumulate ? accumulatedFields : {},  // Send existing fields for accumulation
+          skipApis: shouldAccumulate,  // Skip APIs if we already have data from this address
         }),
       });
 
@@ -466,6 +508,13 @@ export default function AddProperty() {
       const fields = data.fields || {};
       const fieldSources = data.field_sources || {}; // NEW: Track which LLMs provided each field
       const conflicts = data.conflicts || []; // NEW: Track conflicting values
+
+      // Store accumulated fields for next LLM call
+      if (fields && Object.keys(fields).length > 0) {
+        setAccumulatedFields(fields);
+        setTotalFieldsFound(data.total_fields_found || Object.keys(fields).length);
+        console.log('💾 Accumulated fields saved:', Object.keys(fields).length);
+      }
 
       console.log('🔍 API Response:', data);
       console.log('📊 Field Sources:', fieldSources);
