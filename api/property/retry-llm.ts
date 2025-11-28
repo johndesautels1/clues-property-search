@@ -10,8 +10,18 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Vercel serverless config
 export const config = {
-  maxDuration: 30, // 30s should be enough for single LLM call
+  maxDuration: 60, // Pro plan allows 60s
 };
+
+// Timeout wrapper for LLM calls - prevents hanging
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))
+  ]);
+}
+
+const LLM_TIMEOUT = 55000; // 55s per LLM call (within 60s Vercel Pro limit)
 
 // Helper to extract JSON from markdown code blocks or raw text
 function extractJSON(text: string): string | null {
@@ -413,8 +423,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    console.log(`[RETRY-LLM] Calling ${engineId} for: ${address}`);
-    const result = await callFn(address);
+    console.log(`[RETRY-LLM] Calling ${engineId} for: ${address} (timeout: ${LLM_TIMEOUT}ms)`);
+
+    // Wrap LLM call with timeout to prevent hanging
+    const result = await withTimeout(
+      callFn(address),
+      LLM_TIMEOUT,
+      { fields: {}, error: `${engineId} timed out after ${LLM_TIMEOUT / 1000}s` }
+    );
 
     console.log(`[RETRY-LLM] ${engineId} returned ${Object.keys(result.fields).length} fields`);
 
