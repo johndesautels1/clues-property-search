@@ -1,0 +1,417 @@
+/* PropertyComparisonAnalytics.css */
+/* Mobile-optimized styles for property comparison dashboard */
+
+:root {
+  --platinum: #E5E4E2;
+  --champagne: #F7E7CE;
+  --navy: #1C2951;
+  --hunter: #2C5F2D;
+  --burgundy: #800020;
+  --amber: #FFBF00;
+  --crimson: #DC143C;
+  --emerald: #50C878;
+  --sapphire: #0F52BA;
+  --gold: #FFD700;
+}
+
+.comparison-analytics {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0a0e27 0%, #16213e 50%, #0f3460 100%);
+  color: var(--platinum);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  padding: 20px;
+  overflow-x: hidden;
+}
+
+/* Header */
+.analytics-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 10px 0;
+}
+
+.analytics-header h1 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(20px, 5vw, 32px);
+  font-weight: 700;
+  color: var(--champagne);
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.close-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--platinum);
+  font-size: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.close-btn:hover,
+.close-btn:active {
+  background: rgba(255, 255, 255, 0.2);
+  transform: rotate(90deg);
+}
+
+/* Property Summary Cards */
+.property-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.property-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(15px);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.property-card:active {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.property-card.prop-1 {
+  border-left: 4px solid var(--champagne);
+}
+
+.property-card.prop-2 {
+  border-left: 4px solid var(--platinum);
+}
+
+.property-card.prop-3 {
+  border-left: 4px solid var(--emerald);
+}
+
+.property-address {
+  font-size: 14px;
+  color: var(--platinum);
+  margin-bottom: 8px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.property-price {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--champagne);
+  margin-bottom: 6px;
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+.property-details {
+  font-size: 13px;
+  color: rgba(229, 228, 226, 0.7);
+  font-weight: 400;
+}
+
+/* View Selector */
+.view-selector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 5px 0;
+}
+
+.view-selector::-webkit-scrollbar {
+  height: 4px;
+}
+
+.view-selector::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+}
+
+.view-selector::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.view-selector button {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--platinum);
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+
+.view-selector button:hover,
+.view-selector button:active {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.view-selector button.active {
+  background: var(--champagne);
+  color: var(--navy);
+  border-color: var(--champagne);
+  font-weight: 600;
+}
+
+/* Charts Grid */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.chart-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(15px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 25px;
+  transition: all 0.3s ease;
+}
+
+.chart-card:active {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.chart-card.featured {
+  grid-column: span 2;
+}
+
+.chart-card.mission-control {
+  border-color: rgba(255, 215, 0, 0.3);
+  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.1);
+}
+
+.chart-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--champagne);
+  margin: 0 0 20px 0;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.chart-container {
+  position: relative;
+  height: 350px;
+  width: 100%;
+}
+
+.chart-row {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  justify-content: space-around;
+  flex-wrap: wrap;
+}
+
+.mini-chart {
+  flex: 1;
+  min-width: 120px;
+  max-width: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.mini-chart canvas {
+  width: 100% !important;
+  height: 120px !important;
+}
+
+.chart-label {
+  font-size: 11px;
+  color: var(--platinum);
+  margin-top: 10px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.chart-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--champagne);
+  margin-top: 4px;
+  text-align: center;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .comparison-analytics {
+    padding: 15px;
+  }
+  
+  .analytics-header h1 {
+    font-size: 22px;
+  }
+  
+  .close-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+  
+  .property-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .charts-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .chart-card.featured {
+    grid-column: span 1;
+  }
+  
+  .chart-card {
+    padding: 20px;
+  }
+  
+  .chart-title {
+    font-size: 14px;
+    margin-bottom: 15px;
+  }
+  
+  .chart-container {
+    height: 300px;
+  }
+  
+  .view-selector {
+    gap: 8px;
+  }
+  
+  .view-selector button {
+    padding: 10px 20px;
+    font-size: 13px;
+  }
+  
+  .mini-chart {
+    min-width: 100px;
+    max-width: 140px;
+  }
+}
+
+@media (max-width: 480px) {
+  .comparison-analytics {
+    padding: 12px;
+  }
+  
+  .analytics-header h1 {
+    font-size: 18px;
+  }
+  
+  .property-price {
+    font-size: 20px;
+  }
+  
+  .property-address {
+    font-size: 13px;
+  }
+  
+  .property-details {
+    font-size: 12px;
+  }
+  
+  .chart-card {
+    padding: 15px;
+  }
+  
+  .chart-title {
+    font-size: 13px;
+  }
+  
+  .chart-container {
+    height: 280px;
+  }
+  
+  .chart-row {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .mini-chart {
+    min-width: 140px;
+    max-width: 180px;
+  }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Improve touch targets */
+button,
+a {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Prevent text selection during interaction */
+.chart-card,
+.property-card,
+.view-selector button,
+.close-btn {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Loading animation (optional) */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chart-card {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.chart-card:nth-child(1) { animation-delay: 0.05s; }
+.chart-card:nth-child(2) { animation-delay: 0.1s; }
+.chart-card:nth-child(3) { animation-delay: 0.15s; }
+.chart-card:nth-child(4) { animation-delay: 0.2s; }
+.chart-card:nth-child(5) { animation-delay: 0.25s; }
+
+/* Dark mode improvements */
+@media (prefers-color-scheme: dark) {
+  .comparison-analytics {
+    color-scheme: dark;
+  }
+}
+
+/* Safe area for notched devices */
+@supports (padding: max(0px)) {
+  .comparison-analytics {
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+}
