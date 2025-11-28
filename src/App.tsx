@@ -20,6 +20,7 @@ const AddProperty = lazy(() => import('@/pages/AddProperty'));
 const SearchProperty = lazy(() => import('@/pages/SearchProperty'));
 const Compare = lazy(() => import('@/pages/Compare'));
 const Settings = lazy(() => import('@/pages/Settings'));
+const BrokerDashboardPage = lazy(() => import('@/pages/BrokerDashboardPage'));
 
 // Protected route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -74,6 +75,7 @@ function App() {
                     <Route path="/add" element={<AddProperty />} />
                     <Route path="/search" element={<SearchProperty />} />
                     <Route path="/compare" element={<Compare />} />
+                    <Route path="/broker" element={<BrokerDashboardPage />} />
                     <Route path="/settings" element={<Settings />} />
                   </Routes>
                 </Layout>

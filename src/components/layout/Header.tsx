@@ -15,15 +15,17 @@ import {
   LogOut,
   Shield,
   User,
+  LayoutDashboard,
 } from 'lucide-react';
 import { useAuthStore, useCurrentUser, useIsAdmin } from '@/store/authStore';
 
 const navItems = [
-  { path: '/', icon: Home, label: 'Home/Property Analytics' },
-  { path: '/properties', icon: Building2, label: 'My Saved Properties' },
-  { path: '/search', icon: Search, label: 'Search Property' },
-  { path: '/add', icon: PlusCircle, label: 'Add Property' },
-  { path: '/compare', icon: GitCompare, label: 'Advanced Comparison Analytics' },
+  { path: '/', icon: Home, label: 'Home' },
+  { path: '/properties', icon: Building2, label: 'Properties' },
+  { path: '/search', icon: Search, label: 'Search' },
+  { path: '/add', icon: PlusCircle, label: 'Add' },
+  { path: '/compare', icon: GitCompare, label: 'Compare' },
+  { path: '/broker', icon: LayoutDashboard, label: 'Broker' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];
 
