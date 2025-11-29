@@ -140,7 +140,26 @@ function SystemsRadar({ properties }: CategoryEProps) {
       webAugmented
       webSource="Permit history"
     >
-      <Radar data={data} options={options} />
+      <div className="h-full flex flex-col">
+        <div className="flex-1 min-h-0">
+          <Radar data={data} options={options} />
+        </div>
+        {/* Scale legend */}
+        <div className="mt-1 pt-1 border-t border-white/10 flex justify-center items-center gap-4 text-[9px] text-gray-400">
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-red-500" />
+            <span>0 = End of life</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-yellow-500" />
+            <span>50 = Fair</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-green-500" />
+            <span>100 = Excellent</span>
+          </div>
+        </div>
+      </div>
     </GlassChart>
   );
 }
