@@ -115,29 +115,24 @@ function RoomComparisonBar({ properties }: CategoryCProps) {
   );
 }
 
-// C-2: Space Efficiency Scatter - Individual properties with P1/P2/P3 colors
-function SpaceEfficiencyScatter({ properties, onPropertyClick }: CategoryCProps) {
+// C-2: Size vs Price Scatter - Compare sqft to listing price for P1/P2/P3
+function SizeVsPriceScatter({ properties, onPropertyClick }: CategoryCProps) {
   // Take first 3 properties for comparison
   const comparisonProperties = properties.slice(0, 3);
 
   const points = comparisonProperties.map((p, idx) => {
     const propColor = getPropertyColor(idx);
-    const living = getVal(p.details?.livingSqft) || 0;
-    const total = getVal(p.details?.totalSqftUnderRoof) || living || 1;
-    const pps = calcPricePerSqft(
-      getVal(p.address?.pricePerSqft),
-      getVal(p.address?.listingPrice),
-      living
-    );
-    const efficiency = living / total;
+    const sqft = getVal(p.details?.livingSqft) || 0;
+    const price = getVal(p.address?.listingPrice) || 0;
     const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
     return {
       id: p.id,
-      x: efficiency * 100,
-      y: pps,
+      x: sqft,
+      y: price / 1000000, // Convert to millions for readability
       color: propColor,
       propertyNum: idx + 1,
-      address: address.slice(0, 15),
+      address: address.slice(0, 20),
+      rawPrice: price,
     };
   }).filter(p => p.x > 0 && p.y > 0);
 
@@ -149,26 +144,42 @@ function SpaceEfficiencyScatter({ properties, onPropertyClick }: CategoryCProps)
       backgroundColor: point.color.rgba(0.7),
       borderColor: point.color.hex,
       borderWidth: 2,
-      pointRadius: 12,
-      pointHoverRadius: 16,
+      pointRadius: 14,
+      pointHoverRadius: 18,
     })),
   };
+
+  // Calculate dynamic axis ranges
+  const xMin = Math.min(...points.map(p => p.x)) * 0.8;
+  const xMax = Math.max(...points.map(p => p.x)) * 1.1;
+  const yMin = Math.min(...points.map(p => p.y)) * 0.8;
+  const yMax = Math.max(...points.map(p => p.y)) * 1.1;
 
   const options = {
     responsive: true,
     maintainAspectRatio: false,
     scales: {
       x: {
-        title: { display: true, text: 'Space Efficiency %', color: '#E5E7EB', font: { weight: 'bold' as const } },
+        title: { display: true, text: 'Living Sqft', color: '#E5E7EB', font: { weight: 'bold' as const } },
         grid: { color: 'rgba(255,255,255,0.1)' },
-        ticks: { color: '#E5E7EB', font: { weight: 'bold' as const } },
-        min: 0,
-        max: 100,
+        ticks: {
+          color: '#E5E7EB',
+          font: { weight: 'bold' as const },
+          callback: (v: number | string) => `${Number(v).toLocaleString()}`,
+        },
+        min: points.length > 0 ? xMin : 0,
+        max: points.length > 0 ? xMax : 5000,
       },
       y: {
-        title: { display: true, text: '$/sqft', color: '#E5E7EB', font: { weight: 'bold' as const } },
+        title: { display: true, text: 'Price ($M)', color: '#E5E7EB', font: { weight: 'bold' as const } },
         grid: { color: 'rgba(255,255,255,0.1)' },
-        ticks: { color: '#E5E7EB', font: { weight: 'bold' as const }, callback: (v: number | string) => `$${v}` },
+        ticks: {
+          color: '#E5E7EB',
+          font: { weight: 'bold' as const },
+          callback: (v: number | string) => `$${Number(v).toFixed(1)}M`,
+        },
+        min: points.length > 0 ? yMin : 0,
+        max: points.length > 0 ? yMax : 5,
       },
     },
     plugins: {
@@ -188,7 +199,7 @@ function SpaceEfficiencyScatter({ properties, onPropertyClick }: CategoryCProps)
         titleFont: { weight: 'bold' as const },
         bodyFont: { weight: 'bold' as const },
         callbacks: {
-          label: (ctx: any) => `Efficiency: ${ctx.raw.x.toFixed(0)}%, Price: $${ctx.raw.y}/sqft`,
+          label: (ctx: any) => `${ctx.raw.x.toLocaleString()} sqft @ $${(ctx.raw.y).toFixed(2)}M`,
         },
       },
     },
@@ -196,9 +207,9 @@ function SpaceEfficiencyScatter({ properties, onPropertyClick }: CategoryCProps)
 
   return (
     <GlassChart
-      title="Space Efficiency"
-      description={`Comparing ${points.length} properties`}
-      chartId="C-space-efficiency"
+      title="Size vs Price"
+      description={`Sqft to price for ${points.length} properties`}
+      chartId="C-size-price"
       color={PROPERTY_COLORS.P2.hex}
     >
       {points.length > 0 ? (
@@ -307,7 +318,7 @@ export default function CategoryC({ properties, onPropertyClick }: CategoryCProp
   return (
     <>
       <RoomComparisonBar properties={properties} />
-      <SpaceEfficiencyScatter properties={properties} onPropertyClick={onPropertyClick} />
+      <SizeVsPriceScatter properties={properties} onPropertyClick={onPropertyClick} />
       <LayoutBars properties={properties} />
     </>
   );

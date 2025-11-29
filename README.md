@@ -205,7 +205,7 @@ Used to distinguish Property 1, Property 2, Property 3 in comparison views.
 |----------|-------|-----|------|
 | P1 | Emerald | `#10B981` | Distinct from index green |
 | P2 | Cyan | `#00D9FF` | Distinct from index blue |
-| P3 | Purple | `#A855F7` | Not in index at all |
+| P3 | Fuchsia | `#E879F9` | Bright pink for legibility |
 
 ### Color System Usage
 
@@ -323,7 +323,7 @@ const score2 = normalizeScore('AE', 'femaFloodZone'); // -> 35
 |----------|------|--------|
 | A | Address & Identity | Pin Cluster Orbs, Identity Matrix, Geo Density Heat |
 | B | Pricing & Value | Value Gap Funnel, Price/Sqft Violin, Triple Gauge |
-| C | Property Basics | Room Sunburst, Space Efficiency Scatter, Layout Bars |
+| C | Property Basics | Room Comparison, Size vs Price, Layout Bars |
 | D | HOA & Taxes | Cost Donut, HOA Heatmap, Tax Scatter |
 | E | Structure & Systems | Systems Radar, Age Condition Trend, Replacement Bars |
 | F | Interior Features | Amenity Heatmap, Finish Index Bar, Interior Uplift |
@@ -337,6 +337,34 @@ const score2 = normalizeScore('AE', 'femaFloodZone'); // -> 35
 | N | Utilities & Connectivity | Utility Spectrum Donut, Connectivity Luxury Scatter, Utility Expense Bars |
 | O | Environment & Risk | Risk Constellation, Risk Reward Matrix, Environment Gauges |
 | P | Additional Features | Feature Mosaic, Premium Index Bar, Feature Uplift Violin |
+
+---
+
+## Recent Session Changes (Nov 2025)
+
+### UI/UX Improvements
+- **Category sections now collapsed by default** - Users click to expand
+- **P3 color changed** from Purple (#A855F7) to Fuchsia (#E879F9) for better legibility
+- **Address truncation increased** from 12 to 20 characters across all charts
+- **"For Sale" status badge** now displays on single line with `whitespace-nowrap`
+- **Zip Code Heat Map** vertical spacing improved with `space-y-1.5`
+
+### Chart Redesigns
+- **Room Distribution** -> **Room Comparison**: Changed from aggregate donut to horizontal bar comparing P1/P2/P3
+- **Space Efficiency** -> **Size vs Price**: Changed from meaningless efficiency % to useful sqft vs price scatter with dynamic axis ranges
+
+### Data Integrity
+- **Removed all fake/placeholder data** from 48 charts
+- Charts now show "—", 0, or "No data available" when fields are missing
+- All `|| 75`, `|| 85`, `|| 20` fallback values removed
+- Only `|| 0` (missing = zero) and `|| 1` (divide-by-zero guards) remain
+
+### Key Files Modified
+- `src/components/perplexity/categories/CategoryC.tsx` - Room & Size charts
+- `src/components/perplexity/categories/CategoryA.tsx` - Identity Matrix, Zip Heat
+- `src/components/perplexity/CategorySection.tsx` - Collapsed by default
+- `src/pages/PerplexityAnalysis.tsx` - expandedCategories = empty Set
+- `src/components/perplexity/chartColors.ts` - P3 color update
 
 ---
 

@@ -102,7 +102,7 @@ export default function PerplexityAnalysis() {
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [selectedPropertyTabIndex, setSelectedPropertyTabIndex] = useState<number | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-    new Set(categories.map(c => c.id)) // All expanded by default
+    new Set() // All collapsed by default
   );
   const [showFilters, setShowFilters] = useState(false);
 

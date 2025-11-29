@@ -27,7 +27,7 @@ export default function CategorySection({
   icon,
   color,
   children,
-  isExpanded = true,
+  isExpanded = false,
   onToggle,
 }: CategorySectionProps) {
   const { ref, inView } = useInView({
