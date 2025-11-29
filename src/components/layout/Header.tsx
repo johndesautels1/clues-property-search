@@ -16,6 +16,7 @@ import {
   Shield,
   User,
   LayoutDashboard,
+  Sparkles,
 } from 'lucide-react';
 import { useAuthStore, useCurrentUser, useIsAdmin } from '@/store/authStore';
 
@@ -26,6 +27,7 @@ const navItems = [
   { path: '/add', icon: PlusCircle, label: 'Add Property' },
   { path: '/compare', icon: GitCompare, label: 'Advanced Comparison Analytics' },
   { path: '/broker', icon: LayoutDashboard, label: 'Broker Executive Dashboard' },
+  { path: '/perplexity', icon: Sparkles, label: 'Perplexity Analysis' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];
 
