@@ -163,13 +163,13 @@ function IdentityMatrix({ properties, onPropertyClick }: CategoryAProps) {
   return (
     <GlassChart
       title="Identity Matrix"
-      description="Property identifiers at a glance"
+      description={`${uniqueProperties.length} properties - scroll to see all`}
       chartId="A-identity-matrix"
       color="#00D9FF"
     >
-      <div className="overflow-auto h-full">
+      <div className="overflow-y-auto h-full scrollbar-thin scrollbar-thumb-cyan-500/30 scrollbar-track-transparent">
         <table className="w-full text-xs">
-          <thead>
+          <thead className="sticky top-0 bg-black/50 backdrop-blur-sm z-10">
             <tr className="text-gray-300 font-bold border-b border-white/10 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
               <th className="text-left py-2 px-1 w-12">#</th>
               <th className="text-left py-2 px-1">Address</th>
@@ -178,12 +178,12 @@ function IdentityMatrix({ properties, onPropertyClick }: CategoryAProps) {
             </tr>
           </thead>
           <tbody>
-            {uniqueProperties.slice(0, 6).map((p, i) => (
+            {uniqueProperties.map((p, i) => (
               <motion.tr
                 key={`${p.id}-${i}`}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
+                transition={{ delay: Math.min(i * 0.03, 0.3) }}
                 className="border-b border-white/5 cursor-pointer hover:bg-cyan-500/10 transition-colors"
                 onClick={() => onPropertyClick?.(p.id)}
               >
@@ -219,12 +219,6 @@ function IdentityMatrix({ properties, onPropertyClick }: CategoryAProps) {
         {uniqueProperties.length === 0 && (
           <div className="text-gray-300 font-medium text-sm text-center py-8 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
             No properties to display
-          </div>
-        )}
-
-        {uniqueProperties.length > 6 && (
-          <div className="text-center text-cyan-400 font-medium text-xs py-2 drop-shadow-[0_0_4px_rgba(0,217,255,0.5)]">
-            +{uniqueProperties.length - 6} more properties
           </div>
         )}
       </div>
