@@ -93,8 +93,8 @@ function FeatureBadge({ icon: Icon, label, active }: { icon: any; label: string;
   );
 }
 
-// Single property comparison card
-function PropertyCard({ property, index }: { property: Property; index: number }) {
+// Single property comparison card - FULL WIDTH responsive
+function PropertyCard({ property, index, totalCount }: { property: Property; index: number; totalCount: number }) {
   const hasPool = property.features_pool === 100 || property.features?.pool === 100;
   const hasBeach = property.features_beachAccess === 100 || property.features?.beachAccess === 100;
   const hasEV = property.features_evCharging === 100 || property.features?.evCharging === 100;
@@ -102,10 +102,10 @@ function PropertyCard({ property, index }: { property: Property; index: number }
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 50 }}
-      animate={{ opacity: 1, x: 0 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
-      className="flex-shrink-0 w-80 rounded-2xl overflow-hidden"
+      className="flex-1 min-w-[320px] rounded-2xl overflow-hidden"
       style={{
         background: 'rgba(255, 255, 255, 0.05)',
         backdropFilter: 'blur(20px)',
@@ -120,104 +120,105 @@ function PropertyCard({ property, index }: { property: Property; index: number }
             <p className="text-white font-semibold text-lg truncate" title={property.address}>
               {shortAddress(property.address)}
             </p>
-            <p className="text-gray-500 text-xs">{property.propertyType || 'Single Family'}</p>
+            {/* BRIGHT CYAN for property type */}
+            <p className="text-cyan-300 text-sm font-medium">{property.propertyType || 'Single Family'}</p>
           </div>
           <div className="text-right">
             <p className="text-cyan-400 font-bold text-xl">{formatCurrency(property.listPrice)}</p>
-            <p className="text-gray-500 text-xs">{property.daysOnMarket} days</p>
+            <p className="text-amber-400 text-xs font-medium">{property.daysOnMarket} days on market</p>
           </div>
         </div>
 
-        {/* Property basics */}
-        <div className="flex items-center gap-4 text-sm text-gray-400">
-          <span className="flex items-center gap-1">
-            <Bed className="w-4 h-4" /> {property.bedrooms}
+        {/* Property basics - BRIGHTER COLORS */}
+        <div className="flex items-center gap-4 text-sm">
+          <span className="flex items-center gap-1 text-purple-300 font-semibold">
+            <Bed className="w-4 h-4" /> {property.bedrooms} bed
           </span>
-          <span className="flex items-center gap-1">
-            <Bath className="w-4 h-4" /> {property.bathrooms}
+          <span className="flex items-center gap-1 text-purple-300 font-semibold">
+            <Bath className="w-4 h-4" /> {property.bathrooms} bath
           </span>
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1 text-blue-300 font-semibold">
             <Square className="w-4 h-4" /> {property.sqft.toLocaleString()} sqft
           </span>
         </div>
       </div>
 
-      {/* Financial Section */}
+      {/* Financial Section - BRIGHT LABELS */}
       <div className="p-4 border-b border-white/10">
-        <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">Financial</p>
+        <p className="text-amber-400 text-xs uppercase tracking-wider mb-2 font-bold">FINANCIAL</p>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <p className="text-gray-500 text-xs">Cap Rate</p>
-            <p className="text-green-400 font-semibold">{property.capRate.toFixed(1)}%</p>
+            <p className="text-cyan-300 text-xs font-medium">Cap Rate</p>
+            <p className="text-emerald-400 font-bold text-lg">{property.capRate.toFixed(1)}%</p>
           </div>
           <div>
-            <p className="text-gray-500 text-xs">Rental Yield</p>
-            <p className="text-green-400 font-semibold">{property.rentalYield.toFixed(1)}%</p>
+            <p className="text-cyan-300 text-xs font-medium">Rental Yield</p>
+            <p className="text-emerald-400 font-bold text-lg">{property.rentalYield.toFixed(1)}%</p>
           </div>
           <div>
-            <p className="text-gray-500 text-xs">$/Sqft</p>
-            <p className="text-white font-semibold">${property.pricePerSqft.toFixed(0)}</p>
+            <p className="text-cyan-300 text-xs font-medium">$/Sqft</p>
+            <p className="text-white font-bold text-lg">${property.pricePerSqft.toFixed(0)}</p>
           </div>
           <div>
-            <p className="text-gray-500 text-xs">Rent/Mo</p>
-            <p className="text-white font-semibold">{formatCurrency(property.rentalIncome)}</p>
+            <p className="text-cyan-300 text-xs font-medium">Rent/Mo</p>
+            <p className="text-white font-bold text-lg">{formatCurrency(property.rentalIncome)}</p>
           </div>
         </div>
       </div>
 
-      {/* Scores Section */}
+      {/* Scores Section - BRIGHT LABELS */}
       <div className="p-4 border-b border-white/10">
-        <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">Scores</p>
+        <p className="text-purple-400 text-xs uppercase tracking-wider mb-2 font-bold">SCORES</p>
         <div className="grid grid-cols-4 gap-2">
-          <div className="text-center">
-            <p className="text-white font-bold">{property.walkScore}</p>
-            <p className="text-gray-500 text-xs">Walk</p>
+          <div className="text-center p-2 rounded-lg bg-white/5">
+            <p className="text-white font-bold text-lg">{property.walkScore}</p>
+            <p className="text-cyan-300 text-xs font-medium">Walk</p>
           </div>
-          <div className="text-center">
-            <p className="text-white font-bold">{property.transitScore}</p>
-            <p className="text-gray-500 text-xs">Transit</p>
+          <div className="text-center p-2 rounded-lg bg-white/5">
+            <p className="text-white font-bold text-lg">{property.transitScore}</p>
+            <p className="text-cyan-300 text-xs font-medium">Transit</p>
           </div>
-          <div className="text-center">
-            <p className="text-white font-bold">{property.bikeScore}</p>
-            <p className="text-gray-500 text-xs">Bike</p>
+          <div className="text-center p-2 rounded-lg bg-white/5">
+            <p className="text-white font-bold text-lg">{property.bikeScore}</p>
+            <p className="text-cyan-300 text-xs font-medium">Bike</p>
           </div>
-          <div className="text-center">
-            <p className={`font-bold ${property.safetyScore >= 80 ? 'text-green-400' : property.safetyScore >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
+          <div className="text-center p-2 rounded-lg bg-white/5">
+            <p className={`font-bold text-lg ${property.safetyScore >= 80 ? 'text-emerald-400' : property.safetyScore >= 60 ? 'text-amber-400' : 'text-red-400'}`}>
               {property.safetyScore}
             </p>
-            <p className="text-gray-500 text-xs">Safety</p>
+            <p className="text-cyan-300 text-xs font-medium">Safety</p>
           </div>
         </div>
       </div>
 
-      {/* Risk Section */}
+      {/* Risk Section - BRIGHT LABELS */}
       <div className="p-4 border-b border-white/10">
-        <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">Risk (1-10)</p>
+        <p className="text-red-400 text-xs uppercase tracking-wider mb-2 font-bold">RISK (1-10)</p>
         <div className="flex items-center gap-4">
           <div className="flex-1">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-gray-500 text-xs">Flood</span>
-              <span className={`text-xs font-semibold ${property.floodRisk >= 7 ? 'text-red-400' : property.floodRisk >= 4 ? 'text-yellow-400' : 'text-green-400'}`}>
+              <span className="text-blue-300 text-xs font-medium">Flood</span>
+              <span className={`text-sm font-bold ${property.floodRisk >= 7 ? 'text-red-400' : property.floodRisk >= 4 ? 'text-amber-400' : 'text-emerald-400'}`}>
                 {property.floodRisk}/10
               </span>
             </div>
-            <div className="h-1 bg-gray-700 rounded-full overflow-hidden">
+            <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
               <div
-                className={`h-full ${property.floodRisk >= 7 ? 'bg-red-500' : property.floodRisk >= 4 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                className={`h-full ${property.floodRisk >= 7 ? 'bg-red-500' : property.floodRisk >= 4 ? 'bg-amber-500' : 'bg-emerald-500'}`}
                 style={{ width: `${property.floodRisk * 10}%` }}
               />
             </div>
           </div>
           <div className="flex-1">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-gray-500 text-xs">Hurricane</span>
-              <span className={`text-xs font-semibold ${property.hurricaneRisk >= 7 ? 'text-red-400' : property.hurricaneRisk >= 4 ? 'text-yellow-400' : 'text-green-400'}`}>
+              <span className="text-blue-300 text-xs font-medium">Hurricane</span>
+              <span className={`text-sm font-bold ${property.hurricaneRisk >= 7 ? 'text-red-400' : property.hurricaneRisk >= 4 ? 'text-amber-400' : 'text-emerald-400'}`}>
                 {property.hurricaneRisk}/10
               </span>
             </div>
-            <div className="h-1 bg-gray-700 rounded-full overflow-hidden">
+            <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
               <div
-                className={`h-full ${property.hurricaneRisk >= 7 ? 'bg-red-500' : property.hurricaneRisk >= 4 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                className={`h-full ${property.hurricaneRisk >= 7 ? 'bg-red-500' : property.hurricaneRisk >= 4 ? 'bg-amber-500' : 'bg-emerald-500'}`}
                 style={{ width: `${property.hurricaneRisk * 10}%` }}
               />
             </div>
@@ -225,9 +226,9 @@ function PropertyCard({ property, index }: { property: Property; index: number }
         </div>
       </div>
 
-      {/* Features Section */}
+      {/* Features Section - BRIGHT LABELS */}
       <div className="p-4">
-        <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">Features</p>
+        <p className="text-emerald-400 text-xs uppercase tracking-wider mb-2 font-bold">FEATURES</p>
         <div className="flex flex-wrap gap-2">
           <FeatureBadge icon={Waves} label="Pool" active={hasPool} />
           <FeatureBadge icon={Palmtree} label="Beach" active={hasBeach} />
@@ -236,16 +237,16 @@ function PropertyCard({ property, index }: { property: Property; index: number }
         </div>
       </div>
 
-      {/* Market Estimate Footer */}
+      {/* Market Estimate Footer - HIGHLIGHTED */}
       <div className="px-4 pb-4">
-        <div className="p-3 rounded-xl bg-white/5">
+        <div className="p-3 rounded-xl bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-cyan-500/20">
           <div className="flex items-center justify-between">
-            <span className="text-gray-500 text-xs">Market Estimate</span>
-            <span className="text-white font-semibold">{formatCurrency(property.marketEstimate)}</span>
+            <span className="text-cyan-300 text-xs font-medium">Market Estimate</span>
+            <span className="text-white font-bold">{formatCurrency(property.marketEstimate)}</span>
           </div>
           <div className="flex items-center justify-between mt-1">
-            <span className="text-gray-500 text-xs">vs List</span>
-            <span className={`text-xs font-semibold ${property.marketEstimate >= property.listPrice ? 'text-green-400' : 'text-red-400'}`}>
+            <span className="text-purple-300 text-xs font-medium">vs List Price</span>
+            <span className={`text-sm font-bold ${property.marketEstimate >= property.listPrice ? 'text-emerald-400' : 'text-red-400'}`}>
               {property.marketEstimate >= property.listPrice ? '+' : ''}{formatCurrency(property.marketEstimate - property.listPrice)}
             </span>
           </div>
@@ -270,22 +271,15 @@ export default function PropertyComparisonPanels({ properties, title = "Property
       <div className="flex items-center gap-3">
         <Home className="w-6 h-6 text-cyan-400" />
         <h2 className="text-xl font-bold text-white">{title}</h2>
-        <span className="text-gray-500 text-sm">({properties.length} properties)</span>
+        <span className="text-cyan-300 text-sm font-medium">({properties.length} properties)</span>
       </div>
 
-      {/* Horizontal Scroll Container */}
-      <div className="overflow-x-auto pb-4 -mx-4 px-4">
-        <div className="flex gap-4" style={{ minWidth: 'max-content' }}>
-          {properties.map((property, index) => (
-            <PropertyCard key={property.id} property={property} index={index} />
-          ))}
-        </div>
+      {/* FULL WIDTH Grid - cards expand to fill screen */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {properties.map((property, index) => (
+          <PropertyCard key={property.id} property={property} index={index} totalCount={properties.length} />
+        ))}
       </div>
-
-      {/* Scroll hint */}
-      {properties.length > 3 && (
-        <p className="text-gray-600 text-xs text-center">← Scroll to see more properties →</p>
-      )}
     </div>
   );
 }

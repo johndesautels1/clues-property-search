@@ -184,6 +184,14 @@ export default function MonthlyCostChart({ properties, selectedId = 'all' }: Mon
         <span className="text-gray-400">Annual Total</span>
         <span className="text-white text-xl font-bold">{formatCurrency(totalMonthly * 12)}/year</span>
       </div>
+
+      {/* Data source footer */}
+      <div className="mt-4 pt-3 border-t border-white/10">
+        <p className="text-gray-600 text-xs text-center">
+          <strong className="text-gray-500">Data Sources:</strong> Property Tax (County Assessor Records), Insurance (Regional Estimates),
+          HOA (MLS/Public Records), Utilities (Regional Averages), Maintenance (1% of home value estimate)
+        </p>
+      </div>
     </motion.div>
   );
 }

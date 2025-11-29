@@ -122,6 +122,10 @@ export default function PricingHistoryChart({ properties, selectedId = 'all' }: 
     const currentValue = history.marketEstimatePrice || p.marketEstimate || 0;
     const appreciation = salePrice > 0 ? ((currentValue - salePrice) / salePrice * 100) : 0;
 
+    // Get current date for "as of" reference
+    const currentDate = new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    const saleYear = history.salePriceDate?.split('-')[0] || 'Unknown';
+
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -133,17 +137,30 @@ export default function PricingHistoryChart({ properties, selectedId = 'all' }: 
           border: '1px solid rgba(255, 255, 255, 0.1)',
         }}
       >
+        {/* PROMINENT PROPERTY NAME HEADER */}
+        <div className="mb-4 pb-3 border-b border-cyan-500/30">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse" />
+            <span className="text-cyan-400 text-sm font-medium">Currently Viewing</span>
+          </div>
+          <h2 className="text-white text-xl font-bold mt-1">{shortAddress(p.address)}</h2>
+          <p className="text-gray-400 text-xs">{p.address}</p>
+        </div>
+
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <History className="w-5 h-5 text-cyan-400" />
-            <h3 className="text-white font-semibold">Pricing History</h3>
+            <div>
+              <h3 className="text-white font-semibold">Pricing History</h3>
+              <p className="text-gray-500 text-xs">Current values as of {currentDate}</p>
+            </div>
           </div>
           {appreciation !== 0 && (
             <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm ${
               appreciation > 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
             }`}>
               <TrendingUp className="w-4 h-4" />
-              <span>{appreciation > 0 ? '+' : ''}{appreciation.toFixed(1)}%</span>
+              <span>{appreciation > 0 ? '+' : ''}{appreciation.toFixed(1)}% since {saleYear}</span>
             </div>
           )}
         </div>
@@ -151,21 +168,21 @@ export default function PricingHistoryChart({ properties, selectedId = 'all' }: 
           <Bar data={data} options={options} />
         </div>
         <div className="mt-4 grid grid-cols-4 gap-2 text-center">
-          <div>
-            <p className="text-gray-500 text-xs">Sale ({history.salePriceDate?.split('-')[0] || 'N/A'})</p>
-            <p className="text-white font-semibold">{formatCurrency(history.salePrice || 0)}</p>
+          <div className="p-2 rounded-lg bg-gray-700/30">
+            <p className="text-cyan-300 text-xs font-medium">Last Sale ({saleYear})</p>
+            <p className="text-white font-bold">{formatCurrency(history.salePrice || 0)}</p>
           </div>
-          <div>
-            <p className="text-gray-500 text-xs">Assessment</p>
-            <p className="text-amber-400 font-semibold">{formatCurrency(history.assessmentPrice || p.assessedValue || 0)}</p>
+          <div className="p-2 rounded-lg bg-amber-500/10">
+            <p className="text-amber-300 text-xs font-medium">Tax Assessment</p>
+            <p className="text-amber-400 font-bold">{formatCurrency(history.assessmentPrice || p.assessedValue || 0)}</p>
           </div>
-          <div>
-            <p className="text-gray-500 text-xs">List Price</p>
-            <p className="text-cyan-400 font-semibold">{formatCurrency(p.listPrice)}</p>
+          <div className="p-2 rounded-lg bg-cyan-500/10">
+            <p className="text-cyan-300 text-xs font-medium">Current List</p>
+            <p className="text-cyan-400 font-bold">{formatCurrency(p.listPrice)}</p>
           </div>
-          <div>
-            <p className="text-gray-500 text-xs">Market Est.</p>
-            <p className="text-green-400 font-semibold">{formatCurrency(p.marketEstimate)}</p>
+          <div className="p-2 rounded-lg bg-green-500/10">
+            <p className="text-green-300 text-xs font-medium">Market Est. (Now)</p>
+            <p className="text-green-400 font-bold">{formatCurrency(p.marketEstimate)}</p>
           </div>
         </div>
       </motion.div>

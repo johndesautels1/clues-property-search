@@ -60,6 +60,8 @@ export default function AppreciationVelocityChart({ properties, selectedId = 'al
     );
   }
 
+  const singleProp = displayProperties.length === 1 ? displayProperties[0] : null;
+
   // Create gauge data for each property
   const gaugeData = displayProperties.map((p, i) => {
     const rate = getAppreciation(p);
@@ -68,6 +70,7 @@ export default function AppreciationVelocityChart({ properties, selectedId = 'al
 
     return {
       address: shortAddress(p.address),
+      fullAddress: p.address,
       rate,
       data: {
         datasets: [{
@@ -108,10 +111,24 @@ export default function AppreciationVelocityChart({ properties, selectedId = 'al
         border: '1px solid rgba(255, 255, 255, 0.1)',
       }}
     >
+      {/* PROPERTY NAME HEADER for single property */}
+      {singleProp && (
+        <div className="mb-4 pb-3 border-b border-cyan-500/30">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse" />
+            <span className="text-cyan-400 text-sm font-medium">Currently Viewing</span>
+          </div>
+          <h2 className="text-white text-lg font-bold mt-1">{shortAddress(singleProp.address)}</h2>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <TrendingUp className="w-5 h-5 text-cyan-400" />
-          <h3 className="text-white font-semibold">Appreciation Velocity</h3>
+          <div>
+            <h3 className="text-white font-semibold">Appreciation Velocity</h3>
+            <p className="text-gray-500 text-xs">Historical 5-year annual appreciation rate</p>
+          </div>
         </div>
         <div className="text-right">
           <span className="text-gray-400 text-xs">Avg</span>
@@ -143,12 +160,25 @@ export default function AppreciationVelocityChart({ properties, selectedId = 'al
                 <span className="text-gray-500 text-xs">per year</span>
               </div>
             </div>
-            <p className="text-center text-gray-400 text-sm mt-2 truncate" title={item.address}>
+            <p className="text-center text-white font-semibold text-sm mt-2 truncate" title={item.fullAddress}>
               {item.address}
             </p>
           </motion.div>
         ))}
       </div>
+
+      {/* Single property explanation */}
+      {singleProp && (
+        <div className="mt-4 pt-4 border-t border-white/10">
+          <div className="p-3 rounded-lg bg-white/5">
+            <p className="text-cyan-300 text-xs font-medium mb-2">WHAT THIS MEANS</p>
+            <p className="text-gray-400 text-sm">
+              This property's value has appreciated at <span className="text-white font-bold">{getAppreciation(singleProp).toFixed(1)}% per year</span> over
+              the past 5 years based on historical market data. A rate above 5% is considered strong appreciation.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Best Performer Callout */}
       {displayProperties.length > 1 && bestPerformer && (

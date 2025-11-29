@@ -72,6 +72,8 @@ export default function CompetitiveLandscapeBubble({ properties, selectedId = 'a
     );
   }
 
+  const singleProp = validProperties.length === 1 ? validProperties[0] : null;
+
   // Calculate bubble radius based on lot size (normalize to reasonable range)
   const lotSizes = validProperties.map(p => p.lotSize || 5000);
   const maxLot = Math.max(...lotSizes);
@@ -175,14 +177,28 @@ export default function CompetitiveLandscapeBubble({ properties, selectedId = 'a
         border: '1px solid rgba(255, 255, 255, 0.1)',
       }}
     >
+      {/* PROPERTY NAME HEADER for single property */}
+      {singleProp && (
+        <div className="mb-4 pb-3 border-b border-cyan-500/30">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse" />
+            <span className="text-cyan-400 text-sm font-medium">Currently Viewing</span>
+          </div>
+          <h2 className="text-white text-lg font-bold mt-1">{shortAddress(singleProp.address)}</h2>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <Target className="w-5 h-5 text-cyan-400" />
-          <h3 className="text-white font-semibold">Competitive Landscape</h3>
+          <div>
+            <h3 className="text-white font-semibold">Price per Square Foot Analysis</h3>
+            <p className="text-gray-500 text-xs">Compare value: Price vs Size (bubble = lot size)</p>
+          </div>
         </div>
-        <div className="text-right">
+        <div className="text-right p-2 rounded-lg bg-white/5">
           <span className="text-gray-400 text-xs">Avg $/sqft</span>
-          <span className="text-white font-bold ml-2">${Math.round(avgPricePerSqft)}</span>
+          <p className="text-white font-bold">${Math.round(avgPricePerSqft)}</p>
         </div>
       </div>
 
@@ -191,15 +207,40 @@ export default function CompetitiveLandscapeBubble({ properties, selectedId = 'a
       </div>
 
       {/* Legend explanation */}
-      <div className="mt-3 text-center">
-        <span className="text-gray-500 text-xs">Bubble size represents lot size</span>
+      <div className="mt-3 p-2 rounded-lg bg-white/5">
+        <p className="text-cyan-300 text-xs text-center">
+          <strong>How to read:</strong> X-axis = Square Feet | Y-axis = Price | Bubble Size = Lot Size
+        </p>
+        <p className="text-gray-500 text-xs text-center mt-1">
+          Properties in the lower-right offer more space for less money (better value)
+        </p>
       </div>
+
+      {/* Single property stats */}
+      {singleProp && (
+        <div className="mt-4 pt-4 border-t border-white/10">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="p-3 rounded-lg bg-cyan-500/10 text-center">
+              <p className="text-cyan-300 text-xs">Price/Sqft</p>
+              <p className="text-white font-bold text-lg">${getPricePerSqft(singleProp.listPrice, singleProp.sqft)}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-purple-500/10 text-center">
+              <p className="text-purple-300 text-xs">Living Space</p>
+              <p className="text-white font-bold text-lg">{singleProp.sqft?.toLocaleString()} sf</p>
+            </div>
+            <div className="p-3 rounded-lg bg-green-500/10 text-center">
+              <p className="text-green-300 text-xs">Lot Size</p>
+              <p className="text-white font-bold text-lg">{singleProp.lotSize?.toLocaleString() || 'N/A'} sf</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Best Value Callout */}
       {validProperties.length > 1 && bestValue && (
         <div className="mt-4 pt-4 border-t border-white/10">
           <div className="flex items-center justify-between">
-            <span className="text-gray-500 text-sm">Best Value ($/sqft)</span>
+            <span className="text-gray-500 text-sm">Best Value (lowest $/sqft)</span>
             <div className="flex items-center gap-2">
               <span className="text-white font-semibold">{shortAddress(bestValue.address)}</span>
               <span className="px-2 py-1 rounded-full text-xs font-bold bg-green-500/20 text-green-400">
@@ -223,9 +264,9 @@ export default function CompetitiveLandscapeBubble({ properties, selectedId = 'a
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: COLORS[i % COLORS.length].border }}
                 />
-                <span className="text-gray-400 text-xs truncate">{shortAddress(p.address)}</span>
+                <span className="text-white text-xs font-medium truncate">{shortAddress(p.address)}</span>
               </div>
-              <span className="text-white text-xs font-bold">
+              <span className="text-cyan-400 text-xs font-bold">
                 ${getPricePerSqft(p.listPrice, p.sqft)}/sf
               </span>
             </div>
