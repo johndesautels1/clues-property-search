@@ -143,129 +143,164 @@ function ValueGapFunnel({ properties }: CategoryBProps) {
   );
 }
 
-// B-2: Price/Sqft Violin (simplified as distribution bars)
+// Normalize property type names to consolidate variations
+function normalizePropertyType(type: string | null): string {
+  if (!type) return 'Single Family';
+  const normalized = type.toLowerCase().trim();
+  if (normalized.includes('single') || normalized.includes('sfr') || normalized.includes('detached')) {
+    return 'Single Family';
+  }
+  if (normalized.includes('condo') || normalized.includes('condominium')) {
+    return 'Condo';
+  }
+  if (normalized.includes('town') || normalized.includes('attached')) {
+    return 'Townhouse';
+  }
+  if (normalized.includes('multi') || normalized.includes('duplex') || normalized.includes('triplex')) {
+    return 'Multi-Family';
+  }
+  if (normalized.includes('mobile') || normalized.includes('manufactured')) {
+    return 'Mobile Home';
+  }
+  if (normalized.includes('land') || normalized.includes('lot') || normalized.includes('vacant')) {
+    return 'Land';
+  }
+  return type; // Return original if no match
+}
+
+// B-2: Price/Sqft Comparison - Shows each property with P1/P2/P3 colors
 function PriceSqftViolin({ properties }: CategoryBProps) {
-  // Group by property type
-  const groups = new Map<string, number[]>();
-  properties.forEach(p => {
-    const type = getVal(p.details?.propertyType) || 'Single Family';
-    const pps = getVal(p.address?.pricePerSqft);
-    if (pps) {
-      if (!groups.has(type)) groups.set(type, []);
-      groups.get(type)!.push(pps);
-    }
+  // Take first 3 properties for comparison (like Value Gap Funnel)
+  const comparisonProperties = properties.slice(0, 3);
+
+  const propertyData = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
+    const pps = getVal(p.address?.pricePerSqft) || 0;
+    const propType = normalizePropertyType(getVal(p.details?.propertyType));
+
+    return {
+      id: p.id,
+      address: getVal(p.address?.streetAddress) || `Property ${idx + 1}`,
+      pricePerSqft: pps,
+      propertyType: propType,
+      color: propColor,
+      propertyNum: idx + 1,
+    };
   });
 
-  const stats = Array.from(groups.entries()).map(([type, values]) => ({
-    type,
-    min: Math.min(...values),
-    max: Math.max(...values),
-    avg: values.reduce((a, b) => a + b, 0) / values.length,
-    count: values.length,
-  }));
-
-  const maxVal = Math.max(...stats.map(s => s.max), 500);
+  const maxVal = Math.max(...propertyData.map(p => p.pricePerSqft), 500);
 
   return (
     <GlassChart
-      title="Price/Sqft Distribution"
-      description="By property type"
+      title="Price/Sqft Comparison"
+      description={`Comparing ${propertyData.length} properties`}
       chartId="B-price-sqft"
-      color="#8B5CF6"
+      color={PROPERTY_COLORS.P2.hex}
     >
-      <div className="h-full flex flex-col justify-center space-y-3 px-2">
-        {stats.slice(0, 4).map((stat, i) => (
+      <div className="h-full flex flex-col justify-center space-y-4 px-2">
+        {propertyData.map((prop, i) => (
           <motion.div
-            key={stat.type}
+            key={prop.id}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.1 }}
           >
-            <div className="flex justify-between text-xs text-gray-300 font-medium mb-1 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
-              <span className="truncate max-w-[100px]">{stat.type}</span>
-              <span className="text-purple-400 font-bold">${Math.round(stat.avg)}/sqft</span>
+            <div className="flex justify-between text-xs mb-1">
+              <span
+                className="font-bold truncate max-w-[140px] drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
+                style={{ color: prop.color.hex }}
+              >
+                P{prop.propertyNum}: {prop.address.slice(0, 15)}
+              </span>
+              <span
+                className="font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
+                style={{ color: prop.color.hex }}
+              >
+                ${Math.round(prop.pricePerSqft)}/sqft
+              </span>
             </div>
-            <div className="relative h-4 bg-white/5 rounded-full overflow-hidden">
-              {/* Range bar */}
+            <div className="relative h-5 bg-white/5 rounded-full overflow-hidden">
+              {/* Price bar */}
               <motion.div
                 initial={{ width: 0 }}
-                animate={{
-                  width: `${((stat.max - stat.min) / maxVal) * 100}%`,
-                  left: `${(stat.min / maxVal) * 100}%`,
-                }}
+                animate={{ width: `${(prop.pricePerSqft / maxVal) * 100}%` }}
+                transition={{ duration: 0.8, delay: i * 0.15 }}
                 className="absolute h-full rounded-full"
                 style={{
-                  background: 'linear-gradient(90deg, #8B5CF660, #8B5CF6)',
+                  background: `linear-gradient(90deg, ${prop.color.rgba(0.4)}, ${prop.color.hex})`,
+                  boxShadow: `0 0 10px ${prop.color.rgba(0.5)}`,
                 }}
               />
-              {/* Average marker */}
-              <div
-                className="absolute top-0 h-full w-1 bg-white"
-                style={{ left: `${(stat.avg / maxVal) * 100}%` }}
-              />
             </div>
-            <div className="flex justify-between text-xs text-gray-400 font-medium mt-0.5 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
-              <span>${stat.min}</span>
-              <span>${stat.max}</span>
+            <div className="text-xs text-gray-400 font-medium mt-0.5 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
+              {prop.propertyType}
             </div>
           </motion.div>
         ))}
 
-        {stats.length === 0 && (
+        {propertyData.length === 0 && (
           <div className="text-gray-300 font-medium text-sm text-center drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
             No price/sqft data available
           </div>
         )}
+
+        {/* Legend */}
+        <div className="flex justify-center gap-4 pt-2 border-t border-white/10">
+          {propertyData.map((prop) => (
+            <div key={prop.id} className="flex items-center gap-1">
+              <div
+                className="w-3 h-3 rounded-sm"
+                style={{ backgroundColor: prop.color.hex, boxShadow: `0 0 6px ${prop.color.hex}` }}
+              />
+              <span className="text-xs text-gray-300 font-medium">P{prop.propertyNum}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </GlassChart>
   );
 }
 
-// B-3: Triple Gauge - Neon rings
+// B-3: Triple Gauge - Shows market estimate for each of 3 properties
 function TripleGauge({ properties }: CategoryBProps) {
-  // Calculate averages
-  let totalAssessed = 0, totalMarket = 0, totalRedfin = 0, count = 0;
-  properties.forEach(p => {
-    const assessed = getVal(p.details?.assessedValue);
-    const market = getVal(p.details?.marketValueEstimate);
-    const redfin = getVal(p.financial?.redfinEstimate);
-    if (assessed || market || redfin) {
-      totalAssessed += assessed || 0;
-      totalMarket += market || 0;
-      totalRedfin += redfin || 0;
-      count++;
-    }
+  // Take first 3 properties for comparison
+  const comparisonProperties = properties.slice(0, 3);
+
+  const gaugeData = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
+    const market = getVal(p.details?.marketValueEstimate) || getVal(p.address?.listingPrice) || 0;
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
+
+    return {
+      id: p.id,
+      label: `P${idx + 1}`,
+      address: address.slice(0, 12),
+      value: market,
+      color: propColor,
+      propertyNum: idx + 1,
+    };
   });
 
-  const avgAssessed = count > 0 ? totalAssessed / count : 0;
-  const avgMarket = count > 0 ? totalMarket / count : 0;
-  const avgRedfin = count > 0 ? totalRedfin / count : 0;
-  const maxVal = Math.max(avgAssessed, avgMarket, avgRedfin, 1);
-
-  const gauges = [
-    { label: 'Assessed', value: avgAssessed, color: '#4f9dff' },
-    { label: 'Market', value: avgMarket, color: '#7cf3ff' },
-    { label: 'Redfin', value: avgRedfin, color: '#ff6bcb' },
-  ];
+  const maxVal = Math.max(...gaugeData.map(g => g.value), 1);
 
   return (
     <GlassChart
-      title="Triple Estimate Gauges"
-      description="Portfolio value estimates"
+      title="Property Value Gauges"
+      description={`Market estimates for ${gaugeData.length} properties`}
       chartId="B-triple-gauge"
-      color="#ff6bcb"
+      color={PROPERTY_COLORS.P3.hex}
       webAugmented
-      webSource="Redfin Estimate"
+      webSource="Zestimate/Redfin"
     >
       <div className="h-full flex items-center justify-around px-4">
-        {gauges.map((gauge, i) => {
+        {gaugeData.map((gauge, i) => {
           const percent = maxVal > 0 ? (gauge.value / maxVal) * 100 : 0;
           const circumference = 2 * Math.PI * 35;
           const strokeDashoffset = circumference - (percent / 100) * circumference;
 
           return (
             <motion.div
-              key={gauge.label}
+              key={gauge.id}
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: i * 0.1 }}
@@ -288,7 +323,7 @@ function TripleGauge({ properties }: CategoryBProps) {
                     cy="40"
                     r="35"
                     fill="none"
-                    stroke={gauge.color}
+                    stroke={gauge.color.hex}
                     strokeWidth="6"
                     strokeLinecap="round"
                     strokeDasharray={circumference}
@@ -296,7 +331,7 @@ function TripleGauge({ properties }: CategoryBProps) {
                     animate={{ strokeDashoffset }}
                     transition={{ duration: 1, delay: i * 0.2 }}
                     style={{
-                      filter: `drop-shadow(0 0 8px ${gauge.color})`,
+                      filter: `drop-shadow(0 0 8px ${gauge.color.hex})`,
                     }}
                   />
                 </svg>
@@ -307,10 +342,21 @@ function TripleGauge({ properties }: CategoryBProps) {
                   </span>
                 </div>
               </div>
-              <span className="text-xs text-gray-300 font-medium mt-1 block drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">{gauge.label}</span>
+              <span
+                className="text-xs font-bold mt-1 block drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
+                style={{ color: gauge.color.hex }}
+              >
+                {gauge.label}: {gauge.address}
+              </span>
             </motion.div>
           );
         })}
+
+        {gaugeData.length === 0 && (
+          <div className="text-gray-300 font-medium text-sm text-center drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
+            No value data available
+          </div>
+        )}
       </div>
     </GlassChart>
   );

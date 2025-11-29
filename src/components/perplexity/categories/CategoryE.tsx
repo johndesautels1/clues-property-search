@@ -19,7 +19,7 @@ import {
 } from 'chart.js';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
-import { getIndexColor, PROPERTY_COLORS } from '../chartColors';
+import { getIndexColor, PROPERTY_COLORS, getPropertyColor } from '../chartColors';
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, CategoryScale, LinearScale);
 
@@ -42,37 +42,40 @@ function conditionToScore(condition: string | null): number {
   return 50;
 }
 
-// E-1: Systems Health Radar
+// E-1: Systems Health Radar - Show first 3 properties with P1/P2/P3 colors
 function SystemsRadar({ properties }: CategoryEProps) {
-  // Average condition scores across properties
-  const scores = properties.reduce((acc, p) => {
-    acc.roof += conditionToScore(getVal(p.structural?.roofType));
-    acc.hvac += conditionToScore(getVal(p.structural?.hvacType) ? 'GOOD' : null);
-    acc.foundation += conditionToScore(getVal(p.structural?.foundation));
-    acc.kitchen += conditionToScore(getVal(p.structural?.kitchenFeatures) ? 'GOOD' : null);
-    acc.interior += conditionToScore(getVal(p.structural?.interiorCondition));
-    acc.count++;
-    return acc;
-  }, { roof: 0, hvac: 0, foundation: 0, kitchen: 0, interior: 0, count: 0 });
+  // Take first 3 properties for comparison
+  const comparisonProperties = properties.slice(0, 3);
 
-  const count = scores.count || 1;
+  const propertyData = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
+
+    return {
+      id: p.id,
+      label: `P${idx + 1}: ${address.slice(0, 12)}`,
+      roof: conditionToScore(getVal(p.structural?.roofType)),
+      hvac: conditionToScore(getVal(p.structural?.hvacType) ? 'GOOD' : null),
+      foundation: conditionToScore(getVal(p.structural?.foundation)),
+      kitchen: conditionToScore(getVal(p.structural?.kitchenFeatures) ? 'GOOD' : null),
+      interior: conditionToScore(getVal(p.structural?.interiorCondition)),
+      color: propColor,
+      propertyNum: idx + 1,
+    };
+  });
 
   const data = {
     labels: ['Roof', 'HVAC', 'Foundation', 'Kitchen', 'Interior'],
-    datasets: [{
-      label: 'Avg Condition',
-      data: [
-        scores.roof / count,
-        scores.hvac / count,
-        scores.foundation / count,
-        scores.kitchen / count,
-        scores.interior / count,
-      ],
-      backgroundColor: 'rgba(16, 185, 129, 0.2)',
-      borderColor: '#10B981',
+    datasets: propertyData.map((prop) => ({
+      label: prop.label,
+      data: [prop.roof, prop.hvac, prop.foundation, prop.kitchen, prop.interior],
+      backgroundColor: prop.color.rgba(0.2),
+      borderColor: prop.color.hex,
       borderWidth: 2,
-      pointBackgroundColor: '#10B981',
-    }],
+      pointBackgroundColor: prop.color.hex,
+      pointBorderColor: '#fff',
+      pointRadius: 4,
+    })),
   };
 
   const options = {
@@ -82,23 +85,32 @@ function SystemsRadar({ properties }: CategoryEProps) {
       r: {
         angleLines: { color: 'rgba(255,255,255,0.1)' },
         grid: { color: 'rgba(255,255,255,0.1)' },
-        pointLabels: { color: '#FFFFFF', font: { size: 10 } },
+        pointLabels: { color: '#FFFFFF', font: { size: 10, weight: 'bold' as const } },
         ticks: { color: '#9CA3AF', backdropColor: 'transparent', stepSize: 25 },
         suggestedMin: 0,
         suggestedMax: 100,
       },
     },
     plugins: {
-      legend: { display: false },
+      legend: {
+        display: true,
+        position: 'bottom' as const,
+        labels: {
+          color: '#E5E7EB',
+          boxWidth: 12,
+          padding: 10,
+          font: { size: 10, weight: 'bold' as const },
+        },
+      },
     },
   };
 
   return (
     <GlassChart
       title="Systems Health Radar"
-      description="Condition scores by component"
+      description={`Comparing ${propertyData.length} properties`}
       chartId="E-systems-radar"
-      color="#10B981"
+      color={PROPERTY_COLORS.P1.hex}
       webAugmented
       webSource="Permit history"
     >
@@ -182,35 +194,42 @@ function AgeConditionTrend({ properties }: CategoryEProps) {
   );
 }
 
-// E-3: Replacement Horizon Bars
+// E-3: Replacement Horizon Bars - Show first 3 properties with P1/P2/P3 colors
 function ReplacementBars({ properties }: CategoryEProps) {
   const currentYear = new Date().getFullYear();
 
   // Estimate years left based on typical lifespans
   const lifespans = { roof: 25, hvac: 15, waterHeater: 12 };
 
-  const estimates = properties.slice(0, 5).map(p => {
+  // Take first 3 properties for comparison
+  const comparisonProperties = properties.slice(0, 3);
+
+  const estimates = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
     const roofAge = getVal(p.structural?.roofAgeEst);
     const hvacAge = getVal(p.structural?.hvacAge);
     const yearBuilt = getVal(p.details?.yearBuilt) || currentYear - 20;
     const age = currentYear - yearBuilt;
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
 
     return {
       id: p.id,
-      address: getVal(p.address?.streetAddress)?.slice(0, 10) || `#${p.id.slice(0, 4)}`,
+      address: address.slice(0, 12),
       roofYearsLeft: Math.max(lifespans.roof - (roofAge ? parseInt(roofAge) : age), 0),
       hvacYearsLeft: Math.max(lifespans.hvac - (hvacAge ? parseInt(hvacAge) : Math.min(age, 15)), 0),
+      color: propColor,
+      propertyNum: idx + 1,
     };
   });
 
   return (
     <GlassChart
       title="Replacement Horizon"
-      description="Estimated years until replacement"
+      description={`Years until replacement for ${estimates.length} properties`}
       chartId="E-replacement"
-      color="#F59E0B"
+      color={PROPERTY_COLORS.P3.hex}
     >
-      <div className="h-full flex flex-col justify-center space-y-3 px-2">
+      <div className="h-full flex flex-col justify-center space-y-4 px-2">
         {estimates.map((est, i) => (
           <motion.div
             key={est.id}
@@ -219,29 +238,56 @@ function ReplacementBars({ properties }: CategoryEProps) {
             transition={{ delay: i * 0.1 }}
             className="space-y-1"
           >
-            <div className="text-xs text-gray-300 font-medium drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">{est.address}</div>
+            <div
+              className="text-xs font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
+              style={{ color: est.color.hex }}
+            >
+              P{est.propertyNum}: {est.address}
+            </div>
             <div className="flex gap-2">
               <div className="flex-1">
                 <div className="flex justify-between text-xs mb-0.5">
-                  <span className="text-orange-400">Roof</span>
-                  <span className="text-white font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{est.roofYearsLeft}yr</span>
+                  <span className="text-gray-300">Roof</span>
+                  <span
+                    className="font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
+                    style={{ color: est.color.hex }}
+                  >
+                    {est.roofYearsLeft}yr
+                  </span>
                 </div>
-                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-orange-500 rounded-full"
-                    style={{ width: `${Math.min((est.roofYearsLeft / 25) * 100, 100)}%` }}
+                <div className="h-3 bg-white/5 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min((est.roofYearsLeft / 25) * 100, 100)}%` }}
+                    transition={{ duration: 0.6, delay: i * 0.15 }}
+                    className="h-full rounded-full"
+                    style={{
+                      background: `linear-gradient(90deg, ${est.color.rgba(0.4)}, ${est.color.hex})`,
+                      boxShadow: `0 0 6px ${est.color.rgba(0.5)}`,
+                    }}
                   />
                 </div>
               </div>
               <div className="flex-1">
                 <div className="flex justify-between text-xs mb-0.5">
-                  <span className="text-yellow-400">HVAC</span>
-                  <span className="text-white font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{est.hvacYearsLeft}yr</span>
+                  <span className="text-gray-300">HVAC</span>
+                  <span
+                    className="font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
+                    style={{ color: est.color.hex }}
+                  >
+                    {est.hvacYearsLeft}yr
+                  </span>
                 </div>
-                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-yellow-500 rounded-full"
-                    style={{ width: `${Math.min((est.hvacYearsLeft / 15) * 100, 100)}%` }}
+                <div className="h-3 bg-white/5 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min((est.hvacYearsLeft / 15) * 100, 100)}%` }}
+                    transition={{ duration: 0.6, delay: i * 0.15 }}
+                    className="h-full rounded-full"
+                    style={{
+                      background: `linear-gradient(90deg, ${est.color.rgba(0.4)}, ${est.color.hex})`,
+                      boxShadow: `0 0 6px ${est.color.rgba(0.5)}`,
+                    }}
                   />
                 </div>
               </div>
@@ -252,6 +298,19 @@ function ReplacementBars({ properties }: CategoryEProps) {
         {estimates.length === 0 && (
           <div className="text-gray-300 font-medium text-sm text-center drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">No system data</div>
         )}
+
+        {/* Legend */}
+        <div className="flex justify-center gap-4 pt-2 border-t border-white/10">
+          {estimates.map((est) => (
+            <div key={est.id} className="flex items-center gap-1">
+              <div
+                className="w-3 h-3 rounded-sm"
+                style={{ backgroundColor: est.color.hex, boxShadow: `0 0 6px ${est.color.hex}` }}
+              />
+              <span className="text-xs text-gray-300 font-medium">P{est.propertyNum}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </GlassChart>
   );

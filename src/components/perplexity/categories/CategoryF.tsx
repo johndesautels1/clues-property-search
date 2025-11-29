@@ -10,7 +10,7 @@ import { motion } from 'framer-motion';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
 import { Check, X } from 'lucide-react';
-import { getIndexColor, PROPERTY_COLORS } from '../chartColors';
+import { getIndexColor, PROPERTY_COLORS, getPropertyColor } from '../chartColors';
 
 interface CategoryFProps {
   properties: Property[];
@@ -21,26 +21,35 @@ function getVal<T>(field: { value: T | null } | undefined): T | null {
   return field?.value ?? null;
 }
 
-// F-1: Amenity Heatmap
+// F-1: Amenity Heatmap - Show first 3 properties with P1/P2/P3 colors
 function AmenityHeatmap({ properties }: CategoryFProps) {
-  const features = ['Kitchen', 'Smart Home', 'Fireplace', 'Flooring', 'Appliances'];
+  const features = ['Kitchen', 'Smart', 'Fire', 'Floor', 'Appl'];
 
-  const data = properties.slice(0, 6).map(p => ({
-    id: p.id,
-    address: getVal(p.address?.streetAddress)?.slice(0, 8) || `#${p.id.slice(0, 4)}`,
-    kitchen: !!getVal(p.structural?.kitchenFeatures),
-    smart: !!getVal(p.utilities?.smartHomeFeatures),
-    fireplace: getVal(p.structural?.fireplaceYn) || false,
-    flooring: !!getVal(p.structural?.flooringType),
-    appliances: (getVal(p.structural?.appliancesIncluded) || []).length > 0,
-  }));
+  // Take first 3 properties for comparison
+  const comparisonProperties = properties.slice(0, 3);
+
+  const data = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
+    return {
+      id: p.id,
+      address: address.slice(0, 12),
+      kitchen: !!getVal(p.structural?.kitchenFeatures),
+      smart: !!getVal(p.utilities?.smartHomeFeatures),
+      fireplace: getVal(p.structural?.fireplaceYn) || false,
+      flooring: !!getVal(p.structural?.flooringType),
+      appliances: (getVal(p.structural?.appliancesIncluded) || []).length > 0,
+      color: propColor,
+      propertyNum: idx + 1,
+    };
+  });
 
   return (
     <GlassChart
       title="Interior Amenity Grid"
-      description="Feature availability matrix"
+      description={`Feature matrix for ${data.length} properties`}
       chartId="F-amenity-heatmap"
-      color="#8B5CF6"
+      color={PROPERTY_COLORS.P1.hex}
     >
       <div className="h-full overflow-auto">
         <table className="w-full text-xs">
@@ -48,7 +57,7 @@ function AmenityHeatmap({ properties }: CategoryFProps) {
             <tr className="text-gray-300 font-bold drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
               <th className="text-left py-1 px-1">Property</th>
               {features.map(f => (
-                <th key={f} className="text-center py-1 px-1 truncate max-w-[50px]">{f}</th>
+                <th key={f} className="text-center py-1 px-1 truncate max-w-[40px]">{f}</th>
               ))}
             </tr>
           </thead>
@@ -61,16 +70,23 @@ function AmenityHeatmap({ properties }: CategoryFProps) {
                 transition={{ delay: i * 0.05 }}
                 className="border-t border-white/5"
               >
-                <td className="py-1.5 px-1 text-gray-300">{row.address}</td>
+                <td
+                  className="py-1.5 px-1 font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
+                  style={{ color: row.color.hex }}
+                >
+                  P{row.propertyNum}: {row.address}
+                </td>
                 {[row.kitchen, row.smart, row.fireplace, row.flooring, row.appliances].map((has, j) => (
                   <td key={j} className="text-center py-1.5 px-1">
                     <div
-                      className={`w-6 h-6 mx-auto rounded flex items-center justify-center ${
-                        has ? 'bg-purple-500/30' : 'bg-white/5'
-                      }`}
+                      className="w-6 h-6 mx-auto rounded flex items-center justify-center"
+                      style={{
+                        backgroundColor: has ? row.color.rgba(0.3) : 'rgba(255,255,255,0.05)',
+                        border: has ? `1px solid ${row.color.hex}` : 'none',
+                      }}
                     >
                       {has ? (
-                        <Check className="w-4 h-4 text-purple-400" />
+                        <Check className="w-4 h-4" style={{ color: row.color.hex }} />
                       ) : (
                         <X className="w-3 h-3 text-gray-600" />
                       )}
@@ -90,31 +106,38 @@ function AmenityHeatmap({ properties }: CategoryFProps) {
   );
 }
 
-// F-2: Finish Quality Index
+// F-2: Finish Quality Index - Show first 3 properties with P1/P2/P3 colors
 function FinishQualityIndex({ properties }: CategoryFProps) {
-  const scores = properties.slice(0, 6).map(p => {
+  // Take first 3 properties for comparison
+  const comparisonProperties = properties.slice(0, 3);
+
+  const scores = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
     let score = 0;
     if (getVal(p.structural?.kitchenFeatures)) score += 25;
     if (getVal(p.utilities?.smartHomeFeatures)) score += 20;
     if (getVal(p.structural?.fireplaceYn)) score += 15;
     if (getVal(p.structural?.flooringType)) score += 20;
     if ((getVal(p.structural?.appliancesIncluded) || []).length > 3) score += 20;
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
 
     return {
       id: p.id,
-      address: getVal(p.address?.streetAddress)?.slice(0, 12) || `#${p.id.slice(0, 4)}`,
+      address: address.slice(0, 12),
       score,
+      color: propColor,
+      propertyNum: idx + 1,
     };
-  }).sort((a, b) => b.score - a.score);
+  });
 
   return (
     <GlassChart
       title="Finish Quality Index"
-      description="Weighted interior score"
+      description={`Interior score for ${scores.length} properties`}
       chartId="F-finish-index"
-      color="#10B981"
+      color={PROPERTY_COLORS.P2.hex}
     >
-      <div className="h-full flex flex-col justify-center space-y-2 px-2">
+      <div className="h-full flex flex-col justify-center space-y-3 px-2">
         {scores.map((item, i) => (
           <motion.div
             key={item.id}
@@ -123,17 +146,28 @@ function FinishQualityIndex({ properties }: CategoryFProps) {
             transition={{ delay: i * 0.1 }}
           >
             <div className="flex justify-between text-xs mb-1">
-              <span className="text-gray-300 font-medium truncate max-w-[80px] drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">{item.address}</span>
-              <span style={{ color: getIndexColor(item.score).hex }} className="font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]">{item.score}/100</span>
+              <span
+                className="font-bold truncate max-w-[120px] drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
+                style={{ color: item.color.hex }}
+              >
+                P{item.propertyNum}: {item.address}
+              </span>
+              <span
+                className="font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
+                style={{ color: item.color.hex }}
+              >
+                {item.score}/100
+              </span>
             </div>
-            <div className="h-3 bg-white/5 rounded-full overflow-hidden">
+            <div className="h-4 bg-white/5 rounded-full overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${item.score}%` }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
+                transition={{ duration: 0.6, delay: i * 0.15 }}
                 className="h-full rounded-full"
                 style={{
-                  backgroundColor: getIndexColor(item.score).hex,
+                  background: `linear-gradient(90deg, ${item.color.rgba(0.4)}, ${item.color.hex})`,
+                  boxShadow: `0 0 8px ${item.color.rgba(0.5)}`,
                 }}
               />
             </div>
@@ -143,6 +177,19 @@ function FinishQualityIndex({ properties }: CategoryFProps) {
         {scores.length === 0 && (
           <div className="text-gray-300 font-medium text-sm text-center drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">No quality data</div>
         )}
+
+        {/* Legend */}
+        <div className="flex justify-center gap-4 pt-2 border-t border-white/10">
+          {scores.map((item) => (
+            <div key={item.id} className="flex items-center gap-1">
+              <div
+                className="w-3 h-3 rounded-sm"
+                style={{ backgroundColor: item.color.hex, boxShadow: `0 0 6px ${item.color.hex}` }}
+              />
+              <span className="text-xs text-gray-300 font-medium">P{item.propertyNum}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </GlassChart>
   );
