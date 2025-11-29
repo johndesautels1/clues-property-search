@@ -43,9 +43,9 @@ function PinClusterOrbs({ properties, onPropertyClick }: CategoryAProps) {
       webAugmented
       webSource="Redfin/Zillow validation"
     >
-      <div className="relative w-full h-full flex items-center justify-center overflow-auto">
+      <div className="relative w-full h-full flex items-start justify-center overflow-auto pt-2">
         {/* Cluster visualization */}
-        <div className="flex flex-wrap gap-8 justify-center items-start p-4">
+        <div className="flex flex-wrap gap-6 justify-center items-start px-4 py-2">
           {clusterArray.map(([city, props], i) => {
             const size = 50 + (props.length / maxCount) * 50;
             const colors = ['#10B981', '#00D9FF', '#8B5CF6', '#F59E0B', '#EF4444'];
