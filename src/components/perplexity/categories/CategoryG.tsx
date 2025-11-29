@@ -11,7 +11,7 @@ import { Radar } from 'react-chartjs-2';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
 import { Check, X, Waves, Zap, TreeDeciduous, Car } from 'lucide-react';
-import { PROPERTY_COLORS, getPropertyColor } from '../chartColors';
+import { PROPERTY_COLORS, getPropertyColor, calcPricePerSqft } from '../chartColors';
 
 interface CategoryGProps {
   properties: Property[];
@@ -203,7 +203,11 @@ function OutdoorROIBubbles({ properties, onPropertyClick }: CategoryGProps) {
     if (getVal(p.utilities?.evChargingYn) === 'Yes') featureCount++;
     if (getVal(p.structural?.landscaping)) featureCount++;
 
-    const pps = getVal(p.address?.pricePerSqft) || 0;
+    const pps = calcPricePerSqft(
+      getVal(p.address?.pricePerSqft),
+      getVal(p.address?.listingPrice),
+      getVal(p.details?.livingSqft)
+    );
     const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
 
     return {

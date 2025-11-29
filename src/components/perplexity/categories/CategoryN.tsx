@@ -11,7 +11,7 @@ import { Doughnut, Scatter } from 'react-chartjs-2';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
 import { Wifi, Zap, Droplets, Flame } from 'lucide-react';
-import { PROPERTY_COLORS, getPropertyColor } from '../chartColors';
+import { PROPERTY_COLORS, getPropertyColor, calcPricePerSqft } from '../chartColors';
 
 interface CategoryNProps {
   properties: Property[];
@@ -105,7 +105,11 @@ function ConnectivityLuxuryScatter({ properties }: CategoryNProps) {
     const fiber = getVal(p.utilities?.fiberAvailable);
     const maxSpeed = getVal(p.utilities?.maxInternetSpeed);
     const speed = maxSpeed ? parseInt(maxSpeed) || 100 : fiber ? 1000 : 100;
-    const pps = getVal(p.address?.pricePerSqft) || 0;
+    const pps = calcPricePerSqft(
+      getVal(p.address?.pricePerSqft),
+      getVal(p.address?.listingPrice),
+      getVal(p.details?.livingSqft)
+    );
     const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
 
     return {

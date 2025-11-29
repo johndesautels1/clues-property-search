@@ -11,7 +11,7 @@ import { Radar, Scatter } from 'react-chartjs-2';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
 import { Building2, GraduationCap, Train, Heart, ShoppingBag } from 'lucide-react';
-import { PROPERTY_COLORS, getPropertyColor } from '../chartColors';
+import { PROPERTY_COLORS, getPropertyColor, calcPricePerSqft } from '../chartColors';
 
 interface CategoryKProps {
   properties: Property[];
@@ -164,7 +164,11 @@ function ProximityPriceScatter({ properties }: CategoryKProps) {
     const grocery = getVal(p.location?.distanceGroceryMiles) || 0;
     const hospital = getVal(p.location?.distanceHospitalMiles) || 0;
     const avgDist = (grocery + hospital) / 2;
-    const pps = getVal(p.address?.pricePerSqft) || 0;
+    const pps = calcPricePerSqft(
+      getVal(p.address?.pricePerSqft),
+      getVal(p.address?.listingPrice),
+      getVal(p.details?.livingSqft)
+    );
     const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
 
     return {

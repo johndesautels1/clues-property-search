@@ -30,7 +30,7 @@ function getVal<T>(field: { value: T | null } | undefined): T | null {
   return field?.value ?? null;
 }
 
-import { PROPERTY_COLORS, getPropertyColor, LEGACY_PROPERTY_COLORS } from '../chartColors';
+import { PROPERTY_COLORS, getPropertyColor, LEGACY_PROPERTY_COLORS, calcPricePerSqft } from '../chartColors';
 
 // Use shared property colors from chartColors.ts for consistency across all charts
 
@@ -175,7 +175,11 @@ function PriceSqftViolin({ properties }: CategoryBProps) {
 
   const propertyData = comparisonProperties.map((p, idx) => {
     const propColor = getPropertyColor(idx);
-    const pps = getVal(p.address?.pricePerSqft) || 0;
+    const pps = calcPricePerSqft(
+      getVal(p.address?.pricePerSqft),
+      getVal(p.address?.listingPrice),
+      getVal(p.details?.livingSqft)
+    );
     const propType = normalizePropertyType(getVal(p.details?.propertyType));
 
     return {

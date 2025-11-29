@@ -14,7 +14,7 @@ import {
   Waves, Car, Trees, Lock, Home, Sparkles,
   Building, Sun, Star
 } from 'lucide-react';
-import { PROPERTY_COLORS, getPropertyColor, getIndexColor } from '../chartColors';
+import { PROPERTY_COLORS, getPropertyColor, getIndexColor, calcPricePerSqft } from '../chartColors';
 
 interface CategoryPProps {
   properties: Property[];
@@ -233,7 +233,11 @@ function FeatureUpliftViolin({ properties }: CategoryPProps) {
     let withoutFeature: number[] = [];
 
     properties.forEach(p => {
-      const pps = getVal(p.address?.pricePerSqft) || 0;
+      const pps = calcPricePerSqft(
+        getVal(p.address?.pricePerSqft),
+        getVal(p.address?.listingPrice),
+        getVal(p.details?.livingSqft)
+      );
       if (pps === 0) return;
 
       let hasFeature = false;

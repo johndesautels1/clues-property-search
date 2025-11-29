@@ -10,7 +10,7 @@ import { motion } from 'framer-motion';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
 import { Check, X } from 'lucide-react';
-import { getIndexColor, PROPERTY_COLORS, getPropertyColor } from '../chartColors';
+import { getIndexColor, PROPERTY_COLORS, getPropertyColor, calcPricePerSqft } from '../chartColors';
 
 interface CategoryFProps {
   properties: Property[];
@@ -207,8 +207,12 @@ function InteriorUplift({ properties }: CategoryFProps) {
     if (getVal(p.structural?.flooringType)) count++;
     if ((getVal(p.structural?.appliancesIncluded) || []).length > 0) count++;
 
-    const pps = getVal(p.address?.pricePerSqft);
-    if (pps) {
+    const pps = calcPricePerSqft(
+      getVal(p.address?.pricePerSqft),
+      getVal(p.address?.listingPrice),
+      getVal(p.details?.livingSqft)
+    );
+    if (pps > 0) {
       if (!groups.has(count)) groups.set(count, []);
       groups.get(count)!.push(pps);
     }

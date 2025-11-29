@@ -158,3 +158,27 @@ export const LEGACY_PROPERTY_COLORS = [
   { bg: 'rgba(0, 217, 255, 0.85)', border: '#00D9FF', name: 'cyan' },
   { bg: 'rgba(168, 85, 247, 0.85)', border: '#A855F7', name: 'purple' },
 ];
+
+// ============================================
+// Helper Functions for Property Data
+// ============================================
+
+/**
+ * Calculate price per sqft with fallback
+ * Tries pricePerSqft field first, then calculates from listingPrice/livingSqft
+ */
+export function calcPricePerSqft(
+  pricePerSqftValue: number | null | undefined,
+  listingPrice: number | null | undefined,
+  livingSqft: number | null | undefined
+): number {
+  // Try direct value first
+  if (pricePerSqftValue && pricePerSqftValue > 0) {
+    return pricePerSqftValue;
+  }
+  // Calculate from price/sqft
+  if (listingPrice && livingSqft && listingPrice > 0 && livingSqft > 0) {
+    return listingPrice / livingSqft;
+  }
+  return 0;
+}

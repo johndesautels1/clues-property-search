@@ -18,7 +18,7 @@ import {
 } from 'chart.js';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
-import { PROPERTY_COLORS, getPropertyColor } from '../chartColors';
+import { PROPERTY_COLORS, getPropertyColor, calcPricePerSqft } from '../chartColors';
 
 ChartJS.register(ArcElement, PointElement, LinearScale, Tooltip, Legend);
 
@@ -106,7 +106,11 @@ function SpaceEfficiencyScatter({ properties, onPropertyClick }: CategoryCProps)
     const propColor = getPropertyColor(idx);
     const living = getVal(p.details?.livingSqft) || 0;
     const total = getVal(p.details?.totalSqftUnderRoof) || living || 1;
-    const pps = getVal(p.address?.pricePerSqft) || 0;
+    const pps = calcPricePerSqft(
+      getVal(p.address?.pricePerSqft),
+      getVal(p.address?.listingPrice),
+      living
+    );
     const efficiency = living / total;
     const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
     return {
