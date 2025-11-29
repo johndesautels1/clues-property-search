@@ -303,7 +303,7 @@ export default function ExecutiveOverview({ properties }: ExecutiveOverviewProps
                     {kpi.value}
                   </span>
                   {kpi.subtext && (
-                    <span className="text-xs text-gray-500">{kpi.subtext}</span>
+                    <span className="text-xs text-gray-300 font-medium drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">{kpi.subtext}</span>
                   )}
                 </div>
 

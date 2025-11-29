@@ -129,7 +129,7 @@ function PinClusterOrbs({ properties, onPropertyClick }: CategoryAProps) {
 
         {/* Empty state */}
         {clusterArray.length === 0 && (
-          <div className="text-gray-500 text-sm">No location data available</div>
+          <div className="text-gray-300 font-medium text-sm drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">No location data available</div>
         )}
       </div>
     </GlassChart>
