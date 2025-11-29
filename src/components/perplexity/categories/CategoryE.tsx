@@ -144,6 +144,18 @@ function SystemsRadar({ properties }: CategoryEProps) {
         <div className="flex-1 min-h-0">
           <Radar data={data} options={options} />
         </div>
+        {/* Property legend */}
+        <div className="flex justify-center gap-4 pt-1">
+          {propertyData.map((prop) => (
+            <div key={prop.id} className="flex items-center gap-1">
+              <div
+                className="w-3 h-3 rounded-sm"
+                style={{ backgroundColor: prop.color.hex, boxShadow: `0 0 6px ${prop.color.hex}` }}
+              />
+              <span className="text-[9px] text-gray-300 font-medium">{prop.label}</span>
+            </div>
+          ))}
+        </div>
         {/* Scale legend */}
         <div className="mt-1 pt-1 border-t border-white/10 flex justify-center items-center gap-4 text-[9px] text-gray-400">
           <div className="flex items-center gap-1">
