@@ -37,7 +37,7 @@ const PROPERTY_COLORS = [
   { bg: 'rgba(168, 85, 247, 0.85)', border: '#A855F7', name: 'purple' },   // Property 3 - Purple
 ];
 
-// B-1: Value Gap Funnel - Optimized for 3-property comparison
+// B-1: Value Gap Funnel - Vertical bar chart for 3-property comparison
 function ValueGapFunnel({ properties }: CategoryBProps) {
   // Take only first 3 properties (comparison mode)
   const comparisonProperties = properties.slice(0, 3);
@@ -52,38 +52,42 @@ function ValueGapFunnel({ properties }: CategoryBProps) {
     propertyNum: idx + 1,
   }));
 
-  // Create datasets per property for better visual separation
+  // Vertical bar chart - X axis = value types, Y axis = price
+  // Each property gets its own colored bar within each category
   const chartData = {
-    labels: ['Assessed Value', 'Market Estimate', 'List Price'],
-    datasets: data.map((d, idx) => ({
-      label: `P${d.propertyNum}: ${d.address.slice(0, 20)}`,
+    labels: ['Assessed', 'Market Est.', 'List Price'],
+    datasets: data.map((d) => ({
+      label: `P${d.propertyNum}: ${d.address.slice(0, 15)}`,
       data: [d.assessed / 1000000, d.market / 1000000, d.list / 1000000],
       backgroundColor: d.color.bg,
       borderColor: d.color.border,
       borderWidth: 2,
       borderRadius: 6,
-      barThickness: 18,
-      categoryPercentage: 0.8,
-      barPercentage: 0.9,
+      barThickness: 28,
     })),
   };
 
   const options = {
     responsive: true,
     maintainAspectRatio: false,
-    indexAxis: 'y' as const,
     scales: {
-      x: {
-        stacked: false,
+      y: {
+        // Price on vertical axis
         grid: { color: 'rgba(255,255,255,0.1)' },
         ticks: {
           color: '#E5E7EB',
-          font: { weight: 'bold' as const },
+          font: { size: 11, weight: 'bold' as const },
           callback: (value: number | string) => `$${value}M`,
         },
+        title: {
+          display: true,
+          text: 'Price ($M)',
+          color: '#E5E7EB',
+          font: { size: 11, weight: 'bold' as const },
+        },
       },
-      y: {
-        stacked: false,
+      x: {
+        // Values/Estimates on horizontal axis
         grid: { display: false },
         ticks: {
           color: '#E5E7EB',
@@ -94,11 +98,11 @@ function ValueGapFunnel({ properties }: CategoryBProps) {
     plugins: {
       legend: {
         display: true,
-        position: 'top' as const,
+        position: 'bottom' as const,
         labels: {
           color: '#E5E7EB',
           boxWidth: 14,
-          padding: 12,
+          padding: 15,
           font: { size: 10, weight: 'bold' as const },
           usePointStyle: true,
           pointStyle: 'rectRounded',
@@ -110,10 +114,9 @@ function ValueGapFunnel({ properties }: CategoryBProps) {
         bodyFont: { weight: 'bold' as const },
         padding: 12,
         callbacks: {
-          title: (items: any[]) => items[0]?.label || '',
           label: (ctx: any) => {
             const value = ctx.raw * 1000000;
-            return `  ${ctx.dataset.label}: $${value.toLocaleString()}`;
+            return `${ctx.dataset.label}: $${value.toLocaleString()}`;
           },
         },
       },
@@ -130,23 +133,7 @@ function ValueGapFunnel({ properties }: CategoryBProps) {
       webSource="Zestimate/marketEstimate"
     >
       {data.length > 0 ? (
-        <div className="h-full flex flex-col">
-          <Bar data={chartData} options={options} />
-          {/* Property legend with addresses */}
-          <div className="mt-2 flex flex-wrap justify-center gap-3 text-xs">
-            {data.map((d, i) => (
-              <div key={d.id} className="flex items-center gap-1.5">
-                <div
-                  className="w-3 h-3 rounded"
-                  style={{ backgroundColor: d.color.border, boxShadow: `0 0 6px ${d.color.border}` }}
-                />
-                <span className="text-gray-200 font-medium drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
-                  P{d.propertyNum}: {d.address.slice(0, 18)}{d.address.length > 18 ? '...' : ''}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <Bar data={chartData} options={options} />
       ) : (
         <div className="h-full flex items-center justify-center text-gray-300 font-medium text-sm drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
           No pricing data available
