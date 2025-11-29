@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePropertyStore } from '@/store/propertyStore';
 import ExecutiveOverview from '@/components/perplexity/ExecutiveOverview';
 import CategorySection from '@/components/perplexity/CategorySection';
+import PropertyTabs from '@/components/perplexity/PropertyTabs';
 import {
   MapPin, DollarSign, Home, Building2, Wrench,
   Sofa, Trees, Hammer, GraduationCap, Navigation,
@@ -99,6 +100,7 @@ function getCategoryComponent(id: string) {
 export default function PerplexityAnalysis() {
   const { fullProperties } = usePropertyStore();
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
+  const [selectedPropertyTabIndex, setSelectedPropertyTabIndex] = useState<number | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set(categories.map(c => c.id)) // All expanded by default
   );
@@ -231,6 +233,19 @@ export default function PerplexityAnalysis() {
           className="mb-8"
         >
           <ExecutiveOverview properties={displayProperties} />
+        </motion.div>
+
+        {/* Property Tabs - P1/P2/P3 comparison selector */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
+          <PropertyTabs
+            properties={properties}
+            selectedIndex={selectedPropertyTabIndex}
+            onSelectProperty={setSelectedPropertyTabIndex}
+          />
         </motion.div>
 
         {/* Category Sections */}
