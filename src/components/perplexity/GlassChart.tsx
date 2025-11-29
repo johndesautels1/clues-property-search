@@ -58,15 +58,15 @@ export default function GlassChart({
               {title}
             </h4>
             {description && (
-              <p className="text-xs text-gray-500 mt-0.5">{description}</p>
+              <p className="text-xs text-gray-300 font-medium mt-0.5 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">{description}</p>
             )}
           </div>
 
           {/* Web augmentation badge */}
           {webAugmented && (
             <div
-              className="flex items-center gap-1 px-2 py-1 rounded-full text-xs"
-              style={{ backgroundColor: `${color}20`, color }}
+              className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold"
+              style={{ backgroundColor: `${color}30`, color, textShadow: `0 0 6px ${color}` }}
               title={webSource || 'Web augmented data'}
             >
               <Info className="w-3 h-3" />
@@ -79,7 +79,7 @@ export default function GlassChart({
         <div className={`${height} relative`}>{children}</div>
 
         {/* Chart ID for cross-filtering */}
-        <div className="absolute bottom-2 right-2 text-xs text-gray-600 font-mono">
+        <div className="absolute bottom-2 right-2 text-xs text-gray-400 font-mono font-bold drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
           {chartId}
         </div>
       </div>

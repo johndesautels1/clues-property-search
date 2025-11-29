@@ -97,7 +97,7 @@ function PinClusterOrbs({ properties, onPropertyClick }: CategoryAProps) {
                   <div className="text-xs font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.5)] whitespace-nowrap overflow-hidden text-ellipsis">
                     {city}
                   </div>
-                  <div className="text-xs text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="text-xs text-gray-300 font-medium opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
                     {props.length} {props.length === 1 ? 'property' : 'properties'}
                   </div>
                 </div>
