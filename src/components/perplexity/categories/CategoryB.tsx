@@ -116,7 +116,7 @@ function ValueGapFunnel({ properties }: CategoryBProps) {
       {data.length > 0 ? (
         <Bar data={chartData} options={options} />
       ) : (
-        <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+        <div className="h-full flex items-center justify-center text-gray-300 font-medium text-sm drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
           No pricing data available
         </div>
       )}
@@ -162,9 +162,9 @@ function PriceSqftViolin({ properties }: CategoryBProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.1 }}
           >
-            <div className="flex justify-between text-xs text-gray-400 mb-1">
+            <div className="flex justify-between text-xs text-gray-300 font-medium mb-1 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
               <span className="truncate max-w-[100px]">{stat.type}</span>
-              <span className="text-purple-400">${Math.round(stat.avg)}/sqft</span>
+              <span className="text-purple-400 font-bold">${Math.round(stat.avg)}/sqft</span>
             </div>
             <div className="relative h-4 bg-white/5 rounded-full overflow-hidden">
               {/* Range bar */}
@@ -185,7 +185,7 @@ function PriceSqftViolin({ properties }: CategoryBProps) {
                 style={{ left: `${(stat.avg / maxVal) * 100}%` }}
               />
             </div>
-            <div className="flex justify-between text-xs text-gray-600 mt-0.5">
+            <div className="flex justify-between text-xs text-gray-400 font-medium mt-0.5 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
               <span>${stat.min}</span>
               <span>${stat.max}</span>
             </div>
@@ -193,7 +193,7 @@ function PriceSqftViolin({ properties }: CategoryBProps) {
         ))}
 
         {stats.length === 0 && (
-          <div className="text-gray-500 text-sm text-center">
+          <div className="text-gray-300 font-medium text-sm text-center drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
             No price/sqft data available
           </div>
         )}
@@ -288,7 +288,7 @@ function TripleGauge({ properties }: CategoryBProps) {
                   </span>
                 </div>
               </div>
-              <span className="text-xs text-gray-400 mt-1 block">{gauge.label}</span>
+              <span className="text-xs text-gray-300 font-medium mt-1 block drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">{gauge.label}</span>
             </motion.div>
           );
         })}
