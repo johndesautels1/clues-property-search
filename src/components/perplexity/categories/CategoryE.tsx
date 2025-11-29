@@ -7,21 +7,19 @@
  */
 
 import { motion } from 'framer-motion';
-import { Radar, Line } from 'react-chartjs-2';
+import { Radar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   RadialLinearScale,
   PointElement,
   LineElement,
   Filler,
-  CategoryScale,
-  LinearScale,
 } from 'chart.js';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
 import { getIndexColor, PROPERTY_COLORS, getPropertyColor } from '../chartColors';
 
-ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, CategoryScale, LinearScale);
+ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler);
 
 interface CategoryEProps {
   properties: Property[];
@@ -176,77 +174,241 @@ function SystemsRadar({ properties }: CategoryEProps) {
   );
 }
 
-// E-2: Age Condition Trend
-function AgeConditionTrend({ properties }: CategoryEProps) {
+// E-2: Interior Condition - Kitchen, Baths, Living Areas, Bedrooms, Flooring
+function InteriorCondition({ properties }: CategoryEProps) {
   const currentYear = new Date().getFullYear();
-  const points = properties.map(p => {
-    const yearBuilt = getVal(p.details?.yearBuilt) || currentYear;
-    const age = currentYear - yearBuilt;
-    const condition = conditionToScore(getVal(p.structural?.interiorCondition));
-    return { age, condition };
-  }).sort((a, b) => a.age - b.age);
+  const comparisonProperties = properties.slice(0, 3);
 
-  // Group by decade for trend
-  const decades = new Map<number, number[]>();
-  points.forEach(p => {
-    const decade = Math.floor(p.age / 10) * 10;
-    if (!decades.has(decade)) decades.set(decade, []);
-    decades.get(decade)!.push(p.condition);
+  // Interior components to evaluate
+  const interiorComponents = [
+    { key: 'kitchen', label: 'Kitchen' },
+    { key: 'baths', label: 'Baths' },
+    { key: 'living', label: 'Living Areas' },
+    { key: 'flooring', label: 'Flooring' },
+    { key: 'interior', label: 'Overall' },
+  ];
+
+  const propertyData = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
+    const yearBuilt = getVal(p.details?.yearBuilt);
+    const age = yearBuilt ? currentYear - yearBuilt : null;
+
+    // Score each interior component
+    const scores = {
+      kitchen: conditionToScore(getVal(p.structural?.kitchenFeatures) ? 'GOOD' : null),
+      baths: conditionToScore(getVal(p.details?.fullBathrooms) ? 'GOOD' : null),
+      living: conditionToScore(getVal(p.structural?.interiorCondition)),
+      flooring: conditionToScore(getVal(p.structural?.flooringType) ? 'GOOD' : null),
+      interior: conditionToScore(getVal(p.structural?.interiorCondition)),
+    };
+
+    const avgScore = Math.round(
+      Object.values(scores).reduce((a, b) => a + b, 0) / Object.values(scores).length
+    );
+
+    return {
+      id: p.id,
+      label: `P${idx + 1}`,
+      address: address.slice(0, 15),
+      age,
+      scores,
+      avgScore,
+      color: propColor,
+    };
   });
-
-  const trendData = Array.from(decades.entries())
-    .map(([decade, conditions]) => ({
-      decade,
-      avgCondition: conditions.reduce((a, b) => a + b, 0) / conditions.length,
-    }))
-    .sort((a, b) => a.decade - b.decade);
-
-  const data = {
-    labels: trendData.map(d => `${d.decade}yr`),
-    datasets: [{
-      label: 'Avg Condition',
-      data: trendData.map(d => d.avgCondition),
-      borderColor: '#00D9FF',
-      backgroundColor: 'rgba(0, 217, 255, 0.1)',
-      fill: true,
-      tension: 0.4,
-    }],
-  };
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      x: {
-        grid: { color: 'rgba(255,255,255,0.1)' },
-        ticks: { color: '#9CA3AF' },
-      },
-      y: {
-        grid: { color: 'rgba(255,255,255,0.1)' },
-        ticks: { color: '#9CA3AF' },
-        min: 0,
-        max: 100,
-      },
-    },
-    plugins: {
-      legend: { display: false },
-    },
-  };
 
   return (
     <GlassChart
-      title="Age vs Condition"
-      description="Degradation trend by property age"
-      chartId="E-age-condition"
+      title="Interior Condition"
+      description="Kitchen, Baths, Living Areas, Flooring"
+      chartId="E-interior-condition"
       color="#00D9FF"
     >
-      {trendData.length > 0 ? (
-        <Line data={data} options={options} />
-      ) : (
-        <div className="h-full flex items-center justify-center text-gray-300 font-medium text-sm drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
-          No age/condition data
+      <div className="h-full flex flex-col">
+        <div className="flex-1 overflow-auto">
+          {/* Header row */}
+          <div className="grid grid-cols-6 gap-1 text-[8px] text-gray-400 font-bold mb-1 px-1">
+            <div>Property</div>
+            {interiorComponents.map(c => (
+              <div key={c.key} className="text-center">{c.label}</div>
+            ))}
+          </div>
+
+          {/* Property rows */}
+          {propertyData.map((prop, i) => (
+            <motion.div
+              key={prop.id}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className="grid grid-cols-6 gap-1 mb-2 px-1"
+            >
+              {/* Property info */}
+              <div className="flex flex-col">
+                <span
+                  className="text-[9px] font-bold truncate drop-shadow-[0_0_4px_rgba(255,255,255,0.5)]"
+                  style={{ color: prop.color.hex }}
+                >
+                  {prop.label}: {prop.address}
+                </span>
+                <span className="text-[8px] text-gray-500">
+                  {prop.age ? `${prop.age}yr old` : 'Age N/A'}
+                </span>
+              </div>
+
+              {/* Score bars for each component */}
+              {interiorComponents.map(c => {
+                const score = prop.scores[c.key as keyof typeof prop.scores];
+                const barColor = score >= 75 ? '#10B981' : score >= 50 ? '#F59E0B' : '#EF4444';
+                return (
+                  <div key={c.key} className="flex flex-col items-center">
+                    <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${score}%` }}
+                        transition={{ duration: 0.5, delay: i * 0.1 }}
+                        className="h-full rounded-full"
+                        style={{ backgroundColor: barColor }}
+                      />
+                    </div>
+                    <span className="text-[8px] text-gray-400 mt-0.5">{score}</span>
+                  </div>
+                );
+              })}
+            </motion.div>
+          ))}
         </div>
-      )}
+
+        {/* Legend */}
+        <div className="mt-1 pt-1 border-t border-white/10 flex justify-center gap-3 text-[8px] text-gray-400">
+          <span><span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1" />75+ Good</span>
+          <span><span className="inline-block w-2 h-2 rounded-full bg-yellow-500 mr-1" />50-74 Fair</span>
+          <span><span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-1" />&lt;50 Poor</span>
+        </div>
+      </div>
+    </GlassChart>
+  );
+}
+
+// E-2b: Exterior Condition - Foundation, Siding, Soffit/Fascia, Gutters, Driveway, Landscaping, Roof
+function ExteriorCondition({ properties }: CategoryEProps) {
+  const currentYear = new Date().getFullYear();
+  const comparisonProperties = properties.slice(0, 3);
+
+  // Exterior components to evaluate
+  const exteriorComponents = [
+    { key: 'roof', label: 'Roof' },
+    { key: 'foundation', label: 'Foundation' },
+    { key: 'siding', label: 'Siding' },
+    { key: 'landscape', label: 'Landscape' },
+    { key: 'exterior', label: 'Overall' },
+  ];
+
+  const propertyData = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
+    const yearBuilt = getVal(p.details?.yearBuilt);
+    const age = yearBuilt ? currentYear - yearBuilt : null;
+
+    // Estimate roof condition from age
+    const roofAgeStr = getVal(p.structural?.roofAgeEst);
+    const roofAge = roofAgeStr ? parseInt(roofAgeStr) : (age ? Math.min(age, 20) : 10);
+    const roofScore = Math.max(0, 100 - (roofAge * 4)); // Loses ~4 pts per year
+
+    // Score each exterior component
+    const scores = {
+      roof: getVal(p.structural?.roofType) ? roofScore : conditionToScore(null),
+      foundation: conditionToScore(getVal(p.structural?.foundation)),
+      siding: conditionToScore(getVal(p.structural?.exteriorMaterial) ? 'GOOD' : null),
+      landscape: conditionToScore(getVal(p.structural?.landscaping) ? 'GOOD' : null),
+      exterior: conditionToScore(getVal(p.structural?.exteriorMaterial) ? 'GOOD' : null),
+    };
+
+    const avgScore = Math.round(
+      Object.values(scores).reduce((a, b) => a + b, 0) / Object.values(scores).length
+    );
+
+    return {
+      id: p.id,
+      label: `P${idx + 1}`,
+      address: address.slice(0, 15),
+      age,
+      scores,
+      avgScore,
+      color: propColor,
+    };
+  });
+
+  return (
+    <GlassChart
+      title="Exterior Condition"
+      description="Roof, Foundation, Siding, Landscaping"
+      chartId="E-exterior-condition"
+      color="#8B5CF6"
+    >
+      <div className="h-full flex flex-col">
+        <div className="flex-1 overflow-auto">
+          {/* Header row */}
+          <div className="grid grid-cols-6 gap-1 text-[8px] text-gray-400 font-bold mb-1 px-1">
+            <div>Property</div>
+            {exteriorComponents.map(c => (
+              <div key={c.key} className="text-center">{c.label}</div>
+            ))}
+          </div>
+
+          {/* Property rows */}
+          {propertyData.map((prop, i) => (
+            <motion.div
+              key={prop.id}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className="grid grid-cols-6 gap-1 mb-2 px-1"
+            >
+              {/* Property info */}
+              <div className="flex flex-col">
+                <span
+                  className="text-[9px] font-bold truncate drop-shadow-[0_0_4px_rgba(255,255,255,0.5)]"
+                  style={{ color: prop.color.hex }}
+                >
+                  {prop.label}: {prop.address}
+                </span>
+                <span className="text-[8px] text-gray-500">
+                  {prop.age ? `${prop.age}yr old` : 'Age N/A'}
+                </span>
+              </div>
+
+              {/* Score bars for each component */}
+              {exteriorComponents.map(c => {
+                const score = prop.scores[c.key as keyof typeof prop.scores];
+                const barColor = score >= 75 ? '#10B981' : score >= 50 ? '#F59E0B' : '#EF4444';
+                return (
+                  <div key={c.key} className="flex flex-col items-center">
+                    <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${score}%` }}
+                        transition={{ duration: 0.5, delay: i * 0.1 }}
+                        className="h-full rounded-full"
+                        style={{ backgroundColor: barColor }}
+                      />
+                    </div>
+                    <span className="text-[8px] text-gray-400 mt-0.5">{score}</span>
+                  </div>
+                );
+              })}
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Legend */}
+        <div className="mt-1 pt-1 border-t border-white/10 flex justify-center gap-3 text-[8px] text-gray-400">
+          <span><span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1" />75+ Good</span>
+          <span><span className="inline-block w-2 h-2 rounded-full bg-yellow-500 mr-1" />50-74 Fair</span>
+          <span><span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-1" />&lt;50 Poor</span>
+        </div>
+      </div>
     </GlassChart>
   );
 }
@@ -377,7 +539,8 @@ export default function CategoryE({ properties, onPropertyClick }: CategoryEProp
   return (
     <>
       <SystemsRadar properties={properties} />
-      <AgeConditionTrend properties={properties} />
+      <InteriorCondition properties={properties} />
+      <ExteriorCondition properties={properties} />
       <ReplacementBars properties={properties} onPropertyClick={onPropertyClick} />
     </>
   );
