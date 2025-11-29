@@ -88,7 +88,7 @@ function RoomSunburst({ properties }: CategoryCProps) {
       {total > 1 ? (
         <Doughnut data={data} options={options} />
       ) : (
-        <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+        <div className="h-full flex items-center justify-center text-gray-300 font-medium text-sm drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
           No room data available
         </div>
       )}
@@ -156,7 +156,7 @@ function SpaceEfficiencyScatter({ properties, onPropertyClick }: CategoryCProps)
       {points.length > 0 ? (
         <Scatter data={data} options={options} />
       ) : (
-        <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+        <div className="h-full flex items-center justify-center text-gray-300 font-medium text-sm drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
           No space data available
         </div>
       )}
@@ -200,8 +200,8 @@ function LayoutBars({ properties }: CategoryCProps) {
             transition={{ delay: i * 0.1 }}
           >
             <div className="flex justify-between text-xs mb-1">
-              <span className="text-gray-400">{bar.label}</span>
-              <span style={{ color: bar.color }}>{bar.value.toFixed(1)}</span>
+              <span className="text-gray-300 font-medium drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">{bar.label}</span>
+              <span className="font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]" style={{ color: bar.color }}>{bar.value.toFixed(1)}</span>
             </div>
             <div className="h-3 bg-white/5 rounded-full overflow-hidden">
               <motion.div

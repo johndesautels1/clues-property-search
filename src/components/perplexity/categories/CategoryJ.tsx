@@ -153,7 +153,7 @@ function GaugeCluster({ properties }: CategoryJProps) {
                   <span className="text-white font-bold text-lg drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{gauge.value}</span>
                 </div>
               </div>
-              <span className="text-xs text-gray-400 mt-1 block">{gauge.label}</span>
+              <span className="text-xs text-gray-300 font-medium mt-1 block drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">{gauge.label}</span>
             </motion.div>
           );
         })}
@@ -224,7 +224,7 @@ function LocationYieldScatter({ properties }: CategoryJProps) {
       {points.length > 0 ? (
         <Scatter data={data} options={options} />
       ) : (
-        <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+        <div className="h-full flex items-center justify-center text-gray-300 font-medium text-sm drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
           No location/yield data
         </div>
       )}

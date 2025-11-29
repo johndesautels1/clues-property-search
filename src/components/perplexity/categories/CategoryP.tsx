@@ -108,7 +108,7 @@ function FeatureMosaic({ properties }: CategoryPProps) {
               >
                 {percentage}%
               </div>
-              <div className="text-xs text-gray-500 relative z-10 truncate max-w-full">
+              <div className="text-xs text-gray-400 font-medium relative z-10 truncate max-w-full drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
                 {tile.label}
               </div>
             </motion.div>
@@ -205,7 +205,7 @@ function PremiumIndexBar({ properties }: CategoryPProps) {
       {premiumScores.length > 0 ? (
         <Bar data={data} options={options} />
       ) : (
-        <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+        <div className="h-full flex items-center justify-center text-gray-300 font-medium text-sm drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
           No premium data
         </div>
       )}
@@ -290,7 +290,7 @@ function FeatureUpliftViolin({ properties }: CategoryPProps) {
               transition={{ delay: i * 0.1 }}
               className="flex items-center gap-2"
             >
-              <div className="w-20 text-xs text-gray-400 text-right">{item.name}</div>
+              <div className="w-20 text-xs text-gray-300 font-medium text-right drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">{item.name}</div>
 
               {/* Violin-style distribution bar */}
               <div className="flex-1 h-8 relative flex items-center">
@@ -325,7 +325,7 @@ function FeatureUpliftViolin({ properties }: CategoryPProps) {
         })}
 
         {/* Legend */}
-        <div className="flex justify-center gap-4 text-xs text-gray-500 mt-2 pt-2 border-t border-white/10">
+        <div className="flex justify-center gap-4 text-xs text-gray-300 font-medium mt-2 pt-2 border-t border-white/10 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 rounded-full bg-gray-500" />
             <span>Baseline</span>

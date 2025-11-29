@@ -105,7 +105,7 @@ function CrimeGaugeTrio({ properties }: CategoryLProps) {
                   <span className="text-white font-bold text-sm drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{gauge.value}</span>
                 </div>
               </div>
-              <span className="text-xs text-gray-400 mt-1 block">{gauge.label}</span>
+              <span className="text-xs text-gray-300 font-medium mt-1 block drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">{gauge.label}</span>
             </motion.div>
           );
         })}
@@ -177,7 +177,7 @@ function SafetyYieldScatter({ properties }: CategoryLProps) {
       {points.length > 0 ? (
         <Scatter data={data} options={options} />
       ) : (
-        <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+        <div className="h-full flex items-center justify-center text-gray-300 font-medium text-sm drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
           No safety/yield data
         </div>
       )}
@@ -211,7 +211,7 @@ function CrimeHeatRow({ properties }: CategoryLProps) {
       <div className="h-full flex flex-col justify-center">
         {/* Violent crime row */}
         <div className="mb-3">
-          <div className="text-xs text-gray-400 mb-1">Violent Crime Index</div>
+          <div className="text-xs text-gray-300 font-medium mb-1 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">Violent Crime Index</div>
           <div className="flex gap-1">
             {data.map((d, i) => (
               <motion.div
@@ -223,7 +223,7 @@ function CrimeHeatRow({ properties }: CategoryLProps) {
                 style={{ backgroundColor: `${getColor(d.violent)}40` }}
               >
                 <span className="text-white text-xs font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{d.violent}</span>
-                <span className="text-gray-400 text-xs truncate max-w-full px-1">{d.address}</span>
+                <span className="text-gray-300 text-xs font-medium truncate max-w-full px-1 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">{d.address}</span>
               </motion.div>
             ))}
           </div>
@@ -231,7 +231,7 @@ function CrimeHeatRow({ properties }: CategoryLProps) {
 
         {/* Property crime row */}
         <div>
-          <div className="text-xs text-gray-400 mb-1">Property Crime Index</div>
+          <div className="text-xs text-gray-300 font-medium mb-1 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">Property Crime Index</div>
           <div className="flex gap-1">
             {data.map((d, i) => (
               <motion.div
@@ -249,7 +249,7 @@ function CrimeHeatRow({ properties }: CategoryLProps) {
         </div>
 
         {data.length === 0 && (
-          <div className="text-gray-500 text-sm text-center">No crime data</div>
+          <div className="text-gray-300 font-medium text-sm text-center drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">No crime data</div>
         )}
       </div>
     </GlassChart>

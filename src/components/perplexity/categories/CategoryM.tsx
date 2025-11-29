@@ -145,7 +145,7 @@ function CapAppreciationBubbles({ properties }: CategoryMProps) {
       {points.length > 0 ? (
         <Scatter data={data} options={options} />
       ) : (
-        <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+        <div className="h-full flex items-center justify-center text-gray-300 font-medium text-sm drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
           No cap/appreciation data
         </div>
       )}

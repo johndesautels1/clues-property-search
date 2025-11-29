@@ -44,7 +44,7 @@ function AmenityHeatmap({ properties }: CategoryFProps) {
       <div className="h-full overflow-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="text-gray-400">
+            <tr className="text-gray-300 font-bold drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
               <th className="text-left py-1 px-1">Property</th>
               {features.map(f => (
                 <th key={f} className="text-center py-1 px-1 truncate max-w-[50px]">{f}</th>
@@ -82,7 +82,7 @@ function AmenityHeatmap({ properties }: CategoryFProps) {
         </table>
 
         {data.length === 0 && (
-          <div className="text-gray-500 text-sm text-center py-8">No feature data</div>
+          <div className="text-gray-300 font-medium text-sm text-center py-8 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">No feature data</div>
         )}
       </div>
     </GlassChart>
@@ -122,8 +122,8 @@ function FinishQualityIndex({ properties }: CategoryFProps) {
             transition={{ delay: i * 0.1 }}
           >
             <div className="flex justify-between text-xs mb-1">
-              <span className="text-gray-400 truncate max-w-[80px]">{item.address}</span>
-              <span className="text-green-400">{item.score}/100</span>
+              <span className="text-gray-300 font-medium truncate max-w-[80px] drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">{item.address}</span>
+              <span className="text-green-400 font-bold drop-shadow-[0_0_6px_rgba(34,197,94,0.5)]">{item.score}/100</span>
             </div>
             <div className="h-3 bg-white/5 rounded-full overflow-hidden">
               <motion.div
@@ -140,7 +140,7 @@ function FinishQualityIndex({ properties }: CategoryFProps) {
         ))}
 
         {scores.length === 0 && (
-          <div className="text-gray-500 text-sm text-center">No quality data</div>
+          <div className="text-gray-300 font-medium text-sm text-center drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">No quality data</div>
         )}
       </div>
     </GlassChart>
@@ -193,8 +193,8 @@ function InteriorUplift({ properties }: CategoryFProps) {
             transition={{ delay: i * 0.1 }}
           >
             <div className="flex justify-between text-xs mb-1">
-              <span className="text-gray-400">{item.count} features</span>
-              <span className="text-cyan-400">${Math.round(item.avg)}/sqft avg</span>
+              <span className="text-gray-300 font-medium drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">{item.count} features</span>
+              <span className="text-cyan-400 font-bold drop-shadow-[0_0_6px_rgba(0,217,255,0.5)]">${Math.round(item.avg)}/sqft avg</span>
             </div>
             <div className="relative h-4 bg-white/5 rounded-full">
               {/* Range */}
@@ -215,7 +215,7 @@ function InteriorUplift({ properties }: CategoryFProps) {
         ))}
 
         {data.length === 0 && (
-          <div className="text-gray-500 text-sm text-center">No uplift data</div>
+          <div className="text-gray-300 font-medium text-sm text-center drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">No uplift data</div>
         )}
       </div>
     </GlassChart>

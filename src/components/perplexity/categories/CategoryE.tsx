@@ -173,7 +173,7 @@ function AgeConditionTrend({ properties }: CategoryEProps) {
       {trendData.length > 0 ? (
         <Line data={data} options={options} />
       ) : (
-        <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+        <div className="h-full flex items-center justify-center text-gray-300 font-medium text-sm drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
           No age/condition data
         </div>
       )}
@@ -218,7 +218,7 @@ function ReplacementBars({ properties }: CategoryEProps) {
             transition={{ delay: i * 0.1 }}
             className="space-y-1"
           >
-            <div className="text-xs text-gray-400">{est.address}</div>
+            <div className="text-xs text-gray-300 font-medium drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">{est.address}</div>
             <div className="flex gap-2">
               <div className="flex-1">
                 <div className="flex justify-between text-xs mb-0.5">
@@ -249,7 +249,7 @@ function ReplacementBars({ properties }: CategoryEProps) {
         ))}
 
         {estimates.length === 0 && (
-          <div className="text-gray-500 text-sm text-center">No system data</div>
+          <div className="text-gray-300 font-medium text-sm text-center drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">No system data</div>
         )}
       </div>
     </GlassChart>

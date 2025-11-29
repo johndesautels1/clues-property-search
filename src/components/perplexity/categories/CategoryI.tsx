@@ -228,7 +228,7 @@ function SchoolTierHeatmap({ properties }: CategoryIProps) {
       <div className="h-full overflow-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="text-gray-400">
+            <tr className="text-gray-300 font-bold drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
               <th className="text-left py-1 px-1">Property</th>
               <th className="text-center py-1 px-1">Elem</th>
               <th className="text-center py-1 px-1">Middle</th>
@@ -264,7 +264,7 @@ function SchoolTierHeatmap({ properties }: CategoryIProps) {
         </table>
 
         {data.length === 0 && (
-          <div className="text-gray-500 text-sm text-center py-8">No school data</div>
+          <div className="text-gray-300 font-medium text-sm text-center py-8 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">No school data</div>
         )}
       </div>
     </GlassChart>

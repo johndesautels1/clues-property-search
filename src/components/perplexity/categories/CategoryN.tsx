@@ -86,7 +86,7 @@ function UtilityCostDonut({ properties }: CategoryNProps) {
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="text-center">
             <div className="text-xl font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.7)]">${(total/1000).toFixed(0)}K</div>
-            <div className="text-xs text-gray-400">Total/yr</div>
+            <div className="text-xs text-gray-300 font-medium drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">Total/yr</div>
           </div>
         </div>
       </div>
@@ -149,7 +149,7 @@ function ConnectivityLuxuryScatter({ properties }: CategoryNProps) {
       {points.length > 0 ? (
         <Scatter data={data} options={options} />
       ) : (
-        <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+        <div className="h-full flex items-center justify-center text-gray-300 font-medium text-sm drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
           No connectivity data
         </div>
       )}
@@ -192,8 +192,8 @@ function UtilityExpenseBars({ properties }: CategoryNProps) {
             transition={{ delay: i * 0.1 }}
           >
             <div className="flex justify-between text-xs mb-1">
-              <span className="text-gray-400 truncate max-w-[100px]">{item.address}</span>
-              <span className="text-cyan-400">${item.total.toLocaleString()}/yr</span>
+              <span className="text-gray-300 font-medium truncate max-w-[100px] drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">{item.address}</span>
+              <span className="text-cyan-400 font-bold drop-shadow-[0_0_6px_rgba(0,217,255,0.5)]">${item.total.toLocaleString()}/yr</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="flex-1 h-3 bg-white/5 rounded-full overflow-hidden">
@@ -204,17 +204,17 @@ function UtilityExpenseBars({ properties }: CategoryNProps) {
                   className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500"
                 />
               </div>
-              <span className="text-xs text-gray-500 w-16 text-right">${item.perSqft}/sqft</span>
+              <span className="text-xs text-gray-400 font-medium w-16 text-right drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">${item.perSqft}/sqft</span>
             </div>
           </motion.div>
         ))}
 
         {data.length === 0 && (
-          <div className="text-gray-500 text-sm text-center">No utility data</div>
+          <div className="text-gray-300 font-medium text-sm text-center drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">No utility data</div>
         )}
 
         {/* Legend */}
-        <div className="flex items-center justify-center gap-4 text-xs text-gray-500 mt-2">
+        <div className="flex items-center justify-center gap-4 text-xs text-gray-300 font-medium mt-2 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
           <div className="flex items-center gap-1">
             <Zap className="w-3 h-3 text-yellow-400" />
             <span>Electric</span>

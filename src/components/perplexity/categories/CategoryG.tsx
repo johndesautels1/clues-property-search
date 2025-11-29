@@ -49,7 +49,7 @@ function ExteriorFeatureMatrix({ properties }: CategoryGProps) {
       <div className="h-full flex flex-col justify-center">
         <div className="grid gap-2">
           {/* Header row */}
-          <div className="grid grid-cols-5 gap-1 text-xs text-gray-400">
+          <div className="grid grid-cols-5 gap-1 text-xs text-gray-300 font-bold drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
             <div></div>
             {features.map(f => {
               const Icon = f.icon;
@@ -91,7 +91,7 @@ function ExteriorFeatureMatrix({ properties }: CategoryGProps) {
         </div>
 
         {data.length === 0 && (
-          <div className="text-gray-500 text-sm text-center">No exterior data</div>
+          <div className="text-gray-300 font-medium text-sm text-center drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">No exterior data</div>
         )}
       </div>
     </GlassChart>
@@ -189,10 +189,10 @@ function OutdoorROIBubbles({ properties, onPropertyClick }: CategoryGProps) {
     >
       <div className="h-full relative">
         {/* Axis labels */}
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 -rotate-90 text-xs text-gray-500">
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 -rotate-90 text-xs text-gray-300 font-medium drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
           $/sqft
         </div>
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-xs text-gray-500">
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-xs text-gray-300 font-medium drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
           Features
         </div>
 
@@ -239,7 +239,7 @@ function OutdoorROIBubbles({ properties, onPropertyClick }: CategoryGProps) {
         </div>
 
         {bubbles.length === 0 && (
-          <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+          <div className="h-full flex items-center justify-center text-gray-300 font-medium text-sm drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
             No outdoor data
           </div>
         )}

@@ -70,7 +70,7 @@ function RenovationTimeline({ properties }: CategoryHProps) {
     >
       <div className="h-full flex flex-col">
         {/* Timeline axis */}
-        <div className="flex justify-between text-xs text-gray-500 mb-2 px-2">
+        <div className="flex justify-between text-xs text-gray-300 font-medium mb-2 px-2 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
           <span>{minYear}</span>
           <span>{currentYear}</span>
           <span>{maxYear}</span>
@@ -102,8 +102,8 @@ function RenovationTimeline({ properties }: CategoryHProps) {
                   }}
                 >
                   <span className="text-white font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{event.type}</span>
-                  <span className="text-gray-400 ml-2">{event.year}</span>
-                  <span className="text-gray-500 ml-2">({event.address})</span>
+                  <span className="text-gray-300 font-medium ml-2 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">{event.year}</span>
+                  <span className="text-gray-400 font-medium ml-2 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">({event.address})</span>
                 </div>
               </motion.div>
             );
@@ -111,7 +111,7 @@ function RenovationTimeline({ properties }: CategoryHProps) {
         </div>
 
         {timeline.length === 0 && (
-          <div className="flex-1 flex items-center justify-center text-gray-500 text-sm">
+          <div className="flex-1 flex items-center justify-center text-gray-300 font-medium text-sm drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
             No permit history available
           </div>
         )}
@@ -154,8 +154,8 @@ function ValueAddBars({ properties }: CategoryHProps) {
             transition={{ delay: i * 0.1 }}
           >
             <div className="flex justify-between text-xs mb-1">
-              <span className="text-gray-400 truncate max-w-[80px]">{item.address}</span>
-              <span className={item.change >= 0 ? 'text-green-400' : 'text-red-400'}>
+              <span className="text-gray-300 font-medium truncate max-w-[80px] drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">{item.address}</span>
+              <span className={`font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.5)] ${item.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                 {item.change >= 0 ? '+' : ''}{item.change.toFixed(0)}%
               </span>
             </div>
@@ -181,7 +181,7 @@ function ValueAddBars({ properties }: CategoryHProps) {
         ))}
 
         {valueChanges.length === 0 && (
-          <div className="text-gray-500 text-sm text-center">No value history</div>
+          <div className="text-gray-300 font-medium text-sm text-center drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">No value history</div>
         )}
       </div>
     </GlassChart>
@@ -242,7 +242,7 @@ function ComplianceGauge({ properties }: CategoryHProps) {
               transition={{ delay: i * 0.1 }}
               className="flex items-center gap-3"
             >
-              <div className="text-xs text-gray-400 w-20 truncate">{item.address}</div>
+              <div className="text-xs text-gray-300 font-medium w-20 truncate drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">{item.address}</div>
 
               {/* 5-dot gauge */}
               <div className="flex gap-1 flex-1">
@@ -271,7 +271,7 @@ function ComplianceGauge({ properties }: CategoryHProps) {
         })}
 
         {compliance.length === 0 && (
-          <div className="text-gray-500 text-sm text-center">No compliance data</div>
+          <div className="text-gray-300 font-medium text-sm text-center drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">No compliance data</div>
         )}
       </div>
     </GlassChart>

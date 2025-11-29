@@ -203,7 +203,7 @@ function RiskRewardMatrix({ properties }: CategoryOProps) {
             </div>
           </>
         ) : (
-          <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+          <div className="h-full flex items-center justify-center text-gray-300 font-medium text-sm drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
             No risk/yield data
           </div>
         )}
@@ -311,7 +311,7 @@ function EnvironmentGauges({ properties }: CategoryOProps) {
               </div>
               <div className="mt-2">
                 <div className="text-xs text-white font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{gauge.label}</div>
-                <div className="text-xs text-gray-500">{gauge.description}</div>
+                <div className="text-xs text-gray-400 font-medium drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">{gauge.description}</div>
               </div>
             </motion.div>
           );

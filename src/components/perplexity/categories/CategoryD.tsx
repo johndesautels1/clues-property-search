@@ -78,7 +78,7 @@ function CostDonut({ properties }: CategoryDProps) {
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="text-center">
             <div className="text-2xl font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.7)]">${(total/1000).toFixed(0)}K</div>
-            <div className="text-xs text-gray-400">Total/yr</div>
+            <div className="text-xs text-gray-300 font-medium drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">Total/yr</div>
           </div>
         </div>
       </div>
@@ -131,7 +131,7 @@ function HOAHeatmap({ properties }: CategoryDProps) {
         </div>
 
         {hoaData.length === 0 && (
-          <div className="text-gray-500 text-sm text-center">No HOA data available</div>
+          <div className="text-gray-300 font-medium text-sm text-center drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">No HOA data available</div>
         )}
       </div>
     </GlassChart>
@@ -189,7 +189,7 @@ function TaxScatter({ properties }: CategoryDProps) {
       {points.length > 0 ? (
         <Scatter data={data} options={options} />
       ) : (
-        <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+        <div className="h-full flex items-center justify-center text-gray-300 font-medium text-sm drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
           No tax data available
         </div>
       )}
