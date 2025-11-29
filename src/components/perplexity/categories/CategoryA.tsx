@@ -21,14 +21,34 @@ function getVal<T>(field: { value: T | null } | undefined): T | null {
   return field?.value ?? null;
 }
 
+// Normalize city names to handle variations like "Saint" vs "St.", "Mount" vs "Mt.", etc.
+function normalizeCity(city: string): string {
+  return city
+    .replace(/^St\.?\s+/i, 'Saint ')
+    .replace(/^Mt\.?\s+/i, 'Mount ')
+    .replace(/^Ft\.?\s+/i, 'Fort ')
+    .replace(/^N\.?\s+/i, 'North ')
+    .replace(/^S\.?\s+/i, 'South ')
+    .replace(/^E\.?\s+/i, 'East ')
+    .replace(/^W\.?\s+/i, 'West ')
+    .trim();
+}
+
 // A-1: Pin Cluster Orbs - Scatter visualization
 function PinClusterOrbs({ properties, onPropertyClick }: CategoryAProps) {
-  // Group properties by city for clustering
+  // Group properties by city for clustering (normalize city names)
   const clusters = new Map<string, Property[]>();
+  const displayNames = new Map<string, string>(); // Store original display name
+
   properties.forEach(p => {
-    const city = getVal(p.address?.city) || 'Unknown';
-    if (!clusters.has(city)) clusters.set(city, []);
-    clusters.get(city)!.push(p);
+    const rawCity = getVal(p.address?.city) || 'Unknown';
+    const normalizedCity = normalizeCity(rawCity);
+
+    if (!clusters.has(normalizedCity)) {
+      clusters.set(normalizedCity, []);
+      displayNames.set(normalizedCity, rawCity); // Keep first occurrence as display name
+    }
+    clusters.get(normalizedCity)!.push(p);
   });
 
   const clusterArray = Array.from(clusters.entries());
@@ -46,14 +66,15 @@ function PinClusterOrbs({ properties, onPropertyClick }: CategoryAProps) {
       <div className="relative w-full h-full flex items-start justify-center overflow-auto pt-2">
         {/* Cluster visualization */}
         <div className="flex flex-wrap gap-6 justify-center items-start px-4 py-2">
-          {clusterArray.map(([city, props], i) => {
+          {clusterArray.map(([normalizedCity, props], i) => {
             const size = 50 + (props.length / maxCount) * 50;
             const colors = ['#10B981', '#00D9FF', '#8B5CF6', '#F59E0B', '#EF4444'];
             const color = colors[i % colors.length];
+            const displayCity = displayNames.get(normalizedCity) || normalizedCity;
 
             return (
               <motion.div
-                key={city}
+                key={normalizedCity}
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: i * 0.1 }}
@@ -95,7 +116,7 @@ function PinClusterOrbs({ properties, onPropertyClick }: CategoryAProps) {
                   style={{ color }}
                 >
                   <div className="text-xs font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.5)] whitespace-nowrap overflow-hidden text-ellipsis">
-                    {city}
+                    {displayCity}
                   </div>
                   <div className="text-xs text-gray-300 font-medium opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
                     {props.length} {props.length === 1 ? 'property' : 'properties'}
