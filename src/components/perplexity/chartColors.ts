@@ -108,12 +108,12 @@ export const PROPERTY_COLORS = {
     rgba: (alpha: number) => `rgba(0, 217, 255, ${alpha})`,
     name: 'Cyan',
   },
-  // Property 3 - Purple/Violet (not in index at all)
+  // Property 3 - Bright Fuchsia/Magenta (high contrast, distinct from index)
   P3: {
-    hex: '#A855F7',
-    rgb: 'rgb(168, 85, 247)',
-    rgba: (alpha: number) => `rgba(168, 85, 247, ${alpha})`,
-    name: 'Purple',
+    hex: '#E879F9',
+    rgb: 'rgb(232, 121, 249)',
+    rgba: (alpha: number) => `rgba(232, 121, 249, ${alpha})`,
+    name: 'Fuchsia',
   },
 };
 
@@ -156,7 +156,7 @@ export const CHARTJS_INDEX_COLORS = INDEX_SCALE.map(c => ({
 export const LEGACY_PROPERTY_COLORS = [
   { bg: 'rgba(16, 185, 129, 0.85)', border: '#10B981', name: 'emerald' },
   { bg: 'rgba(0, 217, 255, 0.85)', border: '#00D9FF', name: 'cyan' },
-  { bg: 'rgba(168, 85, 247, 0.85)', border: '#A855F7', name: 'purple' },
+  { bg: 'rgba(232, 121, 249, 0.85)', border: '#E879F9', name: 'fuchsia' },
 ];
 
 // ============================================

@@ -62,11 +62,16 @@ export default function GlassChart({
             )}
           </div>
 
-          {/* Web augmentation badge */}
+          {/* Web augmentation badge - high contrast for legibility */}
           {webAugmented && (
             <div
               className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold"
-              style={{ backgroundColor: `${color}30`, color, textShadow: `0 0 6px ${color}` }}
+              style={{
+                backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                color: '#FFFFFF',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                textShadow: '0 0 8px rgba(255,255,255,0.8)'
+              }}
               title={webSource || 'Web augmented data'}
             >
               <Info className="w-3 h-3" />
