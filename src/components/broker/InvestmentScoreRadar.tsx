@@ -122,13 +122,18 @@ export default function InvestmentScoreRadar({ properties, selectedId = 'all' }:
     maintainAspectRatio: false,
     scales: {
       r: {
-        angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
-        grid: { color: 'rgba(255, 255, 255, 0.1)' },
-        pointLabels: { color: '#9CA3AF', font: { size: 11 } },
+        angleLines: { color: 'rgba(255, 255, 255, 0.15)' },
+        grid: { color: 'rgba(255, 255, 255, 0.15)' },
+        pointLabels: {
+          color: '#FFFFFF',
+          font: { size: 12, weight: 'bold' as const }
+        },
         ticks: {
-          color: '#6B7280',
-          backdropColor: 'transparent',
+          color: '#FBBF24', // Bright yellow for scale numbers
+          backdropColor: 'rgba(0, 0, 0, 0.5)',
+          font: { size: 11, weight: 'bold' as const },
           stepSize: 20,
+          showLabelBackdrop: true,
         },
         suggestedMin: 0,
         suggestedMax: 100,

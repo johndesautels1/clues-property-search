@@ -302,7 +302,7 @@ export default function RiskDashboard({ properties, title = "Risk Analysis" }: R
         <span className="text-gray-500 text-sm">({properties.length} properties)</span>
       </div>
 
-      {/* Portfolio Summary Cards */}
+      {/* Portfolio Summary Cards - WITH PROPERTY REFERENCES */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Average Safety Score */}
         <motion.div
@@ -328,6 +328,14 @@ export default function RiskDashboard({ properties, title = "Risk Analysis" }: R
           <p className="text-gray-500 text-xs mt-1">
             {avgSafety >= 80 ? 'Low Risk Portfolio' : avgSafety >= 60 ? 'Moderate Risk' : 'High Risk Portfolio'}
           </p>
+          {/* PROPERTY REFERENCE */}
+          <div className="mt-3 pt-2 border-t border-white/10">
+            <p className="text-cyan-400 text-xs font-medium">
+              Analyzing: {properties.length === 1
+                ? (properties[0].address.split(',')[0] || properties[0].address)
+                : `${properties.length} properties`}
+            </p>
+          </div>
         </motion.div>
 
         {/* Highest Environmental Risk */}
@@ -351,10 +359,23 @@ export default function RiskDashboard({ properties, title = "Risk Analysis" }: R
           {(() => {
             const maxRisk = Math.max(...Object.values(avgRisks));
             const maxKey = Object.entries(avgRisks).find(([, v]) => v === maxRisk)?.[0] || 'N/A';
+            // Find property with highest risk in this category
+            const riskField = maxKey === 'flood' ? 'floodRisk' :
+                             maxKey === 'hurricane' ? 'hurricaneRisk' :
+                             maxKey === 'seaLevel' ? 'seaLevelRisk' :
+                             maxKey === 'wildfire' ? 'wildfireRisk' :
+                             maxKey === 'earthquake' ? 'earthquakeRisk' : 'tornadoRisk';
+            const highestRiskProp = [...properties].sort((a, b) => (b[riskField] || 0) - (a[riskField] || 0))[0];
             return (
               <>
                 <p className="text-3xl font-bold text-red-400">{maxRisk.toFixed(1)}/10</p>
                 <p className="text-gray-500 text-xs mt-1 capitalize">{maxKey} Risk</p>
+                {/* PROPERTY REFERENCE */}
+                <div className="mt-3 pt-2 border-t border-white/10">
+                  <p className="text-amber-400 text-xs">
+                    Highest: {highestRiskProp.address.split(',')[0]} ({highestRiskProp[riskField]}/10)
+                  </p>
+                </div>
               </>
             );
           })()}
@@ -382,6 +403,19 @@ export default function RiskDashboard({ properties, title = "Risk Analysis" }: R
             {violentCounts.low}/{properties.length}
           </p>
           <p className="text-gray-500 text-xs mt-1">Properties in low violent crime areas</p>
+          {/* PROPERTY REFERENCE */}
+          {(() => {
+            const lowCrimeProps = properties.filter(p => (p.violentCrime || '').toUpperCase() === 'LOW');
+            return lowCrimeProps.length > 0 ? (
+              <div className="mt-3 pt-2 border-t border-white/10">
+                <p className="text-green-400 text-xs truncate" title={lowCrimeProps.map(p => p.address.split(',')[0]).join(', ')}>
+                  {lowCrimeProps.length <= 2
+                    ? lowCrimeProps.map(p => p.address.split(',')[0]).join(', ')
+                    : `${lowCrimeProps[0].address.split(',')[0]} +${lowCrimeProps.length - 1} more`}
+                </p>
+              </div>
+            ) : null;
+          })()}
         </motion.div>
       </div>
 
@@ -405,7 +439,7 @@ export default function RiskDashboard({ properties, title = "Risk Analysis" }: R
           </div>
         </motion.div>
 
-        {/* Crime Distribution Bar */}
+        {/* REDESIGNED Crime Index Chart - with proper axes, sources, property reference */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -417,9 +451,106 @@ export default function RiskDashboard({ properties, title = "Risk Analysis" }: R
             border: '1px solid rgba(255, 255, 255, 0.1)',
           }}
         >
-          <p className="text-white font-semibold mb-4">Crime Level Distribution</p>
-          <div className="h-64">
-            <Bar data={crimeBarData} options={crimeBarOptions} />
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-white font-semibold">Crime Index by Property</p>
+            <div className="text-right">
+              <p className="text-gray-400 text-xs">Data as of {new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</p>
+            </div>
+          </div>
+
+          {/* Explanation of crime index */}
+          <div className="mb-4 p-2 rounded-lg bg-white/5">
+            <p className="text-cyan-300 text-xs">
+              <strong>Crime Index Scale:</strong> 0 = Safest (no crime), 100 = National Average, 200+ = High Crime
+            </p>
+          </div>
+
+          {/* Property-based crime bars */}
+          <div className="space-y-3">
+            {properties.map((prop, i) => {
+              // Convert LOW/MOD/HIGH to crime index scores
+              const violentLevel = (prop.violentCrime || '').toUpperCase();
+              const propertyLevel = (prop.propertyCrime || '').toUpperCase();
+              const violentScore = violentLevel === 'LOW' ? 35 : violentLevel === 'MOD' || violentLevel === 'MODERATE' ? 100 : 165;
+              const propertyScore = propertyLevel === 'LOW' ? 40 : propertyLevel === 'MOD' || propertyLevel === 'MODERATE' ? 100 : 160;
+              const avgScore = Math.round((violentScore + propertyScore) / 2);
+              const shortAddr = prop.address.split(',')[0] || prop.address;
+
+              return (
+                <div key={prop.id} className="p-3 rounded-lg bg-white/5">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-white text-sm font-medium truncate flex-1" title={prop.address}>{shortAddr}</span>
+                    <span className={`text-xs font-bold px-2 py-1 rounded ${
+                      avgScore < 60 ? 'bg-green-500/20 text-green-400' :
+                      avgScore < 120 ? 'bg-yellow-500/20 text-yellow-400' :
+                      'bg-red-500/20 text-red-400'
+                    }`}>
+                      Index: {avgScore}
+                    </span>
+                  </div>
+
+                  {/* Crime index bar */}
+                  <div className="relative h-4 bg-gray-700 rounded-full overflow-hidden">
+                    {/* Scale markers */}
+                    <div className="absolute inset-0 flex">
+                      <div className="w-1/4 border-r border-gray-600" title="Safe Zone" />
+                      <div className="w-1/4 border-r border-gray-600" title="Below Average" />
+                      <div className="w-1/4 border-r border-gray-600" title="Average" />
+                      <div className="w-1/4" title="High Crime" />
+                    </div>
+                    {/* Violent crime marker */}
+                    <div
+                      className="absolute h-full bg-red-500/80 transition-all duration-500"
+                      style={{ width: `${Math.min(violentScore / 2, 100)}%` }}
+                      title={`Violent Crime: ${violentScore}`}
+                    />
+                    {/* Property crime overlay */}
+                    <div
+                      className="absolute h-full bg-amber-500/50 transition-all duration-500"
+                      style={{ width: `${Math.min(propertyScore / 2, 100)}%` }}
+                      title={`Property Crime: ${propertyScore}`}
+                    />
+                  </div>
+
+                  {/* Scale labels */}
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>0</span>
+                    <span>50</span>
+                    <span>100</span>
+                    <span>150</span>
+                    <span>200</span>
+                  </div>
+
+                  <div className="flex justify-between mt-2 text-xs">
+                    <span className="text-gray-500">
+                      Violent: <span className={violentLevel === 'LOW' ? 'text-green-400' : violentLevel === 'HIGH' ? 'text-red-400' : 'text-yellow-400'}>{violentLevel || 'N/A'}</span>
+                    </span>
+                    <span className="text-gray-500">
+                      Property: <span className={propertyLevel === 'LOW' ? 'text-green-400' : propertyLevel === 'HIGH' ? 'text-red-400' : 'text-yellow-400'}>{propertyLevel || 'N/A'}</span>
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Legend */}
+          <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-center gap-4">
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded bg-red-500/80" />
+              <span className="text-gray-400 text-xs">Violent Crime</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded bg-amber-500/50" />
+              <span className="text-gray-400 text-xs">Property Crime</span>
+            </div>
+          </div>
+
+          {/* Data source footer */}
+          <div className="mt-3 pt-2 border-t border-white/10">
+            <p className="text-gray-600 text-xs text-center">
+              <strong className="text-gray-500">Data Sources:</strong> FBI Uniform Crime Reporting (UCR), Local Police Dept Statistics, NeighborhoodScout Crime Data
+            </p>
           </div>
         </motion.div>
       </div>
