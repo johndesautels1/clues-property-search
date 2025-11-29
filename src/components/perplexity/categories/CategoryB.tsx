@@ -278,7 +278,7 @@ function TripleGauge({ properties }: CategoryBProps) {
     return {
       id: p.id,
       label: `P${idx + 1}`,
-      address: address.slice(0, 12),
+      address: address.slice(0, 20),
       value: market,
       color: propColor,
       propertyNum: idx + 1,

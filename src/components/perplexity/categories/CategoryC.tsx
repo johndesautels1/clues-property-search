@@ -7,10 +7,11 @@
  */
 
 import { motion } from 'framer-motion';
-import { Doughnut, Scatter } from 'react-chartjs-2';
+import { Bar, Scatter } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
-  ArcElement,
+  BarElement,
+  CategoryScale,
   PointElement,
   LinearScale,
   Tooltip,
@@ -20,7 +21,7 @@ import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
 import { PROPERTY_COLORS, getPropertyColor, calcPricePerSqft } from '../chartColors';
 
-ChartJS.register(ArcElement, PointElement, LinearScale, Tooltip, Legend);
+ChartJS.register(BarElement, CategoryScale, PointElement, LinearScale, Tooltip, Legend);
 
 interface CategoryCProps {
   properties: Property[];
@@ -31,63 +32,80 @@ function getVal<T>(field: { value: T | null } | undefined): T | null {
   return field?.value ?? null;
 }
 
-// C-1: Room Sunburst (as nested donut)
-function RoomSunburst({ properties }: CategoryCProps) {
-  // Aggregate room data
-  let totalBeds = 0, totalBaths = 0, totalGarage = 0;
-  properties.forEach(p => {
-    totalBeds += getVal(p.details?.bedrooms) || 0;
-    totalBaths += getVal(p.details?.totalBathrooms) || 0;
-    totalGarage += getVal(p.details?.garageSpaces) || 0;
+// C-1: Room Comparison Bar - Compare rooms across P1/P2/P3 properties
+function RoomComparisonBar({ properties }: CategoryCProps) {
+  // Take first 3 properties for comparison
+  const comparisonProperties = properties.slice(0, 3);
+
+  const propertyData = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
+    return {
+      id: p.id,
+      label: `P${idx + 1}: ${address.slice(0, 12)}`,
+      beds: getVal(p.details?.bedrooms) || 0,
+      baths: getVal(p.details?.totalBathrooms) || 0,
+      garage: getVal(p.details?.garageSpaces) || 0,
+      color: propColor,
+      propertyNum: idx + 1,
+    };
   });
 
-  const total = totalBeds + totalBaths + totalGarage || 1;
+  const hasData = propertyData.some(p => p.beds > 0 || p.baths > 0 || p.garage > 0);
 
   const data = {
     labels: ['Bedrooms', 'Bathrooms', 'Garage'],
-    datasets: [{
-      data: [totalBeds, totalBaths, totalGarage],
-      backgroundColor: [
-        PROPERTY_COLORS.P1.rgba(0.8),
-        PROPERTY_COLORS.P2.rgba(0.8),
-        PROPERTY_COLORS.P3.rgba(0.8),
-      ],
-      borderColor: [PROPERTY_COLORS.P1.hex, PROPERTY_COLORS.P2.hex, PROPERTY_COLORS.P3.hex],
+    datasets: propertyData.map((prop) => ({
+      label: prop.label,
+      data: [prop.beds, prop.baths, prop.garage],
+      backgroundColor: prop.color.rgba(0.7),
+      borderColor: prop.color.hex,
       borderWidth: 2,
-      hoverOffset: 10,
-    }],
+    })),
   };
 
   const options = {
     responsive: true,
     maintainAspectRatio: false,
-    cutout: '50%',
+    indexAxis: 'y' as const,
+    scales: {
+      x: {
+        grid: { color: 'rgba(255,255,255,0.1)' },
+        ticks: { color: '#E5E7EB', font: { weight: 'bold' as const } },
+      },
+      y: {
+        grid: { color: 'rgba(255,255,255,0.1)' },
+        ticks: { color: '#E5E7EB', font: { weight: 'bold' as const } },
+      },
+    },
     plugins: {
       legend: {
         display: true,
-        position: 'right' as const,
-        labels: { color: '#9CA3AF', boxWidth: 12, padding: 8, font: { size: 10 } },
+        position: 'bottom' as const,
+        labels: {
+          color: '#E5E7EB',
+          boxWidth: 12,
+          padding: 10,
+          font: { size: 10, weight: 'bold' as const },
+        },
       },
       tooltip: {
-        backgroundColor: 'rgba(0,0,0,0.8)',
-        callbacks: {
-          label: (ctx: any) => `${ctx.label}: ${ctx.raw} total (${Math.round(ctx.raw/total*100)}%)`,
-        },
+        backgroundColor: 'rgba(0,0,0,0.9)',
+        titleFont: { weight: 'bold' as const },
+        bodyFont: { weight: 'bold' as const },
       },
     },
   };
 
   return (
     <GlassChart
-      title="Room Distribution"
-      description="Aggregate room breakdown"
-      chartId="C-room-sunburst"
-      color="#10B981"
-      webAugmented
-      webSource="Public records"
+      title="Room Comparison"
+      description={`Beds/baths/garage for ${propertyData.length} properties`}
+      chartId="C-room-comparison"
+      color={PROPERTY_COLORS.P1.hex}
     >
-      {total > 1 ? (
-        <Doughnut data={data} options={options} />
+      {hasData ? (
+        <Bar data={data} options={options} />
       ) : (
         <div className="h-full flex items-center justify-center text-gray-300 font-medium text-sm drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
           No room data available
@@ -288,7 +306,7 @@ function LayoutBars({ properties }: CategoryCProps) {
 export default function CategoryC({ properties, onPropertyClick }: CategoryCProps) {
   return (
     <>
-      <RoomSunburst properties={properties} />
+      <RoomComparisonBar properties={properties} />
       <SpaceEfficiencyScatter properties={properties} onPropertyClick={onPropertyClick} />
       <LayoutBars properties={properties} />
     </>

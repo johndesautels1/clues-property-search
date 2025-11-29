@@ -174,7 +174,7 @@ function IdentityMatrix({ properties, onPropertyClick }: CategoryAProps) {
               <th className="text-left py-2 px-1 w-12">#</th>
               <th className="text-left py-2 px-1">Address</th>
               <th className="text-left py-2 px-1 w-14">Type</th>
-              <th className="text-left py-2 px-1 w-16">Status</th>
+              <th className="text-left py-2 px-1 w-20">Status</th>
             </tr>
           </thead>
           <tbody>
@@ -200,7 +200,7 @@ function IdentityMatrix({ properties, onPropertyClick }: CategoryAProps) {
                 </td>
                 <td className="py-2 px-1">
                   <span
-                    className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
+                    className={`px-1.5 py-0.5 rounded-full text-xs font-bold whitespace-nowrap ${
                       getVal(p.address?.listingStatus) === 'Active'
                         ? 'bg-green-500/30 text-green-400 drop-shadow-[0_0_4px_rgba(34,197,94,0.5)]'
                         : getVal(p.address?.listingStatus) === 'For Sale'
@@ -304,7 +304,7 @@ function GeoDensityHeat({ properties, onPropertyClick }: CategoryAProps) {
                 />
 
                 {/* Content */}
-                <div className="relative z-10 flex flex-col items-center justify-center h-full">
+                <div className="relative z-10 flex flex-col items-center justify-center h-full space-y-1.5">
                   {/* Zip code */}
                   <div className="text-white font-bold text-sm drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">
                     {item.zip}
@@ -312,7 +312,7 @@ function GeoDensityHeat({ properties, onPropertyClick }: CategoryAProps) {
 
                   {/* Property count badge */}
                   <div
-                    className="mt-1 px-2 py-0.5 rounded-full text-xs font-bold"
+                    className="px-2 py-0.5 rounded-full text-xs font-bold"
                     style={{
                       backgroundColor: `${priceColor.bg}80`,
                       color: '#fff',
@@ -323,7 +323,7 @@ function GeoDensityHeat({ properties, onPropertyClick }: CategoryAProps) {
                   </div>
 
                   {/* Avg price */}
-                  <div className="mt-1 text-xs text-gray-200 font-medium drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
+                  <div className="text-xs text-gray-200 font-medium drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
                     ${item.avgPrice >= 1000000
                       ? `${(item.avgPrice / 1000000).toFixed(1)}M`
                       : `${(item.avgPrice / 1000).toFixed(0)}K`}
