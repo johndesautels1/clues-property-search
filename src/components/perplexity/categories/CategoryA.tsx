@@ -226,79 +226,145 @@ function IdentityMatrix({ properties, onPropertyClick }: CategoryAProps) {
   );
 }
 
-// A-3: Geo Density Heat - Heatmap by region
-function GeoDensityHeat({ properties }: CategoryAProps) {
-  // Group by zip code prefix for regional clustering
-  const regions = new Map<string, number>();
+// A-3: Geo Density Heat - Full zip codes with prices and heat grid
+function GeoDensityHeat({ properties, onPropertyClick }: CategoryAProps) {
+  // Group by full zip code with price data
+  const zipData = new Map<string, { count: number; totalPrice: number; properties: Property[] }>();
+
   properties.forEach(p => {
-    const zip = getVal(p.address?.zipCode) || '00000';
-    const prefix = zip.slice(0, 3);
-    regions.set(prefix, (regions.get(prefix) || 0) + 1);
+    const zip = getVal(p.address?.zipCode) || 'Unknown';
+    const price = getVal(p.address?.listingPrice) || 0;
+
+    if (!zipData.has(zip)) {
+      zipData.set(zip, { count: 0, totalPrice: 0, properties: [] });
+    }
+    const data = zipData.get(zip)!;
+    data.count++;
+    data.totalPrice += price;
+    data.properties.push(p);
   });
 
-  const regionArray = Array.from(regions.entries()).sort((a, b) => b[1] - a[1]);
-  const maxCount = Math.max(...regionArray.map(([, count]) => count), 1);
+  // Convert to array and sort by count
+  const zipArray = Array.from(zipData.entries())
+    .map(([zip, data]) => ({
+      zip,
+      count: data.count,
+      avgPrice: data.count > 0 ? data.totalPrice / data.count : 0,
+      properties: data.properties,
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+
+  const maxCount = Math.max(...zipArray.map(z => z.count), 1);
+  const maxPrice = Math.max(...zipArray.map(z => z.avgPrice), 1);
+
+  // Color scale based on price (blue = lower, red = higher)
+  const getPriceColor = (price: number) => {
+    const ratio = price / maxPrice;
+    if (ratio < 0.33) return { bg: '#3B82F6', text: 'blue' }; // Blue - lower
+    if (ratio < 0.66) return { bg: '#F59E0B', text: 'amber' }; // Amber - mid
+    return { bg: '#EF4444', text: 'red' }; // Red - higher
+  };
 
   return (
     <GlassChart
-      title="Geo Density Heat"
-      description="Property concentration by region"
+      title="Zip Code Heat Map"
+      description="Property density & avg price by zip"
       chartId="A-geo-density"
       color="#EF4444"
+      webAugmented
+      webSource="Census/USPS"
     >
-      <div className="h-full flex flex-col justify-center">
-        {/* Heat bars */}
-        <div className="space-y-2">
-          {regionArray.slice(0, 5).map(([region, count], i) => {
-            const intensity = count / maxCount;
-            const hue = 0; // Red hue
-            const saturation = 70 + intensity * 30;
-            const lightness = 50 - intensity * 20;
+      <div className="h-full flex flex-col">
+        {/* Heat grid visualization */}
+        <div className="flex-1 grid grid-cols-3 gap-2 p-1">
+          {zipArray.map((item, i) => {
+            const intensity = item.count / maxCount;
+            const priceColor = getPriceColor(item.avgPrice);
 
             return (
               <motion.div
-                key={region}
-                initial={{ width: 0 }}
-                animate={{ width: '100%' }}
-                transition={{ delay: i * 0.1 }}
-                className="flex items-center gap-3"
+                key={item.zip}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.08 }}
+                className="relative rounded-lg p-2 cursor-pointer group overflow-hidden"
+                style={{
+                  background: `${priceColor.bg}${Math.round(20 + intensity * 40).toString(16)}`,
+                  border: `1px solid ${priceColor.bg}60`,
+                }}
+                onClick={() => item.properties[0] && onPropertyClick?.(item.properties[0].id)}
               >
-                <span className="text-gray-300 text-xs font-mono font-bold w-12 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
-                  {region}xx
-                </span>
-                <div className="flex-1 h-6 rounded-lg overflow-hidden bg-white/5">
+                {/* Glow effect */}
+                <motion.div
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{
+                    background: `radial-gradient(circle at center, ${priceColor.bg}40 0%, transparent 70%)`,
+                  }}
+                />
+
+                {/* Content */}
+                <div className="relative z-10 flex flex-col items-center justify-center h-full">
+                  {/* Zip code */}
+                  <div className="text-white font-bold text-sm drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">
+                    {item.zip}
+                  </div>
+
+                  {/* Property count badge */}
+                  <div
+                    className="mt-1 px-2 py-0.5 rounded-full text-xs font-bold"
+                    style={{
+                      backgroundColor: `${priceColor.bg}80`,
+                      color: '#fff',
+                      textShadow: '0 0 4px rgba(0,0,0,0.5)'
+                    }}
+                  >
+                    {item.count} {item.count === 1 ? 'prop' : 'props'}
+                  </div>
+
+                  {/* Avg price */}
+                  <div className="mt-1 text-xs text-gray-200 font-medium drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
+                    ${item.avgPrice >= 1000000
+                      ? `${(item.avgPrice / 1000000).toFixed(1)}M`
+                      : `${(item.avgPrice / 1000).toFixed(0)}K`}
+                    <span className="text-gray-400 ml-0.5">avg</span>
+                  </div>
+                </div>
+
+                {/* Heat intensity bar at bottom */}
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${intensity * 100}%` }}
-                    transition={{ delay: i * 0.1, duration: 0.5 }}
-                    className="h-full rounded-lg flex items-center justify-end pr-2"
-                    style={{
-                      background: `linear-gradient(90deg, hsl(${hue}, ${saturation}%, ${lightness}%)30, hsl(${hue}, ${saturation}%, ${lightness}%))`,
-                    }}
-                  >
-                    <span className="text-xs text-white font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{count}</span>
-                  </motion.div>
+                    transition={{ delay: i * 0.1 + 0.3, duration: 0.4 }}
+                    className="h-full"
+                    style={{ backgroundColor: priceColor.bg }}
+                  />
                 </div>
               </motion.div>
             );
           })}
         </div>
 
-        {regionArray.length === 0 && (
-          <div className="text-gray-300 font-medium text-sm text-center drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
+        {zipArray.length === 0 && (
+          <div className="flex-1 flex items-center justify-center text-gray-300 font-medium text-sm drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
             No geographic data available
           </div>
         )}
 
         {/* Legend */}
-        <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-300 font-medium drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
+        <div className="mt-2 flex items-center justify-center gap-4 text-xs text-gray-300 font-medium drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
           <div className="flex items-center gap-1">
-            <Flame className="w-3 h-3 text-red-400" />
-            <span>High density</span>
+            <div className="w-3 h-3 rounded bg-blue-500" />
+            <span>Lower $</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded bg-red-900/50" />
-            <span>Low density</span>
+            <div className="w-3 h-3 rounded bg-amber-500" />
+            <span>Mid $</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Flame className="w-3 h-3 text-red-400" />
+            <span>Higher $</span>
           </div>
         </div>
       </div>
@@ -312,7 +378,7 @@ export default function CategoryA({ properties, onPropertyClick }: CategoryAProp
     <>
       <PinClusterOrbs properties={properties} onPropertyClick={onPropertyClick} />
       <IdentityMatrix properties={properties} onPropertyClick={onPropertyClick} />
-      <GeoDensityHeat properties={properties} />
+      <GeoDensityHeat properties={properties} onPropertyClick={onPropertyClick} />
     </>
   );
 }
