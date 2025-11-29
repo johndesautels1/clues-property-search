@@ -37,6 +37,17 @@ import SpaceDistributionChart from './SpaceDistributionChart';
 import SchoolProximityCards from './SchoolProximityCards';
 import CommuteTimeChart from './CommuteTimeChart';
 
+// NEW: 9 Additional Charts from 32 Compare Visuals
+import ValuationCompassChart from './ValuationCompassChart';
+import AppreciationVelocityChart from './AppreciationVelocityChart';
+import MobilityScoresChart from './MobilityScoresChart';
+import SafetyBarometerChart from './SafetyBarometerChart';
+import CompetitiveLandscapeBubble from './CompetitiveLandscapeBubble';
+import EnvironmentalQualityChart from './EnvironmentalQualityChart';
+import InsuranceBreakdownChart from './InsuranceBreakdownChart';
+import UtilityCostChart from './UtilityCostChart';
+import MarketVelocityChart from './MarketVelocityChart';
+
 // Property store for real data
 import { usePropertyStore, useFullProperties } from '@/store/propertyStore';
 import { mapPropertyToChart, mapPropertiesToChart, type ChartProperty } from './propertyToChartMapper';
@@ -515,9 +526,41 @@ export default function BrokerDashboard({ initialProperties, demoMode = false }:
             />
           </section>
 
+          {/* 3b. Valuation Compass & Appreciation Velocity */}
+          <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ValuationCompassChart
+              properties={dashboardData.properties}
+              selectedId={selectedPropertyId}
+            />
+            <AppreciationVelocityChart
+              properties={dashboardData.properties}
+              selectedId={selectedPropertyId}
+            />
+          </section>
+
+          {/* 3c. Competitive Landscape */}
+          <section>
+            <CompetitiveLandscapeBubble
+              properties={dashboardData.properties}
+              selectedId={selectedPropertyId}
+            />
+          </section>
+
           {/* 4. Monthly Cost Breakdown */}
           <section>
             <MonthlyCostChart
+              properties={dashboardData.properties}
+              selectedId={selectedPropertyId}
+            />
+          </section>
+
+          {/* 4b. Utility & Insurance Costs */}
+          <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <UtilityCostChart
+              properties={dashboardData.properties}
+              selectedId={selectedPropertyId}
+            />
+            <InsuranceBreakdownChart
               properties={dashboardData.properties}
               selectedId={selectedPropertyId}
             />
@@ -540,6 +583,18 @@ export default function BrokerDashboard({ initialProperties, demoMode = false }:
             <RiskDashboard
               properties={dashboardData.properties}
               title="Risk Analysis"
+            />
+          </section>
+
+          {/* 6b. Safety & Environmental */}
+          <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <SafetyBarometerChart
+              properties={dashboardData.properties}
+              selectedId={selectedPropertyId}
+            />
+            <EnvironmentalQualityChart
+              properties={dashboardData.properties}
+              selectedId={selectedPropertyId}
             />
           </section>
 
@@ -580,9 +635,25 @@ export default function BrokerDashboard({ initialProperties, demoMode = false }:
             />
           </section>
 
+          {/* 11b. Mobility Scores (Walk/Transit/Bike) */}
+          <section>
+            <MobilityScoresChart
+              properties={dashboardData.properties}
+              selectedId={selectedPropertyId}
+            />
+          </section>
+
           {/* 12. Neighborhood Pulse Trends */}
           <section>
             <NeighborhoodPulseChart
+              properties={dashboardData.properties}
+              selectedId={selectedPropertyId}
+            />
+          </section>
+
+          {/* 12b. Market Velocity (Days on Market) */}
+          <section>
+            <MarketVelocityChart
               properties={dashboardData.properties}
               selectedId={selectedPropertyId}
             />
