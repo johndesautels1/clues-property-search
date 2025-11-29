@@ -30,44 +30,42 @@ function getVal<T>(field: { value: T | null } | undefined): T | null {
   return field?.value ?? null;
 }
 
-// B-1: Value Gap Funnel
+// Property colors for comparison (3 distinct colors)
+const PROPERTY_COLORS = [
+  { bg: 'rgba(16, 185, 129, 0.85)', border: '#10B981', name: 'emerald' },  // Property 1 - Green
+  { bg: 'rgba(0, 217, 255, 0.85)', border: '#00D9FF', name: 'cyan' },      // Property 2 - Cyan
+  { bg: 'rgba(168, 85, 247, 0.85)', border: '#A855F7', name: 'purple' },   // Property 3 - Purple
+];
+
+// B-1: Value Gap Funnel - Optimized for 3-property comparison
 function ValueGapFunnel({ properties }: CategoryBProps) {
-  const data = properties.slice(0, 5).map(p => ({
+  // Take only first 3 properties (comparison mode)
+  const comparisonProperties = properties.slice(0, 3);
+
+  const data = comparisonProperties.map((p, idx) => ({
     id: p.id,
-    address: getVal(p.address?.streetAddress)?.slice(0, 15) || `#${p.id.slice(0, 4)}`,
+    address: getVal(p.address?.streetAddress) || `Property ${idx + 1}`,
     assessed: getVal(p.details?.assessedValue) || 0,
     market: getVal(p.details?.marketValueEstimate) || 0,
     list: getVal(p.address?.listingPrice) || 0,
+    color: PROPERTY_COLORS[idx],
+    propertyNum: idx + 1,
   }));
 
+  // Create datasets per property for better visual separation
   const chartData = {
-    labels: data.map(d => d.address),
-    datasets: [
-      {
-        label: 'Assessed',
-        data: data.map(d => d.assessed / 1000000),
-        backgroundColor: 'rgba(79, 157, 255, 0.8)',
-        borderColor: '#4f9dff',
-        borderWidth: 1,
-        borderRadius: 4,
-      },
-      {
-        label: 'Market',
-        data: data.map(d => d.market / 1000000),
-        backgroundColor: 'rgba(124, 243, 255, 0.8)',
-        borderColor: '#7cf3ff',
-        borderWidth: 1,
-        borderRadius: 4,
-      },
-      {
-        label: 'List',
-        data: data.map(d => d.list / 1000000),
-        backgroundColor: 'rgba(255, 107, 203, 0.8)',
-        borderColor: '#ff6bcb',
-        borderWidth: 1,
-        borderRadius: 4,
-      },
-    ],
+    labels: ['Assessed Value', 'Market Estimate', 'List Price'],
+    datasets: data.map((d, idx) => ({
+      label: `P${d.propertyNum}: ${d.address.slice(0, 20)}`,
+      data: [d.assessed / 1000000, d.market / 1000000, d.list / 1000000],
+      backgroundColor: d.color.bg,
+      borderColor: d.color.border,
+      borderWidth: 2,
+      borderRadius: 6,
+      barThickness: 18,
+      categoryPercentage: 0.8,
+      barPercentage: 0.9,
+    })),
   };
 
   const options = {
@@ -79,26 +77,44 @@ function ValueGapFunnel({ properties }: CategoryBProps) {
         stacked: false,
         grid: { color: 'rgba(255,255,255,0.1)' },
         ticks: {
-          color: '#9CA3AF',
+          color: '#E5E7EB',
+          font: { weight: 'bold' as const },
           callback: (value: number | string) => `$${value}M`,
         },
       },
       y: {
         stacked: false,
         grid: { display: false },
-        ticks: { color: '#9CA3AF', font: { size: 10 } },
+        ticks: {
+          color: '#E5E7EB',
+          font: { size: 11, weight: 'bold' as const },
+        },
       },
     },
     plugins: {
       legend: {
         display: true,
         position: 'top' as const,
-        labels: { color: '#9CA3AF', boxWidth: 12, padding: 8 },
+        labels: {
+          color: '#E5E7EB',
+          boxWidth: 14,
+          padding: 12,
+          font: { size: 10, weight: 'bold' as const },
+          usePointStyle: true,
+          pointStyle: 'rectRounded',
+        },
       },
       tooltip: {
-        backgroundColor: 'rgba(0,0,0,0.8)',
+        backgroundColor: 'rgba(0,0,0,0.9)',
+        titleFont: { weight: 'bold' as const },
+        bodyFont: { weight: 'bold' as const },
+        padding: 12,
         callbacks: {
-          label: (ctx: any) => `${ctx.dataset.label}: $${(ctx.raw * 1000000).toLocaleString()}`,
+          title: (items: any[]) => items[0]?.label || '',
+          label: (ctx: any) => {
+            const value = ctx.raw * 1000000;
+            return `  ${ctx.dataset.label}: $${value.toLocaleString()}`;
+          },
         },
       },
     },
@@ -107,14 +123,30 @@ function ValueGapFunnel({ properties }: CategoryBProps) {
   return (
     <GlassChart
       title="Value Gap Funnel"
-      description="Assessed → Market → List comparison"
+      description={`Comparing ${data.length} properties: Assessed → Market → List`}
       chartId="B-value-gap"
       color="#4f9dff"
       webAugmented
       webSource="Zestimate/marketEstimate"
     >
       {data.length > 0 ? (
-        <Bar data={chartData} options={options} />
+        <div className="h-full flex flex-col">
+          <Bar data={chartData} options={options} />
+          {/* Property legend with addresses */}
+          <div className="mt-2 flex flex-wrap justify-center gap-3 text-xs">
+            {data.map((d, i) => (
+              <div key={d.id} className="flex items-center gap-1.5">
+                <div
+                  className="w-3 h-3 rounded"
+                  style={{ backgroundColor: d.color.border, boxShadow: `0 0 6px ${d.color.border}` }}
+                />
+                <span className="text-gray-200 font-medium drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
+                  P{d.propertyNum}: {d.address.slice(0, 18)}{d.address.length > 18 ? '...' : ''}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       ) : (
         <div className="h-full flex items-center justify-center text-gray-300 font-medium text-sm drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
           No pricing data available
