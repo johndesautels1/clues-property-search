@@ -35,8 +35,7 @@ function UtilityCostDonut({ properties }: CategoryNProps) {
   properties.forEach(p => {
     totalElectric += parseBillAmount(getVal(p.utilities?.avgElectricBill)) * 12;
     totalWater += parseBillAmount(getVal(p.utilities?.avgWaterBill)) * 12;
-    totalInternet += 100 * 12; // Assume $100/mo if fiber available
-    totalGas += getVal(p.utilities?.naturalGas) === 'Yes' ? 50 * 12 : 0;
+    // Internet and gas bill fields not yet in schema - show 0 until available
   });
 
   const data = {
@@ -104,7 +103,8 @@ function ConnectivityLuxuryScatter({ properties }: CategoryNProps) {
     const propColor = getPropertyColor(idx);
     const fiber = getVal(p.utilities?.fiberAvailable);
     const maxSpeed = getVal(p.utilities?.maxInternetSpeed);
-    const speed = maxSpeed ? parseInt(maxSpeed) || 100 : fiber ? 1000 : 100;
+    // Only use speed if we have actual data - no fake fallbacks
+    const speed = maxSpeed ? parseInt(maxSpeed) : fiber ? 1000 : 0;
     const pps = calcPricePerSqft(
       getVal(p.address?.pricePerSqft),
       getVal(p.address?.listingPrice),
@@ -120,7 +120,7 @@ function ConnectivityLuxuryScatter({ properties }: CategoryNProps) {
       propertyNum: idx + 1,
       address: address.slice(0, 15),
     };
-  }).filter(p => p.y > 0);
+  }).filter(p => p.x > 0 && p.y > 0);
 
   // Create separate dataset for each property for distinct colors
   const data = {
@@ -192,7 +192,7 @@ function ConnectivityLuxuryScatter({ properties }: CategoryNProps) {
 // N-3: Utility Expense Bars
 function UtilityExpenseBars({ properties }: CategoryNProps) {
   const data = properties.slice(0, 5).map(p => {
-    const sqft = getVal(p.details?.livingSqft) || 1500;
+    const sqft = getVal(p.details?.livingSqft) || 0;
     const electric = parseBillAmount(getVal(p.utilities?.avgElectricBill));
     const water = parseBillAmount(getVal(p.utilities?.avgWaterBill));
     const total = (electric + water) * 12;

@@ -256,24 +256,30 @@ function EnvironmentGauges({ properties }: CategoryOProps) {
 
   const count = envData.count || 1;
 
+  // Only show values if we have actual data - no fake fallbacks
+  const airValue = envData.air > 0 ? Math.round(envData.air / count) : 0;
+  const solarValue = envData.solar > 0 ? Math.round(envData.solar / count) : 0;
+  const tranquilityValue = envData.water > 0 ? Math.round(envData.water / count) : 0;
+  const hasData = airValue > 0 || solarValue > 0 || tranquilityValue > 0;
+
   const gauges = [
     {
       label: 'Air Quality',
-      value: Math.round(envData.air / count) || 75,
+      value: airValue,
       icon: Wind,
       color: '#10B981',
       description: 'AQI-based score',
     },
     {
       label: 'Solar Potential',
-      value: Math.round(envData.solar / count) || 80,
+      value: solarValue,
       icon: Sun,
       color: '#F59E0B',
       description: 'kWh/sqft potential',
     },
     {
       label: 'Tranquility',
-      value: Math.round(envData.water / count) || 70,
+      value: tranquilityValue,
       icon: Droplets,
       color: '#00D9FF',
       description: 'Noise level score',

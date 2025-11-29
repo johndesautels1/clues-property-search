@@ -120,7 +120,7 @@ function calculateKPIs(properties: Property[]): KPICard[] {
   // Calculate Data Completeness
   let totalCompleteness = 0;
   properties.forEach(p => {
-    totalCompleteness += p.dataCompleteness || 85;
+    totalCompleteness += p.dataCompleteness || 0;
   });
   const avgCompleteness = properties.length > 0 ? Math.round(totalCompleteness / properties.length) : 0;
 
@@ -178,7 +178,7 @@ function calculateKPIs(properties: Property[]): KPICard[] {
     {
       id: 'avg-appreciation',
       label: 'Avg Appreciation',
-      value: '5.2%',
+      value: '—', // Field not yet in schema - will show when marketAnalysis data available
       subtext: '5yr projected',
       icon: LineChart,
       color: '#10B981',
@@ -202,7 +202,7 @@ function calculateKPIs(properties: Property[]): KPICard[] {
     {
       id: 'avg-roi',
       label: 'Avg ROI Projection',
-      value: '12.4%',
+      value: '—', // Field not yet in schema - will show when marketAnalysis data available
       subtext: '10yr horizon',
       icon: Target,
       color: '#8B5CF6',
@@ -226,7 +226,23 @@ function calculateKPIs(properties: Property[]): KPICard[] {
     {
       id: 'confidence',
       label: 'Confidence Score',
-      value: '94.7%',
+      value: (() => {
+        // Use dataCompleteness or aiConfidence from Property root
+        let totalConfidence = 0;
+        let count = 0;
+        properties.forEach(p => {
+          const aiConf = p.aiConfidence;
+          const completeness = p.dataCompleteness;
+          if (aiConf && aiConf > 0) {
+            totalConfidence += aiConf;
+            count++;
+          } else if (completeness && completeness > 0) {
+            totalConfidence += completeness;
+            count++;
+          }
+        });
+        return count > 0 ? `${(totalConfidence / count).toFixed(1)}%` : '—';
+      })(),
       subtext: 'data quality',
       icon: CheckCircle2,
       color: '#10B981',

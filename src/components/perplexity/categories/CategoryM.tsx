@@ -23,14 +23,11 @@ function getVal<T>(field: { value: T | null } | undefined): T | null {
 
 // M-1: ROI Highway Timeline
 function ROIHighway({ properties }: CategoryMProps) {
-  // Get first property with ROI data or create sample
-  const p = properties[0];
-  const currentPrice = p ? (getVal(p.address?.listingPrice) || 1000000) : 1000000;
-
-  // Generate ROI projection (5.5% annual appreciation)
+  // This chart requires appreciation rate data which is not yet in the schema
+  // When marketAnalysis data is available, this will show real projections
+  const hasData = false; // Placeholder until schema includes appreciation fields
+  const values: number[] = [];
   const years = ['Today', 'Y1', 'Y2', 'Y3', 'Y5', 'Y7', 'Y10'];
-  const multipliers = [1, 1.055, 1.113, 1.174, 1.307, 1.455, 1.708];
-  const values = multipliers.map(m => (currentPrice * m) / 1000000);
 
   const data = {
     labels: years,
@@ -81,7 +78,13 @@ function ROIHighway({ properties }: CategoryMProps) {
       chartId="M-roi-highway"
       color="#10B981"
     >
-      <Line data={data} options={options} />
+      {values.length > 0 ? (
+        <Line data={data} options={options} />
+      ) : (
+        <div className="h-full flex items-center justify-center text-gray-300 font-medium text-sm drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
+          No appreciation data available
+        </div>
+      )}
     </GlassChart>
   );
 }
@@ -96,10 +99,11 @@ function CapAppreciationBubbles({ properties }: CategoryMProps) {
     const capRate = getVal(p.financial?.capRateEst) || 0;
     const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
 
+    // Appreciation field not yet in schema - show cap rate only
     return {
       id: p.id,
       x: capRate,
-      y: 5.5, // Assumed appreciation
+      y: 0, // No appreciation data available in current schema
       color: propColor,
       propertyNum: idx + 1,
       address: address.slice(0, 15),
@@ -180,21 +184,20 @@ function MarketPulseTimeline({ properties }: CategoryMProps) {
   // Aggregate neighborhood pulse data
   const years = ['2020', '2021', '2022', '2023', '2024', '2025'];
 
-  const avgByYear = years.map(year => {
-    let total = 0;
-    let count = 0;
-    properties.forEach(p => {
-      const median = getVal(p.financial?.medianHomePriceNeighborhood);
-      if (median) {
-        // Simulate historical data based on current median
-        const yearIndex = parseInt(year) - 2020;
-        const historicalFactor = Math.pow(1.08, yearIndex - 5); // 8% annual growth
-        total += median * historicalFactor;
-        count++;
-      }
-    });
-    return count > 0 ? total / count / 1000000 : 0;
-  });
+  // Only use actual median home price data - no simulated historical data
+  const currentMedian = properties.reduce((acc, p) => {
+    const median = getVal(p.financial?.medianHomePriceNeighborhood);
+    if (median) {
+      acc.total += median;
+      acc.count++;
+    }
+    return acc;
+  }, { total: 0, count: 0 });
+
+  const avgMedian = currentMedian.count > 0 ? currentMedian.total / currentMedian.count / 1000000 : 0;
+
+  // Show only current year data point if we have it
+  const avgByYear = avgMedian > 0 ? [null, null, null, null, null, avgMedian] : [];
 
   const data = {
     labels: years,
@@ -232,11 +235,17 @@ function MarketPulseTimeline({ properties }: CategoryMProps) {
   return (
     <GlassChart
       title="Market Pulse"
-      description="Neighborhood trend 2020-2025"
+      description="Current neighborhood median"
       chartId="M-pulse-timeline"
       color="#F59E0B"
     >
-      <Line data={data} options={options} />
+      {avgMedian > 0 ? (
+        <Line data={data} options={options} />
+      ) : (
+        <div className="h-full flex items-center justify-center text-gray-300 font-medium text-sm drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
+          No neighborhood median data
+        </div>
+      )}
     </GlassChart>
   );
 }

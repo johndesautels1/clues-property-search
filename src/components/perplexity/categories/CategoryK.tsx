@@ -35,10 +35,10 @@ function CommuteCompass({ properties }: CategoryKProps) {
     return {
       id: p.id,
       label: `P${idx + 1}: ${address.slice(0, 12)}`,
-      city: Math.max(0, 100 - ((commute ? parseInt(commute) || 20 : 20) * 2)),
-      school: Math.max(0, 100 - ((getVal(p.location?.elementaryDistanceMiles) || 2) * 20)),
-      hospital: Math.max(0, 100 - ((getVal(p.location?.distanceHospitalMiles) || 5) * 5)),
-      grocery: Math.max(0, 100 - ((getVal(p.location?.distanceGroceryMiles) || 2) * 20)),
+      city: commute ? Math.max(0, 100 - (parseInt(commute) * 2)) : 0,
+      school: getVal(p.location?.elementaryDistanceMiles) ? Math.max(0, 100 - (getVal(p.location?.elementaryDistanceMiles)! * 20)) : 0,
+      hospital: getVal(p.location?.distanceHospitalMiles) ? Math.max(0, 100 - (getVal(p.location?.distanceHospitalMiles)! * 5)) : 0,
+      grocery: getVal(p.location?.distanceGroceryMiles) ? Math.max(0, 100 - (getVal(p.location?.distanceGroceryMiles)! * 20)) : 0,
       color: propColor,
       propertyNum: idx + 1,
     };
@@ -111,11 +111,19 @@ function AccessTiles({ properties }: CategoryKProps) {
 
   const count = avgDistances.count || 1;
 
+  // Also gather transit and school distances
+  const schoolDistances = properties.reduce((acc, p) => {
+    acc.elementary += getVal(p.location?.elementaryDistanceMiles) || 0;
+    acc.count++;
+    return acc;
+  }, { elementary: 0, count: 0 });
+  const schoolCount = schoolDistances.count || 1;
+
   const tiles = [
     { label: 'Grocery', value: avgDistances.grocery / count, icon: ShoppingBag, color: '#10B981' },
     { label: 'Hospital', value: avgDistances.hospital / count, icon: Heart, color: '#EF4444' },
-    { label: 'Transit', value: 5, icon: Train, color: '#00D9FF' },
-    { label: 'School', value: 2, icon: GraduationCap, color: '#8B5CF6' },
+    { label: 'Airport', value: avgDistances.airport / count, icon: Train, color: '#00D9FF' },
+    { label: 'School', value: schoolDistances.elementary / schoolCount, icon: GraduationCap, color: '#8B5CF6' },
   ];
 
   return (
