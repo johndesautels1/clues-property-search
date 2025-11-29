@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
 import { Check, X } from 'lucide-react';
+import { getIndexColor, PROPERTY_COLORS } from '../chartColors';
 
 interface CategoryFProps {
   properties: Property[];
@@ -123,7 +124,7 @@ function FinishQualityIndex({ properties }: CategoryFProps) {
           >
             <div className="flex justify-between text-xs mb-1">
               <span className="text-gray-300 font-medium truncate max-w-[80px] drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">{item.address}</span>
-              <span className="text-green-400 font-bold drop-shadow-[0_0_6px_rgba(34,197,94,0.5)]">{item.score}/100</span>
+              <span style={{ color: getIndexColor(item.score).hex }} className="font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]">{item.score}/100</span>
             </div>
             <div className="h-3 bg-white/5 rounded-full overflow-hidden">
               <motion.div
@@ -132,7 +133,7 @@ function FinishQualityIndex({ properties }: CategoryFProps) {
                 transition={{ duration: 0.5, delay: i * 0.1 }}
                 className="h-full rounded-full"
                 style={{
-                  background: `linear-gradient(90deg, #10B981, ${item.score > 70 ? '#00D9FF' : '#F59E0B'})`,
+                  backgroundColor: getIndexColor(item.score).hex,
                 }}
               />
             </div>

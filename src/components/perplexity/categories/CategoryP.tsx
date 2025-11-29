@@ -14,6 +14,7 @@ import {
   Waves, Car, Trees, Lock, Home, Sparkles,
   Building, Sun, Star
 } from 'lucide-react';
+import { PROPERTY_COLORS, getPropertyColor, getIndexColor } from '../chartColors';
 
 interface CategoryPProps {
   properties: Property[];

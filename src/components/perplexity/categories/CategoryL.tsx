@@ -11,6 +11,7 @@ import { Scatter } from 'react-chartjs-2';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
 import { Shield, AlertTriangle, Home } from 'lucide-react';
+import { INDEX_COLORS, getIndexColor, PROPERTY_COLORS, getPropertyColor } from '../chartColors';
 
 interface CategoryLProps {
   properties: Property[];
@@ -194,11 +195,9 @@ function CrimeHeatRow({ properties }: CategoryLProps) {
     property: crimeToScore(getVal(p.location?.crimeIndexProperty)),
   }));
 
+  // Use CLUES INDEX colors: higher safety score = better (GREEN), lower = worse (RED)
   const getColor = (score: number): string => {
-    if (score >= 80) return '#10B981';
-    if (score >= 60) return '#F59E0B';
-    if (score >= 40) return '#EF4444';
-    return '#991B1B';
+    return getIndexColor(score).hex;
   };
 
   return (

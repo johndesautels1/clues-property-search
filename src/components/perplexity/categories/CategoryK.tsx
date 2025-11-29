@@ -11,6 +11,7 @@ import { Radar, Scatter } from 'react-chartjs-2';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
 import { Building2, GraduationCap, Train, Heart, ShoppingBag } from 'lucide-react';
+import { PROPERTY_COLORS, getPropertyColor } from '../chartColors';
 
 interface CategoryKProps {
   properties: Property[];

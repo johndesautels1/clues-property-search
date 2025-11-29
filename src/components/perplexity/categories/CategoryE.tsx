@@ -19,6 +19,7 @@ import {
 } from 'chart.js';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
+import { getIndexColor, PROPERTY_COLORS } from '../chartColors';
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, CategoryScale, LinearScale);
 

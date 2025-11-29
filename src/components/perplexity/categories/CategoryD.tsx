@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 import { Doughnut, Scatter } from 'react-chartjs-2';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
+import { getIndexColor, PROPERTY_COLORS } from '../chartColors';
 
 interface CategoryDProps {
   properties: Property[];
@@ -97,6 +98,12 @@ function HOAHeatmap({ properties }: CategoryDProps) {
 
   const maxHOA = Math.max(...hoaData.map(d => d.hoa), 1);
 
+  // Get color based on HOA fee level (reversed: higher fee = red, lower = green)
+  const getHOAColor = (hoa: number): string => {
+    const score = 100 - ((hoa / maxHOA) * 100); // Invert: high HOA = low score = red
+    return getIndexColor(score).hex;
+  };
+
   return (
     <GlassChart
       title="HOA Fee Heatmap"
@@ -107,8 +114,7 @@ function HOAHeatmap({ properties }: CategoryDProps) {
       <div className="h-full flex flex-col justify-center">
         <div className="grid grid-cols-4 gap-2">
           {hoaData.map((d, i) => {
-            const intensity = d.hoa / maxHOA;
-            const hue = 120 - intensity * 120; // Green to Red
+            const color = getHOAColor(d.hoa);
 
             return (
               <motion.div
@@ -118,7 +124,8 @@ function HOAHeatmap({ properties }: CategoryDProps) {
                 transition={{ delay: i * 0.05 }}
                 className="p-2 rounded-lg text-center cursor-pointer hover:scale-105 transition-transform"
                 style={{
-                  backgroundColor: d.hasHOA ? `hsla(${hue}, 70%, 40%, 0.6)` : 'rgba(255,255,255,0.05)',
+                  backgroundColor: d.hasHOA ? `${color}40` : 'rgba(255,255,255,0.05)',
+                  border: d.hasHOA ? `1px solid ${color}60` : 'none',
                 }}
               >
                 <div className="text-xs text-gray-300 truncate">{d.address}</div>

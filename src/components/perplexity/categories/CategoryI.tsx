@@ -11,6 +11,7 @@ import { Radar } from 'react-chartjs-2';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
 import { GraduationCap, Star } from 'lucide-react';
+import { getIndexColor } from '../chartColors';
 
 interface CategoryIProps {
   properties: Property[];
@@ -211,11 +212,9 @@ function SchoolTierHeatmap({ properties }: CategoryIProps) {
     district: getVal(p.location?.schoolDistrictName) || 'Unknown',
   }));
 
+  // School ratings 1-10 mapped to 0-100 for CLUES index colors
   const getRatingColor = (rating: number): string => {
-    if (rating >= 8) return '#10B981';
-    if (rating >= 6) return '#F59E0B';
-    if (rating >= 4) return '#EF4444';
-    return '#6B7280';
+    return getIndexColor(rating * 10).hex;
   };
 
   return (

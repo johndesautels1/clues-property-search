@@ -11,6 +11,7 @@ import { Radar, Scatter } from 'react-chartjs-2';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
 import { Wind, Sun, Droplets } from 'lucide-react';
+import { getIndexColor, INDEX_COLORS, PROPERTY_COLORS } from '../chartColors';
 
 interface CategoryOProps {
   properties: Property[];
@@ -129,11 +130,11 @@ function RiskRewardMatrix({ properties }: CategoryOProps) {
       label: 'Properties',
       data: points.map(p => ({ x: p.x, y: p.y })),
       backgroundColor: points.map(p => {
-        // Color by quadrant
-        if (p.x >= 60 && p.y >= 5) return 'rgba(16, 185, 129, 0.7)'; // High safety, high yield = green
-        if (p.x >= 60 && p.y < 5) return 'rgba(0, 217, 255, 0.7)'; // High safety, low yield = blue
-        if (p.x < 60 && p.y >= 5) return 'rgba(245, 158, 11, 0.7)'; // Low safety, high yield = orange
-        return 'rgba(239, 68, 68, 0.7)'; // Low safety, low yield = red
+        // Color by quadrant using INDEX colors
+        if (p.x >= 60 && p.y >= 5) return INDEX_COLORS.GREEN.rgba(0.7); // High safety, high yield = green
+        if (p.x >= 60 && p.y < 5) return INDEX_COLORS.BLUE.rgba(0.7); // High safety, low yield = blue
+        if (p.x < 60 && p.y >= 5) return INDEX_COLORS.ORANGE.rgba(0.7); // Low safety, high yield = orange
+        return INDEX_COLORS.RED.rgba(0.7); // Low safety, low yield = red
       }),
       borderColor: '#fff',
       borderWidth: 1,
@@ -170,12 +171,12 @@ function RiskRewardMatrix({ properties }: CategoryOProps) {
     },
   };
 
-  // Quadrant labels
+  // Quadrant labels using INDEX colors
   const quadrantLabels = [
-    { label: 'Safe & High Yield', x: '75%', y: '25%', color: '#10B981' },
-    { label: 'Safe & Low Yield', x: '75%', y: '75%', color: '#00D9FF' },
-    { label: 'Risky & High Yield', x: '25%', y: '25%', color: '#F59E0B' },
-    { label: 'Risky & Low Yield', x: '25%', y: '75%', color: '#EF4444' },
+    { label: 'Safe & High Yield', x: '75%', y: '25%', color: INDEX_COLORS.GREEN.hex },
+    { label: 'Safe & Low Yield', x: '75%', y: '75%', color: INDEX_COLORS.BLUE.hex },
+    { label: 'Risky & High Yield', x: '25%', y: '25%', color: INDEX_COLORS.ORANGE.hex },
+    { label: 'Risky & Low Yield', x: '25%', y: '75%', color: INDEX_COLORS.RED.hex },
   ];
 
   return (

@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
 import { CheckCircle2, AlertCircle, Clock } from 'lucide-react';
+import { getIndexColor, INDEX_COLORS } from '../chartColors';
 
 interface CategoryHProps {
   properties: Property[];
@@ -217,9 +218,9 @@ function ComplianceGauge({ properties }: CategoryHProps) {
   });
 
   const statusConfig: Record<string, { icon: typeof CheckCircle2; color: string; label: string }> = {
-    compliant: { icon: CheckCircle2, color: '#10B981', label: 'Compliant' },
-    partial: { icon: Clock, color: '#F59E0B', label: 'Partial' },
-    review: { icon: AlertCircle, color: '#EF4444', label: 'Review' },
+    compliant: { icon: CheckCircle2, color: INDEX_COLORS.GREEN.hex, label: 'Compliant' },
+    partial: { icon: Clock, color: INDEX_COLORS.YELLOW.hex, label: 'Partial' },
+    review: { icon: AlertCircle, color: INDEX_COLORS.RED.hex, label: 'Review' },
   };
 
   return (

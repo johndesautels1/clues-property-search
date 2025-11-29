@@ -11,6 +11,7 @@ import { Doughnut, Scatter } from 'react-chartjs-2';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
 import { Wifi, Zap, Droplets, Flame } from 'lucide-react';
+import { PROPERTY_COLORS, getPropertyColor } from '../chartColors';
 
 interface CategoryNProps {
   properties: Property[];

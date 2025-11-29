@@ -18,6 +18,7 @@ import {
 } from 'chart.js';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
+import { PROPERTY_COLORS, getPropertyColor } from '../chartColors';
 
 ChartJS.register(ArcElement, PointElement, LinearScale, Tooltip, Legend);
 
@@ -47,11 +48,11 @@ function RoomSunburst({ properties }: CategoryCProps) {
     datasets: [{
       data: [totalBeds, totalBaths, totalGarage],
       backgroundColor: [
-        'rgba(16, 185, 129, 0.8)',
-        'rgba(0, 217, 255, 0.8)',
-        'rgba(139, 92, 246, 0.8)',
+        PROPERTY_COLORS.P1.rgba(0.8),
+        PROPERTY_COLORS.P2.rgba(0.8),
+        PROPERTY_COLORS.P3.rgba(0.8),
       ],
-      borderColor: ['#10B981', '#00D9FF', '#8B5CF6'],
+      borderColor: [PROPERTY_COLORS.P1.hex, PROPERTY_COLORS.P2.hex, PROPERTY_COLORS.P3.hex],
       borderWidth: 2,
       hoverOffset: 10,
     }],
@@ -178,9 +179,9 @@ function LayoutBars({ properties }: CategoryCProps) {
 
   const count = stats.count || 1;
   const bars = [
-    { label: 'Avg Beds', value: stats.beds / count, max: 6, color: '#10B981' },
-    { label: 'Avg Baths', value: stats.baths / count, max: 5, color: '#00D9FF' },
-    { label: 'Avg Garage', value: stats.garage / count, max: 4, color: '#8B5CF6' },
+    { label: 'Avg Beds', value: stats.beds / count, max: 6, color: PROPERTY_COLORS.P1.hex },
+    { label: 'Avg Baths', value: stats.baths / count, max: 5, color: PROPERTY_COLORS.P2.hex },
+    { label: 'Avg Garage', value: stats.garage / count, max: 4, color: PROPERTY_COLORS.P3.hex },
     { label: 'Avg Parking', value: stats.parking / count, max: 6, color: '#F59E0B' },
   ];
 

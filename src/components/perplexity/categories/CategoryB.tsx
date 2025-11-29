@@ -30,27 +30,27 @@ function getVal<T>(field: { value: T | null } | undefined): T | null {
   return field?.value ?? null;
 }
 
-// Property colors for comparison (3 distinct colors)
-const PROPERTY_COLORS = [
-  { bg: 'rgba(16, 185, 129, 0.85)', border: '#10B981', name: 'emerald' },  // Property 1 - Green
-  { bg: 'rgba(0, 217, 255, 0.85)', border: '#00D9FF', name: 'cyan' },      // Property 2 - Cyan
-  { bg: 'rgba(168, 85, 247, 0.85)', border: '#A855F7', name: 'purple' },   // Property 3 - Purple
-];
+import { PROPERTY_COLORS, getPropertyColor, LEGACY_PROPERTY_COLORS } from '../chartColors';
+
+// Use shared property colors from chartColors.ts for consistency across all charts
 
 // B-1: Value Gap Funnel - Vertical bar chart for 3-property comparison
 function ValueGapFunnel({ properties }: CategoryBProps) {
   // Take only first 3 properties (comparison mode)
   const comparisonProperties = properties.slice(0, 3);
 
-  const data = comparisonProperties.map((p, idx) => ({
-    id: p.id,
-    address: getVal(p.address?.streetAddress) || `Property ${idx + 1}`,
-    assessed: getVal(p.details?.assessedValue) || 0,
-    market: getVal(p.details?.marketValueEstimate) || 0,
-    list: getVal(p.address?.listingPrice) || 0,
-    color: PROPERTY_COLORS[idx],
-    propertyNum: idx + 1,
-  }));
+  const data = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
+    return {
+      id: p.id,
+      address: getVal(p.address?.streetAddress) || `Property ${idx + 1}`,
+      assessed: getVal(p.details?.assessedValue) || 0,
+      market: getVal(p.details?.marketValueEstimate) || 0,
+      list: getVal(p.address?.listingPrice) || 0,
+      color: propColor,
+      propertyNum: idx + 1,
+    };
+  });
 
   // Vertical bar chart - X axis = value types, Y axis = price
   // Each property gets its own colored bar within each category
@@ -59,8 +59,8 @@ function ValueGapFunnel({ properties }: CategoryBProps) {
     datasets: data.map((d) => ({
       label: `P${d.propertyNum}: ${d.address.slice(0, 15)}`,
       data: [d.assessed / 1000000, d.market / 1000000, d.list / 1000000],
-      backgroundColor: d.color.bg,
-      borderColor: d.color.border,
+      backgroundColor: d.color.rgba(0.85),
+      borderColor: d.color.hex,
       borderWidth: 2,
       borderRadius: 6,
       barThickness: 28,
