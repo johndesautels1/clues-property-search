@@ -136,8 +136,30 @@ function PinClusterOrbs({ properties, onPropertyClick }: CategoryAProps) {
   );
 }
 
+// Shorten property type for display
+function shortenPropertyType(type: string | null): string {
+  if (!type) return 'SFH';
+  const lower = type.toLowerCase();
+  if (lower.includes('single') || lower.includes('sfh')) return 'SFH';
+  if (lower.includes('condo')) return 'Condo';
+  if (lower.includes('townhouse') || lower.includes('town')) return 'Town';
+  if (lower.includes('multi')) return 'Multi';
+  if (lower.includes('land') || lower.includes('lot')) return 'Land';
+  if (lower.includes('commercial')) return 'Comm';
+  return type.slice(0, 8);
+}
+
 // A-2: Identity Matrix - Table with hover glow
 function IdentityMatrix({ properties, onPropertyClick }: CategoryAProps) {
+  // Deduplicate properties by address to avoid showing same property twice
+  const seen = new Set<string>();
+  const uniqueProperties = properties.filter(p => {
+    const addr = getVal(p.address?.streetAddress) || getVal(p.address?.fullAddress) || p.id;
+    if (seen.has(addr)) return false;
+    seen.add(addr);
+    return true;
+  });
+
   return (
     <GlassChart
       title="Identity Matrix"
@@ -148,38 +170,42 @@ function IdentityMatrix({ properties, onPropertyClick }: CategoryAProps) {
       <div className="overflow-auto h-full">
         <table className="w-full text-xs">
           <thead>
-            <tr className="text-gray-400 border-b border-white/10">
-              <th className="text-left py-2 px-2">ID</th>
-              <th className="text-left py-2 px-2">Address</th>
-              <th className="text-left py-2 px-2">Type</th>
-              <th className="text-left py-2 px-2">Status</th>
+            <tr className="text-gray-300 font-bold border-b border-white/10 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
+              <th className="text-left py-2 px-1 w-12">#</th>
+              <th className="text-left py-2 px-1">Address</th>
+              <th className="text-left py-2 px-1 w-14">Type</th>
+              <th className="text-left py-2 px-1 w-16">Status</th>
             </tr>
           </thead>
           <tbody>
-            {properties.slice(0, 6).map((p, i) => (
+            {uniqueProperties.slice(0, 6).map((p, i) => (
               <motion.tr
-                key={p.id}
+                key={`${p.id}-${i}`}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.05 }}
                 className="border-b border-white/5 cursor-pointer hover:bg-cyan-500/10 transition-colors"
                 onClick={() => onPropertyClick?.(p.id)}
               >
-                <td className="py-2 px-2 text-cyan-400 font-mono">
-                  #{p.id.slice(0, 4)}
+                <td className="py-2 px-1 text-cyan-400 font-mono font-bold drop-shadow-[0_0_4px_rgba(0,217,255,0.5)]">
+                  {i + 1}
                 </td>
-                <td className="py-2 px-2 text-white font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.5)] truncate max-w-[120px]">
-                  {getVal(p.address?.streetAddress) || getVal(p.address?.fullAddress) || '—'}
+                <td className="py-2 px-1 text-white font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]">
+                  <div className="truncate max-w-[140px]">
+                    {getVal(p.address?.streetAddress) || getVal(p.address?.fullAddress) || '—'}
+                  </div>
                 </td>
-                <td className="py-2 px-2 text-gray-400">
-                  {getVal(p.details?.propertyType) || 'SFH'}
+                <td className="py-2 px-1 text-gray-300 font-medium drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
+                  {shortenPropertyType(getVal(p.details?.propertyType))}
                 </td>
-                <td className="py-2 px-2">
+                <td className="py-2 px-1">
                   <span
-                    className={`px-2 py-0.5 rounded-full text-xs ${
+                    className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
                       getVal(p.address?.listingStatus) === 'Active'
-                        ? 'bg-green-500/20 text-green-400'
-                        : 'bg-gray-500/20 text-gray-400'
+                        ? 'bg-green-500/30 text-green-400 drop-shadow-[0_0_4px_rgba(34,197,94,0.5)]'
+                        : getVal(p.address?.listingStatus) === 'For Sale'
+                        ? 'bg-blue-500/30 text-blue-400 drop-shadow-[0_0_4px_rgba(59,130,246,0.5)]'
+                        : 'bg-gray-500/30 text-gray-300 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]'
                     }`}
                   >
                     {getVal(p.address?.listingStatus) || 'Active'}
@@ -190,15 +216,15 @@ function IdentityMatrix({ properties, onPropertyClick }: CategoryAProps) {
           </tbody>
         </table>
 
-        {properties.length === 0 && (
-          <div className="text-gray-500 text-sm text-center py-8">
+        {uniqueProperties.length === 0 && (
+          <div className="text-gray-300 font-medium text-sm text-center py-8 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
             No properties to display
           </div>
         )}
 
-        {properties.length > 6 && (
-          <div className="text-center text-gray-500 text-xs py-2">
-            +{properties.length - 6} more properties
+        {uniqueProperties.length > 6 && (
+          <div className="text-center text-cyan-400 font-medium text-xs py-2 drop-shadow-[0_0_4px_rgba(0,217,255,0.5)]">
+            +{uniqueProperties.length - 6} more properties
           </div>
         )}
       </div>
