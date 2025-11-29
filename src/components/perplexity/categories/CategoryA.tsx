@@ -269,7 +269,7 @@ function GeoDensityHeat({ properties }: CategoryAProps) {
                 transition={{ delay: i * 0.1 }}
                 className="flex items-center gap-3"
               >
-                <span className="text-gray-400 text-xs font-mono w-12">
+                <span className="text-gray-300 text-xs font-mono font-bold w-12 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
                   {region}xx
                 </span>
                 <div className="flex-1 h-6 rounded-lg overflow-hidden bg-white/5">
@@ -291,13 +291,13 @@ function GeoDensityHeat({ properties }: CategoryAProps) {
         </div>
 
         {regionArray.length === 0 && (
-          <div className="text-gray-500 text-sm text-center">
+          <div className="text-gray-300 font-medium text-sm text-center drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
             No geographic data available
           </div>
         )}
 
         {/* Legend */}
-        <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-500">
+        <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-300 font-medium drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
           <div className="flex items-center gap-1">
             <Flame className="w-3 h-3 text-red-400" />
             <span>High density</span>
