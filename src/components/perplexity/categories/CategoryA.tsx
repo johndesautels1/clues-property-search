@@ -304,7 +304,7 @@ function GeoDensityHeat({ properties, onPropertyClick }: CategoryAProps) {
                 />
 
                 {/* Content */}
-                <div className="relative z-10 flex flex-col items-center justify-center h-full space-y-1.5">
+                <div className="relative z-10 flex flex-col items-center justify-center h-full space-y-2.5">
                   {/* Zip code */}
                   <div className="text-white font-bold text-sm drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">
                     {item.zip}

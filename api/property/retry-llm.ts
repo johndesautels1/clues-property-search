@@ -23,6 +23,106 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
 
 const LLM_TIMEOUT = 55000; // 55s per LLM call (within 60s Vercel Pro limit)
 
+// Map flat LLM field names to numbered field keys (copied from search-stream.ts for isolation)
+const FLAT_TO_NUMBERED_FIELD_MAP: Record<string, string> = {
+  'full_address': '1_full_address', 'address': '1_full_address',
+  'mls_primary': '2_mls_primary', 'mls_number': '2_mls_primary',
+  'mls_secondary': '3_mls_secondary',
+  'listing_status': '4_listing_status', 'status': '4_listing_status',
+  'listing_date': '5_listing_date',
+  'parcel_id': '6_parcel_id', 'parcel': '6_parcel_id',
+  'listing_price': '7_listing_price', 'price': '7_listing_price', 'list_price': '7_listing_price',
+  'price_per_sqft': '8_price_per_sqft', 'price_per_sq_ft': '8_price_per_sqft',
+  'market_value_estimate': '9_market_value_estimate', 'market_value': '9_market_value_estimate', 'estimated_value': '9_market_value_estimate',
+  'last_sale_date': '10_last_sale_date', 'sale_date': '10_last_sale_date',
+  'last_sale_price': '11_last_sale_price', 'sale_price': '11_last_sale_price',
+  'bedrooms': '12_bedrooms', 'beds': '12_bedrooms',
+  'full_bathrooms': '13_full_bathrooms', 'full_baths': '13_full_bathrooms',
+  'half_bathrooms': '14_half_bathrooms', 'half_baths': '14_half_bathrooms',
+  'total_bathrooms': '15_total_bathrooms', 'bathrooms': '15_total_bathrooms', 'baths': '15_total_bathrooms',
+  'living_sqft': '16_living_sqft', 'living_sq_ft': '16_living_sqft', 'sqft': '16_living_sqft', 'square_feet': '16_living_sqft',
+  'total_sqft_under_roof': '17_total_sqft_under_roof',
+  'lot_size_sqft': '18_lot_size_sqft', 'lot_size_sq_ft': '18_lot_size_sqft', 'lot_sqft': '18_lot_size_sqft',
+  'lot_size_acres': '19_lot_size_acres', 'lot_acres': '19_lot_size_acres',
+  'year_built': '20_year_built', 'built': '20_year_built',
+  'property_type': '21_property_type', 'type': '21_property_type',
+  'stories': '22_stories', 'floors': '22_stories',
+  'garage_spaces': '23_garage_spaces', 'garage': '23_garage_spaces',
+  'parking_total': '24_parking_total', 'parking': '24_parking_total',
+  'hoa_yn': '25_hoa_yn', 'hoa': '25_hoa_yn', 'has_hoa': '25_hoa_yn',
+  'hoa_fee_annual': '26_hoa_fee_annual', 'hoa_fee': '26_hoa_fee_annual', 'hoa_fee_monthly': '26_hoa_fee_annual',
+  'ownership_type': '27_ownership_type',
+  'county': '28_county',
+  'annual_taxes': '29_annual_taxes', 'taxes': '29_annual_taxes', 'property_taxes': '29_annual_taxes',
+  'tax_year': '30_tax_year',
+  'assessed_value': '31_assessed_value',
+  'tax_exemptions': '32_tax_exemptions',
+  'property_tax_rate': '33_property_tax_rate', 'property_tax_rate_percent': '33_property_tax_rate', 'tax_rate': '33_property_tax_rate',
+  'recent_tax_history': '34_recent_tax_history',
+  'special_assessments': '35_special_assessments',
+  'roof_type': '36_roof_type', 'roof': '36_roof_type',
+  'roof_age_est': '37_roof_age_est', 'roof_age': '37_roof_age_est',
+  'exterior_material': '38_exterior_material', 'exterior': '38_exterior_material',
+  'foundation': '39_foundation',
+  'hvac_type': '40_hvac_type', 'hvac': '40_hvac_type',
+  'hvac_age': '41_hvac_age',
+  'flooring_type': '42_flooring_type', 'flooring': '42_flooring_type',
+  'kitchen_features': '43_kitchen_features', 'kitchen': '43_kitchen_features',
+  'appliances_included': '44_appliances_included', 'appliances': '44_appliances_included',
+  'fireplace_yn': '45_fireplace_yn', 'fireplace': '45_fireplace_yn', 'has_fireplace': '45_fireplace_yn',
+  'interior_condition': '46_interior_condition',
+  'pool_yn': '47_pool_yn', 'pool': '47_pool_yn', 'has_pool': '47_pool_yn',
+  'pool_type': '48_pool_type',
+  'deck_patio': '49_deck_patio', 'patio': '49_deck_patio',
+  'fence': '50_fence',
+  'landscaping': '51_landscaping',
+  'recent_renovations': '52_recent_renovations', 'renovations': '52_recent_renovations',
+  'assigned_elementary': '56_assigned_elementary', 'elementary_school': '56_assigned_elementary', 'elementary_school_name': '56_assigned_elementary',
+  'elementary_rating': '57_elementary_rating', 'elementary_school_rating': '57_elementary_rating',
+  'assigned_middle': '59_assigned_middle', 'middle_school': '59_assigned_middle', 'middle_school_name': '59_assigned_middle',
+  'middle_rating': '60_middle_rating', 'middle_school_rating': '60_middle_rating',
+  'assigned_high': '62_assigned_high', 'high_school': '62_assigned_high', 'high_school_name': '62_assigned_high',
+  'high_rating': '63_high_rating', 'high_school_rating': '63_high_rating',
+  'school_district': '64_school_district',
+  'walk_score': '65_walk_score', 'walkscore': '65_walk_score',
+  'transit_score': '66_transit_score',
+  'bike_score': '67_bike_score',
+  'noise_level': '68_noise_level',
+  'traffic_level': '69_traffic_level',
+  'walkability_description': '70_walkability_description',
+  'median_home_price_neighborhood': '81_median_home_price_neighborhood', 'median_home_price': '81_median_home_price_neighborhood',
+  'avg_days_on_market': '83_days_on_market_avg', 'days_on_market': '83_days_on_market_avg',
+  'rental_estimate_monthly': '85_rental_estimate_monthly', 'rent_estimate': '85_rental_estimate_monthly', 'rental_estimate': '85_rental_estimate_monthly',
+  'rental_yield_est': '86_rental_yield_est', 'rental_yield': '86_rental_yield_est',
+  'cap_rate_est': '88_cap_rate_est', 'cap_rate': '88_cap_rate_est',
+  'insurance_estimate_annual': '89_insurance_est_annual', 'insurance_estimate': '89_insurance_est_annual', 'insurance_est_annual': '89_insurance_est_annual',
+  'electric_provider': '92_electric_provider',
+  'water_provider': '93_water_provider',
+  'sewer_provider': '94_sewer_provider',
+  'natural_gas': '95_natural_gas',
+  'internet_providers': '96_internet_providers_top',
+  'air_quality_index': '99_air_quality_index_current', 'aqi': '99_air_quality_index_current',
+  'flood_zone': '100_flood_zone', 'flood_zone_code': '100_flood_zone',
+  'flood_risk_level': '101_flood_risk_level', 'flood_risk': '101_flood_risk_level',
+  'climate_risk_summary': '102_climate_risk_summary', 'hurricane_risk': '102_climate_risk_summary',
+  'elevation_feet': '103_elevation_feet', 'elevation': '103_elevation_feet',
+  'neighborhood': '27_neighborhood', 'neighborhood_name': '27_neighborhood',
+  'city': 'city', 'state': 'state', 'zip_code': 'zip_code', 'zip': 'zip_code',
+  'latitude': 'latitude', 'lat': 'latitude',
+  'longitude': 'longitude', 'lng': 'longitude', 'lon': 'longitude',
+  'zestimate': '9_market_value_estimate', 'redfin_estimate': '9_market_value_estimate',
+};
+
+function mapFlatFieldsToNumbered(fields: Record<string, any>): Record<string, any> {
+  const mapped: Record<string, any> = {};
+  for (const [key, fieldData] of Object.entries(fields)) {
+    const lowerKey = key.toLowerCase();
+    const numberedKey = FLAT_TO_NUMBERED_FIELD_MAP[lowerKey] || FLAT_TO_NUMBERED_FIELD_MAP[key] || key;
+    mapped[numberedKey] = fieldData;
+  }
+  return mapped;
+}
+
 // Helper to extract JSON from markdown code blocks or raw text
 function extractJSON(text: string): string | null {
   // First try to extract from markdown code blocks
@@ -434,11 +534,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log(`[RETRY-LLM] ${engineId} returned ${Object.keys(result.fields).length} fields`);
 
+    // Map flat field names to numbered keys for frontend compatibility
+    const mappedFields = mapFlatFieldsToNumbered(result.fields);
+    console.log(`[RETRY-LLM] Mapped to ${Object.keys(mappedFields).length} numbered fields`);
+
     return res.status(200).json({
       success: !result.error,
       engine: engineId,
-      fields: result.fields,
-      fields_found: Object.keys(result.fields).length,
+      fields: mappedFields,
+      fields_found: Object.keys(mappedFields).length,
       error: result.error,
     });
   } catch (error) {

@@ -341,8 +341,8 @@ function TripleGauge({ properties }: CategoryBProps) {
                 </svg>
                 {/* Center value */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-white font-bold text-xs drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">
-                    {gauge.value > 0 ? `$${(gauge.value / 1000000).toFixed(1)}M` : '—'}
+                  <span className="text-white font-bold text-[10px] drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">
+                    {gauge.value > 0 ? `$${gauge.value.toLocaleString()}` : '—'}
                   </span>
                 </div>
               </div>
