@@ -42,7 +42,7 @@ function RoomComparisonBar({ properties }: CategoryCProps) {
     const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
     return {
       id: p.id,
-      label: `P${idx + 1}: ${address.slice(0, 12)}`,
+      label: `P${idx + 1}: ${address.slice(0, 20)}`,
       beds: getVal(p.details?.bedrooms) || 0,
       baths: getVal(p.details?.totalBathrooms) || 0,
       garage: getVal(p.details?.garageSpaces) || 0,
