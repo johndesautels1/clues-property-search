@@ -52,7 +52,7 @@ function SystemsRadar({ properties }: CategoryEProps) {
   const anyHasPool = comparisonProperties.some(p => {
     const poolYn = getVal(p.structural?.poolYn);
     const poolType = getVal(p.structural?.poolType);
-    return poolYn === true || poolYn === 'Yes' || (poolType && poolType !== 'None');
+    return poolYn === true || (poolType && poolType !== 'None');
   });
 
   const propertyData = comparisonProperties.map((p, idx) => {
@@ -62,7 +62,7 @@ function SystemsRadar({ properties }: CategoryEProps) {
     // Determine pool status for this property
     const poolYn = getVal(p.structural?.poolYn);
     const poolType = getVal(p.structural?.poolType);
-    const hasPool = poolYn === true || poolYn === 'Yes' || (poolType && poolType !== 'None');
+    const hasPool = poolYn === true || (poolType && poolType !== 'None');
 
     return {
       id: p.id,
