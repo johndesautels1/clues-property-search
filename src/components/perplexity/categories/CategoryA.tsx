@@ -43,11 +43,11 @@ function PinClusterOrbs({ properties, onPropertyClick }: CategoryAProps) {
       webAugmented
       webSource="Redfin/Zillow validation"
     >
-      <div className="relative w-full h-full flex items-center justify-center">
+      <div className="relative w-full h-full flex items-center justify-center overflow-auto">
         {/* Cluster visualization */}
-        <div className="flex flex-wrap gap-4 justify-center items-center p-4">
+        <div className="flex flex-wrap gap-8 justify-center items-start p-4">
           {clusterArray.map(([city, props], i) => {
-            const size = 40 + (props.length / maxCount) * 60;
+            const size = 50 + (props.length / maxCount) * 50;
             const colors = ['#10B981', '#00D9FF', '#8B5CF6', '#F59E0B', '#EF4444'];
             const color = colors[i % colors.length];
 
@@ -57,41 +57,49 @@ function PinClusterOrbs({ properties, onPropertyClick }: CategoryAProps) {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: i * 0.1 }}
-                className="relative cursor-pointer group"
+                className="flex flex-col items-center cursor-pointer group"
                 onClick={() => props[0] && onPropertyClick?.(props[0].id)}
               >
-                {/* Outer glow */}
-                <div
-                  className="absolute inset-0 rounded-full blur-xl opacity-50"
-                  style={{
-                    backgroundColor: color,
-                    width: size,
-                    height: size,
-                  }}
-                />
+                {/* Orb container */}
+                <div className="relative">
+                  {/* Outer glow */}
+                  <div
+                    className="absolute inset-0 rounded-full blur-xl opacity-50"
+                    style={{
+                      backgroundColor: color,
+                      width: size,
+                      height: size,
+                    }}
+                  />
 
-                {/* Main orb */}
-                <div
-                  className="relative rounded-full flex items-center justify-center"
-                  style={{
-                    width: size,
-                    height: size,
-                    background: `radial-gradient(circle at 30% 30%, ${color}60, ${color}20)`,
-                    border: `2px solid ${color}`,
-                    boxShadow: `0 0 20px ${color}40`,
-                  }}
-                >
-                  <div className="text-center">
-                    <div className="text-white font-bold text-lg drop-shadow-[0_0_8px_rgba(255,255,255,0.7)]">{props.length}</div>
-                    <div className="text-xs text-gray-300 truncate max-w-[60px]">
-                      {city}
+                  {/* Main orb - only count inside */}
+                  <div
+                    className="relative rounded-full flex items-center justify-center transition-transform group-hover:scale-110"
+                    style={{
+                      width: size,
+                      height: size,
+                      background: `radial-gradient(circle at 30% 30%, ${color}60, ${color}20)`,
+                      border: `2px solid ${color}`,
+                      boxShadow: `0 0 20px ${color}40`,
+                    }}
+                  >
+                    <div className="text-white font-bold text-xl drop-shadow-[0_0_8px_rgba(255,255,255,0.7)]">
+                      {props.length}
                     </div>
                   </div>
                 </div>
 
-                {/* Hover tooltip */}
-                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-xs text-gray-400">
-                  {props.length} properties
+                {/* City name below orb */}
+                <div
+                  className="mt-3 text-center max-w-[100px]"
+                  style={{ color }}
+                >
+                  <div className="text-xs font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.5)] whitespace-nowrap overflow-hidden text-ellipsis">
+                    {city}
+                  </div>
+                  <div className="text-xs text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {props.length} {props.length === 1 ? 'property' : 'properties'}
+                  </div>
                 </div>
               </motion.div>
             );
