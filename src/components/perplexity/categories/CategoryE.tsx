@@ -43,39 +43,65 @@ function conditionToScore(condition: string | null): number {
 }
 
 // E-1: Systems Health Radar - Show first 3 properties with P1/P2/P3 colors
+// Aligned with standard inspection and construction practice categories
 function SystemsRadar({ properties }: CategoryEProps) {
   // Take first 3 properties for comparison
   const comparisonProperties = properties.slice(0, 3);
+
+  // Check if any property has a pool (to conditionally show Pool/Spa axis)
+  const anyHasPool = comparisonProperties.some(p => {
+    const poolYn = getVal(p.structural?.poolYn);
+    const poolType = getVal(p.structural?.poolType);
+    return poolYn === true || poolYn === 'Yes' || (poolType && poolType !== 'None');
+  });
 
   const propertyData = comparisonProperties.map((p, idx) => {
     const propColor = getPropertyColor(idx);
     const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
 
+    // Determine pool status for this property
+    const poolYn = getVal(p.structural?.poolYn);
+    const poolType = getVal(p.structural?.poolType);
+    const hasPool = poolYn === true || poolYn === 'Yes' || (poolType && poolType !== 'None');
+
     return {
       id: p.id,
       label: `P${idx + 1}: ${address.slice(0, 12)}`,
-      roof: conditionToScore(getVal(p.structural?.roofType)),
-      hvac: conditionToScore(getVal(p.structural?.hvacType) ? 'GOOD' : null),
+      // Core inspection categories
+      roof: conditionToScore(getVal(p.structural?.roofType) ? 'GOOD' : getVal(p.structural?.roofAgeEst) ? 'FAIR' : null),
       foundation: conditionToScore(getVal(p.structural?.foundation)),
-      kitchen: conditionToScore(getVal(p.structural?.kitchenFeatures) ? 'GOOD' : null),
-      interior: conditionToScore(getVal(p.structural?.interiorCondition)),
+      electrical: conditionToScore(getVal(p.utilities?.electricProvider) ? 'GOOD' : null), // Infer from utility data
+      plumbing: conditionToScore(getVal(p.utilities?.waterProvider) ? 'GOOD' : null), // Infer from utility data
+      hvac: conditionToScore(getVal(p.structural?.hvacType) ? 'GOOD' : getVal(p.structural?.hvacAge) ? 'FAIR' : null),
+      windowsExterior: conditionToScore(getVal(p.structural?.exteriorMaterial) ? 'GOOD' : null),
+      poolSpa: hasPool ? conditionToScore('GOOD') : 0, // Only score if pool exists
+      hasPool,
       color: propColor,
       propertyNum: idx + 1,
     };
   });
 
+  // Build labels and data arrays - Pool/Spa only included if any property has one
+  const baseLabels = ['Roof', 'Foundation', 'Electrical', 'Plumbing', 'HVAC', 'Windows/Doors'];
+  const labels = anyHasPool ? [...baseLabels, 'Pool/Spa'] : baseLabels;
+
   const data = {
-    labels: ['Roof', 'HVAC', 'Foundation', 'Kitchen', 'Interior'],
-    datasets: propertyData.map((prop) => ({
-      label: prop.label,
-      data: [prop.roof, prop.hvac, prop.foundation, prop.kitchen, prop.interior],
-      backgroundColor: prop.color.rgba(0.2),
-      borderColor: prop.color.hex,
-      borderWidth: 2,
-      pointBackgroundColor: prop.color.hex,
-      pointBorderColor: '#fff',
-      pointRadius: 4,
-    })),
+    labels,
+    datasets: propertyData.map((prop) => {
+      const baseData = [prop.roof, prop.foundation, prop.electrical, prop.plumbing, prop.hvac, prop.windowsExterior];
+      const chartData = anyHasPool ? [...baseData, prop.poolSpa] : baseData;
+
+      return {
+        label: prop.label,
+        data: chartData,
+        backgroundColor: prop.color.rgba(0.2),
+        borderColor: prop.color.hex,
+        borderWidth: 2,
+        pointBackgroundColor: prop.color.hex,
+        pointBorderColor: '#fff',
+        pointRadius: 4,
+      };
+    }),
   };
 
   const options = {
