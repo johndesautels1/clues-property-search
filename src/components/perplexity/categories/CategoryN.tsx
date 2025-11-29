@@ -95,27 +95,40 @@ function UtilityCostDonut({ properties }: CategoryNProps) {
   );
 }
 
-// N-2: Connectivity Luxury Scatter
+// N-2: Connectivity Luxury Scatter - Show first 3 properties with P1/P2/P3 colors
 function ConnectivityLuxuryScatter({ properties }: CategoryNProps) {
-  const points = properties.map(p => {
+  // Take first 3 properties for comparison
+  const comparisonProperties = properties.slice(0, 3);
+
+  const points = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
     const fiber = getVal(p.utilities?.fiberAvailable);
     const maxSpeed = getVal(p.utilities?.maxInternetSpeed);
     const speed = maxSpeed ? parseInt(maxSpeed) || 100 : fiber ? 1000 : 100;
     const pps = getVal(p.address?.pricePerSqft) || 0;
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
 
-    return { id: p.id, x: speed, y: pps };
+    return {
+      id: p.id,
+      x: speed,
+      y: pps,
+      color: propColor,
+      propertyNum: idx + 1,
+      address: address.slice(0, 15),
+    };
   }).filter(p => p.y > 0);
 
+  // Create separate dataset for each property for distinct colors
   const data = {
-    datasets: [{
-      label: 'Properties',
-      data: points.map(p => ({ x: p.x, y: p.y })),
-      backgroundColor: 'rgba(139, 92, 246, 0.6)',
-      borderColor: '#8B5CF6',
+    datasets: points.map((point) => ({
+      label: `P${point.propertyNum}: ${point.address}`,
+      data: [{ x: point.x, y: point.y }],
+      backgroundColor: point.color.rgba(0.7),
+      borderColor: point.color.hex,
       borderWidth: 2,
-      pointRadius: 8,
-      pointHoverRadius: 12,
-    }],
+      pointRadius: 12,
+      pointHoverRadius: 16,
+    })),
   };
 
   const options = {
@@ -123,29 +136,43 @@ function ConnectivityLuxuryScatter({ properties }: CategoryNProps) {
     maintainAspectRatio: false,
     scales: {
       x: {
-        title: { display: true, text: 'Internet Speed (Mbps)', color: '#9CA3AF' },
+        title: { display: true, text: 'Internet Speed (Mbps)', color: '#E5E7EB', font: { weight: 'bold' as const } },
         grid: { color: 'rgba(255,255,255,0.1)' },
-        ticks: { color: '#9CA3AF' },
+        ticks: { color: '#E5E7EB', font: { weight: 'bold' as const } },
         type: 'logarithmic' as const,
       },
       y: {
-        title: { display: true, text: '$/sqft', color: '#9CA3AF' },
+        title: { display: true, text: '$/sqft', color: '#E5E7EB', font: { weight: 'bold' as const } },
         grid: { color: 'rgba(255,255,255,0.1)' },
-        ticks: { color: '#9CA3AF', callback: (v: number | string) => `$${v}` },
+        ticks: { color: '#E5E7EB', font: { weight: 'bold' as const }, callback: (v: number | string) => `$${v}` },
       },
     },
     plugins: {
-      legend: { display: false },
-      tooltip: { backgroundColor: 'rgba(0,0,0,0.8)' },
+      legend: {
+        display: true,
+        position: 'bottom' as const,
+        labels: {
+          color: '#E5E7EB',
+          boxWidth: 12,
+          padding: 10,
+          font: { size: 10, weight: 'bold' as const },
+          usePointStyle: true,
+        },
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0,0,0,0.9)',
+        titleFont: { weight: 'bold' as const },
+        bodyFont: { weight: 'bold' as const },
+      },
     },
   };
 
   return (
     <GlassChart
       title="Connectivity vs Luxury"
-      description="Internet speed vs price"
+      description={`Internet speed vs price for ${points.length} properties`}
       chartId="N-connectivity"
-      color="#8B5CF6"
+      color={PROPERTY_COLORS.P3.hex}
     >
       {points.length > 0 ? (
         <Scatter data={data} options={options} />

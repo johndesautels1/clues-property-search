@@ -21,40 +21,42 @@ function getVal<T>(field: { value: T | null } | undefined): T | null {
   return field?.value ?? null;
 }
 
-// J-1: Location Excellence Spider
+// J-1: Location Excellence Spider - Show first 3 properties with P1/P2/P3 colors
 function LocationExcellenceSpider({ properties }: CategoryJProps) {
-  const scores = properties.reduce((acc, p) => {
-    acc.walk += getVal(p.location?.walkScore) || 0;
-    acc.transit += getVal(p.location?.transitScore) || 0;
-    acc.bike += getVal(p.location?.bikeScore) || 0;
-    acc.grocery += 100 - Math.min((getVal(p.location?.distanceGroceryMiles) || 5) * 10, 100);
-    acc.hospital += 100 - Math.min((getVal(p.location?.distanceHospitalMiles) || 10) * 5, 100);
-    acc.park += 100 - Math.min((getVal(p.location?.distanceParkMiles) || 3) * 20, 100);
-    acc.beach += 100 - Math.min((getVal(p.location?.distanceBeachMiles) || 10) * 5, 100);
-    acc.count++;
-    return acc;
-  }, { walk: 0, transit: 0, bike: 0, grocery: 0, hospital: 0, park: 0, beach: 0, count: 0 });
+  // Take first 3 properties for comparison
+  const comparisonProperties = properties.slice(0, 3);
 
-  const count = scores.count || 1;
+  const propertyData = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
+
+    return {
+      id: p.id,
+      label: `P${idx + 1}: ${address.slice(0, 12)}`,
+      walk: getVal(p.location?.walkScore) || 0,
+      transit: getVal(p.location?.transitScore) || 0,
+      bike: getVal(p.location?.bikeScore) || 0,
+      grocery: 100 - Math.min((getVal(p.location?.distanceGroceryMiles) || 5) * 10, 100),
+      hospital: 100 - Math.min((getVal(p.location?.distanceHospitalMiles) || 10) * 5, 100),
+      park: 100 - Math.min((getVal(p.location?.distanceParkMiles) || 3) * 20, 100),
+      beach: 100 - Math.min((getVal(p.location?.distanceBeachMiles) || 10) * 5, 100),
+      color: propColor,
+      propertyNum: idx + 1,
+    };
+  });
 
   const data = {
     labels: ['Walk', 'Transit', 'Bike', 'Grocery', 'Hospital', 'Park', 'Beach'],
-    datasets: [{
-      label: 'Avg Score',
-      data: [
-        scores.walk / count,
-        scores.transit / count,
-        scores.bike / count,
-        scores.grocery / count,
-        scores.hospital / count,
-        scores.park / count,
-        scores.beach / count,
-      ],
-      backgroundColor: 'rgba(0, 217, 255, 0.2)',
-      borderColor: '#00D9FF',
+    datasets: propertyData.map((prop) => ({
+      label: prop.label,
+      data: [prop.walk, prop.transit, prop.bike, prop.grocery, prop.hospital, prop.park, prop.beach],
+      backgroundColor: prop.color.rgba(0.2),
+      borderColor: prop.color.hex,
       borderWidth: 2,
-      pointBackgroundColor: '#00D9FF',
-    }],
+      pointBackgroundColor: prop.color.hex,
+      pointBorderColor: '#fff',
+      pointRadius: 4,
+    })),
   };
 
   const options = {
@@ -64,21 +66,32 @@ function LocationExcellenceSpider({ properties }: CategoryJProps) {
       r: {
         angleLines: { color: 'rgba(255,255,255,0.1)' },
         grid: { color: 'rgba(255,255,255,0.1)' },
-        pointLabels: { color: '#FFFFFF', font: { size: 9 } },
+        pointLabels: { color: '#FFFFFF', font: { size: 9, weight: 'bold' as const } },
         ticks: { color: '#9CA3AF', backdropColor: 'transparent', stepSize: 25 },
         suggestedMin: 0,
         suggestedMax: 100,
       },
     },
-    plugins: { legend: { display: false } },
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom' as const,
+        labels: {
+          color: '#E5E7EB',
+          boxWidth: 12,
+          padding: 10,
+          font: { size: 10, weight: 'bold' as const },
+        },
+      },
+    },
   };
 
   return (
     <GlassChart
       title="Location Excellence Spider"
-      description="7-axis location quality"
+      description={`7-axis quality for ${propertyData.length} properties`}
       chartId="J-excellence-spider"
-      color="#00D9FF"
+      color={PROPERTY_COLORS.P1.hex}
       webAugmented
       webSource="WalkScore API"
     >
@@ -163,28 +176,41 @@ function GaugeCluster({ properties }: CategoryJProps) {
   );
 }
 
-// J-3: Location Yield Scatter
+// J-3: Location Yield Scatter - Show first 3 properties with P1/P2/P3 colors
 function LocationYieldScatter({ properties }: CategoryJProps) {
-  const points = properties.map(p => {
+  // Take first 3 properties for comparison
+  const comparisonProperties = properties.slice(0, 3);
+
+  const points = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
     const walk = getVal(p.location?.walkScore) || 0;
     const transit = getVal(p.location?.transitScore) || 0;
     const bike = getVal(p.location?.bikeScore) || 0;
     const avgScore = (walk + transit + bike) / 3;
     const capRate = getVal(p.financial?.capRateEst) || 0;
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
 
-    return { id: p.id, x: avgScore, y: capRate };
-  }).filter(p => p.x > 0 && p.y > 0);
+    return {
+      id: p.id,
+      x: avgScore,
+      y: capRate,
+      color: propColor,
+      propertyNum: idx + 1,
+      address: address.slice(0, 15),
+    };
+  }).filter(p => p.x > 0);
 
+  // Create separate dataset for each property for distinct colors
   const data = {
-    datasets: [{
-      label: 'Properties',
-      data: points.map(p => ({ x: p.x, y: p.y })),
-      backgroundColor: 'rgba(245, 158, 11, 0.6)',
-      borderColor: '#F59E0B',
+    datasets: points.map((point) => ({
+      label: `P${point.propertyNum}: ${point.address}`,
+      data: [{ x: point.x, y: point.y }],
+      backgroundColor: point.color.rgba(0.7),
+      borderColor: point.color.hex,
       borderWidth: 2,
-      pointRadius: 8,
-      pointHoverRadius: 12,
-    }],
+      pointRadius: 12,
+      pointHoverRadius: 16,
+    })),
   };
 
   const options = {
@@ -192,22 +218,34 @@ function LocationYieldScatter({ properties }: CategoryJProps) {
     maintainAspectRatio: false,
     scales: {
       x: {
-        title: { display: true, text: 'Avg Location Score', color: '#9CA3AF' },
+        title: { display: true, text: 'Avg Location Score', color: '#E5E7EB', font: { weight: 'bold' as const } },
         grid: { color: 'rgba(255,255,255,0.1)' },
-        ticks: { color: '#9CA3AF' },
+        ticks: { color: '#E5E7EB', font: { weight: 'bold' as const } },
         min: 0,
         max: 100,
       },
       y: {
-        title: { display: true, text: 'Cap Rate %', color: '#9CA3AF' },
+        title: { display: true, text: 'Cap Rate %', color: '#E5E7EB', font: { weight: 'bold' as const } },
         grid: { color: 'rgba(255,255,255,0.1)' },
-        ticks: { color: '#9CA3AF', callback: (v: number | string) => `${v}%` },
+        ticks: { color: '#E5E7EB', font: { weight: 'bold' as const }, callback: (v: number | string) => `${v}%` },
       },
     },
     plugins: {
-      legend: { display: false },
+      legend: {
+        display: true,
+        position: 'bottom' as const,
+        labels: {
+          color: '#E5E7EB',
+          boxWidth: 12,
+          padding: 10,
+          font: { size: 10, weight: 'bold' as const },
+          usePointStyle: true,
+        },
+      },
       tooltip: {
-        backgroundColor: 'rgba(0,0,0,0.8)',
+        backgroundColor: 'rgba(0,0,0,0.9)',
+        titleFont: { weight: 'bold' as const },
+        bodyFont: { weight: 'bold' as const },
         callbacks: {
           label: (ctx: any) => `Score: ${ctx.raw.x.toFixed(0)}, Cap: ${ctx.raw.y.toFixed(1)}%`,
         },
@@ -218,9 +256,9 @@ function LocationYieldScatter({ properties }: CategoryJProps) {
   return (
     <GlassChart
       title="Location vs Yield"
-      description="Score correlation with cap rate"
+      description={`Comparing ${points.length} properties`}
       chartId="J-location-yield"
-      color="#F59E0B"
+      color={PROPERTY_COLORS.P3.hex}
     >
       {points.length > 0 ? (
         <Scatter data={data} options={options} />

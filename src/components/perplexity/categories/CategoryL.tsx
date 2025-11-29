@@ -115,29 +115,38 @@ function CrimeGaugeTrio({ properties }: CategoryLProps) {
   );
 }
 
-// L-2: Safety Yield Scatter
+// L-2: Safety Yield Scatter - Show first 3 properties with P1/P2/P3 colors
 function SafetyYieldScatter({ properties }: CategoryLProps) {
-  const points = properties.map(p => {
+  // Take first 3 properties for comparison
+  const comparisonProperties = properties.slice(0, 3);
+
+  const points = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
     const safety = crimeToScore(getVal(p.location?.neighborhoodSafetyRating));
     const rentalYield = getVal(p.financial?.rentalYieldEst) || 0;
-    const price = getVal(p.address?.listingPrice) || 1000000;
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
 
     return {
       id: p.id,
       x: safety,
       y: rentalYield,
-      r: Math.min(price / 100000, 30), // Bubble size based on price
+      color: propColor,
+      propertyNum: idx + 1,
+      address: address.slice(0, 15),
     };
   }).filter(p => p.y > 0);
 
+  // Create separate dataset for each property for distinct colors
   const data = {
-    datasets: [{
-      label: 'Properties',
-      data: points.map(p => ({ x: p.x, y: p.y, r: p.r })),
-      backgroundColor: 'rgba(139, 92, 246, 0.5)',
-      borderColor: '#8B5CF6',
+    datasets: points.map((point) => ({
+      label: `P${point.propertyNum}: ${point.address}`,
+      data: [{ x: point.x, y: point.y }],
+      backgroundColor: point.color.rgba(0.7),
+      borderColor: point.color.hex,
       borderWidth: 2,
-    }],
+      pointRadius: 12,
+      pointHoverRadius: 16,
+    })),
   };
 
   const options = {
@@ -145,22 +154,34 @@ function SafetyYieldScatter({ properties }: CategoryLProps) {
     maintainAspectRatio: false,
     scales: {
       x: {
-        title: { display: true, text: 'Safety Score', color: '#9CA3AF' },
+        title: { display: true, text: 'Safety Score', color: '#E5E7EB', font: { weight: 'bold' as const } },
         grid: { color: 'rgba(255,255,255,0.1)' },
-        ticks: { color: '#9CA3AF' },
+        ticks: { color: '#E5E7EB', font: { weight: 'bold' as const } },
         min: 0,
         max: 100,
       },
       y: {
-        title: { display: true, text: 'Rental Yield %', color: '#9CA3AF' },
+        title: { display: true, text: 'Rental Yield %', color: '#E5E7EB', font: { weight: 'bold' as const } },
         grid: { color: 'rgba(255,255,255,0.1)' },
-        ticks: { color: '#9CA3AF', callback: (v: number | string) => `${v}%` },
+        ticks: { color: '#E5E7EB', font: { weight: 'bold' as const }, callback: (v: number | string) => `${v}%` },
       },
     },
     plugins: {
-      legend: { display: false },
+      legend: {
+        display: true,
+        position: 'bottom' as const,
+        labels: {
+          color: '#E5E7EB',
+          boxWidth: 12,
+          padding: 10,
+          font: { size: 10, weight: 'bold' as const },
+          usePointStyle: true,
+        },
+      },
       tooltip: {
-        backgroundColor: 'rgba(0,0,0,0.8)',
+        backgroundColor: 'rgba(0,0,0,0.9)',
+        titleFont: { weight: 'bold' as const },
+        bodyFont: { weight: 'bold' as const },
         callbacks: {
           label: (ctx: any) => `Safety: ${ctx.raw.x}, Yield: ${ctx.raw.y.toFixed(1)}%`,
         },
@@ -171,9 +192,9 @@ function SafetyYieldScatter({ properties }: CategoryLProps) {
   return (
     <GlassChart
       title="Safety vs Yield Galaxy"
-      description="Risk-adjusted returns"
+      description={`Risk-adjusted returns for ${points.length} properties`}
       chartId="L-safety-yield"
-      color="#8B5CF6"
+      color={PROPERTY_COLORS.P2.hex}
     >
       {points.length > 0 ? (
         <Scatter data={data} options={options} />

@@ -11,7 +11,7 @@ import { Radar } from 'react-chartjs-2';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
 import { GraduationCap, Star } from 'lucide-react';
-import { getIndexColor } from '../chartColors';
+import { getIndexColor, PROPERTY_COLORS, getPropertyColor } from '../chartColors';
 
 interface CategoryIProps {
   properties: Property[];
@@ -138,33 +138,47 @@ function SchoolTripod({ properties }: CategoryIProps) {
   );
 }
 
-// I-2: Family Score Radial
+// I-2: Family Score Radial - Show first 3 properties with P1/P2/P3 colors
 function FamilyScoreRadial({ properties }: CategoryIProps) {
-  const scores = properties.reduce((acc, p) => {
-    acc.elemRating += ratingToNumber(getVal(p.location?.elementaryRating));
-    acc.middleRating += ratingToNumber(getVal(p.location?.middleRating));
-    acc.highRating += ratingToNumber(getVal(p.location?.highRating));
-    acc.count++;
-    return acc;
-  }, { elemRating: 0, middleRating: 0, highRating: 0, count: 0 });
+  // Take first 3 properties for comparison
+  const comparisonProperties = properties.slice(0, 3);
 
-  const count = scores.count || 1;
-  const avgScore = ((scores.elemRating + scores.middleRating + scores.highRating) / 3) / count;
+  const propertyData = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
+    const elemRating = ratingToNumber(getVal(p.location?.elementaryRating));
+    const middleRating = ratingToNumber(getVal(p.location?.middleRating));
+    const highRating = ratingToNumber(getVal(p.location?.highRating));
+    const avgScore = (elemRating + middleRating + highRating) / 3;
+
+    return {
+      id: p.id,
+      label: `P${idx + 1}: ${address.slice(0, 12)}`,
+      elemRating,
+      middleRating,
+      highRating,
+      avgScore,
+      color: propColor,
+      propertyNum: idx + 1,
+    };
+  });
+
+  const overallAvg = propertyData.length > 0
+    ? propertyData.reduce((sum, p) => sum + p.avgScore, 0) / propertyData.length
+    : 0;
 
   const data = {
     labels: ['Elementary', 'Middle School', 'High School'],
-    datasets: [{
-      label: 'Avg Rating',
-      data: [
-        scores.elemRating / count,
-        scores.middleRating / count,
-        scores.highRating / count,
-      ],
-      backgroundColor: 'rgba(16, 185, 129, 0.2)',
-      borderColor: '#10B981',
+    datasets: propertyData.map((prop) => ({
+      label: prop.label,
+      data: [prop.elemRating, prop.middleRating, prop.highRating],
+      backgroundColor: prop.color.rgba(0.2),
+      borderColor: prop.color.hex,
       borderWidth: 2,
-      pointBackgroundColor: '#10B981',
-    }],
+      pointBackgroundColor: prop.color.hex,
+      pointBorderColor: '#fff',
+      pointRadius: 4,
+    })),
   };
 
   const options = {
@@ -174,55 +188,70 @@ function FamilyScoreRadial({ properties }: CategoryIProps) {
       r: {
         angleLines: { color: 'rgba(255,255,255,0.1)' },
         grid: { color: 'rgba(255,255,255,0.1)' },
-        pointLabels: { color: '#FFFFFF', font: { size: 10 } },
+        pointLabels: { color: '#FFFFFF', font: { size: 10, weight: 'bold' as const } },
         ticks: { color: '#9CA3AF', backdropColor: 'transparent', stepSize: 2 },
         suggestedMin: 0,
         suggestedMax: 10,
       },
     },
-    plugins: { legend: { display: false } },
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom' as const,
+        labels: {
+          color: '#E5E7EB',
+          boxWidth: 12,
+          padding: 10,
+          font: { size: 10, weight: 'bold' as const },
+        },
+      },
+    },
   };
 
   return (
     <GlassChart
       title="Family Score Radial"
-      description={`Weighted avg: ${avgScore.toFixed(1)}/10`}
+      description={`Comparing ${propertyData.length} properties (avg: ${overallAvg.toFixed(1)}/10)`}
       chartId="I-family-radial"
-      color="#10B981"
+      color={PROPERTY_COLORS.P1.hex}
     >
       <div className="relative h-full">
         <Radar data={data} options={options} />
         <div className="absolute top-2 right-2 flex items-center gap-1 bg-green-500/20 px-2 py-1 rounded-full">
           <Star className="w-4 h-4 text-green-400 fill-green-400" />
-          <span className="text-green-400 font-bold">{avgScore.toFixed(1)}</span>
+          <span className="text-green-400 font-bold">{overallAvg.toFixed(1)}</span>
         </div>
       </div>
     </GlassChart>
   );
 }
 
-// I-3: School Tier Heatmap
+// I-3: School Tier Heatmap - Show first 3 properties with P1/P2/P3 colors
 function SchoolTierHeatmap({ properties }: CategoryIProps) {
-  const data = properties.slice(0, 6).map(p => ({
-    id: p.id,
-    address: getVal(p.address?.streetAddress)?.slice(0, 10) || `#${p.id.slice(0, 4)}`,
-    elem: ratingToNumber(getVal(p.location?.elementaryRating)),
-    middle: ratingToNumber(getVal(p.location?.middleRating)),
-    high: ratingToNumber(getVal(p.location?.highRating)),
-    district: getVal(p.location?.schoolDistrictName) || 'Unknown',
-  }));
+  // Take first 3 properties for comparison
+  const comparisonProperties = properties.slice(0, 3);
 
-  // School ratings 1-10 mapped to 0-100 for CLUES index colors
-  const getRatingColor = (rating: number): string => {
-    return getIndexColor(rating * 10).hex;
-  };
+  const data = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
+    return {
+      id: p.id,
+      address: address.slice(0, 12),
+      elem: ratingToNumber(getVal(p.location?.elementaryRating)),
+      middle: ratingToNumber(getVal(p.location?.middleRating)),
+      high: ratingToNumber(getVal(p.location?.highRating)),
+      district: getVal(p.location?.schoolDistrictName) || 'Unknown',
+      color: propColor,
+      propertyNum: idx + 1,
+    };
+  });
 
   return (
     <GlassChart
       title="School Tier Heatmap"
-      description="Rating by school level"
+      description={`School ratings for ${data.length} properties`}
       chartId="I-tier-heatmap"
-      color="#00D9FF"
+      color={PROPERTY_COLORS.P2.hex}
     >
       <div className="h-full overflow-auto">
         <table className="w-full text-xs">
@@ -243,14 +272,20 @@ function SchoolTierHeatmap({ properties }: CategoryIProps) {
                 transition={{ delay: i * 0.05 }}
                 className="border-t border-white/5"
               >
-                <td className="py-1.5 px-1 text-gray-300">{row.address}</td>
+                <td
+                  className="py-1.5 px-1 font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
+                  style={{ color: row.color.hex }}
+                >
+                  P{row.propertyNum}: {row.address}
+                </td>
                 {[row.elem, row.middle, row.high].map((rating, j) => (
                   <td key={j} className="text-center py-1.5 px-1">
                     <div
                       className="w-8 h-8 mx-auto rounded flex items-center justify-center font-bold"
                       style={{
-                        backgroundColor: `${getRatingColor(rating)}30`,
-                        color: getRatingColor(rating),
+                        backgroundColor: row.color.rgba(0.3),
+                        color: row.color.hex,
+                        border: `1px solid ${row.color.hex}`,
                       }}
                     >
                       {rating}

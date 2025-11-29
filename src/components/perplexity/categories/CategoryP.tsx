@@ -120,8 +120,11 @@ function FeatureMosaic({ properties }: CategoryPProps) {
   );
 }
 
-// P-2: Premium Index (Weighted Horizontal Bar)
+// P-2: Premium Index - Show first 3 properties with P1/P2/P3 colors
 function PremiumIndexBar({ properties }: CategoryPProps) {
+  // Take first 3 properties for comparison
+  const comparisonProperties = properties.slice(0, 3);
+
   // Calculate weighted premium score for each property
   const weights = {
     pool: 15,
@@ -134,7 +137,8 @@ function PremiumIndexBar({ properties }: CategoryPProps) {
     views: 6,
   };
 
-  const premiumScores = properties.slice(0, 6).map(p => {
+  const premiumScores = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
     let score = 0;
     if (getVal(p.structural?.poolType) && getVal(p.structural?.poolType) !== 'None') score += weights.pool;
     if (boolToNum(getVal(p.structural?.fireplaceYn))) score += weights.fireplace;
@@ -145,26 +149,24 @@ function PremiumIndexBar({ properties }: CategoryPProps) {
     if (getVal(p.utilities?.smartHomeFeatures)) score += weights.smartHome;
     if (getVal(p.utilities?.viewType)) score += weights.views;
 
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
+
     return {
       id: p.id,
-      address: getVal(p.address?.streetAddress)?.slice(0, 12) || `#${p.id.slice(0, 4)}`,
+      address: `P${idx + 1}: ${address.slice(0, 10)}`,
       score,
+      color: propColor,
+      propertyNum: idx + 1,
     };
-  }).sort((a, b) => b.score - a.score);
+  });
 
   const data = {
     labels: premiumScores.map(p => p.address),
     datasets: [{
       label: 'Premium Index',
       data: premiumScores.map(p => p.score),
-      backgroundColor: premiumScores.map((_, i) => {
-        const colors = ['#10B981', '#00D9FF', '#8B5CF6', '#F59E0B', '#EF4444', '#EC4899'];
-        return colors[i % colors.length] + '80';
-      }),
-      borderColor: premiumScores.map((_, i) => {
-        const colors = ['#10B981', '#00D9FF', '#8B5CF6', '#F59E0B', '#EF4444', '#EC4899'];
-        return colors[i % colors.length];
-      }),
+      backgroundColor: premiumScores.map(p => p.color.rgba(0.7)),
+      borderColor: premiumScores.map(p => p.color.hex),
       borderWidth: 2,
       borderRadius: 4,
     }],
@@ -177,18 +179,20 @@ function PremiumIndexBar({ properties }: CategoryPProps) {
     scales: {
       x: {
         grid: { color: 'rgba(255,255,255,0.1)' },
-        ticks: { color: '#9CA3AF' },
+        ticks: { color: '#E5E7EB', font: { weight: 'bold' as const } },
         max: 100,
       },
       y: {
         grid: { display: false },
-        ticks: { color: '#9CA3AF', font: { size: 10 } },
+        ticks: { color: '#E5E7EB', font: { size: 11, weight: 'bold' as const } },
       },
     },
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: 'rgba(0,0,0,0.8)',
+        backgroundColor: 'rgba(0,0,0,0.9)',
+        titleFont: { weight: 'bold' as const },
+        bodyFont: { weight: 'bold' as const },
         callbacks: {
           label: (ctx: any) => `Premium Score: ${ctx.raw}/100`,
         },
@@ -199,9 +203,9 @@ function PremiumIndexBar({ properties }: CategoryPProps) {
   return (
     <GlassChart
       title="Premium Index"
-      description="Weighted feature score ranking"
+      description={`Feature scores for ${premiumScores.length} properties`}
       chartId="P-premium-index"
-      color="#10B981"
+      color={PROPERTY_COLORS.P1.hex}
     >
       {premiumScores.length > 0 ? (
         <Bar data={data} options={options} />

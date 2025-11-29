@@ -10,7 +10,7 @@ import { motion } from 'framer-motion';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
 import { CheckCircle2, AlertCircle, Clock } from 'lucide-react';
-import { getIndexColor, INDEX_COLORS } from '../chartColors';
+import { getIndexColor, INDEX_COLORS, PROPERTY_COLORS, getPropertyColor } from '../chartColors';
 
 interface CategoryHProps {
   properties: Property[];
@@ -121,19 +121,26 @@ function RenovationTimeline({ properties }: CategoryHProps) {
   );
 }
 
-// H-2: Value Add Bars
+// H-2: Value Add Bars - Show first 3 properties with P1/P2/P3 colors
 function ValueAddBars({ properties }: CategoryHProps) {
-  const valueChanges = properties.slice(0, 5).map(p => {
+  // Take first 3 properties for comparison
+  const comparisonProperties = properties.slice(0, 3);
+
+  const valueChanges = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
     const lastSale = getVal(p.details?.lastSalePrice) || 0;
     const current = getVal(p.address?.listingPrice) || getVal(p.details?.marketValueEstimate) || 0;
     const change = lastSale > 0 ? ((current - lastSale) / lastSale) * 100 : 0;
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
 
     return {
       id: p.id,
-      address: getVal(p.address?.streetAddress)?.slice(0, 10) || `#${p.id.slice(0, 4)}`,
+      address: address.slice(0, 12),
       before: lastSale,
       after: current,
       change,
+      color: propColor,
+      propertyNum: idx + 1,
     };
   }).filter(v => v.before > 0);
 
@@ -142,9 +149,9 @@ function ValueAddBars({ properties }: CategoryHProps) {
   return (
     <GlassChart
       title="Value Add Analysis"
-      description="Pre vs Post renovation value"
+      description={`Pre vs Post value for ${valueChanges.length} properties`}
       chartId="H-value-add"
-      color="#10B981"
+      color={PROPERTY_COLORS.P1.hex}
     >
       <div className="h-full flex flex-col justify-center space-y-3 px-2">
         {valueChanges.map((item, i) => (
@@ -155,8 +162,16 @@ function ValueAddBars({ properties }: CategoryHProps) {
             transition={{ delay: i * 0.1 }}
           >
             <div className="flex justify-between text-xs mb-1">
-              <span className="text-gray-300 font-medium truncate max-w-[80px] drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">{item.address}</span>
-              <span className={`font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.5)] ${item.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              <span
+                className="font-bold truncate max-w-[120px] drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
+                style={{ color: item.color.hex }}
+              >
+                P{item.propertyNum}: {item.address}
+              </span>
+              <span
+                className="font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]"
+                style={{ color: item.change >= 0 ? '#10B981' : '#EF4444' }}
+              >
                 {item.change >= 0 ? '+' : ''}{item.change.toFixed(0)}%
               </span>
             </div>
@@ -165,7 +180,8 @@ function ValueAddBars({ properties }: CategoryHProps) {
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${(item.before / maxValue) * 50}%` }}
-                className="h-full bg-gray-500 rounded-l flex items-center justify-end pr-1"
+                className="h-full rounded-l flex items-center justify-end pr-1"
+                style={{ backgroundColor: item.color.rgba(0.4) }}
               >
                 <span className="text-xs text-white font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">${(item.before / 1000000).toFixed(1)}M</span>
               </motion.div>
@@ -173,7 +189,11 @@ function ValueAddBars({ properties }: CategoryHProps) {
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${(item.after / maxValue) * 50}%` }}
-                className="h-full bg-green-500 rounded-r flex items-center pl-1"
+                className="h-full rounded-r flex items-center pl-1"
+                style={{
+                  background: `linear-gradient(90deg, ${item.color.rgba(0.6)}, ${item.color.hex})`,
+                  boxShadow: `0 0 8px ${item.color.rgba(0.5)}`,
+                }}
               >
                 <span className="text-xs text-white font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">${(item.after / 1000000).toFixed(1)}M</span>
               </motion.div>
@@ -184,14 +204,33 @@ function ValueAddBars({ properties }: CategoryHProps) {
         {valueChanges.length === 0 && (
           <div className="text-gray-300 font-medium text-sm text-center drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">No value history</div>
         )}
+
+        {/* Legend */}
+        {valueChanges.length > 0 && (
+          <div className="flex justify-center gap-4 pt-2 border-t border-white/10">
+            {valueChanges.map((item) => (
+              <div key={item.id} className="flex items-center gap-1">
+                <div
+                  className="w-3 h-3 rounded-sm"
+                  style={{ backgroundColor: item.color.hex, boxShadow: `0 0 6px ${item.color.hex}` }}
+                />
+                <span className="text-xs text-gray-300 font-medium">P{item.propertyNum}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </GlassChart>
   );
 }
 
-// H-3: Compliance Gauge
+// H-3: Compliance Gauge - Show first 3 properties with P1/P2/P3 colors
 function ComplianceGauge({ properties }: CategoryHProps) {
-  const compliance = properties.slice(0, 6).map(p => {
+  // Take first 3 properties for comparison
+  const comparisonProperties = properties.slice(0, 3);
+
+  const compliance = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
     let score = 0;
     let checks = 0;
 
@@ -208,12 +247,16 @@ function ComplianceGauge({ properties }: CategoryHProps) {
     // Assume compliant if no negative indicators
     if (checks === 0) { score = 3; checks = 5; }
 
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
+
     return {
       id: p.id,
-      address: getVal(p.address?.streetAddress)?.slice(0, 10) || `#${p.id.slice(0, 4)}`,
+      address: address.slice(0, 12),
       score,
       total: 5,
       status: score >= 4 ? 'compliant' : score >= 2 ? 'partial' : 'review',
+      color: propColor,
+      propertyNum: idx + 1,
     };
   });
 
@@ -226,9 +269,9 @@ function ComplianceGauge({ properties }: CategoryHProps) {
   return (
     <GlassChart
       title="Permit Compliance"
-      description="5-point status check"
+      description={`5-point status for ${compliance.length} properties`}
       chartId="H-compliance"
-      color="#8B5CF6"
+      color={PROPERTY_COLORS.P2.hex}
     >
       <div className="h-full flex flex-col justify-center space-y-3 px-2">
         {compliance.map((item, i) => {
@@ -243,9 +286,14 @@ function ComplianceGauge({ properties }: CategoryHProps) {
               transition={{ delay: i * 0.1 }}
               className="flex items-center gap-3"
             >
-              <div className="text-xs text-gray-300 font-medium w-20 truncate drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">{item.address}</div>
+              <div
+                className="text-xs font-bold w-28 truncate drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
+                style={{ color: item.color.hex }}
+              >
+                P{item.propertyNum}: {item.address}
+              </div>
 
-              {/* 5-dot gauge */}
+              {/* 5-dot gauge using property color */}
               <div className="flex gap-1 flex-1">
                 {[...Array(5)].map((_, j) => (
                   <motion.div
@@ -255,8 +303,8 @@ function ComplianceGauge({ properties }: CategoryHProps) {
                     transition={{ delay: i * 0.1 + j * 0.05 }}
                     className="w-4 h-4 rounded-full"
                     style={{
-                      backgroundColor: j < item.score ? config.color : 'rgba(255,255,255,0.1)',
-                      boxShadow: j < item.score ? `0 0 8px ${config.color}` : 'none',
+                      backgroundColor: j < item.score ? item.color.hex : 'rgba(255,255,255,0.1)',
+                      boxShadow: j < item.score ? `0 0 8px ${item.color.hex}` : 'none',
                     }}
                   />
                 ))}
@@ -265,7 +313,7 @@ function ComplianceGauge({ properties }: CategoryHProps) {
               {/* Status */}
               <div className="flex items-center gap-1" style={{ color: config.color }}>
                 <Icon className="w-4 h-4" />
-                <span className="text-xs">{config.label}</span>
+                <span className="text-xs font-bold">{config.label}</span>
               </div>
             </motion.div>
           );
@@ -273,6 +321,21 @@ function ComplianceGauge({ properties }: CategoryHProps) {
 
         {compliance.length === 0 && (
           <div className="text-gray-300 font-medium text-sm text-center drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">No compliance data</div>
+        )}
+
+        {/* Legend */}
+        {compliance.length > 0 && (
+          <div className="flex justify-center gap-4 pt-2 border-t border-white/10">
+            {compliance.map((item) => (
+              <div key={item.id} className="flex items-center gap-1">
+                <div
+                  className="w-3 h-3 rounded-sm"
+                  style={{ backgroundColor: item.color.hex, boxShadow: `0 0 6px ${item.color.hex}` }}
+                />
+                <span className="text-xs text-gray-300 font-medium">P{item.propertyNum}</span>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </GlassChart>

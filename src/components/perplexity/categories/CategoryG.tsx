@@ -22,30 +22,39 @@ function getVal<T>(field: { value: T | null } | undefined): T | null {
   return field?.value ?? null;
 }
 
-// G-1: Exterior Feature Matrix
+// G-1: Exterior Feature Matrix - Show first 3 properties with P1/P2/P3 colors
 function ExteriorFeatureMatrix({ properties }: CategoryGProps) {
   const features = [
     { key: 'pool', label: 'Pool', icon: Waves },
     { key: 'deck', label: 'Deck', icon: TreeDeciduous },
     { key: 'ev', label: 'EV', icon: Zap },
-    { key: 'garage', label: 'Garage', icon: Car },
+    { key: 'garage', label: 'Gar', icon: Car },
   ];
 
-  const data = properties.slice(0, 5).map(p => ({
-    id: p.id,
-    address: getVal(p.address?.streetAddress)?.slice(0, 8) || `#${p.id.slice(0, 4)}`,
-    pool: getVal(p.structural?.poolYn) || false,
-    deck: !!getVal(p.structural?.deckPatio),
-    ev: getVal(p.utilities?.evChargingYn) === 'Yes',
-    garage: (getVal(p.details?.garageSpaces) || 0) > 0,
-  }));
+  // Take first 3 properties for comparison
+  const comparisonProperties = properties.slice(0, 3);
+
+  const data = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
+    return {
+      id: p.id,
+      address: address.slice(0, 12),
+      pool: getVal(p.structural?.poolYn) || false,
+      deck: !!getVal(p.structural?.deckPatio),
+      ev: getVal(p.utilities?.evChargingYn) === 'Yes',
+      garage: (getVal(p.details?.garageSpaces) || 0) > 0,
+      color: propColor,
+      propertyNum: idx + 1,
+    };
+  });
 
   return (
     <GlassChart
       title="Exterior Feature Matrix"
-      description="Outdoor amenities grid"
+      description={`Outdoor amenities for ${data.length} properties`}
       chartId="G-feature-matrix"
-      color="#10B981"
+      color={PROPERTY_COLORS.P1.hex}
     >
       <div className="h-full flex flex-col justify-center">
         <div className="grid gap-2">
@@ -72,16 +81,23 @@ function ExteriorFeatureMatrix({ properties }: CategoryGProps) {
               transition={{ delay: i * 0.05 }}
               className="grid grid-cols-5 gap-1 items-center"
             >
-              <div className="text-xs text-gray-300 truncate">{row.address}</div>
+              <div
+                className="text-xs font-bold truncate drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
+                style={{ color: row.color.hex }}
+              >
+                P{row.propertyNum}: {row.address}
+              </div>
               {[row.pool, row.deck, row.ev, row.garage].map((has, j) => (
                 <div
                   key={j}
-                  className={`h-8 rounded flex items-center justify-center ${
-                    has ? 'bg-green-500/30' : 'bg-white/5'
-                  }`}
+                  className="h-8 rounded flex items-center justify-center"
+                  style={{
+                    backgroundColor: has ? row.color.rgba(0.3) : 'rgba(255,255,255,0.05)',
+                    border: has ? `1px solid ${row.color.hex}` : 'none',
+                  }}
                 >
                   {has ? (
-                    <Check className="w-4 h-4 text-green-400" />
+                    <Check className="w-4 h-4" style={{ color: row.color.hex }} />
                   ) : (
                     <X className="w-3 h-3 text-gray-600" />
                   )}
@@ -99,36 +115,40 @@ function ExteriorFeatureMatrix({ properties }: CategoryGProps) {
   );
 }
 
-// G-2: Curb Appeal Radar
+// G-2: Curb Appeal Radar - Show first 3 properties with P1/P2/P3 colors
 function CurbAppealRadar({ properties }: CategoryGProps) {
-  const scores = properties.reduce((acc, p) => {
-    acc.pool += getVal(p.structural?.poolYn) ? 1 : 0;
-    acc.deck += getVal(p.structural?.deckPatio) ? 1 : 0;
-    acc.landscaping += getVal(p.structural?.landscaping) ? 1 : 0;
-    acc.fence += getVal(p.structural?.fence) ? 1 : 0;
-    acc.view += getVal(p.utilities?.viewType) ? 1 : 0;
-    acc.count++;
-    return acc;
-  }, { pool: 0, deck: 0, landscaping: 0, fence: 0, view: 0, count: 0 });
+  // Take first 3 properties for comparison
+  const comparisonProperties = properties.slice(0, 3);
 
-  const count = scores.count || 1;
+  const propertyData = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
+
+    return {
+      id: p.id,
+      label: `P${idx + 1}: ${address.slice(0, 12)}`,
+      pool: getVal(p.structural?.poolYn) ? 100 : 0,
+      deck: getVal(p.structural?.deckPatio) ? 100 : 0,
+      landscaping: getVal(p.structural?.landscaping) ? 100 : 0,
+      fence: getVal(p.structural?.fence) ? 100 : 0,
+      view: getVal(p.utilities?.viewType) ? 100 : 0,
+      color: propColor,
+      propertyNum: idx + 1,
+    };
+  });
 
   const data = {
     labels: ['Pool', 'Deck/Patio', 'Landscaping', 'Fence', 'View'],
-    datasets: [{
-      label: 'Feature %',
-      data: [
-        (scores.pool / count) * 100,
-        (scores.deck / count) * 100,
-        (scores.landscaping / count) * 100,
-        (scores.fence / count) * 100,
-        (scores.view / count) * 100,
-      ],
-      backgroundColor: 'rgba(0, 217, 255, 0.2)',
-      borderColor: '#00D9FF',
+    datasets: propertyData.map((prop) => ({
+      label: prop.label,
+      data: [prop.pool, prop.deck, prop.landscaping, prop.fence, prop.view],
+      backgroundColor: prop.color.rgba(0.2),
+      borderColor: prop.color.hex,
       borderWidth: 2,
-      pointBackgroundColor: '#00D9FF',
-    }],
+      pointBackgroundColor: prop.color.hex,
+      pointBorderColor: '#fff',
+      pointRadius: 4,
+    })),
   };
 
   const options = {
@@ -138,30 +158,45 @@ function CurbAppealRadar({ properties }: CategoryGProps) {
       r: {
         angleLines: { color: 'rgba(255,255,255,0.1)' },
         grid: { color: 'rgba(255,255,255,0.1)' },
-        pointLabels: { color: '#FFFFFF', font: { size: 10 } },
+        pointLabels: { color: '#FFFFFF', font: { size: 10, weight: 'bold' as const } },
         ticks: { color: '#9CA3AF', backdropColor: 'transparent', stepSize: 25 },
         suggestedMin: 0,
         suggestedMax: 100,
       },
     },
-    plugins: { legend: { display: false } },
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom' as const,
+        labels: {
+          color: '#E5E7EB',
+          boxWidth: 12,
+          padding: 10,
+          font: { size: 10, weight: 'bold' as const },
+        },
+      },
+    },
   };
 
   return (
     <GlassChart
       title="Curb Appeal Radar"
-      description="Exterior feature coverage %"
+      description={`Exterior features for ${propertyData.length} properties`}
       chartId="G-curb-appeal"
-      color="#00D9FF"
+      color={PROPERTY_COLORS.P1.hex}
     >
       <Radar data={data} options={options} />
     </GlassChart>
   );
 }
 
-// G-3: Outdoor ROI Bubbles
+// G-3: Outdoor ROI Bubbles - Show first 3 properties with P1/P2/P3 colors
 function OutdoorROIBubbles({ properties, onPropertyClick }: CategoryGProps) {
-  const bubbles = properties.slice(0, 8).map(p => {
+  // Take first 3 properties for comparison
+  const comparisonProperties = properties.slice(0, 3);
+
+  const bubbles = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
     let featureCount = 0;
     if (getVal(p.structural?.poolYn)) featureCount++;
     if (getVal(p.structural?.deckPatio)) featureCount++;
@@ -169,12 +204,15 @@ function OutdoorROIBubbles({ properties, onPropertyClick }: CategoryGProps) {
     if (getVal(p.structural?.landscaping)) featureCount++;
 
     const pps = getVal(p.address?.pricePerSqft) || 0;
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
 
     return {
       id: p.id,
-      address: getVal(p.address?.streetAddress)?.slice(0, 6) || `#${p.id.slice(0, 3)}`,
+      address: address.slice(0, 12),
       features: featureCount,
       premium: pps,
+      color: propColor,
+      propertyNum: idx + 1,
     };
   });
 
@@ -184,16 +222,16 @@ function OutdoorROIBubbles({ properties, onPropertyClick }: CategoryGProps) {
   return (
     <GlassChart
       title="Outdoor ROI Bubbles"
-      description="Feature count vs price premium"
+      description={`Feature count vs $/sqft for ${bubbles.length} properties`}
       chartId="G-outdoor-roi"
-      color="#8B5CF6"
+      color={PROPERTY_COLORS.P3.hex}
     >
       <div className="h-full relative">
         {/* Axis labels */}
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 -rotate-90 text-xs text-gray-300 font-medium drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 -rotate-90 text-xs text-gray-300 font-bold drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
           $/sqft
         </div>
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-xs text-gray-300 font-medium drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-xs text-gray-300 font-bold drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
           Features
         </div>
 
@@ -202,7 +240,7 @@ function OutdoorROIBubbles({ properties, onPropertyClick }: CategoryGProps) {
           {bubbles.map((bubble, i) => {
             const x = (bubble.features / maxFeatures) * 80 + 10;
             const y = 90 - (bubble.premium / maxPremium) * 80;
-            const size = 20 + bubble.features * 8;
+            const size = 28 + bubble.features * 8;
 
             return (
               <motion.div
@@ -223,16 +261,25 @@ function OutdoorROIBubbles({ properties, onPropertyClick }: CategoryGProps) {
                   style={{
                     width: size,
                     height: size,
-                    background: `radial-gradient(circle at 30% 30%, rgba(139, 92, 246, 0.8), rgba(139, 92, 246, 0.3))`,
-                    boxShadow: '0 0 15px rgba(139, 92, 246, 0.5)',
+                    background: `radial-gradient(circle at 30% 30%, ${bubble.color.rgba(0.9)}, ${bubble.color.rgba(0.4)})`,
+                    boxShadow: `0 0 15px ${bubble.color.rgba(0.6)}`,
+                    border: `2px solid ${bubble.color.hex}`,
                   }}
                 >
-                  <span className="text-xs text-white font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{bubble.features}</span>
+                  <span
+                    className="text-xs font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
+                    style={{ color: '#fff' }}
+                  >
+                    P{bubble.propertyNum}
+                  </span>
                 </div>
 
                 {/* Tooltip */}
-                <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-black/80 px-2 py-1 rounded text-xs text-white font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]">
-                  {bubble.address}: ${Math.round(bubble.premium)}/sqft
+                <div
+                  className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-black/90 px-2 py-1 rounded text-xs font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]"
+                  style={{ color: bubble.color.hex }}
+                >
+                  {bubble.address}: {bubble.features} features, ${Math.round(bubble.premium)}/sqft
                 </div>
               </motion.div>
             );
@@ -244,6 +291,19 @@ function OutdoorROIBubbles({ properties, onPropertyClick }: CategoryGProps) {
             No outdoor data
           </div>
         )}
+
+        {/* Legend */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-2 flex gap-4">
+          {bubbles.map((b) => (
+            <div key={b.id} className="flex items-center gap-1">
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: b.color.hex, boxShadow: `0 0 6px ${b.color.hex}` }}
+              />
+              <span className="text-xs text-gray-300 font-medium">P{b.propertyNum}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </GlassChart>
   );

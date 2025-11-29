@@ -11,7 +11,7 @@ import { Radar, Scatter } from 'react-chartjs-2';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
 import { Wind, Sun, Droplets } from 'lucide-react';
-import { getIndexColor, INDEX_COLORS, PROPERTY_COLORS } from '../chartColors';
+import { getIndexColor, INDEX_COLORS, PROPERTY_COLORS, getPropertyColor } from '../chartColors';
 
 interface CategoryOProps {
   properties: Property[];
@@ -31,48 +31,46 @@ function riskToScore(risk: string | null): number {
   return 50;
 }
 
-// O-1: 14-Risk Constellation Radar
+// O-1: 14-Risk Constellation Radar - Show first 3 properties with P1/P2/P3 colors
 function RiskConstellation({ properties }: CategoryOProps) {
-  const risks = properties.reduce((acc, p) => {
-    acc.flood += riskToScore(getVal(p.utilities?.floodZone));
-    acc.fire += riskToScore(getVal(p.utilities?.wildfireRisk));
-    acc.earthquake += riskToScore(getVal(p.utilities?.earthquakeRisk));
-    acc.hurricane += riskToScore(getVal(p.utilities?.hurricaneRisk));
-    acc.tornado += riskToScore(getVal(p.utilities?.tornadoRisk));
-    // Air quality from utilities
+  // Take first 3 properties for comparison
+  const comparisonProperties = properties.slice(0, 3);
+
+  const propertyData = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
     const aqiStr = getVal(p.utilities?.airQualityIndexCurrent);
     const aqi = aqiStr ? parseInt(aqiStr) : null;
-    acc.airQuality += aqi ? Math.max(0, 100 - aqi) : 70;
-    // Noise level from utilities
     const noiseStr = getVal(p.utilities?.noiseLevelDbEst);
     const noise = noiseStr ? parseInt(noiseStr) : null;
-    acc.noise += noise ? Math.max(0, 100 - (noise - 30)) : 70;
-    acc.count++;
-    return acc;
-  }, { flood: 0, fire: 0, earthquake: 0, hurricane: 0, tornado: 0, airQuality: 0, noise: 0, count: 0 });
 
-  const count = risks.count || 1;
+    return {
+      id: p.id,
+      label: `P${idx + 1}: ${address.slice(0, 12)}`,
+      flood: riskToScore(getVal(p.utilities?.floodZone)),
+      fire: riskToScore(getVal(p.utilities?.wildfireRisk)),
+      earthquake: riskToScore(getVal(p.utilities?.earthquakeRisk)),
+      hurricane: riskToScore(getVal(p.utilities?.hurricaneRisk)),
+      tornado: riskToScore(getVal(p.utilities?.tornadoRisk)),
+      airQuality: aqi ? Math.max(0, 100 - aqi) : 70,
+      noise: noise ? Math.max(0, 100 - (noise - 30)) : 70,
+      color: propColor,
+      propertyNum: idx + 1,
+    };
+  });
 
   const data = {
     labels: ['Flood', 'Fire', 'Earthquake', 'Hurricane', 'Tornado', 'Air Quality', 'Noise'],
-    datasets: [{
-      label: 'Risk Score',
-      data: [
-        risks.flood / count,
-        risks.fire / count,
-        risks.earthquake / count,
-        risks.hurricane / count,
-        risks.tornado / count,
-        risks.airQuality / count,
-        risks.noise / count,
-      ],
-      backgroundColor: 'rgba(239, 68, 68, 0.2)',
-      borderColor: '#EF4444',
+    datasets: propertyData.map((prop) => ({
+      label: prop.label,
+      data: [prop.flood, prop.fire, prop.earthquake, prop.hurricane, prop.tornado, prop.airQuality, prop.noise],
+      backgroundColor: prop.color.rgba(0.2),
+      borderColor: prop.color.hex,
       borderWidth: 2,
-      pointBackgroundColor: '#EF4444',
+      pointBackgroundColor: prop.color.hex,
       pointBorderColor: '#fff',
       pointRadius: 4,
-    }],
+    })),
   };
 
   const options = {
@@ -82,21 +80,32 @@ function RiskConstellation({ properties }: CategoryOProps) {
       r: {
         angleLines: { color: 'rgba(255,255,255,0.1)' },
         grid: { color: 'rgba(255,255,255,0.1)' },
-        pointLabels: { color: '#FFFFFF', font: { size: 9 } },
+        pointLabels: { color: '#FFFFFF', font: { size: 9, weight: 'bold' as const } },
         ticks: { color: '#9CA3AF', backdropColor: 'transparent', stepSize: 25 },
         suggestedMin: 0,
         suggestedMax: 100,
       },
     },
-    plugins: { legend: { display: false } },
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom' as const,
+        labels: {
+          color: '#E5E7EB',
+          boxWidth: 12,
+          padding: 10,
+          font: { size: 10, weight: 'bold' as const },
+        },
+      },
+    },
   };
 
   return (
     <GlassChart
       title="Risk Constellation"
-      description="7-axis environmental risk radar"
+      description={`7-axis risk for ${propertyData.length} properties`}
       chartId="O-risk-constellation"
-      color="#EF4444"
+      color={PROPERTY_COLORS.P1.hex}
       webAugmented
       webSource="FEMA, EPA"
     >
@@ -105,9 +114,13 @@ function RiskConstellation({ properties }: CategoryOProps) {
   );
 }
 
-// O-2: Risk Reward Matrix Scatter
+// O-2: Risk Reward Matrix Scatter - Show first 3 properties with P1/P2/P3 colors
 function RiskRewardMatrix({ properties }: CategoryOProps) {
-  const points = properties.map(p => {
+  // Take first 3 properties for comparison
+  const comparisonProperties = properties.slice(0, 3);
+
+  const points = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
     // Calculate composite risk score (lower is riskier)
     const floodScore = riskToScore(getVal(p.utilities?.floodZone));
     const fireScore = riskToScore(getVal(p.utilities?.wildfireRisk));
@@ -116,31 +129,29 @@ function RiskRewardMatrix({ properties }: CategoryOProps) {
     // Reward = cap rate or rental yield
     const capRate = getVal(p.financial?.capRateEst) || 0;
     const rentalYield = getVal(p.financial?.rentalYieldEst) || capRate;
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
 
     return {
       id: p.id,
       x: avgRisk, // Higher = safer
       y: rentalYield,
-      price: getVal(p.address?.listingPrice) || 1000000,
+      color: propColor,
+      propertyNum: idx + 1,
+      address: address.slice(0, 15),
     };
   }).filter(p => p.y > 0);
 
+  // Create separate dataset for each property for distinct colors
   const data = {
-    datasets: [{
-      label: 'Properties',
-      data: points.map(p => ({ x: p.x, y: p.y })),
-      backgroundColor: points.map(p => {
-        // Color by quadrant using INDEX colors
-        if (p.x >= 60 && p.y >= 5) return INDEX_COLORS.GREEN.rgba(0.7); // High safety, high yield = green
-        if (p.x >= 60 && p.y < 5) return INDEX_COLORS.BLUE.rgba(0.7); // High safety, low yield = blue
-        if (p.x < 60 && p.y >= 5) return INDEX_COLORS.ORANGE.rgba(0.7); // Low safety, high yield = orange
-        return INDEX_COLORS.RED.rgba(0.7); // Low safety, low yield = red
-      }),
-      borderColor: '#fff',
-      borderWidth: 1,
-      pointRadius: 10,
-      pointHoverRadius: 14,
-    }],
+    datasets: points.map((point) => ({
+      label: `P${point.propertyNum}: ${point.address}`,
+      data: [{ x: point.x, y: point.y }],
+      backgroundColor: point.color.rgba(0.7),
+      borderColor: point.color.hex,
+      borderWidth: 2,
+      pointRadius: 12,
+      pointHoverRadius: 16,
+    })),
   };
 
   const options = {
@@ -148,22 +159,34 @@ function RiskRewardMatrix({ properties }: CategoryOProps) {
     maintainAspectRatio: false,
     scales: {
       x: {
-        title: { display: true, text: 'Safety Score', color: '#9CA3AF' },
+        title: { display: true, text: 'Safety Score', color: '#E5E7EB', font: { weight: 'bold' as const } },
         grid: { color: 'rgba(255,255,255,0.1)' },
-        ticks: { color: '#9CA3AF' },
+        ticks: { color: '#E5E7EB', font: { weight: 'bold' as const } },
         min: 0,
         max: 100,
       },
       y: {
-        title: { display: true, text: 'Yield %', color: '#9CA3AF' },
+        title: { display: true, text: 'Yield %', color: '#E5E7EB', font: { weight: 'bold' as const } },
         grid: { color: 'rgba(255,255,255,0.1)' },
-        ticks: { color: '#9CA3AF', callback: (v: number | string) => `${v}%` },
+        ticks: { color: '#E5E7EB', font: { weight: 'bold' as const }, callback: (v: number | string) => `${v}%` },
       },
     },
     plugins: {
-      legend: { display: false },
+      legend: {
+        display: true,
+        position: 'bottom' as const,
+        labels: {
+          color: '#E5E7EB',
+          boxWidth: 12,
+          padding: 10,
+          font: { size: 10, weight: 'bold' as const },
+          usePointStyle: true,
+        },
+      },
       tooltip: {
-        backgroundColor: 'rgba(0,0,0,0.8)',
+        backgroundColor: 'rgba(0,0,0,0.9)',
+        titleFont: { weight: 'bold' as const },
+        bodyFont: { weight: 'bold' as const },
         callbacks: {
           label: (ctx: any) => `Safety: ${ctx.raw.x.toFixed(0)}, Yield: ${ctx.raw.y.toFixed(1)}%`,
         },
@@ -182,9 +205,9 @@ function RiskRewardMatrix({ properties }: CategoryOProps) {
   return (
     <GlassChart
       title="Risk-Reward Matrix"
-      description="Safety vs yield quadrants"
+      description={`Safety vs yield for ${points.length} properties`}
       chartId="O-risk-reward"
-      color="#F59E0B"
+      color={PROPERTY_COLORS.P2.hex}
     >
       <div className="relative h-full">
         {points.length > 0 ? (

@@ -86,28 +86,37 @@ function ROIHighway({ properties }: CategoryMProps) {
   );
 }
 
-// M-2: Cap Appreciation Bubbles
+// M-2: Cap Appreciation Bubbles - Show first 3 properties with P1/P2/P3 colors
 function CapAppreciationBubbles({ properties }: CategoryMProps) {
-  const points = properties.map(p => {
+  // Take first 3 properties for comparison
+  const comparisonProperties = properties.slice(0, 3);
+
+  const points = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
     const capRate = getVal(p.financial?.capRateEst) || 0;
-    const rentalIncome = getVal(p.financial?.rentalEstimateMonthly) || 0;
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
 
     return {
       id: p.id,
       x: capRate,
       y: 5.5, // Assumed appreciation
-      r: Math.max(5, Math.min(rentalIncome / 500, 20)),
+      color: propColor,
+      propertyNum: idx + 1,
+      address: address.slice(0, 15),
     };
   }).filter(p => p.x > 0);
 
+  // Create separate dataset for each property for distinct colors
   const data = {
-    datasets: [{
-      label: 'Properties',
-      data: points.map(p => ({ x: p.x, y: p.y, r: p.r })),
-      backgroundColor: 'rgba(0, 217, 255, 0.5)',
-      borderColor: '#00D9FF',
+    datasets: points.map((point) => ({
+      label: `P${point.propertyNum}: ${point.address}`,
+      data: [{ x: point.x, y: point.y }],
+      backgroundColor: point.color.rgba(0.7),
+      borderColor: point.color.hex,
       borderWidth: 2,
-    }],
+      pointRadius: 12,
+      pointHoverRadius: 16,
+    })),
   };
 
   const options = {
@@ -115,20 +124,32 @@ function CapAppreciationBubbles({ properties }: CategoryMProps) {
     maintainAspectRatio: false,
     scales: {
       x: {
-        title: { display: true, text: 'Cap Rate %', color: '#9CA3AF' },
+        title: { display: true, text: 'Cap Rate %', color: '#E5E7EB', font: { weight: 'bold' as const } },
         grid: { color: 'rgba(255,255,255,0.1)' },
-        ticks: { color: '#9CA3AF', callback: (v: number | string) => `${v}%` },
+        ticks: { color: '#E5E7EB', font: { weight: 'bold' as const }, callback: (v: number | string) => `${v}%` },
       },
       y: {
-        title: { display: true, text: 'Appreciation %', color: '#9CA3AF' },
+        title: { display: true, text: 'Appreciation %', color: '#E5E7EB', font: { weight: 'bold' as const } },
         grid: { color: 'rgba(255,255,255,0.1)' },
-        ticks: { color: '#9CA3AF', callback: (v: number | string) => `${v}%` },
+        ticks: { color: '#E5E7EB', font: { weight: 'bold' as const }, callback: (v: number | string) => `${v}%` },
       },
     },
     plugins: {
-      legend: { display: false },
+      legend: {
+        display: true,
+        position: 'bottom' as const,
+        labels: {
+          color: '#E5E7EB',
+          boxWidth: 12,
+          padding: 10,
+          font: { size: 10, weight: 'bold' as const },
+          usePointStyle: true,
+        },
+      },
       tooltip: {
-        backgroundColor: 'rgba(0,0,0,0.8)',
+        backgroundColor: 'rgba(0,0,0,0.9)',
+        titleFont: { weight: 'bold' as const },
+        bodyFont: { weight: 'bold' as const },
         callbacks: {
           label: (ctx: any) => `Cap: ${ctx.raw.x}%, Appr: ${ctx.raw.y}%`,
         },
@@ -139,9 +160,9 @@ function CapAppreciationBubbles({ properties }: CategoryMProps) {
   return (
     <GlassChart
       title="Cap vs Appreciation"
-      description="Yield vs growth (size = rental income)"
+      description={`Yield vs growth for ${points.length} properties`}
       chartId="M-cap-appreciation"
-      color="#00D9FF"
+      color={PROPERTY_COLORS.P2.hex}
     >
       {points.length > 0 ? (
         <Scatter data={data} options={options} />
