@@ -223,7 +223,7 @@ function ReplacementBars({ properties }: CategoryEProps) {
               <div className="flex-1">
                 <div className="flex justify-between text-xs mb-0.5">
                   <span className="text-orange-400">Roof</span>
-                  <span className="text-white">{est.roofYearsLeft}yr</span>
+                  <span className="text-white font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{est.roofYearsLeft}yr</span>
                 </div>
                 <div className="h-2 bg-white/5 rounded-full overflow-hidden">
                   <div
@@ -235,7 +235,7 @@ function ReplacementBars({ properties }: CategoryEProps) {
               <div className="flex-1">
                 <div className="flex justify-between text-xs mb-0.5">
                   <span className="text-yellow-400">HVAC</span>
-                  <span className="text-white">{est.hvacYearsLeft}yr</span>
+                  <span className="text-white font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{est.hvacYearsLeft}yr</span>
                 </div>
                 <div className="h-2 bg-white/5 rounded-full overflow-hidden">
                   <div

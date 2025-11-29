@@ -101,7 +101,10 @@ function FeatureMosaic({ properties }: CategoryPProps) {
               />
               <div
                 className="text-xs font-bold relative z-10"
-                style={{ color: hasFeature ? '#fff' : '#6B7280' }}
+                style={{
+                  color: hasFeature ? '#fff' : '#6B7280',
+                  textShadow: hasFeature ? '0 0 6px rgba(255,255,255,0.7)' : 'none'
+                }}
               >
                 {percentage}%
               </div>
@@ -305,7 +308,7 @@ function FeatureUpliftViolin({ properties }: CategoryPProps) {
                   }}
                 >
                   {barWidth > 15 && (
-                    <span className="text-xs text-white font-bold">
+                    <span className="text-xs text-white font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">
                       {isPositive ? '+' : ''}{item.uplift}%
                     </span>
                   )}

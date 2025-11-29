@@ -85,7 +85,7 @@ function UtilityCostDonut({ properties }: CategoryNProps) {
         <Doughnut data={data} options={options} />
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="text-center">
-            <div className="text-xl font-bold text-white">${(total/1000).toFixed(0)}K</div>
+            <div className="text-xl font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.7)]">${(total/1000).toFixed(0)}K</div>
             <div className="text-xs text-gray-400">Total/yr</div>
           </div>
         </div>

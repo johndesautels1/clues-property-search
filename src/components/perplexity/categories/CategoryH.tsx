@@ -101,7 +101,7 @@ function RenovationTimeline({ properties }: CategoryHProps) {
                     borderLeft: `3px solid ${typeColors[event.type]}`,
                   }}
                 >
-                  <span className="text-white">{event.type}</span>
+                  <span className="text-white font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{event.type}</span>
                   <span className="text-gray-400 ml-2">{event.year}</span>
                   <span className="text-gray-500 ml-2">({event.address})</span>
                 </div>
@@ -166,7 +166,7 @@ function ValueAddBars({ properties }: CategoryHProps) {
                 animate={{ width: `${(item.before / maxValue) * 50}%` }}
                 className="h-full bg-gray-500 rounded-l flex items-center justify-end pr-1"
               >
-                <span className="text-xs text-white">${(item.before / 1000000).toFixed(1)}M</span>
+                <span className="text-xs text-white font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">${(item.before / 1000000).toFixed(1)}M</span>
               </motion.div>
               {/* After bar */}
               <motion.div
@@ -174,7 +174,7 @@ function ValueAddBars({ properties }: CategoryHProps) {
                 animate={{ width: `${(item.after / maxValue) * 50}%` }}
                 className="h-full bg-green-500 rounded-r flex items-center pl-1"
               >
-                <span className="text-xs text-white">${(item.after / 1000000).toFixed(1)}M</span>
+                <span className="text-xs text-white font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">${(item.after / 1000000).toFixed(1)}M</span>
               </motion.div>
             </div>
           </motion.div>

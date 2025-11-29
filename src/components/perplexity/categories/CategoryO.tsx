@@ -306,11 +306,11 @@ function EnvironmentGauges({ properties }: CategoryOProps) {
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <Icon className="w-5 h-5 mb-1" style={{ color: gauge.color }} />
-                  <span className="text-white font-bold text-lg">{gauge.value}</span>
+                  <span className="text-white font-bold text-lg drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{gauge.value}</span>
                 </div>
               </div>
               <div className="mt-2">
-                <div className="text-xs text-white font-medium">{gauge.label}</div>
+                <div className="text-xs text-white font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{gauge.label}</div>
                 <div className="text-xs text-gray-500">{gauge.description}</div>
               </div>
             </motion.div>

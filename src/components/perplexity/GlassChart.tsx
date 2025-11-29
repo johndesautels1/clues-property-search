@@ -50,7 +50,7 @@ export default function GlassChart({
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h4 className="text-white font-semibold text-sm flex items-center gap-2">
+            <h4 className="text-white font-bold text-sm drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] flex items-center gap-2">
               <span
                 className="w-2 h-2 rounded-full"
                 style={{ backgroundColor: color }}

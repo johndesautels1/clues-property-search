@@ -158,7 +158,7 @@ export default function PerplexityAnalysis() {
         >
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl font-bold text-white mb-1">
+              <h1 className="text-2xl font-bold text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)] mb-1">
                 Analytics Dashboard
               </h1>
               <p className="text-gray-400 text-sm">

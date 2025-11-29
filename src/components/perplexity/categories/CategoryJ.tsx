@@ -150,7 +150,7 @@ function GaugeCluster({ properties }: CategoryJProps) {
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">{gauge.value}</span>
+                  <span className="text-white font-bold text-lg drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{gauge.value}</span>
                 </div>
               </div>
               <span className="text-xs text-gray-400 mt-1 block">{gauge.label}</span>

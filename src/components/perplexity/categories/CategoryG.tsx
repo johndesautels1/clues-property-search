@@ -226,11 +226,11 @@ function OutdoorROIBubbles({ properties, onPropertyClick }: CategoryGProps) {
                     boxShadow: '0 0 15px rgba(139, 92, 246, 0.5)',
                   }}
                 >
-                  <span className="text-xs text-white font-bold">{bubble.features}</span>
+                  <span className="text-xs text-white font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{bubble.features}</span>
                 </div>
 
                 {/* Tooltip */}
-                <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-black/80 px-2 py-1 rounded text-xs text-white">
+                <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-black/80 px-2 py-1 rounded text-xs text-white font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]">
                   {bubble.address}: ${Math.round(bubble.premium)}/sqft
                 </div>
               </motion.div>

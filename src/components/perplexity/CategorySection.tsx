@@ -65,7 +65,7 @@ export default function CategorySection({
 
           {/* Title and subtitle */}
           <div className="text-left">
-            <h3 className="font-orbitron font-bold text-lg text-white flex items-center gap-2">
+            <h3 className="font-orbitron font-bold text-lg text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] flex items-center gap-2">
               <span
                 className="text-sm font-mono px-2 py-0.5 rounded"
                 style={{ backgroundColor: `${color}20`, color }}

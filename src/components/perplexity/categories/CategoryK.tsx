@@ -127,7 +127,7 @@ function AccessTiles({ properties }: CategoryKProps) {
               }}
             >
               <Icon className="w-6 h-6 mb-1" style={{ color: tile.color }} />
-              <div className="text-lg font-bold text-white">{tile.value.toFixed(1)}mi</div>
+              <div className="text-lg font-bold text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{tile.value.toFixed(1)}mi</div>
               <div className="text-xs text-gray-400">{tile.label}</div>
               <div className="text-xs mt-1" style={{ color: tile.color }}>~{timeMin} min</div>
             </motion.div>

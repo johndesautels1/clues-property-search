@@ -257,7 +257,7 @@ export default function ExecutiveOverview({ properties }: ExecutiveOverviewProps
 
   return (
     <section className="mb-8">
-      <h2 className="text-xl font-orbitron font-bold text-white mb-4 flex items-center gap-2">
+      <h2 className="text-xl font-orbitron font-bold text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)] mb-4 flex items-center gap-2">
         <span className="w-2 h-2 rounded-full bg-quantum-cyan animate-pulse" />
         Executive Overview
       </h2>

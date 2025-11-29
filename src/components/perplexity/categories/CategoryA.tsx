@@ -82,7 +82,7 @@ function PinClusterOrbs({ properties, onPropertyClick }: CategoryAProps) {
                   }}
                 >
                   <div className="text-center">
-                    <div className="text-white font-bold text-lg">{props.length}</div>
+                    <div className="text-white font-bold text-lg drop-shadow-[0_0_8px_rgba(255,255,255,0.7)]">{props.length}</div>
                     <div className="text-xs text-gray-300 truncate max-w-[60px]">
                       {city}
                     </div>
@@ -139,7 +139,7 @@ function IdentityMatrix({ properties, onPropertyClick }: CategoryAProps) {
                 <td className="py-2 px-2 text-cyan-400 font-mono">
                   #{p.id.slice(0, 4)}
                 </td>
-                <td className="py-2 px-2 text-white truncate max-w-[120px]">
+                <td className="py-2 px-2 text-white font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.5)] truncate max-w-[120px]">
                   {getVal(p.address?.streetAddress) || getVal(p.address?.fullAddress) || '—'}
                 </td>
                 <td className="py-2 px-2 text-gray-400">
@@ -227,7 +227,7 @@ function GeoDensityHeat({ properties }: CategoryAProps) {
                       background: `linear-gradient(90deg, hsl(${hue}, ${saturation}%, ${lightness}%)30, hsl(${hue}, ${saturation}%, ${lightness}%))`,
                     }}
                   >
-                    <span className="text-xs text-white font-bold">{count}</span>
+                    <span className="text-xs text-white font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{count}</span>
                   </motion.div>
                 </div>
               </motion.div>

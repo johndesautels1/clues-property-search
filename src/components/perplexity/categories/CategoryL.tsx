@@ -102,7 +102,7 @@ function CrimeGaugeTrio({ properties }: CategoryLProps) {
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <Icon className="w-4 h-4" style={{ color: gauge.color }} />
-                  <span className="text-white font-bold text-sm">{gauge.value}</span>
+                  <span className="text-white font-bold text-sm drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{gauge.value}</span>
                 </div>
               </div>
               <span className="text-xs text-gray-400 mt-1 block">{gauge.label}</span>
@@ -222,7 +222,7 @@ function CrimeHeatRow({ properties }: CategoryLProps) {
                 className="flex-1 h-10 rounded flex flex-col items-center justify-center"
                 style={{ backgroundColor: `${getColor(d.violent)}40` }}
               >
-                <span className="text-white text-xs font-bold">{d.violent}</span>
+                <span className="text-white text-xs font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{d.violent}</span>
                 <span className="text-gray-400 text-xs truncate max-w-full px-1">{d.address}</span>
               </motion.div>
             ))}
@@ -242,7 +242,7 @@ function CrimeHeatRow({ properties }: CategoryLProps) {
                 className="flex-1 h-10 rounded flex flex-col items-center justify-center"
                 style={{ backgroundColor: `${getColor(d.property)}40` }}
               >
-                <span className="text-white text-xs font-bold">{d.property}</span>
+                <span className="text-white text-xs font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{d.property}</span>
               </motion.div>
             ))}
           </div>
