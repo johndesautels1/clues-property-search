@@ -10,7 +10,7 @@ import { motion } from 'framer-motion';
 import { Radar, Scatter } from 'react-chartjs-2';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
-import { getIndexColor, PROPERTY_COLORS } from '../chartColors';
+import { getIndexColor, PROPERTY_COLORS, getPropertyColor } from '../chartColors';
 
 interface CategoryJProps {
   properties: Property[];
