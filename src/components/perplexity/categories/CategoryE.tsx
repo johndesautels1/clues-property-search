@@ -174,6 +174,15 @@ function SystemsRadar({ properties }: CategoryEProps) {
   );
 }
 
+// CLUES 5-color condition scale
+function getConditionColor(score: number): string {
+  if (score >= 81) return '#10B981'; // Green (81-100)
+  if (score >= 61) return '#3B82F6'; // Blue (61-80)
+  if (score >= 41) return '#F59E0B'; // Yellow (41-60)
+  if (score >= 21) return '#F97316'; // Orange (21-40)
+  return '#EF4444'; // Red (0-20)
+}
+
 // E-2: Interior Condition - Kitchen, Baths, Living Areas, Bedrooms, Flooring
 function InteriorCondition({ properties }: CategoryEProps) {
   const currentYear = new Date().getFullYear();
@@ -183,8 +192,8 @@ function InteriorCondition({ properties }: CategoryEProps) {
   const interiorComponents = [
     { key: 'kitchen', label: 'Kitchen' },
     { key: 'baths', label: 'Baths' },
-    { key: 'living', label: 'Living Areas' },
-    { key: 'flooring', label: 'Flooring' },
+    { key: 'living', label: 'Living' },
+    { key: 'flooring', label: 'Floors' },
     { key: 'interior', label: 'Overall' },
   ];
 
@@ -210,7 +219,7 @@ function InteriorCondition({ properties }: CategoryEProps) {
     return {
       id: p.id,
       label: `P${idx + 1}`,
-      address: address.slice(0, 15),
+      address: address.slice(0, 18),
       age,
       scores,
       avgScore,
@@ -228,8 +237,7 @@ function InteriorCondition({ properties }: CategoryEProps) {
       <div className="h-full flex flex-col">
         <div className="flex-1 overflow-auto">
           {/* Header row */}
-          <div className="grid grid-cols-6 gap-1 text-[8px] text-gray-400 font-bold mb-1 px-1">
-            <div>Property</div>
+          <div className="grid grid-cols-5 gap-2 text-[9px] text-gray-400 font-bold mb-2 px-1">
             {interiorComponents.map(c => (
               <div key={c.key} className="text-center">{c.label}</div>
             ))}
@@ -239,52 +247,59 @@ function InteriorCondition({ properties }: CategoryEProps) {
           {propertyData.map((prop, i) => (
             <motion.div
               key={prop.id}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className="grid grid-cols-6 gap-1 mb-2 px-1"
+              className="mb-3"
             >
-              {/* Property info */}
-              <div className="flex flex-col">
+              {/* Score bars row */}
+              <div className="grid grid-cols-5 gap-2 px-1">
+                {interiorComponents.map(c => {
+                  const score = prop.scores[c.key as keyof typeof prop.scores];
+                  const barColor = getConditionColor(score);
+                  return (
+                    <div key={c.key} className="flex flex-col items-center">
+                      <div className="w-full h-4 bg-white/10 rounded-full overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${score}%` }}
+                          transition={{ duration: 0.5, delay: i * 0.1 }}
+                          className="h-full rounded-full"
+                          style={{ backgroundColor: barColor }}
+                        />
+                      </div>
+                      <span className="text-[9px] font-bold mt-0.5" style={{ color: barColor }}>{score}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Property address below */}
+              <div className="flex items-center gap-1 mt-1 px-1">
+                <div
+                  className="w-2 h-2 rounded-sm flex-shrink-0"
+                  style={{ backgroundColor: prop.color.hex, boxShadow: `0 0 4px ${prop.color.hex}` }}
+                />
                 <span
                   className="text-[9px] font-bold truncate drop-shadow-[0_0_4px_rgba(255,255,255,0.5)]"
                   style={{ color: prop.color.hex }}
                 >
                   {prop.label}: {prop.address}
                 </span>
-                <span className="text-[8px] text-gray-500">
-                  {prop.age ? `${prop.age}yr old` : 'Age N/A'}
+                <span className="text-[8px] text-gray-500 flex-shrink-0">
+                  {prop.age ? `(${prop.age}yr)` : ''}
                 </span>
               </div>
-
-              {/* Score bars for each component */}
-              {interiorComponents.map(c => {
-                const score = prop.scores[c.key as keyof typeof prop.scores];
-                const barColor = score >= 75 ? '#10B981' : score >= 50 ? '#F59E0B' : '#EF4444';
-                return (
-                  <div key={c.key} className="flex flex-col items-center">
-                    <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${score}%` }}
-                        transition={{ duration: 0.5, delay: i * 0.1 }}
-                        className="h-full rounded-full"
-                        style={{ backgroundColor: barColor }}
-                      />
-                    </div>
-                    <span className="text-[8px] text-gray-400 mt-0.5">{score}</span>
-                  </div>
-                );
-              })}
             </motion.div>
           ))}
         </div>
 
-        {/* Legend */}
-        <div className="mt-1 pt-1 border-t border-white/10 flex justify-center gap-3 text-[8px] text-gray-400">
-          <span><span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1" />75+ Good</span>
-          <span><span className="inline-block w-2 h-2 rounded-full bg-yellow-500 mr-1" />50-74 Fair</span>
-          <span><span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-1" />&lt;50 Poor</span>
+        {/* 5-color Legend */}
+        <div className="mt-1 pt-1 border-t border-white/10 flex justify-center flex-wrap gap-2 text-[7px] text-gray-400">
+          <span><span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-0.5" />0-20</span>
+          <span><span className="inline-block w-2 h-2 rounded-full bg-orange-500 mr-0.5" />21-40</span>
+          <span><span className="inline-block w-2 h-2 rounded-full bg-yellow-500 mr-0.5" />41-60</span>
+          <span><span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-0.5" />61-80</span>
+          <span><span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-0.5" />81-100</span>
         </div>
       </div>
     </GlassChart>
@@ -299,9 +314,9 @@ function ExteriorCondition({ properties }: CategoryEProps) {
   // Exterior components to evaluate
   const exteriorComponents = [
     { key: 'roof', label: 'Roof' },
-    { key: 'foundation', label: 'Foundation' },
+    { key: 'foundation', label: 'Found.' },
     { key: 'siding', label: 'Siding' },
-    { key: 'landscape', label: 'Landscape' },
+    { key: 'landscape', label: 'Land.' },
     { key: 'exterior', label: 'Overall' },
   ];
 
@@ -332,7 +347,7 @@ function ExteriorCondition({ properties }: CategoryEProps) {
     return {
       id: p.id,
       label: `P${idx + 1}`,
-      address: address.slice(0, 15),
+      address: address.slice(0, 18),
       age,
       scores,
       avgScore,
@@ -350,8 +365,7 @@ function ExteriorCondition({ properties }: CategoryEProps) {
       <div className="h-full flex flex-col">
         <div className="flex-1 overflow-auto">
           {/* Header row */}
-          <div className="grid grid-cols-6 gap-1 text-[8px] text-gray-400 font-bold mb-1 px-1">
-            <div>Property</div>
+          <div className="grid grid-cols-5 gap-2 text-[9px] text-gray-400 font-bold mb-2 px-1">
             {exteriorComponents.map(c => (
               <div key={c.key} className="text-center">{c.label}</div>
             ))}
@@ -361,52 +375,59 @@ function ExteriorCondition({ properties }: CategoryEProps) {
           {propertyData.map((prop, i) => (
             <motion.div
               key={prop.id}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className="grid grid-cols-6 gap-1 mb-2 px-1"
+              className="mb-3"
             >
-              {/* Property info */}
-              <div className="flex flex-col">
+              {/* Score bars row */}
+              <div className="grid grid-cols-5 gap-2 px-1">
+                {exteriorComponents.map(c => {
+                  const score = prop.scores[c.key as keyof typeof prop.scores];
+                  const barColor = getConditionColor(score);
+                  return (
+                    <div key={c.key} className="flex flex-col items-center">
+                      <div className="w-full h-4 bg-white/10 rounded-full overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${score}%` }}
+                          transition={{ duration: 0.5, delay: i * 0.1 }}
+                          className="h-full rounded-full"
+                          style={{ backgroundColor: barColor }}
+                        />
+                      </div>
+                      <span className="text-[9px] font-bold mt-0.5" style={{ color: barColor }}>{score}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Property address below */}
+              <div className="flex items-center gap-1 mt-1 px-1">
+                <div
+                  className="w-2 h-2 rounded-sm flex-shrink-0"
+                  style={{ backgroundColor: prop.color.hex, boxShadow: `0 0 4px ${prop.color.hex}` }}
+                />
                 <span
                   className="text-[9px] font-bold truncate drop-shadow-[0_0_4px_rgba(255,255,255,0.5)]"
                   style={{ color: prop.color.hex }}
                 >
                   {prop.label}: {prop.address}
                 </span>
-                <span className="text-[8px] text-gray-500">
-                  {prop.age ? `${prop.age}yr old` : 'Age N/A'}
+                <span className="text-[8px] text-gray-500 flex-shrink-0">
+                  {prop.age ? `(${prop.age}yr)` : ''}
                 </span>
               </div>
-
-              {/* Score bars for each component */}
-              {exteriorComponents.map(c => {
-                const score = prop.scores[c.key as keyof typeof prop.scores];
-                const barColor = score >= 75 ? '#10B981' : score >= 50 ? '#F59E0B' : '#EF4444';
-                return (
-                  <div key={c.key} className="flex flex-col items-center">
-                    <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${score}%` }}
-                        transition={{ duration: 0.5, delay: i * 0.1 }}
-                        className="h-full rounded-full"
-                        style={{ backgroundColor: barColor }}
-                      />
-                    </div>
-                    <span className="text-[8px] text-gray-400 mt-0.5">{score}</span>
-                  </div>
-                );
-              })}
             </motion.div>
           ))}
         </div>
 
-        {/* Legend */}
-        <div className="mt-1 pt-1 border-t border-white/10 flex justify-center gap-3 text-[8px] text-gray-400">
-          <span><span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1" />75+ Good</span>
-          <span><span className="inline-block w-2 h-2 rounded-full bg-yellow-500 mr-1" />50-74 Fair</span>
-          <span><span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-1" />&lt;50 Poor</span>
+        {/* 5-color Legend */}
+        <div className="mt-1 pt-1 border-t border-white/10 flex justify-center flex-wrap gap-2 text-[7px] text-gray-400">
+          <span><span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-0.5" />0-20</span>
+          <span><span className="inline-block w-2 h-2 rounded-full bg-orange-500 mr-0.5" />21-40</span>
+          <span><span className="inline-block w-2 h-2 rounded-full bg-yellow-500 mr-0.5" />41-60</span>
+          <span><span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-0.5" />61-80</span>
+          <span><span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-0.5" />81-100</span>
         </div>
       </div>
     </GlassChart>
