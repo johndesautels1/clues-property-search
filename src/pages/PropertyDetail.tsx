@@ -362,6 +362,11 @@ export default function PropertyDetail() {
     try {
       const apiUrl = import.meta.env.VITE_API_URL || '';
 
+      // Convert existing property to flat fields for additive merging
+      const { propertyToFlatFields } = await import('@/lib/field-normalizer');
+      const existingFields = propertyToFlatFields(fullProperty);
+      console.log('📤 Sending existing fields for merge:', Object.keys(existingFields).length, 'fields');
+
       // Use SSE streaming for real-time progress
       const response = await fetch(`${apiUrl}/api/property/search-stream`, {
         method: 'POST',
@@ -370,7 +375,7 @@ export default function PropertyDetail() {
           address,
           engines: ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'],
           skipLLMs: false,
-          existingFields: {}, // Let backend merge with any existing
+          existingFields, // CRITICAL: Pass existing fields for additive merging
           skipApis: false,
         }),
       });

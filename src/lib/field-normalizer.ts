@@ -803,3 +803,47 @@ export function computeDataQualityByRange(properties: Property[]): DataQualityMe
     };
   });
 }
+
+/**
+ * REVERSE FUNCTION: Convert a Property object back to flat field format
+ * Used when calling the search API with existing data to enable additive merging.
+ *
+ * @param property - The full Property object to flatten
+ * @returns Record<string, FlatFieldData> - Flat fields keyed by apiKey (e.g., "10_listing_price")
+ */
+export function propertyToFlatFields(property: Property): Record<string, FlatFieldData> {
+  const flatFields: Record<string, FlatFieldData> = {};
+
+  for (const mapping of FIELD_TO_PROPERTY_MAP) {
+    const { apiKey, group, propName } = mapping;
+
+    // Handle nested stellarMLS groups (e.g., "stellarMLS.parking")
+    let groupObj: any;
+    if (group.startsWith('stellarMLS.')) {
+      const subGroup = group.split('.')[1] as keyof NonNullable<Property['stellarMLS']>;
+      groupObj = property.stellarMLS?.[subGroup];
+    } else {
+      groupObj = property[group as keyof Property];
+    }
+
+    if (!groupObj || typeof groupObj !== 'object') continue;
+
+    const field = groupObj[propName] as DataField<any> | undefined;
+    if (!field) continue;
+
+    // Only include fields with actual values
+    const val = field.value;
+    if (val === null || val === undefined || val === '') continue;
+    if (typeof val === 'string' && val.trim() === '') continue;
+    if (Array.isArray(val) && val.length === 0) continue;
+
+    flatFields[apiKey] = {
+      value: field.value,
+      source: field.sources?.[0] || 'Unknown',
+      confidence: (field.confidence as 'High' | 'Medium' | 'Low' | 'Unverified') || 'Medium',
+      llmSources: field.llmSources,
+    };
+  }
+
+  return flatFields;
+}

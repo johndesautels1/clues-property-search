@@ -4,7 +4,159 @@
 
 ---
 
-## CRITICAL: Instructions for Claude Code / AI Assistants
+# ⚠️ CRITICAL: CODEBASE IS FUNDAMENTALLY BROKEN ⚠️
+
+**Audit Date: 2025-11-30**
+
+## TOTAL ERRORS FOUND: 1,300+
+
+| Category | Count | Severity |
+|----------|-------|----------|
+| Field Number Mismatches | 1,122 | CRITICAL |
+| Wrong Comments in property.ts | 130 | MAJOR |
+| Missing fieldKey Props | 167 | CRITICAL |
+| Missing 3rd Party Mappings | 4 | CRITICAL |
+| Missing UI Buttons | 2 | CRITICAL |
+| Stub/Non-functional Code | 2 | CRITICAL |
+| Duplicate Codebase | 1 | MAJOR |
+| Data Stacking Broken | 1 | CRITICAL |
+
+## THE CORE PROBLEM
+
+The codebase uses TWO DIFFERENT field numbering schemes:
+
+**Schema (fields-schema.ts) - THE TRUTH:**
+- 10 = listing_price
+- 17 = bedrooms
+- 21 = living_sqft
+- 35 = annual_taxes
+
+**API/Frontend files - WRONG:**
+- 7 = listing_price
+- 12 = bedrooms
+- 16 = living_sqft
+- 29 = annual_taxes
+
+**This means EVERY data flow is broken:**
+- ❌ LLM data maps to wrong fields
+- ❌ API data maps to wrong fields
+- ❌ PropertyDetail displays wrong data
+- ❌ Data merging doesn't work
+- ❌ The entire application is broken
+
+## FILES WITH FIELD NUMBER ERRORS
+
+### Main Codebase (491 errors):
+| File | Errors |
+|------|--------|
+| api/property/search-stream.ts | 133 |
+| api/property/retry-llm.ts | 133 |
+| src/lib/field-mapping.ts | 88 |
+| src/pages/AddProperty.tsx | 73 |
+| api/property/stellar-mls.ts | 36 |
+| api/property/free-apis.ts | 13 |
+| api/property/enrich.ts | 9 |
+| api/property/search.ts | 6 |
+
+### App Directory (631 errors):
+| File | Errors |
+|------|--------|
+| app/src/pages/AddProperty.tsx | 303 |
+| app/src/lib/field-mapping.ts | 88 |
+| app/src/pages/PropertyDetail.tsx | 83 |
+| app/api/property/scrapers.ts | 62 |
+| app/api/property/search.ts | 45 |
+| app/api/property/scrape-realtor.ts | 28 |
+| + more | ... |
+
+## VERIFICATION SCRIPTS
+
+```bash
+cd D:\Clues_Quantum_Property_Dashboard
+
+# Run full field audit (shows 491 errors)
+node scripts/master-audit.cjs
+
+# Run app directory audit (shows 631 errors)
+node scripts/audit-app-dir.cjs
+
+# Run comment audit (shows 130 errors)
+node scripts/audit-comments.cjs
+```
+
+## FULL AUDIT REPORT
+
+See: `AUDIT_FAILURES.md`
+
+---
+
+## OTHER CRITICAL ISSUES
+
+### 1. Duplicate Codebase
+There are TWO codebases that differ:
+- `src/` - Main source
+- `app/` - Different code
+
+### 2. Missing 3rd Party Field Mappings
+| Source | Status |
+|--------|--------|
+| Zillow | MISSING |
+| Redfin | MISSING |
+| Realtor | MISSING |
+| Trulia | NOT SUPPORTED |
+
+### 3. Stellar MLS API is a STUB
+File `api/property/stellar-mls.ts` line 2 says "Stub" - it returns errors, not data.
+
+### 4. No Web Scrapers
+URL mode relies entirely on LLM guessing. No actual scrapers exist.
+
+### 5. Missing fieldKey Props (167)
+Only 1 of 168 fields has the `fieldKey` prop needed for retry buttons.
+
+### 6. Missing Enrich Buttons
+PDF upload has no "Enrich with APIs" button (CSV does).
+
+### 7. Data Stacking Broken
+PDF import saves and STOPS. No connection to enrichment.
+
+---
+
+## DO NOT TRUST PREVIOUS CLAIMS
+
+The section below claiming "Field Mapping Corrections" with "0 errors" was **FALSE**.
+
+The verification script only checks 3 files. There are 20+ files with field numbers, and 1,122 of them are wrong.
+
+---
+
+## FIXES REQUIRED
+
+### Priority 1: Fix all 1,122 field number mismatches
+Every numbered field in every file must match `fields-schema.ts`.
+
+### Priority 2: Eliminate duplicate codebase
+Delete `app/` or merge into `src/`.
+
+### Priority 3: Add missing features
+- Zillow/Redfin/Realtor field mappings
+- fieldKey props for all 168 fields
+- Enrich buttons in PDF UI
+- Actual Stellar MLS integration
+- Web scrapers
+
+### Priority 4: Fix data stacking
+Connect PDF import to enrichment flow.
+
+---
+
+---
+
+# ORIGINAL README (FOR REFERENCE - CONTAINS FALSE CLAIMS)
+
+---
+
+## Instructions for Claude Code / AI Assistants
 
 ### ALL API KEYS ARE CONFIGURED IN VERCEL
 
@@ -25,45 +177,6 @@
 | Google AI | `GOOGLE_AI_API_KEY` | **CONFIGURED** |
 | xAI/Grok | `XAI_API_KEY` | **CONFIGURED** |
 | FEMA Flood | (no key needed) | **WORKING** |
-
----
-
-## CURRENT FIX NEEDED: Data Stacking / Accumulation
-
-### The Problem
-
-When a property is added via different sources (MLS PDF upload, address search, LLM enrichment), **data gets lost** instead of accumulated. Each source should ADD to existing data, not replace it.
-
-### Expected Behavior
-
-1. User uploads MLS PDF → Gets ~60 fields from PDF
-2. User clicks "Enrich with APIs" → Should ADD Walk Score, Flood Zone, Distances, etc.
-3. User clicks "Retry with LLM" → Should ADD missing fields without losing existing data
-4. Final result: All data from all sources combined (168 fields max)
-
-### Current Bug
-
-- PDF upload works and saves data
-- But calling additional APIs or LLMs may overwrite or fail to merge properly
-- Need to ensure data STACKS, not REPLACES
-
-### Files to Check
-
-1. `src/store/propertyStore.ts` - How properties are stored/updated
-2. `api/property/search.ts` - The `mergeFields()` function and arbitration logic
-3. `api/property/arbitration.ts` - Field conflict resolution
-4. `src/pages/AddProperty.tsx` - How PDF data is saved and merged
-
-### Fix Requirements
-
-1. **Additive merging**: New data sources ADD fields, never remove existing ones
-2. **Source tracking**: Each field keeps track of which source provided it
-3. **Conflict resolution**: When same field from multiple sources, use tier priority:
-   - Tier 1: MLS (highest trust)
-   - Tier 2: County Records, FEMA
-   - Tier 3: Google, WalkScore, HowLoud, AirNow
-   - Tier 4: LLMs (lowest trust, gap-fill only)
-4. **Never lose data**: Once a field has a value, it should persist unless explicitly overwritten by higher-tier source
 
 ---
 
@@ -97,18 +210,6 @@ The source of truth is: `src/types/fields-schema.ts`
 | 155-159 | Stellar MLS Waterfront | Water frontage, access, view |
 | 160-165 | Stellar MLS Leasing | Lease rules, pet limits |
 | 166-168 | Stellar MLS Features | Community, interior, exterior |
-
-### CRITICAL: Field Mapping Verification
-
-Before any field mapping changes, run:
-```bash
-npx ts-node scripts/verify-field-mapping.ts
-```
-
-This verifies these 3 files match `fields-schema.ts`:
-- `src/lib/field-normalizer.ts`
-- `api/property/search.ts`
-- `api/property/parse-mls-pdf.ts`
 
 ---
 
@@ -152,46 +253,25 @@ This verifies these 3 files match `fields-schema.ts`:
 
 ---
 
-## API Endpoints
-
-### `/api/property/search`
-- **Input**: Address string
-- **Process**: Geocode → Call all APIs in parallel → Merge → Return
-- **APIs Called**: Google Maps, WalkScore, FEMA, AirNow, HowLoud, Weather, Google Places
-- **LLMs Called**: Perplexity, Claude, GPT, Grok (as needed for gaps)
-
-### `/api/property/parse-mls-pdf`
-- **Input**: Base64 PDF data
-- **Process**: Send to Claude Vision → Extract fields → Map to schema
-- **Output**: Parsed fields with `source: "Stellar MLS PDF"`
-
-### `/api/property/retry-llm`
-- **Input**: Property address, specific field to retry, LLM to use
-- **Process**: Call specified LLM for just that field
-- **Output**: Single field value with source
-
----
-
 ## File Reference
 
 ### Core Schema Files
 - `src/types/fields-schema.ts` - **SOURCE OF TRUTH** for 168 fields
-- `src/types/property.ts` - TypeScript interfaces for Property objects
+- `src/types/property.ts` - TypeScript interfaces (130 WRONG COMMENTS)
 
-### Mapping Files (must match fields-schema.ts)
-- `src/lib/field-normalizer.ts` - Converts API responses to Property objects
-- `api/property/search.ts` - `fieldPathMap` for nested structure
-- `api/property/parse-mls-pdf.ts` - MLS field name to number mapping
+### Mapping Files (MOSTLY BROKEN - don't match fields-schema.ts)
+- `src/lib/field-normalizer.ts` - OK, matches schema
+- `src/lib/field-mapping.ts` - 88 ERRORS
+- `api/property/search.ts` - 6 ERRORS
+- `api/property/search-stream.ts` - 133 ERRORS
+- `api/property/parse-mls-pdf.ts` - OK for MLS, missing Zillow/Redfin/Realtor
 
 ### Store
 - `src/store/propertyStore.ts` - Zustand store with localStorage
 
 ### UI
-- `src/pages/PropertyDetail.tsx` - Displays all 168 fields
-- `src/pages/AddProperty.tsx` - Add property (address, PDF, manual)
-
-### Verification
-- `scripts/verify-field-mapping.ts` - Checks all mappings match schema
+- `src/pages/PropertyDetail.tsx` - 167 missing fieldKey props
+- `src/pages/AddProperty.tsx` - 73 field errors + missing PDF enrich buttons
 
 ---
 
@@ -204,30 +284,12 @@ npm install
 # Start development server
 npm run dev
 
-# Verify field mappings
-npx ts-node scripts/verify-field-mapping.ts
+# Run field audit (WILL SHOW 491+ ERRORS)
+node scripts/master-audit.cjs
 
 # Build for production
 npm run build
 ```
-
----
-
-## Recent Fixes (November 2025)
-
-### Field Mapping Corrections (2025-11-30)
-- Fixed ALL 168 field numbers across 3 mapping files
-- Key corrections:
-  - Field 10 = listing_price (was 7)
-  - Field 17 = bedrooms (was 12)
-  - Field 21 = living_sqft (was 16)
-  - Field 35 = annual_taxes (was 29)
-- Fixed API helper functions (WalkScore, FEMA, AirNow, HowLoud, etc.)
-- Verification script now shows 0 errors
-
-### PropertyCard Header Fix (2025-11-30)
-- Fixed header showing $0, 0 beds, 0 baths
-- Updated AddProperty.tsx to use correct field numbers
 
 ---
 
@@ -241,13 +303,6 @@ npm run build
 | 41-60 | YELLOW | `#EAB308` | Neutral |
 | 61-80 | BLUE | `#3B82F6` | Good |
 | 81-100 | GREEN | `#22C55E` | Excellent |
-
-### PROPERTY COLORS (comparison)
-| Property | Color | Hex |
-|----------|-------|-----|
-| P1 | Emerald | `#10B981` |
-| P2 | Cyan | `#00D9FF` |
-| P3 | Fuchsia | `#E879F9` |
 
 ---
 
