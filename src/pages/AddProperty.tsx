@@ -1094,6 +1094,17 @@ export default function AddProperty() {
     }
   };
 
+  // Helper to get field value with multiple fallback keys
+  const getFieldValue = (fields: Record<string, any>, ...keys: string[]): any => {
+    for (const key of keys) {
+      const val = fields[key]?.value;
+      if (val !== null && val !== undefined && val !== '' && val !== 'N/A') {
+        return val;
+      }
+    }
+    return null;
+  };
+
   // Import parsed PDF data as a property
   const handlePdfImport = async () => {
     if (Object.keys(pdfParsedFields).length === 0) {
@@ -1107,36 +1118,102 @@ export default function AddProperty() {
     try {
       const propertyId = generateId();
 
-      // Extract address from parsed fields
-      const fullAddress = pdfParsedFields['1_full_address']?.value ||
-                         pdfParsedFields['full_address']?.value ||
-                         pdfParsedFields['address']?.value || '';
+      // Extract address from parsed fields with comprehensive fallbacks
+      // Stellar MLS uses "Address" directly in header, mapped to "1_full_address" or "address"
+      const fullAddress = getFieldValue(pdfParsedFields,
+        '1_full_address', 'full_address', 'address', 'property_address', 'street_address'
+      ) || '';
 
-      // Parse address components
+      // Parse address components from full address string
+      // Format: "3200 GULF BLVD, #203, ST PETE BEACH, FL 33706"
       const addressParts = fullAddress.split(',').map((s: string) => s.trim());
       const street = addressParts[0] || '';
-      const city = addressParts[1] || pdfParsedFields['city']?.value || '';
-      const stateZip = addressParts[2] || '';
-      const stateMatch = stateZip.match(/([A-Z]{2})/);
-      const zipMatch = stateZip.match(/(\d{5})/);
+      const unit = addressParts[1] && addressParts[1].startsWith('#') ? addressParts[1] : '';
+      const cityPart = unit ? addressParts[2] : addressParts[1];
+      const stateZipPart = unit ? addressParts[3] : addressParts[2];
+
+      // Extract city (fallback to parsed fields)
+      const city = cityPart || getFieldValue(pdfParsedFields, 'city') || '';
+
+      // Extract state and zip from "FL 33706" format
+      const stateMatch = stateZipPart?.match(/([A-Z]{2})/);
+      const zipMatch = stateZipPart?.match(/(\d{5})/);
+      const state = stateMatch?.[1] || getFieldValue(pdfParsedFields, 'state') || 'FL';
+      const zip = zipMatch?.[1] || getFieldValue(pdfParsedFields, 'zip_code', 'zip', 'postal_code') || '';
+
+      // Get price with fallbacks (Stellar MLS: "List Price" -> "7_listing_price")
+      const priceRaw = getFieldValue(pdfParsedFields,
+        '7_listing_price', 'listing_price', 'list_price', 'price', 'current_price'
+      );
+      const price = parseFloat(String(priceRaw || '0').replace(/[^0-9.]/g, '')) || 0;
+
+      // Get price per sqft (Stellar MLS: "LP/SqFt" -> "8_price_per_sqft")
+      const pricePerSqftRaw = getFieldValue(pdfParsedFields,
+        '8_price_per_sqft', 'price_per_sqft', 'lp/sqft', 'lpsqft'
+      );
+      const pricePerSqft = parseFloat(String(pricePerSqftRaw || '0').replace(/[^0-9.]/g, '')) || 0;
+
+      // Get bedrooms (Stellar MLS: "Beds" -> "12_bedrooms")
+      const bedsRaw = getFieldValue(pdfParsedFields,
+        '12_bedrooms', 'bedrooms', 'beds', 'br'
+      );
+      const bedrooms = parseInt(String(bedsRaw || '0')) || 0;
+
+      // Get bathrooms (Stellar MLS: "Baths: 2/0" format - need to parse)
+      // The "2/0" means 2 full baths, 0 half baths
+      const bathsRaw = getFieldValue(pdfParsedFields,
+        '15_total_bathrooms', 'total_bathrooms', 'baths', 'bathrooms'
+      );
+      let bathrooms = 0;
+      if (typeof bathsRaw === 'string' && bathsRaw.includes('/')) {
+        // Parse "2/0" format
+        const [full, half] = bathsRaw.split('/').map(n => parseInt(n) || 0);
+        bathrooms = full + (half * 0.5);
+      } else {
+        bathrooms = parseFloat(String(bathsRaw || '0')) || 0;
+      }
+
+      // Get square footage (Stellar MLS: "Heated Area" -> "16_living_sqft")
+      const sqftRaw = getFieldValue(pdfParsedFields,
+        '16_living_sqft', 'living_sqft', 'heated_area', 'living_area', 'sqft', 'square_feet'
+      );
+      const sqft = parseInt(String(sqftRaw || '0').replace(/[^0-9]/g, '')) || 0;
+
+      // Get year built (Stellar MLS: "Year Built" -> "20_year_built")
+      const yearRaw = getFieldValue(pdfParsedFields,
+        '20_year_built', 'year_built', 'built', 'year'
+      );
+      const yearBuilt = parseInt(String(yearRaw || new Date().getFullYear())) || new Date().getFullYear();
+
+      // Get listing status (Stellar MLS: "Status" -> "4_listing_status")
+      const statusRaw = getFieldValue(pdfParsedFields,
+        '4_listing_status', 'listing_status', 'status'
+      );
+      const listingStatus = (statusRaw || 'Active') as 'Active' | 'Pending' | 'Sold';
+
+      // Get days on market (Stellar MLS: "ADOM" or "CDOM")
+      const domRaw = getFieldValue(pdfParsedFields,
+        '83_days_on_market_avg', 'days_on_market', 'adom', 'cdom', 'dom'
+      );
+      const daysOnMarket = parseInt(String(domRaw || '0')) || 0;
 
       // Create property card
       const propertyCard: PropertyCard = {
         id: propertyId,
-        address: street || fullAddress,
+        address: unit ? `${street}, ${unit}` : street || fullAddress,
         city: city,
-        state: stateMatch?.[1] || pdfParsedFields['state']?.value || 'FL',
-        zip: zipMatch?.[1] || pdfParsedFields['zip_code']?.value || '',
-        price: parseFloat(String(pdfParsedFields['7_listing_price']?.value || pdfParsedFields['listing_price']?.value || '0').replace(/[^0-9.]/g, '')) || 0,
-        pricePerSqft: parseFloat(String(pdfParsedFields['8_price_per_sqft']?.value || '0').replace(/[^0-9.]/g, '')) || 0,
-        bedrooms: parseInt(pdfParsedFields['12_bedrooms']?.value || pdfParsedFields['bedrooms']?.value || '0') || 0,
-        bathrooms: parseFloat(pdfParsedFields['15_total_bathrooms']?.value || pdfParsedFields['bathrooms']?.value || '0') || 0,
-        sqft: parseInt(String(pdfParsedFields['16_living_sqft']?.value || pdfParsedFields['living_sqft']?.value || '0').replace(/[^0-9]/g, '')) || 0,
-        yearBuilt: parseInt(pdfParsedFields['20_year_built']?.value || pdfParsedFields['year_built']?.value || new Date().getFullYear().toString()) || new Date().getFullYear(),
+        state: state,
+        zip: zip,
+        price: price,
+        pricePerSqft: pricePerSqft,
+        bedrooms: bedrooms,
+        bathrooms: bathrooms,
+        sqft: sqft,
+        yearBuilt: yearBuilt,
         smartScore: 85,
         dataCompleteness: Math.round((Object.keys(pdfParsedFields).length / 168) * 100),
-        listingStatus: (pdfParsedFields['4_listing_status']?.value || 'Active') as 'Active' | 'Pending' | 'Sold',
-        daysOnMarket: parseInt(pdfParsedFields['days_on_market']?.value || '0') || 0,
+        listingStatus: listingStatus,
+        daysOnMarket: daysOnMarket,
       };
 
       setProgress(75);
@@ -1153,6 +1230,7 @@ export default function AddProperty() {
       setProgress(100);
 
       console.log('✅ Property added from MLS PDF:', Object.keys(pdfParsedFields).length, 'fields');
+      console.log('📋 Property Card:', propertyCard);
 
       // Reset PDF state
       setPdfFile(null);
