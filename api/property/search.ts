@@ -89,136 +89,173 @@ function valuesAreSemanticallySame(val1: any, val2: any): boolean {
 // Updated: 2025-11-30 - Added Stellar MLS fields (139-168)
 // ============================================
 function convertFlatToNestedStructure(flatFields: Record<string, any>): any {
+  // UPDATED: 2025-11-30 - Corrected ALL field numbers to match fields-schema.ts
   const fieldPathMap: Record<string, [string, string] | [string, string, string]> = {
-    // Address & Identity
+    // ================================================================
+    // GROUP 1: Address & Identity (Fields 1-9)
+    // ================================================================
     '1_full_address': ['address', 'fullAddress'],
     '2_mls_primary': ['address', 'mlsPrimary'],
     '3_mls_secondary': ['address', 'mlsSecondary'],
     '4_listing_status': ['address', 'listingStatus'],
     '5_listing_date': ['address', 'listingDate'],
-    '6_parcel_id': ['details', 'parcelId'],
-    // Pricing
-    '7_listing_price': ['address', 'listingPrice'],
-    '8_price_per_sqft': ['address', 'pricePerSqft'],
-    '9_market_value_estimate': ['details', 'marketValueEstimate'],
-    '10_last_sale_date': ['details', 'lastSaleDate'],
-    '11_last_sale_price': ['details', 'lastSalePrice'],
-    // Property Basics
-    '12_bedrooms': ['details', 'bedrooms'],
-    '13_full_bathrooms': ['details', 'fullBathrooms'],
-    '14_half_bathrooms': ['details', 'halfBathrooms'],
-    '15_total_bathrooms': ['details', 'totalBathrooms'],
-    '16_living_sqft': ['details', 'livingSqft'],
-    '17_total_sqft_under_roof': ['details', 'totalSqftUnderRoof'],
-    '18_lot_size_sqft': ['details', 'lotSizeSqft'],
-    '19_lot_size_acres': ['details', 'lotSizeAcres'],
-    '20_year_built': ['details', 'yearBuilt'],
-    '21_property_type': ['details', 'propertyType'],
-    '22_stories': ['details', 'stories'],
-    '23_garage_spaces': ['details', 'garageSpaces'],
-    '24_parking_total': ['details', 'parkingTotal'],
-    // HOA & Ownership
-    '25_hoa_yn': ['details', 'hoaYn'],
-    '26_hoa_fee_annual': ['details', 'hoaFeeAnnual'],
-    '27_ownership_type': ['details', 'ownershipType'],
-    '28_county': ['address', 'county'],
-    // Taxes
-    '29_annual_taxes': ['details', 'annualTaxes'],
-    '30_tax_year': ['details', 'taxYear'],
-    '31_assessed_value': ['details', 'assessedValue'],
-    '32_tax_exemptions': ['financial', 'taxExemptions'],
-    '33_property_tax_rate': ['financial', 'propertyTaxRate'],
-    '34_recent_tax_history': ['financial', 'recentTaxHistory'],
-    '35_special_assessments': ['financial', 'specialAssessments'],
-    // Structure & Systems
-    '36_roof_type': ['structural', 'roofType'],
-    '37_roof_age_est': ['structural', 'roofAgeEst'],
-    '38_exterior_material': ['structural', 'exteriorMaterial'],
-    '39_foundation': ['structural', 'foundation'],
-    '40_hvac_type': ['structural', 'hvacType'],
-    '41_hvac_age': ['structural', 'hvacAge'],
-    '42_flooring_type': ['structural', 'flooringType'],
-    '43_kitchen_features': ['structural', 'kitchenFeatures'],
-    '44_appliances_included': ['structural', 'appliancesIncluded'],
-    '45_fireplace_yn': ['structural', 'fireplaceYn'],
-    '46_interior_condition': ['structural', 'interiorCondition'],
-    '47_pool_yn': ['structural', 'poolYn'],
-    '48_pool_type': ['structural', 'poolType'],
-    '49_deck_patio': ['structural', 'deckPatio'],
-    '50_fence': ['structural', 'fence'],
-    '51_landscaping': ['structural', 'landscaping'],
-    '52_recent_renovations': ['structural', 'recentRenovations'],
-    '53_permit_history_roof': ['structural', 'permitHistoryRoof'],
-    '54_permit_history_hvac': ['structural', 'permitHistoryHvac'],
-    '55_permit_history_other': ['structural', 'permitHistoryPoolAdditions'],
-    // Schools
-    '56_assigned_elementary': ['location', 'assignedElementary'],
-    '57_elementary_rating': ['location', 'elementaryRating'],
-    '58_elementary_distance_miles': ['location', 'elementaryDistanceMiles'],
-    '59_assigned_middle': ['location', 'assignedMiddle'],
-    '60_middle_rating': ['location', 'middleRating'],
-    '61_middle_distance_miles': ['location', 'middleDistanceMiles'],
-    '62_assigned_high': ['location', 'assignedHigh'],
-    '63_high_rating': ['location', 'highRating'],
-    '64_high_distance_miles': ['location', 'highDistanceMiles'],
-    // Location Scores
-    '65_walk_score': ['location', 'walkScore'],
-    '66_transit_score': ['location', 'transitScore'],
-    '67_bike_score': ['location', 'bikeScore'],
-    '68_noise_level': ['location', 'noiseLevel'],
-    '69_traffic_level': ['location', 'trafficLevel'],
-    '70_walkability_description': ['location', 'walkabilityDescription'],
-    '71_commute_time_city_center': ['location', 'commuteTimeCityCenter'],
-    '72_public_transit_access': ['location', 'publicTransitAccess'],
-    // Distances
-    '73_distance_grocery_miles': ['location', 'distanceGroceryMiles'],
-    '74_distance_hospital_miles': ['location', 'distanceHospitalMiles'],
-    '75_distance_airport_miles': ['location', 'distanceAirportMiles'],
-    '76_distance_park_miles': ['location', 'distanceParkMiles'],
-    '77_distance_beach_miles': ['location', 'distanceBeachMiles'],
-    // Safety & Crime
-    '78_crime_index_violent': ['location', 'crimeIndexViolent'],
-    '79_crime_index_property': ['location', 'crimeIndexProperty'],
-    '80_neighborhood_safety_rating': ['location', 'neighborhoodSafetyRating'],
-    // Market & Investment
-    '81_median_home_price_neighborhood': ['financial', 'medianHomePriceNeighborhood'],
-    '82_price_per_sqft_recent_avg': ['financial', 'pricePerSqftRecentAvg'],
-    '83_days_on_market_avg': ['financial', 'daysOnMarketAvg'],
-    '84_inventory_surplus': ['financial', 'inventorySurplus'],
-    '85_rental_estimate_monthly': ['financial', 'rentalEstimateMonthly'],
-    '86_rental_yield_est': ['financial', 'rentalYieldEst'],
-    '87_vacancy_rate_neighborhood': ['financial', 'vacancyRateNeighborhood'],
-    '88_cap_rate_est': ['financial', 'capRateEst'],
-    '89_insurance_est_annual': ['financial', 'insuranceEstAnnual'],
-    '90_financing_terms': ['financial', 'financingTerms'],
-    '91_comparable_sales': ['financial', 'comparableSalesLast3'],
-    // Utilities
-    '92_electric_provider': ['utilities', 'electricProvider'],
-    '93_water_provider': ['utilities', 'waterProvider'],
-    '94_sewer_provider': ['utilities', 'sewerProvider'],
-    '95_natural_gas': ['utilities', 'naturalGas'],
-    '96_internet_providers_top3': ['utilities', 'internetProvidersTop3'],
-    '97_max_internet_speed': ['utilities', 'maxInternetSpeed'],
-    '98_cable_tv_provider': ['utilities', 'cableTvProvider'],
-    // Environment & Risk
-    '99_air_quality_index_current': ['utilities', 'airQualityIndexCurrent'],
-    '100_flood_zone': ['utilities', 'floodZone'],
-    '101_flood_risk_level': ['utilities', 'floodRiskLevel'],
-    '102_climate_risk_summary': ['utilities', 'climateRiskWildfireFlood'],
-    '103_noise_level_db_est': ['utilities', 'noiseLevelDbEst'],
-    '104_solar_potential': ['utilities', 'solarPotential'],
-    // Additional Features
-    '105_ev_charging_yn': ['utilities', 'evChargingYn'],
-    '106_smart_home_features': ['utilities', 'smartHomeFeatures'],
-    '107_accessibility_mods': ['utilities', 'accessibilityMods'],
-    '108_pet_policy': ['utilities', 'petPolicy'],
-    '109_age_restrictions': ['utilities', 'ageRestrictions'],
-    '110_notes_confidence_summary': ['utilities', 'notesConfidenceSummary'],
+    '6_neighborhood': ['address', 'neighborhoodName'],
+    '7_county': ['address', 'county'],
+    '8_zip_code': ['address', 'zipCode'],
+    '9_parcel_id': ['details', 'parcelId'],
 
     // ================================================================
-    // FIELDS 111-138: Extended Original Fields
+    // GROUP 2: Pricing & Value (Fields 10-16)
     // ================================================================
-    // Utilities Extended (111-116)
+    '10_listing_price': ['address', 'listingPrice'],
+    '11_price_per_sqft': ['address', 'pricePerSqft'],
+    '12_market_value_estimate': ['details', 'marketValueEstimate'],
+    '13_last_sale_date': ['details', 'lastSaleDate'],
+    '14_last_sale_price': ['details', 'lastSalePrice'],
+    '15_assessed_value': ['details', 'assessedValue'],
+    '16_redfin_estimate': ['financial', 'redfinEstimate'],
+
+    // ================================================================
+    // GROUP 3: Property Basics (Fields 17-29)
+    // ================================================================
+    '17_bedrooms': ['details', 'bedrooms'],
+    '18_full_bathrooms': ['details', 'fullBathrooms'],
+    '19_half_bathrooms': ['details', 'halfBathrooms'],
+    '20_total_bathrooms': ['details', 'totalBathrooms'],
+    '21_living_sqft': ['details', 'livingSqft'],
+    '22_total_sqft_under_roof': ['details', 'totalSqftUnderRoof'],
+    '23_lot_size_sqft': ['details', 'lotSizeSqft'],
+    '24_lot_size_acres': ['details', 'lotSizeAcres'],
+    '25_year_built': ['details', 'yearBuilt'],
+    '26_property_type': ['details', 'propertyType'],
+    '27_stories': ['details', 'stories'],
+    '28_garage_spaces': ['details', 'garageSpaces'],
+    '29_parking_total': ['details', 'parkingTotal'],
+
+    // ================================================================
+    // GROUP 4: HOA & Taxes (Fields 30-38)
+    // ================================================================
+    '30_hoa_yn': ['details', 'hoaYn'],
+    '31_hoa_fee_annual': ['details', 'hoaFeeAnnual'],
+    '32_hoa_name': ['details', 'hoaName'],
+    '33_hoa_includes': ['details', 'hoaIncludes'],
+    '34_ownership_type': ['details', 'ownershipType'],
+    '35_annual_taxes': ['details', 'annualTaxes'],
+    '36_tax_year': ['details', 'taxYear'],
+    '37_property_tax_rate': ['financial', 'propertyTaxRate'],
+    '38_tax_exemptions': ['financial', 'taxExemptions'],
+
+    // ================================================================
+    // GROUP 5: Structure & Systems (Fields 39-48)
+    // ================================================================
+    '39_roof_type': ['structural', 'roofType'],
+    '40_roof_age_est': ['structural', 'roofAgeEst'],
+    '41_exterior_material': ['structural', 'exteriorMaterial'],
+    '42_foundation': ['structural', 'foundation'],
+    '43_water_heater_type': ['structural', 'waterHeaterType'],
+    '44_garage_type': ['structural', 'garageType'],
+    '45_hvac_type': ['structural', 'hvacType'],
+    '46_hvac_age': ['structural', 'hvacAge'],
+    '47_laundry_type': ['structural', 'laundryType'],
+    '48_interior_condition': ['structural', 'interiorCondition'],
+
+    // ================================================================
+    // GROUP 6: Interior Features (Fields 49-53)
+    // ================================================================
+    '49_flooring_type': ['structural', 'flooringType'],
+    '50_kitchen_features': ['structural', 'kitchenFeatures'],
+    '51_appliances_included': ['structural', 'appliancesIncluded'],
+    '52_fireplace_yn': ['structural', 'fireplaceYn'],
+    '53_fireplace_count': ['structural', 'fireplaceCount'],
+
+    // ================================================================
+    // GROUP 7: Exterior Features (Fields 54-58)
+    // ================================================================
+    '54_pool_yn': ['structural', 'poolYn'],
+    '55_pool_type': ['structural', 'poolType'],
+    '56_deck_patio': ['structural', 'deckPatio'],
+    '57_fence': ['structural', 'fence'],
+    '58_landscaping': ['structural', 'landscaping'],
+
+    // ================================================================
+    // GROUP 8: Permits & Renovations (Fields 59-62)
+    // ================================================================
+    '59_recent_renovations': ['structural', 'recentRenovations'],
+    '60_permit_history_roof': ['structural', 'permitHistoryRoof'],
+    '61_permit_history_hvac': ['structural', 'permitHistoryHvac'],
+    '62_permit_history_other': ['structural', 'permitHistoryPoolAdditions'],
+
+    // ================================================================
+    // GROUP 9: Schools (Fields 63-73)
+    // ================================================================
+    '63_school_district': ['location', 'schoolDistrictName'],
+    '64_elevation_feet': ['location', 'elevationFeet'],
+    '65_elementary_school': ['location', 'assignedElementary'],
+    '66_elementary_rating': ['location', 'elementaryRating'],
+    '67_elementary_distance_mi': ['location', 'elementaryDistanceMiles'],
+    '68_middle_school': ['location', 'assignedMiddle'],
+    '69_middle_rating': ['location', 'middleRating'],
+    '70_middle_distance_mi': ['location', 'middleDistanceMiles'],
+    '71_high_school': ['location', 'assignedHigh'],
+    '72_high_rating': ['location', 'highRating'],
+    '73_high_distance_mi': ['location', 'highDistanceMiles'],
+
+    // ================================================================
+    // GROUP 10: Location Scores (Fields 74-82)
+    // ================================================================
+    '74_walk_score': ['location', 'walkScore'],
+    '75_transit_score': ['location', 'transitScore'],
+    '76_bike_score': ['location', 'bikeScore'],
+    '77_safety_score': ['location', 'neighborhoodSafetyRating'],
+    '78_noise_level': ['location', 'noiseLevel'],
+    '79_traffic_level': ['location', 'trafficLevel'],
+    '80_walkability_description': ['location', 'walkabilityDescription'],
+    '81_public_transit_access': ['location', 'publicTransitAccess'],
+    '82_commute_to_city_center': ['location', 'commuteTimeCityCenter'],
+
+    // ================================================================
+    // GROUP 11: Distances (Fields 83-87)
+    // ================================================================
+    '83_distance_grocery_mi': ['location', 'distanceGroceryMiles'],
+    '84_distance_hospital_mi': ['location', 'distanceHospitalMiles'],
+    '85_distance_airport_mi': ['location', 'distanceAirportMiles'],
+    '86_distance_park_mi': ['location', 'distanceParkMiles'],
+    '87_distance_beach_mi': ['location', 'distanceBeachMiles'],
+
+    // ================================================================
+    // GROUP 12: Safety & Crime (Fields 88-90)
+    // ================================================================
+    '88_violent_crime_index': ['location', 'crimeIndexViolent'],
+    '89_property_crime_index': ['location', 'crimeIndexProperty'],
+    '90_neighborhood_safety_rating': ['location', 'neighborhoodSafetyRating'],
+
+    // ================================================================
+    // GROUP 13: Market & Investment (Fields 91-103)
+    // ================================================================
+    '91_median_home_price_neighborhood': ['financial', 'medianHomePriceNeighborhood'],
+    '92_price_per_sqft_recent_avg': ['financial', 'pricePerSqftRecentAvg'],
+    '93_price_to_rent_ratio': ['financial', 'priceToRentRatio'],
+    '94_price_vs_median_percent': ['financial', 'priceVsMedianPercent'],
+    '95_days_on_market_avg': ['financial', 'daysOnMarketAvg'],
+    '96_inventory_surplus': ['financial', 'inventorySurplus'],
+    '97_insurance_est_annual': ['financial', 'insuranceEstAnnual'],
+    '98_rental_estimate_monthly': ['financial', 'rentalEstimateMonthly'],
+    '99_rental_yield_est': ['financial', 'rentalYieldEst'],
+    '100_vacancy_rate_neighborhood': ['financial', 'vacancyRateNeighborhood'],
+    '101_cap_rate_est': ['financial', 'capRateEst'],
+    '102_financing_terms': ['financial', 'financingTerms'],
+    '103_comparable_sales': ['financial', 'comparableSalesLast3'],
+
+    // ================================================================
+    // GROUP 14: Utilities (Fields 104-116)
+    // ================================================================
+    '104_electric_provider': ['utilities', 'electricProvider'],
+    '105_avg_electric_bill': ['utilities', 'avgElectricBill'],
+    '106_water_provider': ['utilities', 'waterProvider'],
+    '107_avg_water_bill': ['utilities', 'avgWaterBill'],
+    '108_sewer_provider': ['utilities', 'sewerProvider'],
+    '109_natural_gas': ['utilities', 'naturalGas'],
+    '110_trash_provider': ['utilities', 'trashProvider'],
     '111_internet_providers_top3': ['utilities', 'internetProvidersTop3'],
     '112_max_internet_speed': ['utilities', 'maxInternetSpeed'],
     '113_fiber_available': ['utilities', 'fiberAvailable'],
@@ -226,7 +263,9 @@ function convertFlatToNestedStructure(flatFields: Record<string, any>): any {
     '115_cell_coverage_quality': ['utilities', 'cellCoverageQuality'],
     '116_emergency_services_distance': ['utilities', 'emergencyServicesDistance'],
 
-    // Environment & Risk Extended (117-130)
+    // ================================================================
+    // GROUP 15: Environment & Risk (Fields 117-130)
+    // ================================================================
     '117_air_quality_index': ['utilities', 'airQualityIndexCurrent'],
     '118_air_quality_grade': ['utilities', 'airQualityGrade'],
     '119_flood_zone': ['utilities', 'floodZone'],
@@ -242,7 +281,9 @@ function convertFlatToNestedStructure(flatFields: Record<string, any>): any {
     '129_noise_level_db_est': ['utilities', 'noiseLevelDbEst'],
     '130_solar_potential': ['utilities', 'solarPotential'],
 
-    // Additional Features Extended (131-138)
+    // ================================================================
+    // GROUP 16: Additional Features (Fields 131-138)
+    // ================================================================
     '131_view_type': ['utilities', 'viewType'],
     '132_lot_features': ['utilities', 'lotFeatures'],
     '133_ev_charging': ['utilities', 'evChargingYn'],
@@ -253,7 +294,7 @@ function convertFlatToNestedStructure(flatFields: Record<string, any>): any {
     '138_special_assessments': ['financial', 'specialAssessments'],
 
     // ================================================================
-    // STELLAR MLS FIELDS (139-168) - Added 2025-11-30
+    // STELLAR MLS FIELDS (139-168)
     // ================================================================
 
     // Stellar MLS - Parking (139-143)

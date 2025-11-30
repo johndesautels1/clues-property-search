@@ -12,10 +12,10 @@ export const config = {
 };
 
 // MLS field mapping: Maps Stellar MLS field names to our numbered schema
-// Updated based on actual CustomerFull PDF field names
+// UPDATED: 2025-11-30 - Corrected ALL field numbers to match fields-schema.ts
 const MLS_FIELD_MAPPING: Record<string, string> = {
   // ================================================================
-  // ADDRESS & IDENTITY (from PDF header)
+  // GROUP 1: ADDRESS & IDENTITY (Fields 1-9)
   // ================================================================
   'Address': '1_full_address',
   'Full Address': '1_full_address',
@@ -28,195 +28,221 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'Listing Status': '4_listing_status',
   'List Date': '5_listing_date',
   'Original List Date': '5_listing_date',
-  'List Price': '7_listing_price',
-  'Listing Price': '7_listing_price',
-  'Current Price': '7_listing_price',
-  'Price': '7_listing_price',
-  'LP/SqFt': '8_price_per_sqft',  // Stellar MLS uses LP/SqFt
-  'Price/SqFt': '8_price_per_sqft',
-  '$/SqFt': '8_price_per_sqft',
+  'Neighborhood': '6_neighborhood',
+  'County': '7_county',
+  'Zip': '8_zip_code',
+  'Zip Code': '8_zip_code',
+  'ZIP': '8_zip_code',
+  'Postal Code': '8_zip_code',
+  'Tax ID': '9_parcel_id',
+  'Parcel ID': '9_parcel_id',
+  'Parcel Number': '9_parcel_id',
+  'Alt Key/Folio #': '9_parcel_id',
 
   // ================================================================
-  // PROPERTY DETAILS (from PDF)
+  // GROUP 2: PRICING & VALUE (Fields 10-16)
   // ================================================================
-  'Beds': '12_bedrooms',  // Stellar MLS uses "Beds"
-  'Bedrooms': '12_bedrooms',
-  'BR': '12_bedrooms',
-  'Bedrooms Total': '12_bedrooms',
-  'Baths': '15_total_bathrooms',  // Stellar MLS uses "Baths: 2/0" format
-  'Full Baths': '13_full_bathrooms',
-  'Full Bathrooms': '13_full_bathrooms',
-  'Half Baths': '14_half_bathrooms',
-  'Half Bathrooms': '14_half_bathrooms',
-  'Total Baths': '15_total_bathrooms',
-  'Bathrooms Total': '15_total_bathrooms',
-  'Heated Area': '16_living_sqft',  // Stellar MLS uses "Heated Area"
-  'Living Area': '16_living_sqft',
-  'Living SqFt': '16_living_sqft',
-  'Heated SqFt': '16_living_sqft',
-  'Interior SqFt': '16_living_sqft',
-  'Total Area': '17_total_sqft_under_roof',  // Stellar MLS uses "Total Area"
-  'Total SqFt': '17_total_sqft_under_roof',
-  'Lot Size': '18_lot_size_sqft',  // Stellar MLS has "Lot Size: 52,018 SqFt"
-  'Lot SqFt': '18_lot_size_sqft',
-  'Lot Size Acres': '19_lot_size_acres',  // Stellar MLS uses "Lot Size Acres"
-  'Lot Acres': '19_lot_size_acres',
-  'Total Acreage': '19_lot_size_acres',  // Stellar MLS also has "Total Acreage"
-  'Year Built': '20_year_built',
-  'Built': '20_year_built',
-  'Property Style': '21_property_type',  // Stellar MLS uses "Property Style"
-  'Property Type': '21_property_type',
-  'Type': '21_property_type',
-  'Property Sub Type': '21_property_type',
-  'Stories': '22_stories',
-  'Floors in Unit/Home': '148_floors_in_unit',  // Stellar MLS specific
-  'Floors In Unit': '148_floors_in_unit',
-  'Garage': '23_garage_spaces',
-  'Garage Spaces': '23_garage_spaces',
-  'Spcs': '23_garage_spaces',  // Stellar MLS uses "Spcs" for spaces
-  'Parking Spaces': '24_parking_total',
-  'Total Parking': '24_parking_total',
-  'Assigned Spcs': '143_assigned_parking_spaces',  // Stellar MLS uses "Assigned Spcs"
+  'List Price': '10_listing_price',
+  'Listing Price': '10_listing_price',
+  'Current Price': '10_listing_price',
+  'Price': '10_listing_price',
+  'LP/SqFt': '11_price_per_sqft',
+  'Price/SqFt': '11_price_per_sqft',
+  '$/SqFt': '11_price_per_sqft',
+  'Zestimate': '12_market_value_estimate',
+  'Estimated Value': '12_market_value_estimate',
+  'Assessed Value': '15_assessed_value',
+  'Tax Assessed Value': '15_assessed_value',
 
   // ================================================================
-  // HOA & FEES (Stellar MLS specific)
+  // GROUP 3: PROPERTY BASICS (Fields 17-29)
   // ================================================================
-  'HOA / Comm Assn': '25_hoa_yn',  // Stellar MLS uses "HOA / Comm Assn"
-  'HOA': '25_hoa_yn',
-  'HOA Y/N': '25_hoa_yn',
-  'HOA Fee': '26_hoa_fee_annual',
-  'Monthly HOA Amount': '26_hoa_fee_annual',  // Stellar MLS uses "Monthly HOA Amount"
-  'HOA Monthly': '26_hoa_fee_annual',
-  'HOA Annual': '26_hoa_fee_annual',
-  'Total Annual Assoc Fees': '26_hoa_fee_annual',  // Stellar MLS uses this
-  'Average Monthly Fees': '26_hoa_fee_monthly',  // Stellar MLS monthly fee
-  'HOA Name': '70_hoa_name',
-  'Association Name': '70_hoa_name',
-  'Master Assn/Name': '70_hoa_name',  // Stellar MLS format
-  'Fee Includes': '71_hoa_includes',  // Stellar MLS uses "Fee Includes"
-  'HOA Includes': '71_hoa_includes',
-  'Association Fee Includes': '71_hoa_includes',
-  'HOA Pmt Sched': 'hoa_payment_schedule',  // Stellar MLS specific
+  'Beds': '17_bedrooms',
+  'Bedrooms': '17_bedrooms',
+  'BR': '17_bedrooms',
+  'Bedrooms Total': '17_bedrooms',
+  'Full Baths': '18_full_bathrooms',
+  'Full Bathrooms': '18_full_bathrooms',
+  'Half Baths': '19_half_bathrooms',
+  'Half Bathrooms': '19_half_bathrooms',
+  'Baths': '20_total_bathrooms',
+  'Total Baths': '20_total_bathrooms',
+  'Bathrooms Total': '20_total_bathrooms',
+  'Heated Area': '21_living_sqft',
+  'Living Area': '21_living_sqft',
+  'Living SqFt': '21_living_sqft',
+  'Heated SqFt': '21_living_sqft',
+  'Interior SqFt': '21_living_sqft',
+  'Total Area': '22_total_sqft_under_roof',
+  'Total SqFt': '22_total_sqft_under_roof',
+  'Lot Size': '23_lot_size_sqft',
+  'Lot SqFt': '23_lot_size_sqft',
+  'Lot Size Acres': '24_lot_size_acres',
+  'Lot Acres': '24_lot_size_acres',
+  'Total Acreage': '24_lot_size_acres',
+  'Year Built': '25_year_built',
+  'Built': '25_year_built',
+  'Property Style': '26_property_type',
+  'Property Type': '26_property_type',
+  'Type': '26_property_type',
+  'Property Sub Type': '26_property_type',
+  'Stories': '27_stories',
+  'Garage': '28_garage_spaces',
+  'Garage Spaces': '28_garage_spaces',
+  'Spcs': '28_garage_spaces',
+  'Parking Spaces': '29_parking_total',
+  'Total Parking': '29_parking_total',
 
   // ================================================================
-  // TAX & ASSESSMENT (Stellar MLS specific)
+  // GROUP 4: HOA & TAXES (Fields 30-38)
   // ================================================================
-  'County': '28_county',
-  'Taxes': '29_annual_taxes',  // Stellar MLS uses "Taxes: $11,220"
-  'Annual Taxes': '29_annual_taxes',
-  'Tax Amount': '29_annual_taxes',
-  'Tax Year': '30_tax_year',
-  'Assessed Value': '31_assessed_value',
-  'Tax Assessed Value': '31_assessed_value',
-  'Tax ID': '6_parcel_id',  // Stellar MLS uses "Tax ID"
-  'Parcel ID': '6_parcel_id',
-  'Parcel Number': '6_parcel_id',
-  'Alt Key/Folio #': '6_parcel_id_alt',  // Stellar MLS alternate key
+  'HOA / Comm Assn': '30_hoa_yn',
+  'HOA': '30_hoa_yn',
+  'HOA Y/N': '30_hoa_yn',
+  'HOA Fee': '31_hoa_fee_annual',
+  'Monthly HOA Amount': '31_hoa_fee_annual',
+  'HOA Monthly': '31_hoa_fee_annual',
+  'HOA Annual': '31_hoa_fee_annual',
+  'Total Annual Assoc Fees': '31_hoa_fee_annual',
+  'Average Monthly Fees': '31_hoa_fee_annual',
+  'HOA Name': '32_hoa_name',
+  'Association Name': '32_hoa_name',
+  'Master Assn/Name': '32_hoa_name',
+  'Fee Includes': '33_hoa_includes',
+  'HOA Includes': '33_hoa_includes',
+  'Association Fee Includes': '33_hoa_includes',
+  'Ownership': '34_ownership_type',
+  'Taxes': '35_annual_taxes',
+  'Annual Taxes': '35_annual_taxes',
+  'Tax Amount': '35_annual_taxes',
+  'Tax Year': '36_tax_year',
+  'HOA Pmt Sched': 'hoa_payment_schedule',
 
   // ================================================================
-  // STRUCTURAL (Stellar MLS specific field names)
+  // GROUP 5: STRUCTURE & SYSTEMS (Fields 39-48)
   // ================================================================
-  'Roof': '36_roof_type',
-  'Roof Type': '36_roof_type',
-  'Roofing': '36_roof_type',
-  'Ext Construction': '38_exterior_material',  // Stellar MLS uses "Ext Construction"
-  'Exterior': '38_exterior_material',
-  'Exterior Material': '38_exterior_material',
-  'Construction': '38_exterior_material',
-  'Foundation': '39_foundation',
-  'Foundation Type': '39_foundation',
-  'A/C': '40_hvac_type',  // Stellar MLS uses "A/C" for cooling
-  'Heat/Fuel': '40_hvac_heating',  // Stellar MLS uses "Heat/Fuel"
-  'HVAC': '40_hvac_type',
-  'Heating': '40_hvac_heating',
-  'Cooling': '40_hvac_type',
-  'Flooring Covering': '42_flooring_type',  // Stellar MLS uses "Flooring Covering"
-  'Flooring': '42_flooring_type',
-  'Floor': '42_flooring_type',
-  'Kitchen': '43_kitchen_features',
-  'Kitchen Features': '43_kitchen_features',
-  'Appliances Incl': '44_appliances_included',  // Stellar MLS uses "Appliances Incl"
-  'Appliances': '44_appliances_included',
-  'Appliances Included': '44_appliances_included',
-  'Laundry Features': '44_laundry_features',  // Stellar MLS specific
-  'Fireplace': '45_fireplace_yn',
-  'Fireplace Y/N': '45_fireplace_yn',
-  'Pool': '47_pool_yn',
-  'Pool Y/N': '47_pool_yn',
-  'Pool Type': '48_pool_type',
-  'Pool Features': '48_pool_type',
+  'Roof': '39_roof_type',
+  'Roof Type': '39_roof_type',
+  'Roofing': '39_roof_type',
+  'Ext Construction': '41_exterior_material',
+  'Exterior': '41_exterior_material',
+  'Exterior Material': '41_exterior_material',
+  'Construction': '41_exterior_material',
+  'Foundation': '42_foundation',
+  'Foundation Type': '42_foundation',
+  'A/C': '45_hvac_type',
+  'Heat/Fuel': '45_hvac_type',
+  'HVAC': '45_hvac_type',
+  'Heating': '45_hvac_type',
+  'Cooling': '45_hvac_type',
+  'Laundry Features': '47_laundry_type',
 
   // ================================================================
-  // SCHOOLS
+  // GROUP 6: INTERIOR FEATURES (Fields 49-53)
   // ================================================================
-  'Elementary School': '56_assigned_elementary',
-  'Elementary': '56_assigned_elementary',
-  'Middle School': '59_assigned_middle',
-  'Middle': '59_assigned_middle',
-  'High School': '62_assigned_high',
-  'High': '62_assigned_high',
-  'School District': '65_school_district',
-  'District': '65_school_district',
+  'Flooring Covering': '49_flooring_type',
+  'Flooring': '49_flooring_type',
+  'Floor': '49_flooring_type',
+  'Kitchen': '50_kitchen_features',
+  'Kitchen Features': '50_kitchen_features',
+  'Appliances Incl': '51_appliances_included',
+  'Appliances': '51_appliances_included',
+  'Appliances Included': '51_appliances_included',
+  'Fireplace': '52_fireplace_yn',
+  'Fireplace Y/N': '52_fireplace_yn',
 
   // ================================================================
-  // LOCATION (Stellar MLS specific)
+  // GROUP 7: EXTERIOR FEATURES (Fields 54-58)
+  // ================================================================
+  'Pool': '54_pool_yn',
+  'Pool Y/N': '54_pool_yn',
+  'Pool Type': '55_pool_type',
+  'Pool Features': '55_pool_type',
+
+  // ================================================================
+  // GROUP 9: SCHOOLS (Fields 63-73)
+  // ================================================================
+  'School District': '63_school_district',
+  'District': '63_school_district',
+  'Elementary School': '65_elementary_school',
+  'Elementary': '65_elementary_school',
+  'Middle School': '68_middle_school',
+  'Middle': '68_middle_school',
+  'High School': '71_high_school',
+  'High': '71_high_school',
+
+  // ================================================================
+  // GROUP 13: MARKET & INVESTMENT (Fields 91-103)
+  // ================================================================
+  'ADOM': '95_days_on_market_avg',
+  'CDOM': '95_days_on_market_avg',
+  'Days on Market': '95_days_on_market_avg',
+  'DOM': '95_days_on_market_avg',
+
+  // ================================================================
+  // GROUP 15: ENVIRONMENT & RISK (Fields 117-130)
+  // ================================================================
+  'Flood Zone': '119_flood_zone',
+  'Flood Zone Code': '119_flood_zone',
+  'Flood Zone Date': 'flood_zone_date',
+  'Flood Zone Panel': 'flood_zone_panel',
+
+  // ================================================================
+  // LOCATION (parsed separately)
   // ================================================================
   'City': 'city',
   'State': 'state',
-  'Zip': 'zip_code',
-  'Zip Code': 'zip_code',
-  'ZIP': 'zip_code',
-  'Postal Code': 'zip_code',
-  'Neighborhood': '27_neighborhood',
-  'Subdiv': '149_subdivision_name',  // Stellar MLS uses "Subdiv"
+  'Subdiv': '149_subdivision_name',
   'Subdivision': '149_subdivision_name',
   'Subdivision Name': '149_subdivision_name',
-  'SE/TP/RG': 'section_township_range',  // Stellar MLS specific
+  'SE/TP/RG': 'section_township_range',
   'Zoning': 'zoning',
   'Future Land Use': 'future_land_use',
 
   // ================================================================
-  // STELLAR MLS - PARKING (139-143)
+  // STELLAR MLS - PARKING (Fields 139-143)
   // ================================================================
-  'Carport': '139_carport_yn',  // Stellar MLS uses "Carport: Yes"
+  'Carport': '139_carport_yn',
   'Carport Y/N': '139_carport_yn',
-  'Carport Spcs': '140_carport_spaces',  // Stellar MLS uses "Spcs" not "Spaces"
+  'Carport Spcs': '140_carport_spaces',
   'Carport Spaces': '140_carport_spaces',
-  'Attch': '141_garage_attached_yn',  // Stellar MLS uses "Attch" for attached
+  'Attch': '141_garage_attached_yn',
   'Garage Attached': '141_garage_attached_yn',
   'Attached Garage': '141_garage_attached_yn',
-  'Garage/Parking Features': '142_parking_features',  // Stellar MLS format
+  'Garage/Parking Features': '142_parking_features',
   'Parking Features': '142_parking_features',
+  'Assigned Spcs': '143_assigned_parking_spaces',
   'Assigned Parking': '143_assigned_parking_spaces',
 
   // ================================================================
-  // STELLAR MLS - BUILDING (144-148)
+  // STELLAR MLS - BUILDING (Fields 144-148)
   // ================================================================
-  'Floor #': '144_floor_number',  // Stellar MLS uses "Floor #"
+  'Floor #': '144_floor_number',
   'Floor Number': '144_floor_number',
   'Unit Floor': '144_floor_number',
-  'Total # of Floors': '145_building_total_floors',  // Stellar MLS format
+  'Total # of Floors': '145_building_total_floors',
   'Building Floors': '145_building_total_floors',
   'Total Floors': '145_building_total_floors',
-  'Bldg Name/#': '146_building_name_number',  // Stellar MLS uses "Bldg Name/#"
+  'Bldg Name/#': '146_building_name_number',
   'Building Name': '146_building_name_number',
   'Building Number': '146_building_name_number',
-  'Building Elevator Y/N': '147_building_elevator_yn',  // Stellar MLS format
+  'Building Elevator Y/N': '147_building_elevator_yn',
   'Elevator': '147_building_elevator_yn',
   'Elevator Y/N': '147_building_elevator_yn',
   'Floors in Unit/Home': '148_floors_in_unit',
+  'Floors In Unit': '148_floors_in_unit',
 
   // ================================================================
-  // STELLAR MLS - LEGAL & TAX (149-154)
+  // STELLAR MLS - LEGAL (Fields 149-154)
   // ================================================================
-  'Legal Desc': '150_legal_description',  // Stellar MLS uses "Legal Desc"
+  'Legal Desc': '150_legal_description',
   'Legal Description': '150_legal_description',
   'Legal': '150_legal_description',
   'Homestead': '151_homestead_yn',
   'Homestead Y/N': '151_homestead_yn',
   'CDD': '152_cdd_yn',
   'CDD Y/N': '152_cdd_yn',
-  'Annual CDD Fee': '153_annual_cdd_fee',  // Stellar MLS format
+  'Annual CDD Fee': '153_annual_cdd_fee',
   'CDD Fee': '153_annual_cdd_fee',
   'Annual CDD': '153_annual_cdd_fee',
   'Front Exposure': '154_front_exposure',
@@ -224,12 +250,12 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'Direction Faces': '154_front_exposure',
 
   // ================================================================
-  // STELLAR MLS - WATERFRONT (155-159)
+  // STELLAR MLS - WATERFRONT (Fields 155-159)
   // ================================================================
-  'Water Frontage': '155_water_frontage_yn',  // Stellar MLS uses "Water Frontage:No"
+  'Water Frontage': '155_water_frontage_yn',
   'Waterfront': '155_water_frontage_yn',
   'Waterfront Y/N': '155_water_frontage_yn',
-  'Waterfront Ft': '156_waterfront_feet',  // Stellar MLS uses "Waterfront Ft"
+  'Waterfront Ft': '156_waterfront_feet',
   'Waterfront Feet': '156_waterfront_feet',
   'Water Feet': '156_waterfront_feet',
   'Frontage Feet': '156_waterfront_feet',
@@ -237,81 +263,66 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'Water Access Y/N': '157_water_access_yn',
   'Water View': '158_water_view_yn',
   'Water View Y/N': '158_water_view_yn',
-  'Water Name': '159_water_body_name',  // Stellar MLS uses "Water Name"
+  'Water Name': '159_water_body_name',
   'Water Body': '159_water_body_name',
   'Body of Water': '159_water_body_name',
-  'Water Extras': 'water_extras',  // Stellar MLS specific
-  'Addtl Water Info': 'additional_water_info',  // Stellar MLS specific
+  'Water Extras': 'water_extras',
+  'Addtl Water Info': 'additional_water_info',
 
   // ================================================================
-  // STELLAR MLS - LEASING & PETS (160-165)
+  // STELLAR MLS - LEASING (Fields 160-165)
   // ================================================================
-  'Can Property be Leased': '160_can_be_leased_yn',  // Stellar MLS format
+  'Can Property be Leased': '160_can_be_leased_yn',
   'Can Be Leased': '160_can_be_leased_yn',
   'Lease': '160_can_be_leased_yn',
   'Lease Allowed': '160_can_be_leased_yn',
-  'Minimum Lease Period': '161_minimum_lease_period',  // Stellar MLS format
+  'Minimum Lease Period': '161_minimum_lease_period',
   'Minimum Lease': '161_minimum_lease_period',
   'Min Lease': '161_minimum_lease_period',
   'Lease Period': '161_minimum_lease_period',
   'Lease Restrictions': '162_lease_restrictions_yn',
-  'Pet Size': '163_pet_size_limit',  // Stellar MLS uses "Pet Size"
+  'Pet Size': '163_pet_size_limit',
   'Pet Limit': '163_pet_size_limit',
-  '# of Pets': '163_number_of_pets',  // Stellar MLS specific
-  'Max Pet Wt': '164_max_pet_weight',  // Stellar MLS uses "Max Pet Wt"
+  '# of Pets': '163_pet_size_limit',
+  'Max Pet Wt': '164_max_pet_weight',
   'Max Pet Weight': '164_max_pet_weight',
   'Pet Weight': '164_max_pet_weight',
-  'Pet Restrictions': 'pet_restrictions',  // Stellar MLS specific
-  'Association Approval Required': '165_association_approval_yn',  // Stellar MLS format
+  'Pet Restrictions': 'pet_restrictions',
+  'Association Approval Required': '165_association_approval_yn',
   'Association Approval': '165_association_approval_yn',
   'HOA Approval': '165_association_approval_yn',
-  'Approval Process': 'approval_process',  // Stellar MLS specific
-  'Years of Ownership Prior to Leasing Required': 'years_ownership_before_lease',  // Stellar MLS
+  'Approval Process': 'approval_process',
+  'Years of Ownership Prior to Leasing Required': 'years_ownership_before_lease',
 
   // ================================================================
-  // STELLAR MLS - FEATURES (166-168)
+  // STELLAR MLS - FEATURES (Fields 166-168)
   // ================================================================
   'Community Features': '166_community_features',
   'Community Amenities': '166_community_features',
-  'Interior Feat': '167_interior_features',  // Stellar MLS uses "Interior Feat"
+  'Interior Feat': '167_interior_features',
   'Interior Features': '167_interior_features',
   'Interior': '167_interior_features',
-  'Ext Features': '168_exterior_features',  // Stellar MLS uses "Ext Features"
+  'Ext Features': '168_exterior_features',
   'Exterior Features': '168_exterior_features',
-  'Patio And Porch Features': 'patio_porch_features',  // Stellar MLS specific
-  'View': 'view_type',  // Stellar MLS specific
+  'Patio And Porch Features': 'patio_porch_features',
+  'View': '131_view_type',
 
   // ================================================================
-  // FINANCIAL / DAYS ON MARKET
+  // ADDITIONAL UNMAPPED FIELDS
   // ================================================================
-  'ADOM': '83_days_on_market_avg',  // Stellar MLS uses "ADOM"
-  'CDOM': '83_days_on_market_cumulative',  // Stellar MLS uses "CDOM"
-  'Days on Market': '83_days_on_market_avg',
-  'DOM': '83_days_on_market_avg',
-  'Zestimate': '9_market_value_estimate',
-  'Estimated Value': '9_market_value_estimate',
-
-  // ================================================================
-  // STELLAR MLS - ADDITIONAL FIELDS
-  // ================================================================
-  'Ownership': 'ownership_type',  // Stellar MLS has "Ownership: Fee Simple"
   'New Construction': 'new_construction_yn',
   'Property Condition': 'property_condition',
   'Home Warranty Y/N': 'home_warranty_yn',
-  'Flood Zone': '99_flood_zone',  // Map to our schema
-  'Flood Zone Code': '99_flood_zone',
-  'Flood Zone Date': 'flood_zone_date',
-  'Flood Zone Panel': 'flood_zone_panel',
   'Utilities': 'utilities',
   'Water': 'water_source',
   'Sewer': 'sewer_type',
   'Security Feat': 'security_features',
   'Window Features': 'window_features',
   'Furnishings': 'furnishings',
-  'Accessibility Features': 'accessibility_features',
+  'Accessibility Features': '135_accessibility_modifications',
   'Road Surface Type': 'road_surface',
   'Special Sale': 'special_sale_type',
-  'Pets': 'pets_allowed',
+  'Pets': '136_pet_policy',
   'Max Times per Yr': 'max_lease_times_per_year',
 };
 
