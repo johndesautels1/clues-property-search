@@ -424,11 +424,12 @@ async function getWalkScore(lat: number, lon: number, address: string): Promise<
     const data = await response.json();
     if (data.status !== 1) return {};
 
+    // UPDATED: 2025-11-30 - Corrected field numbers to match fields-schema.ts
     return {
-      '65_walk_score': { value: `${data.walkscore} - ${data.description}`, source: 'WalkScore', confidence: 'High' },
-      '66_transit_score': { value: data.transit?.score ? `${data.transit.score} - ${data.transit.description}` : null, source: 'WalkScore', confidence: 'High' },
-      '67_bike_score': { value: data.bike?.score ? `${data.bike.score} - ${data.bike.description}` : null, source: 'WalkScore', confidence: 'High' },
-      '70_walkability_description': { value: data.description, source: 'WalkScore', confidence: 'High' }
+      '74_walk_score': { value: `${data.walkscore} - ${data.description}`, source: 'WalkScore', confidence: 'High' },
+      '75_transit_score': { value: data.transit?.score ? `${data.transit.score} - ${data.transit.description}` : null, source: 'WalkScore', confidence: 'High' },
+      '76_bike_score': { value: data.bike?.score ? `${data.bike.score} - ${data.bike.description}` : null, source: 'WalkScore', confidence: 'High' },
+      '80_walkability_description': { value: data.description, source: 'WalkScore', confidence: 'High' }
     };
   } catch (e) {
     return {};
@@ -441,18 +442,19 @@ async function getFloodZone(lat: number, lon: number): Promise<Record<string, an
     const response = await fetch(url);
     const data = await response.json();
 
+    // UPDATED: 2025-11-30 - Corrected field numbers to match fields-schema.ts
     if (data.features?.[0]) {
       const zone = data.features[0].attributes;
       const floodZone = zone.FLD_ZONE || 'Unknown';
       const isHighRisk = ['A', 'AE', 'AH', 'AO', 'V', 'VE'].some(z => floodZone.startsWith(z));
       return {
-        '100_flood_zone': { value: `FEMA Zone ${floodZone}`, source: 'FEMA NFHL', confidence: 'High' },
-        '101_flood_risk_level': { value: isHighRisk ? 'High Risk (Special Flood Hazard Area)' : 'Minimal Risk', source: 'FEMA NFHL', confidence: 'High' }
+        '119_flood_zone': { value: `FEMA Zone ${floodZone}`, source: 'FEMA NFHL', confidence: 'High' },
+        '120_flood_risk_level': { value: isHighRisk ? 'High Risk (Special Flood Hazard Area)' : 'Minimal Risk', source: 'FEMA NFHL', confidence: 'High' }
       };
     }
     return {
-      '100_flood_zone': { value: 'Zone X (Minimal Risk)', source: 'FEMA NFHL', confidence: 'Medium' },
-      '101_flood_risk_level': { value: 'Minimal', source: 'FEMA NFHL', confidence: 'Medium' }
+      '119_flood_zone': { value: 'Zone X (Minimal Risk)', source: 'FEMA NFHL', confidence: 'Medium' },
+      '120_flood_risk_level': { value: 'Minimal', source: 'FEMA NFHL', confidence: 'Medium' }
     };
   } catch (e) {
     return {};
@@ -467,9 +469,10 @@ async function getAirQuality(lat: number, lon: number): Promise<Record<string, a
     const url = `https://www.airnowapi.org/aq/observation/latLong/current/?format=application/json&latitude=${lat}&longitude=${lon}&distance=25&API_KEY=${apiKey}`;
     const response = await fetch(url);
     const data = await response.json();
+    // UPDATED: 2025-11-30 - Corrected field numbers to match fields-schema.ts
     if (data?.[0]) {
       return {
-        '99_air_quality_index_current': { value: `${data[0].AQI} - ${data[0].Category.Name}`, source: 'AirNow', confidence: 'High' }
+        '117_air_quality_index': { value: `${data[0].AQI} - ${data[0].Category.Name}`, source: 'AirNow', confidence: 'High' }
       };
     }
   } catch (e) {}
@@ -507,7 +510,8 @@ async function getNoiseData(lat: number, lon: number): Promise<Record<string, an
       else if (result.score >= 40) noiseLevel = 'Moderate';
       else if (result.score >= 20) noiseLevel = 'Noisy';
 
-      fields['68_noise_level'] = {
+      // UPDATED: 2025-11-30 - Corrected field numbers to match fields-schema.ts
+      fields['78_noise_level'] = {
         value: `${noiseLevel} (Score: ${result.score}/100)`,
         source: 'HowLoud',
         confidence: 'High'
@@ -521,7 +525,7 @@ async function getNoiseData(lat: number, lon: number): Promise<Record<string, an
         else if (result.traffic >= 40) trafficLevel = 'Moderate';
         else if (result.traffic >= 20) trafficLevel = 'Heavy';
 
-        fields['69_traffic_level'] = {
+        fields['79_traffic_level'] = {
           value: `${trafficLevel} (Score: ${result.traffic}/100)`,
           source: 'HowLoud',
           confidence: 'High'
@@ -530,7 +534,7 @@ async function getNoiseData(lat: number, lon: number): Promise<Record<string, an
 
       // Local noise component if available
       if (result.local !== undefined) {
-        fields['103_noise_level_db_est'] = {
+        fields['129_noise_level_db_est'] = {
           value: `Local noise score: ${result.local}/100 - ${result.localtext || 'N/A'}`,
           source: 'HowLoud',
           confidence: 'High'
@@ -572,8 +576,9 @@ async function getClimateData(lat: number, lon: number): Promise<Record<string, 
       if (data.relativeHumidity) conditions.push(`Humidity: ${data.relativeHumidity}%`);
       if (data.wxPhraseLong) conditions.push(data.wxPhraseLong);
 
+      // UPDATED: 2025-11-30 - Corrected field numbers to match fields-schema.ts
       if (conditions.length > 0) {
-        fields['102_climate_risk_summary'] = {
+        fields['121_climate_risk'] = {
           value: conditions.join(', '),
           source: 'Weather.com',
           confidence: 'High'
@@ -586,7 +591,7 @@ async function getClimateData(lat: number, lon: number): Promise<Record<string, 
         if (data.uvIndex >= 6) solarPotential = 'High';
         else if (data.uvIndex >= 3) solarPotential = 'Moderate';
 
-        fields['104_solar_potential'] = {
+        fields['130_solar_potential'] = {
           value: `${solarPotential} (UV Index: ${data.uvIndex})`,
           source: 'Weather.com',
           confidence: 'Medium'
@@ -613,12 +618,13 @@ async function getDistances(lat: number, lon: number): Promise<Record<string, an
   const origin = `${lat},${lon}`;
   const fields: Record<string, any> = {};
 
+  // UPDATED: 2025-11-30 - Corrected field numbers to match fields-schema.ts
   const placeTypes = [
-    { type: 'supermarket', field: '73_distance_grocery_miles', name: 'Grocery' },
-    { type: 'hospital', field: '74_distance_hospital_miles', name: 'Hospital' },
-    { type: 'airport', field: '75_distance_airport_miles', name: 'Airport' },
-    { type: 'park', field: '76_distance_park_miles', name: 'Park' },
-    { type: 'beach', field: '77_distance_beach_miles', name: 'Beach' },
+    { type: 'supermarket', field: '83_distance_grocery_mi', name: 'Grocery' },
+    { type: 'hospital', field: '84_distance_hospital_mi', name: 'Hospital' },
+    { type: 'airport', field: '85_distance_airport_mi', name: 'Airport' },
+    { type: 'park', field: '86_distance_park_mi', name: 'Park' },
+    { type: 'beach', field: '87_distance_beach_mi', name: 'Beach' },
   ];
 
   for (const place of placeTypes) {
