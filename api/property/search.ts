@@ -84,11 +84,12 @@ function valuesAreSemanticallySame(val1: any, val2: any): boolean {
 }
 
 // ============================================
-// CONVERT FLAT 110-FIELD TO NESTED STRUCTURE
+// CONVERT FLAT 168-FIELD TO NESTED STRUCTURE
 // Maps API field keys to nested PropertyDetail format
+// Updated: 2025-11-30 - Added Stellar MLS fields (139-168)
 // ============================================
 function convertFlatToNestedStructure(flatFields: Record<string, any>): any {
-  const fieldPathMap: Record<string, [string, string]> = {
+  const fieldPathMap: Record<string, [string, string] | [string, string, string]> = {
     // Address & Identity
     '1_full_address': ['address', 'fullAddress'],
     '2_mls_primary': ['address', 'mlsPrimary'],
@@ -213,6 +214,89 @@ function convertFlatToNestedStructure(flatFields: Record<string, any>): any {
     '108_pet_policy': ['utilities', 'petPolicy'],
     '109_age_restrictions': ['utilities', 'ageRestrictions'],
     '110_notes_confidence_summary': ['utilities', 'notesConfidenceSummary'],
+
+    // ================================================================
+    // FIELDS 111-138: Extended Original Fields
+    // ================================================================
+    // Utilities Extended (111-116)
+    '111_internet_providers_top3': ['utilities', 'internetProvidersTop3'],
+    '112_max_internet_speed': ['utilities', 'maxInternetSpeed'],
+    '113_fiber_available': ['utilities', 'fiberAvailable'],
+    '114_cable_tv_provider': ['utilities', 'cableTvProvider'],
+    '115_cell_coverage_quality': ['utilities', 'cellCoverageQuality'],
+    '116_emergency_services_distance': ['utilities', 'emergencyServicesDistance'],
+
+    // Environment & Risk Extended (117-130)
+    '117_air_quality_index': ['utilities', 'airQualityIndexCurrent'],
+    '118_air_quality_grade': ['utilities', 'airQualityGrade'],
+    '119_flood_zone': ['utilities', 'floodZone'],
+    '120_flood_risk_level': ['utilities', 'floodRiskLevel'],
+    '121_climate_risk': ['utilities', 'climateRiskWildfireFlood'],
+    '122_wildfire_risk': ['utilities', 'wildfireRisk'],
+    '123_earthquake_risk': ['utilities', 'earthquakeRisk'],
+    '124_hurricane_risk': ['utilities', 'hurricaneRisk'],
+    '125_tornado_risk': ['utilities', 'tornadoRisk'],
+    '126_radon_risk': ['utilities', 'radonRisk'],
+    '127_superfund_site_nearby': ['utilities', 'superfundNearby'],
+    '128_sea_level_rise_risk': ['utilities', 'seaLevelRiseRisk'],
+    '129_noise_level_db_est': ['utilities', 'noiseLevelDbEst'],
+    '130_solar_potential': ['utilities', 'solarPotential'],
+
+    // Additional Features Extended (131-138)
+    '131_view_type': ['utilities', 'viewType'],
+    '132_lot_features': ['utilities', 'lotFeatures'],
+    '133_ev_charging': ['utilities', 'evChargingYn'],
+    '134_smart_home_features': ['utilities', 'smartHomeFeatures'],
+    '135_accessibility_modifications': ['utilities', 'accessibilityMods'],
+    '136_pet_policy': ['utilities', 'petPolicy'],
+    '137_age_restrictions': ['utilities', 'ageRestrictions'],
+    '138_special_assessments': ['financial', 'specialAssessments'],
+
+    // ================================================================
+    // STELLAR MLS FIELDS (139-168) - Added 2025-11-30
+    // ================================================================
+
+    // Stellar MLS - Parking (139-143)
+    '139_carport_yn': ['stellarMLS', 'parking', 'carportYn'],
+    '140_carport_spaces': ['stellarMLS', 'parking', 'carportSpaces'],
+    '141_garage_attached_yn': ['stellarMLS', 'parking', 'garageAttachedYn'],
+    '142_parking_features': ['stellarMLS', 'parking', 'parkingFeatures'],
+    '143_assigned_parking_spaces': ['stellarMLS', 'parking', 'assignedParkingSpaces'],
+
+    // Stellar MLS - Building (144-148)
+    '144_floor_number': ['stellarMLS', 'building', 'floorNumber'],
+    '145_building_total_floors': ['stellarMLS', 'building', 'buildingTotalFloors'],
+    '146_building_name_number': ['stellarMLS', 'building', 'buildingNameNumber'],
+    '147_building_elevator_yn': ['stellarMLS', 'building', 'buildingElevatorYn'],
+    '148_floors_in_unit': ['stellarMLS', 'building', 'floorsInUnit'],
+
+    // Stellar MLS - Legal (149-154)
+    '149_subdivision_name': ['stellarMLS', 'legal', 'subdivisionName'],
+    '150_legal_description': ['stellarMLS', 'legal', 'legalDescription'],
+    '151_homestead_yn': ['stellarMLS', 'legal', 'homesteadYn'],
+    '152_cdd_yn': ['stellarMLS', 'legal', 'cddYn'],
+    '153_annual_cdd_fee': ['stellarMLS', 'legal', 'annualCddFee'],
+    '154_front_exposure': ['stellarMLS', 'legal', 'frontExposure'],
+
+    // Stellar MLS - Waterfront (155-159)
+    '155_water_frontage_yn': ['stellarMLS', 'waterfront', 'waterFrontageYn'],
+    '156_waterfront_feet': ['stellarMLS', 'waterfront', 'waterfrontFeet'],
+    '157_water_access_yn': ['stellarMLS', 'waterfront', 'waterAccessYn'],
+    '158_water_view_yn': ['stellarMLS', 'waterfront', 'waterViewYn'],
+    '159_water_body_name': ['stellarMLS', 'waterfront', 'waterBodyName'],
+
+    // Stellar MLS - Leasing (160-165)
+    '160_can_be_leased_yn': ['stellarMLS', 'leasing', 'canBeLeasedYn'],
+    '161_minimum_lease_period': ['stellarMLS', 'leasing', 'minimumLeasePeriod'],
+    '162_lease_restrictions_yn': ['stellarMLS', 'leasing', 'leaseRestrictionsYn'],
+    '163_pet_size_limit': ['stellarMLS', 'leasing', 'petSizeLimit'],
+    '164_max_pet_weight': ['stellarMLS', 'leasing', 'maxPetWeight'],
+    '165_association_approval_yn': ['stellarMLS', 'leasing', 'associationApprovalYn'],
+
+    // Stellar MLS - Features (166-168)
+    '166_community_features': ['stellarMLS', 'features', 'communityFeatures'],
+    '167_interior_features': ['stellarMLS', 'features', 'interiorFeatures'],
+    '168_exterior_features': ['stellarMLS', 'features', 'exteriorFeatures'],
   };
 
   const nested: Record<string, any> = {
@@ -222,12 +306,31 @@ function convertFlatToNestedStructure(flatFields: Record<string, any>): any {
     location: {},
     financial: {},
     utilities: {},
+    // Stellar MLS nested structure
+    stellarMLS: {
+      parking: {},
+      building: {},
+      legal: {},
+      waterfront: {},
+      leasing: {},
+      features: {},
+    },
   };
 
   for (const [flatKey, fieldData] of Object.entries(flatFields)) {
     const path = fieldPathMap[flatKey];
-    if (path && nested[path[0]]) {
-      nested[path[0]][path[1]] = fieldData;
+    if (path) {
+      if (path.length === 2) {
+        // Standard 2-level path: [group, field]
+        if (nested[path[0]]) {
+          nested[path[0]][path[1]] = fieldData;
+        }
+      } else if (path.length === 3) {
+        // Stellar MLS 3-level path: [stellarMLS, subgroup, field]
+        if (nested[path[0]] && nested[path[0]][path[1]]) {
+          nested[path[0]][path[1]][path[2]] = fieldData;
+        }
+      }
     }
   }
 
@@ -1654,7 +1757,7 @@ function mergeResults(results: any[]): any {
   // Dedupe sources
   merged.sources = Array.from(new Set(merged.sources));
   merged.total_fields_found = Object.keys(merged.fields).length;
-  merged.completion_percentage = Math.round((merged.total_fields_found / 138) * 100);
+  merged.completion_percentage = Math.round((merged.total_fields_found / 168) * 100);
 
   return merged;
 }
@@ -1886,7 +1989,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ========================================
     const arbitrationResult = arbitrationPipeline.getResult();
     const totalFields = Object.keys(arbitrationResult.fields).length;
-    const completionPercentage = Math.round((totalFields / 138) * 100);
+    const completionPercentage = Math.round((totalFields / 168) * 100);
 
     // Build source breakdown from arbitration result
     const sourceBreakdown: Record<string, number> = {};

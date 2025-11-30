@@ -24,6 +24,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
 const LLM_TIMEOUT = 55000; // 55s per LLM call (within 60s Vercel Pro limit)
 
 // Map flat LLM field names to numbered field keys (copied from search-stream.ts for isolation)
+// Updated: 2025-11-30 - Added Stellar MLS fields (139-168)
 const FLAT_TO_NUMBERED_FIELD_MAP: Record<string, string> = {
   'full_address': '1_full_address', 'address': '1_full_address',
   'mls_primary': '2_mls_primary', 'mls_number': '2_mls_primary',
@@ -111,6 +112,52 @@ const FLAT_TO_NUMBERED_FIELD_MAP: Record<string, string> = {
   'latitude': 'latitude', 'lat': 'latitude',
   'longitude': 'longitude', 'lng': 'longitude', 'lon': 'longitude',
   'zestimate': '9_market_value_estimate', 'redfin_estimate': '9_market_value_estimate',
+
+  // ================================================================
+  // STELLAR MLS FIELDS (139-168) - Added 2025-11-30
+  // ================================================================
+
+  // Stellar MLS - Parking (139-143)
+  'carport_yn': '139_carport_yn', 'carport': '139_carport_yn', 'has_carport': '139_carport_yn',
+  'carport_spaces': '140_carport_spaces',
+  'garage_attached_yn': '141_garage_attached_yn', 'garage_attached': '141_garage_attached_yn', 'attached_garage': '141_garage_attached_yn',
+  'parking_features': '142_parking_features',
+  'assigned_parking_spaces': '143_assigned_parking_spaces', 'assigned_parking': '143_assigned_parking_spaces',
+
+  // Stellar MLS - Building (144-148)
+  'floor_number': '144_floor_number', 'floor': '144_floor_number', 'unit_floor': '144_floor_number',
+  'building_total_floors': '145_building_total_floors', 'total_floors': '145_building_total_floors', 'building_floors': '145_building_total_floors',
+  'building_name_number': '146_building_name_number', 'building_name': '146_building_name_number', 'building_number': '146_building_name_number',
+  'building_elevator_yn': '147_building_elevator_yn', 'elevator': '147_building_elevator_yn', 'has_elevator': '147_building_elevator_yn',
+  'floors_in_unit': '148_floors_in_unit', 'unit_floors': '148_floors_in_unit',
+
+  // Stellar MLS - Legal (149-154)
+  'subdivision_name': '149_subdivision_name', 'subdivision': '149_subdivision_name',
+  'legal_description': '150_legal_description', 'legal': '150_legal_description',
+  'homestead_yn': '151_homestead_yn', 'homestead': '151_homestead_yn', 'homestead_exemption': '151_homestead_yn',
+  'cdd_yn': '152_cdd_yn', 'cdd': '152_cdd_yn', 'has_cdd': '152_cdd_yn',
+  'annual_cdd_fee': '153_annual_cdd_fee', 'cdd_fee': '153_annual_cdd_fee',
+  'front_exposure': '154_front_exposure', 'exposure': '154_front_exposure', 'facing': '154_front_exposure',
+
+  // Stellar MLS - Waterfront (155-159)
+  'water_frontage_yn': '155_water_frontage_yn', 'waterfront': '155_water_frontage_yn', 'is_waterfront': '155_water_frontage_yn',
+  'waterfront_feet': '156_waterfront_feet', 'water_frontage_feet': '156_waterfront_feet',
+  'water_access_yn': '157_water_access_yn', 'water_access': '157_water_access_yn', 'has_water_access': '157_water_access_yn',
+  'water_view_yn': '158_water_view_yn', 'water_view': '158_water_view_yn', 'has_water_view': '158_water_view_yn',
+  'water_body_name': '159_water_body_name', 'water_name': '159_water_body_name', 'body_of_water': '159_water_body_name',
+
+  // Stellar MLS - Leasing (160-165)
+  'can_be_leased_yn': '160_can_be_leased_yn', 'can_lease': '160_can_be_leased_yn', 'leasable': '160_can_be_leased_yn',
+  'minimum_lease_period': '161_minimum_lease_period', 'min_lease': '161_minimum_lease_period', 'lease_minimum': '161_minimum_lease_period',
+  'lease_restrictions_yn': '162_lease_restrictions_yn', 'lease_restrictions': '162_lease_restrictions_yn',
+  'pet_size_limit': '163_pet_size_limit', 'pet_limit': '163_pet_size_limit',
+  'max_pet_weight': '164_max_pet_weight', 'pet_weight_limit': '164_max_pet_weight',
+  'association_approval_yn': '165_association_approval_yn', 'association_approval': '165_association_approval_yn', 'hoa_approval': '165_association_approval_yn',
+
+  // Stellar MLS - Features (166-168)
+  'community_features': '166_community_features', 'community_amenities': '166_community_features',
+  'interior_features': '167_interior_features', 'interior_amenities': '167_interior_features',
+  'exterior_features': '168_exterior_features', 'exterior_amenities': '168_exterior_features',
 };
 
 function mapFlatFieldsToNumbered(fields: Record<string, any>): Record<string, any> {

@@ -1,9 +1,10 @@
 /**
  * CLUES Property Dashboard - Unified Field Normalizer
- * 
- * SINGLE SOURCE OF TRUTH for mapping flat 138-field API keys to the nested Property interface.
+ *
+ * SINGLE SOURCE OF TRUTH for mapping flat 168-field API keys to the nested Property interface.
  * This MUST be the only place where field→path mapping is defined.
- * 
+ * Updated: 2025-11-30 - Added 30 Stellar MLS fields (139-168)
+ *
  * API returns: { "7_listing_price": { value: 450000, source: "Zillow" } }
  * Property type expects: property.address.listingPrice.value = 450000
  */
@@ -19,7 +20,7 @@ export interface FlatFieldData {
   validationMessage?: string;
 }
 
-type GroupName = 'address' | 'details' | 'structural' | 'location' | 'financial' | 'utilities';
+type GroupName = 'address' | 'details' | 'structural' | 'location' | 'financial' | 'utilities' | 'stellarMLS.parking' | 'stellarMLS.building' | 'stellarMLS.legal' | 'stellarMLS.waterfront' | 'stellarMLS.leasing' | 'stellarMLS.features';
 
 interface FieldPathMapping {
   fieldNumber: number;
@@ -31,8 +32,8 @@ interface FieldPathMapping {
 }
 
 /**
- * Complete 138-field mapping to Property interface structure
- * group = the top-level object in Property (address, details, structural, location, financial, utilities)
+ * Complete 168-field mapping to Property interface structure
+ * group = the top-level object in Property (address, details, structural, location, financial, utilities, stellarMLS.*)
  * propName = the property name within that group
  */
 export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
@@ -164,10 +165,48 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
   { fieldNumber: 108, apiKey: '108_pet_policy', group: 'utilities', propName: 'petPolicy', type: 'string' },
   { fieldNumber: 109, apiKey: '109_age_restrictions', group: 'utilities', propName: 'ageRestrictions', type: 'string' },
   { fieldNumber: 110, apiKey: '110_notes_confidence_summary', group: 'utilities', propName: 'notesConfidenceSummary', type: 'string' },
-  // NOTE: Do NOT add entries with apiKeys that conflict with official 138-field schema!
-  // The apiKeyToMappingMap will overwrite earlier entries with later ones.
-  // Fields like trashProvider, fiberAvailable, etc. that aren't in the API's 138-field
-  // schema should be handled separately, NOT by reusing existing field numbers.
+
+  // ========== GROUP: stellarMLS.parking (StellarMLSParkingData - Fields 139-143) ==========
+  { fieldNumber: 139, apiKey: '139_carport_yn', group: 'stellarMLS.parking', propName: 'carportYn', type: 'boolean' },
+  { fieldNumber: 140, apiKey: '140_carport_spaces', group: 'stellarMLS.parking', propName: 'carportSpaces', type: 'number', validation: (v) => v >= 0 && v <= 20 },
+  { fieldNumber: 141, apiKey: '141_garage_attached_yn', group: 'stellarMLS.parking', propName: 'garageAttachedYn', type: 'boolean' },
+  { fieldNumber: 142, apiKey: '142_parking_features', group: 'stellarMLS.parking', propName: 'parkingFeatures', type: 'array' },
+  { fieldNumber: 143, apiKey: '143_assigned_parking_spaces', group: 'stellarMLS.parking', propName: 'assignedParkingSpaces', type: 'number', validation: (v) => v >= 0 && v <= 20 },
+
+  // ========== GROUP: stellarMLS.building (StellarMLSBuildingData - Fields 144-148) ==========
+  { fieldNumber: 144, apiKey: '144_floor_number', group: 'stellarMLS.building', propName: 'floorNumber', type: 'number', validation: (v) => v >= 0 && v <= 200 },
+  { fieldNumber: 145, apiKey: '145_building_total_floors', group: 'stellarMLS.building', propName: 'buildingTotalFloors', type: 'number', validation: (v) => v >= 1 && v <= 200 },
+  { fieldNumber: 146, apiKey: '146_building_name_number', group: 'stellarMLS.building', propName: 'buildingNameNumber', type: 'string' },
+  { fieldNumber: 147, apiKey: '147_building_elevator_yn', group: 'stellarMLS.building', propName: 'buildingElevatorYn', type: 'boolean' },
+  { fieldNumber: 148, apiKey: '148_floors_in_unit', group: 'stellarMLS.building', propName: 'floorsInUnit', type: 'number', validation: (v) => v >= 1 && v <= 10 },
+
+  // ========== GROUP: stellarMLS.legal (StellarMLSLegalData - Fields 149-154) ==========
+  { fieldNumber: 149, apiKey: '149_subdivision_name', group: 'stellarMLS.legal', propName: 'subdivisionName', type: 'string' },
+  { fieldNumber: 150, apiKey: '150_legal_description', group: 'stellarMLS.legal', propName: 'legalDescription', type: 'string' },
+  { fieldNumber: 151, apiKey: '151_homestead_yn', group: 'stellarMLS.legal', propName: 'homesteadYn', type: 'boolean' },
+  { fieldNumber: 152, apiKey: '152_cdd_yn', group: 'stellarMLS.legal', propName: 'cddYn', type: 'boolean' },
+  { fieldNumber: 153, apiKey: '153_annual_cdd_fee', group: 'stellarMLS.legal', propName: 'annualCddFee', type: 'number', validation: (v) => v >= 0 && v < 50000 },
+  { fieldNumber: 154, apiKey: '154_front_exposure', group: 'stellarMLS.legal', propName: 'frontExposure', type: 'string' },
+
+  // ========== GROUP: stellarMLS.waterfront (StellarMLSWaterfrontData - Fields 155-159) ==========
+  { fieldNumber: 155, apiKey: '155_water_frontage_yn', group: 'stellarMLS.waterfront', propName: 'waterFrontageYn', type: 'boolean' },
+  { fieldNumber: 156, apiKey: '156_waterfront_feet', group: 'stellarMLS.waterfront', propName: 'waterfrontFeet', type: 'number', validation: (v) => v >= 0 && v < 10000 },
+  { fieldNumber: 157, apiKey: '157_water_access_yn', group: 'stellarMLS.waterfront', propName: 'waterAccessYn', type: 'boolean' },
+  { fieldNumber: 158, apiKey: '158_water_view_yn', group: 'stellarMLS.waterfront', propName: 'waterViewYn', type: 'boolean' },
+  { fieldNumber: 159, apiKey: '159_water_body_name', group: 'stellarMLS.waterfront', propName: 'waterBodyName', type: 'string' },
+
+  // ========== GROUP: stellarMLS.leasing (StellarMLSLeasingData - Fields 160-165) ==========
+  { fieldNumber: 160, apiKey: '160_can_be_leased_yn', group: 'stellarMLS.leasing', propName: 'canBeLeasedYn', type: 'boolean' },
+  { fieldNumber: 161, apiKey: '161_minimum_lease_period', group: 'stellarMLS.leasing', propName: 'minimumLeasePeriod', type: 'string' },
+  { fieldNumber: 162, apiKey: '162_lease_restrictions_yn', group: 'stellarMLS.leasing', propName: 'leaseRestrictionsYn', type: 'boolean' },
+  { fieldNumber: 163, apiKey: '163_pet_size_limit', group: 'stellarMLS.leasing', propName: 'petSizeLimit', type: 'string' },
+  { fieldNumber: 164, apiKey: '164_max_pet_weight', group: 'stellarMLS.leasing', propName: 'maxPetWeight', type: 'number', validation: (v) => v >= 0 && v <= 500 },
+  { fieldNumber: 165, apiKey: '165_association_approval_yn', group: 'stellarMLS.leasing', propName: 'associationApprovalYn', type: 'boolean' },
+
+  // ========== GROUP: stellarMLS.features (StellarMLSFeaturesData - Fields 166-168) ==========
+  { fieldNumber: 166, apiKey: '166_community_features', group: 'stellarMLS.features', propName: 'communityFeatures', type: 'array' },
+  { fieldNumber: 167, apiKey: '167_interior_features', group: 'stellarMLS.features', propName: 'interiorFeatures', type: 'array' },
+  { fieldNumber: 168, apiKey: '168_exterior_features', group: 'stellarMLS.features', propName: 'exteriorFeatures', type: 'array' },
 ];
 
 const apiKeyToMappingMap = new Map<string, FieldPathMapping>();
@@ -458,6 +497,51 @@ export function normalizeToProperty(
       ageRestrictions: emptyDataField(),
       notesConfidenceSummary: emptyDataField(),
     },
+    // NEW: Stellar MLS fields (139-168) - Added 2025-11-30
+    stellarMLS: {
+      parking: {
+        carportYn: emptyDataField(),
+        carportSpaces: emptyDataField(),
+        garageAttachedYn: emptyDataField(),
+        parkingFeatures: emptyDataField(),
+        assignedParkingSpaces: emptyDataField(),
+      },
+      building: {
+        floorNumber: emptyDataField(),
+        buildingTotalFloors: emptyDataField(),
+        buildingNameNumber: emptyDataField(),
+        buildingElevatorYn: emptyDataField(),
+        floorsInUnit: emptyDataField(),
+      },
+      legal: {
+        subdivisionName: emptyDataField(),
+        legalDescription: emptyDataField(),
+        homesteadYn: emptyDataField(),
+        cddYn: emptyDataField(),
+        annualCddFee: emptyDataField(),
+        frontExposure: emptyDataField(),
+      },
+      waterfront: {
+        waterFrontageYn: emptyDataField(),
+        waterfrontFeet: emptyDataField(),
+        waterAccessYn: emptyDataField(),
+        waterViewYn: emptyDataField(),
+        waterBodyName: emptyDataField(),
+      },
+      leasing: {
+        canBeLeasedYn: emptyDataField(),
+        minimumLeasePeriod: emptyDataField(),
+        leaseRestrictionsYn: emptyDataField(),
+        petSizeLimit: emptyDataField(),
+        maxPetWeight: emptyDataField(),
+        associationApprovalYn: emptyDataField(),
+      },
+      features: {
+        communityFeatures: emptyDataField(),
+        interiorFeatures: emptyDataField(),
+        exteriorFeatures: emptyDataField(),
+      },
+    },
   };
 
   let fieldsPopulated = 0;
@@ -496,10 +580,22 @@ export function normalizeToProperty(
       fieldData.validationMessage
     );
 
-    const group = property[mapping.group] as unknown as Record<string, DataField<any>>;
-    if (group && mapping.propName in group) {
-      group[mapping.propName] = dataField;
-      fieldsPopulated++;
+    // Handle nested paths like 'stellarMLS.parking'
+    if (mapping.group.startsWith('stellarMLS.')) {
+      const subGroup = mapping.group.split('.')[1] as keyof typeof property.stellarMLS;
+      if (property.stellarMLS && property.stellarMLS[subGroup]) {
+        const target = property.stellarMLS[subGroup] as Record<string, DataField<any>>;
+        if (mapping.propName in target) {
+          target[mapping.propName] = dataField;
+          fieldsPopulated++;
+        }
+      }
+    } else {
+      const group = property[mapping.group as keyof Property] as unknown as Record<string, DataField<any>>;
+      if (group && mapping.propName in group) {
+        group[mapping.propName] = dataField;
+        fieldsPopulated++;
+      }
     }
   }
 
@@ -534,7 +630,7 @@ export function normalizeToProperty(
     }
   }
 
-  property.dataCompleteness = Math.round((fieldsPopulated / 138) * 100);
+  property.dataCompleteness = Math.round((fieldsPopulated / 168) * 100);
   property.smartScore = Math.min(100, fieldsPopulated + 20);
 
   return property;
@@ -563,7 +659,7 @@ export function getAllApiKeys(): string[] {
 
 /**
  * Data quality range definitions for Dashboard display
- * Each range corresponds to a field group in the 138-field schema
+ * Each range corresponds to a field group in the 168-field schema
  */
 export const DATA_QUALITY_RANGES = [
   { label: 'Core Fields (1-38)', min: 1, max: 38, colorClass: 'text-quantum-green' },
@@ -571,6 +667,7 @@ export const DATA_QUALITY_RANGES = [
   { label: 'Location (63-90)', min: 63, max: 90, colorClass: 'text-quantum-blue' },
   { label: 'Financial (91-116)', min: 91, max: 116, colorClass: 'text-quantum-purple' },
   { label: 'Environment (117-138)', min: 117, max: 138, colorClass: 'text-quantum-gold' },
+  { label: 'Stellar MLS (139-168)', min: 139, max: 168, colorClass: 'text-quantum-cyan' },
 ] as const;
 
 /**

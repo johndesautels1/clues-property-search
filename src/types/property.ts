@@ -1,6 +1,7 @@
 /**
  * CLUES Property Dashboard - Type Definitions
- * Complete 110-field property schema with confidence tracking
+ * Complete 168-field property schema with confidence tracking
+ * Updated: 2025-11-30 - Added 30 Stellar MLS fields (139-168)
  */
 
 // Confidence levels for data quality
@@ -192,7 +193,75 @@ export interface UtilitiesData {
   notesConfidenceSummary: DataField<string>; // #110
 }
 
-// Complete Property with all 110 fields
+// ================================================================
+// Stellar MLS Data (Fields 139-168) - Added 2025-11-30
+// ================================================================
+
+// Stellar MLS - Parking (139-143)
+export interface StellarMLSParkingData {
+  carportYn: DataField<boolean>;           // #139
+  carportSpaces: DataField<number>;        // #140
+  garageAttachedYn: DataField<boolean>;    // #141
+  parkingFeatures: DataField<string[]>;    // #142
+  assignedParkingSpaces: DataField<number>; // #143
+}
+
+// Stellar MLS - Building (144-148)
+export interface StellarMLSBuildingData {
+  floorNumber: DataField<number>;          // #144
+  buildingTotalFloors: DataField<number>;  // #145
+  buildingNameNumber: DataField<string>;   // #146
+  buildingElevatorYn: DataField<boolean>;  // #147
+  floorsInUnit: DataField<number>;         // #148
+}
+
+// Stellar MLS - Legal & Tax (149-154)
+export interface StellarMLSLegalData {
+  subdivisionName: DataField<string>;      // #149
+  legalDescription: DataField<string>;     // #150
+  homesteadYn: DataField<boolean>;         // #151
+  cddYn: DataField<boolean>;               // #152
+  annualCddFee: DataField<number>;         // #153
+  frontExposure: DataField<string>;        // #154
+}
+
+// Stellar MLS - Waterfront (155-159)
+export interface StellarMLSWaterfrontData {
+  waterFrontageYn: DataField<boolean>;     // #155
+  waterfrontFeet: DataField<number>;       // #156
+  waterAccessYn: DataField<boolean>;       // #157
+  waterViewYn: DataField<boolean>;         // #158
+  waterBodyName: DataField<string>;        // #159
+}
+
+// Stellar MLS - Leasing & Pets (160-165)
+export interface StellarMLSLeasingData {
+  canBeLeasedYn: DataField<boolean>;       // #160
+  minimumLeasePeriod: DataField<string>;   // #161
+  leaseRestrictionsYn: DataField<boolean>; // #162
+  petSizeLimit: DataField<string>;         // #163
+  maxPetWeight: DataField<number>;         // #164
+  associationApprovalYn: DataField<boolean>; // #165
+}
+
+// Stellar MLS - Features (166-168)
+export interface StellarMLSFeaturesData {
+  communityFeatures: DataField<string[]>;  // #166
+  interiorFeatures: DataField<string[]>;   // #167
+  exteriorFeatures: DataField<string[]>;   // #168
+}
+
+// Combined Stellar MLS Data interface
+export interface StellarMLSData {
+  parking: StellarMLSParkingData;
+  building: StellarMLSBuildingData;
+  legal: StellarMLSLegalData;
+  waterfront: StellarMLSWaterfrontData;
+  leasing: StellarMLSLeasingData;
+  features: StellarMLSFeaturesData;
+}
+
+// Complete Property with all 168 fields
 export interface Property {
   id: string;
   createdAt: string;
@@ -203,6 +272,8 @@ export interface Property {
   location: LocationData;
   financial: FinancialData;
   utilities: UtilitiesData;
+  // NEW: Stellar MLS fields (139-168) - Added 2025-11-30
+  stellarMLS?: StellarMLSData;
 
   // Computed scores
   smartScore?: number;

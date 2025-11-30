@@ -114,13 +114,14 @@ export interface ValidationRule {
   validate: (value: any) => { valid: boolean; message?: string };
 }
 
+// Updated: 2025-11-30 - Added Stellar MLS field validations (139-168)
 export const VALIDATION_RULES: ValidationRule[] = [
   {
-    fieldPattern: /price|sale_price|listing_price|market_value|assessed_value/i,
+    fieldPattern: /price|sale_price|listing_price|market_value|assessed_value|annual_cdd_fee/i,
     validate: (v) => {
       const num = typeof v === 'number' ? v : parseFloat(String(v).replace(/[$,]/g, ''));
       if (isNaN(num)) return { valid: false, message: 'Price must be a number' };
-      if (num < 1000) return { valid: false, message: 'Price too low (<$1,000)' };
+      if (num < 0) return { valid: false, message: 'Price cannot be negative' };
       if (num > 100000000) return { valid: false, message: 'Price too high (>$100M)' };
       return { valid: true };
     }
@@ -187,6 +188,77 @@ export const VALIDATION_RULES: ValidationRule[] = [
       const num = typeof v === 'number' ? v : parseInt(String(v));
       if (isNaN(num)) return { valid: false, message: 'Score must be a number' };
       if (num < 0 || num > 100) return { valid: false, message: 'Score out of range (0-100)' };
+      return { valid: true };
+    }
+  },
+
+  // ================================================================
+  // STELLAR MLS FIELD VALIDATIONS (139-168) - Added 2025-11-30
+  // ================================================================
+
+  // Parking fields (139-143)
+  {
+    fieldPattern: /carport_spaces|assigned_parking_spaces|garage_spaces/i,
+    validate: (v) => {
+      const num = typeof v === 'number' ? v : parseInt(String(v));
+      if (isNaN(num)) return { valid: false, message: 'Parking spaces must be a number' };
+      if (num < 0 || num > 20) return { valid: false, message: 'Parking spaces out of range (0-20)' };
+      return { valid: true };
+    }
+  },
+
+  // Building fields (144-148)
+  {
+    fieldPattern: /floor_number|floors_in_unit/i,
+    validate: (v) => {
+      const num = typeof v === 'number' ? v : parseInt(String(v));
+      if (isNaN(num)) return { valid: false, message: 'Floor number must be a number' };
+      if (num < 0 || num > 200) return { valid: false, message: 'Floor number out of range (0-200)' };
+      return { valid: true };
+    }
+  },
+  {
+    fieldPattern: /building_total_floors/i,
+    validate: (v) => {
+      const num = typeof v === 'number' ? v : parseInt(String(v));
+      if (isNaN(num)) return { valid: false, message: 'Total floors must be a number' };
+      if (num < 1 || num > 200) return { valid: false, message: 'Total floors out of range (1-200)' };
+      return { valid: true };
+    }
+  },
+
+  // Waterfront fields (155-159)
+  {
+    fieldPattern: /waterfront_feet/i,
+    validate: (v) => {
+      const num = typeof v === 'number' ? v : parseFloat(String(v));
+      if (isNaN(num)) return { valid: false, message: 'Waterfront feet must be a number' };
+      if (num < 0 || num > 10000) return { valid: false, message: 'Waterfront feet out of range (0-10,000)' };
+      return { valid: true };
+    }
+  },
+
+  // Leasing fields (160-165)
+  {
+    fieldPattern: /max_pet_weight/i,
+    validate: (v) => {
+      const num = typeof v === 'number' ? v : parseFloat(String(v));
+      if (isNaN(num)) return { valid: false, message: 'Pet weight must be a number' };
+      if (num < 0 || num > 500) return { valid: false, message: 'Pet weight out of range (0-500 lbs)' };
+      return { valid: true };
+    }
+  },
+
+  // Boolean Y/N fields (various Stellar MLS)
+  {
+    fieldPattern: /carport_yn|garage_attached_yn|building_elevator_yn|homestead_yn|cdd_yn|water_frontage_yn|water_access_yn|water_view_yn|can_be_leased_yn|lease_restrictions_yn|association_approval_yn/i,
+    validate: (v) => {
+      if (typeof v === 'boolean') return { valid: true };
+      const str = String(v).toLowerCase().trim();
+      const validBools = ['true', 'false', 'yes', 'no', 'y', 'n', '1', '0'];
+      if (!validBools.includes(str)) {
+        return { valid: false, message: 'Must be a boolean (Yes/No, True/False)' };
+      }
       return { valid: true };
     }
   },

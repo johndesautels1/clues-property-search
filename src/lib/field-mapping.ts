@@ -2,6 +2,7 @@
  * CLUES Property Dashboard - Unified Field Mapping
  * Maps API field keys (e.g., "7_listing_price") to frontend keys (e.g., "pricing.listingPrice")
  * This is the SINGLE SOURCE OF TRUTH for field mapping
+ * Updated: 2025-11-30 - Added fields 111-168 (58 fields) including 30 Stellar MLS fields
  */
 
 // API field key format: {number}_{snake_case_name}
@@ -18,8 +19,10 @@ export interface FieldMapping {
 }
 
 /**
- * Complete 138-field mapping table
+ * Complete 168-field mapping table
  * This ensures API responses map correctly to frontend state
+ * Fields 1-138: Original fields
+ * Fields 139-168: Stellar MLS fields (Added 2025-11-30)
  */
 export const FIELD_MAPPINGS: FieldMapping[] = [
   // GROUP A: Address & Identity (1-6)
@@ -165,6 +168,92 @@ export const FIELD_MAPPINGS: FieldMapping[] = [
   { fieldNumber: 108, apiKey: '108_pet_policy', frontendKey: 'additionalFeatures.petPolicy', csvHeader: 'Pet Policy', label: 'Pet Policy', group: 'Additional Features', type: 'string' },
   { fieldNumber: 109, apiKey: '109_age_restrictions', frontendKey: 'additionalFeatures.ageRestrictions', csvHeader: 'Age Restrictions', label: 'Age Restrictions', group: 'Additional Features', type: 'string' },
   { fieldNumber: 110, apiKey: '110_notes_confidence_summary', frontendKey: 'additionalFeatures.notesConfidenceSummary', csvHeader: 'Notes Confidence Summary', label: 'Notes & Confidence Summary', group: 'Additional Features', type: 'string' },
+
+  // ================================================================
+  // GROUP R: Utilities Extended (111-116) - Aligns with fields-schema.ts
+  // ================================================================
+  { fieldNumber: 111, apiKey: '111_internet_providers_top3', frontendKey: 'utilitiesExtended.internetProvidersTop3', csvHeader: 'Internet Providers Top 3', label: 'Internet Providers (Top 3)', group: 'Utilities Extended', type: 'array' },
+  { fieldNumber: 112, apiKey: '112_max_internet_speed', frontendKey: 'utilitiesExtended.maxInternetSpeed', csvHeader: 'Max Internet Speed', label: 'Max Internet Speed', group: 'Utilities Extended', type: 'string' },
+  { fieldNumber: 113, apiKey: '113_fiber_available', frontendKey: 'utilitiesExtended.fiberAvailable', csvHeader: 'Fiber Available', label: 'Fiber Available', group: 'Utilities Extended', type: 'string' },
+  { fieldNumber: 114, apiKey: '114_cable_tv_provider', frontendKey: 'utilitiesExtended.cableTvProvider', csvHeader: 'Cable TV Provider', label: 'Cable TV Provider', group: 'Utilities Extended', type: 'string' },
+  { fieldNumber: 115, apiKey: '115_cell_coverage_quality', frontendKey: 'utilitiesExtended.cellCoverageQuality', csvHeader: 'Cell Coverage Quality', label: 'Cell Coverage Quality', group: 'Utilities Extended', type: 'string' },
+  { fieldNumber: 116, apiKey: '116_emergency_services_distance', frontendKey: 'utilitiesExtended.emergencyServicesDistance', csvHeader: 'Emergency Services Distance', label: 'Emergency Services Distance', group: 'Utilities Extended', type: 'string' },
+
+  // ================================================================
+  // GROUP S: Environment & Risk Extended (117-130)
+  // ================================================================
+  { fieldNumber: 117, apiKey: '117_air_quality_index', frontendKey: 'environmentRiskExtended.airQualityIndex', csvHeader: 'Air Quality Index', label: 'Air Quality Index', group: 'Environment & Risk Extended', type: 'string' },
+  { fieldNumber: 118, apiKey: '118_air_quality_grade', frontendKey: 'environmentRiskExtended.airQualityGrade', csvHeader: 'Air Quality Grade', label: 'Air Quality Grade', group: 'Environment & Risk Extended', type: 'string' },
+  { fieldNumber: 119, apiKey: '119_flood_zone', frontendKey: 'environmentRiskExtended.floodZone', csvHeader: 'Flood Zone', label: 'Flood Zone', group: 'Environment & Risk Extended', type: 'string' },
+  { fieldNumber: 120, apiKey: '120_flood_risk_level', frontendKey: 'environmentRiskExtended.floodRiskLevel', csvHeader: 'Flood Risk Level', label: 'Flood Risk Level', group: 'Environment & Risk Extended', type: 'string' },
+  { fieldNumber: 121, apiKey: '121_climate_risk', frontendKey: 'environmentRiskExtended.climateRisk', csvHeader: 'Climate Risk', label: 'Climate Risk', group: 'Environment & Risk Extended', type: 'string' },
+  { fieldNumber: 122, apiKey: '122_wildfire_risk', frontendKey: 'environmentRiskExtended.wildfireRisk', csvHeader: 'Wildfire Risk', label: 'Wildfire Risk', group: 'Environment & Risk Extended', type: 'string' },
+  { fieldNumber: 123, apiKey: '123_earthquake_risk', frontendKey: 'environmentRiskExtended.earthquakeRisk', csvHeader: 'Earthquake Risk', label: 'Earthquake Risk', group: 'Environment & Risk Extended', type: 'string' },
+  { fieldNumber: 124, apiKey: '124_hurricane_risk', frontendKey: 'environmentRiskExtended.hurricaneRisk', csvHeader: 'Hurricane Risk', label: 'Hurricane Risk', group: 'Environment & Risk Extended', type: 'string' },
+  { fieldNumber: 125, apiKey: '125_tornado_risk', frontendKey: 'environmentRiskExtended.tornadoRisk', csvHeader: 'Tornado Risk', label: 'Tornado Risk', group: 'Environment & Risk Extended', type: 'string' },
+  { fieldNumber: 126, apiKey: '126_radon_risk', frontendKey: 'environmentRiskExtended.radonRisk', csvHeader: 'Radon Risk', label: 'Radon Risk', group: 'Environment & Risk Extended', type: 'string' },
+  { fieldNumber: 127, apiKey: '127_superfund_site_nearby', frontendKey: 'environmentRiskExtended.superfundSiteNearby', csvHeader: 'Superfund Site Nearby', label: 'Superfund Site Nearby', group: 'Environment & Risk Extended', type: 'string' },
+  { fieldNumber: 128, apiKey: '128_sea_level_rise_risk', frontendKey: 'environmentRiskExtended.seaLevelRiseRisk', csvHeader: 'Sea Level Rise Risk', label: 'Sea Level Rise Risk', group: 'Environment & Risk Extended', type: 'string' },
+  { fieldNumber: 129, apiKey: '129_noise_level_db_est', frontendKey: 'environmentRiskExtended.noiseLevelDbEst', csvHeader: 'Noise Level dB Est', label: 'Noise Level (dB Est)', group: 'Environment & Risk Extended', type: 'string' },
+  { fieldNumber: 130, apiKey: '130_solar_potential', frontendKey: 'environmentRiskExtended.solarPotential', csvHeader: 'Solar Potential', label: 'Solar Potential', group: 'Environment & Risk Extended', type: 'string' },
+
+  // ================================================================
+  // GROUP T: Additional Features Extended (131-138)
+  // ================================================================
+  { fieldNumber: 131, apiKey: '131_view_type', frontendKey: 'additionalFeaturesExtended.viewType', csvHeader: 'View Type', label: 'View Type', group: 'Additional Features Extended', type: 'string' },
+  { fieldNumber: 132, apiKey: '132_lot_features', frontendKey: 'additionalFeaturesExtended.lotFeatures', csvHeader: 'Lot Features', label: 'Lot Features', group: 'Additional Features Extended', type: 'string' },
+  { fieldNumber: 133, apiKey: '133_ev_charging', frontendKey: 'additionalFeaturesExtended.evCharging', csvHeader: 'EV Charging', label: 'EV Charging', group: 'Additional Features Extended', type: 'string' },
+  { fieldNumber: 134, apiKey: '134_smart_home_features', frontendKey: 'additionalFeaturesExtended.smartHomeFeatures', csvHeader: 'Smart Home Features', label: 'Smart Home Features', group: 'Additional Features Extended', type: 'string' },
+  { fieldNumber: 135, apiKey: '135_accessibility_modifications', frontendKey: 'additionalFeaturesExtended.accessibilityModifications', csvHeader: 'Accessibility Modifications', label: 'Accessibility Modifications', group: 'Additional Features Extended', type: 'string' },
+  { fieldNumber: 136, apiKey: '136_pet_policy', frontendKey: 'additionalFeaturesExtended.petPolicy', csvHeader: 'Pet Policy', label: 'Pet Policy', group: 'Additional Features Extended', type: 'string' },
+  { fieldNumber: 137, apiKey: '137_age_restrictions', frontendKey: 'additionalFeaturesExtended.ageRestrictions', csvHeader: 'Age Restrictions', label: 'Age Restrictions', group: 'Additional Features Extended', type: 'string' },
+  { fieldNumber: 138, apiKey: '138_special_assessments', frontendKey: 'additionalFeaturesExtended.specialAssessments', csvHeader: 'Special Assessments', label: 'Special Assessments', group: 'Additional Features Extended', type: 'string' },
+
+  // ================================================================
+  // STELLAR MLS FIELDS (139-168) - Added 2025-11-30
+  // ================================================================
+
+  // GROUP U: Stellar MLS - Parking (139-143)
+  { fieldNumber: 139, apiKey: '139_carport_yn', frontendKey: 'stellarMLS.parking.carportYn', csvHeader: 'Carport Y/N', label: 'Carport Y/N', group: 'Stellar MLS - Parking', type: 'boolean' },
+  { fieldNumber: 140, apiKey: '140_carport_spaces', frontendKey: 'stellarMLS.parking.carportSpaces', csvHeader: 'Carport Spaces', label: 'Carport Spaces', group: 'Stellar MLS - Parking', type: 'number' },
+  { fieldNumber: 141, apiKey: '141_garage_attached_yn', frontendKey: 'stellarMLS.parking.garageAttachedYn', csvHeader: 'Garage Attached Y/N', label: 'Garage Attached Y/N', group: 'Stellar MLS - Parking', type: 'boolean' },
+  { fieldNumber: 142, apiKey: '142_parking_features', frontendKey: 'stellarMLS.parking.parkingFeatures', csvHeader: 'Parking Features', label: 'Parking Features', group: 'Stellar MLS - Parking', type: 'array' },
+  { fieldNumber: 143, apiKey: '143_assigned_parking_spaces', frontendKey: 'stellarMLS.parking.assignedParkingSpaces', csvHeader: 'Assigned Parking Spaces', label: 'Assigned Parking Spaces', group: 'Stellar MLS - Parking', type: 'number' },
+
+  // GROUP V: Stellar MLS - Building (144-148)
+  { fieldNumber: 144, apiKey: '144_floor_number', frontendKey: 'stellarMLS.building.floorNumber', csvHeader: 'Floor Number', label: 'Floor Number', group: 'Stellar MLS - Building', type: 'number' },
+  { fieldNumber: 145, apiKey: '145_building_total_floors', frontendKey: 'stellarMLS.building.buildingTotalFloors', csvHeader: 'Building Total Floors', label: 'Building Total Floors', group: 'Stellar MLS - Building', type: 'number' },
+  { fieldNumber: 146, apiKey: '146_building_name_number', frontendKey: 'stellarMLS.building.buildingNameNumber', csvHeader: 'Building Name/Number', label: 'Building Name/Number', group: 'Stellar MLS - Building', type: 'string' },
+  { fieldNumber: 147, apiKey: '147_building_elevator_yn', frontendKey: 'stellarMLS.building.buildingElevatorYn', csvHeader: 'Building Elevator Y/N', label: 'Building Elevator Y/N', group: 'Stellar MLS - Building', type: 'boolean' },
+  { fieldNumber: 148, apiKey: '148_floors_in_unit', frontendKey: 'stellarMLS.building.floorsInUnit', csvHeader: 'Floors in Unit', label: 'Floors in Unit', group: 'Stellar MLS - Building', type: 'number' },
+
+  // GROUP W: Stellar MLS - Legal (149-154)
+  { fieldNumber: 149, apiKey: '149_subdivision_name', frontendKey: 'stellarMLS.legal.subdivisionName', csvHeader: 'Subdivision Name', label: 'Subdivision Name', group: 'Stellar MLS - Legal', type: 'string' },
+  { fieldNumber: 150, apiKey: '150_legal_description', frontendKey: 'stellarMLS.legal.legalDescription', csvHeader: 'Legal Description', label: 'Legal Description', group: 'Stellar MLS - Legal', type: 'string' },
+  { fieldNumber: 151, apiKey: '151_homestead_yn', frontendKey: 'stellarMLS.legal.homesteadYn', csvHeader: 'Homestead Y/N', label: 'Homestead Exemption', group: 'Stellar MLS - Legal', type: 'boolean' },
+  { fieldNumber: 152, apiKey: '152_cdd_yn', frontendKey: 'stellarMLS.legal.cddYn', csvHeader: 'CDD Y/N', label: 'CDD Y/N', group: 'Stellar MLS - Legal', type: 'boolean' },
+  { fieldNumber: 153, apiKey: '153_annual_cdd_fee', frontendKey: 'stellarMLS.legal.annualCddFee', csvHeader: 'Annual CDD Fee', label: 'Annual CDD Fee', group: 'Stellar MLS - Legal', type: 'number' },
+  { fieldNumber: 154, apiKey: '154_front_exposure', frontendKey: 'stellarMLS.legal.frontExposure', csvHeader: 'Front Exposure', label: 'Front Exposure', group: 'Stellar MLS - Legal', type: 'string' },
+
+  // GROUP X: Stellar MLS - Waterfront (155-159)
+  { fieldNumber: 155, apiKey: '155_water_frontage_yn', frontendKey: 'stellarMLS.waterfront.waterFrontageYn', csvHeader: 'Water Frontage Y/N', label: 'Water Frontage Y/N', group: 'Stellar MLS - Waterfront', type: 'boolean' },
+  { fieldNumber: 156, apiKey: '156_waterfront_feet', frontendKey: 'stellarMLS.waterfront.waterfrontFeet', csvHeader: 'Waterfront Feet', label: 'Waterfront Feet', group: 'Stellar MLS - Waterfront', type: 'number' },
+  { fieldNumber: 157, apiKey: '157_water_access_yn', frontendKey: 'stellarMLS.waterfront.waterAccessYn', csvHeader: 'Water Access Y/N', label: 'Water Access Y/N', group: 'Stellar MLS - Waterfront', type: 'boolean' },
+  { fieldNumber: 158, apiKey: '158_water_view_yn', frontendKey: 'stellarMLS.waterfront.waterViewYn', csvHeader: 'Water View Y/N', label: 'Water View Y/N', group: 'Stellar MLS - Waterfront', type: 'boolean' },
+  { fieldNumber: 159, apiKey: '159_water_body_name', frontendKey: 'stellarMLS.waterfront.waterBodyName', csvHeader: 'Water Body Name', label: 'Water Body Name', group: 'Stellar MLS - Waterfront', type: 'string' },
+
+  // GROUP Y: Stellar MLS - Leasing (160-165)
+  { fieldNumber: 160, apiKey: '160_can_be_leased_yn', frontendKey: 'stellarMLS.leasing.canBeLeasedYn', csvHeader: 'Can Be Leased Y/N', label: 'Can Be Leased Y/N', group: 'Stellar MLS - Leasing', type: 'boolean' },
+  { fieldNumber: 161, apiKey: '161_minimum_lease_period', frontendKey: 'stellarMLS.leasing.minimumLeasePeriod', csvHeader: 'Minimum Lease Period', label: 'Minimum Lease Period', group: 'Stellar MLS - Leasing', type: 'string' },
+  { fieldNumber: 162, apiKey: '162_lease_restrictions_yn', frontendKey: 'stellarMLS.leasing.leaseRestrictionsYn', csvHeader: 'Lease Restrictions Y/N', label: 'Lease Restrictions Y/N', group: 'Stellar MLS - Leasing', type: 'boolean' },
+  { fieldNumber: 163, apiKey: '163_pet_size_limit', frontendKey: 'stellarMLS.leasing.petSizeLimit', csvHeader: 'Pet Size Limit', label: 'Pet Size Limit', group: 'Stellar MLS - Leasing', type: 'string' },
+  { fieldNumber: 164, apiKey: '164_max_pet_weight', frontendKey: 'stellarMLS.leasing.maxPetWeight', csvHeader: 'Max Pet Weight', label: 'Max Pet Weight (lbs)', group: 'Stellar MLS - Leasing', type: 'number' },
+  { fieldNumber: 165, apiKey: '165_association_approval_yn', frontendKey: 'stellarMLS.leasing.associationApprovalYn', csvHeader: 'Association Approval Y/N', label: 'Association Approval Req', group: 'Stellar MLS - Leasing', type: 'boolean' },
+
+  // GROUP Z: Stellar MLS - Features (166-168)
+  { fieldNumber: 166, apiKey: '166_community_features', frontendKey: 'stellarMLS.features.communityFeatures', csvHeader: 'Community Features', label: 'Community Features', group: 'Stellar MLS - Features', type: 'array' },
+  { fieldNumber: 167, apiKey: '167_interior_features', frontendKey: 'stellarMLS.features.interiorFeatures', csvHeader: 'Interior Features', label: 'Interior Features', group: 'Stellar MLS - Features', type: 'array' },
+  { fieldNumber: 168, apiKey: '168_exterior_features', frontendKey: 'stellarMLS.features.exteriorFeatures', csvHeader: 'Exterior Features', label: 'Exterior Features', group: 'Stellar MLS - Features', type: 'array' },
 ];
 
 // Lookup maps for fast conversion
