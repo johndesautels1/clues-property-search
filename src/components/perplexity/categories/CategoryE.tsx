@@ -154,20 +154,13 @@ function SystemsRadar({ properties }: CategoryEProps) {
             </div>
           ))}
         </div>
-        {/* Scale legend */}
-        <div className="mt-1 pt-1 border-t border-white/10 flex justify-center items-center gap-4 text-[9px] text-gray-400">
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-red-500" />
-            <span>0 = End of life</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-yellow-500" />
-            <span>50 = Fair</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-green-500" />
-            <span>100 = Excellent</span>
-          </div>
+        {/* 5-color Scale legend - aligned left */}
+        <div className="mt-1 pt-1 border-t border-white/10 flex justify-start items-center gap-2 text-[7px] text-gray-400 pl-1">
+          <span><span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-0.5" />0-20</span>
+          <span><span className="inline-block w-2 h-2 rounded-full bg-orange-500 mr-0.5" />21-40</span>
+          <span><span className="inline-block w-2 h-2 rounded-full bg-yellow-500 mr-0.5" />41-60</span>
+          <span><span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-0.5" />61-80</span>
+          <span><span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-0.5" />81-100</span>
         </div>
       </div>
     </GlassChart>
