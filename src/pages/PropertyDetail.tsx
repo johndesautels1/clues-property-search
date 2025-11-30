@@ -35,6 +35,8 @@ import {
   Target,
   AlertCircle,
   Search,
+  Sparkles,
+  Loader2,
 } from 'lucide-react';
 import { usePropertyStore } from '@/store/propertyStore';
 import { useIsAdmin } from '@/store/authStore';
@@ -335,12 +337,121 @@ const Section = ({ title, icon, children, defaultExpanded = true }: SectionProps
 export default function PropertyDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getPropertyById, getFullPropertyById, removeProperty, updateFullProperty } = usePropertyStore();
+  const { getPropertyById, getFullPropertyById, removeProperty, updateFullProperty, updateProperty } = usePropertyStore();
   const [isRetrying, setIsRetrying] = useState(false);
+  const [isEnriching, setIsEnriching] = useState(false);
+  const [enrichProgress, setEnrichProgress] = useState(0);
   const isAdmin = useIsAdmin(); // Check if current user is admin (agent/broker)
 
   const property = id ? getPropertyById(id) : undefined;
   const fullProperty = id ? getFullPropertyById(id) : undefined;
+
+  // Handler for "Enrich with APIs" button - calls search API to add more data
+  const handleEnrichWithApis = async () => {
+    if (!fullProperty || !id || !property) return;
+
+    const address = fullProperty.address.fullAddress.value;
+    if (!address) {
+      alert('No address found for this property');
+      return;
+    }
+
+    setIsEnriching(true);
+    setEnrichProgress(10);
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+
+      // Use SSE streaming for real-time progress
+      const response = await fetch(`${apiUrl}/api/property/search-stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          address,
+          engines: ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'],
+          skipLLMs: false,
+          existingFields: {}, // Let backend merge with any existing
+          skipApis: false,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let finalData: any = null;
+
+      if (!reader) {
+        throw new Error('No response body');
+      }
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          if (!finalData) {
+            throw new Error('Stream ended without complete event');
+          }
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        let eventType = '';
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            eventType = line.slice(7).trim();
+          } else if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+
+              if (eventType === 'progress') {
+                const { fieldsFound } = data;
+                setEnrichProgress(Math.min(Math.round((fieldsFound / 168) * 100), 99));
+              } else if (eventType === 'complete') {
+                finalData = data;
+              } else if (eventType === 'error') {
+                throw new Error(data.error || 'Search error');
+              }
+            } catch (e) {
+              if (eventType === 'error') throw e;
+              console.error('Failed to parse SSE data:', e);
+            }
+          }
+        }
+      }
+
+      // Convert API response to Property format and merge
+      const { normalizeToProperty } = await import('@/lib/field-normalizer');
+      const enrichedProperty = normalizeToProperty(finalData.fields || {}, id, {}, []);
+
+      // This will trigger additive merge due to our updated store
+      updateFullProperty(id, enrichedProperty);
+
+      // Update property card with new data completeness
+      if (finalData.completion_percentage) {
+        updateProperty(id, {
+          dataCompleteness: finalData.completion_percentage,
+          smartScore: Math.round((finalData.completion_percentage + property.smartScore) / 2),
+        });
+      }
+
+      setEnrichProgress(100);
+      alert(`✅ Property enriched! Added data from ${Object.keys(finalData.fields || {}).length} fields.`);
+
+    } catch (error) {
+      console.error('Enrich error:', error);
+      alert(`Failed to enrich property: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsEnriching(false);
+      setEnrichProgress(0);
+    }
+  };
 
   // Retry handler - calls API with specific LLM (ADMIN ONLY)
   const handleRetryField = async (fieldKey: string, llmName: string) => {
@@ -617,6 +728,29 @@ export default function PropertyDetail() {
             <ArrowLeft className="w-6 h-6" />
           </Link>
           <div className="flex gap-2">
+            {/* Enrich with APIs Button */}
+            <button
+              onClick={handleEnrichWithApis}
+              disabled={isEnriching}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-colors ${
+                isEnriching
+                  ? 'bg-quantum-cyan/20 text-quantum-cyan cursor-wait'
+                  : 'bg-quantum-cyan/10 hover:bg-quantum-cyan/20 text-quantum-cyan'
+              }`}
+              title="Add data from APIs (WalkScore, FEMA, etc.) and LLMs"
+            >
+              {isEnriching ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span className="text-sm">{enrichProgress}%</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5" />
+                  <span className="text-sm hidden md:inline">Enrich with APIs</span>
+                </>
+              )}
+            </button>
             <button className="p-2 hover:bg-white/10 rounded-xl transition-colors">
               <Heart className="w-6 h-6" />
             </button>

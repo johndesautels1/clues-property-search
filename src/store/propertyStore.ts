@@ -2,11 +2,197 @@
  * CLUES Property Dashboard - Global State Store
  * Using Zustand for lightweight, performant state management
  * Uses localStorage as temporary DB until PostgreSQL is connected
+ *
+ * DATA STACKING: When updating properties, data from multiple sources
+ * is MERGED additively, not replaced. Higher tier sources take precedence.
  */
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { PropertyCard, Property, PropertyFilters, PropertySort } from '@/types/property';
+import type { PropertyCard, Property, PropertyFilters, PropertySort, DataField } from '@/types/property';
+
+/**
+ * Source tier hierarchy for data arbitration
+ * Lower number = higher priority (wins conflicts)
+ */
+const SOURCE_TIERS: Record<string, number> = {
+  'Stellar MLS': 1,
+  'Stellar MLS PDF': 1,
+  'MLS': 1,
+  'County Records': 2,
+  'County Assessor': 2,
+  'FEMA': 2,
+  'Google Maps': 3,
+  'Google Geocode': 3,
+  'Google Places': 3,
+  'WalkScore': 3,
+  'HowLoud': 3,
+  'AirNow': 3,
+  'SchoolDigger': 3,
+  'Weather': 3,
+  'BroadbandNow': 3,
+  'CrimeGrade': 3,
+  'Perplexity': 4,
+  'Grok': 4,
+  'Claude': 4,
+  'GPT': 4,
+  'Gemini': 4,
+  'Manual': 5,
+};
+
+/**
+ * Get the tier for a source name (lower = higher priority)
+ */
+function getSourceTier(source: string): number {
+  // Check for exact match first
+  if (SOURCE_TIERS[source]) return SOURCE_TIERS[source];
+
+  // Check for partial matches
+  const lowerSource = source.toLowerCase();
+  if (lowerSource.includes('mls')) return 1;
+  if (lowerSource.includes('county')) return 2;
+  if (lowerSource.includes('fema')) return 2;
+  if (lowerSource.includes('google')) return 3;
+  if (lowerSource.includes('walk') || lowerSource.includes('score')) return 3;
+  if (lowerSource.includes('perplexity') || lowerSource.includes('grok') ||
+      lowerSource.includes('claude') || lowerSource.includes('gpt') ||
+      lowerSource.includes('gemini')) return 4;
+
+  return 5; // Default to lowest priority
+}
+
+/**
+ * Check if a DataField has a valid (non-empty) value
+ */
+function hasValidValue(field: DataField<any> | undefined | null): boolean {
+  if (!field) return false;
+  const val = field.value;
+  if (val === null || val === undefined || val === '') return false;
+  if (typeof val === 'string') {
+    const lower = val.toLowerCase().trim();
+    if (['n/a', 'na', 'unknown', 'null', 'undefined', 'none', '-', '--', 'tbd'].includes(lower)) {
+      return false;
+    }
+  }
+  if (Array.isArray(val) && val.length === 0) return false;
+  return true;
+}
+
+/**
+ * Merge a single DataField - only replace if:
+ * 1. Existing field is empty/null AND new field has value, OR
+ * 2. New source has higher priority (lower tier number) than existing
+ */
+function mergeDataField<T>(
+  existing: DataField<T> | undefined,
+  incoming: DataField<T> | undefined
+): DataField<T> | undefined {
+  // If no incoming data, keep existing
+  if (!incoming || !hasValidValue(incoming)) {
+    return existing;
+  }
+
+  // If no existing data, use incoming
+  if (!existing || !hasValidValue(existing)) {
+    return incoming;
+  }
+
+  // Both have values - check source priority
+  const existingTier = getSourceTier(existing.sources?.[0] || 'Manual');
+  const incomingTier = getSourceTier(incoming.sources?.[0] || 'Manual');
+
+  // Lower tier number = higher priority
+  if (incomingTier < existingTier) {
+    // Higher priority source - use incoming but preserve conflict info
+    return {
+      ...incoming,
+      hasConflict: existing.value !== incoming.value,
+      conflictValues: existing.value !== incoming.value
+        ? [...(incoming.conflictValues || []), { source: existing.sources?.[0] || 'Unknown', value: existing.value }]
+        : incoming.conflictValues,
+    };
+  }
+
+  // Keep existing (higher priority) but track the conflict
+  if (existing.value !== incoming.value) {
+    return {
+      ...existing,
+      hasConflict: true,
+      conflictValues: [...(existing.conflictValues || []), { source: incoming.sources?.[0] || 'Unknown', value: incoming.value }],
+    };
+  }
+
+  return existing;
+}
+
+/**
+ * Deep merge two Property objects - ADDITIVE merge
+ * New data fills gaps, higher tier sources can override lower tier
+ * NEVER removes existing data
+ */
+function mergeProperties(existing: Property, incoming: Property): Property {
+  const merged: Property = { ...existing };
+
+  // Helper to merge a section (e.g., address, details, location)
+  // Uses type assertion since we know the structure matches
+  const mergeSection = <T>(
+    existingSection: T | undefined,
+    incomingSection: T | undefined
+  ): T => {
+    if (!incomingSection) return existingSection as T;
+    if (!existingSection) return incomingSection;
+
+    const result = { ...existingSection } as Record<string, any>;
+    const incSection = incomingSection as Record<string, any>;
+
+    for (const key of Object.keys(incSection)) {
+      const existField = result[key] as DataField<any> | undefined;
+      const incField = incSection[key] as DataField<any> | undefined;
+
+      const mergedField = mergeDataField(existField, incField);
+      if (mergedField) {
+        result[key] = mergedField;
+      }
+    }
+    return result as T;
+  };
+
+  // Merge each section
+  merged.address = mergeSection(existing.address, incoming.address);
+  merged.details = mergeSection(existing.details, incoming.details);
+  merged.structural = mergeSection(existing.structural, incoming.structural);
+  merged.location = mergeSection(existing.location, incoming.location);
+  merged.financial = mergeSection(existing.financial, incoming.financial);
+  merged.utilities = mergeSection(existing.utilities, incoming.utilities);
+
+  // Merge Stellar MLS data if present
+  if (incoming.stellarMLS || existing.stellarMLS) {
+    const existingMLS = existing.stellarMLS || {} as any;
+    const incomingMLS = incoming.stellarMLS || {} as any;
+
+    merged.stellarMLS = {
+      parking: mergeSection(existingMLS.parking, incomingMLS.parking),
+      building: mergeSection(existingMLS.building, incomingMLS.building),
+      legal: mergeSection(existingMLS.legal, incomingMLS.legal),
+      waterfront: mergeSection(existingMLS.waterfront, incomingMLS.waterfront),
+      leasing: mergeSection(existingMLS.leasing, incomingMLS.leasing),
+      features: mergeSection(existingMLS.features, incomingMLS.features),
+    };
+  }
+
+  // Update metadata
+  merged.updatedAt = new Date().toISOString();
+
+  // Preserve computed scores - take higher value
+  if (incoming.smartScore !== undefined || existing.smartScore !== undefined) {
+    merged.smartScore = Math.max(incoming.smartScore || 0, existing.smartScore || 0);
+  }
+  if (incoming.dataCompleteness !== undefined || existing.dataCompleteness !== undefined) {
+    merged.dataCompleteness = Math.max(incoming.dataCompleteness || 0, existing.dataCompleteness || 0);
+  }
+
+  return merged;
+}
 
 // Demo properties to start with
 const initialProperties: PropertyCard[] = [
@@ -157,11 +343,35 @@ export const usePropertyStore = create<PropertyState>()(
       addProperty: (property, fullProperty) =>
         set((state) => {
           const newFullProperties = new Map(state.fullProperties);
+
+          // Check if property already exists (for merging)
+          const existingFull = newFullProperties.get(property.id);
+          const existingCard = state.properties.find(p => p.id === property.id);
+
           if (fullProperty) {
-            newFullProperties.set(property.id, fullProperty);
+            if (existingFull) {
+              // ADDITIVE MERGE: Merge with existing property
+              console.log('🔄 MERGE: Merging addProperty data with existing', property.id);
+              newFullProperties.set(property.id, mergeProperties(existingFull, fullProperty));
+            } else {
+              newFullProperties.set(property.id, fullProperty);
+            }
           }
+
+          // Update or add property card
+          let updatedProperties: PropertyCard[];
+          if (existingCard) {
+            // Update existing card
+            updatedProperties = state.properties.map(p =>
+              p.id === property.id ? { ...p, ...property } : p
+            );
+          } else {
+            // Add new card
+            updatedProperties = [property, ...state.properties];
+          }
+
           return {
-            properties: [property, ...state.properties],
+            properties: updatedProperties,
             fullProperties: newFullProperties,
           };
         }),
@@ -175,16 +385,32 @@ export const usePropertyStore = create<PropertyState>()(
           const newFullPropertiesMap = new Map(state.fullProperties);
           if (fullProperties) {
             fullProperties.forEach((fp) => {
-              console.log('💾 Storing full property ID:', fp.id);
-              console.log('💾 Address data:', fp.address);
-              newFullPropertiesMap.set(fp.id, fp);
+              const existing = newFullPropertiesMap.get(fp.id);
+              if (existing) {
+                // ADDITIVE MERGE: Merge with existing property
+                console.log('🔄 MERGE: Merging addProperties data with existing', fp.id);
+                newFullPropertiesMap.set(fp.id, mergeProperties(existing, fp));
+              } else {
+                console.log('💾 Storing new full property ID:', fp.id);
+                newFullPropertiesMap.set(fp.id, fp);
+              }
             });
           }
 
           console.log('📊 Map now has', newFullPropertiesMap.size, 'full properties');
 
+          // Merge property cards - update existing or add new
+          const existingIds = new Set(state.properties.map(p => p.id));
+          const updatedProperties = state.properties.map(p => {
+            const incoming = newProperties.find(np => np.id === p.id);
+            return incoming ? { ...p, ...incoming } : p;
+          });
+
+          // Add truly new properties
+          const trulyNew = newProperties.filter(np => !existingIds.has(np.id));
+
           return {
-            properties: [...newProperties, ...state.properties],
+            properties: [...trulyNew, ...updatedProperties],
             fullProperties: newFullPropertiesMap,
           };
         }),
@@ -209,7 +435,18 @@ export const usePropertyStore = create<PropertyState>()(
       updateFullProperty: (id, property) =>
         set((state) => {
           const newFullProperties = new Map(state.fullProperties);
-          newFullProperties.set(id, property);
+          const existing = newFullProperties.get(id);
+
+          // ADDITIVE MERGE: If property already exists, merge data instead of replacing
+          if (existing) {
+            console.log('🔄 MERGE: Merging new data with existing property', id);
+            const merged = mergeProperties(existing, property);
+            newFullProperties.set(id, merged);
+          } else {
+            console.log('➕ NEW: Adding new property', id);
+            newFullProperties.set(id, property);
+          }
+
           return { fullProperties: newFullProperties };
         }),
 
