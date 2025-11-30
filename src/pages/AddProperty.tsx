@@ -16,6 +16,7 @@ import {
   PenLine,
   Upload,
   MapPin,
+  FileText,
 } from 'lucide-react';
 import { usePropertyStore } from '@/store/propertyStore';
 import type { PropertyCard, Property, DataField } from '@/types/property';
@@ -32,7 +33,7 @@ interface AddressSuggestion {
 }
 
 type ScrapeStatus = 'idle' | 'searching' | 'scraping' | 'enriching' | 'complete' | 'error';
-type InputMode = 'address' | 'url' | 'manual' | 'csv' | 'text';
+type InputMode = 'address' | 'url' | 'manual' | 'csv' | 'text' | 'pdf';
 
 // Generate a simple unique ID
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -66,6 +67,12 @@ export default function AddProperty() {
   const [csvData, setCsvData] = useState<any[]>([]);
   const [propertyText, setPropertyText] = useState('');
   const [enrichWithAI, setEnrichWithAI] = useState(false);
+
+  // PDF upload state
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfParsedFields, setPdfParsedFields] = useState<Record<string, any>>({});
+  const [pdfParseStatus, setPdfParseStatus] = useState<'idle' | 'uploading' | 'parsing' | 'complete' | 'error'>('idle');
+  const [pdfError, setPdfError] = useState<string | null>(null);
   const [cascadeStatus, setCascadeStatus] = useState<{llm: string; status: 'pending' | 'running' | 'complete' | 'error' | 'skipped'; fieldsFound?: number}[]>([]);
 
   // Manual entry form state
@@ -1018,6 +1025,147 @@ export default function AddProperty() {
     }
   };
 
+  // Handle PDF upload and parsing via API
+  const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      setPdfError('Please upload a PDF file');
+      return;
+    }
+
+    setPdfFile(file);
+    setPdfParseStatus('uploading');
+    setPdfError(null);
+    setPdfParsedFields({});
+
+    try {
+      // Convert file to base64 for API transmission
+      const reader = new FileReader();
+
+      reader.onload = async (e) => {
+        const base64Data = e.target?.result as string;
+
+        setPdfParseStatus('parsing');
+
+        try {
+          const apiUrl = import.meta.env.VITE_API_URL || '';
+          const response = await fetch(`${apiUrl}/api/property/parse-mls-pdf`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              pdfBase64: base64Data.split(',')[1], // Remove data:application/pdf;base64, prefix
+              filename: file.name,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `API Error: ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          if (data.fields && Object.keys(data.fields).length > 0) {
+            setPdfParsedFields(data.fields);
+            setPdfParseStatus('complete');
+            console.log('📄 PDF parsed successfully:', Object.keys(data.fields).length, 'fields');
+          } else {
+            throw new Error('No fields extracted from PDF');
+          }
+        } catch (error) {
+          console.error('PDF parse error:', error);
+          setPdfParseStatus('error');
+          setPdfError(error instanceof Error ? error.message : 'Failed to parse PDF');
+        }
+      };
+
+      reader.onerror = () => {
+        setPdfParseStatus('error');
+        setPdfError('Failed to read PDF file');
+      };
+
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('PDF upload error:', error);
+      setPdfParseStatus('error');
+      setPdfError(error instanceof Error ? error.message : 'Failed to upload PDF');
+    }
+  };
+
+  // Import parsed PDF data as a property
+  const handlePdfImport = async () => {
+    if (Object.keys(pdfParsedFields).length === 0) {
+      alert('No data to import. Please upload and parse a PDF first.');
+      return;
+    }
+
+    setStatus('scraping');
+    setProgress(50);
+
+    try {
+      const propertyId = generateId();
+
+      // Extract address from parsed fields
+      const fullAddress = pdfParsedFields['1_full_address']?.value ||
+                         pdfParsedFields['full_address']?.value ||
+                         pdfParsedFields['address']?.value || '';
+
+      // Parse address components
+      const addressParts = fullAddress.split(',').map((s: string) => s.trim());
+      const street = addressParts[0] || '';
+      const city = addressParts[1] || pdfParsedFields['city']?.value || '';
+      const stateZip = addressParts[2] || '';
+      const stateMatch = stateZip.match(/([A-Z]{2})/);
+      const zipMatch = stateZip.match(/(\d{5})/);
+
+      // Create property card
+      const propertyCard: PropertyCard = {
+        id: propertyId,
+        address: street || fullAddress,
+        city: city,
+        state: stateMatch?.[1] || pdfParsedFields['state']?.value || 'FL',
+        zip: zipMatch?.[1] || pdfParsedFields['zip_code']?.value || '',
+        price: parseFloat(String(pdfParsedFields['7_listing_price']?.value || pdfParsedFields['listing_price']?.value || '0').replace(/[^0-9.]/g, '')) || 0,
+        pricePerSqft: parseFloat(String(pdfParsedFields['8_price_per_sqft']?.value || '0').replace(/[^0-9.]/g, '')) || 0,
+        bedrooms: parseInt(pdfParsedFields['12_bedrooms']?.value || pdfParsedFields['bedrooms']?.value || '0') || 0,
+        bathrooms: parseFloat(pdfParsedFields['15_total_bathrooms']?.value || pdfParsedFields['bathrooms']?.value || '0') || 0,
+        sqft: parseInt(String(pdfParsedFields['16_living_sqft']?.value || pdfParsedFields['living_sqft']?.value || '0').replace(/[^0-9]/g, '')) || 0,
+        yearBuilt: parseInt(pdfParsedFields['20_year_built']?.value || pdfParsedFields['year_built']?.value || new Date().getFullYear().toString()) || new Date().getFullYear(),
+        smartScore: 85,
+        dataCompleteness: Math.round((Object.keys(pdfParsedFields).length / 168) * 100),
+        listingStatus: (pdfParsedFields['4_listing_status']?.value || 'Active') as 'Active' | 'Pending' | 'Sold',
+        daysOnMarket: parseInt(pdfParsedFields['days_on_market']?.value || '0') || 0,
+      };
+
+      setProgress(75);
+
+      // Create full property using normalizer
+      const fullProperty = normalizeToProperty(pdfParsedFields, propertyId, {}, []);
+
+      setProgress(90);
+
+      // Add to store
+      addProperty(propertyCard, fullProperty);
+      setLastAddedId(propertyId);
+      setStatus('complete');
+      setProgress(100);
+
+      console.log('✅ Property added from MLS PDF:', Object.keys(pdfParsedFields).length, 'fields');
+
+      // Reset PDF state
+      setPdfFile(null);
+      setPdfParsedFields({});
+      setPdfParseStatus('idle');
+
+    } catch (error) {
+      console.error('PDF import error:', error);
+      setStatus('error');
+      alert(`Failed to import PDF data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
   // Merge enriched API data with existing CSV data (CSV takes precedence)
   const mergePropertyData = (csvProperty: Property, apiFields: any, propertyId: string): Property => {
     // For each field, only fill if CSV value is null/empty
@@ -1106,7 +1254,18 @@ export default function AddProperty() {
           }`}
         >
           <Upload className="w-4 h-4" />
-          Upload CSV
+          CSV
+        </button>
+        <button
+          onClick={() => setInputMode('pdf')}
+          className={`flex-1 py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${
+            inputMode === 'pdf'
+              ? 'bg-quantum-cyan/20 text-quantum-cyan'
+              : 'text-gray-500 hover:text-white'
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          MLS PDF
         </button>
         <button
           onClick={() => setInputMode('text')}
@@ -1117,7 +1276,7 @@ export default function AddProperty() {
           }`}
         >
           <Sparkles className="w-4 h-4" />
-          Paste Description
+          Text
         </button>
       </div>
 
@@ -1242,6 +1401,120 @@ export default function AddProperty() {
                 </button>
               </div>
             )}
+          </div>
+        ) : inputMode === 'pdf' ? (
+          /* PDF MLS Upload Section */
+          <div className="space-y-4">
+            <div className="text-center py-8">
+              <FileText className="w-16 h-16 mx-auto mb-4 text-quantum-cyan" />
+              <h3 className="text-lg font-semibold mb-2">Upload MLS PDF Sheet</h3>
+              <p className="text-sm text-gray-400 mb-6">
+                Upload a Stellar MLS CustomerFull PDF to extract all 168 property fields automatically
+              </p>
+
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={handlePdfUpload}
+                className="hidden"
+                id="pdf-upload"
+              />
+              <label
+                htmlFor="pdf-upload"
+                className="btn-quantum inline-flex items-center gap-2 cursor-pointer"
+              >
+                <FileText className="w-5 h-5" />
+                Choose MLS PDF File
+              </label>
+            </div>
+
+            {/* PDF Upload Status */}
+            {pdfParseStatus !== 'idle' && (
+              <div className="border border-quantum-cyan/20 rounded-xl p-4 bg-quantum-cyan/5">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="font-semibold">{pdfFile?.name}</p>
+                    <p className="text-sm text-gray-400">
+                      {pdfParseStatus === 'uploading' && 'Uploading PDF...'}
+                      {pdfParseStatus === 'parsing' && 'Parsing with AI (Claude)...'}
+                      {pdfParseStatus === 'complete' && `${Object.keys(pdfParsedFields).length} fields extracted`}
+                      {pdfParseStatus === 'error' && 'Error parsing PDF'}
+                    </p>
+                  </div>
+                  {pdfParseStatus === 'complete' ? (
+                    <CheckCircle className="w-6 h-6 text-quantum-cyan" />
+                  ) : pdfParseStatus === 'error' ? (
+                    <AlertCircle className="w-6 h-6 text-red-400" />
+                  ) : (
+                    <Loader2 className="w-6 h-6 text-quantum-cyan animate-spin" />
+                  )}
+                </div>
+
+                {/* Error message */}
+                {pdfError && (
+                  <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                    <p className="text-sm text-red-400">{pdfError}</p>
+                  </div>
+                )}
+
+                {/* Parsed fields preview */}
+                {pdfParseStatus === 'complete' && Object.keys(pdfParsedFields).length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-400 mb-2">Preview (first 10 fields):</p>
+                    <div className="bg-black/30 rounded-lg p-3 text-xs font-mono overflow-x-auto max-h-48 overflow-y-auto">
+                      {Object.entries(pdfParsedFields).slice(0, 10).map(([key, field]: [string, any]) => (
+                        <div key={key} className="mb-1 flex justify-between">
+                          <span className="text-quantum-cyan">{key}:</span>
+                          <span className="text-white ml-2 truncate max-w-[200px]">{String(field?.value || field).slice(0, 50)}</span>
+                        </div>
+                      ))}
+                      {Object.keys(pdfParsedFields).length > 10 && (
+                        <div className="text-gray-500 mt-2">... and {Object.keys(pdfParsedFields).length - 10} more fields</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Import button */}
+                {pdfParseStatus === 'complete' && (
+                  <button
+                    onClick={handlePdfImport}
+                    disabled={status === 'scraping'}
+                    className="btn-quantum w-full"
+                  >
+                    {status === 'scraping' ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Importing...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-5 h-5" />
+                        Import {Object.keys(pdfParsedFields).length} Fields as Property
+                      </>
+                    )}
+                  </button>
+                )}
+
+                {/* Retry button on error */}
+                {pdfParseStatus === 'error' && (
+                  <div className="flex gap-2">
+                    <label
+                      htmlFor="pdf-upload"
+                      className="btn-glass flex-1 text-center cursor-pointer"
+                    >
+                      Try Another PDF
+                    </label>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Info about supported PDFs */}
+            <div className="text-xs text-gray-500 text-center space-y-1">
+              <p>Supported: Stellar MLS CustomerFull PDFs</p>
+              <p>Extracts: Address, Price, Beds/Baths, Sqft, HOA, Schools, Waterfront, and 160+ more fields</p>
+            </div>
           </div>
         ) : inputMode === 'manual' ? (
           <div className="space-y-4">
