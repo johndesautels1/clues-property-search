@@ -375,16 +375,16 @@ export default function AddProperty() {
         city,
         state: stateMatch?.[1] || manualForm.state,
         zip: zipMatch?.[1] || manualForm.zip,
-        price: fields['7_listing_price']?.value || parseInt(manualForm.price) || 0,
-        pricePerSqft: fields['8_price_per_sqft']?.value || (
+        price: fields['10_listing_price']?.value || parseInt(manualForm.price) || 0,
+        pricePerSqft: fields['11_price_per_sqft']?.value || (
           manualForm.sqft && manualForm.price
             ? Math.round(parseInt(manualForm.price) / parseInt(manualForm.sqft))
             : 0
         ),
-        bedrooms: fields['12_bedrooms']?.value || parseInt(manualForm.bedrooms) || 0,
-        bathrooms: fields['15_total_bathrooms']?.value || parseFloat(manualForm.bathrooms) || 0,
-        sqft: fields['16_living_sqft']?.value || parseInt(manualForm.sqft) || 0,
-        yearBuilt: fields['20_year_built']?.value || parseInt(manualForm.yearBuilt) || new Date().getFullYear(),
+        bedrooms: fields['17_bedrooms']?.value || parseInt(manualForm.bedrooms) || 0,
+        bathrooms: fields['20_total_bathrooms']?.value || parseFloat(manualForm.bathrooms) || 0,
+        sqft: fields['21_living_sqft']?.value || parseInt(manualForm.sqft) || 0,
+        yearBuilt: fields['25_year_built']?.value || parseInt(manualForm.yearBuilt) || new Date().getFullYear(),
         smartScore: data.completion_percentage || 75,
         dataCompleteness: data.completion_percentage || 0,
         listingStatus: fields['4_listing_status']?.value || manualForm.listingStatus as 'Active' | 'Pending' | 'Sold',
@@ -553,12 +553,12 @@ export default function AddProperty() {
         city,
         state: stateMatch?.[1] || 'FL',
         zip: zipMatch?.[1] || '',
-        price: parseNumber(getFieldValue(fields['7_listing_price'])),
-        pricePerSqft: parseNumber(getFieldValue(fields['8_price_per_sqft'])),
-        bedrooms: parseNumber(getFieldValue(fields['12_bedrooms'])),
-        bathrooms: parseNumber(getFieldValue(fields['15_total_bathrooms'])),
-        sqft: parseNumber(getFieldValue(fields['16_living_sqft'])),
-        yearBuilt: parseNumber(getFieldValue(fields['20_year_built'])) || new Date().getFullYear(),
+        price: parseNumber(getFieldValue(fields['10_listing_price'])),
+        pricePerSqft: parseNumber(getFieldValue(fields['11_price_per_sqft'])),
+        bedrooms: parseNumber(getFieldValue(fields['17_bedrooms'])),
+        bathrooms: parseNumber(getFieldValue(fields['20_total_bathrooms'])),
+        sqft: parseNumber(getFieldValue(fields['21_living_sqft'])),
+        yearBuilt: parseNumber(getFieldValue(fields['25_year_built'])) || new Date().getFullYear(),
         smartScore: data.completion_percentage || 75,
         dataCompleteness: data.completion_percentage || 0,
         listingStatus: (getFieldValue(fields['4_listing_status']) || 'Active') as 'Active' | 'Pending' | 'Sold',
@@ -1142,27 +1142,28 @@ export default function AddProperty() {
       const zip = zipMatch?.[1] || getFieldValue(pdfParsedFields, 'zip_code', 'zip', 'postal_code') || '';
 
       // Get price with fallbacks (Stellar MLS: "List Price" -> "7_listing_price")
+      // UPDATED: 2025-11-30 - Corrected field numbers to match fields-schema.ts
       const priceRaw = getFieldValue(pdfParsedFields,
-        '7_listing_price', 'listing_price', 'list_price', 'price', 'current_price'
+        '10_listing_price', 'listing_price', 'list_price', 'price', 'current_price'
       );
       const price = parseFloat(String(priceRaw || '0').replace(/[^0-9.]/g, '')) || 0;
 
-      // Get price per sqft (Stellar MLS: "LP/SqFt" -> "8_price_per_sqft")
+      // Get price per sqft (Stellar MLS: "LP/SqFt" -> "11_price_per_sqft")
       const pricePerSqftRaw = getFieldValue(pdfParsedFields,
-        '8_price_per_sqft', 'price_per_sqft', 'lp/sqft', 'lpsqft'
+        '11_price_per_sqft', 'price_per_sqft', 'lp/sqft', 'lpsqft'
       );
       const pricePerSqft = parseFloat(String(pricePerSqftRaw || '0').replace(/[^0-9.]/g, '')) || 0;
 
-      // Get bedrooms (Stellar MLS: "Beds" -> "12_bedrooms")
+      // Get bedrooms (Stellar MLS: "Beds" -> "17_bedrooms")
       const bedsRaw = getFieldValue(pdfParsedFields,
-        '12_bedrooms', 'bedrooms', 'beds', 'br'
+        '17_bedrooms', 'bedrooms', 'beds', 'br'
       );
       const bedrooms = parseInt(String(bedsRaw || '0')) || 0;
 
       // Get bathrooms (Stellar MLS: "Baths: 2/0" format - need to parse)
       // The "2/0" means 2 full baths, 0 half baths
       const bathsRaw = getFieldValue(pdfParsedFields,
-        '15_total_bathrooms', 'total_bathrooms', 'baths', 'bathrooms'
+        '20_total_bathrooms', 'total_bathrooms', 'baths', 'bathrooms'
       );
       let bathrooms = 0;
       if (typeof bathsRaw === 'string' && bathsRaw.includes('/')) {
@@ -1173,15 +1174,15 @@ export default function AddProperty() {
         bathrooms = parseFloat(String(bathsRaw || '0')) || 0;
       }
 
-      // Get square footage (Stellar MLS: "Heated Area" -> "16_living_sqft")
+      // Get square footage (Stellar MLS: "Heated Area" -> "21_living_sqft")
       const sqftRaw = getFieldValue(pdfParsedFields,
-        '16_living_sqft', 'living_sqft', 'heated_area', 'living_area', 'sqft', 'square_feet'
+        '21_living_sqft', 'living_sqft', 'heated_area', 'living_area', 'sqft', 'square_feet'
       );
       const sqft = parseInt(String(sqftRaw || '0').replace(/[^0-9]/g, '')) || 0;
 
-      // Get year built (Stellar MLS: "Year Built" -> "20_year_built")
+      // Get year built (Stellar MLS: "Year Built" -> "25_year_built")
       const yearRaw = getFieldValue(pdfParsedFields,
-        '20_year_built', 'year_built', 'built', 'year'
+        '25_year_built', 'year_built', 'built', 'year'
       );
       const yearBuilt = parseInt(String(yearRaw || new Date().getFullYear())) || new Date().getFullYear();
 
@@ -1191,9 +1192,9 @@ export default function AddProperty() {
       );
       const listingStatus = (statusRaw || 'Active') as 'Active' | 'Pending' | 'Sold';
 
-      // Get days on market (Stellar MLS: "ADOM" or "CDOM")
+      // Get days on market (Stellar MLS: "ADOM" or "CDOM" -> "95_days_on_market_avg")
       const domRaw = getFieldValue(pdfParsedFields,
-        '83_days_on_market_avg', 'days_on_market', 'adom', 'cdom', 'dom'
+        '95_days_on_market_avg', 'days_on_market', 'adom', 'cdom', 'dom'
       );
       const daysOnMarket = parseInt(String(domRaw || '0')) || 0;
 
