@@ -674,10 +674,11 @@ async function getSchoolDistances(lat: number, lon: number): Promise<Record<stri
   const origin = `${lat},${lon}`;
   const fields: Record<string, any> = {};
 
+  // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Assigned Schools (63-73)
   const schoolTypes = [
-    { type: 'primary_school', field: '58_elementary_distance_miles', name: 'Elementary School' },
-    { type: 'secondary_school', field: '61_middle_distance_miles', name: 'Middle School' },
-    { type: 'school', keyword: 'high school', field: '64_high_distance_miles', name: 'High School' },
+    { type: 'primary_school', field: '67_elementary_distance_mi', name: 'Elementary School' },
+    { type: 'secondary_school', field: '70_middle_distance_mi', name: 'Middle School' },
+    { type: 'school', keyword: 'high school', field: '73_high_distance_mi', name: 'High School' },
   ];
 
   for (const school of schoolTypes) {
@@ -740,10 +741,11 @@ async function getCrimeData(lat: number, lon: number, address: string): Promise<
         const html = await res.text();
 
         // Extract overall crime grade
+        // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Safety & Crime (88-90)
         const gradeMatch = html.match(/Overall Crime Grade[^A-F]*([A-F][+-]?)/i) ||
                           html.match(/crime grade[^A-F]*([A-F][+-]?)/i);
         if (gradeMatch) {
-          fields['80_neighborhood_safety_rating'] = {
+          fields['90_neighborhood_safety_rating'] = {
             value: `Grade ${gradeMatch[1]}`,
             source: 'CrimeGrade.org',
             confidence: 'Medium'
@@ -753,7 +755,7 @@ async function getCrimeData(lat: number, lon: number, address: string): Promise<
         // Extract violent crime grade
         const violentMatch = html.match(/Violent Crime[^A-F]*([A-F][+-]?)/i);
         if (violentMatch) {
-          fields['78_crime_index_violent'] = {
+          fields['88_violent_crime_index'] = {
             value: `Grade ${violentMatch[1]}`,
             source: 'CrimeGrade.org',
             confidence: 'Medium'
@@ -763,7 +765,7 @@ async function getCrimeData(lat: number, lon: number, address: string): Promise<
         // Extract property crime grade
         const propertyMatch = html.match(/Property Crime[^A-F]*([A-F][+-]?)/i);
         if (propertyMatch) {
-          fields['79_crime_index_property'] = {
+          fields['89_property_crime_index'] = {
             value: `Grade ${propertyMatch[1]}`,
             source: 'CrimeGrade.org',
             confidence: 'Medium'
@@ -799,7 +801,7 @@ async function getCrimeData(lat: number, lon: number, address: string): Promise<
               else if (score >= 60) rating = 'Good';
               else if (score >= 40) rating = 'Fair';
 
-              fields['80_neighborhood_safety_rating'] = {
+              fields['90_neighborhood_safety_rating'] = {
                 value: `${rating} (Score: ${score}/100)`,
                 source: 'AreaVibes',
                 confidence: 'Medium'
@@ -830,9 +832,10 @@ async function getTransitAccess(lat: number, lon: number): Promise<Record<string
     const searchRes = await fetch(searchUrl);
     const searchData = await searchRes.json();
 
+    // Field 81 = public_transit_access per fields-schema.ts
     if (searchData.results && searchData.results.length > 0) {
       const stations = searchData.results.slice(0, 3).map((s: any) => s.name);
-      fields['72_public_transit_access'] = {
+      fields['81_public_transit_access'] = {
         value: `Yes - ${searchData.results.length} stations within 1 mile: ${stations.join(', ')}`,
         source: 'Google Places',
         confidence: 'High'
@@ -844,13 +847,13 @@ async function getTransitAccess(lat: number, lon: number): Promise<Record<string
       const busData = await busRes.json();
 
       if (busData.results && busData.results.length > 0) {
-        fields['72_public_transit_access'] = {
+        fields['81_public_transit_access'] = {
           value: `Limited - ${busData.results.length} bus stops within 0.5 miles`,
           source: 'Google Places',
           confidence: 'Medium'
         };
       } else {
-        fields['72_public_transit_access'] = {
+        fields['81_public_transit_access'] = {
           value: 'No public transit within 1 mile',
           source: 'Google Places',
           confidence: 'High'
@@ -887,9 +890,10 @@ async function getCommuteTime(lat: number, lon: number, county: string): Promise
     const response = await fetch(url);
     const data = await response.json();
 
+    // Field 82 = commute_to_city_center per fields-schema.ts
     if (data.rows?.[0]?.elements?.[0]?.duration_in_traffic) {
       return {
-        '71_commute_time_city_center': {
+        '82_commute_to_city_center': {
           value: data.rows[0].elements[0].duration_in_traffic.text,
           source: 'Google Distance Matrix',
           confidence: 'High',
@@ -898,7 +902,7 @@ async function getCommuteTime(lat: number, lon: number, county: string): Promise
       };
     } else if (data.rows?.[0]?.elements?.[0]?.duration) {
       return {
-        '71_commute_time_city_center': {
+        '82_commute_to_city_center': {
           value: data.rows[0].elements[0].duration.text,
           source: 'Google Distance Matrix',
           confidence: 'High',
@@ -918,7 +922,8 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   if (!geo) return {};
 
   const fields: Record<string, any> = {};
-  fields['28_county'] = { value: geo.county, source: 'Google Maps', confidence: 'High' };
+  // Field 7 = county per fields-schema.ts
+  fields['7_county'] = { value: geo.county, source: 'Google Maps', confidence: 'High' };
   fields['coordinates'] = { value: { lat: geo.lat, lon: geo.lon }, source: 'Google Maps', confidence: 'High' };
 
   // Call all APIs in parallel

@@ -23,23 +23,24 @@ async function getWalkScore(lat: number, lon: number, address: string): Promise<
 
     if (data.status !== 1) return {};
 
+    // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Location Scores (74-82)
     return {
-      '65_walk_score': {
+      '74_walk_score': {
         value: `${data.walkscore} - ${data.description}`,
         source: 'WalkScore',
         confidence: 'High'
       },
-      '66_transit_score': {
+      '75_transit_score': {
         value: data.transit?.score ? `${data.transit.score} - ${data.transit.description}` : null,
         source: 'WalkScore',
         confidence: 'High'
       },
-      '67_bike_score': {
+      '76_bike_score': {
         value: data.bike?.score ? `${data.bike.score} - ${data.bike.description}` : null,
         source: 'WalkScore',
         confidence: 'High'
       },
-      '70_walkability_description': {
+      '80_walkability_description': {
         value: data.description,
         source: 'WalkScore',
         confidence: 'High'
@@ -65,13 +66,14 @@ async function getFloodZone(lat: number, lon: number): Promise<Record<string, an
       const floodZone = zone.FLD_ZONE || 'Unknown';
       const isHighRisk = ['A', 'AE', 'AH', 'AO', 'V', 'VE'].some(z => floodZone.startsWith(z));
 
+      // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Environment & Risk (117-130)
       return {
-        '100_flood_zone': {
+        '119_flood_zone': {
           value: `FEMA Zone ${floodZone}`,
           source: 'FEMA NFHL',
           confidence: 'High'
         },
-        '101_flood_risk_level': {
+        '120_flood_risk_level': {
           value: isHighRisk ? 'High Risk (Special Flood Hazard Area)' : 'Minimal Risk',
           source: 'FEMA NFHL',
           confidence: 'High'
@@ -80,12 +82,12 @@ async function getFloodZone(lat: number, lon: number): Promise<Record<string, an
     }
 
     return {
-      '100_flood_zone': {
+      '119_flood_zone': {
         value: 'Zone X (Minimal Risk)',
         source: 'FEMA NFHL',
         confidence: 'Medium'
       },
-      '101_flood_risk_level': {
+      '120_flood_risk_level': {
         value: 'Minimal',
         source: 'FEMA NFHL',
         confidence: 'Medium'
@@ -105,12 +107,12 @@ async function getDistances(lat: number, lon: number): Promise<Record<string, an
   const origin = `${lat},${lon}`;
   const fields: Record<string, any> = {};
 
-  // Define places to search for
+  // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Distances & Amenities (83-87)
   const placeTypes = [
-    { type: 'grocery_or_supermarket', field: '73_distance_grocery_miles', name: 'Grocery' },
-    { type: 'hospital', field: '74_distance_hospital_miles', name: 'Hospital' },
-    { type: 'airport', field: '75_distance_airport_miles', name: 'Airport' },
-    { type: 'park', field: '76_distance_park_miles', name: 'Park' },
+    { type: 'grocery_or_supermarket', field: '83_distance_grocery_mi', name: 'Grocery' },
+    { type: 'hospital', field: '84_distance_hospital_mi', name: 'Hospital' },
+    { type: 'airport', field: '85_distance_airport_mi', name: 'Airport' },
+    { type: 'park', field: '86_distance_park_mi', name: 'Park' },
   ];
 
   for (const place of placeTypes) {
@@ -196,10 +198,11 @@ async function getAirQuality(lat: number, lon: number): Promise<Record<string, a
     const response = await fetch(url);
     const data = await response.json();
 
+    // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Environment & Risk (117-130)
     if (data && data.length > 0) {
       const aqi = data[0];
       return {
-        '99_air_quality_index_current': {
+        '117_air_quality_index': {
           value: `${aqi.AQI} - ${aqi.Category.Name}`,
           source: 'AirNow',
           confidence: 'High'
@@ -244,10 +247,11 @@ async function getCommuteTime(lat: number, lon: number, city: string): Promise<R
     const response = await fetch(url);
     const data = await response.json();
 
+    // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Location Scores (74-82)
     if (data.rows?.[0]?.elements?.[0]?.duration_in_traffic) {
       const duration = data.rows[0].elements[0].duration_in_traffic.text;
       return {
-        '71_commute_time_city_center': {
+        '82_commute_to_city_center': {
           value: duration,
           source: 'Google Maps',
           confidence: 'High'
@@ -300,7 +304,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         longitude = geo.lon;
         county = geo.county;
 
-        result.fields['28_county'] = {
+        // Field 7 = county per fields-schema.ts
+        result.fields['7_county'] = {
           value: county,
           source: 'Google Maps',
           confidence: 'High'

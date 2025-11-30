@@ -78,19 +78,19 @@ export async function searchStellarMLS(address: string): Promise<StellarMLSResul
     // TODO: Implement actual Stellar MLS API call when eKey is obtained
     // The implementation will depend on whether using RETS or Web API
     //
-    // Example fields to populate:
+    // Example fields to populate (aligned with fields-schema.ts SOURCE OF TRUTH):
     // - 2_mls_primary (MLS number)
     // - 3_mls_secondary (Secondary MLS number if applicable)
     // - 4_listing_status (Active, Pending, Sold, etc.)
     // - 5_listing_date (Date listed)
-    // - 7_listing_price (Current list price)
-    // - 8_price_per_sqft (Price per square foot)
-    // - 12_bedrooms
-    // - 13_full_bathrooms
-    // - 14_half_bathrooms
-    // - 16_living_sqft
-    // - 20_year_built
-    // - 21_property_type
+    // - 10_listing_price (Current list price)
+    // - 11_price_per_sqft (Price per square foot)
+    // - 17_bedrooms
+    // - 18_full_bathrooms
+    // - 19_half_bathrooms
+    // - 21_living_sqft
+    // - 25_year_built
+    // - 26_property_type
     // - And many more...
     //
     // MLS data should be mapped using the field-normalizer.ts FIELD_TO_PROPERTY_MAP
@@ -149,48 +149,110 @@ export async function getMLSListingByNumber(mlsNumber: string): Promise<StellarM
   }
 }
 
+/**
+ * Stellar MLS RETS/Web API field mapping to CLUES 168-field schema
+ * ALIGNED WITH fields-schema.ts (SOURCE OF TRUTH)
+ * Updated: 2025-11-30
+ */
 export const STELLAR_MLS_FIELD_MAPPING: Record<string, string> = {
+  // Address & Identity (Fields 1-9)
   'ListingId': '2_mls_primary',
-  'ListPrice': '7_listing_price',
   'StandardStatus': '4_listing_status',
   'ListingContractDate': '5_listing_date',
-  'BedroomsTotal': '12_bedrooms',
-  'BathroomsFull': '13_full_bathrooms',
-  'BathroomsHalf': '14_half_bathrooms',
-  'BathroomsTotalInteger': '15_total_bathrooms',
-  'LivingArea': '16_living_sqft',
-  'BuildingAreaTotal': '17_total_sqft_under_roof',
-  'LotSizeSquareFeet': '18_lot_size_sqft',
-  'LotSizeAcres': '19_lot_size_acres',
-  'YearBuilt': '20_year_built',
-  'PropertyType': '21_property_type',
-  'StoriesTotal': '22_stories',
-  'GarageSpaces': '23_garage_spaces',
-  'ParkingTotal': '24_parking_total',
-  'AssociationYN': '25_hoa_yn',
-  'AssociationFee': '26_hoa_fee_annual',
-  'OwnershipType': '27_ownership_type',
-  'CountyOrParish': '28_county',
-  'TaxAnnualAmount': '29_annual_taxes',
-  'TaxYear': '30_tax_year',
-  'TaxAssessedValue': '31_assessed_value',
-  'ClosePrice': '11_last_sale_price',
-  'CloseDate': '10_last_sale_date',
-  'ParcelNumber': '6_parcel_id',
-  'Roof': '36_roof_type',
-  'ExteriorFeatures': '38_exterior_material',
-  'FoundationDetails': '39_foundation',
-  'Heating': '40_hvac_type',
-  'Flooring': '42_flooring_type',
-  'KitchenFeatures': '43_kitchen_features',
-  'Appliances': '44_appliances_included',
-  'FireplacesTotal': '45_fireplace_yn',
-  'PoolPrivateYN': '47_pool_yn',
-  'PoolFeatures': '48_pool_type',
-  'PatioAndPorchFeatures': '49_deck_patio',
-  'Fencing': '50_fence',
-  'ElementarySchool': '56_assigned_elementary',
-  'MiddleOrJuniorSchool': '59_assigned_middle',
-  'HighSchool': '62_assigned_high',
-  'PublicRemarks': '110_notes_confidence_summary',
+  'PostalCode': '8_zip_code',
+  'ParcelNumber': '9_parcel_id',
+  'SubdivisionName': '6_neighborhood',
+  'CountyOrParish': '7_county',
+
+  // Pricing & Value (Fields 10-16)
+  'ListPrice': '10_listing_price',
+  'PricePerSquareFoot': '11_price_per_sqft',
+  'ClosePrice': '14_last_sale_price',
+  'CloseDate': '13_last_sale_date',
+  'TaxAssessedValue': '15_assessed_value',
+
+  // Property Basics (Fields 17-29)
+  'BedroomsTotal': '17_bedrooms',
+  'BathroomsFull': '18_full_bathrooms',
+  'BathroomsHalf': '19_half_bathrooms',
+  'BathroomsTotalInteger': '20_total_bathrooms',
+  'LivingArea': '21_living_sqft',
+  'BuildingAreaTotal': '22_total_sqft_under_roof',
+  'LotSizeSquareFeet': '23_lot_size_sqft',
+  'LotSizeAcres': '24_lot_size_acres',
+  'YearBuilt': '25_year_built',
+  'PropertyType': '26_property_type',
+  'StoriesTotal': '27_stories',
+  'GarageSpaces': '28_garage_spaces',
+  'ParkingTotal': '29_parking_total',
+
+  // HOA & Taxes (Fields 30-38)
+  'AssociationYN': '30_hoa_yn',
+  'AssociationFee': '31_hoa_fee_annual',
+  'AssociationName': '32_hoa_name',
+  'AssociationAmenities': '33_hoa_includes',
+  'OwnershipType': '34_ownership_type',
+  'TaxAnnualAmount': '35_annual_taxes',
+  'TaxYear': '36_tax_year',
+
+  // Structure & Systems (Fields 39-48)
+  'Roof': '39_roof_type',
+  'ExteriorFeatures': '41_exterior_material',
+  'FoundationDetails': '42_foundation',
+  'WaterHeaterFeatures': '43_water_heater_type',
+  'GarageYN': '44_garage_type',
+  'Heating': '45_hvac_type',
+  'LaundryFeatures': '47_laundry_type',
+
+  // Interior Features (Fields 49-53)
+  'Flooring': '49_flooring_type',
+  'KitchenFeatures': '50_kitchen_features',
+  'Appliances': '51_appliances_included',
+  'FireplaceYN': '52_fireplace_yn',
+  'FireplacesTotal': '53_fireplace_count',
+
+  // Exterior Features (Fields 54-58)
+  'PoolPrivateYN': '54_pool_yn',
+  'PoolFeatures': '55_pool_type',
+  'PatioAndPorchFeatures': '56_deck_patio',
+  'Fencing': '57_fence',
+
+  // Assigned Schools (Fields 63-73)
+  'ElementarySchool': '65_elementary_school',
+  'MiddleOrJuniorSchool': '68_middle_school',
+  'HighSchool': '71_high_school',
+  'SchoolDistrict': '63_school_district',
+
+  // Stellar MLS Specific Fields (139-168)
+  'CarportYN': '139_carport_yn',
+  'CarportSpaces': '140_carport_spaces',
+  'AttachedGarageYN': '141_garage_attached_yn',
+  'ParkingFeatures': '142_parking_features',
+  'FloorNumber': '144_floor_number',
+  'StoriesTotal': '145_building_total_floors',
+  'BuildingName': '146_building_name_number',
+  'ElevatorYN': '147_building_elevator_yn',
+  'LegalSubdivisionName': '149_subdivision_name',
+  'LegalDescription': '150_legal_description',
+  'HomesteadYN': '151_homestead_yn',
+  'CDDYN': '152_cdd_yn',
+  'CDDAnnualAmount': '153_annual_cdd_fee',
+  'DirectionFaces': '154_front_exposure',
+  'WaterfrontYN': '155_water_frontage_yn',
+  'WaterfrontFeet': '156_waterfront_feet',
+  'WaterAccessYN': '157_water_access_yn',
+  'WaterViewYN': '158_water_view_yn',
+  'WaterBodyName': '159_water_body_name',
+  'LeasableYN': '160_can_be_leased_yn',
+  'LeaseTermMinimum': '161_minimum_lease_period',
+  'LeaseRestrictionsYN': '162_lease_restrictions_yn',
+  'PetSizeDescription': '163_pet_size_limit',
+  'MaximumPetWeight': '164_max_pet_weight',
+  'AssociationApprovalRequired': '165_association_approval_yn',
+  'CommunityFeatures': '166_community_features',
+  'InteriorFeatures': '167_interior_features',
+  'ExteriorFeatures': '168_exterior_features',
+
+  // Notes
+  'PublicRemarks': 'notes',
 };

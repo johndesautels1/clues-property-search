@@ -76,10 +76,11 @@ export async function callGoogleGeocode(address: string): Promise<ApiResult & { 
       }
     }
 
-    setField(fields, '28_county', county, 'Google Maps');
-    setField(fields, '27_neighborhood', neighborhood, 'Google Maps');
-    // Note: city/state/zip are parsed from 1_full_address when needed (no separate fields in 110-field schema)
+    // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH)
+    setField(fields, '7_county', county, 'Google Maps');
+    setField(fields, '6_neighborhood', neighborhood, 'Google Maps');
     setField(fields, '1_full_address', result.formatted_address, 'Google Maps');
+    setField(fields, '8_zip_code', zip, 'Google Maps');
 
     if (geometry?.location) {
       setField(fields, 'coordinates', { lat: geometry.location.lat, lon: geometry.location.lng }, 'Google Maps');
@@ -113,12 +114,13 @@ export async function callGooglePlaces(lat: number, lon: number): Promise<ApiRes
 
   const origin = `${lat},${lon}`;
 
+  // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Distances & Amenities (83-87)
   const placeTypes = [
-    { type: 'supermarket', field: '73_distance_grocery_miles', name: 'Grocery' },
-    { type: 'hospital', field: '72_distance_hospital_miles', name: 'Hospital' },
-    { type: 'airport', field: '71_distance_airport_miles', name: 'Airport' },
-    { type: 'park', field: '69_distance_park_miles', name: 'Park' },
-    { type: 'restaurant', field: '68_distance_restaurants_miles', name: 'Restaurant' },
+    { type: 'supermarket', field: '83_distance_grocery_mi', name: 'Grocery' },
+    { type: 'hospital', field: '84_distance_hospital_mi', name: 'Hospital' },
+    { type: 'airport', field: '85_distance_airport_mi', name: 'Airport' },
+    { type: 'park', field: '86_distance_park_mi', name: 'Park' },
+    { type: 'beach', field: '87_distance_beach_mi', name: 'Beach' },
   ];
 
   try {
@@ -175,14 +177,15 @@ export async function callWalkScore(lat: number, lon: number, address: string): 
       return { success: false, source: 'WalkScore', fields, error: `WalkScore status: ${data.status}` };
     }
 
-    setField(fields, '65_walk_score', data.walkscore, 'WalkScore');
-    setField(fields, '70_walkability_description', data.description, 'WalkScore');
+    // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Location Scores (74-82)
+    setField(fields, '74_walk_score', data.walkscore, 'WalkScore');
+    setField(fields, '80_walkability_description', data.description, 'WalkScore');
 
     if (data.transit?.score) {
-      setField(fields, '66_transit_score', data.transit.score, 'WalkScore');
+      setField(fields, '75_transit_score', data.transit.score, 'WalkScore');
     }
     if (data.bike?.score) {
-      setField(fields, '67_bike_score', data.bike.score, 'WalkScore');
+      setField(fields, '76_bike_score', data.bike.score, 'WalkScore');
     }
 
     return { success: true, source: 'WalkScore', fields };
@@ -208,16 +211,14 @@ export async function callFemaFlood(lat: number, lon: number): Promise<ApiResult
       const floodZone = zone.FLD_ZONE || 'Unknown';
       const isHighRisk = ['A', 'AE', 'AH', 'AO', 'V', 'VE'].some(z => floodZone.startsWith(z));
 
-      setField(fields, '100_flood_zone', `FEMA Zone ${floodZone}`, 'FEMA NFHL');
-      setField(fields, '101_flood_risk_level', isHighRisk ? 'High Risk (Special Flood Hazard Area)' : 'Minimal Risk', 'FEMA NFHL');
+      // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Environment & Risk (117-130)
+      setField(fields, '119_flood_zone', `FEMA Zone ${floodZone}`, 'FEMA NFHL');
+      setField(fields, '120_flood_risk_level', isHighRisk ? 'High Risk (Special Flood Hazard Area)' : 'Minimal Risk', 'FEMA NFHL');
 
-      // Estimate flood insurance requirement
-      if (isHighRisk) {
-        setField(fields, '102_flood_insurance_required', true, 'FEMA NFHL');
-      }
+      // Note: No separate flood_insurance_required field in 168-field schema
     } else {
-      setField(fields, '100_flood_zone', 'Zone X (Minimal Risk)', 'FEMA NFHL', 'Medium');
-      setField(fields, '101_flood_risk_level', 'Minimal', 'FEMA NFHL', 'Medium');
+      setField(fields, '119_flood_zone', 'Zone X (Minimal Risk)', 'FEMA NFHL', 'Medium');
+      setField(fields, '120_flood_risk_level', 'Minimal', 'FEMA NFHL', 'Medium');
     }
 
     return { success: true, source: 'FEMA NFHL', fields };
@@ -246,8 +247,9 @@ export async function callAirNow(lat: number, lon: number): Promise<ApiResult> {
     if (data?.[0]) {
       const aqi = data[0].AQI;
       const category = data[0].Category?.Name || '';
-      setField(fields, '99_air_quality_index_current', aqi, 'AirNow');
-      setField(fields, '98_air_quality_category', category, 'AirNow');
+      // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Environment & Risk (117-130)
+      setField(fields, '117_air_quality_index', aqi, 'AirNow');
+      setField(fields, '118_air_quality_grade', category, 'AirNow');
     }
 
     return { success: Object.keys(fields).length > 0, source: 'AirNow', fields };
@@ -286,29 +288,30 @@ export async function callSchoolDigger(lat: number, lon: number): Promise<ApiRes
     const middle = schools.find((s: any) => s.schoolLevel === 'Middle' || s.lowGrade === '6');
     const high = schools.find((s: any) => s.schoolLevel === 'High' || s.lowGrade === '9');
 
+    // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Assigned Schools (63-73)
     if (elementary) {
-      setField(fields, '56_assigned_elementary', elementary.schoolName, 'SchoolDigger');
-      setField(fields, '57_elementary_rating', elementary.rankHistory?.[0]?.rank || elementary.schoolDiggerRank, 'SchoolDigger');
-      setField(fields, '58_elementary_distance_miles', elementary.distance, 'SchoolDigger');
+      setField(fields, '65_elementary_school', elementary.schoolName, 'SchoolDigger');
+      setField(fields, '66_elementary_rating', elementary.rankHistory?.[0]?.rank || elementary.schoolDiggerRank, 'SchoolDigger');
+      setField(fields, '67_elementary_distance_mi', elementary.distance, 'SchoolDigger');
     }
 
     if (middle) {
-      setField(fields, '59_assigned_middle', middle.schoolName, 'SchoolDigger');
-      setField(fields, '60_middle_rating', middle.rankHistory?.[0]?.rank || middle.schoolDiggerRank, 'SchoolDigger');
-      setField(fields, '61_middle_distance_miles', middle.distance, 'SchoolDigger');
+      setField(fields, '68_middle_school', middle.schoolName, 'SchoolDigger');
+      setField(fields, '69_middle_rating', middle.rankHistory?.[0]?.rank || middle.schoolDiggerRank, 'SchoolDigger');
+      setField(fields, '70_middle_distance_mi', middle.distance, 'SchoolDigger');
     }
 
     if (high) {
-      setField(fields, '62_assigned_high', high.schoolName, 'SchoolDigger');
-      setField(fields, '63_high_rating', high.rankHistory?.[0]?.rank || high.schoolDiggerRank, 'SchoolDigger');
-      setField(fields, '64_high_distance_miles', high.distance, 'SchoolDigger');
+      setField(fields, '71_high_school', high.schoolName, 'SchoolDigger');
+      setField(fields, '72_high_rating', high.rankHistory?.[0]?.rank || high.schoolDiggerRank, 'SchoolDigger');
+      setField(fields, '73_high_distance_mi', high.distance, 'SchoolDigger');
     }
 
-    // Calculate average school rating
-    const ratings = [elementary?.schoolDiggerRank, middle?.schoolDiggerRank, high?.schoolDiggerRank].filter(Boolean);
-    if (ratings.length > 0) {
-      const avgRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
-      setField(fields, '55_school_rating_avg', Math.round(avgRating * 10) / 10, 'SchoolDigger');
+    // Note: No school_rating_avg field in 168-field schema
+    // School district is field 63
+    if (elementary?.schoolDistrict || middle?.schoolDistrict || high?.schoolDistrict) {
+      const district = elementary?.schoolDistrict || middle?.schoolDistrict || high?.schoolDistrict;
+      setField(fields, '63_school_district', district, 'SchoolDigger');
     }
 
     return { success: Object.keys(fields).length > 0, source: 'SchoolDigger', fields };
@@ -341,16 +344,11 @@ export async function callAirDNA(lat: number, lon: number, address: string): Pro
     const data = await response.json();
     const market = data.market_data || data;
 
-    // STR market data
-    setField(fields, '76_str_avg_daily_rate', market.adr, 'AirDNA');
-    setField(fields, '77_str_occupancy_rate', market.occupancy, 'AirDNA');
-    setField(fields, '78_str_annual_revenue_estimate', market.revenue, 'AirDNA');
-    setField(fields, '79_str_active_listings_nearby', market.total_active_listings, 'AirDNA');
-
-    // Property-specific estimate if available
-    if (market.property_estimate) {
-      setField(fields, '80_str_revenue_potential', market.property_estimate.revenue, 'AirDNA');
-    }
+    // STR market data - Note: These fields don't exist in the 168-field schema
+    // Mapping to closest market/investment fields (91-103)
+    setField(fields, '98_rental_estimate_monthly', market.adr ? Math.round(market.adr * 30) : null, 'AirDNA');
+    setField(fields, '99_rental_yield_est', market.occupancy, 'AirDNA');
+    // Note: STR-specific fields not in 168-field schema - storing as generic rental data
 
     return { success: Object.keys(fields).length > 0, source: 'AirDNA', fields };
 
@@ -389,24 +387,21 @@ export async function callHowLoud(lat: number, lon: number): Promise<ApiResult> 
     // v2 API returns result as an array
     const result = Array.isArray(data.result) ? data.result[0] : (data.result || data);
 
+    // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH)
+    // Field 78 = noise_level, Field 129 = noise_level_db_est
     if (result.score !== undefined) {
-      setField(fields, '96_noise_score', result.score, 'HowLoud');
-      setField(fields, '97_noise_category', result.scoretext || (result.score > 70 ? 'Quiet' : result.score > 50 ? 'Moderate' : 'Noisy'), 'HowLoud');
+      setField(fields, '129_noise_level_db_est', result.score, 'HowLoud');
+      setField(fields, '78_noise_level', result.scoretext || (result.score > 70 ? 'Quiet' : result.score > 50 ? 'Moderate' : 'Noisy'), 'HowLoud');
     }
 
-    // Traffic noise
+    // Traffic noise → Field 79 traffic_level
     if (result.traffic !== undefined) {
-      setField(fields, '94_traffic_noise', result.traffic, 'HowLoud');
-    }
-
-    // Airport noise
-    if (result.airports !== undefined) {
-      setField(fields, '95_airport_noise', result.airports, 'HowLoud');
+      setField(fields, '79_traffic_level', result.traffic > 70 ? 'Low' : result.traffic > 50 ? 'Moderate' : 'High', 'HowLoud');
     }
 
     // If still no fields, try alternate field names
     if (Object.keys(fields).length === 0 && data.soundscore !== undefined) {
-      setField(fields, '96_noise_score', data.soundscore, 'HowLoud');
+      setField(fields, '129_noise_level_db_est', data.soundscore, 'HowLoud');
     }
 
     return { success: Object.keys(fields).length > 0, source: 'HowLoud', fields, error: Object.keys(fields).length === 0 ? `No score in response: ${JSON.stringify(data).slice(0, 200)}` : undefined };
@@ -449,17 +444,17 @@ export async function callBroadbandNow(lat: number, lon: number, address: string
 
     if (carriers.length > 0) {
       // Find best coverage
-      const bestCarrier = carriers.reduce((best, c) => 
+      const bestCarrier = carriers.reduce((best, c) =>
         (c.download_speed || 0) > (best.download_speed || 0) ? c : best
       , carriers[0]);
 
-      setField(fields, '103_mobile_broadband_best_carrier', bestCarrier.name, 'FCC VizMo');
-      setField(fields, '104_mobile_broadband_download_mbps', bestCarrier.download_speed, 'FCC VizMo');
-      setField(fields, '105_mobile_carriers_available', carriers.length, 'FCC VizMo');
+      // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Utilities & Connectivity (104-116)
+      setField(fields, '115_cell_coverage_quality', `${bestCarrier.name} - ${bestCarrier.download_speed} Mbps`, 'FCC VizMo');
+      setField(fields, '112_max_internet_speed', `${bestCarrier.download_speed} Mbps`, 'FCC VizMo');
 
       // Check for LTE/5G coverage
       const has4G = carriers.some(c => c.lte_coverage);
-      setField(fields, '106_4g_lte_available', has4G, 'FCC VizMo');
+      setField(fields, '113_fiber_available', has4G ? 'LTE Available' : 'No LTE', 'FCC VizMo');
     }
 
     return { success: Object.keys(fields).length > 0, source: 'FCC VizMo', fields };
@@ -507,24 +502,24 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
       if (monthlyRates.length > 0) {
         // Sum monthly rates for annual rate (rates are per 100k per month)
         const annualRate = Math.round(monthlyRates.reduce((a, b) => a + b, 0));
-        setField(fields, '90_violent_crime_rate_per_100k', annualRate, 'FBI UCR');
+        // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Safety & Crime (88-90)
+        setField(fields, '88_violent_crime_index', annualRate.toString(), 'FBI UCR');
 
-        // Grade based on annual violent crime rate per 100k
+        // Grade based on annual violent crime rate per 100k → Field 90 neighborhood_safety_rating
         let grade = 'A';
         if (annualRate > 500) grade = 'F';
         else if (annualRate > 400) grade = 'D';
         else if (annualRate > 300) grade = 'C';
         else if (annualRate > 200) grade = 'B';
 
-        setField(fields, '91_crime_grade', grade, 'FBI UCR');
-        setField(fields, '92_crime_data_year', 2022, 'FBI UCR');
+        setField(fields, '90_neighborhood_safety_rating', grade, 'FBI UCR');
 
         // Compare to US average
         if (usRates) {
           const usMonthlyRates = Object.values(usRates).filter((v): v is number => typeof v === 'number');
           const usAnnualRate = Math.round(usMonthlyRates.reduce((a, b) => a + b, 0));
           const vsNational = Math.round((annualRate / usAnnualRate - 1) * 100);
-          setField(fields, '93_crime_vs_national_percent', vsNational, 'FBI UCR');
+          // Note: No direct field for crime_vs_national_percent in 168-field schema
         }
       }
     }
@@ -553,16 +548,14 @@ export async function callWeather(lat: number, lon: number): Promise<ApiResult> 
       if (owmResponse.ok) {
         const data = await owmResponse.json();
 
+        // Note: Weather data is supplementary - not in 168-field schema
+        // Storing as metadata only - not mapped to numbered fields
         if (data.main) {
-          setField(fields, '118_current_temperature', Math.round(data.main.temp), 'OpenWeatherMap');
-          setField(fields, '122_humidity', data.main.humidity, 'OpenWeatherMap');
-          setField(fields, '119_feels_like', Math.round(data.main.feels_like), 'OpenWeatherMap');
+          setField(fields, 'current_temperature', Math.round(data.main.temp), 'OpenWeatherMap');
+          setField(fields, 'humidity', data.main.humidity, 'OpenWeatherMap');
         }
         if (data.weather?.[0]) {
-          setField(fields, '123_weather_description', data.weather[0].description, 'OpenWeatherMap');
-        }
-        if (data.wind) {
-          setField(fields, '124_wind_speed_mph', Math.round(data.wind.speed), 'OpenWeatherMap');
+          setField(fields, 'weather_description', data.weather[0].description, 'OpenWeatherMap');
         }
 
         return { success: Object.keys(fields).length > 0, source: 'OpenWeatherMap', fields };
@@ -580,8 +573,9 @@ export async function callWeather(lat: number, lon: number): Promise<ApiResult> 
 
       if (response.ok) {
         const data = await response.json();
-        setField(fields, '118_current_temperature', data.temperature, 'Weather.com');
-        setField(fields, '122_humidity', data.relativeHumidity, 'Weather.com');
+        // Note: Weather data is supplementary - not in 168-field schema
+        setField(fields, 'current_temperature', data.temperature, 'Weather.com');
+        setField(fields, 'humidity', data.relativeHumidity, 'Weather.com');
         return { success: Object.keys(fields).length > 0, source: 'Weather.com', fields };
       }
     } catch (e) {
@@ -597,16 +591,17 @@ export async function callWeather(lat: number, lon: number): Promise<ApiResult> 
     if (response.ok) {
       const data = await response.json();
 
+      // Note: Weather data is supplementary - not in 168-field schema
       if (data.current_weather) {
-        setField(fields, '118_current_temperature', data.current_weather.temperature, 'Open-Meteo');
+        setField(fields, 'current_temperature', data.current_weather.temperature, 'Open-Meteo');
       }
 
       if (data.daily) {
         const avgHigh = data.daily.temperature_2m_max.reduce((a: number, b: number) => a + b, 0) / data.daily.temperature_2m_max.length;
         const avgLow = data.daily.temperature_2m_min.reduce((a: number, b: number) => a + b, 0) / data.daily.temperature_2m_min.length;
 
-        setField(fields, '119_avg_high_temp', Math.round(avgHigh), 'Open-Meteo');
-        setField(fields, '120_avg_low_temp', Math.round(avgLow), 'Open-Meteo');
+        setField(fields, 'avg_high_temp', Math.round(avgHigh), 'Open-Meteo');
+        setField(fields, 'avg_low_temp', Math.round(avgLow), 'Open-Meteo');
       }
 
       return { success: Object.keys(fields).length > 0, source: 'Open-Meteo', fields };
@@ -645,20 +640,21 @@ export async function callHudFairMarketRent(zip: string): Promise<ApiResult> {
     const data = await response.json();
     const fmrData = data.data?.basicdata || data.basicdata || data;
 
-    // Extract rent by bedroom count
+    // Extract rent by bedroom count - map to rental_estimate_monthly (field 98)
+    // Note: FMR data is supplementary - not all fields in 168-field schema
     if (fmrData) {
-      setField(fields, '111_fmr_efficiency', fmrData.Efficiency || fmrData.efficiency, 'HUD FMR');
-      setField(fields, '112_fmr_1br', fmrData['One-Bedroom'] || fmrData.one_bedroom, 'HUD FMR');
-      setField(fields, '113_fmr_2br', fmrData['Two-Bedroom'] || fmrData.two_bedroom, 'HUD FMR');
-      setField(fields, '114_fmr_3br', fmrData['Three-Bedroom'] || fmrData.three_bedroom, 'HUD FMR');
-      setField(fields, '115_fmr_4br', fmrData['Four-Bedroom'] || fmrData.four_bedroom, 'HUD FMR');
-      setField(fields, '116_fmr_year', fmrData.year, 'HUD FMR');
-
-      // Get metro/county info if available
-      const metroName = data.data?.metroarea || data.data?.county_name;
-      if (metroName) {
-        setField(fields, '117_fmr_area_name', metroName, 'HUD FMR');
+      // Use 2BR as representative rental estimate (most common search)
+      const twoBedroomRent = fmrData['Two-Bedroom'] || fmrData.two_bedroom;
+      if (twoBedroomRent) {
+        setField(fields, '98_rental_estimate_monthly', twoBedroomRent, 'HUD FMR');
       }
+
+      // Store other FMR data as metadata (not numbered fields)
+      setField(fields, 'fmr_efficiency', fmrData.Efficiency || fmrData.efficiency, 'HUD FMR');
+      setField(fields, 'fmr_1br', fmrData['One-Bedroom'] || fmrData.one_bedroom, 'HUD FMR');
+      setField(fields, 'fmr_2br', twoBedroomRent, 'HUD FMR');
+      setField(fields, 'fmr_3br', fmrData['Three-Bedroom'] || fmrData.three_bedroom, 'HUD FMR');
+      setField(fields, 'fmr_4br', fmrData['Four-Bedroom'] || fmrData.four_bedroom, 'HUD FMR');
     }
 
     return { success: Object.keys(fields).length > 0, source: 'HUD FMR', fields };

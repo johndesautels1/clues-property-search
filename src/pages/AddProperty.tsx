@@ -722,7 +722,8 @@ export default function AddProperty() {
     return firstNumber ? parseFloat(firstNumber) : null;
   };
 
-  // Convert CSV row with 138 fields to full Property object
+  // Convert CSV row with 168 fields to full Property object
+  // UPDATED: 2025-11-30 - Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH)
   const convertCsvToFullProperty = (row: any, propertyId: string): Property => {
     const now = new Date().toISOString();
 
@@ -732,160 +733,168 @@ export default function AddProperty() {
       updatedAt: now,
       address: {
         fullAddress: createDataField(row['1_full_address'] || ''),
-        mlsPrimary: createDataField(row['2_mls_number_primary'] || ''),
-        mlsSecondary: createDataField(row['3_mls_number_secondary'] || ''),
+        mlsPrimary: createDataField(row['2_mls_primary'] || ''),
+        mlsSecondary: createDataField(row['3_mls_secondary'] || ''),
         listingStatus: createDataField(row['4_listing_status'] || 'Active'),
-        listingDate: createDataField(row['5_list_price'] || ''),
-        listingPrice: createDataField(row['5_list_price'] ? parseFloat(row['5_list_price'].toString().replace(/[^0-9.]/g, '')) : null),
-        pricePerSqft: createDataField(row['19_price_per_sqft'] ? parseFloat(row['19_price_per_sqft'].toString().replace(/[^0-9.]/g, '')) : null),
+        listingDate: createDataField(row['5_listing_date'] || ''),
+        listingPrice: createDataField(row['10_listing_price'] ? parseFloat(row['10_listing_price'].toString().replace(/[^0-9.]/g, '')) : null),
+        pricePerSqft: createDataField(row['11_price_per_sqft'] ? parseFloat(row['11_price_per_sqft'].toString().replace(/[^0-9.]/g, '')) : null),
         streetAddress: createDataField(row['1_full_address'] || ''),
-        city: createDataField(row['42_city'] || ''),
-        state: createDataField(row['44_state'] || 'FL'),
-        zipCode: createDataField(row['45_zip_code'] || ''),
-        county: createDataField(row['43_county'] || ''),
-        latitude: createDataField(row['46_latitude'] ? parseFloat(row['46_latitude']) : null),
-        longitude: createDataField(row['47_longitude'] ? parseFloat(row['47_longitude']) : null),
-        neighborhoodName: createDataField(row['41_neighborhood_name'] || ''),
+        city: createDataField(row['city'] || ''),
+        state: createDataField(row['state'] || 'FL'),
+        zipCode: createDataField(row['8_zip_code'] || ''),
+        county: createDataField(row['7_county'] || ''),
+        latitude: createDataField(row['latitude'] ? parseFloat(row['latitude']) : null),
+        longitude: createDataField(row['longitude'] ? parseFloat(row['longitude']) : null),
+        neighborhoodName: createDataField(row['6_neighborhood'] || ''),
       },
       details: {
-        bedrooms: createDataField(row['11_bedrooms'] ? parseInt(row['11_bedrooms']) : null),
-        fullBathrooms: createDataField(row['12_bathrooms_full'] ? parseInt(row['12_bathrooms_full']) : null),
-        halfBathrooms: createDataField(row['13_bathrooms_half'] ? parseInt(row['13_bathrooms_half']) : null),
-        totalBathrooms: createDataField(row['14_bathrooms_total'] ? parseFloat(row['14_bathrooms_total']) : null),
-        livingSqft: createDataField(row['15_living_area_sqft'] ? parseInt(row['15_living_area_sqft']) : null),
-        totalSqftUnderRoof: createDataField(row['16_total_area_sqft'] ? parseInt(row['16_total_area_sqft']) : null),
-        lotSizeSqft: createDataField(row['17_lot_size_sqft'] ? parseInt(row['17_lot_size_sqft']) : null),
-        lotSizeAcres: createDataField(row['18_lot_size_acres'] ? parseFloat(row['18_lot_size_acres']) : null),
-        yearBuilt: createDataField(row['9_year_built'] ? parseInt(row['9_year_built']) : null),
-        propertyType: createDataField(row['8_property_type'] || 'Single Family'),
-        stories: createDataField(row['stories'] || null),
-        garageSpaces: createDataField(row['32_garage_spaces'] ? parseInt(row['32_garage_spaces']) : null),
-        parkingTotal: createDataField(row['33_parking_spaces_total'] || ''),
-        hoaYn: createDataField(row['69_hoa_fee_monthly'] && row['69_hoa_fee_monthly'] !== '$0'),
-        hoaFeeAnnual: createDataField(row['69_hoa_fee_monthly'] ? parseFloat(row['69_hoa_fee_monthly'].toString().replace(/[^0-9.]/g, '')) * 12 : null),
-        hoaName: createDataField(row['70_hoa_name'] || ''),
-        hoaIncludes: createDataField(row['71_hoa_includes'] || ''),
-        annualTaxes: createDataField(row['67_annual_property_tax'] ? parseFloat(row['67_annual_property_tax'].toString().replace(/[^0-9.]/g, '')) : null),
-        taxYear: createDataField(new Date().getFullYear()),
-        assessedValue: createDataField(row['66_tax_assessed_value'] ? parseFloat(row['66_tax_assessed_value'].toString().replace(/[^0-9.]/g, '')) : null),
-        marketValueEstimate: createDataField(row['73_zestimate'] ? parseFloat(row['73_zestimate'].toString().replace(/[^0-9.]/g, '')) : null),
-        lastSaleDate: createDataField(row['7_sold_price'] || ''),
-        lastSalePrice: createDataField(row['7_sold_price'] ? parseFloat(row['7_sold_price'].toString().replace(/[^0-9.]/g, '')) : null),
-        ownershipType: createDataField(''),
-        parcelId: createDataField(''),
+        bedrooms: createDataField(row['17_bedrooms'] ? parseInt(row['17_bedrooms']) : null),
+        fullBathrooms: createDataField(row['18_full_bathrooms'] ? parseInt(row['18_full_bathrooms']) : null),
+        halfBathrooms: createDataField(row['19_half_bathrooms'] ? parseInt(row['19_half_bathrooms']) : null),
+        totalBathrooms: createDataField(row['20_total_bathrooms'] ? parseFloat(row['20_total_bathrooms']) : null),
+        livingSqft: createDataField(row['21_living_sqft'] ? parseInt(row['21_living_sqft']) : null),
+        totalSqftUnderRoof: createDataField(row['22_total_sqft_under_roof'] ? parseInt(row['22_total_sqft_under_roof']) : null),
+        lotSizeSqft: createDataField(row['23_lot_size_sqft'] ? parseInt(row['23_lot_size_sqft']) : null),
+        lotSizeAcres: createDataField(row['24_lot_size_acres'] ? parseFloat(row['24_lot_size_acres']) : null),
+        yearBuilt: createDataField(row['25_year_built'] ? parseInt(row['25_year_built']) : null),
+        propertyType: createDataField(row['26_property_type'] || 'Single Family'),
+        stories: createDataField(row['27_stories'] || null),
+        garageSpaces: createDataField(row['28_garage_spaces'] ? parseInt(row['28_garage_spaces']) : null),
+        parkingTotal: createDataField(row['29_parking_total'] || ''),
+        hoaYn: createDataField(row['30_hoa_yn'] === 'true' || row['30_hoa_yn'] === 'yes' || row['30_hoa_yn'] === true),
+        hoaFeeAnnual: createDataField(row['31_hoa_fee_annual'] ? parseFloat(row['31_hoa_fee_annual'].toString().replace(/[^0-9.]/g, '')) : null),
+        hoaName: createDataField(row['32_hoa_name'] || ''),
+        hoaIncludes: createDataField(row['33_hoa_includes'] || ''),
+        annualTaxes: createDataField(row['35_annual_taxes'] ? parseFloat(row['35_annual_taxes'].toString().replace(/[^0-9.]/g, '')) : null),
+        taxYear: createDataField(row['36_tax_year'] ? parseInt(row['36_tax_year']) : new Date().getFullYear()),
+        assessedValue: createDataField(row['15_assessed_value'] ? parseFloat(row['15_assessed_value'].toString().replace(/[^0-9.]/g, '')) : null),
+        marketValueEstimate: createDataField(row['12_market_value_estimate'] ? parseFloat(row['12_market_value_estimate'].toString().replace(/[^0-9.]/g, '')) : null),
+        lastSaleDate: createDataField(row['13_last_sale_date'] || ''),
+        lastSalePrice: createDataField(row['14_last_sale_price'] ? parseFloat(row['14_last_sale_price'].toString().replace(/[^0-9.]/g, '')) : null),
+        ownershipType: createDataField(row['34_ownership_type'] || ''),
+        parcelId: createDataField(row['9_parcel_id'] || ''),
       },
       structural: {
-        roofType: createDataField(''),
-        roofAgeEst: createDataField(row['10_year_renovated'] || ''),
-        exteriorMaterial: createDataField(''),
-        foundation: createDataField(''),
-        hvacType: createDataField(''),
-        hvacAge: createDataField(''),
-        waterHeaterType: createDataField(row['30_water_heater_type'] || ''),
-        garageType: createDataField(row['31_garage_type'] || ''),
-        flooringType: createDataField(row['40_flooring_types'] || ''),
-        kitchenFeatures: createDataField(''),
-        appliancesIncluded: createDataField([]),
-        laundryType: createDataField(row['39_laundry_type'] || ''),
-        fireplaceYn: createDataField(row['37_fireplace'] ? row['37_fireplace'].toLowerCase() === 'true' || row['37_fireplace'].toLowerCase() === 'yes' : false),
-        fireplaceCount: createDataField(row['38_fireplace_count'] ? parseInt(row['38_fireplace_count']) : null),
-        poolYn: createDataField(row['34_pool'] ? row['34_pool'].toLowerCase() === 'true' || row['34_pool'].toLowerCase() === 'yes' : false),
-        poolType: createDataField(row['35_pool_type'] || ''),
-        deckPatio: createDataField(''),
-        fence: createDataField(row['36_fence_type'] || ''),
-        landscaping: createDataField(''),
-        recentRenovations: createDataField(row['10_year_renovated'] || ''),
-        permitHistoryRoof: createDataField(''),
-        permitHistoryHvac: createDataField(''),
-        permitHistoryPoolAdditions: createDataField(''),
-        interiorCondition: createDataField(''),
+        roofType: createDataField(row['39_roof_type'] || ''),
+        roofAgeEst: createDataField(row['40_roof_age_est'] || ''),
+        exteriorMaterial: createDataField(row['41_exterior_material'] || ''),
+        foundation: createDataField(row['42_foundation'] || ''),
+        hvacType: createDataField(row['45_hvac_type'] || ''),
+        hvacAge: createDataField(row['46_hvac_age'] || ''),
+        waterHeaterType: createDataField(row['43_water_heater_type'] || ''),
+        garageType: createDataField(row['44_garage_type'] || ''),
+        flooringType: createDataField(row['49_flooring_type'] || ''),
+        kitchenFeatures: createDataField(row['50_kitchen_features'] || ''),
+        appliancesIncluded: createDataField(row['51_appliances_included'] ? row['51_appliances_included'].split(',').map((s: string) => s.trim()) : []),
+        laundryType: createDataField(row['47_laundry_type'] || ''),
+        fireplaceYn: createDataField(row['52_fireplace_yn'] === 'true' || row['52_fireplace_yn'] === 'yes' || row['52_fireplace_yn'] === true),
+        fireplaceCount: createDataField(row['53_fireplace_count'] ? parseInt(row['53_fireplace_count']) : null),
+        poolYn: createDataField(row['54_pool_yn'] === 'true' || row['54_pool_yn'] === 'yes' || row['54_pool_yn'] === true),
+        poolType: createDataField(row['55_pool_type'] || ''),
+        deckPatio: createDataField(row['56_deck_patio'] || ''),
+        fence: createDataField(row['57_fence'] || ''),
+        landscaping: createDataField(row['58_landscaping'] || ''),
+        recentRenovations: createDataField(row['59_recent_renovations'] || ''),
+        permitHistoryRoof: createDataField(row['60_permit_history_roof'] || ''),
+        permitHistoryHvac: createDataField(row['61_permit_history_hvac'] || ''),
+        permitHistoryPoolAdditions: createDataField(row['62_permit_history_other'] || ''),
+        interiorCondition: createDataField(row['48_interior_condition'] || ''),
       },
       location: {
-        assignedElementary: createDataField(row['56_elementary_school_name'] || ''),
-        elementaryRating: createDataField(row['57_elementary_school_rating'] || ''),
-        elementaryDistanceMiles: createDataField(row['58_elementary_school_distance'] ? parseFloat(row['58_elementary_school_distance']) : null),
-        assignedMiddle: createDataField(row['59_middle_school_name'] || ''),
-        middleRating: createDataField(row['60_middle_school_rating'] || ''),
-        middleDistanceMiles: createDataField(row['61_middle_school_distance'] ? parseFloat(row['61_middle_school_distance']) : null),
-        assignedHigh: createDataField(row['62_high_school_name'] || ''),
-        highRating: createDataField(row['63_high_school_rating'] || ''),
-        highDistanceMiles: createDataField(row['64_high_school_distance'] ? parseFloat(row['64_high_school_distance']) : null),
-        schoolDistrictName: createDataField(row['65_school_district_name'] || ''),
-        elevationFeet: createDataField(row['55_elevation_feet'] ? parseFloat(row['55_elevation_feet']) : null),
-        walkScore: createDataField(row['48_walk_score'] ? parseInt(row['48_walk_score']) : null),
-        transitScore: createDataField(row['50_transit_score'] ? parseInt(row['50_transit_score']) : null),
-        bikeScore: createDataField(row['49_bike_score'] ? parseInt(row['49_bike_score']) : null),
-        distanceGroceryMiles: createDataField(0),
-        distanceHospitalMiles: createDataField(0),
-        distanceAirportMiles: createDataField(0),
-        distanceParkMiles: createDataField(0),
-        distanceBeachMiles: createDataField(0),
-        crimeIndexViolent: createDataField(''),
-        crimeIndexProperty: createDataField(''),
-        neighborhoodSafetyRating: createDataField(row['51_crime_rate_level'] || ''),
-        noiseLevel: createDataField(row['52_noise_level_estimate'] || ''),
-        trafficLevel: createDataField(''),
-        walkabilityDescription: createDataField(''),
-        commuteTimeCityCenter: createDataField(''),
-        publicTransitAccess: createDataField(''),
+        // Schools (fields 63-73)
+        assignedElementary: createDataField(row['65_elementary_school'] || ''),
+        elementaryRating: createDataField(row['66_elementary_rating'] || ''),
+        elementaryDistanceMiles: createDataField(row['67_elementary_distance_mi'] ? parseFloat(row['67_elementary_distance_mi']) : null),
+        assignedMiddle: createDataField(row['68_middle_school'] || ''),
+        middleRating: createDataField(row['69_middle_rating'] || ''),
+        middleDistanceMiles: createDataField(row['70_middle_distance_mi'] ? parseFloat(row['70_middle_distance_mi']) : null),
+        assignedHigh: createDataField(row['71_high_school'] || ''),
+        highRating: createDataField(row['72_high_rating'] || ''),
+        highDistanceMiles: createDataField(row['73_high_distance_mi'] ? parseFloat(row['73_high_distance_mi']) : null),
+        schoolDistrictName: createDataField(row['63_school_district'] || ''),
+        elevationFeet: createDataField(row['64_elevation_feet'] ? parseFloat(row['64_elevation_feet']) : null),
+        // Location Scores (fields 74-82)
+        walkScore: createDataField(row['74_walk_score'] ? parseInt(row['74_walk_score']) : null),
+        transitScore: createDataField(row['75_transit_score'] ? parseInt(row['75_transit_score']) : null),
+        bikeScore: createDataField(row['76_bike_score'] ? parseInt(row['76_bike_score']) : null),
+        // Distances & Amenities (fields 83-87)
+        distanceGroceryMiles: createDataField(row['83_distance_grocery_mi'] ? parseFloat(row['83_distance_grocery_mi']) : null),
+        distanceHospitalMiles: createDataField(row['84_distance_hospital_mi'] ? parseFloat(row['84_distance_hospital_mi']) : null),
+        distanceAirportMiles: createDataField(row['85_distance_airport_mi'] ? parseFloat(row['85_distance_airport_mi']) : null),
+        distanceParkMiles: createDataField(row['86_distance_park_mi'] ? parseFloat(row['86_distance_park_mi']) : null),
+        distanceBeachMiles: createDataField(row['87_distance_beach_mi'] ? parseFloat(row['87_distance_beach_mi']) : null),
+        // Safety & Crime (fields 88-90)
+        crimeIndexViolent: createDataField(row['88_violent_crime_index'] || ''),
+        crimeIndexProperty: createDataField(row['89_property_crime_index'] || ''),
+        neighborhoodSafetyRating: createDataField(row['90_neighborhood_safety_rating'] || ''),
+        noiseLevel: createDataField(row['78_noise_level'] || ''),
+        trafficLevel: createDataField(row['79_traffic_level'] || ''),
+        walkabilityDescription: createDataField(row['80_walkability_description'] || ''),
+        commuteTimeCityCenter: createDataField(row['82_commute_to_city_center'] || ''),
+        publicTransitAccess: createDataField(row['81_public_transit_access'] || ''),
       },
       financial: {
-        annualPropertyTax: createDataField(row['67_annual_property_tax'] ? parseFloat(row['67_annual_property_tax'].toString().replace(/[^0-9.]/g, '')) : null),
-        taxExemptions: createDataField(''),
-        propertyTaxRate: createDataField(row['68_tax_rate_percent'] ? parseFloat(row['68_tax_rate_percent']) : null),
+        // Market & Investment Data (fields 91-103)
+        annualPropertyTax: createDataField(row['35_annual_taxes'] ? parseFloat(row['35_annual_taxes'].toString().replace(/[^0-9.]/g, '')) : null),
+        taxExemptions: createDataField(row['38_tax_exemptions'] || ''),
+        propertyTaxRate: createDataField(row['37_property_tax_rate'] ? parseFloat(row['37_property_tax_rate']) : null),
         recentTaxPaymentHistory: createDataField(''),
-        medianHomePriceNeighborhood: createDataField(row['78_median_home_price_area'] ? parseFloat(row['78_median_home_price_area'].toString().replace(/[^0-9.]/g, '')) : null),
-        pricePerSqftRecentAvg: createDataField(row['19_price_per_sqft'] ? parseFloat(row['19_price_per_sqft'].toString().replace(/[^0-9.]/g, '')) : null),
-        redfinEstimate: createDataField(row['74_redfin_estimate'] ? parseFloat(row['74_redfin_estimate'].toString().replace(/[^0-9.]/g, '')) : null),
-        priceToRentRatio: createDataField(row['77_price_to_rent_ratio'] ? parseFloat(row['77_price_to_rent_ratio']) : null),
-        priceVsMedianPercent: createDataField(row['79_price_vs_median_percent'] ? parseFloat(row['79_price_vs_median_percent']) : null),
-        daysOnMarketAvg: createDataField(row['20_days_on_market'] && row['20_days_on_market'] !== 'N/A' ? parseFloat(row['20_days_on_market']) : null),
-        inventorySurplus: createDataField(''),
-        rentalEstimateMonthly: createDataField(row['75_rental_estimate_monthly'] ? parseFloat(row['75_rental_estimate_monthly'].toString().replace(/[^0-9.]/g, '')) : null),
-        rentalYieldEst: createDataField(0),
-        vacancyRateNeighborhood: createDataField(0),
-        capRateEst: createDataField(row['76_cap_rate_estimate'] ? parseFloat(row['76_cap_rate_estimate']) : null),
-        insuranceEstAnnual: createDataField(parsePrice(row['80_insurance_estimate_annual'])),
-        financingTerms: createDataField(''),
-        comparableSalesLast3: createDataField([]),
-        specialAssessments: createDataField(row['72_special_assessments'] || ''),
+        medianHomePriceNeighborhood: createDataField(row['91_median_home_price_neighborhood'] ? parseFloat(row['91_median_home_price_neighborhood'].toString().replace(/[^0-9.]/g, '')) : null),
+        pricePerSqftRecentAvg: createDataField(row['92_price_per_sqft_recent_avg'] ? parseFloat(row['92_price_per_sqft_recent_avg'].toString().replace(/[^0-9.]/g, '')) : null),
+        redfinEstimate: createDataField(row['16_redfin_estimate'] ? parseFloat(row['16_redfin_estimate'].toString().replace(/[^0-9.]/g, '')) : null),
+        priceToRentRatio: createDataField(row['93_price_to_rent_ratio'] ? parseFloat(row['93_price_to_rent_ratio']) : null),
+        priceVsMedianPercent: createDataField(row['94_price_vs_median_percent'] ? parseFloat(row['94_price_vs_median_percent']) : null),
+        daysOnMarketAvg: createDataField(row['95_days_on_market_avg'] ? parseFloat(row['95_days_on_market_avg']) : null),
+        inventorySurplus: createDataField(row['96_inventory_surplus'] || ''),
+        rentalEstimateMonthly: createDataField(row['98_rental_estimate_monthly'] ? parseFloat(row['98_rental_estimate_monthly'].toString().replace(/[^0-9.]/g, '')) : null),
+        rentalYieldEst: createDataField(row['99_rental_yield_est'] ? parseFloat(row['99_rental_yield_est']) : null),
+        vacancyRateNeighborhood: createDataField(row['100_vacancy_rate_neighborhood'] ? parseFloat(row['100_vacancy_rate_neighborhood']) : null),
+        capRateEst: createDataField(row['101_cap_rate_est'] ? parseFloat(row['101_cap_rate_est']) : null),
+        insuranceEstAnnual: createDataField(row['97_insurance_est_annual'] ? parseFloat(row['97_insurance_est_annual'].toString().replace(/[^0-9.]/g, '')) : null),
+        financingTerms: createDataField(row['102_financing_terms'] || ''),
+        comparableSalesLast3: createDataField(row['103_comparable_sales'] ? [row['103_comparable_sales']] : []),
+        specialAssessments: createDataField(row['138_special_assessments'] || ''),
       },
       utilities: {
-        electricProvider: createDataField(row['81_electric_provider'] || ''),
-        waterProvider: createDataField(row['82_water_provider'] || ''),
-        sewerProvider: createDataField(row['83_sewer_type'] || ''),
-        naturalGas: createDataField(row['84_gas_provider'] || ''),
-        trashProvider: createDataField(row['85_trash_provider'] || ''),
-        internetProvidersTop3: createDataField(row['86_internet_providers'] ? row['86_internet_providers'].split(',').map((s: string) => s.trim()) : []),
-        maxInternetSpeed: createDataField(row['87_max_internet_speed_mbps'] || ''),
-        fiberAvailable: createDataField(row['88_fiber_available'] ? row['88_fiber_available'].toLowerCase() === 'true' : false),
-        cableTvProvider: createDataField(row['89_cable_provider'] || ''),
-        avgElectricBill: createDataField(row['90_avg_electric_bill'] || ''),
-        avgWaterBill: createDataField(row['91_avg_water_bill'] || ''),
-        cellCoverageQuality: createDataField(row['94_cell_coverage_quality'] || ''),
-        emergencyServicesDistance: createDataField(row['95_emergency_services_distance'] || ''),
-        airQualityIndexCurrent: createDataField(row['96_air_quality_index'] || ''),
-        airQualityGrade: createDataField(row['97_air_quality_grade'] || ''),
-        floodZone: createDataField(row['53_flood_zone'] || ''),
-        floodRiskLevel: createDataField(row['54_flood_risk_level'] || ''),
-        climateRiskWildfireFlood: createDataField(row['104_climate_risk_overall'] || ''),
-        wildfireRisk: createDataField(row['98_wildfire_risk'] || ''),
-        earthquakeRisk: createDataField(row['99_earthquake_risk'] || ''),
-        hurricaneRisk: createDataField(row['100_hurricane_risk'] || ''),
-        tornadoRisk: createDataField(row['101_tornado_risk'] || ''),
-        radonRisk: createDataField(row['102_radon_risk'] || ''),
-        superfundNearby: createDataField(row['103_superfund_nearby'] ? row['103_superfund_nearby'].toLowerCase() === 'true' : false),
-        seaLevelRiseRisk: createDataField(row['105_sea_level_rise_risk'] || ''),
-        noiseLevelDbEst: createDataField(''),
-        solarPotential: createDataField(row['92_solar_potential'] || ''),
-        evChargingYn: createDataField(row['93_ev_charging_nearby'] || ''),
-        smartHomeFeatures: createDataField(row['106_smart_home_features'] || ''),
-        accessibilityMods: createDataField(row['107_accessibility_features'] || ''),
-        viewType: createDataField(row['108_view_type'] || ''),
-        lotFeatures: createDataField(row['109_lot_features'] || ''),
-        petPolicy: createDataField(''),
-        ageRestrictions: createDataField(''),
-        notesConfidenceSummary: createDataField(row['110_notes_and_confidence'] || ''),
+        // Utilities & Connectivity (fields 104-116)
+        electricProvider: createDataField(row['104_electric_provider'] || ''),
+        waterProvider: createDataField(row['106_water_provider'] || ''),
+        sewerProvider: createDataField(row['108_sewer_provider'] || ''),
+        naturalGas: createDataField(row['109_natural_gas'] || ''),
+        trashProvider: createDataField(row['110_trash_provider'] || ''),
+        internetProvidersTop3: createDataField(row['111_internet_providers_top3'] ? row['111_internet_providers_top3'].split(',').map((s: string) => s.trim()) : []),
+        maxInternetSpeed: createDataField(row['112_max_internet_speed'] || ''),
+        fiberAvailable: createDataField(row['113_fiber_available'] === 'true' || row['113_fiber_available'] === 'yes' || row['113_fiber_available'] === true),
+        cableTvProvider: createDataField(row['114_cable_tv_provider'] || ''),
+        avgElectricBill: createDataField(row['105_avg_electric_bill'] || ''),
+        avgWaterBill: createDataField(row['107_avg_water_bill'] || ''),
+        cellCoverageQuality: createDataField(row['115_cell_coverage_quality'] || ''),
+        emergencyServicesDistance: createDataField(row['116_emergency_services_distance'] || ''),
+        // Environment & Risk (fields 117-130)
+        airQualityIndexCurrent: createDataField(row['117_air_quality_index'] || ''),
+        airQualityGrade: createDataField(row['118_air_quality_grade'] || ''),
+        floodZone: createDataField(row['119_flood_zone'] || ''),
+        floodRiskLevel: createDataField(row['120_flood_risk_level'] || ''),
+        climateRiskWildfireFlood: createDataField(row['121_climate_risk'] || ''),
+        wildfireRisk: createDataField(row['122_wildfire_risk'] || ''),
+        earthquakeRisk: createDataField(row['123_earthquake_risk'] || ''),
+        hurricaneRisk: createDataField(row['124_hurricane_risk'] || ''),
+        tornadoRisk: createDataField(row['125_tornado_risk'] || ''),
+        radonRisk: createDataField(row['126_radon_risk'] || ''),
+        superfundNearby: createDataField(row['127_superfund_site_nearby'] === 'true' || row['127_superfund_site_nearby'] === 'yes' || row['127_superfund_site_nearby'] === true),
+        seaLevelRiseRisk: createDataField(row['128_sea_level_rise_risk'] || ''),
+        noiseLevelDbEst: createDataField(row['129_noise_level_db_est'] || ''),
+        solarPotential: createDataField(row['130_solar_potential'] || ''),
+        // Additional Features (fields 131-138)
+        evChargingYn: createDataField(row['133_ev_charging'] || ''),
+        smartHomeFeatures: createDataField(row['134_smart_home_features'] || ''),
+        accessibilityMods: createDataField(row['135_accessibility_modifications'] || ''),
+        viewType: createDataField(row['131_view_type'] || ''),
+        lotFeatures: createDataField(row['132_lot_features'] || ''),
+        petPolicy: createDataField(row['136_pet_policy'] || ''),
+        ageRestrictions: createDataField(row['137_age_restrictions'] || ''),
+        notesConfidenceSummary: createDataField(''),
       },
     };
   };
@@ -917,28 +926,28 @@ export default function AddProperty() {
         const state = row['state'] || row['State'] || 'FL';
         const zip = row['zip'] || row['ZIP'] || '';
 
-        // Extract price (support both field definition format and standard)
-        const listingPrice = row['5_list_price'] || row['7_sold_price'] || row['price'] || row['Price'] || '0';
+        // Extract price (field 10 = listing_price per fields-schema.ts)
+        const listingPrice = row['10_listing_price'] || row['14_last_sale_price'] || row['price'] || row['Price'] || '0';
         const price = parseInt(String(listingPrice).replace(/[^0-9]/g, '')) || 0;
 
-        // Extract bedrooms/bathrooms
-        const bedrooms = parseInt(row['11_bedrooms'] || row['bedrooms'] || row['Bedrooms'] || '0');
-        const bathrooms = parseFloat(row['14_bathrooms_total'] || row['bathrooms'] || row['Bathrooms'] || '0');
+        // Extract bedrooms/bathrooms (field 17 = bedrooms, field 20 = total_bathrooms)
+        const bedrooms = parseInt(row['17_bedrooms'] || row['bedrooms'] || row['Bedrooms'] || '0');
+        const bathrooms = parseFloat(row['20_total_bathrooms'] || row['bathrooms'] || row['Bathrooms'] || '0');
 
-        // Extract sqft
-        const sqft = parseInt(row['15_living_area_sqft'] || row['sqft'] || row['Sqft'] || '0');
+        // Extract sqft (field 21 = living_sqft)
+        const sqft = parseInt(row['21_living_sqft'] || row['sqft'] || row['Sqft'] || '0');
 
-        // Extract year built
-        const yearBuilt = parseInt(row['9_year_built'] || row['yearBuilt'] || row['Year Built'] || new Date().getFullYear().toString());
+        // Extract year built (field 25 = year_built)
+        const yearBuilt = parseInt(row['25_year_built'] || row['yearBuilt'] || row['Year Built'] || new Date().getFullYear().toString());
 
         // Extract status
         const listingStatus = row['4_listing_status'] || row['status'] || row['Status'] || 'Active';
 
         // Count non-empty fields for data completeness
         const filledFieldsCount = Object.values(row).filter(v => v && v !== '').length;
-        const dataCompleteness = Math.round((filledFieldsCount / 138) * 100);
+        const dataCompleteness = Math.round((filledFieldsCount / 168) * 100);
 
-        // Create full property with all 138 fields from CSV
+        // Create full property with all 168 fields from CSV
         let fullProperty = convertCsvToFullProperty(row, propertyId);
 
         // ENRICHMENT: Call LLM APIs to fill missing fields if enabled
@@ -1246,6 +1255,7 @@ export default function AddProperty() {
   };
 
   // Merge enriched API data with existing CSV data (CSV takes precedence)
+  // UPDATED: 2025-11-30 - Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH)
   const mergePropertyData = (csvProperty: Property, apiFields: any, propertyId: string): Property => {
     // For each field, only fill if CSV value is null/empty
     const merged = { ...csvProperty };
@@ -1258,18 +1268,20 @@ export default function AddProperty() {
       return csvField;
     };
 
-    // Merge address fields
+    // Merge address fields (1-9)
     merged.address.mlsPrimary = mergeField(merged.address.mlsPrimary, '2_mls_primary');
-    merged.address.county = mergeField(merged.address.county, '28_county');
+    merged.address.county = mergeField(merged.address.county, '7_county');
     merged.address.latitude = mergeField(merged.address.latitude, 'coordinates');
     merged.address.longitude = mergeField(merged.address.longitude, 'coordinates');
 
-    // Merge location fields
-    merged.location.walkScore = mergeField(merged.location.walkScore, '65_walk_score');
-    merged.location.transitScore = mergeField(merged.location.transitScore, '66_transit_score');
-    merged.utilities.floodZone = mergeField(merged.utilities.floodZone, '100_flood_zone');
+    // Merge location fields (74-82)
+    merged.location.walkScore = mergeField(merged.location.walkScore, '74_walk_score');
+    merged.location.transitScore = mergeField(merged.location.transitScore, '75_transit_score');
 
-    // Could merge all 138 fields here, but for now just key ones
+    // Merge environment fields (117-130)
+    merged.utilities.floodZone = mergeField(merged.utilities.floodZone, '119_flood_zone');
+
+    // Could merge all 168 fields here, but for now just key ones
     return merged;
   };
 
@@ -1404,7 +1416,7 @@ export default function AddProperty() {
                         const address = row['1_full_address'] || row['address'] || row['Address'] || 'No address';
                         const city = row['city'] || row['City'] || '';
                         const state = row['state'] || row['State'] || '';
-                        const priceRaw = row['6_listing_price'] || row['7_listing_price'] || row['price'] || row['Price'] || '0';
+                        const priceRaw = row['10_listing_price'] || row['price'] || row['Price'] || '0';
                         const price = parseInt(String(priceRaw).replace(/[^0-9]/g, '')) || 0;
                         const fieldCount = Object.values(row).filter(v => v && v !== '').length;
 
