@@ -250,7 +250,7 @@ function InteriorCondition({ properties }: CategoryEProps) {
               initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className="mb-3"
+              className="mb-4"
             >
               {/* Score bars row */}
               <div className="grid grid-cols-5 gap-2 px-1">
@@ -274,18 +274,18 @@ function InteriorCondition({ properties }: CategoryEProps) {
                 })}
               </div>
               {/* Property address below */}
-              <div className="flex items-center gap-1 mt-1 px-1">
+              <div className="flex items-center gap-1.5 mt-1.5 px-1">
                 <div
-                  className="w-2 h-2 rounded-sm flex-shrink-0"
-                  style={{ backgroundColor: prop.color.hex, boxShadow: `0 0 4px ${prop.color.hex}` }}
+                  className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+                  style={{ backgroundColor: prop.color.hex, boxShadow: `0 0 6px ${prop.color.hex}` }}
                 />
                 <span
-                  className="text-[9px] font-bold truncate drop-shadow-[0_0_4px_rgba(255,255,255,0.5)]"
+                  className="text-[10px] font-bold truncate drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
                   style={{ color: prop.color.hex }}
                 >
                   {prop.label}: {prop.address}
                 </span>
-                <span className="text-[8px] text-gray-500 flex-shrink-0">
+                <span className="text-[9px] text-white font-bold flex-shrink-0 drop-shadow-[0_0_4px_rgba(255,255,255,0.5)]">
                   {prop.age ? `(${prop.age}yr)` : ''}
                 </span>
               </div>
@@ -378,7 +378,7 @@ function ExteriorCondition({ properties }: CategoryEProps) {
               initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className="mb-3"
+              className="mb-4"
             >
               {/* Score bars row */}
               <div className="grid grid-cols-5 gap-2 px-1">
@@ -402,18 +402,18 @@ function ExteriorCondition({ properties }: CategoryEProps) {
                 })}
               </div>
               {/* Property address below */}
-              <div className="flex items-center gap-1 mt-1 px-1">
+              <div className="flex items-center gap-1.5 mt-1.5 px-1">
                 <div
-                  className="w-2 h-2 rounded-sm flex-shrink-0"
-                  style={{ backgroundColor: prop.color.hex, boxShadow: `0 0 4px ${prop.color.hex}` }}
+                  className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+                  style={{ backgroundColor: prop.color.hex, boxShadow: `0 0 6px ${prop.color.hex}` }}
                 />
                 <span
-                  className="text-[9px] font-bold truncate drop-shadow-[0_0_4px_rgba(255,255,255,0.5)]"
+                  className="text-[10px] font-bold truncate drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
                   style={{ color: prop.color.hex }}
                 >
                   {prop.label}: {prop.address}
                 </span>
-                <span className="text-[8px] text-gray-500 flex-shrink-0">
+                <span className="text-[9px] text-white font-bold flex-shrink-0 drop-shadow-[0_0_4px_rgba(255,255,255,0.5)]">
                   {prop.age ? `(${prop.age}yr)` : ''}
                 </span>
               </div>
