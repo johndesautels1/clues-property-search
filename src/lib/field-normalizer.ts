@@ -56,7 +56,7 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
   { fieldNumber: 13, apiKey: '13_last_sale_date', group: 'details', propName: 'lastSaleDate', type: 'date' },
   { fieldNumber: 14, apiKey: '14_last_sale_price', group: 'details', propName: 'lastSalePrice', type: 'number', validation: (v) => v > 0 && v < 1000000000 },
   { fieldNumber: 15, apiKey: '15_assessed_value', group: 'details', propName: 'assessedValue', type: 'number', validation: (v) => v > 0 && v < 1000000000 },
-  { fieldNumber: 16, apiKey: '16_redfin_estimate', group: 'financial', propName: 'redfinEstimate', type: 'number' },
+  { fieldNumber: 16, apiKey: '16_redfin_estimate', group: 'financial', propName: 'redfinEstimate', type: 'number', validation: (v) => v >= 0 && v < 1000000000 },
 
   // ========== GROUP 3: Property Basics (Fields 17-29) ==========
   { fieldNumber: 17, apiKey: '17_bedrooms', group: 'details', propName: 'bedrooms', type: 'number', validation: (v) => v >= 0 && v <= 50 },
@@ -81,7 +81,7 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
   { fieldNumber: 34, apiKey: '34_ownership_type', group: 'details', propName: 'ownershipType', type: 'string' },
   { fieldNumber: 35, apiKey: '35_annual_taxes', group: 'details', propName: 'annualTaxes', type: 'number', validation: (v) => v >= 0 && v < 200000 },
   { fieldNumber: 36, apiKey: '36_tax_year', group: 'details', propName: 'taxYear', type: 'number', validation: (v) => v >= 1900 && v <= new Date().getFullYear() + 1 },
-  { fieldNumber: 37, apiKey: '37_property_tax_rate', group: 'financial', propName: 'propertyTaxRate', type: 'number' },
+  { fieldNumber: 37, apiKey: '37_property_tax_rate', group: 'financial', propName: 'propertyTaxRate', type: 'number', validation: (v) => v >= 0 && v <= 10 },
   { fieldNumber: 38, apiKey: '38_tax_exemptions', group: 'financial', propName: 'taxExemptions', type: 'string' },
 
   // ========== GROUP 5: Structure & Systems (Fields 39-48) ==========
@@ -101,7 +101,7 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
   { fieldNumber: 50, apiKey: '50_kitchen_features', group: 'structural', propName: 'kitchenFeatures', type: 'string' },
   { fieldNumber: 51, apiKey: '51_appliances_included', group: 'structural', propName: 'appliancesIncluded', type: 'array' },
   { fieldNumber: 52, apiKey: '52_fireplace_yn', group: 'structural', propName: 'fireplaceYn', type: 'boolean' },
-  { fieldNumber: 53, apiKey: '53_fireplace_count', group: 'structural', propName: 'fireplaceCount', type: 'number' },
+  { fieldNumber: 53, apiKey: '53_fireplace_count', group: 'structural', propName: 'fireplaceCount', type: 'number', validation: (v) => v >= 0 && v <= 20 },
 
   // ========== GROUP 7: Exterior Features (Fields 54-58) ==========
   { fieldNumber: 54, apiKey: '54_pool_yn', group: 'structural', propName: 'poolYn', type: 'boolean' },
@@ -118,16 +118,16 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
 
   // ========== GROUP 9: Schools (Fields 63-73) ==========
   { fieldNumber: 63, apiKey: '63_school_district', group: 'location', propName: 'schoolDistrictName', type: 'string' },
-  { fieldNumber: 64, apiKey: '64_elevation_feet', group: 'location', propName: 'elevationFeet', type: 'number' },
+  { fieldNumber: 64, apiKey: '64_elevation_feet', group: 'location', propName: 'elevationFeet', type: 'number', validation: (v) => v >= -1000 && v <= 30000 },
   { fieldNumber: 65, apiKey: '65_elementary_school', group: 'location', propName: 'assignedElementary', type: 'string' },
   { fieldNumber: 66, apiKey: '66_elementary_rating', group: 'location', propName: 'elementaryRating', type: 'string' },
-  { fieldNumber: 67, apiKey: '67_elementary_distance_mi', group: 'location', propName: 'elementaryDistanceMiles', type: 'number' },
+  { fieldNumber: 67, apiKey: '67_elementary_distance_mi', group: 'location', propName: 'elementaryDistanceMiles', type: 'number', validation: (v) => v >= 0 && v <= 100 },
   { fieldNumber: 68, apiKey: '68_middle_school', group: 'location', propName: 'assignedMiddle', type: 'string' },
   { fieldNumber: 69, apiKey: '69_middle_rating', group: 'location', propName: 'middleRating', type: 'string' },
-  { fieldNumber: 70, apiKey: '70_middle_distance_mi', group: 'location', propName: 'middleDistanceMiles', type: 'number' },
+  { fieldNumber: 70, apiKey: '70_middle_distance_mi', group: 'location', propName: 'middleDistanceMiles', type: 'number', validation: (v) => v >= 0 && v <= 100 },
   { fieldNumber: 71, apiKey: '71_high_school', group: 'location', propName: 'assignedHigh', type: 'string' },
   { fieldNumber: 72, apiKey: '72_high_rating', group: 'location', propName: 'highRating', type: 'string' },
-  { fieldNumber: 73, apiKey: '73_high_distance_mi', group: 'location', propName: 'highDistanceMiles', type: 'number' },
+  { fieldNumber: 73, apiKey: '73_high_distance_mi', group: 'location', propName: 'highDistanceMiles', type: 'number', validation: (v) => v >= 0 && v <= 100 },
 
   // ========== GROUP 10: Location Scores (Fields 74-82) ==========
   { fieldNumber: 74, apiKey: '74_walk_score', group: 'location', propName: 'walkScore', type: 'any' },
@@ -141,11 +141,11 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
   { fieldNumber: 82, apiKey: '82_commute_to_city_center', group: 'location', propName: 'commuteTimeCityCenter', type: 'string' },
 
   // ========== GROUP 11: Distances (Fields 83-87) ==========
-  { fieldNumber: 83, apiKey: '83_distance_grocery_mi', group: 'location', propName: 'distanceGroceryMiles', type: 'number' },
-  { fieldNumber: 84, apiKey: '84_distance_hospital_mi', group: 'location', propName: 'distanceHospitalMiles', type: 'number' },
-  { fieldNumber: 85, apiKey: '85_distance_airport_mi', group: 'location', propName: 'distanceAirportMiles', type: 'number' },
-  { fieldNumber: 86, apiKey: '86_distance_park_mi', group: 'location', propName: 'distanceParkMiles', type: 'number' },
-  { fieldNumber: 87, apiKey: '87_distance_beach_mi', group: 'location', propName: 'distanceBeachMiles', type: 'number' },
+  { fieldNumber: 83, apiKey: '83_distance_grocery_mi', group: 'location', propName: 'distanceGroceryMiles', type: 'number', validation: (v) => v >= 0 && v <= 100 },
+  { fieldNumber: 84, apiKey: '84_distance_hospital_mi', group: 'location', propName: 'distanceHospitalMiles', type: 'number', validation: (v) => v >= 0 && v <= 100 },
+  { fieldNumber: 85, apiKey: '85_distance_airport_mi', group: 'location', propName: 'distanceAirportMiles', type: 'number', validation: (v) => v >= 0 && v <= 500 },
+  { fieldNumber: 86, apiKey: '86_distance_park_mi', group: 'location', propName: 'distanceParkMiles', type: 'number', validation: (v) => v >= 0 && v <= 100 },
+  { fieldNumber: 87, apiKey: '87_distance_beach_mi', group: 'location', propName: 'distanceBeachMiles', type: 'number', validation: (v) => v >= 0 && v <= 500 },
 
   // ========== GROUP 12: Safety & Crime (Fields 88-90) ==========
   { fieldNumber: 88, apiKey: '88_violent_crime_index', group: 'location', propName: 'crimeIndexViolent', type: 'string' },
@@ -153,17 +153,17 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
   { fieldNumber: 90, apiKey: '90_neighborhood_safety_rating', group: 'location', propName: 'neighborhoodSafetyRating', type: 'string' },
 
   // ========== GROUP 13: Market & Investment (Fields 91-103) ==========
-  { fieldNumber: 91, apiKey: '91_median_home_price_neighborhood', group: 'financial', propName: 'medianHomePriceNeighborhood', type: 'number' },
-  { fieldNumber: 92, apiKey: '92_price_per_sqft_recent_avg', group: 'financial', propName: 'pricePerSqftRecentAvg', type: 'number' },
-  { fieldNumber: 93, apiKey: '93_price_to_rent_ratio', group: 'financial', propName: 'priceToRentRatio', type: 'number' },
-  { fieldNumber: 94, apiKey: '94_price_vs_median_percent', group: 'financial', propName: 'priceVsMedianPercent', type: 'number' },
-  { fieldNumber: 95, apiKey: '95_days_on_market_avg', group: 'financial', propName: 'daysOnMarketAvg', type: 'number' },
+  { fieldNumber: 91, apiKey: '91_median_home_price_neighborhood', group: 'financial', propName: 'medianHomePriceNeighborhood', type: 'number', validation: (v) => v >= 0 && v < 50000000 },
+  { fieldNumber: 92, apiKey: '92_price_per_sqft_recent_avg', group: 'financial', propName: 'pricePerSqftRecentAvg', type: 'number', validation: (v) => v >= 0 && v < 50000 },
+  { fieldNumber: 93, apiKey: '93_price_to_rent_ratio', group: 'financial', propName: 'priceToRentRatio', type: 'number', validation: (v) => v >= 0 && v <= 100 },
+  { fieldNumber: 94, apiKey: '94_price_vs_median_percent', group: 'financial', propName: 'priceVsMedianPercent', type: 'number', validation: (v) => v >= -100 && v <= 1000 },
+  { fieldNumber: 95, apiKey: '95_days_on_market_avg', group: 'financial', propName: 'daysOnMarketAvg', type: 'number', validation: (v) => v >= 0 && v <= 3650 },
   { fieldNumber: 96, apiKey: '96_inventory_surplus', group: 'financial', propName: 'inventorySurplus', type: 'string' },
-  { fieldNumber: 97, apiKey: '97_insurance_est_annual', group: 'financial', propName: 'insuranceEstAnnual', type: 'number' },
-  { fieldNumber: 98, apiKey: '98_rental_estimate_monthly', group: 'financial', propName: 'rentalEstimateMonthly', type: 'number' },
-  { fieldNumber: 99, apiKey: '99_rental_yield_est', group: 'financial', propName: 'rentalYieldEst', type: 'number' },
-  { fieldNumber: 100, apiKey: '100_vacancy_rate_neighborhood', group: 'financial', propName: 'vacancyRateNeighborhood', type: 'number' },
-  { fieldNumber: 101, apiKey: '101_cap_rate_est', group: 'financial', propName: 'capRateEst', type: 'number' },
+  { fieldNumber: 97, apiKey: '97_insurance_est_annual', group: 'financial', propName: 'insuranceEstAnnual', type: 'number', validation: (v) => v >= 0 && v < 100000 },
+  { fieldNumber: 98, apiKey: '98_rental_estimate_monthly', group: 'financial', propName: 'rentalEstimateMonthly', type: 'number', validation: (v) => v >= 0 && v < 500000 },
+  { fieldNumber: 99, apiKey: '99_rental_yield_est', group: 'financial', propName: 'rentalYieldEst', type: 'number', validation: (v) => v >= 0 && v <= 50 },
+  { fieldNumber: 100, apiKey: '100_vacancy_rate_neighborhood', group: 'financial', propName: 'vacancyRateNeighborhood', type: 'number', validation: (v) => v >= 0 && v <= 100 },
+  { fieldNumber: 101, apiKey: '101_cap_rate_est', group: 'financial', propName: 'capRateEst', type: 'number', validation: (v) => v >= 0 && v <= 50 },
   { fieldNumber: 102, apiKey: '102_financing_terms', group: 'financial', propName: 'financingTerms', type: 'string' },
   { fieldNumber: 103, apiKey: '103_comparable_sales', group: 'financial', propName: 'comparableSalesLast3', type: 'array' },
 
