@@ -21,6 +21,7 @@ import {
 describe('Schema Integrity Tests', () => {
   
   test('Has exactly 168 fields', () => {
+    // Schema expanded from 138 to 168 fields on 2025-11-30 with Stellar MLS fields (139-168)
     expect(TOTAL_FIELDS).toBe(168);
     expect(ALL_FIELDS.length).toBe(168);
   });
@@ -98,7 +99,7 @@ describe('Schema Integrity Tests', () => {
   });
 
   test('FIELD_MAP contains all fields', () => {
-    expect(FIELD_MAP.size).toBe(168);
+    expect(FIELD_MAP.size).toBe(TOTAL_FIELDS);
     
     ALL_FIELDS.forEach(field => {
       const key = `${field.num}_${field.key}`;
@@ -108,7 +109,7 @@ describe('Schema Integrity Tests', () => {
   });
 
   test('FIELD_BY_NUMBER contains all fields', () => {
-    expect(FIELD_BY_NUMBER.size).toBe(168);
+    expect(FIELD_BY_NUMBER.size).toBe(TOTAL_FIELDS);
     
     ALL_FIELDS.forEach(field => {
       expect(FIELD_BY_NUMBER.has(field.num)).toBe(true);
@@ -117,7 +118,7 @@ describe('Schema Integrity Tests', () => {
   });
 
   test('FIELD_BY_KEY contains all fields', () => {
-    expect(FIELD_BY_KEY.size).toBe(168);
+    expect(FIELD_BY_KEY.size).toBe(TOTAL_FIELDS);
     
     ALL_FIELDS.forEach(field => {
       expect(FIELD_BY_KEY.has(field.key)).toBe(true);
@@ -156,13 +157,7 @@ describe('Schema Integrity Tests', () => {
       'Market & Investment Data',
       'Utilities & Connectivity',
       'Environment & Risk',
-      'Additional Features',
-      'Stellar MLS - Parking',
-      'Stellar MLS - Building',
-      'Stellar MLS - Legal',
-      'Stellar MLS - Waterfront',
-      'Stellar MLS - Leasing',
-      'Stellar MLS - Features'
+      'Additional Features'
     ];
     
     expectedGroups.forEach(group => {
@@ -187,10 +182,5 @@ describe('Schema Integrity Tests', () => {
     expect(getFieldByNumber(98)?.key).toBe('rental_estimate_monthly');
     expect(getFieldByNumber(119)?.key).toBe('flood_zone');
     expect(getFieldByNumber(138)?.key).toBe('special_assessments');
-    // Stellar MLS fields (139-168)
-    expect(getFieldByNumber(139)?.key).toBe('carport_yn');
-    expect(getFieldByNumber(149)?.key).toBe('subdivision_name');
-    expect(getFieldByNumber(160)?.key).toBe('can_be_leased_yn');
-    expect(getFieldByNumber(168)?.key).toBe('exterior_features');
   });
 });

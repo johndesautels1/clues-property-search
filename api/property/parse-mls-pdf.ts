@@ -5,14 +5,36 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import {
+  isMonthlyHoaFeeKey,
+  convertMonthlyHoaToAnnual
+} from '../../src/lib/field-map-flat-to-numbered.js';
+import {
+  safeJsonParse,
+  extractAndParseJson
+} from '../../src/lib/safe-json-parse.js';
 
 // Vercel serverless config
 export const config = {
   maxDuration: 120, // 2 minutes for PDF parsing
 };
 
+// Fields that contain monthly HOA values (need conversion to annual)
+const MONTHLY_HOA_FIELDS = new Set([
+  'Monthly HOA Amount',
+  'HOA Monthly',
+  'Average Monthly Fees',
+  'HOA Fee', // Often monthly in MLS sheets
+]);
+
+// Fields that are already annual
+const ANNUAL_HOA_FIELDS = new Set([
+  'HOA Annual',
+  'Total Annual Assoc Fees',
+]);
+
 // MLS field mapping: Maps Stellar MLS field names to our numbered schema
-// UPDATED: 2025-12-01 - Expanded mappings for better field coverage (168 fields)
+// UPDATED: 2025-11-30 - Corrected ALL field numbers to match fields-schema.ts
 const MLS_FIELD_MAPPING: Record<string, string> = {
   // ================================================================
   // GROUP 1: ADDRESS & IDENTITY (Fields 1-9)
@@ -20,29 +42,15 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'Address': '1_full_address',
   'Full Address': '1_full_address',
   'Property Address': '1_full_address',
-  'Street Address': '1_full_address',
-  'Location': '1_full_address',
   'MLS#': '2_mls_primary',
   'MLS Number': '2_mls_primary',
   'MLS': '2_mls_primary',
   'Listing ID': '2_mls_primary',
-  'List Number': '2_mls_primary',
-  'Secondary MLS': '3_mls_secondary',
-  'Other MLS': '3_mls_secondary',
-  'MLS Secondary': '3_mls_secondary',
-  'Cross MLS': '3_mls_secondary',
-  'IDX': '3_mls_secondary',
   'Status': '4_listing_status',
   'Listing Status': '4_listing_status',
-  'Property Status': '4_listing_status',
-  'Listing Type': '4_listing_status',
   'List Date': '5_listing_date',
   'Original List Date': '5_listing_date',
-  'Date Listed': '5_listing_date',
-  'On Market Date': '5_listing_date',
   'Neighborhood': '6_neighborhood',
-  'Area': '6_neighborhood',
-  'Location Area': '6_neighborhood',
   'County': '7_county',
   'Zip': '8_zip_code',
   'Zip Code': '8_zip_code',
@@ -52,8 +60,6 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'Parcel ID': '9_parcel_id',
   'Parcel Number': '9_parcel_id',
   'Alt Key/Folio #': '9_parcel_id',
-  'Folio Number': '9_parcel_id',
-  'APN': '9_parcel_id',
 
   // ================================================================
   // GROUP 2: PRICING & VALUE (Fields 10-16)
@@ -62,31 +68,13 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'Listing Price': '10_listing_price',
   'Current Price': '10_listing_price',
   'Price': '10_listing_price',
-  'Asking Price': '10_listing_price',
-  'Original Price': '10_listing_price',
   'LP/SqFt': '11_price_per_sqft',
   'Price/SqFt': '11_price_per_sqft',
   '$/SqFt': '11_price_per_sqft',
-  'Price Per Sq Ft': '11_price_per_sqft',
-  'Cost Per Sq Ft': '11_price_per_sqft',
   'Zestimate': '12_market_value_estimate',
   'Estimated Value': '12_market_value_estimate',
-  'Market Value': '12_market_value_estimate',
-  'Appraised Value': '12_market_value_estimate',
-  'Prior Sale Date': '13_last_sale_date',
-  'Last Sale Date': '13_last_sale_date',
-  'Previous Sale Date': '13_last_sale_date',
-  'Sold Date': '13_last_sale_date',
-  'Close Date': '13_last_sale_date',
-  'Prior Sale Price': '14_last_sale_price',
-  'Last Sale Price': '14_last_sale_price',
-  'Previous Sale Price': '14_last_sale_price',
-  'Sold Price': '14_last_sale_price',
   'Assessed Value': '15_assessed_value',
   'Tax Assessed Value': '15_assessed_value',
-  'Just Value': '15_assessed_value',
-  'Total Assessed Value': '15_assessed_value',
-  'Redfin Estimate': '16_redfin_estimate',
 
   // ================================================================
   // GROUP 3: PROPERTY BASICS (Fields 17-29)
@@ -95,69 +83,37 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'Bedrooms': '17_bedrooms',
   'BR': '17_bedrooms',
   'Bedrooms Total': '17_bedrooms',
-  'Total Bedrooms': '17_bedrooms',
-  'Bed': '17_bedrooms',
   'Full Baths': '18_full_bathrooms',
   'Full Bathrooms': '18_full_bathrooms',
-  'Full Bath': '18_full_bathrooms',
   'Half Baths': '19_half_bathrooms',
   'Half Bathrooms': '19_half_bathrooms',
-  'Half Bath': '19_half_bathrooms',
-  'Partial Baths': '19_half_bathrooms',
   'Baths': '20_total_bathrooms',
   'Total Baths': '20_total_bathrooms',
   'Bathrooms Total': '20_total_bathrooms',
-  'BA': '20_total_bathrooms',
-  'Bathrooms': '20_total_bathrooms',
   'Heated Area': '21_living_sqft',
   'Living Area': '21_living_sqft',
   'Living SqFt': '21_living_sqft',
   'Heated SqFt': '21_living_sqft',
   'Interior SqFt': '21_living_sqft',
-  'Sqft': '21_living_sqft',
-  'Square Feet': '21_living_sqft',
-  'Living Square Feet': '21_living_sqft',
-  'Above Grade Finished Area': '21_living_sqft',
   'Total Area': '22_total_sqft_under_roof',
   'Total SqFt': '22_total_sqft_under_roof',
-  'Building Area Total': '22_total_sqft_under_roof',
-  'Under Roof': '22_total_sqft_under_roof',
-  'Total Building Area': '22_total_sqft_under_roof',
-  'Gross Area': '22_total_sqft_under_roof',
   'Lot Size': '23_lot_size_sqft',
   'Lot SqFt': '23_lot_size_sqft',
-  'Lot Square Feet': '23_lot_size_sqft',
-  'Land Area': '23_lot_size_sqft',
   'Lot Size Acres': '24_lot_size_acres',
   'Lot Acres': '24_lot_size_acres',
   'Total Acreage': '24_lot_size_acres',
-  'Acres': '24_lot_size_acres',
-  'Land Acres': '24_lot_size_acres',
   'Year Built': '25_year_built',
   'Built': '25_year_built',
-  'Year Constructed': '25_year_built',
-  'Construction Year': '25_year_built',
   'Property Style': '26_property_type',
   'Property Type': '26_property_type',
   'Type': '26_property_type',
   'Property Sub Type': '26_property_type',
-  'Sub Type': '26_property_type',
-  'Style': '26_property_type',
-  'Building Type': '26_property_type',
   'Stories': '27_stories',
-  'Levels': '27_stories',
-  'Number of Stories': '27_stories',
-  '# Stories': '27_stories',
-  'Floors': '27_stories',
   'Garage': '28_garage_spaces',
   'Garage Spaces': '28_garage_spaces',
   'Spcs': '28_garage_spaces',
-  'Garage Size': '28_garage_spaces',
-  '# of Garages': '28_garage_spaces',
   'Parking Spaces': '29_parking_total',
   'Total Parking': '29_parking_total',
-  'Parking': '29_parking_total',
-  'Parking Total Spaces': '29_parking_total',
 
   // ================================================================
   // GROUP 4: HOA & TAXES (Fields 30-38)
@@ -165,43 +121,23 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'HOA / Comm Assn': '30_hoa_yn',
   'HOA': '30_hoa_yn',
   'HOA Y/N': '30_hoa_yn',
-  'Association': '30_hoa_yn',
-  'Community Association': '30_hoa_yn',
   'HOA Fee': '31_hoa_fee_annual',
   'Monthly HOA Amount': '31_hoa_fee_annual',
   'HOA Monthly': '31_hoa_fee_annual',
   'HOA Annual': '31_hoa_fee_annual',
   'Total Annual Assoc Fees': '31_hoa_fee_annual',
   'Average Monthly Fees': '31_hoa_fee_annual',
-  'Association Fee': '31_hoa_fee_annual',
-  'Condo Fee': '31_hoa_fee_annual',
-  'Maintenance Fee': '31_hoa_fee_annual',
   'HOA Name': '32_hoa_name',
   'Association Name': '32_hoa_name',
   'Master Assn/Name': '32_hoa_name',
-  'HOA Company': '32_hoa_name',
   'Fee Includes': '33_hoa_includes',
   'HOA Includes': '33_hoa_includes',
   'Association Fee Includes': '33_hoa_includes',
-  'Amenities Included': '33_hoa_includes',
   'Ownership': '34_ownership_type',
-  'Ownership Type': '34_ownership_type',
-  'Fee Simple': '34_ownership_type',
   'Taxes': '35_annual_taxes',
   'Annual Taxes': '35_annual_taxes',
   'Tax Amount': '35_annual_taxes',
-  'Property Tax': '35_annual_taxes',
-  'Real Estate Tax': '35_annual_taxes',
   'Tax Year': '36_tax_year',
-  'Property Tax Year': '36_tax_year',
-  'Mill Rate': '37_property_tax_rate',
-  'Tax Rate': '37_property_tax_rate',
-  'Property Tax Rate': '37_property_tax_rate',
-  'Millage': '37_property_tax_rate',
-  'Millage Rate': '37_property_tax_rate',
-  'Tax Exemptions': '38_tax_exemptions',
-  'Exemptions': '38_tax_exemptions',
-  'Tax Exemption': '38_tax_exemptions',
   'HOA Pmt Sched': 'hoa_payment_schedule',
 
   // ================================================================
@@ -210,50 +146,18 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'Roof': '39_roof_type',
   'Roof Type': '39_roof_type',
   'Roofing': '39_roof_type',
-  'Roof Material': '39_roof_type',
-  'Roof Age': '40_roof_age_est',
-  'Roof Age Est': '40_roof_age_est',
-  'Roof Year': '40_roof_age_est',
-  'Year Roof': '40_roof_age_est',
-  'Roof Installed': '40_roof_age_est',
   'Ext Construction': '41_exterior_material',
   'Exterior': '41_exterior_material',
   'Exterior Material': '41_exterior_material',
   'Construction': '41_exterior_material',
-  'Construction Materials': '41_exterior_material',
-  'Exterior Construction': '41_exterior_material',
-  'Siding': '41_exterior_material',
   'Foundation': '42_foundation',
   'Foundation Type': '42_foundation',
-  'Foundation Details': '42_foundation',
-  'Water Heater': '43_water_heater_type',
-  'Water Heater Type': '43_water_heater_type',
-  'Hot Water': '43_water_heater_type',
-  'Hot Water Heater': '43_water_heater_type',
-  'Garage Type': '44_garage_type',
-  'Garage Style': '44_garage_type',
-  'Garage Description': '44_garage_type',
   'A/C': '45_hvac_type',
   'Heat/Fuel': '45_hvac_type',
   'HVAC': '45_hvac_type',
   'Heating': '45_hvac_type',
   'Cooling': '45_hvac_type',
-  'Heating Type': '45_hvac_type',
-  'Cooling Type': '45_hvac_type',
-  'Central Air': '45_hvac_type',
-  'Air Conditioning': '45_hvac_type',
-  'HVAC Age': '46_hvac_age',
-  'AC Age': '46_hvac_age',
-  'Age of HVAC': '46_hvac_age',
-  'HVAC Year': '46_hvac_age',
   'Laundry Features': '47_laundry_type',
-  'Laundry': '47_laundry_type',
-  'Laundry Room': '47_laundry_type',
-  'Washer/Dryer': '47_laundry_type',
-  'Property Condition': '48_interior_condition',
-  'Interior Condition': '48_interior_condition',
-  'Condition': '48_interior_condition',
-  'Overall Condition': '48_interior_condition',
 
   // ================================================================
   // GROUP 6: INTERIOR FEATURES (Fields 49-53)
@@ -261,275 +165,47 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'Flooring Covering': '49_flooring_type',
   'Flooring': '49_flooring_type',
   'Floor': '49_flooring_type',
-  'Floor Covering': '49_flooring_type',
-  'Floors': '49_flooring_type',
   'Kitchen': '50_kitchen_features',
   'Kitchen Features': '50_kitchen_features',
-  'Kitchen Description': '50_kitchen_features',
   'Appliances Incl': '51_appliances_included',
   'Appliances': '51_appliances_included',
   'Appliances Included': '51_appliances_included',
-  'Equipment': '51_appliances_included',
   'Fireplace': '52_fireplace_yn',
   'Fireplace Y/N': '52_fireplace_yn',
-  'Has Fireplace': '52_fireplace_yn',
-  'Fireplaces': '53_fireplace_count',
-  '# Fireplaces': '53_fireplace_count',
-  'Number of Fireplaces': '53_fireplace_count',
-  'Fireplace Count': '53_fireplace_count',
 
   // ================================================================
   // GROUP 7: EXTERIOR FEATURES (Fields 54-58)
   // ================================================================
   'Pool': '54_pool_yn',
   'Pool Y/N': '54_pool_yn',
-  'Has Pool': '54_pool_yn',
-  'Private Pool': '54_pool_yn',
   'Pool Type': '55_pool_type',
   'Pool Features': '55_pool_type',
-  'Pool Description': '55_pool_type',
-  'Deck': '56_deck_patio',
-  'Patio': '56_deck_patio',
-  'Deck/Patio': '56_deck_patio',
-  'Patio And Porch Features': '56_deck_patio',
-  'Porch': '56_deck_patio',
-  'Outdoor Living': '56_deck_patio',
-  'Fence': '57_fence',
-  'Fencing': '57_fence',
-  'Fence Type': '57_fence',
-  'Fenced': '57_fence',
-  'Landscaping': '58_landscaping',
-  'Landscape': '58_landscaping',
-  'Lot Description': '58_landscaping',
-  'Yard': '58_landscaping',
-
-  // ================================================================
-  // GROUP 8: PERMITS & RENOVATIONS (Fields 59-62)
-  // ================================================================
-  'Recent Renovations': '59_recent_renovations',
-  'Renovations': '59_recent_renovations',
-  'Updates': '59_recent_renovations',
-  'Improvements': '59_recent_renovations',
-  'Recent Updates': '59_recent_renovations',
-  'Upgrades': '59_recent_renovations',
-  'Remodeled': '59_recent_renovations',
-  'Roof Permit': '60_permit_history_roof',
-  'Permit History Roof': '60_permit_history_roof',
-  'HVAC Permit': '61_permit_history_hvac',
-  'Permit History HVAC': '61_permit_history_hvac',
-  'Other Permits': '62_permit_history_other',
-  'Building Permits': '62_permit_history_other',
-  'Permit History': '62_permit_history_other',
 
   // ================================================================
   // GROUP 9: SCHOOLS (Fields 63-73)
   // ================================================================
   'School District': '63_school_district',
   'District': '63_school_district',
-  'School District Name': '63_school_district',
-  'Elevation': '64_elevation_feet',
-  'Elevation Feet': '64_elevation_feet',
-  'Property Elevation': '64_elevation_feet',
-  'Feet Above Sea Level': '64_elevation_feet',
   'Elementary School': '65_elementary_school',
   'Elementary': '65_elementary_school',
-  'Assigned Elementary': '65_elementary_school',
-  'Elementary Rating': '66_elementary_rating',
-  'Elementary School Rating': '66_elementary_rating',
-  'Elementary Distance': '67_elementary_distance_mi',
-  'Elementary Distance Miles': '67_elementary_distance_mi',
   'Middle School': '68_middle_school',
   'Middle': '68_middle_school',
-  'Assigned Middle': '68_middle_school',
-  'Middle Rating': '69_middle_rating',
-  'Middle School Rating': '69_middle_rating',
-  'Middle Distance': '70_middle_distance_mi',
-  'Middle Distance Miles': '70_middle_distance_mi',
   'High School': '71_high_school',
   'High': '71_high_school',
-  'Assigned High': '71_high_school',
-  'High Rating': '72_high_rating',
-  'High School Rating': '72_high_rating',
-  'High Distance': '73_high_distance_mi',
-  'High Distance Miles': '73_high_distance_mi',
-
-  // ================================================================
-  // GROUP 10: LOCATION SCORES (Fields 74-82)
-  // ================================================================
-  'Walk Score': '74_walk_score',
-  'WalkScore': '74_walk_score',
-  'Transit Score': '75_transit_score',
-  'TransitScore': '75_transit_score',
-  'Bike Score': '76_bike_score',
-  'BikeScore': '76_bike_score',
-  'Safety Score': '77_safety_score',
-  'Safety': '77_safety_score',
-  'Noise Level': '78_noise_level',
-  'Noise': '78_noise_level',
-  'Sound Score': '78_noise_level',
-  'Traffic Level': '79_traffic_level',
-  'Traffic': '79_traffic_level',
-  'Walkability Description': '80_walkability_description',
-  'Walkability': '80_walkability_description',
-  'Public Transit Access': '81_public_transit_access',
-  'Transit Access': '81_public_transit_access',
-  'Public Transit': '81_public_transit_access',
-  'Commute to City Center': '82_commute_to_city_center',
-  'Commute Time': '82_commute_to_city_center',
-  'Downtown Commute': '82_commute_to_city_center',
-
-  // ================================================================
-  // GROUP 11: DISTANCES & AMENITIES (Fields 83-87)
-  // ================================================================
-  'Distance to Grocery': '83_distance_grocery_mi',
-  'Grocery Distance': '83_distance_grocery_mi',
-  'Nearest Grocery': '83_distance_grocery_mi',
-  'Distance to Hospital': '84_distance_hospital_mi',
-  'Hospital Distance': '84_distance_hospital_mi',
-  'Nearest Hospital': '84_distance_hospital_mi',
-  'Distance to Airport': '85_distance_airport_mi',
-  'Airport Distance': '85_distance_airport_mi',
-  'Nearest Airport': '85_distance_airport_mi',
-  'Distance to Park': '86_distance_park_mi',
-  'Park Distance': '86_distance_park_mi',
-  'Nearest Park': '86_distance_park_mi',
-  'Distance to Beach': '87_distance_beach_mi',
-  'Beach Distance': '87_distance_beach_mi',
-  'Nearest Beach': '87_distance_beach_mi',
-  'Beach Access': '87_distance_beach_mi',
-
-  // ================================================================
-  // GROUP 12: SAFETY & CRIME (Fields 88-90)
-  // ================================================================
-  'Violent Crime Index': '88_violent_crime_index',
-  'Violent Crime': '88_violent_crime_index',
-  'Property Crime Index': '89_property_crime_index',
-  'Property Crime': '89_property_crime_index',
-  'Neighborhood Safety Rating': '90_neighborhood_safety_rating',
-  'Safety Rating': '90_neighborhood_safety_rating',
-  'Crime Rating': '90_neighborhood_safety_rating',
 
   // ================================================================
   // GROUP 13: MARKET & INVESTMENT (Fields 91-103)
   // ================================================================
-  'Median Home Price': '91_median_home_price_neighborhood',
-  'Neighborhood Median Price': '91_median_home_price_neighborhood',
-  'Area Median Price': '91_median_home_price_neighborhood',
-  'Price Per SqFt Avg': '92_price_per_sqft_recent_avg',
-  'Average Price Per SqFt': '92_price_per_sqft_recent_avg',
-  'Area Price Per SqFt': '92_price_per_sqft_recent_avg',
-  'Price to Rent Ratio': '93_price_to_rent_ratio',
-  'Price vs Median': '94_price_vs_median_percent',
   'ADOM': '95_days_on_market_avg',
   'CDOM': '95_days_on_market_avg',
   'Days on Market': '95_days_on_market_avg',
   'DOM': '95_days_on_market_avg',
-  'Average Days on Market': '95_days_on_market_avg',
-  'Market Days': '95_days_on_market_avg',
-  'Inventory': '96_inventory_surplus',
-  'Market Inventory': '96_inventory_surplus',
-  'Insurance Estimate': '97_insurance_est_annual',
-  'Insurance': '97_insurance_est_annual',
-  'Annual Insurance': '97_insurance_est_annual',
-  'Rental Estimate': '98_rental_estimate_monthly',
-  'Rent Estimate': '98_rental_estimate_monthly',
-  'Monthly Rent': '98_rental_estimate_monthly',
-  'Rental Income': '98_rental_estimate_monthly',
-  'Rental Yield': '99_rental_yield_est',
-  'Yield': '99_rental_yield_est',
-  'Vacancy Rate': '100_vacancy_rate_neighborhood',
-  'Cap Rate': '101_cap_rate_est',
-  'Capitalization Rate': '101_cap_rate_est',
-  'Financing Terms': '102_financing_terms',
-  'Financing': '102_financing_terms',
-  'Loan Terms': '102_financing_terms',
-  'Comparable Sales': '103_comparable_sales',
-  'Comps': '103_comparable_sales',
-  'Recent Sales': '103_comparable_sales',
-
-  // ================================================================
-  // GROUP 14: UTILITIES & CONNECTIVITY (Fields 104-116)
-  // ================================================================
-  'Electric Provider': '104_electric_provider',
-  'Electric Company': '104_electric_provider',
-  'Power Company': '104_electric_provider',
-  'Electric': '104_electric_provider',
-  'Avg Electric Bill': '105_avg_electric_bill',
-  'Electric Bill': '105_avg_electric_bill',
-  'Average Electric': '105_avg_electric_bill',
-  'Water Provider': '106_water_provider',
-  'Water Company': '106_water_provider',
-  'Water Source': '106_water_provider',
-  'Water': '106_water_provider',
-  'Avg Water Bill': '107_avg_water_bill',
-  'Water Bill': '107_avg_water_bill',
-  'Average Water': '107_avg_water_bill',
-  'Sewer Provider': '108_sewer_provider',
-  'Sewer Company': '108_sewer_provider',
-  'Sewer': '108_sewer_provider',
-  'Sewer Type': '108_sewer_provider',
-  'Natural Gas': '109_natural_gas',
-  'Gas': '109_natural_gas',
-  'Gas Service': '109_natural_gas',
-  'Gas Provider': '109_natural_gas',
-  'Trash Provider': '110_trash_provider',
-  'Garbage Service': '110_trash_provider',
-  'Trash Service': '110_trash_provider',
-  'Waste Management': '110_trash_provider',
-  'Internet Providers': '111_internet_providers_top3',
-  'Internet': '111_internet_providers_top3',
-  'ISP': '111_internet_providers_top3',
-  'Max Internet Speed': '112_max_internet_speed',
-  'Internet Speed': '112_max_internet_speed',
-  'Broadband Speed': '112_max_internet_speed',
-  'Fiber Available': '113_fiber_available',
-  'Fiber': '113_fiber_available',
-  'Fiber Optic': '113_fiber_available',
-  'Cable TV Provider': '114_cable_tv_provider',
-  'Cable Provider': '114_cable_tv_provider',
-  'Cable': '114_cable_tv_provider',
-  'Cell Coverage Quality': '115_cell_coverage_quality',
-  'Cell Coverage': '115_cell_coverage_quality',
-  'Mobile Coverage': '115_cell_coverage_quality',
-  'Emergency Services Distance': '116_emergency_services_distance',
-  'Emergency Services': '116_emergency_services_distance',
-  'Fire Station Distance': '116_emergency_services_distance',
 
   // ================================================================
   // GROUP 15: ENVIRONMENT & RISK (Fields 117-130)
   // ================================================================
-  'Air Quality Index': '117_air_quality_index',
-  'AQI': '117_air_quality_index',
-  'Air Quality': '117_air_quality_index',
-  'Air Quality Grade': '118_air_quality_grade',
   'Flood Zone': '119_flood_zone',
   'Flood Zone Code': '119_flood_zone',
-  'FEMA Flood Zone': '119_flood_zone',
-  'Flood Risk Level': '120_flood_risk_level',
-  'Flood Risk': '120_flood_risk_level',
-  'Climate Risk': '121_climate_risk',
-  'Climate': '121_climate_risk',
-  'Wildfire Risk': '122_wildfire_risk',
-  'Fire Risk': '122_wildfire_risk',
-  'Earthquake Risk': '123_earthquake_risk',
-  'Seismic Risk': '123_earthquake_risk',
-  'Hurricane Risk': '124_hurricane_risk',
-  'Storm Risk': '124_hurricane_risk',
-  'Tornado Risk': '125_tornado_risk',
-  'Radon Risk': '126_radon_risk',
-  'Radon': '126_radon_risk',
-  'Superfund Site Nearby': '127_superfund_site_nearby',
-  'Superfund': '127_superfund_site_nearby',
-  'Environmental Hazard': '127_superfund_site_nearby',
-  'Sea Level Rise Risk': '128_sea_level_rise_risk',
-  'Sea Level Rise': '128_sea_level_rise_risk',
-  'Coastal Flood Risk': '128_sea_level_rise_risk',
-  'Noise Level dB': '129_noise_level_db_est',
-  'Noise dB': '129_noise_level_db_est',
-  'Decibel Level': '129_noise_level_db_est',
-  'Solar Potential': '130_solar_potential',
-  'Solar': '130_solar_potential',
-  'Solar Score': '130_solar_potential',
   'Flood Zone Date': 'flood_zone_date',
   'Flood Zone Panel': 'flood_zone_panel',
 
@@ -645,153 +321,32 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   // ================================================================
   'Community Features': '166_community_features',
   'Community Amenities': '166_community_features',
-  'HOA Amenities': '166_community_features',
-  'Neighborhood Amenities': '166_community_features',
   'Interior Feat': '167_interior_features',
   'Interior Features': '167_interior_features',
   'Interior': '167_interior_features',
-  'Interior Amenities': '167_interior_features',
   'Ext Features': '168_exterior_features',
   'Exterior Features': '168_exterior_features',
-  'Outdoor Features': '168_exterior_features',
-
-  // ================================================================
-  // GROUP 16: ADDITIONAL FEATURES (Fields 131-138)
-  // ================================================================
+  'Patio And Porch Features': 'patio_porch_features',
   'View': '131_view_type',
-  'View Type': '131_view_type',
-  'Property View': '131_view_type',
-  'Views': '131_view_type',
-  'Lot Features': '132_lot_features',
-  'Lot Description': '132_lot_features',
-  'Lot Characteristics': '132_lot_features',
-  'EV Charging': '133_ev_charging',
-  'Electric Vehicle Charging': '133_ev_charging',
-  'EV Charger': '133_ev_charging',
-  'Electric Car Charging': '133_ev_charging',
-  'Smart Home Features': '134_smart_home_features',
-  'Smart Home': '134_smart_home_features',
-  'Home Automation': '134_smart_home_features',
-  'Smart Features': '134_smart_home_features',
-  'Accessibility Features': '135_accessibility_modifications',
-  'Accessibility': '135_accessibility_modifications',
-  'Accessibility Modifications': '135_accessibility_modifications',
-  'ADA Features': '135_accessibility_modifications',
-  'Handicap Features': '135_accessibility_modifications',
-  'Pets': '136_pet_policy',
-  'Pet Policy': '136_pet_policy',
-  'Pet Rules': '136_pet_policy',
-  'Pets Allowed': '136_pet_policy',
-  'Age Restrictions': '137_age_restrictions',
-  'Age Restriction': '137_age_restrictions',
-  'Senior Community': '137_age_restrictions',
-  '55+': '137_age_restrictions',
-  '55+ Community': '137_age_restrictions',
-  'Special Assessments': '138_special_assessments',
-  'Special Assessment': '138_special_assessments',
-  'Assessments': '138_special_assessments',
 
   // ================================================================
-  // ADDITIONAL UNMAPPED FIELDS (kept for reference)
+  // ADDITIONAL UNMAPPED FIELDS
   // ================================================================
-  'Patio And Porch Features': '56_deck_patio',
   'New Construction': 'new_construction_yn',
+  'Property Condition': 'property_condition',
   'Home Warranty Y/N': 'home_warranty_yn',
   'Utilities': 'utilities',
+  'Water': 'water_source',
+  'Sewer': 'sewer_type',
   'Security Feat': 'security_features',
   'Window Features': 'window_features',
   'Furnishings': 'furnishings',
+  'Accessibility Features': '135_accessibility_modifications',
   'Road Surface Type': 'road_surface',
   'Special Sale': 'special_sale_type',
+  'Pets': '136_pet_policy',
   'Max Times per Yr': 'max_lease_times_per_year',
 };
-
-// ================================================================
-// INPUT SANITIZATION AND HOA FEE CONVERSION
-// ================================================================
-
-// Monthly HOA field names that need conversion to annual
-const MONTHLY_HOA_PDF_FIELD_NAMES = new Set([
-  'monthly hoa amount',
-  'hoa monthly',
-  'average monthly fees',
-]);
-
-// Annual HOA field names that should NOT be converted
-const ANNUAL_HOA_FIELD_NAMES = new Set([
-  'total annual assoc fees',
-  'hoa annual',
-  'annual hoa',
-]);
-
-/**
- * Sanitize input values to prevent injection and ensure data integrity
- */
-function sanitizeInputValue(value: any, fieldType: 'string' | 'number' | 'boolean' = 'string'): any {
-  if (value === null || value === undefined) return null;
-
-  // Check for common invalid/placeholder values
-  const strVal = String(value).toLowerCase().trim();
-  const invalidValues = ['null', 'undefined', 'n/a', 'na', 'nan', 'unknown', 'not available', 'not found', 'none', '-', '--', 'tbd', 'n\\a', ''];
-  if (invalidValues.includes(strVal)) return null;
-
-  switch (fieldType) {
-    case 'number':
-      // Remove currency symbols and commas, then parse
-      const cleanedNum = String(value).replace(/[$,]/g, '').trim();
-      const parsed = parseFloat(cleanedNum);
-      if (isNaN(parsed) || !isFinite(parsed)) return null;
-      // Sanity check for unreasonable values
-      if (parsed < 0 || parsed > 1000000000) return null;
-      return parsed;
-
-    case 'boolean':
-      if (typeof value === 'boolean') return value;
-      const boolStr = strVal;
-      if (['true', 'yes', '1', 'y'].includes(boolStr)) return true;
-      if (['false', 'no', '0', 'n'].includes(boolStr)) return false;
-      return null;
-
-    case 'string':
-    default:
-      // Sanitize strings: limit length, remove control characters
-      let sanitized = String(value).trim();
-      // Remove control characters including tabs, but preserve newlines
-      sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
-      // Limit string length to prevent abuse
-      if (sanitized.length > 10000) sanitized = sanitized.substring(0, 10000);
-      return sanitized || null;
-  }
-}
-
-/**
- * Determine if an HOA fee value is likely monthly based on the field name and value
- * @param rawKey - The original field name from the PDF
- * @param value - The numeric value
- * @returns True if the value should be converted from monthly to annual
- */
-function isMonthlyHoaFee(rawKey: string, value: number): boolean {
-  const normalizedKey = rawKey.toLowerCase().trim();
-  
-  // Check if it's explicitly a monthly field
-  if (MONTHLY_HOA_PDF_FIELD_NAMES.has(normalizedKey)) {
-    return true;
-  }
-  
-  // Check if it's explicitly an annual field
-  if (ANNUAL_HOA_FIELD_NAMES.has(normalizedKey)) {
-    return false;
-  }
-  
-  // For ambiguous "HOA Fee" field, use heuristics based on typical values
-  // Monthly fees are typically $50-$2000, annual fees are typically $600-$24000
-  // If the value is under $3000, it's more likely monthly
-  if (normalizedKey === 'hoa fee' && value > 0 && value < 3000) {
-    return true;
-  }
-  
-  return false;
-}
 
 // Helper to normalize field names for matching
 function normalizeFieldName(name: string): string {
@@ -861,9 +416,8 @@ function mapFieldsToSchema(rawFields: Record<string, any>): { fields: Record<str
                      sourceType === 'redfin' ? 'Redfin' : 'MLS PDF';
 
   for (const [rawKey, value] of Object.entries(rawFields)) {
-    // Sanitize the input value first
-    const sanitizedValue = sanitizeInputValue(value, 'string');
-    if (sanitizedValue === null) {
+    // Skip null/empty values
+    if (value === null || value === undefined || value === '' || value === 'N/A' || value === 'n/a') {
       continue;
     }
 
@@ -882,36 +436,32 @@ function mapFieldsToSchema(rawFields: Record<string, any>): { fields: Record<str
 
     // If we found a mapping, add to result
     if (schemaKey) {
-      let processedValue = sanitizedValue;
-      let note: string | undefined;
-
-      // Handle HOA fee monthly-to-annual conversion
+      let finalValue = value;
+      
+      // Handle HOA fee conversion: monthly → annual
       if (schemaKey === '31_hoa_fee_annual') {
-        const numericValue = sanitizeInputValue(value, 'number');
-        if (numericValue !== null && typeof numericValue === 'number') {
-          if (isMonthlyHoaFee(rawKey, numericValue)) {
-            // Convert monthly to annual by multiplying by 12
-            processedValue = numericValue * 12;
-            note = `Converted from monthly ($${numericValue}/mo) to annual`;
-            console.log(`[PDF PARSER] Converted HOA fee from monthly ($${numericValue}) to annual ($${processedValue})`);
-          } else {
-            processedValue = numericValue;
+        // Check if this is a monthly field that needs conversion
+        if (MONTHLY_HOA_FIELDS.has(rawKey)) {
+          const annualValue = convertMonthlyHoaToAnnual(value);
+          if (annualValue !== null) {
+            finalValue = annualValue;
+            console.log(`[PDF PARSER] Converted monthly HOA $${value} to annual $${annualValue}`);
           }
         }
+        // If it's already annual (e.g., 'HOA Annual', 'Total Annual Assoc Fees'), keep as is
       }
-
+      
       mappedFields[schemaKey] = {
-        value: processedValue,
+        value: finalValue,
         source: sourceName,
         confidence: 'High',
-        ...(note && { note }),
       };
       mappedCount++;
     } else {
       // Keep unmapped fields with original key (might be useful)
       const cleanKey = rawKey.toLowerCase().replace(/\s+/g, '_');
       mappedFields[cleanKey] = {
-        value: sanitizedValue,
+        value: value,
         source: sourceName,
         confidence: 'Medium',
       };
@@ -1097,12 +647,11 @@ Return ONLY the JSON object, no markdown or explanation.`;
         jsonStr = codeBlockMatch[1].trim();
       }
 
-      // Find JSON object in text
-      const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        console.log('[PDF PARSER] Extracted', Object.keys(parsed).length, 'raw fields');
-        return parsed;
+      // Use safe JSON parsing with extraction
+      const parseResult = extractAndParseJson<Record<string, any>>(jsonStr, 'PDF PARSER');
+      if (parseResult.success && parseResult.data) {
+        console.log('[PDF PARSER] Extracted', Object.keys(parseResult.data).length, 'raw fields');
+        return parseResult.data;
       }
     }
 
