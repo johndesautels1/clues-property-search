@@ -229,7 +229,7 @@ export const STELLAR_MLS_FIELD_MAPPING: Record<string, string> = {
   'AttachedGarageYN': '141_garage_attached_yn',
   'ParkingFeatures': '142_parking_features',
   'FloorNumber': '144_floor_number',
-  'StoriesTotal': '145_building_total_floors',
+  'BuildingStoriesTotal': '145_building_total_floors',
   'BuildingName': '146_building_name_number',
   'ElevatorYN': '147_building_elevator_yn',
   'LegalSubdivisionName': '149_subdivision_name',
@@ -251,7 +251,7 @@ export const STELLAR_MLS_FIELD_MAPPING: Record<string, string> = {
   'AssociationApprovalRequired': '165_association_approval_yn',
   'CommunityFeatures': '166_community_features',
   'InteriorFeatures': '167_interior_features',
-  'ExteriorFeatures': '168_exterior_features',
+  'ExteriorFeaturesAll': '168_exterior_features',
 
   // Notes
   'PublicRemarks': 'notes',
