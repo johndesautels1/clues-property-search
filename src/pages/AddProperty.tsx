@@ -3,7 +3,7 @@
  * LLM-powered property scraping + Manual entry - CONNECTED TO STORE
  */
 
-import { useState, useEffect, useRef, useCallback, startTransition } from 'react';
+import { useState, useEffect, useRef, useCallback, startTransition, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -80,13 +80,9 @@ export default function AddProperty() {
 
   // Manual entry form state - now stores all 168 fields
   // Initialize with empty strings for all fields from the schema
-  const [manualFormFields, setManualFormFields] = useState<Record<string, string>>(() => {
-    const initial: Record<string, string> = {};
-    ALL_FIELDS.forEach(field => {
-      initial[field.key] = '';
-    });
-    return initial;
-  });
+  const [manualFormFields, setManualFormFields] = useState<Record<string, string>>(() => 
+    Object.fromEntries(ALL_FIELDS.map(field => [field.key, '']))
+  );
 
   // Legacy form state for backward compatibility with address autocomplete
   const [manualForm, setManualForm] = useState({
@@ -234,8 +230,19 @@ export default function AddProperty() {
     }
   };
 
-  // Count filled fields
-  const filledFieldsCount = Object.values(manualFormFields).filter(v => v !== '').length;
+  // Pre-compute field groups with their fields - memoized to avoid O(n×m) on every render
+  const fieldGroupsWithFields = useMemo(() => {
+    return UI_FIELD_GROUPS.map(group => ({
+      ...group,
+      groupFields: ALL_FIELDS.filter(f => group.fields.includes(f.num))
+    }));
+  }, []); // Static data, only compute once
+
+  // Count filled fields - memoized for performance
+  const filledFieldsCount = useMemo(
+    () => Object.values(manualFormFields).filter(v => v !== '').length,
+    [manualFormFields]
+  );
   const totalFieldsCount = ALL_FIELDS.length;
   const completionPercentage = Math.round((filledFieldsCount / totalFieldsCount) * 100);
 
@@ -364,7 +371,7 @@ export default function AddProperty() {
     const manualFields: Record<string, { value: any; source: string }> = {};
     ALL_FIELDS.forEach(field => {
       const value = manualFormFields[field.key];
-      if (value !== '' && value !== null && value !== undefined) {
+      if (value !== '') {
         // Convert types appropriately
         let parsedValue: any = value;
         if (field.type === 'number' || field.type === 'currency' || field.type === 'percentage') {
@@ -590,12 +597,8 @@ export default function AddProperty() {
         propertyType: 'Single Family',
         listingStatus: 'Active',
       });
-      // Reset the new 168-field form
-      const resetFields: Record<string, string> = {};
-      ALL_FIELDS.forEach(field => {
-        resetFields[field.key] = '';
-      });
-      setManualFormFields(resetFields);
+      // Reset the new 168-field form using the same pattern as initialization
+      setManualFormFields(Object.fromEntries(ALL_FIELDS.map(field => [field.key, ''])));
       setSelectedSuggestion(null);
 
     } catch (error) {
@@ -1826,9 +1829,8 @@ export default function AddProperty() {
 
             {/* Collapsible Field Groups */}
             <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
-              {UI_FIELD_GROUPS.map((group) => {
-                const groupFields = ALL_FIELDS.filter(f => group.fields.includes(f.num));
-                const filledInGroup = groupFields.filter(f => manualFormFields[f.key] !== '').length;
+              {fieldGroupsWithFields.map((group) => {
+                const filledInGroup = group.groupFields.filter(f => manualFormFields[f.key] !== '').length;
                 const isExpanded = expandedGroups.has(group.id);
                 
                 return (
@@ -1847,7 +1849,7 @@ export default function AddProperty() {
                         )}
                         <span className="text-sm font-semibold text-white">{group.name}</span>
                         <span className="text-xs px-2 py-0.5 rounded-full bg-gray-700/50 text-gray-400">
-                          {filledInGroup}/{groupFields.length}
+                          {filledInGroup}/{group.groupFields.length}
                         </span>
                       </div>
                       <span className="text-xs text-gray-500">
@@ -1866,7 +1868,7 @@ export default function AddProperty() {
                           className="overflow-hidden"
                         >
                           <div className="p-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {groupFields.map((field) => (
+                            {group.groupFields.map((field) => (
                               <div key={field.key}>
                                 <label className="block text-xs text-gray-400 mb-1">
                                   {field.label}
