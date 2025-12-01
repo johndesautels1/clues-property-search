@@ -904,7 +904,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Get final arbitration result with quorum voting and single-source detection
     const arbitrationResult = arbitrationPipeline.getResult();
     const totalFields = Object.keys(arbitrationResult.fields).length;
-    const completionPercentage = Math.round((totalFields / 138) * 100);
+    const completionPercentage = Math.round((totalFields / 168) * 100); // Updated to 168 fields per schema
 
     // Send final complete event with all data including arbitration metadata
     sendEvent(res, 'complete', {
@@ -935,7 +935,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           address: searchAddress,
           fields: partialResult.fields,
           total_fields_found: partialFields,
-          completion_percentage: Math.round((partialFields / 138) * 100),
+          completion_percentage: Math.round((partialFields / 168) * 100), // Updated to 168 fields
           llm_responses: llmResponses,
           conflicts: partialResult.conflicts,
           validation_failures: partialResult.validationFailures,
@@ -943,12 +943,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           single_source_warnings: partialResult.singleSourceWarnings
         });
       } else {
-        sendEvent(res, 'error', { error: String(error) });
+        // Send well-formed error event with consistent structure
+        sendEvent(res, 'error', { 
+          error: String(error),
+          timestamp: new Date().toISOString(),
+          address: searchAddress,
+        });
       }
-    } catch (e) {
-      sendEvent(res, 'error', { error: String(error) });
+    } catch (innerError) {
+      // Final fallback - ensure error event is always sent
+      console.error('[STREAMING] Error in error handler:', innerError);
+      try {
+        sendEvent(res, 'error', { 
+          error: String(error),
+          innerError: String(innerError),
+          timestamp: new Date().toISOString(),
+        });
+      } catch (writeError) {
+        // Stream may be closed, just log
+        console.error('[STREAMING] Failed to write error event:', writeError);
+      }
+    }
+  } finally {
+    // Always ensure stream is properly closed
+    try {
+      res.end();
+    } catch (endError) {
+      console.error('[STREAMING] Error ending response:', endError);
     }
   }
-
-  res.end();
 }
