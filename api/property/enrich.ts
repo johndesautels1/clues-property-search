@@ -4,6 +4,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { sanitizeAddress, isValidAddress } from '../../src/lib/safe-json-parse.js';
 
 interface EnrichmentResult {
   fields: Record<string, any>;
@@ -279,10 +280,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { address, lat, lon } = req.body;
+  const { address: rawAddress, lat, lon } = req.body;
+
+  // 🛡️ INPUT SANITIZATION: Prevent prompt injection attacks
+  const address = sanitizeAddress(rawAddress);
 
   if (!address) {
     return res.status(400).json({ error: 'Address required' });
+  }
+
+  // Validate address format
+  if (!isValidAddress(address)) {
+    return res.status(400).json({ error: 'Invalid address format' });
+  }
+
+  // Validate lat/lon if provided (must be numbers in valid range)
+  if (lat !== undefined && (typeof lat !== 'number' || lat < -90 || lat > 90)) {
+    return res.status(400).json({ error: 'Invalid latitude' });
+  }
+  if (lon !== undefined && (typeof lon !== 'number' || lon < -180 || lon > 180)) {
+    return res.status(400).json({ error: 'Invalid longitude' });
   }
 
   const result: EnrichmentResult = {

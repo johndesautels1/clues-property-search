@@ -39,6 +39,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
 import { scrapeFloridaCounty } from './florida-counties.js';
 import { LLM_CASCADE_ORDER } from './llm-constants.js';
 import { createArbitrationPipeline, type FieldValue, type ArbitrationResult } from './arbitration.js';
+import { sanitizeAddress, isValidAddress } from '../../src/lib/safe-json-parse.js';
 
 
 // ============================================
@@ -2530,8 +2531,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Order: Perplexity → Grok → Claude Opus → GPT → Claude Sonnet → Gemini
   // Web-search LLMs first (verify real data), then knowledge-based LLMs
   const {
-    address,
-    url,
+    address: rawAddress,
+    url: rawUrl,
     engines = ['perplexity', 'grok'],  // Web-search LLMs with citations. Add back: [...LLM_CASCADE_ORDER] for all
     skipLLMs = false,
     useCascade = true, // Enable cascade mode by default
@@ -2539,8 +2540,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     skipApis = false,  // Skip free APIs if we already have their data
   } = req.body;
 
+  // 🛡️ INPUT SANITIZATION: Prevent prompt injection attacks
+  const address = sanitizeAddress(rawAddress);
+  const url = rawUrl ? sanitizeAddress(rawUrl) : undefined;
+
   if (!address && !url) {
     return res.status(400).json({ error: 'Address or URL required' });
+  }
+
+  // Validate address format
+  if (address && !isValidAddress(address)) {
+    return res.status(400).json({ error: 'Invalid address format' });
   }
 
   const searchQuery = address || `property at URL: ${url}`;

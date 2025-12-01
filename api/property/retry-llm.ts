@@ -826,10 +826,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { address, engines = ['perplexity'] } = req.body;
+  const { address: rawAddress, engines = ['perplexity'] } = req.body;
+
+  // 🛡️ INPUT SANITIZATION: Prevent prompt injection attacks
+  const address = sanitizeAddress(rawAddress);
 
   if (!address) {
     return res.status(400).json({ error: 'Address required' });
+  }
+
+  // Validate address format
+  if (!isValidAddress(address)) {
+    return res.status(400).json({ error: 'Invalid address format' });
   }
 
   // Map engine IDs to functions
