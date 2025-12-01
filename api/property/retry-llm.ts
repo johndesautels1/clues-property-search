@@ -352,8 +352,11 @@ function extractAndParseJSON(text: string): { success: boolean; data: Record<str
 
 async function callPerplexity(address: string): Promise<{ fields: Record<string, any>; error?: string }> {
   const apiKey = process.env.PERPLEXITY_API_KEY;
+  console.log('[PERPLEXITY] API key present:', !!apiKey, 'length:', apiKey?.length || 0);
   if (!apiKey) {
-    console.log('[PERPLEXITY] API key not set');
+    // Log all env var keys to debug
+    const envKeys = Object.keys(process.env).filter(k => k.includes('API') || k.includes('KEY'));
+    console.log('[PERPLEXITY] Available env vars with API/KEY:', envKeys);
     return { error: 'API key not set', fields: {} };
   }
 
@@ -425,8 +428,8 @@ async function callPerplexity(address: string): Promise<{ fields: Record<string,
 
 async function callGrok(address: string): Promise<{ fields: Record<string, any>; error?: string }> {
   const apiKey = process.env.XAI_API_KEY;
+  console.log('[GROK] API key present:', !!apiKey, 'length:', apiKey?.length || 0);
   if (!apiKey) {
-    console.log('[GROK] API key not set');
     return { error: 'API key not set', fields: {} };
   }
 
@@ -493,6 +496,7 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
 
 async function callClaudeOpus(address: string): Promise<{ fields: Record<string, any>; error?: string }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
+  console.log('[CLAUDE OPUS] API key present:', !!apiKey, 'length:', apiKey?.length || 0);
   if (!apiKey) return { error: 'API key not set', fields: {} };
 
   const prompt = `You are a real estate data assistant. Based on your knowledge, provide property data estimates for this address: ${address}
@@ -584,8 +588,8 @@ Only include fields you have reasonable confidence about based on the location. 
 
 async function callGPT(address: string): Promise<{ fields: Record<string, any>; error?: string }> {
   const apiKey = process.env.OPENAI_API_KEY;
+  console.log('[GPT] API key present:', !!apiKey, 'length:', apiKey?.length || 0);
   if (!apiKey) {
-    console.log('[GPT] API key not set');
     return { error: 'API key not set', fields: {} };
   }
 
@@ -651,6 +655,7 @@ Only include fields you have reasonable confidence about. Return ONLY the JSON o
 
 async function callClaudeSonnet(address: string): Promise<{ fields: Record<string, any>; error?: string }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
+  console.log('[CLAUDE SONNET] API key present:', !!apiKey, 'length:', apiKey?.length || 0);
   if (!apiKey) return { error: 'API key not set', fields: {} };
 
   const prompt = `You are a real estate data assistant. Based on your knowledge, provide property data estimates for this address: ${address}
@@ -742,8 +747,8 @@ Only include fields you have reasonable confidence about based on the location. 
 
 async function callGemini(address: string): Promise<{ fields: Record<string, any>; error?: string }> {
   const apiKey = process.env.GEMINI_API_KEY;
+  console.log('[GEMINI] API key present:', !!apiKey, 'length:', apiKey?.length || 0);
   if (!apiKey) {
-    console.log('[GEMINI] API key not set');
     return { error: 'API key not set', fields: {} };
   }
 
