@@ -100,6 +100,27 @@ export default function AddProperty() {
   };
   const [manualForm, setManualForm] = useState<Record<string, string>>(initialFormState());
   
+  // Default values that should not count as "filled"
+  const DEFAULT_VALUES = new Set(['', 'FL', 'Active', 'Single Family']);
+  
+  // Fields that are handled specially outside of field groups (e.g., in header)
+  const FIELDS_HANDLED_SEPARATELY = new Set(['full_address']);
+  
+  // Helper to count non-empty/non-default field values
+  const countFilledFields = (form: Record<string, string>): number => {
+    return Object.values(form).filter(v => v && !DEFAULT_VALUES.has(v)).length;
+  };
+  
+  // Helper to count filled fields within a specific group
+  const countFilledInGroup = (group: string): number => {
+    const fieldsInGroup = ALL_FIELDS.filter(f => f.group === group);
+    return fieldsInGroup.filter(f => {
+      const key = `${f.num}_${f.key}`;
+      const val = manualForm[key];
+      return val && !DEFAULT_VALUES.has(val);
+    }).length;
+  };
+  
   // Track which field groups are expanded in the form
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['Address & Identity', 'Pricing & Value', 'Property Basics']));
   
@@ -1665,7 +1686,7 @@ export default function AddProperty() {
               <div>
                 <h3 className="text-lg font-semibold text-white">168-Field Manual Entry</h3>
                 <p className="text-xs text-gray-400">
-                  {Object.values(manualForm).filter(v => v && v !== '' && v !== 'FL' && v !== 'Active' && v !== 'Single Family').length} of 168 fields filled
+                  {countFilledFields(manualForm)} of 168 fields filled
                 </p>
               </div>
               <div className="flex gap-2">
@@ -1786,11 +1807,7 @@ export default function AddProperty() {
               {FIELD_GROUPS.map((group) => {
                 const fieldsInGroup = ALL_FIELDS.filter(f => f.group === group);
                 const isExpanded = expandedGroups.has(group);
-                const filledCount = fieldsInGroup.filter(f => {
-                  const key = `${f.num}_${f.key}`;
-                  const val = manualForm[key];
-                  return val && val !== '' && val !== 'Active' && val !== 'Single Family';
-                }).length;
+                const filledCount = countFilledInGroup(group);
                 
                 return (
                   <div key={group} className="border border-white/10 rounded-xl overflow-hidden">
@@ -1829,8 +1846,8 @@ export default function AddProperty() {
                           <div className="p-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                             {fieldsInGroup.map((field) => {
                               const fieldKey = `${field.num}_${field.key}`;
-                              // Skip full_address as it's handled above
-                              if (field.key === 'full_address') return null;
+                              // Skip fields that are handled separately (e.g., address in header)
+                              if (FIELDS_HANDLED_SEPARATELY.has(field.key)) return null;
                               
                               return (
                                 <div key={fieldKey} className="group">
@@ -1905,7 +1922,7 @@ export default function AddProperty() {
               {status === 'idle' || status === 'complete' || status === 'error' ? (
                 <>
                   <Sparkles className="w-5 h-5" />
-                  Search & Add Property ({Object.values(manualForm).filter(v => v && v !== '' && v !== 'FL' && v !== 'Active' && v !== 'Single Family').length} fields)
+                  Search & Add Property ({countFilledFields(manualForm)} fields)
                 </>
               ) : (
                 <>
