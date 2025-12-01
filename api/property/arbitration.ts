@@ -46,6 +46,36 @@ export const DATA_TIERS: Record<string, TierConfig> = {
   'gemini': { tier: 4, name: 'Gemini', description: 'Google LLM', reliability: 50 },
 };
 
+/**
+ * FIX #4 & #5: Pre-built lookup Maps for O(1) source tier and reliability lookups
+ * Built once at module load instead of iterating Object.entries on every call
+ */
+const sourceTierLookup = new Map<string, DataTier>();
+const sourceReliabilityLookup = new Map<string, number>();
+
+// Build lookup maps at module initialization
+for (const [key, config] of Object.entries(DATA_TIERS)) {
+  sourceTierLookup.set(key, config.tier);
+  sourceReliabilityLookup.set(key, config.reliability);
+}
+
+/**
+ * FIX #4 & #5: Memoization cache for dynamic source name lookups
+ */
+const sourceTierCache = new Map<string, DataTier>();
+const sourceReliabilityCache = new Map<string, number>();
+
+/**
+ * Default values for arbitration - centralized for consistency
+ * FIX #12: Centralized defaults
+ */
+const ARBITRATION_DEFAULTS = {
+  TIER: 4 as DataTier,
+  RELIABILITY: 50,
+  CONFIDENCE: 'Medium' as const,
+  LLM_SOURCES: [] as string[],
+} as const;
+
 export interface FieldValue {
   value: any;
   source: string;
@@ -80,33 +110,83 @@ export interface ArbitrationResult {
   singleSourceWarnings: Array<{ field: string; source: string }>;
 }
 
+/**
+ * FIX #4: Optimized getSourceTier with O(1) Map lookup + memoization cache
+ * Previously: O(n) iteration through Object.entries on every call
+ * Now: O(1) Map lookup with fallback caching for dynamic names
+ */
 export function getSourceTier(sourceName: string): DataTier {
+  // Check memoization cache first
+  const cached = sourceTierCache.get(sourceName);
+  if (cached !== undefined) return cached;
+
   const sourceKey = sourceName.toLowerCase().replace(/\s+/g, '-').replace('maps', 'geocode');
-  
-  for (const [key, config] of Object.entries(DATA_TIERS)) {
+
+  // Try direct Map lookup first (O(1))
+  const directLookup = sourceTierLookup.get(sourceKey);
+  if (directLookup !== undefined) {
+    sourceTierCache.set(sourceName, directLookup);
+    return directLookup;
+  }
+
+  // Fallback: check for partial matches using pre-built keys
+  let tier: DataTier = ARBITRATION_DEFAULTS.TIER;
+
+  for (const key of sourceTierLookup.keys()) {
     if (sourceKey.includes(key) || key.includes(sourceKey)) {
-      return config.tier;
+      tier = sourceTierLookup.get(key)!;
+      break;
     }
   }
-  
-  if (sourceName.toLowerCase().includes('google')) return 2;
-  if (['perplexity', 'grok', 'claude', 'gpt', 'gemini', 'anthropic', 'openai'].some(
-    llm => sourceName.toLowerCase().includes(llm)
-  )) return 4;
-  
-  return 4;
+
+  // Additional pattern matching
+  if (tier === ARBITRATION_DEFAULTS.TIER) {
+    const lowerName = sourceName.toLowerCase();
+    if (lowerName.includes('google')) {
+      tier = 2;
+    } else if (['perplexity', 'grok', 'claude', 'gpt', 'gemini', 'anthropic', 'openai'].some(
+      llm => lowerName.includes(llm)
+    )) {
+      tier = 4;
+    }
+  }
+
+  // Cache the result for future lookups
+  sourceTierCache.set(sourceName, tier);
+  return tier;
 }
 
+/**
+ * FIX #5: Optimized getSourceReliability with O(1) Map lookup + memoization cache
+ * Previously: O(n) iteration through Object.entries on every call
+ * Now: O(1) Map lookup with fallback caching for dynamic names
+ */
 export function getSourceReliability(sourceName: string): number {
+  // Check memoization cache first
+  const cached = sourceReliabilityCache.get(sourceName);
+  if (cached !== undefined) return cached;
+
   const sourceKey = sourceName.toLowerCase().replace(/\s+/g, '-');
-  
-  for (const [key, config] of Object.entries(DATA_TIERS)) {
+
+  // Try direct Map lookup first (O(1))
+  const directLookup = sourceReliabilityLookup.get(sourceKey);
+  if (directLookup !== undefined) {
+    sourceReliabilityCache.set(sourceName, directLookup);
+    return directLookup;
+  }
+
+  // Fallback: check for partial matches using pre-built keys
+  for (const key of sourceReliabilityLookup.keys()) {
     if (sourceKey.includes(key) || key.includes(sourceKey)) {
-      return config.reliability;
+      const reliability = sourceReliabilityLookup.get(key)!;
+      sourceReliabilityCache.set(sourceName, reliability);
+      return reliability;
     }
   }
-  
-  return 50;
+
+  // Cache default and return
+  sourceReliabilityCache.set(sourceName, ARBITRATION_DEFAULTS.RELIABILITY);
+  return ARBITRATION_DEFAULTS.RELIABILITY;
 }
 
 export interface ValidationRule {
@@ -264,12 +344,36 @@ export const VALIDATION_RULES: ValidationRule[] = [
   },
 ];
 
+/**
+ * FIX #6: Pre-build validation rule cache for common field patterns
+ * Maps common field key patterns to their rules for O(1) lookup
+ * Falls back to regex matching for unknown patterns
+ */
+const validationRuleCache = new Map<string, ValidationRule | null>();
+
+/**
+ * FIX #6: Optimized validateField with caching
+ * Previously: O(n) linear scan through all VALIDATION_RULES on every call
+ * Now: O(1) cache lookup for previously validated field keys
+ */
 export function validateField(fieldKey: string, value: any): { valid: boolean; message?: string } {
+  // Check cache first
+  const cachedRule = validationRuleCache.get(fieldKey);
+  if (cachedRule !== undefined) {
+    // null means no rule matched for this field
+    return cachedRule ? cachedRule.validate(value) : { valid: true };
+  }
+
+  // Find matching rule and cache it
   for (const rule of VALIDATION_RULES) {
     if (rule.fieldPattern.test(fieldKey)) {
+      validationRuleCache.set(fieldKey, rule);
       return rule.validate(value);
     }
   }
+
+  // No rule matched - cache null to avoid re-scanning
+  validationRuleCache.set(fieldKey, null);
   return { valid: true };
 }
 
@@ -403,31 +507,49 @@ export function arbitrateField(
   return { result: null, action: 'skip' };
 }
 
+/**
+ * FIX #10: Optimized LLM quorum voting with single-pass max finding
+ * FIX #16: Validate minQuorum parameter
+ * Previously: Two-pass (build counts, then find max via Array.from + loop)
+ * Now: Track max during count building for single-pass operation
+ */
 export function applyLLMQuorumVoting(
   fields: Record<string, FieldValue>,
   minQuorum: number = 2
 ): { fields: Record<string, FieldValue>; quorumFields: Array<{ field: string; value: any; sources: string[]; quorumCount: number }> } {
+  // FIX #16: Validate minQuorum parameter - must be at least 1
+  const validMinQuorum = Math.max(1, Math.floor(minQuorum));
+
   const quorumFields: Array<{ field: string; value: any; sources: string[]; quorumCount: number }> = [];
-  
+
   for (const [key, field] of Object.entries(fields)) {
     if (field.tier !== 4 || !field.conflictValues || field.conflictValues.length === 0) {
       continue;
     }
-    
+
     const valueCounts = new Map<string, { count: number; sources: string[]; value: any }>();
-    
-    valueCounts.set(JSON.stringify(field.value), {
+
+    // FIX #10: Track max during count building (single-pass)
+    let maxCount = 1;
+    let winningEntry: { count: number; sources: string[]; value: any } = {
       count: 1,
       sources: [field.source],
       value: field.value,
-    });
-    
+    };
+
+    valueCounts.set(JSON.stringify(field.value), winningEntry);
+
     for (const conflict of field.conflictValues) {
       const valKey = JSON.stringify(conflict.value);
       const existing = valueCounts.get(valKey);
       if (existing) {
         existing.count++;
         existing.sources.push(conflict.source);
+        // Update max if this entry is now the winner
+        if (existing.count > maxCount) {
+          maxCount = existing.count;
+          winningEntry = existing;
+        }
       } else {
         valueCounts.set(valKey, {
           count: 1,
@@ -436,28 +558,17 @@ export function applyLLMQuorumVoting(
         });
       }
     }
-    
-    let maxCount = 0;
-    let winningEntry: { count: number; sources: string[]; value: any } | null = null;
-    
-    // Convert to array to avoid MapIterator compatibility issues
-    const entries = Array.from(valueCounts.values());
-    for (const entry of entries) {
-      if (entry.count > maxCount) {
-        maxCount = entry.count;
-        winningEntry = entry;
-      }
-    }
-    
-    if (winningEntry && maxCount >= minQuorum) {
+
+    // No need for second pass - we already have the winner
+    if (maxCount >= validMinQuorum) {
       fields[key] = {
         ...field,
         value: winningEntry.value,
-        confidence: maxCount >= 3 ? 'High' : 'Medium',
+        confidence: maxCount >= 3 ? 'High' : ARBITRATION_DEFAULTS.CONFIDENCE,
         llmSources: winningEntry.sources,
         hasConflict: valueCounts.size > 1,
       };
-      
+
       quorumFields.push({
         field: key,
         value: winningEntry.value,
@@ -466,7 +577,7 @@ export function applyLLMQuorumVoting(
       });
     }
   }
-  
+
   return { fields, quorumFields };
 }
 
@@ -487,28 +598,39 @@ export function detectSingleSourceHallucinations(
   return warnings;
 }
 
+/**
+ * FIX #3 & #16: Optimized createArbitrationPipeline
+ * - Uses Map for O(1) conflict lookup instead of .find() (FIX #3)
+ * - Validates minLLMQuorum parameter (FIX #16)
+ */
 export function createArbitrationPipeline(minLLMQuorum: number = 2): {
   addField: (fieldKey: string, value: any, source: string) => void;
   addFieldsFromSource: (sourceFields: Record<string, any>, sourceName: string) => number;
   getFieldCount: () => number;
   getResult: () => ArbitrationResult;
 } {
+  // FIX #16: Validate minLLMQuorum - must be at least 1
+  const validMinQuorum = Math.max(1, Math.floor(minLLMQuorum));
+
   const fields: Record<string, FieldValue> = {};
   const auditTrail: AuditEntry[] = [];
   const conflicts: ArbitrationResult['conflicts'] = [];
   const validationFailures: ArbitrationResult['validationFailures'] = [];
-  
+
+  // FIX #3: Use Map for O(1) conflict lookup instead of .find() per field
+  const conflictIndexMap = new Map<string, number>();
+
   return {
     addField(fieldKey: string, value: any, source: string) {
       const validation = validateField(fieldKey, value);
-      
+
       if (!validation.valid) {
         validationFailures.push({
           field: fieldKey,
           value,
           reason: validation.message || 'Validation failed',
         });
-        
+
         auditTrail.push({
           field: fieldKey,
           action: 'validation_fail',
@@ -518,12 +640,12 @@ export function createArbitrationPipeline(minLLMQuorum: number = 2): {
           reason: validation.message || 'Validation failed',
           timestamp: new Date().toISOString(),
         });
-        
+
         return;
       }
-      
+
       const { result, action } = arbitrateField(fields[fieldKey], value, source, auditTrail);
-      
+
       if (result) {
         if (auditTrail.length > 0) {
           auditTrail[auditTrail.length - 1].field = fieldKey;
@@ -531,16 +653,19 @@ export function createArbitrationPipeline(minLLMQuorum: number = 2): {
         // Mark field as validation passed since it got through validation gate
         result.validationStatus = 'passed';
         fields[fieldKey] = result;
-        
+
         if (action === 'conflict' && result.conflictValues) {
-          const existingConflict = conflicts.find(c => c.field === fieldKey);
-          if (existingConflict) {
-            existingConflict.values.push({
+          // FIX #3: O(1) Map lookup instead of O(n) .find()
+          const existingIndex = conflictIndexMap.get(fieldKey);
+          if (existingIndex !== undefined) {
+            conflicts[existingIndex].values.push({
               source,
               value,
               tier: getSourceTier(source),
             });
           } else {
+            // Store the index for future O(1) lookups
+            conflictIndexMap.set(fieldKey, conflicts.length);
             conflicts.push({
               field: fieldKey,
               values: [
@@ -581,7 +706,8 @@ export function createArbitrationPipeline(minLLMQuorum: number = 2): {
     },
 
     getResult(): ArbitrationResult {
-      const { fields: votedFields, quorumFields } = applyLLMQuorumVoting(fields, minLLMQuorum);
+      // Use validated quorum value
+      const { fields: votedFields, quorumFields } = applyLLMQuorumVoting(fields, validMinQuorum);
       const singleSourceWarnings = detectSingleSourceHallucinations(votedFields);
       
       // Apply single-source warning status to fields for UI display

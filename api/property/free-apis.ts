@@ -305,10 +305,31 @@ export async function callSchoolDigger(lat: number, lon: number): Promise<ApiRes
     const data = fetchResult.data;
     const schools = Array.isArray(data.schoolList) ? data.schoolList : [];
 
-    // Find closest elementary, middle, high schools
-    const elementary = schools.find((s: any) => s.schoolLevel === 'Elementary' || s.lowGrade === 'K');
-    const middle = schools.find((s: any) => s.schoolLevel === 'Middle' || s.lowGrade === '6');
-    const high = schools.find((s: any) => s.schoolLevel === 'High' || s.lowGrade === '9');
+    // FIX #7: Single-pass school categorization instead of 3 separate .find() calls
+    // Previously: 3 separate array scans O(3n), Now: single pass O(n)
+    let elementary: any = null;
+    let middle: any = null;
+    let high: any = null;
+    let schoolDistrict: string | null = null;
+
+    for (const school of schools) {
+      // Capture first district we find (for fallback)
+      if (!schoolDistrict && school.schoolDistrict) {
+        schoolDistrict = school.schoolDistrict;
+      }
+
+      // Categorize by school level
+      if (!elementary && (school.schoolLevel === 'Elementary' || school.lowGrade === 'K')) {
+        elementary = school;
+      } else if (!middle && (school.schoolLevel === 'Middle' || school.lowGrade === '6')) {
+        middle = school;
+      } else if (!high && (school.schoolLevel === 'High' || school.lowGrade === '9')) {
+        high = school;
+      }
+
+      // Early exit if we found all three
+      if (elementary && middle && high) break;
+    }
 
     // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Assigned Schools (63-73)
     if (elementary) {
@@ -329,10 +350,11 @@ export async function callSchoolDigger(lat: number, lon: number): Promise<ApiRes
       setField(fields, '73_high_distance_mi', high.distance, 'SchoolDigger');
     }
 
+    // FIX #13: School district with proper fallback - use captured district or explicit default
     // Note: No school_rating_avg field in 168-field schema
     // School district is field 63
-    if (elementary?.schoolDistrict || middle?.schoolDistrict || high?.schoolDistrict) {
-      const district = elementary?.schoolDistrict || middle?.schoolDistrict || high?.schoolDistrict;
+    const district = elementary?.schoolDistrict || middle?.schoolDistrict || high?.schoolDistrict || schoolDistrict;
+    if (district) {
       setField(fields, '63_school_district', district, 'SchoolDigger');
     }
 
@@ -661,23 +683,28 @@ export async function callHudFairMarketRent(zip: string): Promise<ApiResult> {
     }
 
     const data = fetchResult.data;
-    const fmrData = data.data?.basicdata || data.basicdata || data;
+
+    // FIX #18: Simplified HUD fallback chain using nullish coalescing
+    // Previously: Complex nested fallback chain that was hard to read/maintain
+    // Now: Clear nullish coalescing with explicit structure
+    const fmrData = data?.data?.basicdata ?? data?.basicdata ?? data ?? null;
 
     // Extract rent by bedroom count - map to rental_estimate_monthly (field 98)
     // Note: FMR data is supplementary - not all fields in 168-field schema
     if (fmrData) {
-      // Use 2BR as representative rental estimate (most common search)
-      const twoBedroomRent = fmrData['Two-Bedroom'] || fmrData.two_bedroom;
+      // FIX #18: Use nullish coalescing for cleaner fallbacks
+      const twoBedroomRent = fmrData['Two-Bedroom'] ?? fmrData.two_bedroom ?? null;
       if (twoBedroomRent) {
         setField(fields, '98_rental_estimate_monthly', twoBedroomRent, 'HUD FMR');
       }
 
       // Store other FMR data as metadata (not numbered fields)
-      setField(fields, 'fmr_efficiency', fmrData.Efficiency || fmrData.efficiency, 'HUD FMR');
-      setField(fields, 'fmr_1br', fmrData['One-Bedroom'] || fmrData.one_bedroom, 'HUD FMR');
+      // Using nullish coalescing for each field
+      setField(fields, 'fmr_efficiency', fmrData.Efficiency ?? fmrData.efficiency, 'HUD FMR');
+      setField(fields, 'fmr_1br', fmrData['One-Bedroom'] ?? fmrData.one_bedroom, 'HUD FMR');
       setField(fields, 'fmr_2br', twoBedroomRent, 'HUD FMR');
-      setField(fields, 'fmr_3br', fmrData['Three-Bedroom'] || fmrData.three_bedroom, 'HUD FMR');
-      setField(fields, 'fmr_4br', fmrData['Four-Bedroom'] || fmrData.four_bedroom, 'HUD FMR');
+      setField(fields, 'fmr_3br', fmrData['Three-Bedroom'] ?? fmrData.three_bedroom, 'HUD FMR');
+      setField(fields, 'fmr_4br', fmrData['Four-Bedroom'] ?? fmrData.four_bedroom, 'HUD FMR');
     }
 
     return { success: Object.keys(fields).length > 0, source: 'HUD FMR', fields };

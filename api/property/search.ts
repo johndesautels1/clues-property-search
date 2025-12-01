@@ -2777,6 +2777,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sourceBreakdown[source] = (sourceBreakdown[source] || 0) + 1;
     }
 
+    // FIX #8: Build lookup maps once before loop instead of O(n) lookups per field
+    // Previously: .find(), .some() calls inside loop = O(n*m) complexity
+    // Now: O(n) map building + O(1) lookups = O(n+m) complexity
+    const conflictMap = new Map<string, Array<{ source: string; value: any; tier: number }>>();
+    for (const conflict of arbitrationResult.conflicts) {
+      conflictMap.set(conflict.field, conflict.values);
+    }
+
+    const warningSet = new Set<string>();
+    for (const warning of arbitrationResult.singleSourceWarnings) {
+      warningSet.add(warning.field);
+    }
+
     // Convert arbitration fields to frontend DataField format
     const convertedFields: Record<string, any> = {};
     for (const [key, field] of Object.entries(arbitrationResult.fields)) {
@@ -2794,26 +2807,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         } catch {}
       }
 
-      // Use validationStatus from the FieldValue (set by arbitration pipeline)
-      // or derive from singleSourceWarnings if not set
-      const hasConflict = arbitrationResult.conflicts.some(c => c.field === key);
-      const hasSingleSourceWarning = arbitrationResult.singleSourceWarnings.some(w => w.field === key);
+      // FIX #8: O(1) Map/Set lookups instead of O(n) .some()/.find()
+      const hasConflict = conflictMap.has(key);
+      const hasSingleSourceWarning = warningSet.has(key);
 
       // Prefer field's own validation status (set by arbitration pipeline)
       // Fall back to recalculating from arrays for backwards compatibility
-      const validationStatus = field.validationStatus || 
+      const validationStatus = field.validationStatus ||
         (hasSingleSourceWarning ? 'warning' : 'passed');
-      const validationMessage = field.validationMessage || 
+      const validationMessage = field.validationMessage ||
         (hasSingleSourceWarning ? 'Single LLM source - verify independently' : undefined);
 
+      // FIX #14: Explicit default for confidence
       convertedFields[key] = {
         value: parsedValue,
-        confidence: field.confidence || 'Medium',
+        confidence: field.confidence ?? 'Medium',
         notes: '',
         sources: [field.source],
-        llmSources: field.llmSources,
+        llmSources: field.llmSources ?? [],
         hasConflict: hasConflict,
-        conflictValues: arbitrationResult.conflicts.find(c => c.field === key)?.values || [],
+        conflictValues: conflictMap.get(key) ?? [],
         validationStatus,
         validationMessage
       };

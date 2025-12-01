@@ -290,14 +290,18 @@ function createDataField<T>(
 
 /**
  * Map API confidence strings to our ConfidenceLevel type
+ * FIX #15: Handle empty string explicitly - treat as 'Medium' not 'Low'
  */
 function mapConfidence(apiConf?: string): ConfidenceLevel {
-  if (!apiConf) return 'Medium';
-  const lower = apiConf.toLowerCase();
+  // FIX #15: Empty string should be treated same as undefined (return default)
+  if (!apiConf || apiConf.trim() === '') return 'Medium';
+  const lower = apiConf.toLowerCase().trim();
   if (lower === 'high' || lower === 'verified') return 'High';
   if (lower === 'medium-high') return 'Medium-High';
   if (lower === 'medium') return 'Medium';
-  return 'Low';
+  if (lower === 'low' || lower === 'unverified') return 'Low';
+  // Unknown confidence values default to Medium, not Low
+  return 'Medium';
 }
 
 /**

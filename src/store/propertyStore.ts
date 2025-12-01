@@ -12,6 +12,17 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import type { PropertyCard, Property, PropertyFilters, PropertySort, DataField } from '@/types/property';
 
 /**
+ * Default values for data fields - centralized for consistency
+ * FIX #11: Centralized defaults instead of scattered fallbacks
+ */
+const DEFAULTS = {
+  SOURCE: 'Manual',
+  CONFIDENCE: 'Medium' as const,
+  TIER: 5,
+  LLM_SOURCES: [] as string[],
+} as const;
+
+/**
  * Source tier hierarchy for data arbitration
  * Lower number = higher priority (wins conflicts)
  */
@@ -41,24 +52,46 @@ const SOURCE_TIERS: Record<string, number> = {
 };
 
 /**
+ * FIX #1: Memoization cache for getSourceTier()
+ * Prevents repeated string parsing on every field merge (50-100x per property)
+ */
+const sourceTierCache = new Map<string, number>();
+
+/**
  * Get the tier for a source name (lower = higher priority)
+ * FIX #1: Now uses memoization cache for O(1) repeat lookups
  */
 function getSourceTier(source: string): number {
+  // Check cache first
+  const cached = sourceTierCache.get(source);
+  if (cached !== undefined) return cached;
+
+  let tier: number;
+
   // Check for exact match first
-  if (SOURCE_TIERS[source]) return SOURCE_TIERS[source];
+  if (SOURCE_TIERS[source]) {
+    tier = SOURCE_TIERS[source];
+  } else {
+    // Check for partial matches
+    const lowerSource = source.toLowerCase();
+    if (lowerSource.includes('mls')) {
+      tier = 1;
+    } else if (lowerSource.includes('county') || lowerSource.includes('fema')) {
+      tier = 2;
+    } else if (lowerSource.includes('google') || lowerSource.includes('walk') || lowerSource.includes('score')) {
+      tier = 3;
+    } else if (lowerSource.includes('perplexity') || lowerSource.includes('grok') ||
+        lowerSource.includes('claude') || lowerSource.includes('gpt') ||
+        lowerSource.includes('gemini')) {
+      tier = 4;
+    } else {
+      tier = DEFAULTS.TIER; // FIX #11: Use centralized default
+    }
+  }
 
-  // Check for partial matches
-  const lowerSource = source.toLowerCase();
-  if (lowerSource.includes('mls')) return 1;
-  if (lowerSource.includes('county')) return 2;
-  if (lowerSource.includes('fema')) return 2;
-  if (lowerSource.includes('google')) return 3;
-  if (lowerSource.includes('walk') || lowerSource.includes('score')) return 3;
-  if (lowerSource.includes('perplexity') || lowerSource.includes('grok') ||
-      lowerSource.includes('claude') || lowerSource.includes('gpt') ||
-      lowerSource.includes('gemini')) return 4;
-
-  return 5; // Default to lowest priority
+  // Cache the result
+  sourceTierCache.set(source, tier);
+  return tier;
 }
 
 /**
@@ -98,8 +131,9 @@ function mergeDataField<T>(
   }
 
   // Both have values - check source priority
-  const existingTier = getSourceTier(existing.sources?.[0] || 'Manual');
-  const incomingTier = getSourceTier(incoming.sources?.[0] || 'Manual');
+  // FIX #11: Use centralized DEFAULTS.SOURCE instead of hardcoded 'Manual'
+  const existingTier = getSourceTier(existing.sources?.[0] || DEFAULTS.SOURCE);
+  const incomingTier = getSourceTier(incoming.sources?.[0] || DEFAULTS.SOURCE);
 
   // Lower tier number = higher priority
   if (incomingTier < existingTier) {
@@ -166,9 +200,18 @@ function mergeProperties(existing: Property, incoming: Property): Property {
   merged.utilities = mergeSection(existing.utilities, incoming.utilities);
 
   // Merge Stellar MLS data if present
+  // FIX #17: Use proper empty object defaults instead of unsafe 'as any' cast
   if (incoming.stellarMLS || existing.stellarMLS) {
-    const existingMLS = existing.stellarMLS || {} as any;
-    const incomingMLS = incoming.stellarMLS || {} as any;
+    const emptyMLSSection = {
+      parking: undefined,
+      building: undefined,
+      legal: undefined,
+      waterfront: undefined,
+      leasing: undefined,
+      features: undefined,
+    };
+    const existingMLS = existing.stellarMLS || emptyMLSSection;
+    const incomingMLS = incoming.stellarMLS || emptyMLSSection;
 
     merged.stellarMLS = {
       parking: mergeSection(existingMLS.parking, incomingMLS.parking),
@@ -406,14 +449,17 @@ export const usePropertyStore = create<PropertyState>()(
 
           console.log('📊 Map now has', newFullPropertiesMap.size, 'full properties');
 
-          // Merge property cards - update existing or add new
+          // FIX #2 & #9: Build lookup Map once instead of .find() per property (O(n) vs O(n²))
+          // Also reuse existingIds Set for both operations
           const existingIds = new Set(state.properties.map(p => p.id));
+          const incomingMap = new Map(newProperties.map(np => [np.id, np]));
+
           const updatedProperties = state.properties.map(p => {
-            const incoming = newProperties.find(np => np.id === p.id);
+            const incoming = incomingMap.get(p.id); // O(1) lookup instead of O(n) find
             return incoming ? { ...p, ...incoming } : p;
           });
 
-          // Add truly new properties
+          // Add truly new properties (reusing existingIds Set)
           const trulyNew = newProperties.filter(np => !existingIds.has(np.id));
 
           return {
