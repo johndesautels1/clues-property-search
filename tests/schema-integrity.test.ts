@@ -20,9 +20,9 @@ import {
 
 describe('Schema Integrity Tests', () => {
   
-  test('Has exactly 138 fields', () => {
-    expect(TOTAL_FIELDS).toBe(138);
-    expect(ALL_FIELDS.length).toBe(138);
+  test('Has exactly 168 fields', () => {
+    expect(TOTAL_FIELDS).toBe(168);
+    expect(ALL_FIELDS.length).toBe(168);
   });
 
   test('No duplicate field numbers', () => {
@@ -49,7 +49,7 @@ describe('Schema Integrity Tests', () => {
     expect(uniqueKeys.size).toBe(keys.length);
   });
 
-  test('Field numbers are sequential from 1 to 138', () => {
+  test('Field numbers are sequential from 1 to 168', () => {
     const numbers = ALL_FIELDS.map(f => f.num).sort((a, b) => a - b);
     
     for (let i = 0; i < numbers.length; i++) {
@@ -98,7 +98,7 @@ describe('Schema Integrity Tests', () => {
   });
 
   test('FIELD_MAP contains all fields', () => {
-    expect(FIELD_MAP.size).toBe(138);
+    expect(FIELD_MAP.size).toBe(168);
     
     ALL_FIELDS.forEach(field => {
       const key = `${field.num}_${field.key}`;
@@ -108,7 +108,7 @@ describe('Schema Integrity Tests', () => {
   });
 
   test('FIELD_BY_NUMBER contains all fields', () => {
-    expect(FIELD_BY_NUMBER.size).toBe(138);
+    expect(FIELD_BY_NUMBER.size).toBe(168);
     
     ALL_FIELDS.forEach(field => {
       expect(FIELD_BY_NUMBER.has(field.num)).toBe(true);
@@ -117,7 +117,7 @@ describe('Schema Integrity Tests', () => {
   });
 
   test('FIELD_BY_KEY contains all fields', () => {
-    expect(FIELD_BY_KEY.size).toBe(138);
+    expect(FIELD_BY_KEY.size).toBe(168);
     
     ALL_FIELDS.forEach(field => {
       expect(FIELD_BY_KEY.has(field.key)).toBe(true);
@@ -156,7 +156,14 @@ describe('Schema Integrity Tests', () => {
       'Market & Investment Data',
       'Utilities & Connectivity',
       'Environment & Risk',
-      'Additional Features'
+      'Additional Features',
+      // Stellar MLS Groups (139-168)
+      'Stellar MLS - Parking',
+      'Stellar MLS - Building',
+      'Stellar MLS - Legal',
+      'Stellar MLS - Waterfront',
+      'Stellar MLS - Leasing',
+      'Stellar MLS - Features'
     ];
     
     expectedGroups.forEach(group => {
@@ -181,5 +188,8 @@ describe('Schema Integrity Tests', () => {
     expect(getFieldByNumber(98)?.key).toBe('rental_estimate_monthly');
     expect(getFieldByNumber(119)?.key).toBe('flood_zone');
     expect(getFieldByNumber(138)?.key).toBe('special_assessments');
+    // Stellar MLS fields (139-168)
+    expect(getFieldByNumber(139)?.key).toBe('carport_yn');
+    expect(getFieldByNumber(168)?.key).toBe('exterior_features');
   });
 });
