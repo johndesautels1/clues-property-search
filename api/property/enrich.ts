@@ -4,7 +4,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sanitizeAddress, isValidAddress } from '../../src/lib/safe-json-parse.js';
+import { sanitizeAddress, isValidAddress, safeFetch } from '../../src/lib/safe-json-parse.js';
 
 interface EnrichmentResult {
   fields: Record<string, any>;
@@ -19,34 +19,58 @@ async function getWalkScore(lat: number, lon: number, address: string): Promise<
 
   try {
     const url = `https://api.walkscore.com/score?format=json&address=${encodeURIComponent(address)}&lat=${lat}&lon=${lon}&wsapikey=${apiKey}`;
-    const response = await fetch(url);
-    const data = await response.json();
+    const result = await safeFetch<any>(url, undefined, 'WalkScore');
+
+    if (!result.success || !result.data) return {};
+    const data = result.data;
 
     if (data.status !== 1) return {};
 
+    // Null-safe access to all score properties
+    const walkScore = data.walkscore;
+    const walkDesc = data.description;
+    const transitScore = data.transit?.score;
+    const transitDesc = data.transit?.description;
+    const bikeScore = data.bike?.score;
+    const bikeDesc = data.bike?.description;
+
+    // Only include fields with valid data
+    const fields: Record<string, any> = {};
+
     // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Location Scores (74-82)
-    return {
-      '74_walk_score': {
-        value: `${data.walkscore} - ${data.description}`,
+    if (walkScore !== undefined && walkDesc) {
+      fields['74_walk_score'] = {
+        value: `${walkScore} - ${walkDesc}`,
         source: 'WalkScore',
         confidence: 'High'
-      },
-      '75_transit_score': {
-        value: data.transit?.score ? `${data.transit.score} - ${data.transit.description}` : null,
+      };
+    }
+
+    if (transitScore !== undefined && transitDesc) {
+      fields['75_transit_score'] = {
+        value: `${transitScore} - ${transitDesc}`,
         source: 'WalkScore',
         confidence: 'High'
-      },
-      '76_bike_score': {
-        value: data.bike?.score ? `${data.bike.score} - ${data.bike.description}` : null,
+      };
+    }
+
+    if (bikeScore !== undefined && bikeDesc) {
+      fields['76_bike_score'] = {
+        value: `${bikeScore} - ${bikeDesc}`,
         source: 'WalkScore',
         confidence: 'High'
-      },
-      '80_walkability_description': {
-        value: data.description,
+      };
+    }
+
+    if (walkDesc) {
+      fields['80_walkability_description'] = {
+        value: walkDesc,
         source: 'WalkScore',
         confidence: 'High'
-      }
-    };
+      };
+    }
+
+    return fields;
   } catch (e) {
     console.error('WalkScore error:', e);
     return {};
@@ -59,11 +83,15 @@ async function getFloodZone(lat: number, lon: number): Promise<Record<string, an
     // FEMA National Flood Hazard Layer API
     const url = `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?where=1%3D1&geometry=${lon}%2C${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE%2CZONE_SUBTY%2CSFHA_TF&returnGeometry=false&f=json`;
 
-    const response = await fetch(url);
-    const data = await response.json();
+    const result = await safeFetch<any>(url, undefined, 'FEMA');
 
-    if (data.features && data.features.length > 0) {
-      const zone = data.features[0].attributes;
+    if (!result.success || !result.data) return {};
+    const data = result.data;
+
+    if (Array.isArray(data.features) && data.features.length > 0) {
+      const zone = data.features[0]?.attributes;
+      if (!zone) return {};
+
       const floodZone = zone.FLD_ZONE || 'Unknown';
       const isHighRisk = ['A', 'AE', 'AH', 'AO', 'V', 'VE'].some(z => floodZone.startsWith(z));
 
@@ -120,30 +148,31 @@ async function getDistances(lat: number, lon: number): Promise<Record<string, an
     try {
       // Find nearest place
       const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${origin}&rankby=distance&type=${place.type}&key=${apiKey}`;
-      const searchRes = await fetch(searchUrl);
-      const searchData = await searchRes.json();
+      const searchResult = await safeFetch<any>(searchUrl, undefined, `Google-${place.name}`);
 
-      if (searchData.results && searchData.results.length > 0) {
-        const nearest = searchData.results[0];
-        const destLat = nearest.geometry.location.lat;
-        const destLon = nearest.geometry.location.lng;
+      if (!searchResult.success || !searchResult.data?.results?.length) continue;
+      const searchData = searchResult.data;
 
-        // Get distance
-        const distUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destLat},${destLon}&units=imperial&key=${apiKey}`;
-        const distRes = await fetch(distUrl);
-        const distData = await distRes.json();
+      const nearest = searchData.results[0];
+      const destLat = nearest.geometry?.location?.lat;
+      const destLon = nearest.geometry?.location?.lng;
 
-        if (distData.rows?.[0]?.elements?.[0]?.distance) {
-          const meters = distData.rows[0].elements[0].distance.value;
-          const miles = (meters / 1609.34).toFixed(1);
+      if (!destLat || !destLon) continue;
 
-          fields[place.field] = {
-            value: parseFloat(miles),
-            source: 'Google Maps',
-            confidence: 'High',
-            details: nearest.name
-          };
-        }
+      // Get distance
+      const distUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destLat},${destLon}&units=imperial&key=${apiKey}`;
+      const distResult = await safeFetch<any>(distUrl, undefined, `Google-Distance-${place.name}`);
+
+      if (distResult.success && distResult.data?.rows?.[0]?.elements?.[0]?.distance) {
+        const meters = distResult.data.rows[0].elements[0].distance.value;
+        const miles = (meters / 1609.34).toFixed(1);
+
+        fields[place.field] = {
+          value: parseFloat(miles),
+          source: 'Google Maps',
+          confidence: 'High',
+          details: nearest.name
+        };
       }
     } catch (e) {
       console.error(`Error getting ${place.name} distance:`, e);
@@ -160,16 +189,20 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lon: numb
 
   try {
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
-    const response = await fetch(url);
-    const data = await response.json();
+    const fetchResult = await safeFetch<any>(url, undefined, 'Google-Geocode');
+
+    if (!fetchResult.success || !fetchResult.data) return null;
+    const data = fetchResult.data;
 
     if (data.results && data.results.length > 0) {
-      const result = data.results[0];
-      const location = result.geometry.location;
+      const geoResult = data.results[0];
+      const location = geoResult.geometry?.location;
+
+      if (!location) return null;
 
       // Find county from address components
       let county = '';
-      for (const component of result.address_components) {
+      for (const component of geoResult.address_components || []) {
         if (component.types.includes('administrative_area_level_2')) {
           county = component.long_name;
           break;
@@ -196,19 +229,27 @@ async function getAirQuality(lat: number, lon: number): Promise<Record<string, a
 
   try {
     const url = `https://www.airnowapi.org/aq/observation/latLong/current/?format=application/json&latitude=${lat}&longitude=${lon}&distance=25&API_KEY=${apiKey}`;
-    const response = await fetch(url);
-    const data = await response.json();
+    const result = await safeFetch<any[]>(url, undefined, 'AirNow');
+
+    if (!result.success || !result.data) return {};
+    const data = result.data;
 
     // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Environment & Risk (117-130)
-    if (data && data.length > 0) {
+    if (Array.isArray(data) && data.length > 0) {
       const aqi = data[0];
-      return {
-        '117_air_quality_index': {
-          value: `${aqi.AQI} - ${aqi.Category.Name}`,
-          source: 'AirNow',
-          confidence: 'High'
-        }
-      };
+      // Null-safe access to AQI and Category
+      const aqiValue = aqi?.AQI;
+      const categoryName = aqi?.Category?.Name;
+
+      if (aqiValue !== undefined && categoryName) {
+        return {
+          '117_air_quality_index': {
+            value: `${aqiValue} - ${categoryName}`,
+            source: 'AirNow',
+            confidence: 'High'
+          }
+        };
+      }
     }
   } catch (e) {
     console.error('AirNow error:', e);
@@ -245,12 +286,13 @@ async function getCommuteTime(lat: number, lon: number, city: string): Promise<R
 
   try {
     const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${lat},${lon}&destinations=${downtown}&departure_time=now&key=${apiKey}`;
-    const response = await fetch(url);
-    const data = await response.json();
+    const result = await safeFetch<any>(url, undefined, 'Google-Commute');
+
+    if (!result.success || !result.data) return {};
 
     // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Location Scores (74-82)
-    if (data.rows?.[0]?.elements?.[0]?.duration_in_traffic) {
-      const duration = data.rows[0].elements[0].duration_in_traffic.text;
+    if (result.data.rows?.[0]?.elements?.[0]?.duration_in_traffic) {
+      const duration = result.data.rows[0].elements[0].duration_in_traffic.text;
       return {
         '82_commute_to_city_center': {
           value: duration,
@@ -338,8 +380,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const addressParts = address.split(',');
     const city = addressParts[1]?.trim() || 'Tampa';
 
-    // Call all enrichment APIs in parallel
-    const [walkScore, floodZone, distances, airQuality, commuteTime] = await Promise.all([
+    // Call all enrichment APIs in parallel with Promise.allSettled
+    // This ensures one failed API doesn't crash all others
+    const apiResults = await Promise.allSettled([
       getWalkScore(latitude, longitude, address),
       getFloodZone(latitude, longitude),
       getDistances(latitude, longitude),
@@ -347,30 +390,47 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       getCommuteTime(latitude, longitude, city)
     ]);
 
-    // Merge all results
-    if (Object.keys(walkScore).length > 0) {
-      Object.assign(result.fields, walkScore);
+    // Process results with proper error handling
+    const [walkScoreResult, floodZoneResult, distancesResult, airQualityResult, commuteTimeResult] = apiResults;
+
+    // WalkScore
+    if (walkScoreResult.status === 'fulfilled' && Object.keys(walkScoreResult.value).length > 0) {
+      Object.assign(result.fields, walkScoreResult.value);
       result.sources_used.push('WalkScore');
+    } else if (walkScoreResult.status === 'rejected') {
+      result.errors.push(`WalkScore: ${String(walkScoreResult.reason)}`);
     }
 
-    if (Object.keys(floodZone).length > 0) {
-      Object.assign(result.fields, floodZone);
+    // FEMA Flood Zone
+    if (floodZoneResult.status === 'fulfilled' && Object.keys(floodZoneResult.value).length > 0) {
+      Object.assign(result.fields, floodZoneResult.value);
       result.sources_used.push('FEMA NFHL');
+    } else if (floodZoneResult.status === 'rejected') {
+      result.errors.push(`FEMA: ${String(floodZoneResult.reason)}`);
     }
 
-    if (Object.keys(distances).length > 0) {
-      Object.assign(result.fields, distances);
+    // Google Distances
+    if (distancesResult.status === 'fulfilled' && Object.keys(distancesResult.value).length > 0) {
+      Object.assign(result.fields, distancesResult.value);
       result.sources_used.push('Google Places/Distance Matrix');
+    } else if (distancesResult.status === 'rejected') {
+      result.errors.push(`Google Distances: ${String(distancesResult.reason)}`);
     }
 
-    if (Object.keys(airQuality).length > 0) {
-      Object.assign(result.fields, airQuality);
+    // AirNow
+    if (airQualityResult.status === 'fulfilled' && Object.keys(airQualityResult.value).length > 0) {
+      Object.assign(result.fields, airQualityResult.value);
       result.sources_used.push('AirNow');
+    } else if (airQualityResult.status === 'rejected') {
+      result.errors.push(`AirNow: ${String(airQualityResult.reason)}`);
     }
 
-    if (Object.keys(commuteTime).length > 0) {
-      Object.assign(result.fields, commuteTime);
+    // Commute Time
+    if (commuteTimeResult.status === 'fulfilled' && Object.keys(commuteTimeResult.value).length > 0) {
+      Object.assign(result.fields, commuteTimeResult.value);
       result.sources_used.push('Google Distance Matrix');
+    } else if (commuteTimeResult.status === 'rejected') {
+      result.errors.push(`Commute Time: ${String(commuteTimeResult.reason)}`);
     }
 
     // Add coordinates to response

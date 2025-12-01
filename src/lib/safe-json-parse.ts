@@ -391,3 +391,140 @@ export function createLLMError(
     rawResponse: rawResponse?.substring(0, 1000), // Truncate for logging
   };
 }
+
+/**
+ * Safe fetch result type
+ */
+export interface SafeFetchResult<T> {
+  success: boolean;
+  data: T | null;
+  status?: number;
+  error?: string;
+}
+
+/**
+ * Safely fetch and parse JSON from a URL with proper error handling
+ * Handles network errors, non-OK responses, and JSON parse failures
+ *
+ * @param url - URL to fetch
+ * @param options - Optional fetch options (method, headers, body, etc.)
+ * @param context - Optional context for error logging
+ * @param timeoutMs - Optional timeout in milliseconds (default: 30000)
+ * @returns SafeFetchResult with success flag and data/error
+ */
+export async function safeFetch<T = unknown>(
+  url: string,
+  options?: RequestInit,
+  context?: string,
+  timeoutMs: number = 30000
+): Promise<SafeFetchResult<T>> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      // Try to get error message from response body
+      let errorBody = '';
+      try {
+        errorBody = await response.text();
+        errorBody = errorBody.substring(0, 500); // Truncate
+      } catch {
+        // Ignore body read errors
+      }
+
+      console.error(
+        `[safeFetch]${context ? ` [${context}]` : ''} HTTP ${response.status}: ${response.statusText}`,
+        errorBody ? `| Body: ${errorBody}` : ''
+      );
+
+      return {
+        success: false,
+        data: null,
+        status: response.status,
+        error: `HTTP ${response.status}: ${response.statusText}`,
+      };
+    }
+
+    // Parse JSON response
+    const text = await response.text();
+
+    if (!text || text.trim() === '') {
+      return {
+        success: true,
+        data: null,
+        status: response.status,
+      };
+    }
+
+    try {
+      const data = JSON.parse(text) as T;
+      return {
+        success: true,
+        data,
+        status: response.status,
+      };
+    } catch (parseError) {
+      console.error(
+        `[safeFetch]${context ? ` [${context}]` : ''} JSON parse error:`,
+        parseError instanceof Error ? parseError.message : 'Unknown error'
+      );
+      console.error(`[safeFetch] Raw response (first 500 chars):`, text.substring(0, 500));
+
+      return {
+        success: false,
+        data: null,
+        status: response.status,
+        error: `JSON parse error: ${parseError instanceof Error ? parseError.message : 'Unknown'}`,
+      };
+    }
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error(`[safeFetch]${context ? ` [${context}]` : ''} Request timed out after ${timeoutMs}ms`);
+      return {
+        success: false,
+        data: null,
+        error: `Request timed out after ${timeoutMs}ms`,
+      };
+    }
+
+    console.error(
+      `[safeFetch]${context ? ` [${context}]` : ''} Network error:`,
+      error instanceof Error ? error.message : 'Unknown error'
+    );
+
+    return {
+      success: false,
+      data: null,
+      error: error instanceof Error ? error.message : 'Network error',
+    };
+  }
+}
+
+/**
+ * Check if a value is null, undefined, or an empty string
+ * Useful for null checks before property access
+ */
+export function isNullish(value: unknown): value is null | undefined {
+  return value === null || value === undefined;
+}
+
+/**
+ * Check if a value exists and is not empty
+ * For strings, also checks for empty/whitespace-only
+ */
+export function hasValue(value: unknown): boolean {
+  if (isNullish(value)) return false;
+  if (typeof value === 'string') return value.trim().length > 0;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === 'object') return Object.keys(value as object).length > 0;
+  return true;
+}
