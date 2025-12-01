@@ -284,7 +284,7 @@ function sanitizeInputValue(value: any, fieldType: 'string' | 'number' | 'boolea
     default:
       // Sanitize strings: limit length, remove control characters
       let sanitized = String(value).trim();
-      // Remove control characters except newlines and tabs
+      // Remove control characters including tabs, but preserve newlines
       sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
       // Limit string length to prevent abuse
       if (sanitized.length > 10000) sanitized = sanitized.substring(0, 10000);

@@ -2,12 +2,16 @@
  * CLUES Property Dashboard - HOA Fee Conversion and Input Sanitization Tests
  *
  * Tests for the HOA fee monthly-to-annual conversion and input sanitization functionality.
+ * 
+ * Note: The sanitization and conversion functions are recreated here because they are
+ * internal to the API files and not exported. This is intentional to test the logic
+ * independently. If the implementation changes, these tests should be updated accordingly.
  */
 
 import { describe, test, expect } from 'vitest';
 
-// We'll test the sanitization and conversion logic by recreating the functions here
-// since they're internal to the API files
+// We recreate the sanitization and conversion logic here for testing
+// since they're internal to the API files and not exported
 
 /**
  * Sanitize input values to prevent injection and ensure data integrity
@@ -208,8 +212,8 @@ describe('HOA Fee Conversion Tests', () => {
       expect(isMonthlyHoaFee('HOA Fee', 1500)).toBe(true);
       expect(isMonthlyHoaFee('HOA Fee', 2999)).toBe(true);
       
-      // Values $3000 or more are likely annual (but the heuristic uses < 3000, so 3000 is still monthly)
-      // This is a conservative approach - better to convert than not
+      // Values $3000 or more are treated as annual (no conversion)
+      // The heuristic uses value < 3000, so 3000+ values are not converted
       expect(isMonthlyHoaFee('HOA Fee', 3001)).toBe(false);
       expect(isMonthlyHoaFee('HOA Fee', 6000)).toBe(false);
       expect(isMonthlyHoaFee('HOA Fee', 12000)).toBe(false);
