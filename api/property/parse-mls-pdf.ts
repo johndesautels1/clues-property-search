@@ -5,33 +5,11 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import {
-  isMonthlyHoaFeeKey,
-  convertMonthlyHoaToAnnual
-} from '../../src/lib/field-map-flat-to-numbered.js';
-import {
-  safeJsonParse,
-  extractAndParseJson
-} from '../../src/lib/safe-json-parse.js';
 
 // Vercel serverless config
 export const config = {
   maxDuration: 120, // 2 minutes for PDF parsing
 };
-
-// Fields that contain monthly HOA values (need conversion to annual)
-const MONTHLY_HOA_FIELDS = new Set([
-  'Monthly HOA Amount',
-  'HOA Monthly',
-  'Average Monthly Fees',
-  'HOA Fee', // Often monthly in MLS sheets
-]);
-
-// Fields that are already annual
-const ANNUAL_HOA_FIELDS = new Set([
-  'HOA Annual',
-  'Total Annual Assoc Fees',
-]);
 
 // MLS field mapping: Maps Stellar MLS field names to our numbered schema
 // UPDATED: 2025-11-30 - Corrected ALL field numbers to match fields-schema.ts
@@ -436,23 +414,8 @@ function mapFieldsToSchema(rawFields: Record<string, any>): { fields: Record<str
 
     // If we found a mapping, add to result
     if (schemaKey) {
-      let finalValue = value;
-      
-      // Handle HOA fee conversion: monthly → annual
-      if (schemaKey === '31_hoa_fee_annual') {
-        // Check if this is a monthly field that needs conversion
-        if (MONTHLY_HOA_FIELDS.has(rawKey)) {
-          const annualValue = convertMonthlyHoaToAnnual(value);
-          if (annualValue !== null) {
-            finalValue = annualValue;
-            console.log(`[PDF PARSER] Converted monthly HOA $${value} to annual $${annualValue}`);
-          }
-        }
-        // If it's already annual (e.g., 'HOA Annual', 'Total Annual Assoc Fees'), keep as is
-      }
-      
       mappedFields[schemaKey] = {
-        value: finalValue,
+        value: value,
         source: sourceName,
         confidence: 'High',
       };
@@ -479,7 +442,7 @@ async function parsePdfWithClaude(pdfBase64: string): Promise<Record<string, any
     throw new Error('ANTHROPIC_API_KEY not configured');
   }
 
-  const prompt = `You are a Stellar MLS data extraction expert. Extract ALL property data from this Stellar MLS CustomerFull PDF sheet.
+  const prompt = \`You are a Stellar MLS data extraction expert. Extract ALL property data from this Stellar MLS CustomerFull PDF sheet.
 
 CRITICAL: Use the EXACT field names as they appear in the Stellar MLS PDF. Here are the standard Stellar MLS field names to look for:
 
@@ -591,7 +554,7 @@ Example output format:
   "Legal Desc": "MARINA BAY OF ST PETERSBURG BEACH CONDO BLDG 100, UNIT 203"
 }
 
-Return ONLY the JSON object, no markdown or explanation.`;
+Return ONLY the JSON object, no markdown or explanation.\`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -629,7 +592,7 @@ Return ONLY the JSON object, no markdown or explanation.`;
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       console.error('[PDF PARSER] Claude API error:', response.status, errorData);
-      throw new Error(`Claude API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+      throw new Error(\`Claude API error: \${response.status} - \${errorData.error?.message || 'Unknown error'}\`);
     }
 
     const data = await response.json();
@@ -642,16 +605,17 @@ Return ONLY the JSON object, no markdown or explanation.`;
       let jsonStr = text;
 
       // Remove markdown code blocks if present
-      const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+      const codeBlockMatch = text.match(/\`\`\`(?:json)?\s*([\s\S]*?)\`\`\`/);
       if (codeBlockMatch) {
         jsonStr = codeBlockMatch[1].trim();
       }
 
-      // Use safe JSON parsing with extraction
-      const parseResult = extractAndParseJson<Record<string, any>>(jsonStr, 'PDF PARSER');
-      if (parseResult.success && parseResult.data) {
-        console.log('[PDF PARSER] Extracted', Object.keys(parseResult.data).length, 'raw fields');
-        return parseResult.data;
+      // Find JSON object in text
+      const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        console.log('[PDF PARSER] Extracted', Object.keys(parsed).length, 'raw fields');
+        return parsed;
       }
     }
 
@@ -697,8 +661,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                        sourceType === 'realtor' ? 'Realtor.com' :
                        sourceType === 'redfin' ? 'Redfin' : 'MLS PDF';
 
-    console.log(`[PDF PARSER] Source detected: ${sourceName}`);
-    console.log(`[PDF PARSER] Mapped ${mappedCount} fields, ${unmappedCount} unmapped`);
+    console.log(\`[PDF PARSER] Source detected: \${sourceName}\`);
+    console.log(\`[PDF PARSER] Mapped \${mappedCount} fields, \${unmappedCount} unmapped\`);
 
     return res.status(200).json({
       success: true,
