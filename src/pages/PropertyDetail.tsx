@@ -341,6 +341,7 @@ export default function PropertyDetail() {
   const [isRetrying, setIsRetrying] = useState(false);
   const [isEnriching, setIsEnriching] = useState(false);
   const [enrichProgress, setEnrichProgress] = useState(0);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null); // Error state for consistent UX
   const isAdmin = useIsAdmin(); // Check if current user is admin (agent/broker)
 
   const property = id ? getPropertyById(id) : undefined;
@@ -451,7 +452,7 @@ export default function PropertyDetail() {
 
     } catch (error) {
       console.error('Enrich error:', error);
-      alert(`Failed to enrich property: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setErrorMessage(`Failed to enrich property: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsEnriching(false);
       setEnrichProgress(0);
@@ -665,7 +666,7 @@ export default function PropertyDetail() {
       }
     } catch (error) {
       console.error('Retry error:', error);
-      alert(`Failed to retry with ${llmName}: ${error}`);
+      setErrorMessage(`Failed to retry with ${llmName}: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsRetrying(false);
       globalIsRetrying = false;
@@ -771,6 +772,26 @@ export default function PropertyDetail() {
           </div>
         </div>
       </motion.div>
+
+      {/* Error Banner - displays errors from enrich/retry operations */}
+      {errorMessage && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mx-4 mt-2 p-4 bg-red-500/20 border border-red-500/50 rounded-xl flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-red-400" />
+            <span className="text-red-200">{errorMessage}</span>
+          </div>
+          <button
+            onClick={() => setErrorMessage(null)}
+            className="text-red-400 hover:text-red-300 text-sm"
+          >
+            Dismiss
+          </button>
+        </motion.div>
+      )}
 
       {/* Hero Image */}
       <motion.div
