@@ -3,6 +3,8 @@
  * These are called BEFORE LLMs because they provide accurate, non-hallucinated data
  */
 
+import { safeFetch } from '../../src/lib/safe-json-parse.js';
+
 export interface ApiField {
   value: string | number | boolean | object | null;
   source: string;
@@ -42,8 +44,13 @@ export async function callGoogleGeocode(address: string): Promise<ApiResult & { 
 
   try {
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
-    const response = await fetch(url);
-    const data = await response.json();
+    const fetchResult = await safeFetch<any>(url, undefined, 'Google-Geocode');
+
+    if (!fetchResult.success || !fetchResult.data) {
+      return { success: false, source: 'Google Geocode', fields, error: fetchResult.error || 'Fetch failed' };
+    }
+
+    const data = fetchResult.data;
 
     if (data.status !== 'OK' || !data.results?.[0]) {
       return { success: false, source: 'Google Geocode', fields, error: `Geocode status: ${data.status}` };
@@ -127,23 +134,23 @@ export async function callGooglePlaces(lat: number, lon: number): Promise<ApiRes
     for (const place of placeTypes) {
       try {
         const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${origin}&rankby=distance&type=${place.type}&key=${apiKey}`;
-        const searchRes = await fetch(searchUrl);
-        const searchData = await searchRes.json();
+        const searchResult = await safeFetch<any>(searchUrl, undefined, `Google-Places-${place.name}`);
 
-        if (searchData.results && searchData.results.length > 0) {
-          const nearest = searchData.results[0];
-          const destLat = nearest.geometry.location.lat;
-          const destLon = nearest.geometry.location.lng;
+        if (!searchResult.success || !searchResult.data?.results?.length) continue;
 
-          const distUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destLat},${destLon}&units=imperial&key=${apiKey}`;
-          const distRes = await fetch(distUrl);
-          const distData = await distRes.json();
+        const nearest = searchResult.data.results[0];
+        const destLat = nearest.geometry?.location?.lat;
+        const destLon = nearest.geometry?.location?.lng;
 
-          if (distData.rows?.[0]?.elements?.[0]?.distance) {
-            const meters = distData.rows[0].elements[0].distance.value;
-            const miles = parseFloat((meters / 1609.34).toFixed(1));
-            setField(fields, place.field, miles, 'Google Places');
-          }
+        if (!destLat || !destLon) continue;
+
+        const distUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destLat},${destLon}&units=imperial&key=${apiKey}`;
+        const distResult = await safeFetch<any>(distUrl, undefined, `Google-Distance-${place.name}`);
+
+        if (distResult.success && distResult.data?.rows?.[0]?.elements?.[0]?.distance) {
+          const meters = distResult.data.rows[0].elements[0].distance.value;
+          const miles = parseFloat((meters / 1609.34).toFixed(1));
+          setField(fields, place.field, miles, 'Google Places');
         }
       } catch (e) {
         console.error(`Error getting ${place.name} distance:`, e);
@@ -170,8 +177,13 @@ export async function callWalkScore(lat: number, lon: number, address: string): 
 
   try {
     const url = `https://api.walkscore.com/score?format=json&address=${encodeURIComponent(address)}&lat=${lat}&lon=${lon}&wsapikey=${apiKey}&transit=1&bike=1`;
-    const response = await fetch(url);
-    const data = await response.json();
+    const fetchResult = await safeFetch<any>(url, undefined, 'WalkScore');
+
+    if (!fetchResult.success || !fetchResult.data) {
+      return { success: false, source: 'WalkScore', fields, error: fetchResult.error || 'Fetch failed' };
+    }
+
+    const data = fetchResult.data;
 
     if (data.status !== 1) {
       return { success: false, source: 'WalkScore', fields, error: `WalkScore status: ${data.status}` };
@@ -203,10 +215,15 @@ export async function callFemaFlood(lat: number, lon: number): Promise<ApiResult
 
   try {
     const url = `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?where=1%3D1&geometry=${lon}%2C${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE%2CZONE_SUBTY%2CSFHA_TF&returnGeometry=false&f=json`;
-    const response = await fetch(url);
-    const data = await response.json();
+    const fetchResult = await safeFetch<any>(url, undefined, 'FEMA-Flood');
 
-    if (data.features?.[0]) {
+    if (!fetchResult.success || !fetchResult.data) {
+      return { success: false, source: 'FEMA NFHL', fields, error: fetchResult.error || 'Fetch failed' };
+    }
+
+    const data = fetchResult.data;
+
+    if (Array.isArray(data.features) && data.features.length > 0 && data.features[0]?.attributes) {
       const zone = data.features[0].attributes;
       const floodZone = zone.FLD_ZONE || 'Unknown';
       const isHighRisk = ['A', 'AE', 'AH', 'AO', 'V', 'VE'].some(z => floodZone.startsWith(z));
@@ -241,10 +258,15 @@ export async function callAirNow(lat: number, lon: number): Promise<ApiResult> {
 
   try {
     const url = `https://www.airnowapi.org/aq/observation/latLong/current/?format=application/json&latitude=${lat}&longitude=${lon}&distance=25&API_KEY=${apiKey}`;
-    const response = await fetch(url);
-    const data = await response.json();
+    const fetchResult = await safeFetch<any[]>(url, undefined, 'AirNow');
 
-    if (data?.[0]) {
+    if (!fetchResult.success || !fetchResult.data) {
+      return { success: false, source: 'AirNow', fields, error: fetchResult.error || 'Fetch failed' };
+    }
+
+    const data = fetchResult.data;
+
+    if (Array.isArray(data) && data.length > 0 && data[0]) {
       const aqi = data[0].AQI;
       const category = data[0].Category?.Name || '';
       // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Environment & Risk (117-130)
@@ -274,14 +296,14 @@ export async function callSchoolDigger(lat: number, lon: number): Promise<ApiRes
   try {
     // Search for nearby schools
     const url = `https://api.schooldigger.com/v2.0/schools?st=FL&lat=${lat}&lng=${lon}&distanceMiles=5&perPage=20&appID=${appId}&appKey=${apiKey}`;
-    const response = await fetch(url);
+    const fetchResult = await safeFetch<any>(url, undefined, 'SchoolDigger');
 
-    if (!response.ok) {
-      return { success: false, source: 'SchoolDigger', fields, error: `HTTP ${response.status}` };
+    if (!fetchResult.success || !fetchResult.data) {
+      return { success: false, source: 'SchoolDigger', fields, error: fetchResult.error || 'Fetch failed' };
     }
 
-    const data = await response.json();
-    const schools = data.schoolList || [];
+    const data = fetchResult.data;
+    const schools = Array.isArray(data.schoolList) ? data.schoolList : [];
 
     // Find closest elementary, middle, high schools
     const elementary = schools.find((s: any) => s.schoolLevel === 'Elementary' || s.lowGrade === 'K');
@@ -335,13 +357,13 @@ export async function callAirDNA(lat: number, lon: number, address: string): Pro
   try {
     // AirDNA Market endpoint
     const url = `https://api.airdna.co/v1/market/search?access_token=${apiKey}&lat=${lat}&lng=${lon}&radius=1`;
-    const response = await fetch(url);
+    const fetchResult = await safeFetch<any>(url, undefined, 'AirDNA');
 
-    if (!response.ok) {
-      return { success: false, source: 'AirDNA', fields, error: `HTTP ${response.status}` };
+    if (!fetchResult.success || !fetchResult.data) {
+      return { success: false, source: 'AirDNA', fields, error: fetchResult.error || 'Fetch failed' };
     }
 
-    const data = await response.json();
+    const data = fetchResult.data;
     const market = data.market_data || data;
 
     // STR market data - Note: These fields don't exist in the 168-field schema
@@ -372,17 +394,17 @@ export async function callHowLoud(lat: number, lon: number): Promise<ApiResult> 
   try {
     // HowLoud API v2 endpoint - uses x-api-key header
     const url = `https://api.howloud.com/v2/score?lat=${lat}&lng=${lon}`;
-    const response = await fetch(url, {
+    const fetchResult = await safeFetch<any>(url, {
       headers: {
         'x-api-key': apiKey
       }
-    });
+    }, 'HowLoud');
 
-    if (!response.ok) {
-      return { success: false, source: 'HowLoud', fields, error: `HTTP ${response.status}` };
+    if (!fetchResult.success || !fetchResult.data) {
+      return { success: false, source: 'HowLoud', fields, error: fetchResult.error || 'Fetch failed' };
     }
 
-    const data = await response.json();
+    const data = fetchResult.data;
 
     // v2 API returns result as an array
     const result = Array.isArray(data.result) ? data.result[0] : (data.result || data);
@@ -421,13 +443,13 @@ export async function callBroadbandNow(lat: number, lon: number, address: string
   try {
     // FCC VizMo API - Mobile Broadband data
     const url = `http://vizmo.fcc.gov/api/carrier.json?lat=${lat}&lon=${lon}`;
-    const response = await fetch(url);
+    const fetchResult = await safeFetch<any>(url, undefined, 'FCC-Broadband');
 
-    if (!response.ok) {
-      return { success: false, source: 'FCC Broadband', fields, error: `HTTP ${response.status}` };
+    if (!fetchResult.success || !fetchResult.data) {
+      return { success: false, source: 'FCC Broadband', fields, error: fetchResult.error || 'Fetch failed' };
     }
 
-    const data = await response.json();
+    const data = fetchResult.data;
 
     // Extract carrier data with proper typing
     interface CarrierData {
@@ -485,12 +507,13 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
     // Use 2022 data (most complete available) with MM-YYYY format
     const url = `https://api.usa.gov/crime/fbi/cde/summarized/state/${stateCode}/violent-crime?from=01-2022&to=12-2022&API_KEY=${apiKey}`;
 
-    const response = await fetch(url);
-    if (!response.ok) {
-      return { success: false, source: 'FBI UCR', fields, error: 'HTTP ' + response.status };
+    const fetchResult = await safeFetch<any>(url, undefined, 'FBI-Crime');
+
+    if (!fetchResult.success || !fetchResult.data) {
+      return { success: false, source: 'FBI UCR', fields, error: fetchResult.error || 'Fetch failed' };
     }
 
-    const data = await response.json();
+    const data = fetchResult.data;
 
     // New API format returns monthly rates in offenses.rates[State]
     if (data.offenses?.rates?.[stateCode] || data.offenses?.rates?.Florida) {
@@ -543,10 +566,10 @@ export async function callWeather(lat: number, lon: number): Promise<ApiResult> 
   if (owmKey) {
     try {
       const owmUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${owmKey}&units=imperial`;
-      const owmResponse = await fetch(owmUrl);
+      const owmResult = await safeFetch<any>(owmUrl, undefined, 'OpenWeatherMap');
 
-      if (owmResponse.ok) {
-        const data = await owmResponse.json();
+      if (owmResult.success && owmResult.data) {
+        const data = owmResult.data;
 
         // Note: Weather data is supplementary - not in 168-field schema
         // Storing as metadata only - not mapped to numbered fields
@@ -569,10 +592,10 @@ export async function callWeather(lat: number, lon: number): Promise<ApiResult> 
   if (weatherComKey) {
     try {
       const url = `https://api.weather.com/v3/wx/conditions/current?geocode=${lat},${lon}&language=en-US&format=json&apiKey=${weatherComKey}`;
-      const response = await fetch(url);
+      const fetchResult = await safeFetch<any>(url, undefined, 'Weather.com');
 
-      if (response.ok) {
-        const data = await response.json();
+      if (fetchResult.success && fetchResult.data) {
+        const data = fetchResult.data;
         // Note: Weather data is supplementary - not in 168-field schema
         setField(fields, 'current_temperature', data.temperature, 'Weather.com');
         setField(fields, 'humidity', data.relativeHumidity, 'Weather.com');
@@ -586,17 +609,17 @@ export async function callWeather(lat: number, lon: number): Promise<ApiResult> 
   // Fallback to free Open-Meteo (no API key needed)
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=America%2FNew_York`;
-    const response = await fetch(url);
+    const fetchResult = await safeFetch<any>(url, undefined, 'Open-Meteo');
 
-    if (response.ok) {
-      const data = await response.json();
+    if (fetchResult.success && fetchResult.data) {
+      const data = fetchResult.data;
 
       // Note: Weather data is supplementary - not in 168-field schema
       if (data.current_weather) {
         setField(fields, 'current_temperature', data.current_weather.temperature, 'Open-Meteo');
       }
 
-      if (data.daily) {
+      if (data.daily?.temperature_2m_max && data.daily?.temperature_2m_min) {
         const avgHigh = data.daily.temperature_2m_max.reduce((a: number, b: number) => a + b, 0) / data.daily.temperature_2m_max.length;
         const avgLow = data.daily.temperature_2m_min.reduce((a: number, b: number) => a + b, 0) / data.daily.temperature_2m_min.length;
 
@@ -626,18 +649,18 @@ export async function callHudFairMarketRent(zip: string): Promise<ApiResult> {
   try {
     // HUD FMR API - get Fair Market Rent by ZIP code
     const url = `https://www.huduser.gov/hudapi/public/fmr/data/${zip}`;
-    const response = await fetch(url, {
+    const fetchResult = await safeFetch<any>(url, {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       }
-    });
+    }, 'HUD-FMR');
 
-    if (!response.ok) {
-      return { success: false, source: 'HUD FMR', fields, error: `HTTP ${response.status}` };
+    if (!fetchResult.success || !fetchResult.data) {
+      return { success: false, source: 'HUD FMR', fields, error: fetchResult.error || 'Fetch failed' };
     }
 
-    const data = await response.json();
+    const data = fetchResult.data;
     const fmrData = data.data?.basicdata || data.basicdata || data;
 
     // Extract rent by bedroom count - map to rental_estimate_monthly (field 98)

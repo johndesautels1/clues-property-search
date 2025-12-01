@@ -4,6 +4,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { safeFetch, sanitizeAddress } from '../../src/lib/safe-json-parse.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers
@@ -20,10 +21,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { input } = req.query;
+  const { input: rawInput } = req.query;
 
-  if (!input || typeof input !== 'string') {
+  if (!rawInput || typeof rawInput !== 'string') {
     return res.status(400).json({ error: 'Input query required' });
+  }
+
+  // 🛡️ INPUT SANITIZATION: Prevent prompt injection
+  const input = sanitizeAddress(rawInput);
+
+  if (!input) {
+    return res.status(400).json({ error: 'Invalid input' });
   }
 
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
@@ -48,15 +56,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Use location bias for Tampa Bay area (center of target counties)
     // Latitude: 27.9506, Longitude: -82.4572 (Tampa)
     // Radius covers all 8 counties (~100km)
-    const response = await fetch(
-      `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
-        input
-      )}&types=address&components=country:us&location=27.9506,-82.4572&radius=150000&strictbounds=false&key=${apiKey}`
-    );
+    const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
+      input
+    )}&types=address&components=country:us&location=27.9506,-82.4572&radius=150000&strictbounds=false&key=${apiKey}`;
 
-    const data = await response.json();
+    const fetchResult = await safeFetch<any>(url, undefined, 'Google-Autocomplete');
 
-    if (data.status === 'OK') {
+    if (!fetchResult.success || !fetchResult.data) {
+      return res.status(500).json({ error: 'Failed to fetch suggestions', details: fetchResult.error });
+    }
+
+    const data = fetchResult.data;
+
+    if (data.status === 'OK' && Array.isArray(data.predictions)) {
       // Filter to only include addresses in target Florida counties
       const suggestions = data.predictions
         .filter((p: any) => {
