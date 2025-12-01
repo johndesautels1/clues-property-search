@@ -22,6 +22,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { TOTAL_FIELDS } from '../../src/types/fields-schema.js';
 
 // Vercel serverless config - Pro plan allows 60s
 export const config = {
@@ -904,7 +905,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Get final arbitration result with quorum voting and single-source detection
     const arbitrationResult = arbitrationPipeline.getResult();
     const totalFields = Object.keys(arbitrationResult.fields).length;
-    const completionPercentage = Math.round((totalFields / 168) * 100); // Updated to 168 fields per schema
+    const completionPercentage = Math.round((totalFields / TOTAL_FIELDS) * 100);
 
     // Send final complete event with all data including arbitration metadata
     sendEvent(res, 'complete', {
@@ -935,7 +936,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           address: searchAddress,
           fields: partialResult.fields,
           total_fields_found: partialFields,
-          completion_percentage: Math.round((partialFields / 168) * 100), // Updated to 168 fields
+          completion_percentage: Math.round((partialFields / TOTAL_FIELDS) * 100),
           llm_responses: llmResponses,
           conflicts: partialResult.conflicts,
           validation_failures: partialResult.validationFailures,

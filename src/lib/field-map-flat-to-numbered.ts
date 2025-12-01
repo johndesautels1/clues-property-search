@@ -392,8 +392,11 @@ export function isMonthlyHoaFeeKey(key: string): boolean {
 /**
  * Convert monthly HOA fee to annual
  * Returns null if value is invalid/missing
+ * 
+ * @param monthlyValue - Monthly fee value (string, number, or null/undefined)
+ * @returns Annual fee or null if invalid
  */
-export function convertMonthlyHoaToAnnual(monthlyValue: any): number | null {
+export function convertMonthlyHoaToAnnual(monthlyValue: string | number | null | undefined): number | null {
   if (monthlyValue === null || monthlyValue === undefined || monthlyValue === '') {
     return null;
   }

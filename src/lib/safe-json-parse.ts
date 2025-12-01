@@ -28,12 +28,12 @@ export interface SafeParseResult<T> {
  * Safely parse JSON with error handling
  * Returns a typed result instead of throwing
  * 
- * @param jsonString - String to parse
+ * @param jsonString - String to parse (accepts null/undefined for convenience)
  * @param context - Optional context for error logging
  * @returns SafeParseResult with success flag and data/error
  */
 export function safeJsonParse<T = unknown>(
-  jsonString: string,
+  jsonString: string | null | undefined,
   context?: string
 ): SafeParseResult<T> {
   if (!jsonString || typeof jsonString !== 'string') {
@@ -67,12 +67,12 @@ export function safeJsonParse<T = unknown>(
  * Extract JSON from LLM response text that may contain markdown or extra content
  * Handles common patterns: ```json blocks, plain JSON, mixed content
  * 
- * @param text - Raw LLM response text
+ * @param text - Raw LLM response text (accepts null/undefined for convenience)
  * @param context - Optional context for error logging
  * @returns SafeParseResult with extracted and parsed JSON
  */
 export function extractAndParseJson<T = unknown>(
-  text: string,
+  text: string | null | undefined,
   context?: string
 ): SafeParseResult<T> {
   if (!text || typeof text !== 'string') {
