@@ -17,12 +17,15 @@ import {
   Upload,
   MapPin,
   FileText,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { usePropertyStore } from '@/store/propertyStore';
 import type { PropertyCard, Property, DataField } from '@/types/property';
 import { LLM_CASCADE_ORDER, LLM_DISPLAY_NAMES } from '@/lib/llm-constants';
 import { normalizeToProperty } from '@/lib/field-normalizer';
 import { initializeCascadeStatus, getSourceName } from '@/lib/data-sources';
+import { ALL_FIELDS, UI_FIELD_GROUPS, type FieldDefinition } from '@/types/fields-schema';
 
 // Autocomplete suggestion type
 interface AddressSuggestion {
@@ -75,7 +78,17 @@ export default function AddProperty() {
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [cascadeStatus, setCascadeStatus] = useState<{llm: string; status: 'pending' | 'running' | 'complete' | 'error' | 'skipped'; fieldsFound?: number}[]>([]);
 
-  // Manual entry form state
+  // Manual entry form state - now stores all 168 fields
+  // Initialize with empty strings for all fields from the schema
+  const [manualFormFields, setManualFormFields] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    ALL_FIELDS.forEach(field => {
+      initial[field.key] = '';
+    });
+    return initial;
+  });
+
+  // Legacy form state for backward compatibility with address autocomplete
   const [manualForm, setManualForm] = useState({
     address: '',
     city: '',
@@ -89,6 +102,142 @@ export default function AddProperty() {
     propertyType: 'Single Family',
     listingStatus: 'Active',
   });
+
+  // Track which field groups are expanded
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
+    // Default to first 4 groups expanded
+    return new Set(['A', 'B', 'C', 'D']);
+  });
+
+  // Toggle group expansion
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(groupId)) {
+        next.delete(groupId);
+      } else {
+        next.add(groupId);
+      }
+      return next;
+    });
+  };
+
+  // Update manual form field
+  const updateManualField = (key: string, value: string) => {
+    setManualFormFields(prev => ({ ...prev, [key]: value }));
+    
+    // Also update legacy form for address-related fields
+    if (key === 'full_address') {
+      setManualForm(prev => ({ ...prev, address: value }));
+    } else if (key === 'zip_code') {
+      setManualForm(prev => ({ ...prev, zip: value }));
+    } else if (key === 'listing_price') {
+      setManualForm(prev => ({ ...prev, price: value }));
+    } else if (key === 'bedrooms') {
+      setManualForm(prev => ({ ...prev, bedrooms: value }));
+    } else if (key === 'total_bathrooms') {
+      setManualForm(prev => ({ ...prev, bathrooms: value }));
+    } else if (key === 'living_sqft') {
+      setManualForm(prev => ({ ...prev, sqft: value }));
+    } else if (key === 'year_built') {
+      setManualForm(prev => ({ ...prev, yearBuilt: value }));
+    } else if (key === 'property_type') {
+      setManualForm(prev => ({ ...prev, propertyType: value }));
+    } else if (key === 'listing_status') {
+      setManualForm(prev => ({ ...prev, listingStatus: value }));
+    }
+  };
+
+  // Get field definition by key
+  const getFieldByKey = (key: string): FieldDefinition | undefined => {
+    return ALL_FIELDS.find(f => f.key === key);
+  };
+
+  // Render input based on field type
+  const renderFieldInput = (field: FieldDefinition) => {
+    const value = manualFormFields[field.key] || '';
+    const commonClasses = 'input-glass text-sm';
+    
+    switch (field.type) {
+      case 'boolean':
+        return (
+          <select
+            value={value}
+            onChange={(e) => updateManualField(field.key, e.target.value)}
+            className={commonClasses}
+          >
+            <option value="">Select...</option>
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+        );
+      
+      case 'select':
+        return (
+          <select
+            value={value}
+            onChange={(e) => updateManualField(field.key, e.target.value)}
+            className={commonClasses}
+          >
+            <option value="">Select...</option>
+            {field.options?.map(opt => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+        );
+      
+      case 'multiselect':
+        return (
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => updateManualField(field.key, e.target.value)}
+            className={commonClasses}
+            placeholder="Comma-separated values"
+          />
+        );
+      
+      case 'number':
+      case 'currency':
+      case 'percentage':
+        return (
+          <input
+            type="number"
+            value={value}
+            onChange={(e) => updateManualField(field.key, e.target.value)}
+            className={commonClasses}
+            placeholder={field.placeholder || (field.type === 'currency' ? '$0' : field.type === 'percentage' ? '0%' : '0')}
+            step={field.type === 'percentage' ? '0.01' : '1'}
+          />
+        );
+      
+      case 'date':
+        return (
+          <input
+            type="date"
+            value={value}
+            onChange={(e) => updateManualField(field.key, e.target.value)}
+            className={commonClasses}
+          />
+        );
+      
+      default:
+        return (
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => updateManualField(field.key, e.target.value)}
+            className={commonClasses}
+            placeholder={field.placeholder || field.label}
+          />
+        );
+    }
+  };
+
+  // Count filled fields
+  const filledFieldsCount = Object.values(manualFormFields).filter(v => v !== '').length;
+  const totalFieldsCount = ALL_FIELDS.length;
+  const completionPercentage = Math.round((filledFieldsCount / totalFieldsCount) * 100);
 
   // Autocomplete state for Manual tab
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
@@ -199,13 +348,36 @@ export default function AddProperty() {
   }, []);
 
   const handleManualSubmit = async () => {
-    if (!manualForm.address || !manualForm.city) {
-      alert('Please fill in at least address and city');
+    // Check full_address from new form fields, fall back to legacy form
+    const fullAddressField = manualFormFields['full_address'] || '';
+    const legacyFullAddress = `${manualForm.address}, ${manualForm.city}, ${manualForm.state}${manualForm.zip ? ' ' + manualForm.zip : ''}`;
+    
+    // Use the new field if filled, otherwise use legacy
+    const fullAddress = fullAddressField || legacyFullAddress;
+    
+    if (!fullAddress || fullAddress === ', FL') {
+      alert('Please fill in at least the Full Address field');
       return;
     }
 
-    // Construct full address for API search
-    const fullAddress = `${manualForm.address}, ${manualForm.city}, ${manualForm.state}${manualForm.zip ? ' ' + manualForm.zip : ''}`;
+    // Convert manualFormFields to the API format (num_key: { value })
+    const manualFields: Record<string, { value: any; source: string }> = {};
+    ALL_FIELDS.forEach(field => {
+      const value = manualFormFields[field.key];
+      if (value !== '' && value !== null && value !== undefined) {
+        // Convert types appropriately
+        let parsedValue: any = value;
+        if (field.type === 'number' || field.type === 'currency' || field.type === 'percentage') {
+          parsedValue = parseFloat(value) || value;
+        } else if (field.type === 'boolean') {
+          parsedValue = value === 'true';
+        }
+        manualFields[`${field.num}_${field.key}`] = { 
+          value: parsedValue, 
+          source: 'Manual Entry' 
+        };
+      }
+    });
 
     // Check if this is a new address or continuing with same address
     const isNewAddress = fullAddress !== currentAddress;
@@ -240,6 +412,9 @@ export default function AddProperty() {
         return [selectedEngine];
       };
 
+      // Merge manual fields with any existing accumulated fields
+      const mergedFields = { ...accumulatedFields, ...manualFields };
+
       const response = await fetch(`${apiUrl}/api/property/search-stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -247,7 +422,7 @@ export default function AddProperty() {
           address: fullAddress,
           engines: getEngines(),
           skipLLMs: false,
-          existingFields: shouldAccumulate ? accumulatedFields : {},  // Send existing fields for accumulation
+          existingFields: shouldAccumulate ? mergedFields : manualFields,  // Include manual fields
           skipApis: shouldAccumulate,  // Skip APIs if we already have data from this address
         }),
       });
@@ -401,7 +576,7 @@ export default function AddProperty() {
 
       console.log('✅ Property added from manual entry:', data);
 
-      // Reset form
+      // Reset all form fields
       setManualForm({
         address: '',
         city: '',
@@ -415,6 +590,12 @@ export default function AddProperty() {
         propertyType: 'Single Family',
         listingStatus: 'Active',
       });
+      // Reset the new 168-field form
+      const resetFields: Record<string, string> = {};
+      ALL_FIELDS.forEach(field => {
+        resetFields[field.key] = '';
+      });
+      setManualFormFields(resetFields);
       setSelectedSuggestion(null);
 
     } catch (error) {
@@ -1609,191 +1790,105 @@ export default function AddProperty() {
           </div>
         ) : inputMode === 'manual' ? (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Address input with autocomplete */}
-              <div className="md:col-span-2 relative" ref={autocompleteRef}>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Street Address * <span className="text-quantum-cyan text-xs">(8 FL Counties)</span>
-                </label>
-                <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                  <input
-                    type="text"
-                    placeholder="Start typing address... (Pinellas, Pasco, Hillsborough, etc.)"
-                    value={manualForm.address}
-                    onChange={(e) => handleAddressInputChange(e.target.value)}
-                    onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                    className="input-glass pl-12"
-                    autoComplete="off"
-                  />
-                  {isLoadingSuggestions && (
-                    <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-quantum-cyan animate-spin" />
-                  )}
-                </div>
-
-                {/* Autocomplete dropdown */}
-                <AnimatePresence>
-                  {showSuggestions && suggestions.length > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="absolute z-50 w-full mt-1 bg-gray-900 border border-quantum-cyan/30 rounded-xl shadow-lg overflow-hidden"
-                    >
-                      {suggestions.map((suggestion, index) => (
-                        <button
-                          key={suggestion.placeId || index}
-                          type="button"
-                          onClick={() => handleSelectSuggestion(suggestion)}
-                          className="w-full px-4 py-3 text-left hover:bg-quantum-cyan/10 transition-colors border-b border-white/5 last:border-b-0"
-                        >
-                          <div className="flex items-start gap-3">
-                            <MapPin className="w-4 h-4 text-quantum-cyan mt-0.5 flex-shrink-0" />
-                            <div>
-                              <p className="text-white font-medium text-sm">{suggestion.mainText}</p>
-                              <p className="text-gray-400 text-xs">{suggestion.secondaryText}</p>
-                            </div>
-                          </div>
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Helper text */}
-                <p className="text-xs text-gray-500 mt-1">
-                  Covers: Pinellas, Pasco, Manatee, Sarasota, Polk, Hernando, Hillsborough, Citrus
-                </p>
+            {/* Coverage Progress Bar */}
+            <div className="bg-gray-800/50 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-400">Data Coverage</span>
+                <span className="text-sm font-semibold text-quantum-cyan">
+                  {filledFieldsCount} / {totalFieldsCount} fields ({completionPercentage}%)
+                </span>
               </div>
-
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  City *
-                </label>
-                <input
-                  type="text"
-                  placeholder="St Pete Beach"
-                  value={manualForm.city}
-                  onChange={(e) => setManualForm({ ...manualForm, city: e.target.value })}
-                  className="input-glass"
-                  readOnly={!!selectedSuggestion}
+              <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-quantum-cyan to-quantum-green transition-all duration-300"
+                  style={{ width: `${completionPercentage}%` }}
                 />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">
-                    State
-                  </label>
-                  <select
-                    value={manualForm.state}
-                    onChange={(e) => setManualForm({ ...manualForm, state: e.target.value })}
-                    className="input-glass"
-                  >
-                    <option value="FL">FL</option>
-                    <option value="GA">GA</option>
-                    <option value="TX">TX</option>
-                    <option value="CA">CA</option>
-                    <option value="NY">NY</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">
-                    ZIP
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="33706"
-                    value={manualForm.zip}
-                    onChange={(e) => setManualForm({ ...manualForm, zip: e.target.value })}
-                    className="input-glass"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Price *
-                </label>
-                <input
-                  type="number"
-                  placeholder="549000"
-                  value={manualForm.price}
-                  onChange={(e) => setManualForm({ ...manualForm, price: e.target.value })}
-                  className="input-glass"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Sq Ft
-                </label>
-                <input
-                  type="number"
-                  placeholder="1426"
-                  value={manualForm.sqft}
-                  onChange={(e) => setManualForm({ ...manualForm, sqft: e.target.value })}
-                  className="input-glass"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Bedrooms
-                </label>
-                <select
-                  value={manualForm.bedrooms}
-                  onChange={(e) => setManualForm({ ...manualForm, bedrooms: e.target.value })}
-                  className="input-glass"
-                >
-                  <option value="">Select</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                  <option value="4">4</option>
-                  <option value="5">5+</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Bathrooms
-                </label>
-                <select
-                  value={manualForm.bathrooms}
-                  onChange={(e) => setManualForm({ ...manualForm, bathrooms: e.target.value })}
-                  className="input-glass"
-                >
-                  <option value="">Select</option>
-                  <option value="1">1</option>
-                  <option value="1.5">1.5</option>
-                  <option value="2">2</option>
-                  <option value="2.5">2.5</option>
-                  <option value="3">3+</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Year Built
-                </label>
-                <input
-                  type="number"
-                  placeholder="1958"
-                  value={manualForm.yearBuilt}
-                  onChange={(e) => setManualForm({ ...manualForm, yearBuilt: e.target.value })}
-                  className="input-glass"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Status
-                </label>
-                <select
-                  value={manualForm.listingStatus}
-                  onChange={(e) => setManualForm({ ...manualForm, listingStatus: e.target.value })}
-                  className="input-glass"
-                >
-                  <option value="Active">Active</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Sold">Sold</option>
-                </select>
               </div>
             </div>
+
+            {/* Quick Actions */}
+            <div className="flex gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setExpandedGroups(new Set(UI_FIELD_GROUPS.map(g => g.id)))}
+                className="text-xs px-3 py-1.5 rounded-lg bg-quantum-cyan/10 text-quantum-cyan hover:bg-quantum-cyan/20 transition-colors"
+              >
+                Expand All
+              </button>
+              <button
+                type="button"
+                onClick={() => setExpandedGroups(new Set())}
+                className="text-xs px-3 py-1.5 rounded-lg bg-gray-700/50 text-gray-400 hover:bg-gray-700 transition-colors"
+              >
+                Collapse All
+              </button>
+            </div>
+
+            {/* Collapsible Field Groups */}
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+              {UI_FIELD_GROUPS.map((group) => {
+                const groupFields = ALL_FIELDS.filter(f => group.fields.includes(f.num));
+                const filledInGroup = groupFields.filter(f => manualFormFields[f.key] !== '').length;
+                const isExpanded = expandedGroups.has(group.id);
+                
+                return (
+                  <div key={group.id} className="border border-white/10 rounded-xl overflow-hidden">
+                    {/* Group Header */}
+                    <button
+                      type="button"
+                      onClick={() => toggleGroup(group.id)}
+                      className="w-full flex items-center justify-between p-3 bg-gray-800/30 hover:bg-gray-800/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        {isExpanded ? (
+                          <ChevronDown className="w-4 h-4 text-quantum-cyan" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-gray-500" />
+                        )}
+                        <span className="text-sm font-semibold text-white">{group.name}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-700/50 text-gray-400">
+                          {filledInGroup}/{groupFields.length}
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        Fields {group.fields[0]}-{group.fields[group.fields.length - 1]}
+                      </span>
+                    </button>
+                    
+                    {/* Group Fields */}
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="p-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {groupFields.map((field) => (
+                              <div key={field.key}>
+                                <label className="block text-xs text-gray-400 mb-1">
+                                  {field.label}
+                                  {field.required && <span className="text-quantum-cyan ml-1">*</span>}
+                                  {field.calculated && <span className="text-gray-600 ml-1">(auto)</span>}
+                                </label>
+                                {renderFieldInput(field)}
+                              </div>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Legacy Address Autocomplete (hidden, used for API compatibility) */}
+            <input type="hidden" value={manualForm.address} />
+            <input type="hidden" value={manualForm.city} />
+            <input type="hidden" value={manualForm.state} />
 
             <button
               onClick={handleManualSubmit}
@@ -1803,12 +1898,12 @@ export default function AddProperty() {
               {status === 'idle' || status === 'complete' || status === 'error' ? (
                 <>
                   <Sparkles className="w-5 h-5" />
-                  Search & Add Property
+                  Save Property ({filledFieldsCount} fields)
                 </>
               ) : (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Fetching Real Property Data...
+                  Saving Property Data...
                 </>
               )}
             </button>
