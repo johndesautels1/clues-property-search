@@ -84,72 +84,82 @@ function ExteriorFeaturesGrid({ properties, onPropertyClick }: CategoryGProps) {
       chartId="G-exterior-features"
       color={PROPERTY_COLORS.P1.hex}
     >
-      <div className="h-full overflow-auto">
-        {/* Header row with icons */}
-        <div className="grid gap-1 mb-2" style={{ gridTemplateColumns: `100px repeat(${features.length}, 1fr)` }}>
-          <div className="text-xs text-gray-400 font-bold">Property</div>
+      <div className="h-full overflow-auto flex flex-col">
+        {/* Header row with icons - full width with generous spacing */}
+        <div className="flex justify-between px-2 mb-3">
           {features.map(f => {
             const Icon = f.icon;
             return (
-              <div key={f.key} className="text-center">
-                <Icon className="w-3.5 h-3.5 mx-auto mb-0.5 text-gray-300" />
-                <div className="text-[9px] text-gray-300 font-bold truncate">{f.label}</div>
+              <div key={f.key} className="text-center flex-1">
+                <Icon className="w-4 h-4 mx-auto mb-1 text-gray-300" />
+                <div className="text-[10px] text-gray-300 font-bold">{f.label}</div>
               </div>
             );
           })}
         </div>
 
-        {/* Data rows */}
-        {data.map((row, i) => (
-          <motion.div
-            key={row.id}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className="grid gap-1 items-center border-t border-white/5 py-1.5 cursor-pointer hover:bg-white/5"
-            style={{ gridTemplateColumns: `100px repeat(${features.length}, 1fr)` }}
-            onClick={() => onPropertyClick?.(row.id)}
-          >
-            <div
-              className="text-xs font-bold truncate drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
-              style={{ color: row.color.hex }}
+        {/* Data rows - each property is a block with checkboxes above, address below */}
+        <div className="flex-1 space-y-4">
+          {data.map((row, i) => (
+            <motion.div
+              key={row.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.08 }}
+              className="cursor-pointer hover:bg-white/5 rounded-lg p-2"
+              onClick={() => onPropertyClick?.(row.id)}
             >
-              P{row.propertyNum}: {row.address}
-            </div>
-            {[
-              { has: row.pool, extra: row.poolType ? `(${row.poolType.slice(0, 6)})` : '' },
-              { has: row.deck, extra: '' },
-              { has: row.dock },
-              { has: row.balcony },
-              { has: row.outKitchen },
-              { has: row.outShower },
-              { has: row.hurricane },
-              { has: row.sprinkler },
-            ].map((cell, j) => (
-              <div
-                key={j}
-                className="h-7 rounded flex items-center justify-center relative group"
-                style={{
-                  backgroundColor: cell.has ? row.color.rgba(0.3) : 'rgba(255,255,255,0.05)',
-                  border: cell.has ? `1px solid ${row.color.hex}` : 'none',
-                }}
-              >
-                {cell.has ? (
-                  <>
-                    <Check className="w-4 h-4" style={{ color: row.color.hex }} />
-                    {cell.extra && (
-                      <span className="absolute -top-1 -right-1 text-[7px] font-bold" style={{ color: row.color.hex }}>
-                        {cell.extra}
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  <X className="w-3 h-3 text-gray-600" />
-                )}
+              {/* Checkboxes row - full width with generous spacing */}
+              <div className="flex justify-between px-2 mb-2">
+                {[
+                  { has: row.pool, extra: row.poolType ? `(${row.poolType.slice(0, 6)})` : '' },
+                  { has: row.deck, extra: '' },
+                  { has: row.dock },
+                  { has: row.balcony },
+                  { has: row.outKitchen },
+                  { has: row.outShower },
+                  { has: row.hurricane },
+                  { has: row.sprinkler },
+                ].map((cell, j) => (
+                  <div key={j} className="flex-1 flex justify-center">
+                    <div
+                      className="w-8 h-8 rounded-md flex items-center justify-center relative"
+                      style={{
+                        backgroundColor: cell.has ? row.color.rgba(0.3) : 'rgba(255,255,255,0.05)',
+                        border: cell.has ? `2px solid ${row.color.hex}` : '1px solid rgba(255,255,255,0.1)',
+                        boxShadow: cell.has ? `0 0 8px ${row.color.rgba(0.4)}` : 'none',
+                      }}
+                    >
+                      {cell.has ? (
+                        <>
+                          <Check className="w-5 h-5" style={{ color: row.color.hex }} />
+                          {cell.extra && (
+                            <span
+                              className="absolute -top-2 -right-2 text-[9px] font-bold bg-black/80 px-1 rounded"
+                              style={{ color: row.color.hex }}
+                            >
+                              {cell.extra}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <X className="w-4 h-4 text-gray-600" />
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </motion.div>
-        ))}
+
+              {/* Address below checkboxes - centered */}
+              <div
+                className="text-center text-xs font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
+                style={{ color: row.color.hex }}
+              >
+                P{row.propertyNum}: {row.address}
+              </div>
+            </motion.div>
+          ))}
+        </div>
 
         {data.length === 0 && (
           <div className="text-gray-300 font-medium text-sm text-center py-8 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
