@@ -326,6 +326,92 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'Max Times per Yr': 'max_lease_times_per_year',
 };
 
+// Monthly HOA field names that need to be converted to annual
+const MONTHLY_HOA_FIELD_NAMES = new Set([
+  'monthly hoa amount',
+  'hoa monthly',
+  'average monthly fees',
+]);
+
+// Field names that are explicitly annual (no conversion needed)
+const ANNUAL_HOA_FIELD_NAMES = new Set([
+  'total annual assoc fees',
+  'hoa annual',
+  'annual hoa',
+]);
+
+/**
+ * Sanitize input values to prevent injection and ensure data integrity
+ * @param value - The value to sanitize
+ * @param fieldType - The expected type of the field ('string' | 'number' | 'boolean')
+ * @returns Sanitized value or null if invalid
+ */
+function sanitizeInputValue(value: any, fieldType: 'string' | 'number' | 'boolean' = 'string'): any {
+  if (value === null || value === undefined) return null;
+
+  // Check for common invalid/placeholder values
+  const strVal = String(value).toLowerCase().trim();
+  const invalidValues = ['null', 'undefined', 'n/a', 'na', 'nan', 'unknown', 'not available', 'not found', 'none', '-', '--', 'tbd', 'n\\a', ''];
+  if (invalidValues.includes(strVal)) return null;
+
+  switch (fieldType) {
+    case 'number':
+      // Remove currency symbols and commas, then parse
+      const cleanedNum = String(value).replace(/[$,]/g, '').trim();
+      const parsed = parseFloat(cleanedNum);
+      if (isNaN(parsed) || !isFinite(parsed)) return null;
+      // Sanity check for unreasonable values
+      if (parsed < 0 || parsed > 1000000000) return null;
+      return parsed;
+
+    case 'boolean':
+      if (typeof value === 'boolean') return value;
+      const boolStr = strVal;
+      if (['true', 'yes', '1', 'y'].includes(boolStr)) return true;
+      if (['false', 'no', '0', 'n'].includes(boolStr)) return false;
+      return null;
+
+    case 'string':
+    default:
+      // Sanitize strings: limit length, remove control characters
+      let sanitized = String(value).trim();
+      // Remove control characters except newlines and tabs
+      sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+      // Limit string length to prevent abuse
+      if (sanitized.length > 10000) sanitized = sanitized.substring(0, 10000);
+      return sanitized || null;
+  }
+}
+
+/**
+ * Determine if an HOA fee value is likely monthly based on the field name and value
+ * @param rawKey - The original field name from the PDF
+ * @param value - The numeric value
+ * @returns True if the value should be converted from monthly to annual
+ */
+function isMonthlyHoaFee(rawKey: string, value: number): boolean {
+  const normalizedKey = rawKey.toLowerCase().trim();
+  
+  // Check if it's explicitly a monthly field
+  if (MONTHLY_HOA_FIELD_NAMES.has(normalizedKey)) {
+    return true;
+  }
+  
+  // Check if it's explicitly an annual field
+  if (ANNUAL_HOA_FIELD_NAMES.has(normalizedKey)) {
+    return false;
+  }
+  
+  // For ambiguous "HOA Fee" field, use heuristics based on typical values
+  // Monthly fees are typically $50-$2000, annual fees are typically $600-$24000
+  // If the value is under $3000, it's more likely monthly
+  if (normalizedKey === 'hoa fee' && value > 0 && value < 3000) {
+    return true;
+  }
+  
+  return false;
+}
+
 // Helper to normalize field names for matching
 function normalizeFieldName(name: string): string {
   return name
@@ -394,8 +480,9 @@ function mapFieldsToSchema(rawFields: Record<string, any>): { fields: Record<str
                      sourceType === 'redfin' ? 'Redfin' : 'MLS PDF';
 
   for (const [rawKey, value] of Object.entries(rawFields)) {
-    // Skip null/empty values
-    if (value === null || value === undefined || value === '' || value === 'N/A' || value === 'n/a') {
+    // Sanitize and skip invalid values
+    const sanitizedValue = sanitizeInputValue(value, 'string');
+    if (sanitizedValue === null) {
       continue;
     }
 
@@ -414,17 +501,36 @@ function mapFieldsToSchema(rawFields: Record<string, any>): { fields: Record<str
 
     // If we found a mapping, add to result
     if (schemaKey) {
+      let processedValue = sanitizedValue;
+      let note: string | undefined;
+
+      // Handle HOA fee monthly-to-annual conversion
+      if (schemaKey === '31_hoa_fee_annual') {
+        const numericValue = sanitizeInputValue(value, 'number');
+        if (numericValue !== null && typeof numericValue === 'number') {
+          if (isMonthlyHoaFee(rawKey, numericValue)) {
+            // Convert monthly to annual by multiplying by 12
+            processedValue = numericValue * 12;
+            note = `Converted from monthly ($${numericValue}/mo) to annual`;
+            console.log(`[PDF PARSER] Converted HOA fee from monthly ($${numericValue}) to annual ($${processedValue})`);
+          } else {
+            processedValue = numericValue;
+          }
+        }
+      }
+
       mappedFields[schemaKey] = {
-        value: value,
+        value: processedValue,
         source: sourceName,
         confidence: 'High',
+        ...(note && { note }),
       };
       mappedCount++;
     } else {
       // Keep unmapped fields with original key (might be useful)
       const cleanKey = rawKey.toLowerCase().replace(/\s+/g, '_');
       mappedFields[cleanKey] = {
-        value: value,
+        value: sanitizedValue,
         source: sourceName,
         confidence: 'Medium',
       };

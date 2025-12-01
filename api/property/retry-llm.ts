@@ -249,12 +249,78 @@ const FLAT_TO_NUMBERED_FIELD_MAP: Record<string, string> = {
   'exterior_features': '168_exterior_features', 'exterior_amenities': '168_exterior_features',
 };
 
+/**
+ * Sanitize input values to prevent injection and ensure data integrity
+ * @param value - The value to sanitize
+ * @param fieldType - The expected type of the field ('string' | 'number' | 'boolean')
+ * @returns Sanitized value or null if invalid
+ */
+function sanitizeInputValue(value: any, fieldType: 'string' | 'number' | 'boolean' = 'string'): any {
+  if (value === null || value === undefined) return null;
+
+  // Check for common invalid/placeholder values
+  const strVal = String(value).toLowerCase().trim();
+  const invalidValues = ['null', 'undefined', 'n/a', 'na', 'nan', 'unknown', 'not available', 'not found', 'none', '-', '--', 'tbd', 'n\\a', ''];
+  if (invalidValues.includes(strVal)) return null;
+
+  switch (fieldType) {
+    case 'number':
+      // Remove currency symbols and commas, then parse
+      const cleanedNum = String(value).replace(/[$,]/g, '').trim();
+      const parsed = parseFloat(cleanedNum);
+      if (isNaN(parsed) || !isFinite(parsed)) return null;
+      // Sanity check for unreasonable values
+      if (parsed < 0 || parsed > 1000000000) return null;
+      return parsed;
+
+    case 'boolean':
+      if (typeof value === 'boolean') return value;
+      const boolStr = strVal;
+      if (['true', 'yes', '1', 'y'].includes(boolStr)) return true;
+      if (['false', 'no', '0', 'n'].includes(boolStr)) return false;
+      return null;
+
+    case 'string':
+    default:
+      // Sanitize strings: limit length, remove control characters
+      let sanitized = String(value).trim();
+      // Remove control characters except newlines and tabs
+      sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+      // Limit string length to prevent abuse
+      if (sanitized.length > 10000) sanitized = sanitized.substring(0, 10000);
+      return sanitized || null;
+  }
+}
+
+// Fields that are known to be monthly and need conversion to annual
+const MONTHLY_TO_ANNUAL_FIELDS = new Set(['hoa_fee_monthly', 'hoa_monthly']);
+
 function mapFlatFieldsToNumbered(fields: Record<string, any>): Record<string, any> {
   const mapped: Record<string, any> = {};
   for (const [key, fieldData] of Object.entries(fields)) {
     const lowerKey = key.toLowerCase();
     const numberedKey = FLAT_TO_NUMBERED_FIELD_MAP[lowerKey] || FLAT_TO_NUMBERED_FIELD_MAP[key] || key;
-    mapped[numberedKey] = fieldData;
+
+    let processedFieldData = fieldData;
+
+    // Handle HOA fee monthly-to-annual conversion
+    if (MONTHLY_TO_ANNUAL_FIELDS.has(lowerKey) && numberedKey === '31_hoa_fee_annual') {
+      const rawValue = fieldData.value !== undefined ? fieldData.value : fieldData;
+      const sanitizedValue = sanitizeInputValue(rawValue, 'number');
+      if (sanitizedValue !== null && typeof sanitizedValue === 'number') {
+        // Convert monthly to annual by multiplying by 12
+        const annualValue = sanitizedValue * 12;
+        processedFieldData = {
+          value: annualValue,
+          source: fieldData.source || 'LLM',
+          confidence: fieldData.confidence || 'Medium',
+          note: `Converted from monthly ($${sanitizedValue}/mo) to annual`
+        };
+        console.log(`[RETRY-LLM] Converted HOA fee from monthly ($${sanitizedValue}) to annual ($${annualValue})`);
+      }
+    }
+
+    mapped[numberedKey] = processedFieldData;
   }
   return mapped;
 }
