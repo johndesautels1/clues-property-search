@@ -20,10 +20,9 @@ import {
 
 describe('Schema Integrity Tests', () => {
   
-  test('Has exactly 168 fields', () => {
-    // Schema expanded from 138 to 168 fields on 2025-11-30 with Stellar MLS fields (139-168)
-    expect(TOTAL_FIELDS).toBe(168);
-    expect(ALL_FIELDS.length).toBe(168);
+  test('Has exactly 138 fields', () => {
+    expect(TOTAL_FIELDS).toBe(138);
+    expect(ALL_FIELDS.length).toBe(138);
   });
 
   test('No duplicate field numbers', () => {
@@ -50,7 +49,7 @@ describe('Schema Integrity Tests', () => {
     expect(uniqueKeys.size).toBe(keys.length);
   });
 
-  test('Field numbers are sequential from 1 to 168', () => {
+  test('Field numbers are sequential from 1 to 138', () => {
     const numbers = ALL_FIELDS.map(f => f.num).sort((a, b) => a - b);
     
     for (let i = 0; i < numbers.length; i++) {
@@ -99,7 +98,7 @@ describe('Schema Integrity Tests', () => {
   });
 
   test('FIELD_MAP contains all fields', () => {
-    expect(FIELD_MAP.size).toBe(TOTAL_FIELDS);
+    expect(FIELD_MAP.size).toBe(138);
     
     ALL_FIELDS.forEach(field => {
       const key = `${field.num}_${field.key}`;
@@ -109,7 +108,7 @@ describe('Schema Integrity Tests', () => {
   });
 
   test('FIELD_BY_NUMBER contains all fields', () => {
-    expect(FIELD_BY_NUMBER.size).toBe(TOTAL_FIELDS);
+    expect(FIELD_BY_NUMBER.size).toBe(138);
     
     ALL_FIELDS.forEach(field => {
       expect(FIELD_BY_NUMBER.has(field.num)).toBe(true);
@@ -118,7 +117,7 @@ describe('Schema Integrity Tests', () => {
   });
 
   test('FIELD_BY_KEY contains all fields', () => {
-    expect(FIELD_BY_KEY.size).toBe(TOTAL_FIELDS);
+    expect(FIELD_BY_KEY.size).toBe(138);
     
     ALL_FIELDS.forEach(field => {
       expect(FIELD_BY_KEY.has(field.key)).toBe(true);

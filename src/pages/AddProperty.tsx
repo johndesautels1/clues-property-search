@@ -75,39 +75,19 @@ export default function AddProperty() {
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [cascadeStatus, setCascadeStatus] = useState<{llm: string; status: 'pending' | 'running' | 'complete' | 'error' | 'skipped'; fieldsFound?: number}[]>([]);
 
-  // Manual entry form state - Expanded to 25 high-value fields per 5-Agent Audit
+  // Manual entry form state
   const [manualForm, setManualForm] = useState({
-    // Basic Address (5 fields)
     address: '',
     city: '',
     state: 'FL',
     zip: '',
-    county: '',
-    // Pricing (3 fields)
     price: '',
-    pricePerSqft: '',
-    lastSalePrice: '',
-    // Property Details (7 fields)
     bedrooms: '',
     bathrooms: '',
     sqft: '',
-    lotSizeSqft: '',
     yearBuilt: '',
     propertyType: 'Single Family',
-    stories: '',
-    // HOA & Taxes (4 fields)
-    hoaYn: 'no',
-    hoaFeeAnnual: '',
-    annualTaxes: '',
-    taxYear: new Date().getFullYear().toString(),
-    // Structural (3 fields)
-    garageSpaces: '',
-    poolYn: 'no',
-    roofType: '',
-    // Status (3 fields)
     listingStatus: 'Active',
-    mlsNumber: '',
-    listingDate: '',
   });
 
   // Autocomplete state for Manual tab
@@ -260,82 +240,6 @@ export default function AddProperty() {
         return [selectedEngine];
       };
 
-      // Build existingFields from manual form data for the API
-      const manualFields: Record<string, any> = {};
-      
-      // Pre-populate fields from manual entry form
-      if (manualForm.price) {
-        manualFields['10_listing_price'] = { value: parseFloat(manualForm.price), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.pricePerSqft) {
-        manualFields['11_price_per_sqft'] = { value: parseFloat(manualForm.pricePerSqft), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.lastSalePrice) {
-        manualFields['14_last_sale_price'] = { value: parseFloat(manualForm.lastSalePrice), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.bedrooms) {
-        manualFields['17_bedrooms'] = { value: parseInt(manualForm.bedrooms), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.bathrooms) {
-        manualFields['20_total_bathrooms'] = { value: parseFloat(manualForm.bathrooms), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.sqft) {
-        manualFields['21_living_sqft'] = { value: parseInt(manualForm.sqft), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.lotSizeSqft) {
-        manualFields['23_lot_size_sqft'] = { value: parseInt(manualForm.lotSizeSqft), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.yearBuilt) {
-        manualFields['25_year_built'] = { value: parseInt(manualForm.yearBuilt), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.propertyType) {
-        manualFields['26_property_type'] = { value: manualForm.propertyType, source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.stories) {
-        manualFields['27_stories'] = { value: parseInt(manualForm.stories), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.hoaYn) {
-        manualFields['30_hoa_yn'] = { value: manualForm.hoaYn === 'yes', source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.hoaFeeAnnual) {
-        manualFields['31_hoa_fee_annual'] = { value: parseFloat(manualForm.hoaFeeAnnual), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.annualTaxes) {
-        manualFields['35_annual_taxes'] = { value: parseFloat(manualForm.annualTaxes), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.taxYear) {
-        manualFields['36_tax_year'] = { value: parseInt(manualForm.taxYear), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.garageSpaces) {
-        manualFields['28_garage_spaces'] = { value: parseInt(manualForm.garageSpaces), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.poolYn) {
-        manualFields['54_pool_yn'] = { value: manualForm.poolYn === 'yes', source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.roofType) {
-        manualFields['39_roof_type'] = { value: manualForm.roofType, source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.listingStatus) {
-        manualFields['4_listing_status'] = { value: manualForm.listingStatus, source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.mlsNumber) {
-        manualFields['2_mls_primary'] = { value: manualForm.mlsNumber, source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.listingDate) {
-        manualFields['5_listing_date'] = { value: manualForm.listingDate, source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.county) {
-        manualFields['7_county'] = { value: manualForm.county, source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.zip) {
-        manualFields['8_zip_code'] = { value: manualForm.zip, source: 'Manual Entry', confidence: 'High' };
-      }
-      
-      // Merge manual fields with any previously accumulated fields
-      const mergedExistingFields = shouldAccumulate 
-        ? { ...accumulatedFields, ...manualFields }
-        : manualFields;
-
       const response = await fetch(`${apiUrl}/api/property/search-stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -343,7 +247,7 @@ export default function AddProperty() {
           address: fullAddress,
           engines: getEngines(),
           skipLLMs: false,
-          existingFields: mergedExistingFields,  // Send manual + accumulated fields
+          existingFields: shouldAccumulate ? accumulatedFields : {},  // Send existing fields for accumulation
           skipApis: shouldAccumulate,  // Skip APIs if we already have data from this address
         }),
       });
@@ -503,27 +407,13 @@ export default function AddProperty() {
         city: '',
         state: 'FL',
         zip: '',
-        county: '',
         price: '',
-        pricePerSqft: '',
-        lastSalePrice: '',
         bedrooms: '',
         bathrooms: '',
         sqft: '',
-        lotSizeSqft: '',
         yearBuilt: '',
         propertyType: 'Single Family',
-        stories: '',
-        hoaYn: 'no',
-        hoaFeeAnnual: '',
-        annualTaxes: '',
-        taxYear: new Date().getFullYear().toString(),
-        garageSpaces: '',
-        poolYn: 'no',
-        roofType: '',
         listingStatus: 'Active',
-        mlsNumber: '',
-        listingDate: '',
       });
       setSelectedSuggestion(null);
 
@@ -1891,227 +1781,17 @@ export default function AddProperty() {
               </div>
               <div>
                 <label className="block text-sm text-gray-400 mb-2">
-                  Stories
+                  Status
                 </label>
                 <select
-                  value={manualForm.stories}
-                  onChange={(e) => setManualForm({ ...manualForm, stories: e.target.value })}
+                  value={manualForm.listingStatus}
+                  onChange={(e) => setManualForm({ ...manualForm, listingStatus: e.target.value })}
                   className="input-glass"
                 >
-                  <option value="">Select</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3+</option>
+                  <option value="Active">Active</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Sold">Sold</option>
                 </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Property Type
-                </label>
-                <select
-                  value={manualForm.propertyType}
-                  onChange={(e) => setManualForm({ ...manualForm, propertyType: e.target.value })}
-                  className="input-glass"
-                >
-                  <option value="Single Family">Single Family</option>
-                  <option value="Condo">Condo</option>
-                  <option value="Townhouse">Townhouse</option>
-                  <option value="Multi-Family">Multi-Family</option>
-                  <option value="Villa">Villa</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Lot Size (Sq Ft)
-                </label>
-                <input
-                  type="number"
-                  placeholder="5000"
-                  value={manualForm.lotSizeSqft}
-                  onChange={(e) => setManualForm({ ...manualForm, lotSizeSqft: e.target.value })}
-                  className="input-glass"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Garage Spaces
-                </label>
-                <select
-                  value={manualForm.garageSpaces}
-                  onChange={(e) => setManualForm({ ...manualForm, garageSpaces: e.target.value })}
-                  className="input-glass"
-                >
-                  <option value="">Select</option>
-                  <option value="0">0</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3+</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Pool
-                </label>
-                <select
-                  value={manualForm.poolYn}
-                  onChange={(e) => setManualForm({ ...manualForm, poolYn: e.target.value })}
-                  className="input-glass"
-                >
-                  <option value="no">No</option>
-                  <option value="yes">Yes</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Roof Type
-                </label>
-                <select
-                  value={manualForm.roofType}
-                  onChange={(e) => setManualForm({ ...manualForm, roofType: e.target.value })}
-                  className="input-glass"
-                >
-                  <option value="">Select</option>
-                  <option value="Shingle">Shingle</option>
-                  <option value="Tile">Tile</option>
-                  <option value="Metal">Metal</option>
-                  <option value="Flat">Flat</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-            </div>
-
-            {/* HOA & Tax Section */}
-            <div className="pt-4 border-t border-white/10">
-              <h4 className="text-sm font-medium text-quantum-cyan mb-3">HOA & Taxes</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">
-                    HOA?
-                  </label>
-                  <select
-                    value={manualForm.hoaYn}
-                    onChange={(e) => setManualForm({ ...manualForm, hoaYn: e.target.value })}
-                    className="input-glass"
-                  >
-                    <option value="no">No</option>
-                    <option value="yes">Yes</option>
-                  </select>
-                </div>
-                {manualForm.hoaYn === 'yes' && (
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">
-                      HOA Annual Fee
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="1200"
-                      value={manualForm.hoaFeeAnnual}
-                      onChange={(e) => setManualForm({ ...manualForm, hoaFeeAnnual: e.target.value })}
-                      className="input-glass"
-                    />
-                  </div>
-                )}
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">
-                    Annual Taxes
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="3500"
-                    value={manualForm.annualTaxes}
-                    onChange={(e) => setManualForm({ ...manualForm, annualTaxes: e.target.value })}
-                    className="input-glass"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">
-                    Tax Year
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="2024"
-                    value={manualForm.taxYear}
-                    onChange={(e) => setManualForm({ ...manualForm, taxYear: e.target.value })}
-                    className="input-glass"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Listing Info Section */}
-            <div className="pt-4 border-t border-white/10">
-              <h4 className="text-sm font-medium text-quantum-cyan mb-3">Listing Info</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">
-                    Status
-                  </label>
-                  <select
-                    value={manualForm.listingStatus}
-                    onChange={(e) => setManualForm({ ...manualForm, listingStatus: e.target.value })}
-                    className="input-glass"
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Sold">Sold</option>
-                    <option value="OffMarket">Off Market</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">
-                    MLS #
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="TB1234567"
-                    value={manualForm.mlsNumber}
-                    onChange={(e) => setManualForm({ ...manualForm, mlsNumber: e.target.value })}
-                    className="input-glass"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">
-                    List Date
-                  </label>
-                  <input
-                    type="date"
-                    value={manualForm.listingDate}
-                    onChange={(e) => setManualForm({ ...manualForm, listingDate: e.target.value })}
-                    className="input-glass"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">
-                    Last Sale Price
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="450000"
-                    value={manualForm.lastSalePrice}
-                    onChange={(e) => setManualForm({ ...manualForm, lastSalePrice: e.target.value })}
-                    className="input-glass"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">
-                    County
-                  </label>
-                  <select
-                    value={manualForm.county}
-                    onChange={(e) => setManualForm({ ...manualForm, county: e.target.value })}
-                    className="input-glass"
-                  >
-                    <option value="">Select</option>
-                    <option value="Pinellas">Pinellas</option>
-                    <option value="Pasco">Pasco</option>
-                    <option value="Hillsborough">Hillsborough</option>
-                    <option value="Manatee">Manatee</option>
-                    <option value="Sarasota">Sarasota</option>
-                    <option value="Polk">Polk</option>
-                    <option value="Hernando">Hernando</option>
-                    <option value="Citrus">Citrus</option>
-                  </select>
-                </div>
               </div>
             </div>
 
