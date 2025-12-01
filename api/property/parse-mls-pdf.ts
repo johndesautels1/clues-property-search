@@ -5,11 +5,33 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import {
+  isMonthlyHoaFeeKey,
+  convertMonthlyHoaToAnnual
+} from '../../src/lib/field-map-flat-to-numbered.js';
+import {
+  safeJsonParse,
+  extractAndParseJson
+} from '../../src/lib/safe-json-parse.js';
 
 // Vercel serverless config
 export const config = {
   maxDuration: 120, // 2 minutes for PDF parsing
 };
+
+// Fields that contain monthly HOA values (need conversion to annual)
+const MONTHLY_HOA_FIELDS = new Set([
+  'Monthly HOA Amount',
+  'HOA Monthly',
+  'Average Monthly Fees',
+  'HOA Fee', // Often monthly in MLS sheets
+]);
+
+// Fields that are already annual
+const ANNUAL_HOA_FIELDS = new Set([
+  'HOA Annual',
+  'Total Annual Assoc Fees',
+]);
 
 // MLS field mapping: Maps Stellar MLS field names to our numbered schema
 // UPDATED: 2025-11-30 - Corrected ALL field numbers to match fields-schema.ts
@@ -414,8 +436,23 @@ function mapFieldsToSchema(rawFields: Record<string, any>): { fields: Record<str
 
     // If we found a mapping, add to result
     if (schemaKey) {
+      let finalValue = value;
+      
+      // Handle HOA fee conversion: monthly → annual
+      if (schemaKey === '31_hoa_fee_annual') {
+        // Check if this is a monthly field that needs conversion
+        if (MONTHLY_HOA_FIELDS.has(rawKey)) {
+          const annualValue = convertMonthlyHoaToAnnual(value);
+          if (annualValue !== null) {
+            finalValue = annualValue;
+            console.log(`[PDF PARSER] Converted monthly HOA $${value} to annual $${annualValue}`);
+          }
+        }
+        // If it's already annual (e.g., 'HOA Annual', 'Total Annual Assoc Fees'), keep as is
+      }
+      
       mappedFields[schemaKey] = {
-        value: value,
+        value: finalValue,
         source: sourceName,
         confidence: 'High',
       };
@@ -610,12 +647,11 @@ Return ONLY the JSON object, no markdown or explanation.`;
         jsonStr = codeBlockMatch[1].trim();
       }
 
-      // Find JSON object in text
-      const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        console.log('[PDF PARSER] Extracted', Object.keys(parsed).length, 'raw fields');
-        return parsed;
+      // Use safe JSON parsing with extraction
+      const parseResult = extractAndParseJson<Record<string, any>>(jsonStr, 'PDF PARSER');
+      if (parseResult.success && parseResult.data) {
+        console.log('[PDF PARSER] Extracted', Object.keys(parseResult.data).length, 'raw fields');
+        return parseResult.data;
       }
     }
 
