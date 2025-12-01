@@ -339,18 +339,23 @@ function mapFlatFieldsToNumbered(fields: Record<string, any>): Record<string, an
   return sharedMapFlatFieldsToNumbered(convertedFields, 'RETRY-LLM');
 }
 
-// Helper to extract JSON from markdown code blocks or raw text (uses shared module)
-function extractJSON(text: string): string | null {
+// Helper to extract and parse JSON from markdown code blocks or raw text
+// Returns parsed object directly (not a string) to avoid double-parsing
+function extractAndParseJSON(text: string): { success: boolean; data: Record<string, any> | null; error?: string } {
   const result = extractAndParseJson<Record<string, any>>(text, 'RETRY-LLM');
-  if (result.success && result.data) {
-    return JSON.stringify(result.data);
-  }
-  return null;
+  return {
+    success: result.success,
+    data: result.data,
+    error: result.error
+  };
 }
 
 async function callPerplexity(address: string): Promise<{ fields: Record<string, any>; error?: string }> {
   const apiKey = process.env.PERPLEXITY_API_KEY;
-  if (!apiKey) return { error: 'API key not set', fields: {} };
+  if (!apiKey) {
+    console.log('[PERPLEXITY] API key not set');
+    return { error: 'API key not set', fields: {} };
+  }
 
   const systemPrompt = `You are a real estate data extraction engine. Return ONLY a JSON object with property data for the given address. Include any fields you can verify from the web. Do NOT include null, N/A, or unknown values - simply omit fields you cannot verify. Return JSON only, no markdown.`;
 
@@ -372,45 +377,58 @@ async function callPerplexity(address: string): Promise<{ fields: Record<string,
     });
 
     const data = await response.json();
+    console.log('[PERPLEXITY] Status:', response.status);
+
     if (data.choices?.[0]?.message?.content) {
       const text = data.choices[0].message.content;
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        try {
-          const parsed = JSON.parse(jsonMatch[0]);
-          const fields: Record<string, any> = {};
-          const flattenObject = (obj: any, prefix = '') => {
-            for (const [key, value] of Object.entries(obj)) {
-              if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
-                if (typeof value === 'object' && !Array.isArray(value)) {
-                  flattenObject(value, prefix + key + '_');
-                } else {
-                  // TYPE COERCION: Validate and coerce value to expected type
-                  const coerced = coerceValue(prefix + key, value);
-                  if (coerced !== null) {
-                    fields[prefix + key] = { value: coerced, source: 'Perplexity', confidence: 'Medium' };
-                  }
+      console.log('[PERPLEXITY] Response length:', text.length, 'chars');
+
+      // Use unified JSON extraction
+      const parseResult = extractAndParseJSON(text);
+      console.log('[PERPLEXITY] Parse result:', parseResult.success ? `${Object.keys(parseResult.data || {}).length} keys` : parseResult.error);
+
+      if (parseResult.success && parseResult.data) {
+        const parsed = parseResult.data;
+        const fields: Record<string, any> = {};
+        const flattenObject = (obj: any, prefix = '') => {
+          for (const [key, value] of Object.entries(obj)) {
+            if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
+              if (typeof value === 'object' && !Array.isArray(value)) {
+                flattenObject(value, prefix + key + '_');
+              } else {
+                // TYPE COERCION: Validate and coerce value to expected type
+                const coerced = coerceValue(prefix + key, value);
+                if (coerced !== null) {
+                  fields[prefix + key] = { value: coerced, source: 'Perplexity', confidence: 'Medium' };
                 }
               }
             }
-          };
-          flattenObject(parsed);
-          return { fields };
-        } catch (parseError) {
-          console.error('❌ Perplexity JSON.parse error:', parseError);
-          return { error: `JSON parse error: ${String(parseError)}`, fields: {} };
-        }
+          }
+        };
+        flattenObject(parsed);
+        console.log('[PERPLEXITY] Fields found:', Object.keys(fields).length);
+        return { fields };
+      } else {
+        console.log('[PERPLEXITY] JSON extraction failed:', parseResult.error);
+        return { error: `JSON extraction failed: ${parseResult.error}`, fields: {} };
       }
+    } else if (data.error) {
+      console.log('[PERPLEXITY] API Error:', JSON.stringify(data.error));
+      return { error: `API Error: ${data.error?.message || JSON.stringify(data.error)}`, fields: {} };
     }
-    return { error: 'Failed to parse response', fields: {} };
+    return { error: 'No content in response', fields: {} };
   } catch (error) {
+    console.log('[PERPLEXITY] Exception:', String(error));
     return { error: String(error), fields: {} };
   }
 }
 
 async function callGrok(address: string): Promise<{ fields: Record<string, any>; error?: string }> {
   const apiKey = process.env.XAI_API_KEY;
-  if (!apiKey) return { error: 'API key not set', fields: {} };
+  if (!apiKey) {
+    console.log('[GROK] API key not set');
+    return { error: 'API key not set', fields: {} };
+  }
 
   const systemPrompt = `You are a real estate data assistant with web search capabilities. Return ONLY a JSON object with property data. Do NOT include null, N/A, or unknown values - simply omit fields you cannot verify. Return JSON only.`;
 
@@ -434,31 +452,41 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
     });
 
     const data = await response.json();
+    console.log('[GROK] Status:', response.status);
+
     if (data.choices?.[0]?.message?.content) {
       const text = data.choices[0].message.content;
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        try {
-          const parsed = JSON.parse(jsonMatch[0]);
-          const fields: Record<string, any> = {};
-          for (const [key, value] of Object.entries(parsed)) {
-            if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
-              // TYPE COERCION: Validate and coerce value to expected type
-              const coerced = coerceValue(key, value);
-              if (coerced !== null) {
-                fields[key] = { value: coerced, source: 'Grok', confidence: 'Medium' };
-              }
+      console.log('[GROK] Response length:', text.length, 'chars');
+
+      // Use unified JSON extraction
+      const parseResult = extractAndParseJSON(text);
+      console.log('[GROK] Parse result:', parseResult.success ? `${Object.keys(parseResult.data || {}).length} keys` : parseResult.error);
+
+      if (parseResult.success && parseResult.data) {
+        const parsed = parseResult.data;
+        const fields: Record<string, any> = {};
+        for (const [key, value] of Object.entries(parsed)) {
+          if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
+            // TYPE COERCION: Validate and coerce value to expected type
+            const coerced = coerceValue(key, value);
+            if (coerced !== null) {
+              fields[key] = { value: coerced, source: 'Grok', confidence: 'Medium' };
             }
           }
-          return { fields };
-        } catch (parseError) {
-          console.error('❌ Grok JSON.parse error:', parseError);
-          return { error: `JSON parse error: ${String(parseError)}`, fields: {} };
         }
+        console.log('[GROK] Fields found:', Object.keys(fields).length);
+        return { fields };
+      } else {
+        console.log('[GROK] JSON extraction failed:', parseResult.error);
+        return { error: `JSON extraction failed: ${parseResult.error}`, fields: {} };
       }
+    } else if (data.error) {
+      console.log('[GROK] API Error:', JSON.stringify(data.error));
+      return { error: `API Error: ${data.error?.message || JSON.stringify(data.error)}`, fields: {} };
     }
-    return { error: 'Failed to parse response', fields: {} };
+    return { error: 'No content in response', fields: {} };
   } catch (error) {
+    console.log('[GROK] Exception:', String(error));
     return { error: String(error), fields: {} };
   }
 }
@@ -512,41 +540,42 @@ Only include fields you have reasonable confidence about based on the location. 
     if (data.content?.[0]?.text) {
       const text = data.content[0].text;
       console.log('[CLAUDE OPUS] Text:', text.slice(0, 500));
-      const jsonStr = extractJSON(text);
-      console.log('[CLAUDE OPUS] Extracted JSON:', jsonStr?.slice(0, 300) || 'null');
-      if (jsonStr) {
-        try {
-          const parsed = JSON.parse(jsonStr);
-          const fields: Record<string, any> = {};
-          // Handle both parsed.fields (wrapped) and parsed directly
-          for (const [key, value] of Object.entries(parsed.fields || parsed)) {
-            const strVal = String(value).toLowerCase().trim();
-            const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'unknown' || strVal === 'not available' || strVal === 'none';
-            if (!isBadValue) {
-              const rawValue = (value as any)?.value !== undefined ? (value as any).value : value;
-              // TYPE COERCION: Validate and coerce value to expected type
-              const coerced = coerceValue(key, rawValue);
-              if (coerced !== null) {
-                fields[key] = {
-                  value: coerced,
-                  source: 'Claude Opus',
-                  confidence: 'Low'
-                };
-              }
+
+      // Use unified JSON extraction (no double-parsing)
+      const parseResult = extractAndParseJSON(text);
+      console.log('[CLAUDE OPUS] Parse result:', parseResult.success ? `${Object.keys(parseResult.data || {}).length} keys` : parseResult.error);
+
+      if (parseResult.success && parseResult.data) {
+        const parsed = parseResult.data;
+        const fields: Record<string, any> = {};
+        // Handle both parsed.fields (wrapped) and parsed directly
+        for (const [key, value] of Object.entries(parsed.fields || parsed)) {
+          const strVal = String(value).toLowerCase().trim();
+          const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'unknown' || strVal === 'not available' || strVal === 'none';
+          if (!isBadValue) {
+            const rawValue = (value as any)?.value !== undefined ? (value as any).value : value;
+            // TYPE COERCION: Validate and coerce value to expected type
+            const coerced = coerceValue(key, rawValue);
+            if (coerced !== null) {
+              fields[key] = {
+                value: coerced,
+                source: 'Claude Opus',
+                confidence: 'Low'
+              };
             }
           }
-          console.log('[CLAUDE OPUS] Fields found:', Object.keys(fields).length);
-          return { fields };
-        } catch (parseError) {
-          console.log('[CLAUDE OPUS] JSON.parse error:', String(parseError));
-          return { error: `JSON parse error: ${String(parseError)}`, fields: {} };
         }
+        console.log('[CLAUDE OPUS] Fields found:', Object.keys(fields).length);
+        return { fields };
+      } else {
+        console.log('[CLAUDE OPUS] JSON extraction failed:', parseResult.error);
+        return { error: `JSON extraction failed: ${parseResult.error}`, fields: {} };
       }
     } else if (data.error) {
       console.log('[CLAUDE OPUS] API Error:', JSON.stringify(data.error));
       return { error: `API Error: ${data.error?.message || JSON.stringify(data.error)}`, fields: {} };
     }
-    return { error: 'Failed to parse response', fields: {} };
+    return { error: 'No content in response', fields: {} };
   } catch (error) {
     console.log('[CLAUDE OPUS] Exception:', String(error));
     return { error: String(error), fields: {} };
@@ -555,7 +584,10 @@ Only include fields you have reasonable confidence about based on the location. 
 
 async function callGPT(address: string): Promise<{ fields: Record<string, any>; error?: string }> {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return { error: 'API key not set', fields: {} };
+  if (!apiKey) {
+    console.log('[GPT] API key not set');
+    return { error: 'API key not set', fields: {} };
+  }
 
   const prompt = `You are a real estate data assistant. Return a JSON object with property data estimates for: ${address}
 
@@ -578,31 +610,41 @@ Only include fields you have reasonable confidence about. Return ONLY the JSON o
     });
 
     const data = await response.json();
+    console.log('[GPT] Status:', response.status);
+
     if (data.choices?.[0]?.message?.content) {
       const text = data.choices[0].message.content;
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        try {
-          const parsed = JSON.parse(jsonMatch[0]);
-          const fields: Record<string, any> = {};
-          for (const [key, value] of Object.entries(parsed)) {
-            if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
-              // TYPE COERCION: Validate and coerce value to expected type
-              const coerced = coerceValue(key, value);
-              if (coerced !== null) {
-                fields[key] = { value: coerced, source: 'GPT', confidence: 'Low' };
-              }
+      console.log('[GPT] Response length:', text.length, 'chars');
+
+      // Use unified JSON extraction
+      const parseResult = extractAndParseJSON(text);
+      console.log('[GPT] Parse result:', parseResult.success ? `${Object.keys(parseResult.data || {}).length} keys` : parseResult.error);
+
+      if (parseResult.success && parseResult.data) {
+        const parsed = parseResult.data;
+        const fields: Record<string, any> = {};
+        for (const [key, value] of Object.entries(parsed)) {
+          if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
+            // TYPE COERCION: Validate and coerce value to expected type
+            const coerced = coerceValue(key, value);
+            if (coerced !== null) {
+              fields[key] = { value: coerced, source: 'GPT', confidence: 'Low' };
             }
           }
-          return { fields };
-        } catch (parseError) {
-          console.error('❌ GPT JSON.parse error:', parseError);
-          return { error: `JSON parse error: ${String(parseError)}`, fields: {} };
         }
+        console.log('[GPT] Fields found:', Object.keys(fields).length);
+        return { fields };
+      } else {
+        console.log('[GPT] JSON extraction failed:', parseResult.error);
+        return { error: `JSON extraction failed: ${parseResult.error}`, fields: {} };
       }
+    } else if (data.error) {
+      console.log('[GPT] API Error:', JSON.stringify(data.error));
+      return { error: `API Error: ${data.error?.message || JSON.stringify(data.error)}`, fields: {} };
     }
-    return { error: 'Failed to parse response', fields: {} };
+    return { error: 'No content in response', fields: {} };
   } catch (error) {
+    console.log('[GPT] Exception:', String(error));
     return { error: String(error), fields: {} };
   }
 }
@@ -651,46 +693,59 @@ Only include fields you have reasonable confidence about based on the location. 
     });
 
     const data = await response.json();
+    console.log('[CLAUDE SONNET] Status:', response.status);
+
     if (data.content?.[0]?.text) {
       const text = data.content[0].text;
-      const jsonStr = extractJSON(text);
-      if (jsonStr) {
-        try {
-          const parsed = JSON.parse(jsonStr);
-          const fields: Record<string, any> = {};
-          // Handle both parsed.fields (wrapped) and parsed directly
-          for (const [key, value] of Object.entries(parsed.fields || parsed)) {
-            const strVal = String(value).toLowerCase().trim();
-            const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'unknown' || strVal === 'not available' || strVal === 'none';
-            if (!isBadValue) {
-              const rawValue = (value as any)?.value !== undefined ? (value as any).value : value;
-              // TYPE COERCION: Validate and coerce value to expected type
-              const coerced = coerceValue(key, rawValue);
-              if (coerced !== null) {
-                fields[key] = {
-                  value: coerced,
-                  source: 'Claude Sonnet',
-                  confidence: 'Low'
-                };
-              }
+      console.log('[CLAUDE SONNET] Text:', text.slice(0, 300));
+
+      // Use unified JSON extraction (no double-parsing)
+      const parseResult = extractAndParseJSON(text);
+      console.log('[CLAUDE SONNET] Parse result:', parseResult.success ? `${Object.keys(parseResult.data || {}).length} keys` : parseResult.error);
+
+      if (parseResult.success && parseResult.data) {
+        const parsed = parseResult.data;
+        const fields: Record<string, any> = {};
+        // Handle both parsed.fields (wrapped) and parsed directly
+        for (const [key, value] of Object.entries(parsed.fields || parsed)) {
+          const strVal = String(value).toLowerCase().trim();
+          const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'unknown' || strVal === 'not available' || strVal === 'none';
+          if (!isBadValue) {
+            const rawValue = (value as any)?.value !== undefined ? (value as any).value : value;
+            // TYPE COERCION: Validate and coerce value to expected type
+            const coerced = coerceValue(key, rawValue);
+            if (coerced !== null) {
+              fields[key] = {
+                value: coerced,
+                source: 'Claude Sonnet',
+                confidence: 'Low'
+              };
             }
           }
-          return { fields };
-        } catch (parseError) {
-          console.error('❌ Claude Sonnet JSON.parse error:', parseError);
-          return { error: `JSON parse error: ${String(parseError)}`, fields: {} };
         }
+        console.log('[CLAUDE SONNET] Fields found:', Object.keys(fields).length);
+        return { fields };
+      } else {
+        console.log('[CLAUDE SONNET] JSON extraction failed:', parseResult.error);
+        return { error: `JSON extraction failed: ${parseResult.error}`, fields: {} };
       }
+    } else if (data.error) {
+      console.log('[CLAUDE SONNET] API Error:', JSON.stringify(data.error));
+      return { error: `API Error: ${data.error?.message || JSON.stringify(data.error)}`, fields: {} };
     }
-    return { error: 'Failed to parse response', fields: {} };
+    return { error: 'No content in response', fields: {} };
   } catch (error) {
+    console.log('[CLAUDE SONNET] Exception:', String(error));
     return { error: String(error), fields: {} };
   }
 }
 
 async function callGemini(address: string): Promise<{ fields: Record<string, any>; error?: string }> {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return { error: 'API key not set', fields: {} };
+  if (!apiKey) {
+    console.log('[GEMINI] API key not set');
+    return { error: 'API key not set', fields: {} };
+  }
 
   const prompt = `You are a real estate analyst. Return ONLY a JSON object with property data for: ${address}
 
@@ -717,31 +772,41 @@ Do NOT include null, N/A, or unknown values. Return JSON only, no markdown.`;
     );
 
     const data = await response.json();
+    console.log('[GEMINI] Status:', response.status);
+
     if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
       const text = data.candidates[0].content.parts[0].text;
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        try {
-          const parsed = JSON.parse(jsonMatch[0]);
-          const fields: Record<string, any> = {};
-          for (const [key, value] of Object.entries(parsed)) {
-            if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
-              // TYPE COERCION: Validate and coerce value to expected type
-              const coerced = coerceValue(key, value);
-              if (coerced !== null) {
-                fields[key] = { value: coerced, source: 'Gemini', confidence: 'Medium' };
-              }
+      console.log('[GEMINI] Response length:', text.length, 'chars');
+
+      // Use unified JSON extraction
+      const parseResult = extractAndParseJSON(text);
+      console.log('[GEMINI] Parse result:', parseResult.success ? `${Object.keys(parseResult.data || {}).length} keys` : parseResult.error);
+
+      if (parseResult.success && parseResult.data) {
+        const parsed = parseResult.data;
+        const fields: Record<string, any> = {};
+        for (const [key, value] of Object.entries(parsed)) {
+          if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
+            // TYPE COERCION: Validate and coerce value to expected type
+            const coerced = coerceValue(key, value);
+            if (coerced !== null) {
+              fields[key] = { value: coerced, source: 'Gemini', confidence: 'Medium' };
             }
           }
-          return { fields };
-        } catch (parseError) {
-          console.error('❌ Gemini JSON.parse error:', parseError);
-          return { error: `JSON parse error: ${String(parseError)}`, fields: {} };
         }
+        console.log('[GEMINI] Fields found:', Object.keys(fields).length);
+        return { fields };
+      } else {
+        console.log('[GEMINI] JSON extraction failed:', parseResult.error);
+        return { error: `JSON extraction failed: ${parseResult.error}`, fields: {} };
       }
+    } else if (data.error) {
+      console.log('[GEMINI] API Error:', JSON.stringify(data.error));
+      return { error: `API Error: ${data.error?.message || JSON.stringify(data.error)}`, fields: {} };
     }
-    return { error: 'Failed to parse response', fields: {} };
+    return { error: 'No content in response', fields: {} };
   } catch (error) {
+    console.log('[GEMINI] Exception:', String(error));
     return { error: String(error), fields: {} };
   }
 }
