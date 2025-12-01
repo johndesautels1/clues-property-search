@@ -84,6 +84,83 @@ function valuesAreSemanticallySame(val1: any, val2: any): boolean {
 }
 
 // ============================================
+// NULL BLOCKING HELPER - CRITICAL SYSTEM RULE
+// NO NULL VALUES ARE ALLOWED INTO THE FIELD SYSTEM
+// This function filters LLM responses to remove any nulls
+// ============================================
+function filterNullValues(parsed: any, llmName: string): Record<string, any> {
+  const fields: Record<string, any> = {};
+  let nullsBlocked = 0;
+  let fieldsAccepted = 0;
+
+  // Handle case where parsed has a 'fields' property
+  const dataToProcess = parsed.fields || parsed;
+
+  for (const [key, val] of Object.entries(dataToProcess)) {
+    // Skip metadata fields
+    if (['llm', 'error', 'sources_searched', 'fields_found', 'fields_missing', 'note'].includes(key)) {
+      continue;
+    }
+
+    // BLOCK 1: Skip if val is directly null/undefined
+    if (val === null || val === undefined) {
+      nullsBlocked++;
+      continue;
+    }
+
+    // BLOCK 2: Skip if val is an object with null/undefined/empty value
+    if (typeof val === 'object' && val !== null) {
+      const valueField = (val as any).value;
+      if (valueField === null || valueField === undefined || valueField === '' ||
+          valueField === 'null' || valueField === 'N/A' || valueField === 'Not found' ||
+          valueField === 'Unknown' || valueField === 'not available') {
+        nullsBlocked++;
+        continue;
+      }
+
+      // ACCEPT: Valid object with real value
+      fields[key] = {
+        value: valueField,
+        source: (val as any).source || `${llmName}`,
+        confidence: (val as any).confidence || 'Medium'
+      };
+      fieldsAccepted++;
+    } else if (typeof val === 'string') {
+      // BLOCK 3: Skip empty or null-like strings
+      if (val === '' || val === 'null' || val === 'N/A' || val === 'Not found' ||
+          val === 'Unknown' || val === 'not available' || val.toLowerCase() === 'none') {
+        nullsBlocked++;
+        continue;
+      }
+      // ACCEPT: Valid string
+      fields[key] = {
+        value: val,
+        source: llmName,
+        confidence: 'Medium'
+      };
+      fieldsAccepted++;
+    } else if (typeof val === 'number' || typeof val === 'boolean') {
+      // ACCEPT: Numbers and booleans (but not NaN)
+      if (typeof val === 'number' && isNaN(val)) {
+        nullsBlocked++;
+        continue;
+      }
+      fields[key] = {
+        value: val,
+        source: llmName,
+        confidence: 'Medium'
+      };
+      fieldsAccepted++;
+    } else {
+      nullsBlocked++;
+    }
+  }
+
+  console.log(`🛡️ ${llmName}: ${fieldsAccepted} fields ACCEPTED, ${nullsBlocked} nulls BLOCKED`);
+  return fields;
+}
+
+// ============================================
 // CONVERT FLAT 168-FIELD TO NESTED STRUCTURE
 // Maps API field keys to nested PropertyDetail format
 // Updated: 2025-11-30 - Added Stellar MLS fields (139-168)
@@ -950,114 +1027,41 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
 
 // ============================================
 // PERPLEXITY - HAS REAL WEB SEARCH
+// Refactored per Perplexity guidance: grouped fields, priority tiers,
+// web search instructions at top, NO NULL VALUES ALLOWED
 // ============================================
 
 async function callPerplexity(address: string): Promise<Record<string, any>> {
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) {
-    console.log('PERPLEXITY_API_KEY not set');
+    console.log('❌ PERPLEXITY_API_KEY not set');
     return {};
   }
 
-  const prompt = `You have REAL-TIME WEB SEARCH. Use it to find VERIFIED property data for this address: ${address}
+  // User message structured per Perplexity guidance:
+  // TASK at top, then PROPERTY, then PRIORITY, then FIELDS, then FORMAT
+  const userPrompt = `TASK:
+1. Use REAL-TIME WEB SEARCH to look up this EXACT property
+2. For each field below, find a SPECIFIC value from web sources
+3. If you CANNOT find verified data for a field, DO NOT include it - simply omit it
+4. NEVER return null values - only return fields where you found REAL data
 
-CRITICAL INSTRUCTIONS - ANTI-HALLUCINATION:
-1. You MUST use web search to find real data from actual websites
-2. NEVER make up or estimate values - if you can't find it, say "Not found"
-3. Include the exact source URL for each field you find
-4. Cross-verify important values (price, sqft) across multiple sources
-5. Only return data you actually found via web search
+PROPERTY:
+Address: ${address}
 
-Search these sources IN THIS ORDER:
-- Zillow.com, Redfin.com, Realtor.com (for listing data, MLS numbers, prices)
-- County property appraiser website for the specific county (for tax data, parcel IDs, assessed values)
-- GreatSchools.org (for school assignments and ratings)
-- FEMA NFHL (for flood zones)
-- Public tax collector records
-- Recent sales comps from MLS or Zillow
+PRIORITY:
+- P1 (MUST attempt): prices, MLS ID, taxes, HOA fees, beds, baths, sqft, year built, lot size, schools, flood zone
+- P2 (SHOULD attempt): utilities, systems, distances, environment/risk fields
+- P3 (IF EASY): all remaining fields
+If time/coverage is limited, prioritize: P1 > P2 > P3
 
-I need ALL of these fields. Return ONLY what you can verify from real sources with actual URLs:
+FIELD SCHEMA (168 fields, grouped with source hints):
+${FIELD_GROUPS_PERPLEXITY}
 
-PROPERTY BASICS:
-- 1_full_address: full street address
-- 2_mls_primary: MLS listing number
-- 4_listing_status: For Sale, Sold, Pending, Off Market
-- 5_listing_date: when listed
-- 6_parcel_id: county parcel/folio number
-- 7_listing_price: current or last list price
-- 10_last_sale_date: date of last sale
-- 11_last_sale_price: price of last sale
-- 12_bedrooms: number of bedrooms
-- 13_full_bathrooms: full baths
-- 14_half_bathrooms: half baths
-- 16_living_sqft: heated/living square feet
-- 18_lot_size_sqft: lot size in sqft
-- 20_year_built: year constructed
-- 21_property_type: Single Family, Condo, Townhouse, etc
-- 22_stories: number of stories
-- 23_garage_spaces: garage capacity
-- 25_hoa_yn: true/false if HOA exists
-- 26_hoa_fee_annual: annual HOA fee
-
-TAXES & VALUE:
-- 9_market_value_estimate: Zestimate or similar
-- 29_annual_taxes: annual property tax amount
-- 31_assessed_value: county assessed value
-- 32_tax_exemptions: Homestead or other exemptions
-- 33_property_tax_rate: mill rate
-
-STRUCTURE:
-- 36_roof_type: tile, shingle, metal, etc
-- 37_roof_age_est: estimated roof age or year installed
-- 38_exterior_material: stucco, brick, siding
-- 39_foundation: slab, crawl space, basement
-- 40_hvac_type: central, split, window
-- 41_hvac_age: estimated HVAC age
-- 45_fireplace_yn: true/false
-- 47_pool_yn: true/false
-- 48_pool_type: in-ground, above-ground, screened
-
-SCHOOLS (from GreatSchools.org):
-- 56_assigned_elementary: school name
-- 57_elementary_rating: rating out of 10
-- 59_assigned_middle: school name
-- 60_middle_rating: rating out of 10
-- 62_assigned_high: school name
-- 63_high_rating: rating out of 10
-
-MARKET DATA:
-- 81_median_home_price_neighborhood: median price in area
-- 82_price_per_sqft_recent_avg: average $/sqft in area
-- 83_days_on_market_avg: average DOM in area
-- 85_rental_estimate_monthly: estimated monthly rent
-- 86_rental_yield_est: estimated rental yield %
-- 91_comparable_sales: 2-3 recent nearby sales with prices
-
-CRIME (from NeighborhoodScout, CrimeGrade, or similar):
-- 78_crime_index_violent: violent crime rating
-- 79_crime_index_property: property crime rating
-- 80_neighborhood_safety_rating: overall safety grade
-
-UTILITIES:
-- 92_electric_provider: electric company name
-- 93_water_provider: water company name
-- 96_internet_providers_top3: top internet providers
-
-Return as JSON format with SOURCE URLS:
-{
-  "field_name": {"value": "actual value", "source": "Website Name - https://actual-url.com/page"}
-}
-
-CRITICAL RULES:
-- Only include fields with REAL verified data from actual web searches
-- If you cannot find data for a field, DO NOT include it in the response
-- NEVER make up, estimate, or guess values
-- Include the actual URL you found the data on
-- If a source doesn't have a field, skip it rather than guessing
-- For missing fields, it's better to return fewer fields with high confidence than more fields with made-up data`;
+${JSON_RESPONSE_FORMAT_PERPLEXITY}`;
 
   try {
-    console.log('Calling Perplexity API...');
+    console.log('✅ Calling Perplexity API with restructured prompt...');
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
@@ -1069,9 +1073,9 @@ CRITICAL RULES:
         messages: [
           {
             role: 'system',
-            content: 'You are a real estate data researcher. Search the web and return ONLY verified data from real sources. Never make up data.'
+            content: PERPLEXITY_SYSTEM_MESSAGE
           },
-          { role: 'user', content: prompt }
+          { role: 'user', content: userPrompt }
         ],
         temperature: 0.1,
       }),
@@ -1080,46 +1084,82 @@ CRITICAL RULES:
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('Perplexity API error:', response.status, data);
+      console.error('❌ Perplexity API error:', response.status, data);
       return {};
     }
 
-    console.log('Perplexity response received:', JSON.stringify(data).substring(0, 500));
+    console.log('✅ Perplexity response received:', JSON.stringify(data).substring(0, 500));
 
     if (data.choices?.[0]?.message?.content) {
       const text = data.choices[0].message.content;
-      console.log('Perplexity content:', text.substring(0, 500));
+      console.log('Perplexity content preview:', text.substring(0, 500));
 
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         try {
           const parsed = JSON.parse(jsonMatch[0]);
-          // Add confidence and format properly
+
+          // ============================================
+          // CRITICAL: NULL BLOCKING - NO NULL VALUES ALLOWED
+          // Only accept fields with real, non-null values
+          // ============================================
           const fields: Record<string, any> = {};
+          let nullsBlocked = 0;
+          let fieldsAccepted = 0;
+
           for (const [key, val] of Object.entries(parsed)) {
-            if (val && typeof val === 'object' && (val as any).value !== null) {
+            // BLOCK 1: Skip if val is directly null/undefined
+            if (val === null || val === undefined) {
+              nullsBlocked++;
+              console.log(`🚫 NULL BLOCKED: ${key} (direct null)`);
+              continue;
+            }
+
+            // BLOCK 2: Skip if val is an object with null/undefined value
+            if (typeof val === 'object') {
+              const valueField = (val as any).value;
+              if (valueField === null || valueField === undefined || valueField === '' || valueField === 'null' || valueField === 'N/A' || valueField === 'Not found') {
+                nullsBlocked++;
+                console.log(`🚫 NULL BLOCKED: ${key} (null/empty/N/A value)`);
+                continue;
+              }
+
+              // ACCEPT: Valid object with real value
               fields[key] = {
-                value: (val as any).value,
-                source: `${(val as any).source} (via Perplexity)`,
+                value: valueField,
+                source: `${(val as any).source || 'Perplexity Web Search'} (via Perplexity)`,
                 confidence: 'High'
               };
+              fieldsAccepted++;
+            } else if (val !== '' && val !== 'null' && val !== 'N/A' && val !== 'Not found') {
+              // ACCEPT: Direct value (string/number/boolean) that's not empty
+              fields[key] = {
+                value: val,
+                source: 'Perplexity Web Search',
+                confidence: 'High'
+              };
+              fieldsAccepted++;
+            } else {
+              nullsBlocked++;
+              console.log(`🚫 NULL BLOCKED: ${key} (empty/N/A string)`);
             }
           }
-          console.log(`Perplexity found ${Object.keys(fields).length} fields`);
+
+          console.log(`✅ Perplexity: ${fieldsAccepted} fields ACCEPTED, ${nullsBlocked} nulls BLOCKED`);
           return fields;
         } catch (parseError) {
-          console.error('Failed to parse Perplexity JSON:', parseError);
+          console.error('❌ Failed to parse Perplexity JSON:', parseError);
           console.error('Raw text:', text);
         }
       } else {
-        console.log('No JSON found in Perplexity response');
+        console.log('❌ No JSON found in Perplexity response');
       }
     } else {
-      console.log('No content in Perplexity response');
+      console.log('❌ No content in Perplexity response');
     }
     return {};
   } catch (error) {
-    console.error('Perplexity error:', error);
+    console.error('❌ Perplexity error:', error);
     return {};
   }
 }
@@ -1128,103 +1168,345 @@ CRITICAL RULES:
 // LLM CALLS (DISABLED - hallucinate without web access)
 // ============================================
 
-// Field definitions for the prompt
+// Field definitions for the prompt - SYNCHRONIZED WITH fields-schema.ts (168 fields)
 const FIELD_GROUPS = `
-GROUP A - Address & Identity (1-6):
-1. full_address, 2. mls_primary, 3. mls_secondary, 4. listing_status, 5. listing_date, 6. parcel_id
+GROUP 1 - Address & Identity (Fields 1-9):
+1. full_address, 2. mls_primary, 3. mls_secondary, 4. listing_status, 5. listing_date,
+6. neighborhood, 7. county, 8. zip_code, 9. parcel_id
 
-GROUP B - Pricing (7-11):
-7. listing_price, 8. price_per_sqft, 9. market_value_estimate, 10. last_sale_date, 11. last_sale_price
+GROUP 2 - Pricing & Value (Fields 10-16):
+10. listing_price, 11. price_per_sqft, 12. market_value_estimate, 13. last_sale_date,
+14. last_sale_price, 15. assessed_value, 16. redfin_estimate
 
-GROUP C - Property Basics (12-24):
-12. bedrooms, 13. full_bathrooms, 14. half_bathrooms, 15. total_bathrooms, 16. living_sqft,
-17. total_sqft_under_roof, 18. lot_size_sqft, 19. lot_size_acres, 20. year_built, 21. property_type,
-22. stories, 23. garage_spaces, 24. parking_total
+GROUP 3 - Property Basics (Fields 17-29):
+17. bedrooms, 18. full_bathrooms, 19. half_bathrooms, 20. total_bathrooms, 21. living_sqft,
+22. total_sqft_under_roof, 23. lot_size_sqft, 24. lot_size_acres, 25. year_built,
+26. property_type, 27. stories, 28. garage_spaces, 29. parking_total
 
-GROUP D - HOA & Ownership (25-28):
-25. hoa_yn, 26. hoa_fee_annual, 27. ownership_type, 28. county
+GROUP 4 - HOA & Taxes (Fields 30-38):
+30. hoa_yn, 31. hoa_fee_annual, 32. hoa_name, 33. hoa_includes, 34. ownership_type,
+35. annual_taxes, 36. tax_year, 37. property_tax_rate, 38. tax_exemptions
 
-GROUP E - Taxes & Assessments (29-35):
-29. annual_taxes, 30. tax_year, 31. assessed_value, 32. tax_exemptions, 33. property_tax_rate,
-34. recent_tax_history, 35. special_assessments
+GROUP 5 - Structure & Systems (Fields 39-48):
+39. roof_type, 40. roof_age_est, 41. exterior_material, 42. foundation, 43. water_heater_type,
+44. garage_type, 45. hvac_type, 46. hvac_age, 47. laundry_type, 48. interior_condition
 
-GROUP F - Structure & Systems (36-41):
-36. roof_type, 37. roof_age_est, 38. exterior_material, 39. foundation, 40. hvac_type, 41. hvac_age
+GROUP 6 - Interior Features (Fields 49-53):
+49. flooring_type, 50. kitchen_features, 51. appliances_included, 52. fireplace_yn, 53. fireplace_count
 
-GROUP G - Interior Features (42-46):
-42. flooring_type, 43. kitchen_features, 44. appliances_included, 45. fireplace_yn, 46. interior_condition
+GROUP 7 - Exterior Features (Fields 54-58):
+54. pool_yn, 55. pool_type, 56. deck_patio, 57. fence, 58. landscaping
 
-GROUP H - Exterior Features (47-51):
-47. pool_yn, 48. pool_type, 49. deck_patio, 50. fence, 51. landscaping
+GROUP 8 - Permits & Renovations (Fields 59-62):
+59. recent_renovations, 60. permit_history_roof, 61. permit_history_hvac, 62. permit_history_other
 
-GROUP I - Permits & Renovations (52-55):
-52. recent_renovations, 53. permit_history_roof, 54. permit_history_hvac, 55. permit_history_other
+GROUP 9 - Assigned Schools (Fields 63-73):
+63. school_district, 64. elevation_feet, 65. elementary_school, 66. elementary_rating,
+67. elementary_distance_mi, 68. middle_school, 69. middle_rating, 70. middle_distance_mi,
+71. high_school, 72. high_rating, 73. high_distance_mi
 
-GROUP J - Schools (56-64):
-56. assigned_elementary, 57. elementary_rating, 58. elementary_distance_miles,
-59. assigned_middle, 60. middle_rating, 61. middle_distance_miles,
-62. assigned_high, 63. high_rating, 64. high_distance_miles
+GROUP 10 - Location Scores (Fields 74-82):
+74. walk_score, 75. transit_score, 76. bike_score, 77. safety_score, 78. noise_level,
+79. traffic_level, 80. walkability_description, 81. public_transit_access, 82. commute_to_city_center
 
-GROUP K - Location Scores (65-72):
-65. walk_score, 66. transit_score, 67. bike_score, 68. noise_level, 69. traffic_level,
-70. walkability_description, 71. commute_time_city_center, 72. public_transit_access
+GROUP 11 - Distances & Amenities (Fields 83-87):
+83. distance_grocery_mi, 84. distance_hospital_mi, 85. distance_airport_mi,
+86. distance_park_mi, 87. distance_beach_mi
 
-GROUP L - Distances & Amenities (73-77):
-73. distance_grocery_miles, 74. distance_hospital_miles, 75. distance_airport_miles,
-76. distance_park_miles, 77. distance_beach_miles
+GROUP 12 - Safety & Crime (Fields 88-90):
+88. violent_crime_index, 89. property_crime_index, 90. neighborhood_safety_rating
 
-GROUP M - Safety & Crime (78-80):
-78. crime_index_violent, 79. crime_index_property, 80. neighborhood_safety_rating
+GROUP 13 - Market & Investment Data (Fields 91-103):
+91. median_home_price_neighborhood, 92. price_per_sqft_recent_avg, 93. price_to_rent_ratio,
+94. price_vs_median_percent, 95. days_on_market_avg, 96. inventory_surplus, 97. insurance_est_annual,
+98. rental_estimate_monthly, 99. rental_yield_est, 100. vacancy_rate_neighborhood,
+101. cap_rate_est, 102. financing_terms, 103. comparable_sales
 
-GROUP N - Market & Investment (81-91):
-81. median_home_price_neighborhood, 82. price_per_sqft_recent_avg, 83. days_on_market_avg,
-84. inventory_surplus, 85. rental_estimate_monthly, 86. rental_yield_est, 87. vacancy_rate_neighborhood,
-88. cap_rate_est, 89. insurance_est_annual, 90. financing_terms, 91. comparable_sales
+GROUP 14 - Utilities & Connectivity (Fields 104-116):
+104. electric_provider, 105. avg_electric_bill, 106. water_provider, 107. avg_water_bill,
+108. sewer_provider, 109. natural_gas, 110. trash_provider, 111. internet_providers_top3,
+112. max_internet_speed, 113. fiber_available, 114. cable_tv_provider, 115. cell_coverage_quality,
+116. emergency_services_distance
 
-GROUP O - Utilities (92-98):
-92. electric_provider, 93. water_provider, 94. sewer_provider, 95. natural_gas,
-96. internet_providers_top3, 97. max_internet_speed, 98. cable_tv_provider
+GROUP 15 - Environment & Risk (Fields 117-130):
+117. air_quality_index, 118. air_quality_grade, 119. flood_zone, 120. flood_risk_level,
+121. climate_risk, 122. wildfire_risk, 123. earthquake_risk, 124. hurricane_risk, 125. tornado_risk,
+126. radon_risk, 127. superfund_site_nearby, 128. sea_level_rise_risk, 129. noise_level_db_est, 130. solar_potential
 
-GROUP P - Environment & Risk (99-104):
-99. air_quality_index_current, 100. flood_zone, 101. flood_risk_level, 102. climate_risk_summary,
-103. noise_level_db_est, 104. solar_potential
+GROUP 16 - Additional Features (Fields 131-138):
+131. view_type, 132. lot_features, 133. ev_charging, 134. smart_home_features,
+135. accessibility_modifications, 136. pet_policy, 137. age_restrictions, 138. special_assessments
 
-GROUP Q - Additional Features (105-110):
-105. ev_charging_yn, 106. smart_home_features, 107. accessibility_mods, 108. pet_policy,
-109. age_restrictions, 110. notes_confidence_summary
+GROUP 17 - Stellar MLS Parking (Fields 139-143):
+139. carport_yn, 140. carport_spaces, 141. garage_attached_yn, 142. parking_features, 143. assigned_parking_spaces
+
+GROUP 18 - Stellar MLS Building (Fields 144-148):
+144. floor_number, 145. building_total_floors, 146. building_name_number, 147. building_elevator_yn, 148. floors_in_unit
+
+GROUP 19 - Stellar MLS Legal (Fields 149-154):
+149. subdivision_name, 150. legal_description, 151. homestead_yn, 152. cdd_yn, 153. annual_cdd_fee, 154. front_exposure
+
+GROUP 20 - Stellar MLS Waterfront (Fields 155-159):
+155. water_frontage_yn, 156. waterfront_feet, 157. water_access_yn, 158. water_view_yn, 159. water_body_name
+
+GROUP 21 - Stellar MLS Leasing (Fields 160-165):
+160. can_be_leased_yn, 161. minimum_lease_period, 162. lease_restrictions_yn, 163. pet_size_limit, 164. max_pet_weight, 165. association_approval_yn
+
+GROUP 22 - Stellar MLS Features (Fields 166-168):
+166. community_features, 167. interior_features, 168. exterior_features
 `;
+
+// ============================================
+// PERPLEXITY-SPECIFIC CONSTANTS (with source hints for web search)
+// These are SEPARATE from shared constants to avoid affecting other LLMs
+// ============================================
+
+const FIELD_GROUPS_PERPLEXITY = `
+GROUP 1 - Address & Identity (Fields 1-9) [P1 = Priority 1]:
+1. full_address (from listing sites), 2. mls_primary (from MLS/Zillow/Redfin) [P1],
+3. mls_secondary, 4. listing_status (from listing sites) [P1], 5. listing_date (from MLS),
+6. neighborhood (from listing sites), 7. county (from county records) [P1],
+8. zip_code (from listing sites), 9. parcel_id (from county property appraiser) [P1]
+
+GROUP 2 - Pricing & Value (Fields 10-16) [P1]:
+10. listing_price (from Zillow/Redfin/Realtor) [P1], 11. price_per_sqft (calculated),
+12. market_value_estimate (Zestimate/Redfin Estimate) [P1], 13. last_sale_date (from county records) [P1],
+14. last_sale_price (from county records) [P1], 15. assessed_value (from county property appraiser) [P1],
+16. redfin_estimate (from Redfin)
+
+GROUP 3 - Property Basics (Fields 17-29) [P1]:
+17. bedrooms (from listing sites) [P1], 18. full_bathrooms (from listing sites) [P1],
+19. half_bathrooms (from listing sites), 20. total_bathrooms (calculated),
+21. living_sqft (from listing/county) [P1], 22. total_sqft_under_roof (from county),
+23. lot_size_sqft (from county) [P1], 24. lot_size_acres (calculated),
+25. year_built (from county/listing) [P1], 26. property_type (from listing) [P1],
+27. stories (from listing), 28. garage_spaces (from listing), 29. parking_total (from listing)
+
+GROUP 4 - HOA & Taxes (Fields 30-38) [P1]:
+30. hoa_yn (from listing) [P1], 31. hoa_fee_annual (from listing/HOA site) [P1],
+32. hoa_name (from listing), 33. hoa_includes (from listing),
+34. ownership_type (from county), 35. annual_taxes (from county tax collector) [P1],
+36. tax_year (from county), 37. property_tax_rate (from county), 38. tax_exemptions (from county)
+
+GROUP 5 - Structure & Systems (Fields 39-48) [P2]:
+39. roof_type (from listing/permits), 40. roof_age_est (from permits),
+41. exterior_material (from listing), 42. foundation (from listing),
+43. water_heater_type (from listing), 44. garage_type (from listing),
+45. hvac_type (from listing), 46. hvac_age (from permits),
+47. laundry_type (from listing), 48. interior_condition (from listing)
+
+GROUP 6 - Interior Features (Fields 49-53) [P2]:
+49. flooring_type (from listing), 50. kitchen_features (from listing),
+51. appliances_included (from listing), 52. fireplace_yn (from listing), 53. fireplace_count (from listing)
+
+GROUP 7 - Exterior Features (Fields 54-58) [P2]:
+54. pool_yn (from listing/aerial) [P1], 55. pool_type (from listing),
+56. deck_patio (from listing), 57. fence (from listing), 58. landscaping (from listing)
+
+GROUP 8 - Permits & Renovations (Fields 59-62) [P2]:
+59. recent_renovations (from permits/listing), 60. permit_history_roof (from county permits),
+61. permit_history_hvac (from county permits), 62. permit_history_other (from county permits)
+
+GROUP 9 - Assigned Schools (Fields 63-73) [P1]:
+63. school_district (from GreatSchools/school site) [P1], 64. elevation_feet (from elevation API),
+65. elementary_school (from GreatSchools) [P1], 66. elementary_rating (from GreatSchools) [P1],
+67. elementary_distance_mi (calculated), 68. middle_school (from GreatSchools) [P1],
+69. middle_rating (from GreatSchools) [P1], 70. middle_distance_mi (calculated),
+71. high_school (from GreatSchools) [P1], 72. high_rating (from GreatSchools) [P1],
+73. high_distance_mi (calculated)
+
+GROUP 10 - Location Scores (Fields 74-82) [P2]:
+74. walk_score (from WalkScore.com), 75. transit_score (from WalkScore.com),
+76. bike_score (from WalkScore.com), 77. safety_score (from crime sites),
+78. noise_level (from HowLoud), 79. traffic_level (from traffic sites),
+80. walkability_description, 81. public_transit_access, 82. commute_to_city_center
+
+GROUP 11 - Distances & Amenities (Fields 83-87) [P2]:
+83. distance_grocery_mi (from Google Maps), 84. distance_hospital_mi (from Google Maps),
+85. distance_airport_mi (from Google Maps), 86. distance_park_mi (from Google Maps),
+87. distance_beach_mi (from Google Maps)
+
+GROUP 12 - Safety & Crime (Fields 88-90) [P2]:
+88. violent_crime_index (from NeighborhoodScout/CrimeGrade), 89. property_crime_index (from crime sites),
+90. neighborhood_safety_rating (from crime sites)
+
+GROUP 13 - Market & Investment Data (Fields 91-103) [P2]:
+91. median_home_price_neighborhood (from Zillow/Redfin), 92. price_per_sqft_recent_avg (from listing sites),
+93. price_to_rent_ratio (calculated), 94. price_vs_median_percent (calculated),
+95. days_on_market_avg (from listing sites), 96. inventory_surplus (from market reports),
+97. insurance_est_annual (from insurance sites), 98. rental_estimate_monthly (from Rentometer/Zillow),
+99. rental_yield_est (calculated), 100. vacancy_rate_neighborhood (from census),
+101. cap_rate_est (calculated), 102. financing_terms, 103. comparable_sales (from listing sites)
+
+GROUP 14 - Utilities & Connectivity (Fields 104-116) [P3]:
+104. electric_provider (from utility sites), 105. avg_electric_bill,
+106. water_provider (from utility sites), 107. avg_water_bill,
+108. sewer_provider, 109. natural_gas, 110. trash_provider,
+111. internet_providers_top3 (from BroadbandNow), 112. max_internet_speed,
+113. fiber_available, 114. cable_tv_provider, 115. cell_coverage_quality,
+116. emergency_services_distance
+
+GROUP 15 - Environment & Risk (Fields 117-130) [P2]:
+117. air_quality_index (from AirNow), 118. air_quality_grade,
+119. flood_zone (from FEMA NFHL) [P1], 120. flood_risk_level (from FEMA) [P1],
+121. climate_risk, 122. wildfire_risk, 123. earthquake_risk,
+124. hurricane_risk, 125. tornado_risk, 126. radon_risk,
+127. superfund_site_nearby, 128. sea_level_rise_risk, 129. noise_level_db_est, 130. solar_potential
+
+GROUP 16 - Additional Features (Fields 131-138) [P3]:
+131. view_type (from listing), 132. lot_features (from listing),
+133. ev_charging (from listing), 134. smart_home_features (from listing),
+135. accessibility_modifications, 136. pet_policy, 137. age_restrictions, 138. special_assessments
+
+GROUP 17 - Stellar MLS Parking (Fields 139-143) [P3]:
+139. carport_yn, 140. carport_spaces, 141. garage_attached_yn, 142. parking_features, 143. assigned_parking_spaces
+
+GROUP 18 - Stellar MLS Building (Fields 144-148) [P3]:
+144. floor_number, 145. building_total_floors, 146. building_name_number, 147. building_elevator_yn, 148. floors_in_unit
+
+GROUP 19 - Stellar MLS Legal (Fields 149-154) [P3]:
+149. subdivision_name (from county), 150. legal_description (from county),
+151. homestead_yn (from county), 152. cdd_yn, 153. annual_cdd_fee, 154. front_exposure
+
+GROUP 20 - Stellar MLS Waterfront (Fields 155-159) [P3]:
+155. water_frontage_yn, 156. waterfront_feet, 157. water_access_yn, 158. water_view_yn, 159. water_body_name
+
+GROUP 21 - Stellar MLS Leasing (Fields 160-165) [P3]:
+160. can_be_leased_yn, 161. minimum_lease_period, 162. lease_restrictions_yn,
+163. pet_size_limit, 164. max_pet_weight, 165. association_approval_yn
+
+GROUP 22 - Stellar MLS Features (Fields 166-168) [P3]:
+166. community_features, 167. interior_features, 168. exterior_features
+`;
+
+const JSON_RESPONSE_FORMAT_PERPLEXITY = `
+RESPONSE FORMAT - Return ONLY valid JSON. DO NOT include fields you cannot find - simply omit them.
+
+Example (for a DIFFERENT property - only showing fields that were FOUND):
+{
+  "10_listing_price": { "value": 650000, "source": "Zillow - https://www.zillow.com/..." },
+  "7_county": { "value": "Pinellas County", "source": "County Property Appraiser - https://www.pcpao.gov/..." },
+  "35_annual_taxes": { "value": 8234, "source": "County Tax Collector - https://..." },
+  "17_bedrooms": { "value": 4, "source": "Redfin - https://www.redfin.com/..." },
+  "119_flood_zone": { "value": "Zone X", "source": "FEMA - https://msc.fema.gov/..." }
+}
+
+CRITICAL RULES:
+- Use EXACT field keys: [number]_[field_name] (e.g., "10_listing_price", "7_county", "17_bedrooms")
+- If you CANNOT find verified data for a field, DO NOT include it in your response
+- NEVER return null values - simply omit unfound fields
+- Include source URL for every field you return
+- Only return fields where you found REAL data from web search`;
+
+const PERPLEXITY_SYSTEM_MESSAGE = `You are a real estate data researcher with REAL-TIME WEB SEARCH capabilities.
+
+CRITICAL INSTRUCTIONS:
+1. You MUST use web search to retrieve VERIFIED, up-to-date property data
+2. Prefer official and primary sources: MLS portals (Zillow, Redfin, Realtor.com), county property appraisers, school rating sites (GreatSchools), FEMA
+3. NEVER fabricate URLs, values, or data - only return what you actually find via web search
+4. If you cannot find data for a field, DO NOT include that field - simply omit it from your response
+5. NEVER return null values - omit unfound fields entirely
+
+SOURCE PRIORITY:
+1. County Property Appraiser websites (for taxes, assessed value, parcel ID, ownership)
+2. MLS-powered listing sites (Zillow, Redfin, Realtor.com) for listing data
+3. GreatSchools.org for school assignments and ratings
+4. FEMA NFHL for flood zones
+5. WalkScore.com for walk/transit/bike scores`;
 
 // ============================================
 // LLM-SPECIFIC PROMPTS - Tailored to each model's capabilities
 // ============================================
 
 // CRITICAL: Exact field key format for reliable mapping
+// SOURCE OF TRUTH: src/types/fields-schema.ts - ALL 168 FIELDS
 const EXACT_FIELD_KEYS = `
 EXACT FIELD KEYS - You MUST use these EXACT keys (number_fieldname format):
-1_full_address, 2_mls_primary, 3_mls_secondary, 4_listing_status, 5_listing_date, 6_parcel_id,
-7_listing_price, 8_price_per_sqft, 9_market_value_estimate, 10_last_sale_date, 11_last_sale_price,
-12_bedrooms, 13_full_bathrooms, 14_half_bathrooms, 15_total_bathrooms, 16_living_sqft,
-17_total_sqft_under_roof, 18_lot_size_sqft, 19_lot_size_acres, 20_year_built, 21_property_type,
-22_stories, 23_garage_spaces, 24_parking_total, 25_hoa_yn, 26_hoa_fee_annual, 27_ownership_type,
-28_county, 29_annual_taxes, 30_tax_year, 31_assessed_value, 32_tax_exemptions, 33_property_tax_rate,
-34_recent_tax_history, 35_special_assessments, 36_roof_type, 37_roof_age_est, 38_exterior_material,
-39_foundation, 40_hvac_type, 41_hvac_age, 42_flooring_type, 43_kitchen_features, 44_appliances_included,
-45_fireplace_yn, 46_interior_condition, 47_pool_yn, 48_pool_type, 49_deck_patio, 50_fence,
-51_landscaping, 52_recent_renovations, 53_permit_history_roof, 54_permit_history_hvac, 55_permit_history_other,
-56_assigned_elementary, 57_elementary_rating, 58_elementary_distance_miles, 59_assigned_middle,
-60_middle_rating, 61_middle_distance_miles, 62_assigned_high, 63_high_rating, 64_high_distance_miles,
-65_walk_score, 66_transit_score, 67_bike_score, 68_noise_level, 69_traffic_level,
-70_walkability_description, 71_commute_time_city_center, 72_public_transit_access,
-73_distance_grocery_miles, 74_distance_hospital_miles, 75_distance_airport_miles,
-76_distance_park_miles, 77_distance_beach_miles, 78_crime_index_violent, 79_crime_index_property,
-80_neighborhood_safety_rating, 81_median_home_price_neighborhood, 82_price_per_sqft_recent_avg,
-83_days_on_market_avg, 84_inventory_surplus, 85_rental_estimate_monthly, 86_rental_yield_est,
-87_vacancy_rate_neighborhood, 88_cap_rate_est, 89_insurance_est_annual, 90_financing_terms,
-91_comparable_sales, 92_electric_provider, 93_water_provider, 94_sewer_provider, 95_natural_gas,
-96_internet_providers_top3, 97_max_internet_speed, 98_cable_tv_provider, 99_air_quality_index_current,
-100_flood_zone, 101_flood_risk_level, 102_climate_risk_summary, 103_noise_level_db_est, 104_solar_potential,
-105_ev_charging_yn, 106_smart_home_features, 107_accessibility_mods, 108_pet_policy,
-109_age_restrictions, 110_notes_confidence_summary`;
+
+GROUP 1 - Address & Identity (Fields 1-9):
+1_full_address, 2_mls_primary, 3_mls_secondary, 4_listing_status, 5_listing_date,
+6_neighborhood, 7_county, 8_zip_code, 9_parcel_id,
+
+GROUP 2 - Pricing & Value (Fields 10-16):
+10_listing_price, 11_price_per_sqft, 12_market_value_estimate, 13_last_sale_date,
+14_last_sale_price, 15_assessed_value, 16_redfin_estimate,
+
+GROUP 3 - Property Basics (Fields 17-29):
+17_bedrooms, 18_full_bathrooms, 19_half_bathrooms, 20_total_bathrooms, 21_living_sqft,
+22_total_sqft_under_roof, 23_lot_size_sqft, 24_lot_size_acres, 25_year_built,
+26_property_type, 27_stories, 28_garage_spaces, 29_parking_total,
+
+GROUP 4 - HOA & Taxes (Fields 30-38):
+30_hoa_yn, 31_hoa_fee_annual, 32_hoa_name, 33_hoa_includes, 34_ownership_type,
+35_annual_taxes, 36_tax_year, 37_property_tax_rate, 38_tax_exemptions,
+
+GROUP 5 - Structure & Systems (Fields 39-48):
+39_roof_type, 40_roof_age_est, 41_exterior_material, 42_foundation, 43_water_heater_type,
+44_garage_type, 45_hvac_type, 46_hvac_age, 47_laundry_type, 48_interior_condition,
+
+GROUP 6 - Interior Features (Fields 49-53):
+49_flooring_type, 50_kitchen_features, 51_appliances_included, 52_fireplace_yn, 53_fireplace_count,
+
+GROUP 7 - Exterior Features (Fields 54-58):
+54_pool_yn, 55_pool_type, 56_deck_patio, 57_fence, 58_landscaping,
+
+GROUP 8 - Permits & Renovations (Fields 59-62):
+59_recent_renovations, 60_permit_history_roof, 61_permit_history_hvac, 62_permit_history_other,
+
+GROUP 9 - Assigned Schools (Fields 63-73):
+63_school_district, 64_elevation_feet, 65_elementary_school, 66_elementary_rating,
+67_elementary_distance_mi, 68_middle_school, 69_middle_rating, 70_middle_distance_mi,
+71_high_school, 72_high_rating, 73_high_distance_mi,
+
+GROUP 10 - Location Scores (Fields 74-82):
+74_walk_score, 75_transit_score, 76_bike_score, 77_safety_score, 78_noise_level,
+79_traffic_level, 80_walkability_description, 81_public_transit_access, 82_commute_to_city_center,
+
+GROUP 11 - Distances & Amenities (Fields 83-87):
+83_distance_grocery_mi, 84_distance_hospital_mi, 85_distance_airport_mi,
+86_distance_park_mi, 87_distance_beach_mi,
+
+GROUP 12 - Safety & Crime (Fields 88-90):
+88_violent_crime_index, 89_property_crime_index, 90_neighborhood_safety_rating,
+
+GROUP 13 - Market & Investment Data (Fields 91-103):
+91_median_home_price_neighborhood, 92_price_per_sqft_recent_avg, 93_price_to_rent_ratio,
+94_price_vs_median_percent, 95_days_on_market_avg, 96_inventory_surplus, 97_insurance_est_annual,
+98_rental_estimate_monthly, 99_rental_yield_est, 100_vacancy_rate_neighborhood,
+101_cap_rate_est, 102_financing_terms, 103_comparable_sales,
+
+GROUP 14 - Utilities & Connectivity (Fields 104-116):
+104_electric_provider, 105_avg_electric_bill, 106_water_provider, 107_avg_water_bill,
+108_sewer_provider, 109_natural_gas, 110_trash_provider, 111_internet_providers_top3,
+112_max_internet_speed, 113_fiber_available, 114_cable_tv_provider, 115_cell_coverage_quality,
+116_emergency_services_distance,
+
+GROUP 15 - Environment & Risk (Fields 117-130):
+117_air_quality_index, 118_air_quality_grade, 119_flood_zone, 120_flood_risk_level,
+121_climate_risk, 122_wildfire_risk, 123_earthquake_risk, 124_hurricane_risk, 125_tornado_risk,
+126_radon_risk, 127_superfund_site_nearby, 128_sea_level_rise_risk, 129_noise_level_db_est, 130_solar_potential,
+
+GROUP 16 - Additional Features (Fields 131-138):
+131_view_type, 132_lot_features, 133_ev_charging, 134_smart_home_features,
+135_accessibility_modifications, 136_pet_policy, 137_age_restrictions, 138_special_assessments,
+
+GROUP 17 - Stellar MLS Parking (Fields 139-143):
+139_carport_yn, 140_carport_spaces, 141_garage_attached_yn, 142_parking_features, 143_assigned_parking_spaces,
+
+GROUP 18 - Stellar MLS Building (Fields 144-148):
+144_floor_number, 145_building_total_floors, 146_building_name_number, 147_building_elevator_yn, 148_floors_in_unit,
+
+GROUP 19 - Stellar MLS Legal (Fields 149-154):
+149_subdivision_name, 150_legal_description, 151_homestead_yn, 152_cdd_yn, 153_annual_cdd_fee, 154_front_exposure,
+
+GROUP 20 - Stellar MLS Waterfront (Fields 155-159):
+155_water_frontage_yn, 156_waterfront_feet, 157_water_access_yn, 158_water_view_yn, 159_water_body_name,
+
+GROUP 21 - Stellar MLS Leasing (Fields 160-165):
+160_can_be_leased_yn, 161_minimum_lease_period, 162_lease_restrictions_yn, 163_pet_size_limit, 164_max_pet_weight, 165_association_approval_yn,
+
+GROUP 22 - Stellar MLS Features (Fields 166-168):
+166_community_features, 167_interior_features, 168_exterior_features`;
 
 // BASE JSON RESPONSE FORMAT (shared)
 const JSON_RESPONSE_FORMAT = `
@@ -1233,18 +1515,20 @@ ${EXACT_FIELD_KEYS}
 RESPONSE FORMAT - Return ONLY valid JSON with EXACT field keys above:
 {
   "fields": {
-    "7_listing_price": { "value": 450000, "source": "Zillow.com", "confidence": "High" },
-    "28_county": { "value": "Pinellas County", "source": "Geographic knowledge", "confidence": "High" },
-    "29_annual_taxes": { "value": 5234.50, "source": "County Property Appraiser", "confidence": "High" },
-    "31_assessed_value": { "value": null, "source": "Not found", "confidence": "Unverified" }
+    "10_listing_price": { "value": 450000, "source": "Zillow.com", "confidence": "High" },
+    "7_county": { "value": "Pinellas County", "source": "Geographic knowledge", "confidence": "High" },
+    "35_annual_taxes": { "value": 5234.50, "source": "County Property Appraiser", "confidence": "High" },
+    "15_assessed_value": { "value": null, "source": "Not found", "confidence": "Unverified" },
+    "17_bedrooms": { "value": 3, "source": "Zillow.com", "confidence": "High" },
+    "21_living_sqft": { "value": 1850, "source": "County Records", "confidence": "High" }
   },
   "sources_searched": ["Zillow", "County Property Appraiser", "Training data"],
   "fields_found": 45,
   "fields_missing": ["2_mls_primary", "3_mls_secondary"],
-  "note": "Found 45 of 110 fields"
+  "note": "Found 45 of 168 fields"
 }
 
-CRITICAL: Use EXACT field key format: [number]_[field_name] (e.g., "7_listing_price", "28_county")
+CRITICAL: Use EXACT field key format: [number]_[field_name] (e.g., "10_listing_price", "7_county", "17_bedrooms")
 DO NOT use variations like "listing_price", "listingPrice", "7. listing_price", or "field_7"`;
 
 // ============================================
@@ -1252,7 +1536,7 @@ DO NOT use variations like "listing_price", "listingPrice", "7. listing_price", 
 // ============================================
 const PROMPT_GROK = `You are GROK, a real estate data extraction expert with LIVE WEB SEARCH capabilities.
 
-YOUR MISSION: Extract ALL 110 property data fields for the given address. You HAVE web access - USE IT AGGRESSIVELY.
+YOUR MISSION: Extract ALL 168 property data fields for the given address. You HAVE web access - USE IT AGGRESSIVELY.
 
 ${FIELD_GROUPS}
 
@@ -1281,7 +1565,7 @@ ${JSON_RESPONSE_FORMAT}`;
 // ============================================
 const PROMPT_PERPLEXITY = `You are a real estate research expert with LIVE WEB SEARCH capabilities.
 
-YOUR MISSION: Research and extract ALL 110 property data fields. You have web access - search thoroughly and cite sources.
+YOUR MISSION: Research and extract ALL 168 property data fields. You have web access - search thoroughly and cite sources.
 
 ${FIELD_GROUPS}
 
@@ -1314,7 +1598,7 @@ ${JSON_RESPONSE_FORMAT}`;
 // ============================================
 const PROMPT_CLAUDE_OPUS = `You are Claude Opus, the most capable AI assistant, helping extract property data. You do NOT have web access.
 
-YOUR MISSION: Extract as many of the 110 property fields as possible using your training knowledge.
+YOUR MISSION: Extract as many of the 168 property fields as possible using your training knowledge.
 
 ${FIELD_GROUPS}
 
@@ -1488,7 +1772,7 @@ async function callClaudeOpus(address: string): Promise<any> {
         messages: [
           {
             role: 'user',
-            content: `Extract all 110 property data fields for this address: ${address}
+            content: `Extract all 168 property data fields for this address: ${address}
 
 Use your training knowledge to provide geographic, regional, and structural data. Return null for fields requiring live data.`,
           },
@@ -1501,7 +1785,10 @@ Use your training knowledge to provide geographic, regional, and structural data
       const text = data.content[0].text;
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        return { ...JSON.parse(jsonMatch[0]), llm: 'Claude Opus' };
+        const parsed = JSON.parse(jsonMatch[0]);
+        // 🛡️ NULL BLOCKING: Filter all null values before returning
+        const filteredFields = filterNullValues(parsed, 'Claude Opus');
+        return { fields: filteredFields, llm: 'Claude Opus' };
       }
     }
     return { error: 'Failed to parse Claude Opus response', fields: {}, llm: 'Claude Opus' };
@@ -1543,7 +1830,10 @@ Quick extraction from training knowledge. Return null for property-specific data
       const text = data.content[0].text;
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        return { ...JSON.parse(jsonMatch[0]), llm: 'Claude Sonnet' };
+        const parsed = JSON.parse(jsonMatch[0]);
+        // 🛡️ NULL BLOCKING: Filter all null values before returning
+        const filteredFields = filterNullValues(parsed, 'Claude Sonnet');
+        return { fields: filteredFields, llm: 'Claude Sonnet' };
       }
     }
     return { error: 'Failed to parse Claude Sonnet response', fields: {}, llm: 'Claude Sonnet' };
@@ -1627,9 +1917,9 @@ async function callGPT(address: string): Promise<any> {
           { role: 'system', content: PROMPT_GPT },
           {
             role: 'user',
-            content: `Extract all 110 property data fields for this address: ${address}
+            content: `Extract all 168 property data fields for this address: ${address}
 
-Use your training knowledge. Return JSON with EXACT field keys (e.g., "7_listing_price", "28_county"). Return null for fields requiring live data.`,
+Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listing_price", "7_county", "17_bedrooms"). Return null for fields requiring live data.`,
           },
         ],
       }),
@@ -1640,7 +1930,10 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "7_listing
       const text = data.choices[0].message.content;
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        return { ...JSON.parse(jsonMatch[0]), llm: 'GPT' };
+        const parsed = JSON.parse(jsonMatch[0]);
+        // 🛡️ NULL BLOCKING: Filter all null values before returning
+        const filteredFields = filterNullValues(parsed, 'GPT');
+        return { fields: filteredFields, llm: 'GPT' };
       }
     }
     return { error: 'Failed to parse GPT response', fields: {}, llm: 'GPT' };
@@ -1659,7 +1952,7 @@ async function callGrok(address: string): Promise<any> {
 
 ${EXACT_FIELD_KEYS}
 
-CRITICAL: Use EXACT field keys like "7_listing_price", "28_county", "29_annual_taxes"
+CRITICAL: Use EXACT field keys like "10_listing_price", "7_county", "35_annual_taxes", "17_bedrooms"
 SEARCH THE WEB AGGRESSIVELY for: listing prices, tax values, assessed values, MLS numbers, school ratings
 CITE YOUR SOURCES for every field you populate`;
 
@@ -1693,7 +1986,10 @@ Search Zillow, Redfin, Realtor.com, county records, and other public sources. Re
       const text = data.choices[0].message.content;
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        return { ...JSON.parse(jsonMatch[0]), llm: 'Grok' };
+        const parsed = JSON.parse(jsonMatch[0]);
+        // 🛡️ NULL BLOCKING: Filter all null values before returning
+        const filteredFields = filterNullValues(parsed, 'Grok');
+        return { fields: filteredFields, llm: 'Grok' };
       }
     }
     return { error: 'Failed to parse Grok response', fields: {}, llm: 'Grok' };
@@ -1725,7 +2021,7 @@ async function callGemini(address: string): Promise<any> {
 
 Extract property data fields for this address: ${address}
 
-Use EXACT field keys like "7_listing_price", "28_county", "29_annual_taxes".
+Use EXACT field keys like "10_listing_price", "7_county", "35_annual_taxes", "17_bedrooms".
 Return null for property-specific data you don't have. Return JSON only.`,
                 },
               ],
@@ -1743,7 +2039,10 @@ Return null for property-specific data you don't have. Return JSON only.`,
       const text = data.candidates[0].content.parts[0].text;
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        return { ...JSON.parse(jsonMatch[0]), llm: 'Gemini' };
+        const parsed = JSON.parse(jsonMatch[0]);
+        // 🛡️ NULL BLOCKING: Filter all null values before returning
+        const filteredFields = filterNullValues(parsed, 'Gemini');
+        return { fields: filteredFields, llm: 'Gemini' };
       }
     }
     return { error: 'Failed to parse Gemini response', fields: {}, llm: 'Gemini' };
@@ -1752,7 +2051,10 @@ Return null for property-specific data you don't have. Return JSON only.`,
   }
 }
 
-// Merge results from multiple LLMs
+// ============================================
+// MERGE RESULTS FROM MULTIPLE LLMs
+// CRITICAL: Additional NULL blocking layer as final defense
+// ============================================
 function mergeResults(results: any[]): any {
   const merged: any = {
     fields: {},
@@ -1762,6 +2064,29 @@ function mergeResults(results: any[]): any {
   };
 
   const confidenceOrder = { High: 3, Medium: 2, Low: 1, Unverified: 0 };
+  let totalNullsBlocked = 0;
+
+  // 🛡️ NULL-LIKE VALUES TO BLOCK (comprehensive list)
+  const isNullLike = (value: any): boolean => {
+    if (value === null || value === undefined) return true;
+    if (typeof value === 'string') {
+      const normalized = value.toLowerCase().trim();
+      return normalized === '' ||
+             normalized === 'null' ||
+             normalized === 'n/a' ||
+             normalized === 'not found' ||
+             normalized === 'unknown' ||
+             normalized === 'not available' ||
+             normalized === 'none' ||
+             normalized === 'undefined' ||
+             normalized === 'not specified' ||
+             normalized === 'na' ||
+             normalized === '-' ||
+             normalized === '--';
+    }
+    if (typeof value === 'number' && isNaN(value)) return true;
+    return false;
+  };
 
   // Process each LLM result
   for (const result of results) {
@@ -1782,7 +2107,24 @@ function mergeResults(results: any[]): any {
     // Merge fields - highest confidence wins
     for (const [fieldKey, fieldData] of Object.entries(result.fields || {})) {
       const field = fieldData as any;
-      if (!field || field.value === null || field.value === undefined || field.value === '') continue;
+
+      // 🛡️ DEFENSIVE NULL BLOCKING: Skip any null-like values
+      if (!field) {
+        totalNullsBlocked++;
+        continue;
+      }
+
+      // Check for null-like value in field object
+      if (isNullLike(field.value)) {
+        totalNullsBlocked++;
+        continue;
+      }
+
+      // Check for direct null-like value (if field isn't wrapped)
+      if (typeof field !== 'object' && isNullLike(field)) {
+        totalNullsBlocked++;
+        continue;
+      }
 
       const existing = merged.fields[fieldKey];
       const newConfidence = confidenceOrder[field.confidence as keyof typeof confidenceOrder] || 0;
@@ -1806,10 +2148,24 @@ function mergeResults(results: any[]): any {
     }
   }
 
+  // 🛡️ Final sweep: Remove any nulls that slipped through
+  const finalFields: Record<string, any> = {};
+  for (const [key, value] of Object.entries(merged.fields)) {
+    const v = value as any;
+    if (v && !isNullLike(v.value)) {
+      finalFields[key] = v;
+    } else {
+      totalNullsBlocked++;
+    }
+  }
+  merged.fields = finalFields;
+
   // Dedupe sources
   merged.sources = Array.from(new Set(merged.sources));
   merged.total_fields_found = Object.keys(merged.fields).length;
   merged.completion_percentage = Math.round((merged.total_fields_found / 168) * 100);
+
+  console.log(`🛡️ MERGE COMPLETE: ${merged.total_fields_found} fields accepted, ${totalNullsBlocked} nulls BLOCKED`);
 
   return merged;
 }
