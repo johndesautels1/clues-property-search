@@ -1,16 +1,17 @@
 /**
  * Category F: Interior Features (5 fields)
  * Charts:
- * 1. AMENITY HEATMAP - Kitchen/Smart/Fire binary grid
- * 2. FINISH INDEX BAR - Weighted composite score
- * 3. UPLIFT VIOLIN - Features vs $/sqft premium
+ * 1. INTERIOR FEATURES GRID - True interior features from schema #167 + #52/#53
+ * 2. INTERIOR UPGRADES - Quality upgrades from #50, #49, #134, #59
+ * 3. FINISH INDEX BAR - Weighted composite score
+ * 4. UPLIFT VIOLIN - Features vs $/sqft premium
  */
 
 import { motion } from 'framer-motion';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
-import { Check, X } from 'lucide-react';
-import { getIndexColor, PROPERTY_COLORS, getPropertyColor, calcPricePerSqft } from '../chartColors';
+import { Check, X, Flame, Home, Sparkles, PanelTop, Wind, GlassWater, Columns, BookOpen } from 'lucide-react';
+import { PROPERTY_COLORS, getPropertyColor, calcPricePerSqft } from '../chartColors';
 
 interface CategoryFProps {
   properties: Property[];
@@ -21,9 +22,26 @@ function getVal<T>(field: { value: T | null } | undefined): T | null {
   return field?.value ?? null;
 }
 
-// F-1: Amenity Heatmap - Show first 3 properties with P1/P2/P3 colors
-function AmenityHeatmap({ properties }: CategoryFProps) {
-  const features = ['Kitchen', 'Smart', 'Fire', 'Floor', 'Appl'];
+/**
+ * F-1: Interior Features Grid
+ * TRUE interior features from schema:
+ * - Field #167: interior_features (multiselect) - Cathedral Ceiling(s), Walk-In Closet(s),
+ *   Primary Bedroom Main Floor, Open Floor Plan, Crown Molding, Skylight(s), Wet Bar, Built-in Features
+ * - Field #52: fireplace_yn (boolean)
+ * - Field #53: fireplace_count (number)
+ */
+function InteriorFeaturesGrid({ properties, onPropertyClick }: CategoryFProps) {
+  // Define true interior features with icons
+  const features = [
+    { key: 'fireplace', label: 'Fireplace', icon: Flame },
+    { key: 'cathedral', label: 'Cathedral', icon: Home },
+    { key: 'walkIn', label: 'Walk-In', icon: Columns },
+    { key: 'openFloor', label: 'Open Plan', icon: PanelTop },
+    { key: 'skylight', label: 'Skylight', icon: Sparkles },
+    { key: 'wetBar', label: 'Wet Bar', icon: GlassWater },
+    { key: 'crownMold', label: 'Crown', icon: Wind },
+    { key: 'builtIns', label: 'Built-ins', icon: BookOpen },
+  ];
 
   // Take first 3 properties for comparison
   const comparisonProperties = properties.slice(0, 3);
@@ -31,14 +49,26 @@ function AmenityHeatmap({ properties }: CategoryFProps) {
   const data = comparisonProperties.map((p, idx) => {
     const propColor = getPropertyColor(idx);
     const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
+
+    // Get interior features array from Stellar MLS (#167)
+    const interiorFeatures = getVal(p.stellarMLS?.features?.interiorFeatures) || [];
+
+    // Check for each feature (case-insensitive partial match)
+    const hasFeature = (searchTerm: string) =>
+      interiorFeatures.some(f => f.toLowerCase().includes(searchTerm.toLowerCase()));
+
     return {
       id: p.id,
-      address: address.slice(0, 12),
-      kitchen: !!getVal(p.structural?.kitchenFeatures),
-      smart: !!getVal(p.utilities?.smartHomeFeatures),
+      address: address.slice(0, 14),
       fireplace: getVal(p.structural?.fireplaceYn) || false,
-      flooring: !!getVal(p.structural?.flooringType),
-      appliances: (getVal(p.structural?.appliancesIncluded) || []).length > 0,
+      fireplaceCount: getVal(p.structural?.fireplaceCount) || 0,
+      cathedral: hasFeature('cathedral'),
+      walkIn: hasFeature('walk-in') || hasFeature('walkin'),
+      openFloor: hasFeature('open floor'),
+      skylight: hasFeature('skylight'),
+      wetBar: hasFeature('wet bar'),
+      crownMold: hasFeature('crown'),
+      builtIns: hasFeature('built-in') || hasFeature('builtin'),
       color: propColor,
       propertyNum: idx + 1,
     };
@@ -46,67 +76,247 @@ function AmenityHeatmap({ properties }: CategoryFProps) {
 
   return (
     <GlassChart
-      title="Interior Amenity Grid"
-      description={`Feature matrix for ${data.length} properties`}
-      chartId="F-amenity-heatmap"
+      title="Interior Features Grid"
+      description={`True features for ${data.length} properties (Schema #52, #53, #167)`}
+      chartId="F-interior-features"
       color={PROPERTY_COLORS.P1.hex}
     >
       <div className="h-full overflow-auto">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="text-gray-300 font-bold drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
-              <th className="text-left py-1 px-1">Property</th>
-              {features.map(f => (
-                <th key={f} className="text-center py-1 px-1 truncate max-w-[40px]">{f}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((row, i) => (
-              <motion.tr
-                key={row.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: i * 0.05 }}
-                className="border-t border-white/5"
+        {/* Header row with icons */}
+        <div className="grid gap-1 mb-2" style={{ gridTemplateColumns: `100px repeat(${features.length}, 1fr)` }}>
+          <div className="text-xs text-gray-400 font-bold">Property</div>
+          {features.map(f => {
+            const Icon = f.icon;
+            return (
+              <div key={f.key} className="text-center">
+                <Icon className="w-3.5 h-3.5 mx-auto mb-0.5 text-gray-300" />
+                <div className="text-[10px] text-gray-300 font-bold truncate">{f.label}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Data rows */}
+        {data.map((row, i) => (
+          <motion.div
+            key={row.id}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.05 }}
+            className="grid gap-1 items-center border-t border-white/5 py-1.5 cursor-pointer hover:bg-white/5"
+            style={{ gridTemplateColumns: `100px repeat(${features.length}, 1fr)` }}
+            onClick={() => onPropertyClick?.(row.id)}
+          >
+            <div
+              className="text-xs font-bold truncate drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
+              style={{ color: row.color.hex }}
+            >
+              P{row.propertyNum}: {row.address}
+            </div>
+            {[
+              { has: row.fireplace, extra: row.fireplaceCount > 1 ? `(${row.fireplaceCount})` : '' },
+              { has: row.cathedral },
+              { has: row.walkIn },
+              { has: row.openFloor },
+              { has: row.skylight },
+              { has: row.wetBar },
+              { has: row.crownMold },
+              { has: row.builtIns },
+            ].map((cell, j) => (
+              <div
+                key={j}
+                className="h-7 rounded flex items-center justify-center relative"
+                style={{
+                  backgroundColor: cell.has ? row.color.rgba(0.3) : 'rgba(255,255,255,0.05)',
+                  border: cell.has ? `1px solid ${row.color.hex}` : 'none',
+                }}
               >
-                <td
-                  className="py-1.5 px-1 font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
-                  style={{ color: row.color.hex }}
-                >
-                  P{row.propertyNum}: {row.address}
-                </td>
-                {[row.kitchen, row.smart, row.fireplace, row.flooring, row.appliances].map((has, j) => (
-                  <td key={j} className="text-center py-1.5 px-1">
-                    <div
-                      className="w-6 h-6 mx-auto rounded flex items-center justify-center"
-                      style={{
-                        backgroundColor: has ? row.color.rgba(0.3) : 'rgba(255,255,255,0.05)',
-                        border: has ? `1px solid ${row.color.hex}` : 'none',
-                      }}
-                    >
-                      {has ? (
-                        <Check className="w-4 h-4" style={{ color: row.color.hex }} />
-                      ) : (
-                        <X className="w-3 h-3 text-gray-600" />
-                      )}
-                    </div>
-                  </td>
-                ))}
-              </motion.tr>
+                {cell.has ? (
+                  <>
+                    <Check className="w-4 h-4" style={{ color: row.color.hex }} />
+                    {cell.extra && (
+                      <span className="absolute -top-1 -right-1 text-[8px] font-bold" style={{ color: row.color.hex }}>
+                        {cell.extra}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <X className="w-3 h-3 text-gray-600" />
+                )}
+              </div>
             ))}
-          </tbody>
-        </table>
+          </motion.div>
+        ))}
 
         {data.length === 0 && (
-          <div className="text-gray-300 font-medium text-sm text-center py-8 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">No feature data</div>
+          <div className="text-gray-300 font-medium text-sm text-center py-8 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
+            No interior feature data
+          </div>
         )}
       </div>
     </GlassChart>
   );
 }
 
-// F-2: Finish Quality Index - Show first 3 properties with P1/P2/P3 colors
+/**
+ * F-2: Interior Upgrades
+ * Quality upgrades/improvements from schema:
+ * - Field #50: kitchen_features (text) - Executive kitchen, granite, etc.
+ * - Field #49: flooring_type (text) - Hardwood, marble, travertine
+ * - Field #134: smart_home_features (text) - Smart home details
+ * - Field #59: recent_renovations (text) - Renovation descriptions
+ * - Field #48: interior_condition (select) - Excellent, Renovated, etc.
+ */
+function InteriorUpgrades({ properties, onPropertyClick }: CategoryFProps) {
+  // Take first 3 properties for comparison
+  const comparisonProperties = properties.slice(0, 3);
+
+  const data = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
+
+    // Get upgrade fields
+    const kitchenFeatures = getVal(p.structural?.kitchenFeatures) || '';
+    const flooringType = getVal(p.structural?.flooringType) || '';
+    const smartHome = getVal(p.utilities?.smartHomeFeatures) || '';
+    const renovations = getVal(p.structural?.recentRenovations) || '';
+    const condition = getVal(p.structural?.interiorCondition) || '';
+
+    // Calculate upgrade quality scores (0-3 scale: None, Basic, Good, Premium)
+    const getKitchenScore = (k: string): number => {
+      const kLower = k.toLowerCase();
+      if (kLower.includes('executive') || kLower.includes('gourmet') || kLower.includes('chef')) return 3;
+      if (kLower.includes('granite') || kLower.includes('quartz') || kLower.includes('stainless')) return 2;
+      if (k.length > 0) return 1;
+      return 0;
+    };
+
+    const getFlooringScore = (f: string): number => {
+      const fLower = f.toLowerCase();
+      if (fLower.includes('marble') || fLower.includes('travertine') || fLower.includes('hardwood')) return 3;
+      if (fLower.includes('tile') || fLower.includes('laminate') || fLower.includes('wood')) return 2;
+      if (f.length > 0) return 1;
+      return 0;
+    };
+
+    const getSmartScore = (s: string): number => {
+      const sLower = s.toLowerCase();
+      if (sLower.includes('full') || sLower.includes('complete') || sLower.includes('integrated')) return 3;
+      if (sLower.includes('thermostat') || sLower.includes('security') || sLower.includes('lighting')) return 2;
+      if (s.length > 0) return 1;
+      return 0;
+    };
+
+    const getConditionScore = (c: string): number => {
+      const cLower = c.toLowerCase();
+      if (cLower.includes('excellent') || cLower.includes('renovated')) return 3;
+      if (cLower.includes('good')) return 2;
+      if (cLower.includes('fair')) return 1;
+      return 0;
+    };
+
+    return {
+      id: p.id,
+      address: address.slice(0, 14),
+      kitchen: { score: getKitchenScore(kitchenFeatures), detail: kitchenFeatures },
+      flooring: { score: getFlooringScore(flooringType), detail: flooringType },
+      smart: { score: getSmartScore(smartHome), detail: smartHome },
+      condition: { score: getConditionScore(condition), detail: condition },
+      renovations: renovations,
+      color: propColor,
+      propertyNum: idx + 1,
+    };
+  });
+
+  const scoreLabels = ['None', 'Basic', 'Good', 'Premium'];
+  const scoreColors = ['#6B7280', '#F59E0B', '#3B82F6', '#10B981'];
+
+  return (
+    <GlassChart
+      title="Interior Upgrades"
+      description={`Quality upgrades for ${data.length} properties (Schema #48, #49, #50, #59, #134)`}
+      chartId="F-interior-upgrades"
+      color={PROPERTY_COLORS.P2.hex}
+    >
+      <div className="h-full flex flex-col justify-center space-y-3 px-1">
+        {data.map((row, i) => (
+          <motion.div
+            key={row.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className="space-y-1.5 cursor-pointer hover:bg-white/5 rounded p-1"
+            onClick={() => onPropertyClick?.(row.id)}
+          >
+            <div
+              className="text-xs font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
+              style={{ color: row.color.hex }}
+            >
+              P{row.propertyNum}: {row.address}
+            </div>
+
+            <div className="grid grid-cols-4 gap-1">
+              {[
+                { label: 'Kitchen', data: row.kitchen },
+                { label: 'Flooring', data: row.flooring },
+                { label: 'Smart', data: row.smart },
+                { label: 'Condition', data: row.condition },
+              ].map((item) => (
+                <div key={item.label} className="text-center group relative">
+                  <div className="text-[9px] text-gray-400 mb-0.5">{item.label}</div>
+                  <div
+                    className="h-5 rounded flex items-center justify-center text-[10px] font-bold"
+                    style={{
+                      backgroundColor: `${scoreColors[item.data.score]}30`,
+                      border: `1px solid ${scoreColors[item.data.score]}`,
+                      color: scoreColors[item.data.score],
+                    }}
+                  >
+                    {scoreLabels[item.data.score]}
+                  </div>
+                  {/* Tooltip with detail */}
+                  {item.data.detail && (
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-black/95 px-2 py-1 rounded text-[10px] text-white whitespace-nowrap max-w-[150px] truncate">
+                      {item.data.detail}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {row.renovations && (
+              <div className="text-[10px] text-cyan-400 truncate" title={row.renovations}>
+                Reno: {row.renovations}
+              </div>
+            )}
+          </motion.div>
+        ))}
+
+        {data.length === 0 && (
+          <div className="text-gray-300 font-medium text-sm text-center drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
+            No upgrade data
+          </div>
+        )}
+
+        {/* Legend */}
+        <div className="flex justify-center gap-3 pt-2 border-t border-white/10">
+          {scoreLabels.map((label, i) => (
+            <div key={label} className="flex items-center gap-1">
+              <div
+                className="w-2.5 h-2.5 rounded-sm"
+                style={{ backgroundColor: scoreColors[i] }}
+              />
+              <span className="text-[10px] text-gray-400">{label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </GlassChart>
+  );
+}
+
+// F-3: Finish Quality Index - Show first 3 properties with P1/P2/P3 colors
+// Uses TRUE features from schema: #52 fireplace, #167 interior_features, #50 kitchen, #134 smart
 function FinishQualityIndex({ properties }: CategoryFProps) {
   // Take first 3 properties for comparison
   const comparisonProperties = properties.slice(0, 3);
@@ -114,17 +324,34 @@ function FinishQualityIndex({ properties }: CategoryFProps) {
   const scores = comparisonProperties.map((p, idx) => {
     const propColor = getPropertyColor(idx);
     let score = 0;
-    if (getVal(p.structural?.kitchenFeatures)) score += 25;
-    if (getVal(p.utilities?.smartHomeFeatures)) score += 20;
-    if (getVal(p.structural?.fireplaceYn)) score += 15;
-    if (getVal(p.structural?.flooringType)) score += 20;
-    if ((getVal(p.structural?.appliancesIncluded) || []).length > 3) score += 20;
+
+    // Get TRUE interior features from #167
+    const interiorFeatures = getVal(p.stellarMLS?.features?.interiorFeatures) || [];
+
+    // Score based on TRUE features (not basics like "has kitchen")
+    if (getVal(p.structural?.fireplaceYn)) score += 15;  // #52
+    if (interiorFeatures.some(f => f.toLowerCase().includes('cathedral'))) score += 12;
+    if (interiorFeatures.some(f => f.toLowerCase().includes('walk-in'))) score += 10;
+    if (interiorFeatures.some(f => f.toLowerCase().includes('open floor'))) score += 12;
+    if (interiorFeatures.some(f => f.toLowerCase().includes('crown'))) score += 8;
+    if (interiorFeatures.some(f => f.toLowerCase().includes('skylight'))) score += 10;
+    if (interiorFeatures.some(f => f.toLowerCase().includes('wet bar'))) score += 8;
+    if (interiorFeatures.some(f => f.toLowerCase().includes('built-in'))) score += 10;
+
+    // Upgrade quality bonuses from #50, #134
+    const kitchen = (getVal(p.structural?.kitchenFeatures) || '').toLowerCase();
+    if (kitchen.includes('executive') || kitchen.includes('gourmet')) score += 15;
+    else if (kitchen.includes('granite') || kitchen.includes('quartz')) score += 8;
+
+    const smart = getVal(p.utilities?.smartHomeFeatures) || '';
+    if (smart.length > 0) score += 10;
+
     const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
 
     return {
       id: p.id,
       address: address.slice(0, 12),
-      score,
+      score: Math.min(score, 100), // Cap at 100
       color: propColor,
       propertyNum: idx + 1,
     };
@@ -195,17 +422,20 @@ function FinishQualityIndex({ properties }: CategoryFProps) {
   );
 }
 
-// F-3: Interior Uplift (feature count vs price)
+// F-4: Interior Uplift (feature count vs price)
+// Uses TRUE features from schema: #52 fireplace, #167 interior_features count
 function InteriorUplift({ properties }: CategoryFProps) {
-  // Group by feature count
+  // Group by TRUE feature count
   const groups = new Map<number, number[]>();
   properties.forEach(p => {
     let count = 0;
-    if (getVal(p.structural?.kitchenFeatures)) count++;
-    if (getVal(p.utilities?.smartHomeFeatures)) count++;
+
+    // Count TRUE interior features from #167
+    const interiorFeatures = getVal(p.stellarMLS?.features?.interiorFeatures) || [];
+    count += interiorFeatures.length;
+
+    // Add fireplace from #52
     if (getVal(p.structural?.fireplaceYn)) count++;
-    if (getVal(p.structural?.flooringType)) count++;
-    if ((getVal(p.structural?.appliancesIncluded) || []).length > 0) count++;
 
     const pps = calcPricePerSqft(
       getVal(p.address?.pricePerSqft),
@@ -277,7 +507,8 @@ function InteriorUplift({ properties }: CategoryFProps) {
 export default function CategoryF({ properties, onPropertyClick }: CategoryFProps) {
   return (
     <>
-      <AmenityHeatmap properties={properties} onPropertyClick={onPropertyClick} />
+      <InteriorFeaturesGrid properties={properties} onPropertyClick={onPropertyClick} />
+      <InteriorUpgrades properties={properties} onPropertyClick={onPropertyClick} />
       <FinishQualityIndex properties={properties} />
       <InteriorUplift properties={properties} />
     </>

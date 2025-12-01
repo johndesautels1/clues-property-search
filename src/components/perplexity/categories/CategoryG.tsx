@@ -1,16 +1,17 @@
 /**
  * Category G: Exterior Features (5 fields)
  * Charts:
- * 1. FEATURE MATRIX - Pool/Deck/EV/Beach heat grid
- * 2. CURB APPEAL RADAR - Multi-axis exterior scores
- * 3. OUTDOOR ROI BUBBLES - Feature count vs premium
+ * 1. EXTERIOR FEATURES GRID - True exterior features from schema #168, #54-56
+ * 2. EXTERIOR UPGRADES - Quality upgrades from #133, #130, #168
+ * 3. CURB APPEAL RADAR - Multi-axis exterior scores
+ * 4. OUTDOOR ROI BUBBLES - Feature count vs premium
  */
 
 import { motion } from 'framer-motion';
 import { Radar } from 'react-chartjs-2';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
-import { Check, X, Waves, Zap, TreeDeciduous, Car } from 'lucide-react';
+import { Check, X, Waves, Zap, TreeDeciduous, Car, Home, Anchor, UtensilsCrossed, ShowerHead, Shield, Droplets, Sun, BatteryCharging } from 'lucide-react';
 import { PROPERTY_COLORS, getPropertyColor, calcPricePerSqft } from '../chartColors';
 
 interface CategoryGProps {
@@ -22,13 +23,26 @@ function getVal<T>(field: { value: T | null } | undefined): T | null {
   return field?.value ?? null;
 }
 
-// G-1: Exterior Feature Matrix - Show first 3 properties with P1/P2/P3 colors
-function ExteriorFeatureMatrix({ properties }: CategoryGProps) {
+/**
+ * G-1: Exterior Features Grid
+ * TRUE exterior features from schema:
+ * - Field #168: exterior_features (multiselect) - Balcony, Outdoor Shower, Sidewalk,
+ *   Sliding Doors, Hurricane Shutters, Sprinkler System, Outdoor Kitchen, Private Dock
+ * - Field #54: pool_yn (boolean)
+ * - Field #55: pool_type (select)
+ * - Field #56: deck_patio (text)
+ */
+function ExteriorFeaturesGrid({ properties, onPropertyClick }: CategoryGProps) {
+  // Define true exterior features with icons
   const features = [
     { key: 'pool', label: 'Pool', icon: Waves },
-    { key: 'deck', label: 'Deck', icon: TreeDeciduous },
-    { key: 'ev', label: 'EV', icon: Zap },
-    { key: 'garage', label: 'Gar', icon: Car },
+    { key: 'deck', label: 'Deck/Patio', icon: TreeDeciduous },
+    { key: 'dock', label: 'Dock', icon: Anchor },
+    { key: 'balcony', label: 'Balcony', icon: Home },
+    { key: 'outKitchen', label: 'Out Kitchen', icon: UtensilsCrossed },
+    { key: 'outShower', label: 'Out Shower', icon: ShowerHead },
+    { key: 'hurricane', label: 'Shutters', icon: Shield },
+    { key: 'sprinkler', label: 'Sprinkler', icon: Droplets },
   ];
 
   // Take first 3 properties for comparison
@@ -37,13 +51,27 @@ function ExteriorFeatureMatrix({ properties }: CategoryGProps) {
   const data = comparisonProperties.map((p, idx) => {
     const propColor = getPropertyColor(idx);
     const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
+
+    // Get exterior features array from Stellar MLS (#168)
+    const exteriorFeatures = getVal(p.stellarMLS?.features?.exteriorFeatures) || [];
+
+    // Check for each feature (case-insensitive partial match)
+    const hasFeature = (searchTerm: string) =>
+      exteriorFeatures.some(f => f.toLowerCase().includes(searchTerm.toLowerCase()));
+
     return {
       id: p.id,
-      address: address.slice(0, 12),
+      address: address.slice(0, 14),
       pool: getVal(p.structural?.poolYn) || false,
+      poolType: getVal(p.structural?.poolType) || '',
       deck: !!getVal(p.structural?.deckPatio),
-      ev: getVal(p.utilities?.evChargingYn) === 'Yes',
-      garage: (getVal(p.details?.garageSpaces) || 0) > 0,
+      deckDetail: getVal(p.structural?.deckPatio) || '',
+      dock: hasFeature('dock'),
+      balcony: hasFeature('balcony'),
+      outKitchen: hasFeature('outdoor kitchen'),
+      outShower: hasFeature('outdoor shower'),
+      hurricane: hasFeature('hurricane') || hasFeature('shutter'),
+      sprinkler: hasFeature('sprinkler'),
       color: propColor,
       propertyNum: idx + 1,
     };
@@ -51,71 +79,267 @@ function ExteriorFeatureMatrix({ properties }: CategoryGProps) {
 
   return (
     <GlassChart
-      title="Exterior Feature Matrix"
-      description={`Outdoor amenities for ${data.length} properties`}
-      chartId="G-feature-matrix"
+      title="Exterior Features Grid"
+      description={`True features for ${data.length} properties (Schema #54, #55, #56, #168)`}
+      chartId="G-exterior-features"
       color={PROPERTY_COLORS.P1.hex}
     >
-      <div className="h-full flex flex-col justify-center">
-        <div className="grid gap-2">
-          {/* Header row */}
-          <div className="grid grid-cols-5 gap-1 text-xs text-gray-300 font-bold drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
-            <div></div>
-            {features.map(f => {
-              const Icon = f.icon;
-              return (
-                <div key={f.key} className="text-center">
-                  <Icon className="w-4 h-4 mx-auto mb-1" />
-                  {f.label}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Data rows */}
-          {data.map((row, i) => (
-            <motion.div
-              key={row.id}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="grid grid-cols-5 gap-1 items-center"
-            >
-              <div
-                className="text-xs font-bold truncate drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
-                style={{ color: row.color.hex }}
-              >
-                P{row.propertyNum}: {row.address}
+      <div className="h-full overflow-auto">
+        {/* Header row with icons */}
+        <div className="grid gap-1 mb-2" style={{ gridTemplateColumns: `100px repeat(${features.length}, 1fr)` }}>
+          <div className="text-xs text-gray-400 font-bold">Property</div>
+          {features.map(f => {
+            const Icon = f.icon;
+            return (
+              <div key={f.key} className="text-center">
+                <Icon className="w-3.5 h-3.5 mx-auto mb-0.5 text-gray-300" />
+                <div className="text-[9px] text-gray-300 font-bold truncate">{f.label}</div>
               </div>
-              {[row.pool, row.deck, row.ev, row.garage].map((has, j) => (
-                <div
-                  key={j}
-                  className="h-8 rounded flex items-center justify-center"
-                  style={{
-                    backgroundColor: has ? row.color.rgba(0.3) : 'rgba(255,255,255,0.05)',
-                    border: has ? `1px solid ${row.color.hex}` : 'none',
-                  }}
-                >
-                  {has ? (
-                    <Check className="w-4 h-4" style={{ color: row.color.hex }} />
-                  ) : (
-                    <X className="w-3 h-3 text-gray-600" />
-                  )}
-                </div>
-              ))}
-            </motion.div>
-          ))}
+            );
+          })}
         </div>
 
+        {/* Data rows */}
+        {data.map((row, i) => (
+          <motion.div
+            key={row.id}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.05 }}
+            className="grid gap-1 items-center border-t border-white/5 py-1.5 cursor-pointer hover:bg-white/5"
+            style={{ gridTemplateColumns: `100px repeat(${features.length}, 1fr)` }}
+            onClick={() => onPropertyClick?.(row.id)}
+          >
+            <div
+              className="text-xs font-bold truncate drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
+              style={{ color: row.color.hex }}
+            >
+              P{row.propertyNum}: {row.address}
+            </div>
+            {[
+              { has: row.pool, extra: row.poolType ? `(${row.poolType.slice(0, 6)})` : '' },
+              { has: row.deck, extra: '' },
+              { has: row.dock },
+              { has: row.balcony },
+              { has: row.outKitchen },
+              { has: row.outShower },
+              { has: row.hurricane },
+              { has: row.sprinkler },
+            ].map((cell, j) => (
+              <div
+                key={j}
+                className="h-7 rounded flex items-center justify-center relative group"
+                style={{
+                  backgroundColor: cell.has ? row.color.rgba(0.3) : 'rgba(255,255,255,0.05)',
+                  border: cell.has ? `1px solid ${row.color.hex}` : 'none',
+                }}
+              >
+                {cell.has ? (
+                  <>
+                    <Check className="w-4 h-4" style={{ color: row.color.hex }} />
+                    {cell.extra && (
+                      <span className="absolute -top-1 -right-1 text-[7px] font-bold" style={{ color: row.color.hex }}>
+                        {cell.extra}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <X className="w-3 h-3 text-gray-600" />
+                )}
+              </div>
+            ))}
+          </motion.div>
+        ))}
+
         {data.length === 0 && (
-          <div className="text-gray-300 font-medium text-sm text-center drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">No exterior data</div>
+          <div className="text-gray-300 font-medium text-sm text-center py-8 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
+            No exterior feature data
+          </div>
         )}
       </div>
     </GlassChart>
   );
 }
 
-// G-2: Curb Appeal Radar - Show first 3 properties with P1/P2/P3 colors
+/**
+ * G-2: Exterior Upgrades
+ * Quality upgrades/improvements from schema:
+ * - Field #133: ev_charging (text) - EV charging station
+ * - Field #130: solar_potential (text) - Solar panels/potential
+ * - Field #168: exterior_features (multiselect) - for screened porch, sprinkler
+ * - Field #57: fence (text)
+ * - Field #58: landscaping (text)
+ */
+function ExteriorUpgrades({ properties, onPropertyClick }: CategoryGProps) {
+  // Take first 3 properties for comparison
+  const comparisonProperties = properties.slice(0, 3);
+
+  const data = comparisonProperties.map((p, idx) => {
+    const propColor = getPropertyColor(idx);
+    const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
+
+    // Get upgrade fields
+    const evCharging = getVal(p.utilities?.evChargingYn) || '';
+    const solarPotential = getVal(p.utilities?.solarPotential) || '';
+    const fence = getVal(p.structural?.fence) || '';
+    const landscaping = getVal(p.structural?.landscaping) || '';
+
+    // Get exterior features array from Stellar MLS (#168)
+    const exteriorFeatures = getVal(p.stellarMLS?.features?.exteriorFeatures) || [];
+    const hasFeature = (searchTerm: string) =>
+      exteriorFeatures.some(f => f.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    // Calculate upgrade quality scores (0-3 scale: None, Basic, Good, Premium)
+    const getEvScore = (ev: string): number => {
+      const evLower = ev.toLowerCase();
+      if (evLower.includes('tesla') || evLower.includes('level 2') || evLower.includes('fast')) return 3;
+      if (evLower === 'yes' || evLower.includes('charger') || evLower.includes('outlet')) return 2;
+      if (ev.length > 0 && evLower !== 'no' && evLower !== 'none') return 1;
+      return 0;
+    };
+
+    const getSolarScore = (s: string): number => {
+      const sLower = s.toLowerCase();
+      if (sLower.includes('installed') || sLower.includes('owned') || sLower.includes('panels')) return 3;
+      if (sLower.includes('excellent') || sLower.includes('high')) return 2;
+      if (s.length > 0 && sLower !== 'none' && sLower !== 'low') return 1;
+      return 0;
+    };
+
+    const getFenceScore = (f: string): number => {
+      const fLower = f.toLowerCase();
+      if (fLower.includes('wrought iron') || fLower.includes('brick') || fLower.includes('stone')) return 3;
+      if (fLower.includes('vinyl') || fLower.includes('aluminum') || fLower.includes('wood')) return 2;
+      if (f.length > 0 && fLower !== 'none') return 1;
+      return 0;
+    };
+
+    const getLandscapeScore = (l: string): number => {
+      const lLower = l.toLowerCase();
+      if (lLower.includes('professional') || lLower.includes('mature') || lLower.includes('tropical')) return 3;
+      if (lLower.includes('maintained') || lLower.includes('irrigation')) return 2;
+      if (l.length > 0 && lLower !== 'none') return 1;
+      return 0;
+    };
+
+    return {
+      id: p.id,
+      address: address.slice(0, 14),
+      ev: { score: getEvScore(evCharging), detail: evCharging },
+      solar: { score: getSolarScore(solarPotential), detail: solarPotential },
+      fence: { score: getFenceScore(fence), detail: fence },
+      landscaping: { score: getLandscapeScore(landscaping), detail: landscaping },
+      hasSprinkler: hasFeature('sprinkler'),
+      hasHurricane: hasFeature('hurricane') || hasFeature('shutter'),
+      color: propColor,
+      propertyNum: idx + 1,
+    };
+  });
+
+  const scoreLabels = ['None', 'Basic', 'Good', 'Premium'];
+  const scoreColors = ['#6B7280', '#F59E0B', '#3B82F6', '#10B981'];
+
+  return (
+    <GlassChart
+      title="Exterior Upgrades"
+      description={`Quality upgrades for ${data.length} properties (Schema #57, #58, #130, #133, #168)`}
+      chartId="G-exterior-upgrades"
+      color={PROPERTY_COLORS.P2.hex}
+    >
+      <div className="h-full flex flex-col justify-center space-y-3 px-1">
+        {data.map((row, i) => (
+          <motion.div
+            key={row.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className="space-y-1.5 cursor-pointer hover:bg-white/5 rounded p-1"
+            onClick={() => onPropertyClick?.(row.id)}
+          >
+            <div className="flex justify-between items-center">
+              <div
+                className="text-xs font-bold drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]"
+                style={{ color: row.color.hex }}
+              >
+                P{row.propertyNum}: {row.address}
+              </div>
+              {/* Quick badges for special features */}
+              <div className="flex gap-1">
+                {row.hasSprinkler && (
+                  <div className="flex items-center gap-0.5 px-1 py-0.5 bg-blue-500/20 rounded text-[8px] text-blue-400">
+                    <Droplets className="w-2.5 h-2.5" />
+                  </div>
+                )}
+                {row.hasHurricane && (
+                  <div className="flex items-center gap-0.5 px-1 py-0.5 bg-orange-500/20 rounded text-[8px] text-orange-400">
+                    <Shield className="w-2.5 h-2.5" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-4 gap-1">
+              {[
+                { label: 'EV Charging', data: row.ev, icon: BatteryCharging },
+                { label: 'Solar', data: row.solar, icon: Sun },
+                { label: 'Fencing', data: row.fence, icon: Shield },
+                { label: 'Landscape', data: row.landscaping, icon: TreeDeciduous },
+              ].map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div key={item.label} className="text-center group relative">
+                    <div className="flex items-center justify-center gap-0.5 text-[9px] text-gray-400 mb-0.5">
+                      <Icon className="w-2.5 h-2.5" />
+                      <span className="truncate">{item.label}</span>
+                    </div>
+                    <div
+                      className="h-5 rounded flex items-center justify-center text-[10px] font-bold"
+                      style={{
+                        backgroundColor: `${scoreColors[item.data.score]}30`,
+                        border: `1px solid ${scoreColors[item.data.score]}`,
+                        color: scoreColors[item.data.score],
+                      }}
+                    >
+                      {scoreLabels[item.data.score]}
+                    </div>
+                    {/* Tooltip with detail */}
+                    {item.data.detail && (
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-black/95 px-2 py-1 rounded text-[10px] text-white whitespace-nowrap max-w-[150px] truncate">
+                        {item.data.detail}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        ))}
+
+        {data.length === 0 && (
+          <div className="text-gray-300 font-medium text-sm text-center drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">
+            No upgrade data
+          </div>
+        )}
+
+        {/* Legend */}
+        <div className="flex justify-center gap-3 pt-2 border-t border-white/10">
+          {scoreLabels.map((label, i) => (
+            <div key={label} className="flex items-center gap-1">
+              <div
+                className="w-2.5 h-2.5 rounded-sm"
+                style={{ backgroundColor: scoreColors[i] }}
+              />
+              <span className="text-[10px] text-gray-400">{label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </GlassChart>
+  );
+}
+
+// G-3: Curb Appeal Radar - Show first 3 properties with P1/P2/P3 colors
+// Uses TRUE features from schema: #54 pool, #56 deck, #57 fence, #58 landscaping, #131 view
 function CurbAppealRadar({ properties }: CategoryGProps) {
   // Take first 3 properties for comparison
   const comparisonProperties = properties.slice(0, 3);
@@ -190,7 +414,8 @@ function CurbAppealRadar({ properties }: CategoryGProps) {
   );
 }
 
-// G-3: Outdoor ROI Bubbles - Show first 3 properties with P1/P2/P3 colors
+// G-4: Outdoor ROI Bubbles - Show first 3 properties with P1/P2/P3 colors
+// Uses TRUE features from schema: #54 pool, #56 deck, #168 exterior_features count
 function OutdoorROIBubbles({ properties, onPropertyClick }: CategoryGProps) {
   // Take first 3 properties for comparison
   const comparisonProperties = properties.slice(0, 3);
@@ -198,10 +423,14 @@ function OutdoorROIBubbles({ properties, onPropertyClick }: CategoryGProps) {
   const bubbles = comparisonProperties.map((p, idx) => {
     const propColor = getPropertyColor(idx);
     let featureCount = 0;
-    if (getVal(p.structural?.poolYn)) featureCount++;
-    if (getVal(p.structural?.deckPatio)) featureCount++;
-    if (getVal(p.utilities?.evChargingYn) === 'Yes') featureCount++;
-    if (getVal(p.structural?.landscaping)) featureCount++;
+
+    // Count TRUE exterior features from #168
+    const exteriorFeatures = getVal(p.stellarMLS?.features?.exteriorFeatures) || [];
+    featureCount += exteriorFeatures.length;
+
+    // Add standard exterior features from schema
+    if (getVal(p.structural?.poolYn)) featureCount++;  // #54
+    if (getVal(p.structural?.deckPatio)) featureCount++;  // #56
 
     const pps = calcPricePerSqft(
       getVal(p.address?.pricePerSqft),
@@ -316,7 +545,8 @@ function OutdoorROIBubbles({ properties, onPropertyClick }: CategoryGProps) {
 export default function CategoryG({ properties, onPropertyClick }: CategoryGProps) {
   return (
     <>
-      <ExteriorFeatureMatrix properties={properties} onPropertyClick={onPropertyClick} />
+      <ExteriorFeaturesGrid properties={properties} onPropertyClick={onPropertyClick} />
+      <ExteriorUpgrades properties={properties} onPropertyClick={onPropertyClick} />
       <CurbAppealRadar properties={properties} />
       <OutdoorROIBubbles properties={properties} onPropertyClick={onPropertyClick} />
     </>
