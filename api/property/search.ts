@@ -84,6 +84,348 @@ function valuesAreSemanticallySame(val1: any, val2: any): boolean {
 }
 
 // ============================================
+// COMPLETE TYPE MAP - ALL 168 FIELDS from fields-schema.ts
+// Maps EVERY field key to its expected type for validation and coercion
+// 336 total entries (168 numbered + 168 unnumbered key variants)
+// ============================================
+type FieldType = 'text' | 'number' | 'boolean' | 'currency' | 'percentage' | 'date' | 'select' | 'multiselect';
+const FIELD_TYPE_MAP: Record<string, FieldType> = {
+  // ================================================================
+  // GROUP 1: Address & Identity (Fields 1-9)
+  // ================================================================
+  '1_full_address': 'text', 'full_address': 'text',
+  '2_mls_primary': 'text', 'mls_primary': 'text',
+  '3_mls_secondary': 'text', 'mls_secondary': 'text',
+  '4_listing_status': 'select', 'listing_status': 'select',
+  '5_listing_date': 'date', 'listing_date': 'date',
+  '6_neighborhood': 'text', 'neighborhood': 'text',
+  '7_county': 'text', 'county': 'text',
+  '8_zip_code': 'text', 'zip_code': 'text',
+  '9_parcel_id': 'text', 'parcel_id': 'text',
+
+  // ================================================================
+  // GROUP 2: Pricing & Value (Fields 10-16)
+  // ================================================================
+  '10_listing_price': 'currency', 'listing_price': 'currency',
+  '11_price_per_sqft': 'currency', 'price_per_sqft': 'currency',
+  '12_market_value_estimate': 'currency', 'market_value_estimate': 'currency',
+  '13_last_sale_date': 'date', 'last_sale_date': 'date',
+  '14_last_sale_price': 'currency', 'last_sale_price': 'currency',
+  '15_assessed_value': 'currency', 'assessed_value': 'currency',
+  '16_redfin_estimate': 'currency', 'redfin_estimate': 'currency',
+
+  // ================================================================
+  // GROUP 3: Property Basics (Fields 17-29)
+  // ================================================================
+  '17_bedrooms': 'number', 'bedrooms': 'number',
+  '18_full_bathrooms': 'number', 'full_bathrooms': 'number',
+  '19_half_bathrooms': 'number', 'half_bathrooms': 'number',
+  '20_total_bathrooms': 'number', 'total_bathrooms': 'number',
+  '21_living_sqft': 'number', 'living_sqft': 'number',
+  '22_total_sqft_under_roof': 'number', 'total_sqft_under_roof': 'number',
+  '23_lot_size_sqft': 'number', 'lot_size_sqft': 'number',
+  '24_lot_size_acres': 'number', 'lot_size_acres': 'number',
+  '25_year_built': 'number', 'year_built': 'number',
+  '26_property_type': 'select', 'property_type': 'select',
+  '27_stories': 'number', 'stories': 'number',
+  '28_garage_spaces': 'number', 'garage_spaces': 'number',
+  '29_parking_total': 'text', 'parking_total': 'text',
+
+  // ================================================================
+  // GROUP 4: HOA & Taxes (Fields 30-38)
+  // ================================================================
+  '30_hoa_yn': 'boolean', 'hoa_yn': 'boolean',
+  '31_hoa_fee_annual': 'currency', 'hoa_fee_annual': 'currency',
+  '32_hoa_name': 'text', 'hoa_name': 'text',
+  '33_hoa_includes': 'text', 'hoa_includes': 'text',
+  '34_ownership_type': 'select', 'ownership_type': 'select',
+  '35_annual_taxes': 'currency', 'annual_taxes': 'currency',
+  '36_tax_year': 'number', 'tax_year': 'number',
+  '37_property_tax_rate': 'percentage', 'property_tax_rate': 'percentage',
+  '38_tax_exemptions': 'text', 'tax_exemptions': 'text',
+
+  // ================================================================
+  // GROUP 5: Structure & Systems (Fields 39-48)
+  // ================================================================
+  '39_roof_type': 'select', 'roof_type': 'select',
+  '40_roof_age_est': 'text', 'roof_age_est': 'text',
+  '41_exterior_material': 'select', 'exterior_material': 'select',
+  '42_foundation': 'select', 'foundation': 'select',
+  '43_water_heater_type': 'text', 'water_heater_type': 'text',
+  '44_garage_type': 'text', 'garage_type': 'text',
+  '45_hvac_type': 'text', 'hvac_type': 'text',
+  '46_hvac_age': 'text', 'hvac_age': 'text',
+  '47_laundry_type': 'text', 'laundry_type': 'text',
+  '48_interior_condition': 'select', 'interior_condition': 'select',
+
+  // ================================================================
+  // GROUP 6: Interior Features (Fields 49-53)
+  // ================================================================
+  '49_flooring_type': 'text', 'flooring_type': 'text',
+  '50_kitchen_features': 'text', 'kitchen_features': 'text',
+  '51_appliances_included': 'multiselect', 'appliances_included': 'multiselect',
+  '52_fireplace_yn': 'boolean', 'fireplace_yn': 'boolean',
+  '53_fireplace_count': 'number', 'fireplace_count': 'number',
+
+  // ================================================================
+  // GROUP 7: Exterior Features (Fields 54-58)
+  // ================================================================
+  '54_pool_yn': 'boolean', 'pool_yn': 'boolean',
+  '55_pool_type': 'select', 'pool_type': 'select',
+  '56_deck_patio': 'text', 'deck_patio': 'text',
+  '57_fence': 'text', 'fence': 'text',
+  '58_landscaping': 'text', 'landscaping': 'text',
+
+  // ================================================================
+  // GROUP 8: Permits & Renovations (Fields 59-62)
+  // ================================================================
+  '59_recent_renovations': 'text', 'recent_renovations': 'text',
+  '60_permit_history_roof': 'text', 'permit_history_roof': 'text',
+  '61_permit_history_hvac': 'text', 'permit_history_hvac': 'text',
+  '62_permit_history_other': 'text', 'permit_history_other': 'text',
+
+  // ================================================================
+  // GROUP 9: Assigned Schools (Fields 63-73)
+  // ================================================================
+  '63_school_district': 'text', 'school_district': 'text',
+  '64_elevation_feet': 'number', 'elevation_feet': 'number',
+  '65_elementary_school': 'text', 'elementary_school': 'text',
+  '66_elementary_rating': 'text', 'elementary_rating': 'text',
+  '67_elementary_distance_mi': 'number', 'elementary_distance_mi': 'number',
+  '68_middle_school': 'text', 'middle_school': 'text',
+  '69_middle_rating': 'text', 'middle_rating': 'text',
+  '70_middle_distance_mi': 'number', 'middle_distance_mi': 'number',
+  '71_high_school': 'text', 'high_school': 'text',
+  '72_high_rating': 'text', 'high_rating': 'text',
+  '73_high_distance_mi': 'number', 'high_distance_mi': 'number',
+
+  // ================================================================
+  // GROUP 10: Location Scores (Fields 74-82)
+  // ================================================================
+  '74_walk_score': 'number', 'walk_score': 'number',
+  '75_transit_score': 'number', 'transit_score': 'number',
+  '76_bike_score': 'number', 'bike_score': 'number',
+  '77_safety_score': 'number', 'safety_score': 'number',
+  '78_noise_level': 'text', 'noise_level': 'text',
+  '79_traffic_level': 'text', 'traffic_level': 'text',
+  '80_walkability_description': 'text', 'walkability_description': 'text',
+  '81_public_transit_access': 'text', 'public_transit_access': 'text',
+  '82_commute_to_city_center': 'text', 'commute_to_city_center': 'text',
+
+  // ================================================================
+  // GROUP 11: Distances & Amenities (Fields 83-87)
+  // ================================================================
+  '83_distance_grocery_mi': 'number', 'distance_grocery_mi': 'number',
+  '84_distance_hospital_mi': 'number', 'distance_hospital_mi': 'number',
+  '85_distance_airport_mi': 'number', 'distance_airport_mi': 'number',
+  '86_distance_park_mi': 'number', 'distance_park_mi': 'number',
+  '87_distance_beach_mi': 'number', 'distance_beach_mi': 'number',
+
+  // ================================================================
+  // GROUP 12: Safety & Crime (Fields 88-90)
+  // ================================================================
+  '88_violent_crime_index': 'text', 'violent_crime_index': 'text',
+  '89_property_crime_index': 'text', 'property_crime_index': 'text',
+  '90_neighborhood_safety_rating': 'text', 'neighborhood_safety_rating': 'text',
+
+  // ================================================================
+  // GROUP 13: Market & Investment Data (Fields 91-103)
+  // ================================================================
+  '91_median_home_price_neighborhood': 'currency', 'median_home_price_neighborhood': 'currency',
+  '92_price_per_sqft_recent_avg': 'currency', 'price_per_sqft_recent_avg': 'currency',
+  '93_price_to_rent_ratio': 'number', 'price_to_rent_ratio': 'number',
+  '94_price_vs_median_percent': 'percentage', 'price_vs_median_percent': 'percentage',
+  '95_days_on_market_avg': 'number', 'days_on_market_avg': 'number',
+  '96_inventory_surplus': 'text', 'inventory_surplus': 'text',
+  '97_insurance_est_annual': 'currency', 'insurance_est_annual': 'currency',
+  '98_rental_estimate_monthly': 'currency', 'rental_estimate_monthly': 'currency',
+  '99_rental_yield_est': 'percentage', 'rental_yield_est': 'percentage',
+  '100_vacancy_rate_neighborhood': 'percentage', 'vacancy_rate_neighborhood': 'percentage',
+  '101_cap_rate_est': 'percentage', 'cap_rate_est': 'percentage',
+  '102_financing_terms': 'text', 'financing_terms': 'text',
+  '103_comparable_sales': 'text', 'comparable_sales': 'text',
+
+  // ================================================================
+  // GROUP 14: Utilities & Connectivity (Fields 104-116)
+  // ================================================================
+  '104_electric_provider': 'text', 'electric_provider': 'text',
+  '105_avg_electric_bill': 'text', 'avg_electric_bill': 'text',
+  '106_water_provider': 'text', 'water_provider': 'text',
+  '107_avg_water_bill': 'text', 'avg_water_bill': 'text',
+  '108_sewer_provider': 'text', 'sewer_provider': 'text',
+  '109_natural_gas': 'text', 'natural_gas': 'text',
+  '110_trash_provider': 'text', 'trash_provider': 'text',
+  '111_internet_providers_top3': 'text', 'internet_providers_top3': 'text',
+  '112_max_internet_speed': 'text', 'max_internet_speed': 'text',
+  '113_fiber_available': 'text', 'fiber_available': 'text',
+  '114_cable_tv_provider': 'text', 'cable_tv_provider': 'text',
+  '115_cell_coverage_quality': 'text', 'cell_coverage_quality': 'text',
+  '116_emergency_services_distance': 'text', 'emergency_services_distance': 'text',
+
+  // ================================================================
+  // GROUP 15: Environment & Risk (Fields 117-130)
+  // ================================================================
+  '117_air_quality_index': 'text', 'air_quality_index': 'text',
+  '118_air_quality_grade': 'text', 'air_quality_grade': 'text',
+  '119_flood_zone': 'text', 'flood_zone': 'text',
+  '120_flood_risk_level': 'text', 'flood_risk_level': 'text',
+  '121_climate_risk': 'text', 'climate_risk': 'text',
+  '122_wildfire_risk': 'text', 'wildfire_risk': 'text',
+  '123_earthquake_risk': 'text', 'earthquake_risk': 'text',
+  '124_hurricane_risk': 'text', 'hurricane_risk': 'text',
+  '125_tornado_risk': 'text', 'tornado_risk': 'text',
+  '126_radon_risk': 'text', 'radon_risk': 'text',
+  '127_superfund_site_nearby': 'text', 'superfund_site_nearby': 'text',
+  '128_sea_level_rise_risk': 'text', 'sea_level_rise_risk': 'text',
+  '129_noise_level_db_est': 'text', 'noise_level_db_est': 'text',
+  '130_solar_potential': 'text', 'solar_potential': 'text',
+
+  // ================================================================
+  // GROUP 16: Additional Features (Fields 131-138)
+  // ================================================================
+  '131_view_type': 'text', 'view_type': 'text',
+  '132_lot_features': 'text', 'lot_features': 'text',
+  '133_ev_charging': 'text', 'ev_charging': 'text',
+  '134_smart_home_features': 'text', 'smart_home_features': 'text',
+  '135_accessibility_modifications': 'text', 'accessibility_modifications': 'text',
+  '136_pet_policy': 'text', 'pet_policy': 'text',
+  '137_age_restrictions': 'text', 'age_restrictions': 'text',
+  '138_special_assessments': 'text', 'special_assessments': 'text',
+
+  // ================================================================
+  // GROUP 17: Stellar MLS - Parking & Garage (Fields 139-143)
+  // ================================================================
+  '139_carport_yn': 'boolean', 'carport_yn': 'boolean',
+  '140_carport_spaces': 'number', 'carport_spaces': 'number',
+  '141_garage_attached_yn': 'boolean', 'garage_attached_yn': 'boolean',
+  '142_parking_features': 'multiselect', 'parking_features': 'multiselect',
+  '143_assigned_parking_spaces': 'number', 'assigned_parking_spaces': 'number',
+
+  // ================================================================
+  // GROUP 18: Stellar MLS - Building Info (Fields 144-148)
+  // ================================================================
+  '144_floor_number': 'number', 'floor_number': 'number',
+  '145_building_total_floors': 'number', 'building_total_floors': 'number',
+  '146_building_name_number': 'text', 'building_name_number': 'text',
+  '147_building_elevator_yn': 'boolean', 'building_elevator_yn': 'boolean',
+  '148_floors_in_unit': 'number', 'floors_in_unit': 'number',
+
+  // ================================================================
+  // GROUP 19: Stellar MLS - Legal & Tax (Fields 149-154)
+  // ================================================================
+  '149_subdivision_name': 'text', 'subdivision_name': 'text',
+  '150_legal_description': 'text', 'legal_description': 'text',
+  '151_homestead_yn': 'boolean', 'homestead_yn': 'boolean',
+  '152_cdd_yn': 'boolean', 'cdd_yn': 'boolean',
+  '153_annual_cdd_fee': 'currency', 'annual_cdd_fee': 'currency',
+  '154_front_exposure': 'select', 'front_exposure': 'select',
+
+  // ================================================================
+  // GROUP 20: Stellar MLS - Waterfront (Fields 155-159)
+  // ================================================================
+  '155_water_frontage_yn': 'boolean', 'water_frontage_yn': 'boolean',
+  '156_waterfront_feet': 'number', 'waterfront_feet': 'number',
+  '157_water_access_yn': 'boolean', 'water_access_yn': 'boolean',
+  '158_water_view_yn': 'boolean', 'water_view_yn': 'boolean',
+  '159_water_body_name': 'text', 'water_body_name': 'text',
+
+  // ================================================================
+  // GROUP 21: Stellar MLS - Leasing & Pets (Fields 160-165)
+  // ================================================================
+  '160_can_be_leased_yn': 'boolean', 'can_be_leased_yn': 'boolean',
+  '161_minimum_lease_period': 'text', 'minimum_lease_period': 'text',
+  '162_lease_restrictions_yn': 'boolean', 'lease_restrictions_yn': 'boolean',
+  '163_pet_size_limit': 'text', 'pet_size_limit': 'text',
+  '164_max_pet_weight': 'number', 'max_pet_weight': 'number',
+  '165_association_approval_yn': 'boolean', 'association_approval_yn': 'boolean',
+
+  // ================================================================
+  // GROUP 22: Stellar MLS - Features & Flood (Fields 166-168)
+  // ================================================================
+  '166_community_features': 'multiselect', 'community_features': 'multiselect',
+  '167_interior_features': 'multiselect', 'interior_features': 'multiselect',
+  '168_exterior_features': 'multiselect', 'exterior_features': 'multiselect',
+};
+
+// ============================================
+// TYPE COERCION FUNCTION - Validates and coerces LLM values
+// Ensures values match expected types from the 168-field schema
+// ============================================
+function coerceValue(key: string, value: any): any {
+  const expectedType = FIELD_TYPE_MAP[key];
+
+  // If no type mapping (unknown field), return as-is
+  if (!expectedType) {
+    console.log(`⚠️ UNKNOWN FIELD: ${key} not in 168-field schema`);
+    return value;
+  }
+
+  // TEXT, SELECT, MULTISELECT types - pass through as strings
+  if (expectedType === 'text' || expectedType === 'select' || expectedType === 'multiselect') {
+    // Already a string - return as-is
+    if (typeof value === 'string') return value.trim();
+    // Convert arrays to comma-separated for multiselect
+    if (Array.isArray(value)) return value.join(', ');
+    // Convert other types to string
+    return String(value);
+  }
+
+  // NUMBER, CURRENCY, PERCENTAGE types - must be numeric
+  if (expectedType === 'number' || expectedType === 'currency' || expectedType === 'percentage') {
+    if (typeof value === 'number' && !isNaN(value)) return value;
+
+    // Coerce string to number
+    if (typeof value === 'string') {
+      // Remove currency symbols, commas, percentage signs
+      const cleaned = value.replace(/[$,€£%\s]/g, '').trim();
+      const num = parseFloat(cleaned);
+      if (!isNaN(num)) {
+        console.log(`🔄 TYPE COERCED: ${key} "${value}" → ${num} (${expectedType})`);
+        return num;
+      }
+    }
+    // Invalid - return null to be filtered
+    console.log(`⚠️ TYPE COERCION FAILED: ${key} "${value}" is not a valid ${expectedType}`);
+    return null;
+  }
+
+  // BOOLEAN type
+  if (expectedType === 'boolean') {
+    if (typeof value === 'boolean') return value;
+
+    // Coerce string to boolean
+    if (typeof value === 'string') {
+      const lower = value.toLowerCase().trim();
+      if (['true', 'yes', 'y', '1', 'on'].includes(lower)) {
+        console.log(`🔄 TYPE COERCED: ${key} "${value}" → true (boolean)`);
+        return true;
+      }
+      if (['false', 'no', 'n', '0', 'off', 'none'].includes(lower)) {
+        console.log(`🔄 TYPE COERCED: ${key} "${value}" → false (boolean)`);
+        return false;
+      }
+    }
+    // Coerce number to boolean
+    if (typeof value === 'number') {
+      return value !== 0;
+    }
+    console.log(`⚠️ TYPE COERCION FAILED: ${key} "${value}" is not a valid boolean`);
+    return null;
+  }
+
+  // DATE type - keep as string but validate
+  if (expectedType === 'date') {
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+    return null;
+  }
+
+  // Default: return as-is
+  return value;
+}
+
+// ============================================
 // NULL BLOCKING HELPER - CRITICAL SYSTEM RULE
 // NO NULL VALUES ARE ALLOWED INTO THE FIELD SYSTEM
 // This function filters LLM responses to remove any nulls
@@ -92,6 +434,7 @@ function filterNullValues(parsed: any, llmName: string): Record<string, any> {
   const fields: Record<string, any> = {};
   let nullsBlocked = 0;
   let fieldsAccepted = 0;
+  let typesCoerced = 0;
 
   // Handle case where parsed has a 'fields' property
   const dataToProcess = parsed.fields || parsed;
@@ -108,55 +451,59 @@ function filterNullValues(parsed: any, llmName: string): Record<string, any> {
       continue;
     }
 
-    // BLOCK 2: Skip if val is an object with null/undefined/empty value
-    if (typeof val === 'object' && val !== null) {
-      const valueField = (val as any).value;
-      if (valueField === null || valueField === undefined || valueField === '' ||
-          valueField === 'null' || valueField === 'N/A' || valueField === 'Not found' ||
-          valueField === 'Unknown' || valueField === 'not available') {
-        nullsBlocked++;
-        continue;
-      }
+    // Extract the actual value (handle both {value: x} objects and direct values)
+    let rawValue: any;
+    let source: string = llmName;
+    let confidence: string = 'Medium';
 
-      // ACCEPT: Valid object with real value
-      fields[key] = {
-        value: valueField,
-        source: (val as any).source || `${llmName}`,
-        confidence: (val as any).confidence || 'Medium'
-      };
-      fieldsAccepted++;
-    } else if (typeof val === 'string') {
-      // BLOCK 3: Skip empty or null-like strings
-      if (val === '' || val === 'null' || val === 'N/A' || val === 'Not found' ||
-          val === 'Unknown' || val === 'not available' || val.toLowerCase() === 'none') {
-        nullsBlocked++;
-        continue;
-      }
-      // ACCEPT: Valid string
-      fields[key] = {
-        value: val,
-        source: llmName,
-        confidence: 'Medium'
-      };
-      fieldsAccepted++;
-    } else if (typeof val === 'number' || typeof val === 'boolean') {
-      // ACCEPT: Numbers and booleans (but not NaN)
-      if (typeof val === 'number' && isNaN(val)) {
-        nullsBlocked++;
-        continue;
-      }
-      fields[key] = {
-        value: val,
-        source: llmName,
-        confidence: 'Medium'
-      };
-      fieldsAccepted++;
+    if (typeof val === 'object' && val !== null) {
+      rawValue = (val as any).value;
+      source = (val as any).source || llmName;
+      confidence = (val as any).confidence || 'Medium';
     } else {
-      nullsBlocked++;
+      rawValue = val;
     }
+
+    // BLOCK 2: Skip null-like values
+    if (rawValue === null || rawValue === undefined || rawValue === '' ||
+        rawValue === 'null' || rawValue === 'N/A' || rawValue === 'Not found' ||
+        rawValue === 'Unknown' || rawValue === 'not available' ||
+        (typeof rawValue === 'string' && rawValue.toLowerCase() === 'none')) {
+      nullsBlocked++;
+      continue;
+    }
+
+    // TYPE COERCION: Validate and coerce value to expected type
+    const originalValue = rawValue;
+    const coercedValue = coerceValue(key, rawValue);
+
+    // If coercion returned null, the value was invalid for expected type
+    if (coercedValue === null) {
+      nullsBlocked++;
+      continue;
+    }
+
+    // Track if type was coerced
+    if (coercedValue !== originalValue) {
+      typesCoerced++;
+    }
+
+    // BLOCK 3: Skip NaN numbers
+    if (typeof coercedValue === 'number' && isNaN(coercedValue)) {
+      nullsBlocked++;
+      continue;
+    }
+
+    // ACCEPT: Valid, type-coerced value
+    fields[key] = {
+      value: coercedValue,
+      source: source,
+      confidence: confidence
+    };
+    fieldsAccepted++;
   }
 
-  console.log(`🛡️ ${llmName}: ${fieldsAccepted} fields ACCEPTED, ${nullsBlocked} nulls BLOCKED`);
+  console.log(`🛡️ ${llmName}: ${fieldsAccepted} fields ACCEPTED, ${nullsBlocked} nulls BLOCKED, ${typesCoerced} types COERCED`);
   return fields;
 }
 
@@ -1098,55 +1445,16 @@ ${JSON_RESPONSE_FORMAT_PERPLEXITY}`;
       if (jsonMatch) {
         try {
           const parsed = JSON.parse(jsonMatch[0]);
-
-          // ============================================
-          // CRITICAL: NULL BLOCKING - NO NULL VALUES ALLOWED
-          // Only accept fields with real, non-null values
-          // ============================================
-          const fields: Record<string, any> = {};
-          let nullsBlocked = 0;
-          let fieldsAccepted = 0;
-
-          for (const [key, val] of Object.entries(parsed)) {
-            // BLOCK 1: Skip if val is directly null/undefined
-            if (val === null || val === undefined) {
-              nullsBlocked++;
-              console.log(`🚫 NULL BLOCKED: ${key} (direct null)`);
-              continue;
-            }
-
-            // BLOCK 2: Skip if val is an object with null/undefined value
-            if (typeof val === 'object') {
-              const valueField = (val as any).value;
-              if (valueField === null || valueField === undefined || valueField === '' || valueField === 'null' || valueField === 'N/A' || valueField === 'Not found') {
-                nullsBlocked++;
-                console.log(`🚫 NULL BLOCKED: ${key} (null/empty/N/A value)`);
-                continue;
-              }
-
-              // ACCEPT: Valid object with real value
-              fields[key] = {
-                value: valueField,
-                source: `${(val as any).source || 'Perplexity Web Search'} (via Perplexity)`,
-                confidence: 'High'
-              };
-              fieldsAccepted++;
-            } else if (val !== '' && val !== 'null' && val !== 'N/A' && val !== 'Not found') {
-              // ACCEPT: Direct value (string/number/boolean) that's not empty
-              fields[key] = {
-                value: val,
-                source: 'Perplexity Web Search',
-                confidence: 'High'
-              };
-              fieldsAccepted++;
-            } else {
-              nullsBlocked++;
-              console.log(`🚫 NULL BLOCKED: ${key} (empty/N/A string)`);
+          // Use shared filterNullValues with type coercion
+          const filteredFields = filterNullValues(parsed, 'Perplexity');
+          // Upgrade confidence to High for Perplexity (has web search)
+          for (const key of Object.keys(filteredFields)) {
+            filteredFields[key].confidence = 'High';
+            if (!filteredFields[key].source.includes('Perplexity')) {
+              filteredFields[key].source = `${filteredFields[key].source} (via Perplexity)`;
             }
           }
-
-          console.log(`✅ Perplexity: ${fieldsAccepted} fields ACCEPTED, ${nullsBlocked} nulls BLOCKED`);
-          return fields;
+          return filteredFields;
         } catch (parseError) {
           console.error('❌ Failed to parse Perplexity JSON:', parseError);
           console.error('Raw text:', text);
