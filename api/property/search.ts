@@ -2668,24 +2668,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             )
           );
 
-          // Process results
-          llmResults.forEach((result, idx) => {
+          // Process results SEQUENTIALLY to avoid race conditions
+          // Results are processed in order: perplexity → grok → claude-opus → gpt → claude-sonnet → gemini
+          console.log(`\n=== Processing ${llmResults.length} LLM results in sequence ===`);
+
+          for (let idx = 0; idx < llmResults.length; idx++) {
+            const result = llmResults[idx];
             const llm = enabledLlms[idx];
+            const processingOrder = idx + 1;
+
+            console.log(`[${processingOrder}/${llmResults.length}] Processing ${llm.id}...`);
 
             if (result.status === 'fulfilled') {
               const llmData = result.value;
+
+              // Handle both formats: Perplexity returns fields directly, others return { fields: ... }
               const llmFields = llmData.fields || llmData;
+              const llmError = llmData.error;
               const rawFieldCount = Object.keys(llmFields || {}).length;
+
+              if (llmError) {
+                console.log(`⚠️ [${processingOrder}] ${llm.id}: Error - ${llmError}`);
+              }
 
               if (llmFields && rawFieldCount > 0) {
                 // Convert to FieldValue format for arbitration
                 const formattedFields: Record<string, FieldValue> = {};
+                let skippedNulls = 0;
+
                 for (const [key, value] of Object.entries(llmFields)) {
                   const fieldData = value as any;
                   const fieldValue = fieldData?.value !== undefined ? fieldData.value : value;
 
                   // Skip null/empty responses
                   if (fieldValue === null || fieldValue === undefined || fieldValue === '' || fieldValue === 'Not available') {
+                    skippedNulls++;
                     continue;
                   }
 
@@ -2698,27 +2715,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 }
 
                 const newUniqueFields = arbitrationPipeline.addFieldsFromSource(formattedFields, llmSourceNames[llm.id]);
+                const totalAfter = arbitrationPipeline.getFieldCount();
 
                 llmResponses.push({
                   llm: llm.id,
-                  fields_found: rawFieldCount,  // Actual fields returned by LLM
-                  new_unique_fields: newUniqueFields,  // Fields not already found
-                  success: !(llmData as any).error
+                  fields_found: rawFieldCount,
+                  new_unique_fields: newUniqueFields,
+                  success: !llmError
                 });
 
-                console.log(`✅ ${llm.id}: ${rawFieldCount} returned, ${newUniqueFields} new unique fields added`);
+                console.log(`✅ [${processingOrder}] ${llm.id}: ${rawFieldCount} returned, ${skippedNulls} nulls skipped, ${newUniqueFields} new unique added (total now: ${totalAfter})`);
               } else {
                 llmResponses.push({
                   llm: llm.id,
                   fields_found: 0,
                   new_unique_fields: 0,
                   success: false,
-                  error: (llmData as any).error || 'No fields returned'
+                  error: llmError || 'No fields returned'
                 });
-                console.log(`⚠️ ${llm.id}: No fields returned`);
+                console.log(`⚠️ [${processingOrder}] ${llm.id}: No fields returned`);
               }
             } else {
-              console.error(`❌ ${llm.id} failed:`, result.reason);
+              console.error(`❌ [${processingOrder}] ${llm.id} promise rejected:`, result.reason);
               llmResponses.push({
                 llm: llm.id,
                 fields_found: 0,
@@ -2727,7 +2745,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 error: String(result.reason)
               });
             }
-          });
+          }
+
+          console.log(`=== LLM processing complete. Total fields: ${arbitrationPipeline.getFieldCount()} ===\n`);
         }
       }
       // Removed "Sufficient data" skip logic - LLMs always run if enabled

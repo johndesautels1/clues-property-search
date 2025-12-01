@@ -862,33 +862,48 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             )
           );
 
-          llmResults.forEach((result, idx) => {
+          // Process results SEQUENTIALLY to ensure consistent ordering
+          console.log(`\n=== Processing ${llmResults.length} LLM results in sequence ===`);
+
+          for (let idx = 0; idx < llmResults.length; idx++) {
+            const result = llmResults[idx];
             const llm = enabledLlms[idx];
+            const processingOrder = idx + 1;
+
+            console.log(`[${processingOrder}/${llmResults.length}] Processing ${llm.id}...`);
+
             if (result.status === 'fulfilled') {
               const data = result.value;
-              // Count raw fields returned by this LLM (before deduplication)
-              const rawFieldCount = Object.keys(data.fields || {}).length;
-              // Count new unique fields added to the pipeline
-              const newUniqueFields = arbitrationPipeline.addFieldsFromSource(data.fields || {}, llm.name);
+              // Handle both formats: Perplexity returns fields directly, others return { fields: ... }
+              const llmFields = data.fields || data;
+              const rawFieldCount = Object.keys(llmFields || {}).length;
+              const newUniqueFields = arbitrationPipeline.addFieldsFromSource(llmFields || {}, llm.name);
+
               llmResponses.push({
                 llm: llm.id,
-                fields_found: rawFieldCount,  // Actual fields returned by LLM
-                new_unique_fields: newUniqueFields,  // Fields not already found
+                fields_found: rawFieldCount,
+                new_unique_fields: newUniqueFields,
                 success: !data.error
               });
+
+              console.log(`✅ [${processingOrder}] ${llm.id}: ${rawFieldCount} returned, ${newUniqueFields} new unique (total: ${arbitrationPipeline.getFieldCount()})`);
+
               sendEvent(res, 'progress', {
                 source: llm.id,
                 status: data.error ? 'error' : 'complete',
-                fieldsFound: rawFieldCount,  // Show actual fields returned
-                newUniqueFields: newUniqueFields,  // Also show new unique count
+                fieldsFound: rawFieldCount,
+                newUniqueFields: newUniqueFields,
                 totalFieldsSoFar: arbitrationPipeline.getFieldCount(),
                 error: data.error
               });
             } else {
+              console.error(`❌ [${processingOrder}] ${llm.id} promise rejected:`, result.reason);
               sendEvent(res, 'progress', { source: llm.id, status: 'error', fieldsFound: 0, newUniqueFields: 0, totalFieldsSoFar: arbitrationPipeline.getFieldCount(), error: 'Failed' });
               llmResponses.push({ llm: llm.id, fields_found: 0, new_unique_fields: 0, success: false });
             }
-          });
+          }
+
+          console.log(`=== LLM processing complete. Total fields: ${arbitrationPipeline.getFieldCount()} ===\n`);
         }
       }
       // Removed "Sufficient data" skip logic - LLMs always run if enabled
