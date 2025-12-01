@@ -101,21 +101,26 @@ async function callPerplexity(address: string): Promise<{ fields: Record<string,
       const text = data.choices[0].message.content;
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        const fields: Record<string, any> = {};
-        const flattenObject = (obj: any, prefix = '') => {
-          for (const [key, value] of Object.entries(obj)) {
-            if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
-              if (typeof value === 'object' && !Array.isArray(value)) {
-                flattenObject(value, prefix + key + '_');
-              } else {
-                fields[prefix + key] = { value, source: 'Perplexity', confidence: 'Medium' };
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          const fields: Record<string, any> = {};
+          const flattenObject = (obj: any, prefix = '') => {
+            for (const [key, value] of Object.entries(obj)) {
+              if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
+                if (typeof value === 'object' && !Array.isArray(value)) {
+                  flattenObject(value, prefix + key + '_');
+                } else {
+                  fields[prefix + key] = { value, source: 'Perplexity', confidence: 'Medium' };
+                }
               }
             }
-          }
-        };
-        flattenObject(parsed);
-        return { fields };
+          };
+          flattenObject(parsed);
+          return { fields };
+        } catch (parseError) {
+          console.error('❌ Perplexity JSON.parse error:', parseError);
+          return { error: `JSON parse error: ${String(parseError)}`, fields: {} };
+        }
       }
     }
     return { error: 'Failed to parse response', fields: {} };
@@ -154,14 +159,19 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
       const text = data.choices[0].message.content;
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        const fields: Record<string, any> = {};
-        for (const [key, value] of Object.entries(parsed)) {
-          if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
-            fields[key] = { value, source: 'Grok', confidence: 'Medium' };
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          const fields: Record<string, any> = {};
+          for (const [key, value] of Object.entries(parsed)) {
+            if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
+              fields[key] = { value, source: 'Grok', confidence: 'Medium' };
+            }
           }
+          return { fields };
+        } catch (parseError) {
+          console.error('❌ Grok JSON.parse error:', parseError);
+          return { error: `JSON parse error: ${String(parseError)}`, fields: {} };
         }
-        return { fields };
       }
     }
     return { error: 'Failed to parse response', fields: {} };
@@ -284,14 +294,19 @@ Only include fields you have reasonable confidence about. Return ONLY the JSON o
       const text = data.choices[0].message.content;
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        const fields: Record<string, any> = {};
-        for (const [key, value] of Object.entries(parsed)) {
-          if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
-            fields[key] = { value, source: 'GPT', confidence: 'Low' };
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          const fields: Record<string, any> = {};
+          for (const [key, value] of Object.entries(parsed)) {
+            if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
+              fields[key] = { value, source: 'GPT', confidence: 'Low' };
+            }
           }
+          return { fields };
+        } catch (parseError) {
+          console.error('❌ GPT JSON.parse error:', parseError);
+          return { error: `JSON parse error: ${String(parseError)}`, fields: {} };
         }
-        return { fields };
       }
     }
     return { error: 'Failed to parse response', fields: {} };
@@ -348,21 +363,26 @@ Only include fields you have reasonable confidence about based on the location. 
       const text = data.content[0].text;
       const jsonStr = extractJSON(text);
       if (jsonStr) {
-        const parsed = JSON.parse(jsonStr);
-        const fields: Record<string, any> = {};
-        // Handle both parsed.fields (wrapped) and parsed directly
-        for (const [key, value] of Object.entries(parsed.fields || parsed)) {
-          const strVal = String(value).toLowerCase().trim();
-          const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'unknown' || strVal === 'not available' || strVal === 'none';
-          if (!isBadValue) {
-            fields[key] = {
-              value: (value as any)?.value !== undefined ? (value as any).value : value,
-              source: 'Claude Sonnet',
-              confidence: 'Low'
-            };
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const fields: Record<string, any> = {};
+          // Handle both parsed.fields (wrapped) and parsed directly
+          for (const [key, value] of Object.entries(parsed.fields || parsed)) {
+            const strVal = String(value).toLowerCase().trim();
+            const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'unknown' || strVal === 'not available' || strVal === 'none';
+            if (!isBadValue) {
+              fields[key] = {
+                value: (value as any)?.value !== undefined ? (value as any).value : value,
+                source: 'Claude Sonnet',
+                confidence: 'Low'
+              };
+            }
           }
+          return { fields };
+        } catch (parseError) {
+          console.error('❌ Claude Sonnet JSON.parse error:', parseError);
+          return { error: `JSON parse error: ${String(parseError)}`, fields: {} };
         }
-        return { fields };
       }
     }
     return { error: 'Failed to parse response', fields: {} };
@@ -404,14 +424,19 @@ Do NOT include null, N/A, or unknown values. Return JSON only, no markdown.`;
       const text = data.candidates[0].content.parts[0].text;
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        const fields: Record<string, any> = {};
-        for (const [key, value] of Object.entries(parsed)) {
-          if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
-            fields[key] = { value, source: 'Gemini', confidence: 'Medium' };
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          const fields: Record<string, any> = {};
+          for (const [key, value] of Object.entries(parsed)) {
+            if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
+              fields[key] = { value, source: 'Gemini', confidence: 'Medium' };
+            }
           }
+          return { fields };
+        } catch (parseError) {
+          console.error('❌ Gemini JSON.parse error:', parseError);
+          return { error: `JSON parse error: ${String(parseError)}`, fields: {} };
         }
-        return { fields };
       }
     }
     return { error: 'Failed to parse response', fields: {} };

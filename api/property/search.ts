@@ -1785,10 +1785,15 @@ Use your training knowledge to provide geographic, regional, and structural data
       const text = data.content[0].text;
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        // 🛡️ NULL BLOCKING: Filter all null values before returning
-        const filteredFields = filterNullValues(parsed, 'Claude Opus');
-        return { fields: filteredFields, llm: 'Claude Opus' };
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          // 🛡️ NULL BLOCKING: Filter all null values before returning
+          const filteredFields = filterNullValues(parsed, 'Claude Opus');
+          return { fields: filteredFields, llm: 'Claude Opus' };
+        } catch (parseError) {
+          console.error('❌ Claude Opus JSON.parse error:', parseError);
+          return { error: `JSON parse error: ${String(parseError)}`, fields: {}, llm: 'Claude Opus' };
+        }
       }
     }
     return { error: 'Failed to parse Claude Opus response', fields: {}, llm: 'Claude Opus' };
@@ -1830,10 +1835,15 @@ Quick extraction from training knowledge. Return null for property-specific data
       const text = data.content[0].text;
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        // 🛡️ NULL BLOCKING: Filter all null values before returning
-        const filteredFields = filterNullValues(parsed, 'Claude Sonnet');
-        return { fields: filteredFields, llm: 'Claude Sonnet' };
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          // 🛡️ NULL BLOCKING: Filter all null values before returning
+          const filteredFields = filterNullValues(parsed, 'Claude Sonnet');
+          return { fields: filteredFields, llm: 'Claude Sonnet' };
+        } catch (parseError) {
+          console.error('❌ Claude Sonnet JSON.parse error:', parseError);
+          return { error: `JSON parse error: ${String(parseError)}`, fields: {}, llm: 'Claude Sonnet' };
+        }
       }
     }
     return { error: 'Failed to parse Claude Sonnet response', fields: {}, llm: 'Claude Sonnet' };
@@ -1889,7 +1899,15 @@ Return structured JSON with proper field keys. Use null for unknown data.`,
       const text = data.choices[0].message.content;
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        return { ...JSON.parse(jsonMatch[0]), llm: 'Copilot' };
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          // 🛡️ NULL BLOCKING: Filter all null values before returning
+          const filteredFields = filterNullValues(parsed, 'Copilot');
+          return { fields: filteredFields, llm: 'Copilot' };
+        } catch (parseError) {
+          console.error('❌ Copilot JSON.parse error:', parseError);
+          return { error: `JSON parse error: ${String(parseError)}`, fields: {}, llm: 'Copilot' };
+        }
       }
     }
     return { error: 'Failed to parse Copilot response', fields: {}, llm: 'Copilot' };
@@ -1930,10 +1948,15 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
       const text = data.choices[0].message.content;
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        // 🛡️ NULL BLOCKING: Filter all null values before returning
-        const filteredFields = filterNullValues(parsed, 'GPT');
-        return { fields: filteredFields, llm: 'GPT' };
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          // 🛡️ NULL BLOCKING: Filter all null values before returning
+          const filteredFields = filterNullValues(parsed, 'GPT');
+          return { fields: filteredFields, llm: 'GPT' };
+        } catch (parseError) {
+          console.error('❌ GPT JSON.parse error:', parseError);
+          return { error: `JSON parse error: ${String(parseError)}`, fields: {}, llm: 'GPT' };
+        }
       }
     }
     return { error: 'Failed to parse GPT response', fields: {}, llm: 'GPT' };
@@ -1986,10 +2009,15 @@ Search Zillow, Redfin, Realtor.com, county records, and other public sources. Re
       const text = data.choices[0].message.content;
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        // 🛡️ NULL BLOCKING: Filter all null values before returning
-        const filteredFields = filterNullValues(parsed, 'Grok');
-        return { fields: filteredFields, llm: 'Grok' };
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          // 🛡️ NULL BLOCKING: Filter all null values before returning
+          const filteredFields = filterNullValues(parsed, 'Grok');
+          return { fields: filteredFields, llm: 'Grok' };
+        } catch (parseError) {
+          console.error('❌ Grok JSON.parse error:', parseError);
+          return { error: `JSON parse error: ${String(parseError)}`, fields: {}, llm: 'Grok' };
+        }
       }
     }
     return { error: 'Failed to parse Grok response', fields: {}, llm: 'Grok' };
@@ -2039,10 +2067,15 @@ Return null for property-specific data you don't have. Return JSON only.`,
       const text = data.candidates[0].content.parts[0].text;
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        // 🛡️ NULL BLOCKING: Filter all null values before returning
-        const filteredFields = filterNullValues(parsed, 'Gemini');
-        return { fields: filteredFields, llm: 'Gemini' };
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          // 🛡️ NULL BLOCKING: Filter all null values before returning
+          const filteredFields = filterNullValues(parsed, 'Gemini');
+          return { fields: filteredFields, llm: 'Gemini' };
+        } catch (parseError) {
+          console.error('❌ Gemini JSON.parse error:', parseError);
+          return { error: `JSON parse error: ${String(parseError)}`, fields: {}, llm: 'Gemini' };
+        }
       }
     }
     return { error: 'Failed to parse Gemini response', fields: {}, llm: 'Gemini' };

@@ -296,12 +296,19 @@ const customStorage = {
   getItem: (name: string) => {
     const str = localStorage.getItem(name);
     if (!str) return null;
-    const parsed = JSON.parse(str);
-    // Convert fullProperties array back to Map
-    if (parsed.state?.fullProperties && Array.isArray(parsed.state.fullProperties)) {
-      parsed.state.fullProperties = new Map(parsed.state.fullProperties);
+    try {
+      const parsed = JSON.parse(str);
+      // Convert fullProperties array back to Map
+      if (parsed.state?.fullProperties && Array.isArray(parsed.state.fullProperties)) {
+        parsed.state.fullProperties = new Map(parsed.state.fullProperties);
+      }
+      return parsed;
+    } catch (parseError) {
+      console.error('❌ Failed to parse localStorage data:', parseError);
+      // Clear corrupted data to prevent infinite loops
+      localStorage.removeItem(name);
+      return null;
     }
-    return parsed;
   },
   setItem: (name: string, value: any) => {
     const toStore = {
