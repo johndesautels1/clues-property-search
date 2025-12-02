@@ -96,6 +96,18 @@ function mapFlatFieldsToNumbered(fields: Record<string, any>, source: string): R
   return sharedMapFlatFieldsToNumbered(convertedFields, source);
 }
 
+// Helper to count only non-null, non-empty fields
+function countValidFields(fields: Record<string, any>): number {
+  return Object.values(fields).filter(field => {
+    if (!field) return false;
+    const value = field.value !== undefined ? field.value : field;
+    // Exclude null, undefined, empty string, "N/A", "Unknown", etc.
+    if (value === null || value === undefined || value === '') return false;
+    const strVal = String(value).toLowerCase().trim();
+    return strVal !== 'n/a' && strVal !== 'na' && strVal !== 'unknown' && strVal !== 'not available' && strVal !== 'none';
+  }).length;
+}
+
 // SSE helper to send events
 function sendEvent(res: VercelResponse, event: string, data: any) {
   res.write(`event: ${event}\n`);
@@ -720,7 +732,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ========================================
 
     const API_TIMEOUT = 25000; // 25s per API call (HowLoud can be slow)
-    const LLM_TIMEOUT = 50000; // 50s per LLM call (Perplexity needs time for web searches)
+    const LLM_TIMEOUT = 52000; // 52s per LLM call (Claude Opus/Sonnet need extra time)
     const startTime = Date.now();
     const DEADLINE = 54000; // 54s hard deadline (Vercel set to 55s)
 
@@ -930,7 +942,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Get final arbitration result with quorum voting and single-source detection
     const arbitrationResult = arbitrationPipeline.getResult();
-    const totalFields = Object.keys(arbitrationResult.fields).length;
+    const totalFields = countValidFields(arbitrationResult.fields);  // Only count non-null/non-empty
     const completionPercentage = Math.round((totalFields / TOTAL_FIELDS) * 100);
 
     // Send final complete event with all data including arbitration metadata
@@ -951,7 +963,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Even on error/timeout, send whatever data was collected
     try {
       const partialResult = arbitrationPipeline.getResult();
-      const partialFields = Object.keys(partialResult.fields).length;
+      const partialFields = countValidFields(partialResult.fields);  // Only count non-null/non-empty
 
       if (partialFields > 0) {
         // Send partial data with error flag so frontend knows it's incomplete
