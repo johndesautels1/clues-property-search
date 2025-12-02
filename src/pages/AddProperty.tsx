@@ -353,7 +353,9 @@ export default function AddProperty() {
         }),
       });
 
-      if (!response.ok) {
+      // Don't throw on 504 - we may have partial data from SSE stream
+      const is504 = response.status === 504;
+      if (!response.ok && !is504) {
         throw new Error(`API Error: ${response.status}`);
       }
 
@@ -362,6 +364,7 @@ export default function AddProperty() {
       let buffer = '';
       let finalData: any = null;
       let currentFieldsFound = 0;
+      let partialFields: Record<string, any> = {};  // Collect fields even if stream fails
 
       // Use unified source name mapping from data-sources manifest
 
@@ -369,12 +372,37 @@ export default function AddProperty() {
         throw new Error('No response body');
       }
 
+      let streamError: Error | null = null;
+
       while (true) {
-        const { done, value } = await reader.read();
+        let done = false;
+        let value: Uint8Array | undefined;
+
+        try {
+          const result = await reader.read();
+          done = result.done;
+          value = result.value;
+        } catch (readError) {
+          // Connection failed (504, network error, etc.) - don't throw, use partial data
+          console.warn('⚠️ Stream read error:', readError);
+          streamError = readError instanceof Error ? readError : new Error('Stream read failed');
+          done = true;
+        }
 
         if (done) {
-          if (!finalData) {
-            throw new Error('Stream ended without complete event');
+          // If we have finalData (complete event received), use it
+          // If not but we have partialFields, create synthetic finalData from them
+          if (!finalData && Object.keys(partialFields).length > 0) {
+            console.warn('⚠️ Stream ended without complete event, using partial data:', Object.keys(partialFields).length, 'fields');
+            finalData = {
+              fields: partialFields,
+              partial: true,
+              error: streamError?.message || 'Stream ended prematurely',
+              total_fields_found: Object.keys(partialFields).length,
+              completion_percentage: Math.round((Object.keys(partialFields).length / 138) * 100),
+            };
+          } else if (!finalData) {
+            throw new Error('Stream ended without complete event and no data received');
           }
           break;
         }
@@ -618,11 +646,34 @@ export default function AddProperty() {
       setStatus('enriching');
       setProgress(60);
 
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`);
-      }
+      let data: any;
+      let isPartialData = false;
 
-      const data = await response.json();
+      // Handle 504 timeout - still try to get partial data
+      if (response.status === 504) {
+        console.warn('⚠️ 504 Gateway Timeout - checking for partial data');
+        isPartialData = true;
+        try {
+          data = await response.json();
+        } catch {
+          // If we can't parse the response, check if we have accumulated fields
+          if (Object.keys(accumulatedFields).length > 0) {
+            data = {
+              fields: accumulatedFields,
+              partial: true,
+              error: '504 Gateway Timeout',
+              total_fields_found: Object.keys(accumulatedFields).length,
+              completion_percentage: Math.round((Object.keys(accumulatedFields).length / 138) * 100),
+            };
+          } else {
+            throw new Error('504 Gateway Timeout - no data received');
+          }
+        }
+      } else if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+      } else {
+        data = await response.json();
+      }
 
       setProgress(90);
 
@@ -630,6 +681,11 @@ export default function AddProperty() {
       const fields = data.fields || {};
       const fieldSources = data.field_sources || {}; // NEW: Track which LLMs provided each field
       const conflicts = data.conflicts || []; // NEW: Track conflicting values
+
+      // If partial data, warn but continue
+      if (data.partial || isPartialData) {
+        console.warn('⚠️ Partial data received:', data.error || 'Timeout');
+      }
 
       // Store accumulated fields for next LLM call
       if (fields && Object.keys(fields).length > 0) {
@@ -685,17 +741,59 @@ export default function AddProperty() {
 
       addProperty(scrapedProperty, fullPropertyData);
       setLastAddedId(scrapedProperty.id);
-      setStatus('complete');
-      setProgress(100);
 
-      console.log('✅ Property scraped successfully:', data);
+      // Set status based on whether we got partial or complete data
+      if (data.partial || isPartialData) {
+        setStatus('complete'); // Still mark complete so user can view data
+        setProgress(data.completion_percentage || 60);
+        console.warn('⚠️ Property added with partial data:', data.total_fields_found, 'fields');
+        // Don't show blocking alert - just log it
+      } else {
+        setStatus('complete');
+        setProgress(100);
+        console.log('✅ Property scraped successfully:', data);
+      }
+
       console.log('📊 Fields found:', data.total_fields_found);
       console.log('📋 Sources:', data.sources);
 
     } catch (error) {
       console.error('Scrape error:', error);
-      setStatus('error');
-      alert(`Failed to extract property data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Check if we have accumulated fields we can use
+      if (Object.keys(accumulatedFields).length > 0) {
+        console.warn('⚠️ Using accumulated fields after error:', Object.keys(accumulatedFields).length);
+        const fields = accumulatedFields;
+        const fullAddress = fields['1_full_address']?.value || searchQuery || '';
+        const addressParts = (fullAddress || '').split(',').map((s: string) => s.trim());
+
+        const scrapedProperty: PropertyCard = {
+          id: generateId(),
+          address: addressParts[0] || fullAddress,
+          city: addressParts[1] || 'Unknown',
+          state: addressParts[2]?.match(/([A-Z]{2})/)?.[1] || 'FL',
+          zip: addressParts[2]?.match(/(\d{5})/)?.[1] || '',
+          price: fields['10_listing_price']?.value || 0,
+          pricePerSqft: fields['11_price_per_sqft']?.value || 0,
+          bedrooms: fields['17_bedrooms']?.value || 0,
+          bathrooms: fields['20_total_bathrooms']?.value || 0,
+          sqft: fields['21_living_sqft']?.value || 0,
+          yearBuilt: fields['25_year_built']?.value || new Date().getFullYear(),
+          smartScore: Math.round((Object.keys(fields).length / 138) * 100),
+          dataCompleteness: Math.round((Object.keys(fields).length / 138) * 100),
+          listingStatus: fields['4_listing_status']?.value || 'Active',
+          daysOnMarket: 0,
+        };
+
+        const fullPropertyData = convertApiResponseToFullProperty(fields, scrapedProperty.id, {}, []);
+        addProperty(scrapedProperty, fullPropertyData);
+        setLastAddedId(scrapedProperty.id);
+        setStatus('complete');
+        setProgress(scrapedProperty.dataCompleteness);
+        console.warn('⚠️ Property added with cached data after error');
+      } else {
+        setStatus('error');
+        alert(`Failed to extract property data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
     }
   };
 

@@ -11,7 +11,7 @@ import { motion } from 'framer-motion';
 import { Radar } from 'react-chartjs-2';
 import GlassChart from '../GlassChart';
 import type { Property } from '@/types/property';
-import { Check, X, Waves, Zap, TreeDeciduous, Car, Home, Anchor, UtensilsCrossed, ShowerHead, Shield, Droplets, Sun, BatteryCharging } from 'lucide-react';
+import { Check, X, Waves, Zap, TreeDeciduous, Car, Home, Anchor, UtensilsCrossed, ShowerHead, Shield, Droplets, Sun, BatteryCharging, Square } from 'lucide-react';
 import { PROPERTY_COLORS, getPropertyColor, calcPricePerSqft } from '../chartColors';
 
 interface CategoryGProps {
@@ -39,7 +39,7 @@ function ExteriorFeaturesGrid({ properties, onPropertyClick }: CategoryGProps) {
     { key: 'deck', label: 'Deck/Patio', icon: TreeDeciduous },
     { key: 'dock', label: 'Dock', icon: Anchor },
     { key: 'balcony', label: 'Balcony', icon: Home },
-    { key: 'outKitchen', label: 'Out Kitchen', icon: UtensilsCrossed },
+    { key: 'fence', label: 'Fence', icon: Square },
     { key: 'outShower', label: 'Out Shower', icon: ShowerHead },
     { key: 'hurricane', label: 'Shutters', icon: Shield },
     { key: 'sprinkler', label: 'Sprinkler', icon: Droplets },
@@ -68,7 +68,7 @@ function ExteriorFeaturesGrid({ properties, onPropertyClick }: CategoryGProps) {
       deckDetail: getVal(p.structural?.deckPatio) || '',
       dock: hasFeature('dock'),
       balcony: hasFeature('balcony'),
-      outKitchen: hasFeature('outdoor kitchen'),
+      fence: !!getVal(p.structural?.fence),
       outShower: hasFeature('outdoor shower'),
       hurricane: hasFeature('hurricane') || hasFeature('shutter'),
       sprinkler: hasFeature('sprinkler'),
@@ -116,7 +116,7 @@ function ExteriorFeaturesGrid({ properties, onPropertyClick }: CategoryGProps) {
                   { has: row.deck, extra: '' },
                   { has: row.dock },
                   { has: row.balcony },
-                  { has: row.outKitchen },
+                  { has: row.fence },
                   { has: row.outShower },
                   { has: row.hurricane },
                   { has: row.sprinkler },
@@ -176,8 +176,7 @@ function ExteriorFeaturesGrid({ properties, onPropertyClick }: CategoryGProps) {
  * Quality upgrades/improvements from schema:
  * - Field #133: ev_charging (text) - EV charging station
  * - Field #130: solar_potential (text) - Solar panels/potential
- * - Field #168: exterior_features (multiselect) - for screened porch, sprinkler
- * - Field #57: fence (text)
+ * - Field #168: exterior_features (multiselect) - for outdoor kitchen
  * - Field #58: landscaping (text)
  */
 function ExteriorUpgrades({ properties, onPropertyClick }: CategoryGProps) {
