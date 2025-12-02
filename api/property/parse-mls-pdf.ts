@@ -53,6 +53,7 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'Recent': '5_listing_date',
   'Recent:': '5_listing_date',
   'Neighborhood': '6_neighborhood',
+  'Subdiv/Condo': '6_neighborhood',  // Stellar MLS uses "Subdiv/Condo" for neighborhood
   'County': '7_county',
   'Zip': '8_zip_code',
   'Zip Code': '8_zip_code',
@@ -572,6 +573,34 @@ function mapFieldsToSchema(rawFields: Record<string, any>): { fields: Record<str
     }
   }
 
+  // Handle "Floors in Unit/Home" text numbers (e.g., "One" → 1)
+  if (rawFields['Floors in Unit/Home']) {
+    const textNumber = String(rawFields['Floors in Unit/Home']).trim().toLowerCase();
+    const numberMap: Record<string, number> = {
+      'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
+      'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10
+    };
+    if (numberMap[textNumber] !== undefined && !rawFields['Stories']) {
+      rawFields['Stories'] = numberMap[textNumber];
+      console.log(`[PDF PARSER] Floors in Unit/Home "${rawFields['Floors in Unit/Home']}" → Stories: ${numberMap[textNumber]}`);
+    }
+  }
+
+  // Extract ZIP code from Address if not provided separately
+  if (!rawFields['Zip'] && !rawFields['ZIP'] && !rawFields['Zip Code'] && rawFields['Address']) {
+    const zipMatch = String(rawFields['Address']).match(/(\d{5})(?:-\d{4})?/);
+    if (zipMatch) {
+      rawFields['Zip'] = zipMatch[1];
+      console.log(`[PDF PARSER] Extracted ZIP "${zipMatch[1]}" from Address`);
+    }
+  }
+
+  // Handle "Assigned Spcs" for parking total
+  if (rawFields['Assigned Spcs'] && !rawFields['Parking Total']) {
+    rawFields['Parking Total'] = rawFields['Assigned Spcs'];
+    console.log(`[PDF PARSER] Assigned Spcs "${rawFields['Assigned Spcs']}" → Parking Total`);
+  }
+
   // ================================================================
   // FIELD MAPPING: Map raw fields to numbered schema
   // ================================================================
@@ -661,6 +690,15 @@ For **"Baths"** field formatted as "X/Y" (e.g., "2/0"):
 
 For **"Recent:"** field (shows listing date like "11/22/2025 : NEW"):
 - Extract as "Recent": "11/22/2025 : NEW"
+
+For **"Floors in Unit/Home"** field (e.g., "One"):
+- Extract the EXACT text value as written: "Floors in Unit/Home": "One"
+
+For **"Assigned Spcs"** field (parking spaces):
+- Extract as: "Assigned Spcs": 2
+
+For **"Subdiv/Condo"** field (may be blank):
+- Extract as: "Subdiv/Condo": "" (or the actual value if present)
 
 **Sections to Extract From:**
 - Header section (MLS#, Address, County, Status, List Price, Subdiv, Beds, Baths, Year Built, Property Style, Pool, ADOM, CDOM, etc.)
