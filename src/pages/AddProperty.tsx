@@ -260,7 +260,8 @@ export default function AddProperty() {
       // Determine which engines to use based on selection
       const getEngines = () => {
         if (selectedEngine === 'Auto') {
-          return ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'];
+          // ONLY Perplexity and Grok (web search LLMs) - Claude/GPT/Gemini disabled for testing
+          return ['perplexity', 'grok'];
         }
         return [selectedEngine];
       };
@@ -635,8 +636,8 @@ export default function AddProperty() {
       // Map selected engine to API format
       const getEngines = () => {
         if (selectedEngine === 'Auto') {
-          // Full cascade order per reliability audit
-          return ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'];
+          // ONLY Perplexity and Grok (web search LLMs) - Claude/GPT/Gemini disabled for testing
+          return ['perplexity', 'grok'];
         }
         // Single engine selected
         return [selectedEngine]; // Already in correct format (e.g., 'claude-opus', 'gpt')
@@ -1376,7 +1377,7 @@ export default function AddProperty() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 address: address,
-                engines: ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'],
+                engines: ['perplexity', 'grok'],  // ONLY web search LLMs - Claude/GPT/Gemini disabled for testing
                 useCascade: true,
               }),
             });
