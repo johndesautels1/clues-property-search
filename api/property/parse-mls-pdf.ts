@@ -885,8 +885,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log('[PDF PARSER] Processing:', filename || 'unnamed.pdf');
 
   try {
-    // Parse PDF with Claude
-    const rawFields = await parsePdfWithClaude(pdfBase64);
+    // Parse PDF with Claude (Opus 4 by default, with Sonnet fallback on timeout)
+    let rawFields: Record<string, any>;
+
+    try {
+      console.log('[PDF PARSER] Attempting with Claude Opus 4 (max accuracy)...');
+      rawFields = await parsePdfWithClaude(pdfBase64, true); // useOpus=true
+    } catch (opusError: any) {
+      // If Opus times out or fails, automatically fall back to faster Sonnet
+      console.warn('[PDF PARSER] Opus failed, falling back to Sonnet:', opusError.message);
+      console.log('[PDF PARSER] Retrying with Claude Sonnet 4 (faster)...');
+      rawFields = await parsePdfWithClaude(pdfBase64, false); // useOpus=false
+    }
 
     // Map to our schema with source detection
     const { fields: mappedFields, sourceType, mappedCount, unmappedCount } = mapFieldsToSchema(rawFields);
