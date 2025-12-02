@@ -437,7 +437,6 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'Vegetation': 'vegetation',
   'Barn Features': 'barn_features',
   'Horse Amenities': 'horse_amenities',
-  'Fencing': 'fencing_type',
   '# of Stalls': 'number_of_stalls',
   '# Paddocks/Pastures': 'number_paddocks_pastures',
   'Green Energy Generation': 'green_energy_generation',

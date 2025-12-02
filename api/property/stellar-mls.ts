@@ -197,7 +197,6 @@ export const STELLAR_MLS_FIELD_MAPPING: Record<string, string> = {
 
   // Structure & Systems (Fields 39-48)
   'Roof': '39_roof_type',
-  'ExteriorFeatures': '41_exterior_material',
   'FoundationDetails': '42_foundation',
   'WaterHeaterFeatures': '43_water_heater_type',
   'GarageYN': '44_garage_type',
@@ -229,7 +228,7 @@ export const STELLAR_MLS_FIELD_MAPPING: Record<string, string> = {
   'AttachedGarageYN': '141_garage_attached_yn',
   'ParkingFeatures': '142_parking_features',
   'FloorNumber': '144_floor_number',
-  'StoriesTotal': '145_building_total_floors',
+  'BuildingFloorsTotal': '145_building_total_floors',
   'BuildingName': '146_building_name_number',
   'ElevatorYN': '147_building_elevator_yn',
   'LegalSubdivisionName': '149_subdivision_name',
