@@ -1677,6 +1677,8 @@ export default function AddProperty() {
             address: enrichAddress,
             engines: ['perplexity', 'grok'], // Only web search LLMs (not Claude/GPT/Gemini)
             existingFields: pdfParsedFields, // Pass PDF data so APIs don't re-fetch what we have
+            skipApis: false, // IMPORTANT: Run free APIs (WalkScore, Crime, etc.) to fill missing fields
+            skipLLMs: false, // Run LLMs to fill gaps
             propertyId: propertyId,
           }),
         });
@@ -1724,8 +1726,15 @@ export default function AddProperty() {
                 const data = JSON.parse(line.slice(6));
 
                 if (eventType === 'progress') {
-                  const { source, status: sourceStatus, fieldsFound, currentFields } = data;
+                  const { source, status: sourceStatus, fieldsFound, currentFields, message } = data;
                   const displayName = getSourceName(source);
+
+                  // Log API progress to debug why Location/Crime/Market fields are empty
+                  console.log(`📡 ${displayName}: ${sourceStatus}`, {
+                    fieldsFound,
+                    message,
+                    currentFieldsCount: currentFields ? Object.keys(currentFields).length : 0
+                  });
 
                   if (currentFields && Object.keys(currentFields).length > 0) {
                     partialFields = { ...partialFields, ...currentFields };

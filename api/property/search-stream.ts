@@ -811,15 +811,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const newFields = arbitrationPipeline.addFieldsFromSource(geoResult.fields, 'Google Geocode');
         lat = geoResult.lat;
         lon = geoResult.lon;
+
+        // DEBUG: Log geocode results to investigate why free APIs aren't running
+        console.log(`[GEOCODE] Address: "${extractedAddress}" → lat: ${lat}, lon: ${lon}, success: ${geoResult.success}`);
+
         sendEvent(res, 'progress', {
           source: 'google-geocode',
           status: geoResult.success ? 'complete' : 'error',
           fieldsFound: newFields,
           totalFieldsSoFar: arbitrationPipeline.getFieldCount(),
           currentFields: arbitrationPipeline.getResult().fields,  // 🔥 FIX: Send accumulated fields
-          error: geoResult.error
+          error: geoResult.error,
+          message: lat && lon ? `Coordinates: ${lat.toFixed(4)}, ${lon.toFixed(4)}` : 'No coordinates'
         });
       } catch (e) {
+        console.log(`[GEOCODE] Error:`, e);
         sendEvent(res, 'progress', { source: 'google-geocode', status: 'error', fieldsFound: 0, error: String(e) });
       }
     } else {
@@ -831,7 +837,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // TIER 2-3: PARALLEL API CALLS (if we have coordinates and time)
     // Skip if we're only adding LLM data to existing session
     // ========================================
+    console.log(`[FREE APIs] skipApis=${skipApis}, lat=${lat}, lon=${lon}, hasTime()=${hasTime()}`);
+
     if (!skipApis && lat && lon && hasTime()) {
+      console.log(`[FREE APIs] ✅ Running all free APIs (WalkScore, Crime, HowLoud, etc.)`);
       const tier23Sources = ['google-places', 'walkscore', 'fema', 'schooldigger', 'airnow', 'howloud', 'weather', 'crime'];
       tier23Sources.forEach(src => {
         sendEvent(res, 'progress', { source: src, status: 'searching', message: 'Fetching...' });
