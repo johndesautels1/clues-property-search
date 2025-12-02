@@ -394,12 +394,22 @@ export default function PropertyDetail() {
         throw new Error('No response body');
       }
 
+      let partialFields: Record<string, any> = {};  // Collect partial data
+
       while (true) {
         const { done, value } = await reader.read();
 
         if (done) {
-          if (!finalData) {
-            throw new Error('Stream ended without complete event');
+          // Use partial data if no complete event received
+          if (!finalData && Object.keys(partialFields).length > 0) {
+            console.warn('⚠️ Stream ended without complete event, using partial data:', Object.keys(partialFields).length, 'fields');
+            finalData = {
+              fields: partialFields,
+              partial: true,
+              completion_percentage: Math.round((Object.keys(partialFields).length / 168) * 100),
+            };
+          } else if (!finalData) {
+            throw new Error('Stream ended without complete event and no data received');
           }
           break;
         }
@@ -417,7 +427,14 @@ export default function PropertyDetail() {
               const data = JSON.parse(line.slice(6));
 
               if (eventType === 'progress') {
-                const { fieldsFound } = data;
+                const { fieldsFound, currentFields } = data;
+
+                // 🔥 FIX: Capture partial fields as they arrive
+                if (currentFields && Object.keys(currentFields).length > 0) {
+                  partialFields = { ...partialFields, ...currentFields };
+                  console.log(`💾 Enrich: Captured ${Object.keys(currentFields).length} fields, total: ${Object.keys(partialFields).length}`);
+                }
+
                 setEnrichProgress(Math.min(Math.round((fieldsFound / 168) * 100), 99));
               } else if (eventType === 'complete') {
                 finalData = data;

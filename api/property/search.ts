@@ -28,7 +28,7 @@ export const config = {
 };
 
 // Timeout wrapper for API/LLM calls - prevents hanging
-const LLM_TIMEOUT = 48000; // 48 seconds per LLM call (7s buffer for processing)
+const LLM_TIMEOUT = 50000; // 50 seconds per LLM call (Perplexity needs time for web searches)
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([
     promise,

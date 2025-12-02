@@ -720,7 +720,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ========================================
 
     const API_TIMEOUT = 25000; // 25s per API call (HowLoud can be slow)
-    const LLM_TIMEOUT = 48000; // 48s per LLM call (all run in parallel, with 7s buffer)
+    const LLM_TIMEOUT = 50000; // 50s per LLM call (Perplexity needs time for web searches)
     const startTime = Date.now();
     const DEADLINE = 54000; // 54s hard deadline (Vercel set to 55s)
 
