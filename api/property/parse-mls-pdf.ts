@@ -50,6 +50,8 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'Listing Status': '4_listing_status',
   'List Date': '5_listing_date',
   'Original List Date': '5_listing_date',
+  'Recent': '5_listing_date',
+  'Recent:': '5_listing_date',
   'Neighborhood': '6_neighborhood',
   'County': '7_county',
   'Zip': '8_zip_code',
@@ -117,6 +119,8 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'Type': '26_property_type',
   'Property Sub Type': '26_property_type',
   'Stories': '27_stories',
+  'Floors in Unit/Home': '27_stories',
+  'Floors In Unit': '27_stories',
   'Garage': '28_garage_spaces',
   'Garage Spaces': '28_garage_spaces',
   'Spcs': '28_garage_spaces',
@@ -176,6 +180,7 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'Garage Type': '44_garage_type',
   'Garage Description': '44_garage_type',
   'Garage Style': '44_garage_type',
+  'Garage Dim': '44_garage_type',
   'A/C': '45_hvac_type',
   'Heat/Fuel': '45_hvac_type',
   'HVAC': '45_hvac_type',
@@ -315,8 +320,7 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'Building Elevator Y/N': '147_building_elevator_yn',
   'Elevator': '147_building_elevator_yn',
   'Elevator Y/N': '147_building_elevator_yn',
-  'Floors in Unit/Home': '148_floors_in_unit',
-  'Floors In Unit': '148_floors_in_unit',
+  // NOTE: "Floors in Unit/Home" now maps to 27_stories (line 122), not 148_floors_in_unit
 
   // ================================================================
   // STELLAR MLS - LEGAL (Fields 149-154)
@@ -409,8 +413,10 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   // ADDITIONAL UNMAPPED FIELDS
   // ================================================================
   'New Construction': 'new_construction_yn',
+  'Proj Comp Date': 'project_completion_date',
   'Property Condition': 'property_condition',
   'Home Warranty Y/N': 'home_warranty_yn',
+  'Permit Number': 'permit_number',
   'Utilities': 'utilities',
   'Water': 'water_source',
   'Sewer': 'sewer_type',
@@ -419,9 +425,41 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'Furnishings': 'furnishings',
   'Accessibility Features': '135_accessibility_modifications',
   'Road Surface Type': 'road_surface',
+  'Road Responsibility': 'road_responsibility',
   'Special Sale': 'special_sale_type',
   'Pets': '136_pet_policy',
   'Max Times per Yr': 'max_lease_times_per_year',
+  'Property Description': 'property_description',
+  'Architectural Style': 'architectural_style',
+  'Property Attached Y/N': 'property_attached_yn',
+  'Spa and Features': 'spa_features',
+  'Vegetation': 'vegetation',
+  'Barn Features': 'barn_features',
+  'Horse Amenities': 'horse_amenities',
+  'Fencing': 'fencing_type',
+  '# of Stalls': 'number_of_stalls',
+  '# Paddocks/Pastures': 'number_paddocks_pastures',
+  'Green Energy Generation': 'green_energy_generation',
+  'Green Energy Generation Y/N': 'green_energy_generation_yn',
+  'Affidavit': 'affidavit',
+  'Expire/Renewal Date': 'expire_renewal_date',
+  'FCHR Website Y/N': 'fchr_website_yn',
+  'Condo Fee': 'condo_fee',
+  'Monthly Condo Fee': 'condo_fee_monthly',
+  'Master Assn Ph': 'master_assn_phone',
+  'Other Fee': 'other_fee',
+  'Housing for Older Per': 'housing_for_older_persons',
+  'Additional Rooms': 'additional_rooms',
+  'Room Type': 'room_type',
+  'Approx Dim': 'approximate_dimensions',
+  'Closet Type': 'closet_type',
+  'Features': 'room_features',
+  'Other Structures': 'other_structures',
+  'Other Equipment': 'other_equipment',
+  'Pool Dimensions': 'pool_dimensions',
+  'Farm Type': 'farm_type',
+  '# of Wells': 'number_of_wells',
+  '# of Septics': 'number_of_septics',
 };
 
 // Helper to normalize field names for matching
@@ -491,6 +529,53 @@ function mapFieldsToSchema(rawFields: Record<string, any>): { fields: Record<str
                      sourceType === 'realtor' ? 'Realtor.com' :
                      sourceType === 'redfin' ? 'Redfin' : 'MLS PDF';
 
+  // ================================================================
+  // PRE-PROCESSING: Handle compound fields before mapping
+  // ================================================================
+
+  // Handle "Baths" field formatted as "2/0" (full/half)
+  if (rawFields['Baths'] && typeof rawFields['Baths'] === 'string' && rawFields['Baths'].includes('/')) {
+    const bathParts = rawFields['Baths'].split('/');
+    const fullBaths = parseInt(bathParts[0]?.trim() || '0');
+    const halfBaths = parseInt(bathParts[1]?.trim() || '0');
+    if (!isNaN(fullBaths) && !rawFields['Full Baths']) {
+      rawFields['Full Baths'] = fullBaths;
+      console.log(`[PDF PARSER] Split Baths "${rawFields['Baths']}" → Full: ${fullBaths}, Half: ${halfBaths}`);
+    }
+    if (!isNaN(halfBaths) && !rawFields['Half Baths']) {
+      rawFields['Half Baths'] = halfBaths;
+    }
+  }
+
+  // Handle Pool field - if value is "Community" or "Private", set Pool Y/N to Yes
+  if (rawFields['Pool']) {
+    const poolValue = String(rawFields['Pool']).trim();
+    if (poolValue === 'Community' || poolValue === 'Private' || poolValue === 'Yes') {
+      if (!rawFields['Pool Y/N']) {
+        rawFields['Pool Y/N'] = 'Yes';
+      }
+      if (!rawFields['Pool Type'] && (poolValue === 'Community' || poolValue === 'Private')) {
+        rawFields['Pool Type'] = poolValue;
+        console.log(`[PDF PARSER] Pool "${poolValue}" → Pool Y/N: Yes, Pool Type: ${poolValue}`);
+      }
+    }
+  }
+
+  // Handle "Recent:" field (listing date with status like "11/22/2025 : NEW")
+  if (rawFields['Recent:'] || rawFields['Recent']) {
+    const recentValue = String(rawFields['Recent:'] || rawFields['Recent']);
+    // Extract just the date part if it has " : " separator
+    const datePart = recentValue.split(':')[0]?.trim();
+    if (datePart && !rawFields['List Date']) {
+      rawFields['List Date'] = datePart;
+      console.log(`[PDF PARSER] Recent "${recentValue}" → List Date: ${datePart}`);
+    }
+  }
+
+  // ================================================================
+  // FIELD MAPPING: Map raw fields to numbered schema
+  // ================================================================
+
   for (const [rawKey, value] of Object.entries(rawFields)) {
     // Skip null/empty values
     if (value === null || value === undefined || value === '' || value === 'N/A' || value === 'n/a') {
@@ -555,54 +640,41 @@ async function parsePdfWithClaude(pdfBase64: string): Promise<Record<string, any
     throw new Error('ANTHROPIC_API_KEY not configured');
   }
 
-  const prompt = `You are a Stellar MLS data extraction expert. Extract ALL property data from this Stellar MLS CustomerFull PDF sheet.
+  const prompt = `You are a Stellar MLS data extraction expert. Extract EVERY SINGLE field and value from this Stellar MLS CustomerFull PDF sheet.
 
-CRITICAL: Use the EXACT field names as they appear in the Stellar MLS PDF. Here are the standard Stellar MLS field names to look for:
+CRITICAL INSTRUCTIONS:
+1. **Extract ALL fields** - Do not limit to the examples below. Include EVERY field you see in the PDF.
+2. **Use EXACT field names** as they appear in the Stellar MLS PDF (including special characters, spaces, and punctuation).
+3. **Include blank/empty fields** - If a field exists but has no value, include it with empty string or null.
+4. **Preserve exact values** - Do not convert or interpret values:
+   - Pool: "Community" → keep as "Community" (not "Yes")
+   - Baths: "2/0" → keep as "2/0" (do not convert to number)
+   - Garage: "No" → keep as "No"
 
-**Header Section:**
-- MLS# (e.g., "TB8449505")
-- Address (full street address from header)
-- County, Status, List Price
-- Subdiv (subdivision name)
-- Beds, Baths (format: "2/0" for full/half)
-- Year Built, Property Style, Pool
-- ADOM, CDOM (days on market)
-- Pets, Minimum Lease Period
-- Garage, Attch (attached), Spcs (spaces), Carport, Carport Spcs
-- Garage/Parking Features, Assigned Spcs
-- LP/SqFt, Heated Area, Total Area
-- Flood Zone Code, Total Annual Assoc Fees, Average Monthly Fees
+**Special Field Handling:**
 
-**Land, Site, and Tax Information:**
-- Legal Desc, SE/TP/RG, Zoning
-- Tax ID, Taxes, Tax Year
-- Homestead, CDD, Annual CDD Fee
-- Front Exposure, Lot Size Acres, Lot Size
-- Water Frontage, Waterfront Ft, Water Access, Water View, Water Name
-- Floor #, Total # of Floors, Bldg Name/#, Floors in Unit/Home
-- Flood Zone, Flood Zone Date, Flood Zone Panel
+For **"Baths"** field formatted as "X/Y" (e.g., "2/0"):
+- Extract as "Baths": "2/0"
+- ALSO extract separately as:
+  - "Full Baths": 2 (number before slash)
+  - "Half Baths": 0 (number after slash)
 
-**Interior Information:**
-- A/C, Heat/Fuel, Flooring Covering
-- Laundry Features, Fireplace, Furnishings
-- Utilities, Water, Sewer
-- Interior Feat, Appliances Incl
+For **"Recent:"** field (shows listing date like "11/22/2025 : NEW"):
+- Extract as "Recent": "11/22/2025 : NEW"
 
-**Exterior Information:**
-- Ext Construction, Roof, Foundation
-- Ext Features, Pool, Pool Features
-- Road Surface Type
+**Sections to Extract From:**
+- Header section (MLS#, Address, County, Status, List Price, Subdiv, Beds, Baths, Year Built, Property Style, Pool, ADOM, CDOM, etc.)
+- Land, Site, and Tax Information (Legal Desc, Tax ID, Taxes, Homestead, CDD, Flood Zone, Floor #, Total # of Floors, Bldg Name/#, Floors in Unit/Home, etc.)
+- Interior Information (A/C, Heat/Fuel, Flooring Covering, Laundry Features, Fireplace, Interior Feat, Appliances Incl, etc.)
+- Exterior Information (Ext Construction, Roof, Foundation, Ext Features, Pool Features, etc.)
+- Community Information (Community Features, Fee Includes, HOA Fee, Monthly HOA Amount, Pet Size, Max Pet Wt, Lease Restrictions, etc.)
+- Green Features (Green Energy Generation Y/N, etc.)
+- Property Description (the long marketing text at the top)
+- ANY other sections or fields present
 
-**Community Information:**
-- Community Features, Fee Includes
-- HOA / Comm Assn, HOA Fee, HOA Pmt Sched
-- Monthly HOA Amount
-- Pet Size, Max Pet Wt, # of Pets
-- Can Property be Leased, Building Elevator Y/N
-- Association Approval Required, Lease Restrictions
-- Minimum Lease Period
+**Extract fields even if they appear to be blank or "N/A" in the PDF.**
 
-Extract EVERY field you can find. Return a JSON object using the EXACT field names from the PDF.
+Return a JSON object with EVERY field found, using the exact field names from the PDF.
 
 Example output format:
 {
