@@ -1644,21 +1644,158 @@ export default function AddProperty() {
       // Create full property using normalizer
       const fullProperty = normalizeToProperty(pdfParsedFields, propertyId, {}, []);
 
-      setProgress(90);
+      setProgress(75);
 
-      // Add to store
+      // Add to store with PDF data first
       addProperty(propertyCard, fullProperty);
       setLastAddedId(propertyId);
-      setStatus('complete');
-      setProgress(100);
 
       console.log('✅ Property added from MLS PDF:', Object.keys(pdfParsedFields).length, 'fields');
       console.log('📋 Property Card:', propertyCard);
+      console.log('🔄 Starting auto-enrichment cascade...');
 
-      // Reset PDF state
-      setPdfFile(null);
-      setPdfParsedFields({});
-      setPdfParseStatus('idle');
+      // ================================================================
+      // AUTO-ENRICHMENT: Trigger cascade to fill missing fields
+      // ================================================================
+      try {
+        setStatus('scraping');
+        setProgress(80);
+        setCascadeStatus(initializeCascadeStatus());
+
+        const apiUrl = import.meta.env.VITE_API_URL || '';
+
+        // Build full address for API enrichment
+        const enrichAddress = unit ? `${street}, ${unit}, ${city}, ${state} ${zip}` : `${street}, ${city}, ${state} ${zip}`;
+
+        console.log('🔍 Enriching with address:', enrichAddress);
+
+        // Use SSE streaming for real-time progress (same as Address mode)
+        const response = await fetch(`${apiUrl}/api/property/search-stream`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            address: enrichAddress,
+            engines: ['perplexity', 'grok'], // Only web search LLMs (not Claude/GPT/Gemini)
+            existingFields: pdfParsedFields, // Pass PDF data so APIs don't re-fetch what we have
+            propertyId: propertyId,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Enrichment API error: ${response.status}`);
+        }
+
+        if (!response.body) {
+          throw new Error('No response body from enrichment API');
+        }
+
+        // Process SSE stream
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let finalData: any = null;
+        let partialFields: Record<string, any> = { ...pdfParsedFields };
+
+        while (true) {
+          const { done, value } = await reader.read();
+
+          if (done) {
+            if (!finalData && Object.keys(partialFields).length > Object.keys(pdfParsedFields).length) {
+              console.log('⚠️ Stream ended without complete event, using partial enriched data');
+              finalData = {
+                fields: partialFields,
+                partial: true,
+                total_fields_found: Object.keys(partialFields).length,
+              };
+            }
+            break;
+          }
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          let eventType = '';
+          for (const line of lines) {
+            if (line.startsWith('event: ')) {
+              eventType = line.slice(7).trim();
+            } else if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+
+                if (eventType === 'progress') {
+                  const { source, status: sourceStatus, fieldsFound, currentFields } = data;
+                  const displayName = getSourceName(source);
+
+                  if (currentFields && Object.keys(currentFields).length > 0) {
+                    partialFields = { ...partialFields, ...currentFields };
+                  }
+
+                  startTransition(() => {
+                    setCascadeStatus(prev => {
+                      const existing = prev.find(s => s.llm === displayName);
+                      if (existing) {
+                        return prev.map(s => s.llm === displayName
+                          ? { ...s, status: sourceStatus as 'pending' | 'running' | 'complete' | 'error', fieldsFound }
+                          : s
+                        );
+                      }
+                      return [...prev, { llm: displayName, status: sourceStatus as 'pending' | 'running' | 'complete' | 'error', fieldsFound }];
+                    });
+                  });
+                } else if (eventType === 'complete') {
+                  finalData = data;
+                } else if (eventType === 'error') {
+                  console.error('Enrichment error:', data.error);
+                }
+              } catch (e) {
+                console.error('Failed to parse SSE data:', e);
+              }
+            }
+          }
+        }
+
+        if (finalData && finalData.fields) {
+          // Merge enriched data with existing property
+          const enrichedFields = { ...pdfParsedFields, ...finalData.fields };
+          const enrichedFullProperty = normalizeToProperty(enrichedFields, propertyId, {}, []);
+
+          // Update property card with new data completeness
+          const enrichedCard = {
+            ...propertyCard,
+            dataCompleteness: Math.round((Object.keys(enrichedFields).length / 168) * 100),
+          };
+
+          // Update store with enriched data
+          addProperty(enrichedCard, enrichedFullProperty);
+
+          console.log('✅ Auto-enrichment complete:', Object.keys(enrichedFields).length, 'total fields');
+          setProgress(100);
+          setStatus('complete');
+        } else {
+          // Enrichment failed, but PDF data is already saved
+          console.warn('⚠️ Auto-enrichment failed, but PDF data was saved');
+          setProgress(100);
+          setStatus('complete');
+        }
+
+        // Reset PDF state
+        setPdfFile(null);
+        setPdfParsedFields({});
+        setPdfParseStatus('idle');
+
+      } catch (enrichError) {
+        // Enrichment failed, but PDF data is already saved
+        console.error('❌ Auto-enrichment error:', enrichError);
+        console.log('✅ Property saved with PDF data only (enrichment skipped)');
+        setProgress(100);
+        setStatus('complete');
+
+        // Reset PDF state
+        setPdfFile(null);
+        setPdfParsedFields({});
+        setPdfParseStatus('idle');
+      }
 
     } catch (error) {
       console.error('PDF import error:', error);
