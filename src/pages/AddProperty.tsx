@@ -598,8 +598,18 @@ export default function AddProperty() {
     const hasExistingData = Object.keys(accumulatedFields).length > 0;
     const shouldAccumulate = !isNewAddress && hasExistingData;
 
+    // DEBUG: Trace accumulation logic
+    console.log('🔍 [DEBUG] handleScrape called');
+    console.log('🔍 [DEBUG] searchQuery:', searchQuery);
+    console.log('🔍 [DEBUG] currentAddress:', currentAddress);
+    console.log('🔍 [DEBUG] isNewAddress:', isNewAddress);
+    console.log('🔍 [DEBUG] hasExistingData:', hasExistingData);
+    console.log('🔍 [DEBUG] shouldAccumulate:', shouldAccumulate);
+    console.log('🔍 [DEBUG] accumulatedFields count:', Object.keys(accumulatedFields).length);
+
     if (isNewAddress) {
       // New address - reset accumulation
+      console.log('🔍 [DEBUG] RESETTING accumulatedFields because isNewAddress=true');
       setAccumulatedFields({});
       setCurrentAddress(searchQuery);
       setTotalFieldsFound(0);
@@ -626,21 +636,27 @@ export default function AddProperty() {
         return [selectedEngine]; // Already in correct format (e.g., 'claude-opus', 'gpt')
       };
 
+      const requestBody = {
+        address: searchQuery,
+        url: inputMode === 'url' ? url : undefined,
+        engines: getEngines(),
+        useGrok: selectedEngine === 'Auto' || selectedEngine === 'grok',
+        usePerplexity: selectedEngine === 'perplexity',
+        useCascade: selectedEngine === 'Auto', // Only cascade on Auto
+        existingFields: shouldAccumulate ? accumulatedFields : {},  // Send existing fields for accumulation
+        skipApis: shouldAccumulate,  // Skip APIs if we already have data from this address
+      };
+
+      console.log('🔍 [DEBUG] Sending to API:', apiUrl);
+      console.log('🔍 [DEBUG] Request body existingFields count:', Object.keys(requestBody.existingFields).length);
+      console.log('🔍 [DEBUG] skipApis:', requestBody.skipApis);
+
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          address: searchQuery,
-          url: inputMode === 'url' ? url : undefined,
-          engines: getEngines(),
-          useGrok: selectedEngine === 'Auto' || selectedEngine === 'grok',
-          usePerplexity: selectedEngine === 'perplexity',
-          useCascade: selectedEngine === 'Auto', // Only cascade on Auto
-          existingFields: shouldAccumulate ? accumulatedFields : {},  // Send existing fields for accumulation
-          skipApis: shouldAccumulate,  // Skip APIs if we already have data from this address
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       setStatus('enriching');
@@ -649,15 +665,21 @@ export default function AddProperty() {
       let data: any;
       let isPartialData = false;
 
+      console.log('🔍 [DEBUG] Response status:', response.status);
+
       // Handle 504 timeout - still try to get partial data
       if (response.status === 504) {
-        console.warn('⚠️ 504 Gateway Timeout - checking for partial data');
+        console.warn('⚠️ [DEBUG] 504 Gateway Timeout - checking for partial data');
+        console.log('🔍 [DEBUG] accumulatedFields at 504:', Object.keys(accumulatedFields).length);
         isPartialData = true;
         try {
           data = await response.json();
-        } catch {
+          console.log('🔍 [DEBUG] 504 response had JSON body:', Object.keys(data.fields || {}).length, 'fields');
+        } catch (jsonErr) {
+          console.log('🔍 [DEBUG] 504 response had NO JSON body, error:', jsonErr);
           // If we can't parse the response, check if we have accumulated fields
           if (Object.keys(accumulatedFields).length > 0) {
+            console.log('🔍 [DEBUG] Using accumulatedFields as fallback');
             data = {
               fields: accumulatedFields,
               partial: true,
@@ -666,13 +688,16 @@ export default function AddProperty() {
               completion_percentage: Math.round((Object.keys(accumulatedFields).length / 138) * 100),
             };
           } else {
+            console.log('🔍 [DEBUG] NO accumulatedFields available - throwing error');
             throw new Error('504 Gateway Timeout - no data received');
           }
         }
       } else if (!response.ok) {
+        console.log('🔍 [DEBUG] Non-OK response:', response.status);
         throw new Error(`API Error: ${response.status}`);
       } else {
         data = await response.json();
+        console.log('🔍 [DEBUG] Success response, fields:', Object.keys(data.fields || {}).length);
       }
 
       setProgress(90);
@@ -2605,6 +2630,61 @@ Beautiful 3BR/2BA beach house at 290 41st Ave, St Pete Beach, FL 33706. Built in
                   className="btn-glass flex-1"
                 >
                   Add Another
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Show View Partial Data button when error but we have some data */}
+          {status === 'error' && Object.keys(accumulatedFields).length > 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="mt-6 pt-4 border-t border-white/10"
+            >
+              <div className="text-sm text-yellow-400 mb-3">
+                ⚠️ Search incomplete, but {Object.keys(accumulatedFields).length} fields were found
+              </div>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => {
+                    // Create property from accumulated fields
+                    const fields = accumulatedFields;
+                    const fullAddress = fields['1_full_address']?.value || url || address || 'Unknown';
+                    const addressParts = (fullAddress || '').split(',').map((s: string) => s.trim());
+
+                    const partialProperty: PropertyCard = {
+                      id: generateId(),
+                      address: addressParts[0] || fullAddress,
+                      city: addressParts[1] || 'Unknown',
+                      state: addressParts[2]?.match(/([A-Z]{2})/)?.[1] || 'FL',
+                      zip: addressParts[2]?.match(/(\d{5})/)?.[1] || '',
+                      price: fields['10_listing_price']?.value || 0,
+                      pricePerSqft: fields['11_price_per_sqft']?.value || 0,
+                      bedrooms: fields['17_bedrooms']?.value || 0,
+                      bathrooms: fields['20_total_bathrooms']?.value || 0,
+                      sqft: fields['21_living_sqft']?.value || 0,
+                      yearBuilt: fields['25_year_built']?.value || new Date().getFullYear(),
+                      smartScore: Math.round((Object.keys(fields).length / 138) * 100),
+                      dataCompleteness: Math.round((Object.keys(fields).length / 138) * 100),
+                      listingStatus: fields['4_listing_status']?.value || 'Active',
+                      daysOnMarket: 0,
+                    };
+
+                    const fullPropertyData = convertApiResponseToFullProperty(fields, partialProperty.id, {}, []);
+                    addProperty(partialProperty, fullPropertyData);
+                    setLastAddedId(partialProperty.id);
+                    navigate(`/property/${partialProperty.id}`);
+                  }}
+                  className="btn-quantum flex-1 bg-yellow-600 hover:bg-yellow-500"
+                >
+                  View Partial Data ({Object.keys(accumulatedFields).length} fields)
+                </button>
+                <button
+                  onClick={resetForm}
+                  className="btn-glass flex-1"
+                >
+                  Try Again
                 </button>
               </div>
             </motion.div>
