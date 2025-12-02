@@ -484,7 +484,15 @@ export default function PropertyDetail() {
     setIsRetrying(true);
     try {
       const apiUrl = '/api/property/retry-llm';
-      const address = fullProperty.address.fullAddress.value;
+      const address = fullProperty.address?.fullAddress?.value || fullProperty.address?.streetAddress?.value || '';
+
+      if (!address) {
+        console.error('[RETRY-LLM] No address found in property');
+        setErrorMessage('Cannot retry: No address found for this property');
+        setIsRetrying(false);
+        globalIsRetrying = false;
+        return;
+      }
 
       // Map display names to engine IDs
       const engineMap: Record<string, string> = {

@@ -275,9 +275,8 @@ const PERPLEXITY_TO_NUMBERED_FIELDS: Record<string, string> = {
   'address_identity_county': '7_county',
   'address_identity_zip_code': '8_zip_code',
   'address_identity_parcel_id': '9_parcel_id',
-  'address_identity_street_address': '1_full_address',
-  'address_identity_city': '1_full_address',
-  'address_identity_state': '1_full_address',
+  // ❌ REMOVED: street_address, city, state were overwriting 1_full_address
+  // Only keep the grouped full_address mapping (line 271)
   'address_identity_latitude': 'coordinates',
   'address_identity_longitude': 'coordinates',
 

@@ -748,8 +748,53 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const hasTime = () => (Date.now() - startTime) < DEADLINE;
 
     // ========================================
+    // SPECIAL CASE: URL mode - Run Perplexity first to extract address
+    // ========================================
+    let extractedAddress = searchAddress;
+    let perplexityAlreadyRan = false;
+
+    if (url && !skipLLMs && engines.includes('perplexity')) {
+      console.log('[URL MODE] Running Perplexity first to extract address from URL');
+      sendEvent(res, 'progress', { source: 'perplexity', status: 'searching', message: 'Extracting address from URL...' });
+      perplexityAlreadyRan = true;
+
+      try {
+        const perplexityResult = await withTimeout(
+          callPerplexity(url),
+          LLM_TIMEOUT,
+          { fields: {}, error: 'timeout' }
+        );
+
+        const perplexityFields = perplexityResult.fields || perplexityResult;
+        const rawFieldCount = Object.keys(perplexityFields || {}).length;
+        const newFields = arbitrationPipeline.addFieldsFromSource(perplexityFields || {}, 'Perplexity');
+
+        // Extract the address from Perplexity's response
+        const fullAddressField = perplexityFields['1_full_address']?.value || perplexityFields['address_identity_full_address']?.value;
+        if (fullAddressField) {
+          extractedAddress = fullAddressField;
+          console.log(`[URL MODE] Perplexity extracted address: ${extractedAddress}`);
+        }
+
+        sendEvent(res, 'progress', {
+          source: 'perplexity',
+          status: perplexityResult.error ? 'error' : 'complete',
+          fieldsFound: rawFieldCount,
+          newUniqueFields: newFields,
+          totalFieldsSoFar: arbitrationPipeline.getFieldCount(),
+          currentFields: arbitrationPipeline.getResult().fields,
+          error: perplexityResult.error
+        });
+      } catch (e) {
+        console.error('[URL MODE] Perplexity error:', e);
+        sendEvent(res, 'progress', { source: 'perplexity', status: 'error', fieldsFound: 0, error: String(e) });
+      }
+    }
+
+    // ========================================
     // TIER 2: GOOGLE GEOCODE (must run first for lat/lon)
     // Skip if we already have API data from previous session
+    // Uses extracted address from Perplexity in URL mode
     // ========================================
     let lat: number | undefined;
     let lon: number | undefined;
@@ -759,7 +804,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       try {
         const geoResult = await withTimeout(
-          callGoogleGeocode(searchAddress),
+          callGoogleGeocode(extractedAddress),
           API_TIMEOUT,
           { ...createFallback('Google Geocode'), lat: undefined, lon: undefined, county: '', zip: '' }
         );
@@ -854,8 +899,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // LLMs provide valuable additional data even if APIs returned some fields
       if (true) {  // Always run LLMs if enabled and time permits
         // Pro plan: Use ALL selected LLMs
+        // Skip Perplexity if it already ran in URL mode
         const enabledLlms = [
-          { id: 'perplexity', fn: callPerplexity, name: 'Perplexity', enabled: engines.includes('perplexity') },
+          { id: 'perplexity', fn: callPerplexity, name: 'Perplexity', enabled: engines.includes('perplexity') && !perplexityAlreadyRan },
           { id: 'grok', fn: callGrok, name: 'Grok', enabled: engines.includes('grok') },
           { id: 'claude-opus', fn: callClaudeOpus, name: 'Claude Opus', enabled: engines.includes('claude-opus') },
           { id: 'gpt', fn: callGPT, name: 'GPT', enabled: engines.includes('gpt') },
@@ -867,6 +913,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'].forEach(id => {
           if (!engines.includes(id)) {
             sendEvent(res, 'progress', { source: id, status: 'skipped', fieldsFound: 0, message: 'Not enabled' });
+          } else if (id === 'perplexity' && perplexityAlreadyRan) {
+            sendEvent(res, 'progress', { source: id, status: 'skipped', fieldsFound: 0, message: 'Already ran for URL extraction' });
           }
         });
 
