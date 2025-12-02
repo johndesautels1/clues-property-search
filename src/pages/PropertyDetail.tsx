@@ -492,9 +492,15 @@ export default function PropertyDetail() {
 
       if (response.ok) {
         const data = await response.json();
-        const newFieldData = data.fields[fieldKey];
+        console.log(`[RETRY-LLM] Response:`, data);
+        console.log(`[RETRY-LLM] Looking for fieldKey: ${fieldKey}`);
+        console.log(`[RETRY-LLM] Available fields:`, Object.keys(data.fields || {}));
 
-        if (newFieldData && newFieldData.value != null) {
+        // Check if the specific field was found, OR if ANY fields were returned
+        const newFieldData = data.fields[fieldKey];
+        const totalFieldsReturned = Object.keys(data.fields || {}).length;
+
+        if (totalFieldsReturned > 0) {
           const updated = JSON.parse(JSON.stringify(fullProperty));
           const paths: Record<string, [string, string]> = {
             // GROUP 1: Address & Identity (1-9)
@@ -652,14 +658,41 @@ export default function PropertyDetail() {
             '137_age_restrictions': ['utilities', 'ageRestrictions'],
             '138_special_assessments': ['utilities', 'specialAssessments'],
           };
-          const path = paths[fieldKey];
-          if (path && updated[path[0]]) {
-            updated[path[0]][path[1]] = { value: newFieldData.value, confidence: 'Medium', notes: `Updated by ${llmName}`, sources: [llmName] };
+
+          // Update ALL fields returned by the LLM, not just the one clicked
+          let fieldsUpdated = 0;
+          let requestedFieldValue = null;
+
+          for (const [returnedFieldKey, fieldData] of Object.entries(data.fields)) {
+            const path = paths[returnedFieldKey];
+            if (path && updated[path[0]] && (fieldData as any)?.value != null) {
+              updated[path[0]][path[1]] = {
+                value: (fieldData as any).value,
+                confidence: 'Medium',
+                notes: `Updated by ${llmName}`,
+                sources: [llmName]
+              };
+              fieldsUpdated++;
+
+              // Track if we found the specific field that was clicked
+              if (returnedFieldKey === fieldKey) {
+                requestedFieldValue = (fieldData as any).value;
+              }
+            }
+          }
+
+          if (fieldsUpdated > 0) {
             updateFullProperty(id, updated);
-            alert(`✅ ${llmName}: ${newFieldData.value}`);
-          } else { alert(`✅ ${llmName}: ${newFieldData.value}`); }
+            if (requestedFieldValue !== null) {
+              alert(`✅ ${llmName}: ${requestedFieldValue} (+ ${fieldsUpdated - 1} other fields updated)`);
+            } else {
+              alert(`✅ ${llmName}: Updated ${fieldsUpdated} fields (requested field not found)`);
+            }
+          } else {
+            alert(`❌ ${llmName} returned data but no matching fields`);
+          }
         } else {
-          alert(`❌ ${llmName} found no data`);
+          alert(`❌ ${llmName} found no data for this property`);
         }
       } else {
         alert(`Error calling ${llmName} API`);
