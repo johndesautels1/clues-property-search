@@ -795,7 +795,7 @@ export default function AddProperty() {
       const conflicts = data.conflicts || []; // NEW: Track conflicting values
 
       // If partial data, warn but continue
-      if (data.partial || isPartialData) {
+      if (data.partial) {
         console.warn('⚠️ Partial data received:', data.error || 'Timeout');
       }
 
@@ -855,7 +855,7 @@ export default function AddProperty() {
       setLastAddedId(scrapedProperty.id);
 
       // Set status based on whether we got partial or complete data
-      if (data.partial || isPartialData) {
+      if (data.partial) {
         setStatus('complete'); // Still mark complete so user can view data
         setProgress(data.completion_percentage || 60);
         console.warn('⚠️ Property added with partial data:', data.total_fields_found, 'fields');
