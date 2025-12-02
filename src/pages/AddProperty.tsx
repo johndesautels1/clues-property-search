@@ -827,7 +827,10 @@ export default function AddProperty() {
       };
 
       const parseNumber = (val: any): number => {
-        const num = typeof val === 'number' ? val : parseFloat(String(val));
+        if (typeof val === 'number') return val;
+        // Remove commas from formatted numbers (e.g., "1,345" → "1345")
+        const cleaned = String(val).replace(/,/g, '');
+        const num = parseFloat(cleaned);
         return !isNaN(num) ? num : 0;
       };
 

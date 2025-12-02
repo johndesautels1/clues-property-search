@@ -1,16 +1,17 @@
 /**
  * CLUES Property Dashboard - Tiered Arbitration Service (API Version)
- * 
+ *
  * SINGLE SOURCE OF TRUTH for data source precedence and conflict resolution.
- * 
+ *
  * Tier Hierarchy (Higher tier ALWAYS wins):
- *   Tier 1: Stellar MLS (Primary source - when eKey obtained)
- *   Tier 2: Google APIs (Geocode, Places, Distance Matrix)
- *   Tier 3: Paid/Free APIs (WalkScore, SchoolDigger, FEMA, AirNow, HowLoud, Weather, FBI Crime)
- *   Tier 4: LLM Cascade (Perplexity, Grok, Claude Opus, GPT, Claude Sonnet, Gemini)
- * 
+ *   Tier 1: Stellar MLS & Claude PDF Parser (Primary trusted sources - 100% reliability)
+ *   Tier 2: Google APIs (Geocode, Places, Distance Matrix - 95% reliability)
+ *   Tier 3: Paid/Free APIs (WalkScore, SchoolDigger, FEMA, AirNow, HowLoud, Weather, FBI Crime - 85-95% reliability)
+ *   Tier 4: LLM Web Search (Perplexity, Grok, Claude Opus, GPT, Claude Sonnet, Gemini - 50-75% reliability)
+ *
  * Key Principles:
  *   - Higher tier data NEVER gets overwritten by lower tier
+ *   - Value normalization prevents false conflicts (e.g., "Condo" = "Condominium", "St Pete" = "Saint Pete")
  *   - LLM quorum voting for numeric/text fields when multiple LLMs return same value
  *   - Validation gates for all fields (price range, year range, geo coords, bathroom math)
  *   - Single-source hallucination protection (flag data from only one LLM)
@@ -28,9 +29,11 @@ export interface TierConfig {
 
 export const DATA_TIERS: Record<string, TierConfig> = {
   'stellar-mls': { tier: 1, name: 'Stellar MLS', description: 'Primary MLS data source', reliability: 100 },
+  'stellar-mls-pdf': { tier: 1, name: 'Stellar MLS PDF', description: 'Claude PDF parser (trusted)', reliability: 100 },
   'google-geocode': { tier: 2, name: 'Google Geocode', description: 'Address geocoding', reliability: 95 },
   'google-places': { tier: 2, name: 'Google Places', description: 'Nearby amenities', reliability: 95 },
   'google-distance': { tier: 2, name: 'Google Distance Matrix', description: 'Commute times', reliability: 95 },
+  'google-maps': { tier: 2, name: 'Google Maps', description: 'Google Maps API', reliability: 95 },
   'walkscore': { tier: 3, name: 'WalkScore', description: 'Walkability scores', reliability: 90 },
   'schooldigger': { tier: 3, name: 'SchoolDigger', description: 'School ratings', reliability: 85 },
   'fema': { tier: 3, name: 'FEMA NFHL', description: 'Flood zones', reliability: 95 },
@@ -38,6 +41,7 @@ export const DATA_TIERS: Record<string, TierConfig> = {
   'howloud': { tier: 3, name: 'HowLoud', description: 'Noise levels', reliability: 85 },
   'weather': { tier: 3, name: 'Weather API', description: 'Climate data', reliability: 85 },
   'fbi-crime': { tier: 3, name: 'FBI Crime Stats', description: 'Crime statistics', reliability: 90 },
+  'crime': { tier: 3, name: 'FBI Crime Stats', description: 'Crime statistics', reliability: 90 },
   'perplexity': { tier: 4, name: 'Perplexity', description: 'LLM with web search', reliability: 75 },
   'grok': { tier: 4, name: 'Grok/xAI', description: 'LLM with real-time data', reliability: 70 },
   'claude-opus': { tier: 4, name: 'Claude Opus', description: 'High-quality LLM', reliability: 65 },
@@ -356,6 +360,62 @@ const validationRuleCache = new Map<string, ValidationRule | null>();
  * Previously: O(n) linear scan through all VALIDATION_RULES on every call
  * Now: O(1) cache lookup for previously validated field keys
  */
+/**
+ * Normalize values to detect trivial variations that shouldn't be flagged as conflicts
+ * Examples:
+ * - "Condominium" vs "Condo" → both become "condo"
+ * - "St Pete Beach" vs "Saint Pete Beach" → both become "st pete beach"
+ * - "APT 203" vs "#203" → both become "203"
+ * - "Pinellas County" vs "Pinellas" → both become "pinellas"
+ * - "Central Air" vs "Central" → both become "central"
+ * - "Wood" vs "Hardwood" → both become "wood"
+ */
+export function normalizeValueForComparison(value: any, fieldKey: string = ''): string {
+  if (value === null || value === undefined) return '';
+
+  let str = String(value).toLowerCase().trim();
+
+  // Remove common abbreviation symbols
+  str = str.replace(/[#,\.]/g, '').replace(/\s+/g, ' ');
+
+  // Property type normalizations
+  if (fieldKey.includes('property_type') || fieldKey.includes('26_')) {
+    if (str.includes('condo')) return 'condo';
+    if (str.includes('single family')) return 'single-family';
+    if (str.includes('townhouse') || str.includes('town home')) return 'townhouse';
+  }
+
+  // Address normalizations
+  if (fieldKey.includes('address') || fieldKey.includes('1_')) {
+    str = str.replace(/\bapt\b/g, '').replace(/\bunit\b/g, '').replace(/\bste\b/g, '');
+    str = str.replace(/\bsaint\b/g, 'st').replace(/\bst\./g, 'st');
+  }
+
+  // County normalizations
+  if (fieldKey.includes('county') || fieldKey.includes('7_')) {
+    str = str.replace(/\bcounty\b/g, '');
+  }
+
+  // HVAC normalizations
+  if (fieldKey.includes('hvac') || fieldKey.includes('47_')) {
+    str = str.replace(/\bair\b/g, '');
+  }
+
+  // Flooring normalizations
+  if (fieldKey.includes('flooring') || fieldKey.includes('64_')) {
+    str = str.replace(/\bhardwood\b/g, 'wood');
+    str = str.replace(/\bluxury vinyl\b/g, 'vinyl');
+  }
+
+  // Status normalizations
+  if (fieldKey.includes('listing_status') || fieldKey.includes('4_')) {
+    if (str.includes('sale')) return 'for sale';
+    if (str.includes('active')) return 'active';
+  }
+
+  return str.trim();
+}
+
 export function validateField(fieldKey: string, value: any): { valid: boolean; message?: string } {
   // Check cache first
   const cachedRule = validationRuleCache.get(fieldKey);
@@ -381,15 +441,16 @@ export function arbitrateField(
   existingField: FieldValue | undefined,
   newValue: any,
   newSource: string,
-  auditTrail: AuditEntry[]
+  auditTrail: AuditEntry[],
+  fieldKey: string = ''
 ): { result: FieldValue | null; action: 'set' | 'skip' | 'override' | 'conflict' | 'validation_fail' } {
   const newTier = getSourceTier(newSource);
   const timestamp = new Date().toISOString();
-  
+
   if (newValue === null || newValue === undefined || newValue === '') {
     return { result: null, action: 'skip' };
   }
-  
+
   if (!existingField) {
     const newField: FieldValue = {
       value: newValue,
@@ -399,7 +460,7 @@ export function arbitrateField(
       timestamp,
       llmSources: newTier === 4 ? [newSource] : undefined,
     };
-    
+
     auditTrail.push({
       field: '',
       action: 'set',
@@ -409,10 +470,15 @@ export function arbitrateField(
       reason: 'Field was empty',
       timestamp,
     });
-    
+
     return { result: newField, action: 'set' };
   }
-  
+
+  // Normalize values for comparison to avoid false conflicts
+  const normalizedNew = normalizeValueForComparison(newValue, fieldKey);
+  const normalizedExisting = normalizeValueForComparison(existingField.value, fieldKey);
+  const areValuesEquivalent = normalizedNew === normalizedExisting;
+
   if (newTier < existingField.tier) {
     const overrideField: FieldValue = {
       value: newValue,
@@ -420,12 +486,12 @@ export function arbitrateField(
       confidence: newTier <= 2 ? 'High' : 'Medium',
       tier: newTier,
       timestamp,
-      hasConflict: JSON.stringify(existingField.value) !== JSON.stringify(newValue),
-      conflictValues: existingField.value !== newValue 
+      hasConflict: !areValuesEquivalent,
+      conflictValues: !areValuesEquivalent
         ? [{ source: existingField.source, value: existingField.value }]
         : undefined,
     };
-    
+
     auditTrail.push({
       field: '',
       action: 'override',
@@ -437,12 +503,14 @@ export function arbitrateField(
       reason: `Higher tier (${newTier}) overrides lower tier (${existingField.tier})`,
       timestamp,
     });
-    
+
     return { result: overrideField, action: 'override' };
   }
-  
-  if (newTier === existingField.tier && JSON.stringify(existingField.value) !== JSON.stringify(newValue)) {
+
+  // Same tier but different values - check if it's a real conflict after normalization
+  if (newTier === existingField.tier && !areValuesEquivalent) {
     if (newTier === 4) {
+      // LLM conflict - add to conflict list
       const updatedField: FieldValue = {
         ...existingField,
         llmSources: [...(existingField.llmSources || [existingField.source]), newSource],
@@ -452,7 +520,7 @@ export function arbitrateField(
           { source: newSource, value: newValue }
         ],
       };
-      
+
       auditTrail.push({
         field: '',
         action: 'conflict',
@@ -464,10 +532,10 @@ export function arbitrateField(
         reason: 'LLM conflict - added to conflict list',
         timestamp,
       });
-      
+
       return { result: updatedField, action: 'conflict' };
     }
-    
+
     auditTrail.push({
       field: '',
       action: 'skip',
@@ -479,19 +547,20 @@ export function arbitrateField(
       reason: 'Same tier conflict - keeping first value',
       timestamp,
     });
-    
+
     return { result: existingField, action: 'skip' };
   }
-  
+
+  // Same tier, same value (after normalization) - just add source if LLM
   if (newTier === 4 && existingField.tier === 4) {
     const updatedField: FieldValue = {
       ...existingField,
       llmSources: [...(existingField.llmSources || [existingField.source]), newSource],
     };
-    
+
     return { result: updatedField, action: 'skip' };
   }
-  
+
   auditTrail.push({
     field: '',
     action: 'skip',
@@ -503,7 +572,7 @@ export function arbitrateField(
     reason: `Lower tier (${newTier}) cannot override higher tier (${existingField.tier})`,
     timestamp,
   });
-  
+
   return { result: null, action: 'skip' };
 }
 
@@ -644,7 +713,7 @@ export function createArbitrationPipeline(minLLMQuorum: number = 2): {
         return;
       }
 
-      const { result, action } = arbitrateField(fields[fieldKey], value, source, auditTrail);
+      const { result, action } = arbitrateField(fields[fieldKey], value, source, auditTrail, fieldKey);
 
       if (result) {
         if (auditTrail.length > 0) {
