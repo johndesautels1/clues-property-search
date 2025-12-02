@@ -626,8 +626,8 @@ export default function AddProperty() {
 
     try {
 
-      // Call the backend API
-      const apiUrl = import.meta.env.VITE_API_URL || '/api/property/search';
+      // Call the backend API - use streaming endpoint for real-time progress
+      const apiUrl = import.meta.env.VITE_API_URL || '/api/property/search-stream';
 
       setStatus('scraping');
       setProgress(30);
@@ -665,47 +665,128 @@ export default function AddProperty() {
         body: JSON.stringify(requestBody),
       });
 
-      setStatus('enriching');
-      setProgress(60);
-
-      let data: any;
-      let isPartialData = false;
-
-      console.log('🔍 [DEBUG] Response status:', response.status);
-
-      // Handle 504 timeout - still try to get partial data
-      if (response.status === 504) {
-        console.warn('⚠️ [DEBUG] 504 Gateway Timeout - checking for partial data');
-        console.log('🔍 [DEBUG] accumulatedFields at 504:', Object.keys(accumulatedFields).length);
-        isPartialData = true;
-        try {
-          data = await response.json();
-          console.log('🔍 [DEBUG] 504 response had JSON body:', Object.keys(data.fields || {}).length, 'fields');
-        } catch (jsonErr) {
-          console.log('🔍 [DEBUG] 504 response had NO JSON body, error:', jsonErr);
-          // If we can't parse the response, check if we have accumulated fields
-          if (Object.keys(accumulatedFields).length > 0) {
-            console.log('🔍 [DEBUG] Using accumulatedFields as fallback');
-            data = {
-              fields: accumulatedFields,
-              partial: true,
-              error: '504 Gateway Timeout',
-              total_fields_found: Object.keys(accumulatedFields).length,
-              completion_percentage: Math.round((Object.keys(accumulatedFields).length / 138) * 100),
-            };
-          } else {
-            console.log('🔍 [DEBUG] NO accumulatedFields available - throwing error');
-            throw new Error('504 Gateway Timeout - no data received');
-          }
-        }
-      } else if (!response.ok) {
-        console.log('🔍 [DEBUG] Non-OK response:', response.status);
+      // Don't throw on 504 - we may have partial data from SSE stream
+      const is504 = response.status === 504;
+      if (!response.ok && !is504) {
         throw new Error(`API Error: ${response.status}`);
-      } else {
-        data = await response.json();
-        console.log('🔍 [DEBUG] Success response, fields:', Object.keys(data.fields || {}).length);
       }
 
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let finalData: any = null;
+      let currentFieldsFound = 0;
+      let partialFields: Record<string, any> = {};  // Collect fields even if stream fails
+
+      if (!reader) {
+        throw new Error('No response body');
+      }
+
+      let streamError: Error | null = null;
+
+      while (true) {
+        let done = false;
+        let value: Uint8Array | undefined;
+
+        try {
+          const result = await reader.read();
+          done = result.done;
+          value = result.value;
+        } catch (readError) {
+          // Connection failed (504, network error, etc.) - don't throw, use partial data
+          console.warn('⚠️ Stream read error:', readError);
+          streamError = readError instanceof Error ? readError : new Error('Stream read failed');
+          done = true;
+        }
+
+        if (done) {
+          // If we have finalData (complete event received), use it
+          // If not but we have partialFields, create synthetic finalData from them
+          if (!finalData && Object.keys(partialFields).length > 0) {
+            console.warn('⚠️ Stream ended without complete event, using partial data:', Object.keys(partialFields).length, 'fields');
+            finalData = {
+              fields: partialFields,
+              partial: true,
+              error: streamError?.message || 'Stream ended prematurely',
+              total_fields_found: Object.keys(partialFields).length,
+              completion_percentage: Math.round((Object.keys(partialFields).length / 138) * 100),
+            };
+          } else if (!finalData) {
+            throw new Error('Stream ended without complete event and no data received');
+          }
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        let eventType = '';
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            eventType = line.slice(7).trim();
+          } else if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+
+              if (eventType === 'progress') {
+                const { source, status: sourceStatus, fieldsFound, newUniqueFields, currentFields } = data;
+                const displayName = getSourceName(source);
+
+                // 🔥 FIX: Capture intermediate field data as it arrives
+                if (currentFields && Object.keys(currentFields).length > 0) {
+                  partialFields = { ...partialFields, ...currentFields };
+                  console.log(`💾 Captured ${Object.keys(currentFields).length} fields from ${displayName}, total now: ${Object.keys(partialFields).length}`);
+                }
+
+                startTransition(() => {
+                  setCascadeStatus(prev => {
+                    const existing = prev.find(s => s.llm === displayName);
+                    if (existing) {
+                      return prev.map(s => s.llm === displayName
+                        ? { ...s, status: sourceStatus as 'pending' | 'running' | 'complete' | 'error', fieldsFound }
+                        : s
+                      );
+                    }
+                    return [...prev, { llm: displayName, status: sourceStatus as 'pending' | 'running' | 'complete' | 'error', fieldsFound }];
+                  });
+
+                  // Update progress based on NEW UNIQUE fields
+                  if (newUniqueFields !== undefined) {
+                    currentFieldsFound += newUniqueFields;
+                  } else {
+                    currentFieldsFound += fieldsFound || 0;
+                  }
+                  setProgress(Math.min(Math.round((currentFieldsFound / 138) * 100), 99));
+
+                  if (sourceStatus === 'searching') {
+                    setStatus('scraping');
+                  }
+                });
+              } else if (eventType === 'complete') {
+                finalData = data;
+                if (data.total_fields_found !== undefined) {
+                  setTotalFieldsFound(data.total_fields_found);
+                }
+                if (data.fields) {
+                  setAccumulatedFields(data.fields);
+                  console.log('💾 Accumulated fields saved:', Object.keys(data.fields).length);
+                }
+                if (data.partial) {
+                  console.warn('⚠️ Partial data received due to timeout:', data.error);
+                }
+              } else if (eventType === 'error') {
+                throw new Error(data.error || 'Search error');
+              }
+            } catch (e) {
+              if (eventType === 'error') throw e;
+              console.error('Failed to parse SSE data:', e);
+            }
+          }
+        }
+      }
+
+      const data = finalData;
       setProgress(90);
 
       // Extract property data from API response
