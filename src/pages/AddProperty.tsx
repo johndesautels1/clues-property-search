@@ -25,6 +25,14 @@ import { normalizeToProperty } from '@/lib/field-normalizer';
 import { validateCsvData, getValidationSummary, type ValidationResult } from '@/lib/csv-validator';
 import { initializeCascadeStatus, getSourceName } from '@/lib/data-sources';
 
+// Helper to parse numbers and remove commas (e.g., "1,345" → 1345)
+const safeParseNumber = (val: any): number => {
+  if (typeof val === 'number') return val;
+  const cleaned = String(val || '0').replace(/,/g, '');
+  const num = parseFloat(cleaned);
+  return !isNaN(num) ? num : 0;
+};
+
 // Autocomplete suggestion type
 interface AddressSuggestion {
   description: string;
@@ -512,15 +520,15 @@ export default function AddProperty() {
         state: stateMatch?.[1] || manualForm.state,
         zip: zipMatch?.[1] || manualForm.zip,
         price: fields['10_listing_price']?.value || parseInt(manualForm.price) || 0,
-        pricePerSqft: fields['11_price_per_sqft']?.value || (
+        pricePerSqft: safeParseNumber(getFieldValue(fields['11_price_per_sqft'])) || (
           manualForm.sqft && manualForm.price
             ? Math.round(parseInt(manualForm.price) / parseInt(manualForm.sqft))
             : 0
         ),
-        bedrooms: fields['17_bedrooms']?.value || parseInt(manualForm.bedrooms) || 0,
-        bathrooms: fields['20_total_bathrooms']?.value || parseFloat(manualForm.bathrooms) || 0,
-        sqft: fields['21_living_sqft']?.value || parseInt(manualForm.sqft) || 0,
-        yearBuilt: fields['25_year_built']?.value || parseInt(manualForm.yearBuilt) || new Date().getFullYear(),
+        bedrooms: safeParseNumber(getFieldValue(fields['17_bedrooms'])) || parseInt(manualForm.bedrooms) || 0,
+        bathrooms: safeParseNumber(getFieldValue(fields['20_total_bathrooms'])) || parseFloat(manualForm.bathrooms) || 0,
+        sqft: safeParseNumber(getFieldValue(fields['21_living_sqft'])) || parseInt(manualForm.sqft) || 0,
+        yearBuilt: safeParseNumber(getFieldValue(fields['25_year_built'])) || parseInt(manualForm.yearBuilt) || new Date().getFullYear(),
         smartScore: data.completion_percentage || 75,
         dataCompleteness: data.completion_percentage || 0,
         listingStatus: fields['4_listing_status']?.value || manualForm.listingStatus as 'Active' | 'Pending' | 'Sold',
@@ -840,12 +848,12 @@ export default function AddProperty() {
         city,
         state: stateMatch?.[1] || 'FL',
         zip: zipMatch?.[1] || '',
-        price: parseNumber(getFieldValue(fields['10_listing_price'])),
-        pricePerSqft: parseNumber(getFieldValue(fields['11_price_per_sqft'])),
-        bedrooms: parseNumber(getFieldValue(fields['17_bedrooms'])),
-        bathrooms: parseNumber(getFieldValue(fields['20_total_bathrooms'])),
-        sqft: parseNumber(getFieldValue(fields['21_living_sqft'])),
-        yearBuilt: parseNumber(getFieldValue(fields['25_year_built'])) || new Date().getFullYear(),
+        price: safeParseNumber(getFieldValue(fields['10_listing_price'])),
+        pricePerSqft: safeParseNumber(getFieldValue(fields['11_price_per_sqft'])),
+        bedrooms: safeParseNumber(getFieldValue(fields['17_bedrooms'])),
+        bathrooms: safeParseNumber(getFieldValue(fields['20_total_bathrooms'])),
+        sqft: safeParseNumber(getFieldValue(fields['21_living_sqft'])),
+        yearBuilt: safeParseNumber(getFieldValue(fields['25_year_built'])) || new Date().getFullYear(),
         smartScore: data.completion_percentage || 75,
         dataCompleteness: data.completion_percentage || 0,
         listingStatus: (getFieldValue(fields['4_listing_status']) || 'Active') as 'Active' | 'Pending' | 'Sold',
@@ -888,12 +896,12 @@ export default function AddProperty() {
           city: addressParts[1] || 'Unknown',
           state: addressParts[2]?.match(/([A-Z]{2})/)?.[1] || 'FL',
           zip: addressParts[2]?.match(/(\d{5})/)?.[1] || '',
-          price: fields['10_listing_price']?.value || 0,
-          pricePerSqft: fields['11_price_per_sqft']?.value || 0,
-          bedrooms: fields['17_bedrooms']?.value || 0,
-          bathrooms: fields['20_total_bathrooms']?.value || 0,
-          sqft: fields['21_living_sqft']?.value || 0,
-          yearBuilt: fields['25_year_built']?.value || new Date().getFullYear(),
+          price: safeParseNumber(getFieldValue(fields['10_listing_price'])),
+          pricePerSqft: safeParseNumber(getFieldValue(fields['11_price_per_sqft'])),
+          bedrooms: safeParseNumber(getFieldValue(fields['17_bedrooms'])),
+          bathrooms: safeParseNumber(getFieldValue(fields['20_total_bathrooms'])),
+          sqft: safeParseNumber(getFieldValue(fields['21_living_sqft'])),
+          yearBuilt: safeParseNumber(getFieldValue(fields['25_year_built'])) || new Date().getFullYear(),
           smartScore: Math.round((Object.keys(fields).length / 168) * 100),
           dataCompleteness: Math.round((Object.keys(fields).length / 168) * 100),
           listingStatus: fields['4_listing_status']?.value || 'Active',
@@ -2867,18 +2875,26 @@ Beautiful 3BR/2BA beach house at 290 41st Ave, St Pete Beach, FL 33706. Built in
                     const fullAddress = fields['1_full_address']?.value || url || address || 'Unknown';
                     const addressParts = (fullAddress || '').split(',').map((s: string) => s.trim());
 
+                    // Helper to parse numbers from field values (removes commas, etc.)
+                    const parseFieldNumber = (val: any): number => {
+                      if (typeof val === 'number') return val;
+                      const cleaned = String(val || '0').replace(/,/g, '');
+                      const num = parseFloat(cleaned);
+                      return !isNaN(num) ? num : 0;
+                    };
+
                     const partialProperty: PropertyCard = {
                       id: generateId(),
                       address: addressParts[0] || fullAddress,
                       city: addressParts[1] || 'Unknown',
                       state: addressParts[2]?.match(/([A-Z]{2})/)?.[1] || 'FL',
                       zip: addressParts[2]?.match(/(\d{5})/)?.[1] || '',
-                      price: fields['10_listing_price']?.value || 0,
-                      pricePerSqft: fields['11_price_per_sqft']?.value || 0,
-                      bedrooms: fields['17_bedrooms']?.value || 0,
-                      bathrooms: fields['20_total_bathrooms']?.value || 0,
-                      sqft: fields['21_living_sqft']?.value || 0,
-                      yearBuilt: fields['25_year_built']?.value || new Date().getFullYear(),
+                      price: parseFieldNumber(fields['10_listing_price']?.value),
+                      pricePerSqft: parseFieldNumber(fields['11_price_per_sqft']?.value),
+                      bedrooms: parseFieldNumber(fields['17_bedrooms']?.value),
+                      bathrooms: parseFieldNumber(fields['20_total_bathrooms']?.value),
+                      sqft: parseFieldNumber(fields['21_living_sqft']?.value),
+                      yearBuilt: parseFieldNumber(fields['25_year_built']?.value) || new Date().getFullYear(),
                       smartScore: Math.round((Object.keys(fields).length / 168) * 100),
                       dataCompleteness: Math.round((Object.keys(fields).length / 168) * 100),
                       listingStatus: fields['4_listing_status']?.value || 'Active',
