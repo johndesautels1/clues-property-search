@@ -277,7 +277,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
                       streamDied: true,
                       fields: lastKnownFields,
                       total_fields_found: lastFieldCount,
-                      completion_percentage: Math.round((lastFieldCount / 138) * 100),
+                      completion_percentage: Math.round((lastFieldCount / 168) * 100),
                       error: 'Connection lost - showing partial results'
                     });
                   } else {
@@ -316,13 +316,13 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
                         // Otherwise accumulate live totals from completed sources
                         if (typeof totalFieldsSoFar === 'number') {
                           setLiveFieldsFound(totalFieldsSoFar);
-                          setLiveCompletionPct(Math.round((totalFieldsSoFar / 138) * 100));
+                          setLiveCompletionPct(Math.round((totalFieldsSoFar / 168) * 100));
                         } else if (status === 'complete' && (newUniqueFields > 0 || fieldsFound > 0)) {
                           // Fallback: accumulate incrementally
                           const increment = typeof newUniqueFields === 'number' ? newUniqueFields : (fieldsFound || 0);
                           setLiveFieldsFound(prev => {
                             const newTotal = prev + increment;
-                            setLiveCompletionPct(Math.round((newTotal / 138) * 100));
+                            setLiveCompletionPct(Math.round((newTotal / 168) * 100));
                             return newTotal;
                           });
                         }
@@ -340,7 +340,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
                             partial: true,
                             fields: lastKnownFields,
                             total_fields_found: lastFieldCount,
-                            completion_percentage: Math.round((lastFieldCount / 138) * 100),
+                            completion_percentage: Math.round((lastFieldCount / 168) * 100),
                             error: data.error || 'Search error'
                           });
                         } else {
@@ -361,7 +361,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
                   streamDied: true,
                   fields: lastKnownFields,
                   total_fields_found: lastFieldCount,
-                  completion_percentage: Math.round((lastFieldCount / 138) * 100),
+                  completion_percentage: Math.round((lastFieldCount / 168) * 100),
                   error: 'Connection timeout - showing partial results'
                 });
               } else {
@@ -383,9 +383,9 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
       // Show appropriate message based on partial vs complete results
       if (data.partial) {
         setSearchError(`Partial results: ${data.error || 'Some sources failed'}. You can still view and edit the data received.`);
-        setSearchProgress(`Found ${data.total_fields_found || 0} of 138 fields (${data.completion_percentage || 0}%) - PARTIAL`);
+        setSearchProgress(`Found ${data.total_fields_found || 0} of 168 fields (${data.completion_percentage || 0}%) - PARTIAL`);
       } else {
-        setSearchProgress(`Found ${data.total_fields_found || 0} of 138 fields (${data.completion_percentage || 0}%)`);
+        setSearchProgress(`Found ${data.total_fields_found || 0} of 168 fields (${data.completion_percentage || 0}%)`);
       }
 
       // Map API response to form data (works for both partial and complete)

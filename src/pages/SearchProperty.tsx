@@ -174,7 +174,7 @@ export default function SearchProperty() {
             Search for Property
           </h1>
           <p className="text-gray-400 mt-1">
-            Enter address to auto-populate or fill in all 138 fields manually
+            Enter address to auto-populate or fill in all 168 fields manually
           </p>
         </div>
       </div>

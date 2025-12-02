@@ -24,7 +24,7 @@ export default function PropertyDebug() {
       </div>
 
       <div className="glass-card p-6">
-        <h2 className="text-xl font-bold text-quantum-cyan mb-4">Full Property (138 fields)</h2>
+        <h2 className="text-xl font-bold text-quantum-cyan mb-4">Full Property (168 fields)</h2>
         <pre className="bg-black/50 p-4 rounded text-xs text-gray-300 overflow-auto max-h-[600px]">
           {JSON.stringify(fullProperty, null, 2)}
         </pre>

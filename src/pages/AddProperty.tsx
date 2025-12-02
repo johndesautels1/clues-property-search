@@ -2867,8 +2867,8 @@ Beautiful 3BR/2BA beach house at 290 41st Ave, St Pete Beach, FL 33706. Built in
                       bathrooms: fields['20_total_bathrooms']?.value || 0,
                       sqft: fields['21_living_sqft']?.value || 0,
                       yearBuilt: fields['25_year_built']?.value || new Date().getFullYear(),
-                      smartScore: Math.round((Object.keys(fields).length / 138) * 100),
-                      dataCompleteness: Math.round((Object.keys(fields).length / 138) * 100),
+                      smartScore: Math.round((Object.keys(fields).length / 168) * 100),
+                      dataCompleteness: Math.round((Object.keys(fields).length / 168) * 100),
                       listingStatus: fields['4_listing_status']?.value || 'Active',
                       daysOnMarket: 0,
                     };

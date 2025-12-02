@@ -1,6 +1,6 @@
 /**
  * CLUES Property Dashboard - Comprehensive Property Detail Page
- * Displays all 138 fields organized by category with data quality indicators
+ * Displays all 168 fields organized by category with data quality indicators
  * Uses schema from src/types/fields-schema.ts as single source of truth
  */
 
@@ -914,7 +914,7 @@ export default function PropertyDetail() {
               {property.listingStatus}
             </span>
             <span className="text-sm text-gray-400">
-              {property.dataCompleteness}% Data Complete ({Math.round(property.dataCompleteness * 1.38)}/138 fields)
+              {property.dataCompleteness}% Data Complete ({Math.round(property.dataCompleteness * 1.68)}/168 fields)
             </span>
           </div>
         </motion.div>
