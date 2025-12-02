@@ -400,7 +400,7 @@ export default function AddProperty() {
               partial: true,
               error: streamError?.message || 'Stream ended prematurely',
               total_fields_found: Object.keys(partialFields).length,
-              completion_percentage: Math.round((Object.keys(partialFields).length / 138) * 100),
+              completion_percentage: Math.round((Object.keys(partialFields).length / 168) * 100),
             };
           } else if (!finalData) {
             throw new Error('Stream ended without complete event and no data received');
@@ -452,7 +452,7 @@ export default function AddProperty() {
                     // Fallback for non-LLM sources that don't send newUniqueFields
                     currentFieldsFound += fieldsFound || 0;
                   }
-                  setProgress(Math.min(Math.round((currentFieldsFound / 138) * 100), 99));
+                  setProgress(Math.min(Math.round((currentFieldsFound / 168) * 100), 99));
 
                   // Update status message
                   if (sourceStatus === 'searching') {
@@ -527,7 +527,7 @@ export default function AddProperty() {
         daysOnMarket: 0,
       };
 
-      // Create full property object with all 138 fields if available
+      // Create full property object with all 168 fields if available
       const fullPropertyData = convertApiResponseToFullProperty(fields, scrapedProperty.id, fieldSources, conflicts);
 
       addProperty(scrapedProperty, fullPropertyData);
@@ -710,7 +710,7 @@ export default function AddProperty() {
               partial: true,
               error: streamError?.message || 'Stream ended prematurely',
               total_fields_found: Object.keys(partialFields).length,
-              completion_percentage: Math.round((Object.keys(partialFields).length / 138) * 100),
+              completion_percentage: Math.round((Object.keys(partialFields).length / 168) * 100),
             };
           } else if (!finalData) {
             throw new Error('Stream ended without complete event and no data received');
@@ -758,7 +758,7 @@ export default function AddProperty() {
                   } else {
                     currentFieldsFound += fieldsFound || 0;
                   }
-                  setProgress(Math.min(Math.round((currentFieldsFound / 138) * 100), 99));
+                  setProgress(Math.min(Math.round((currentFieldsFound / 168) * 100), 99));
 
                   if (sourceStatus === 'searching') {
                     setStatus('scraping');
@@ -849,7 +849,7 @@ export default function AddProperty() {
         daysOnMarket: 0,
       };
 
-      // Create full property object with all 138 fields if available
+      // Create full property object with all 168 fields if available
       const fullPropertyData = convertApiResponseToFullProperty(fields, scrapedProperty.id, fieldSources, conflicts);
 
       addProperty(scrapedProperty, fullPropertyData);
@@ -891,8 +891,8 @@ export default function AddProperty() {
           bathrooms: fields['20_total_bathrooms']?.value || 0,
           sqft: fields['21_living_sqft']?.value || 0,
           yearBuilt: fields['25_year_built']?.value || new Date().getFullYear(),
-          smartScore: Math.round((Object.keys(fields).length / 138) * 100),
-          dataCompleteness: Math.round((Object.keys(fields).length / 138) * 100),
+          smartScore: Math.round((Object.keys(fields).length / 168) * 100),
+          dataCompleteness: Math.round((Object.keys(fields).length / 168) * 100),
           listingStatus: fields['4_listing_status']?.value || 'Active',
           daysOnMarket: 0,
         };
@@ -928,7 +928,7 @@ export default function AddProperty() {
       case 'searching':
         return 'Finding property listings...';
       case 'scraping':
-        return 'Extracting 138 fields with AI...';
+        return 'Extracting 168 fields with AI...';
       case 'enriching':
         return 'Enriching with Walk Score, Crime, Schools...';
       case 'complete':
@@ -1235,7 +1235,7 @@ export default function AddProperty() {
         seaLevelRiseRisk: createDataField(row['128_sea_level_rise_risk'] || ''),
         noiseLevelDbEst: createDataField(row['129_noise_level_db_est'] || ''),
         solarPotential: createDataField(row['130_solar_potential'] || ''),
-        // Additional Features (fields 131-138)
+        // Additional Features (fields 131-168)
         evChargingYn: createDataField(row['133_ev_charging'] || ''),
         smartHomeFeatures: createDataField(row['134_smart_home_features'] || ''),
         accessibilityMods: createDataField(row['135_accessibility_modifications'] || ''),
@@ -1333,7 +1333,7 @@ export default function AddProperty() {
         // Generate ID for this property
         const propertyId = generateId();
 
-        // Try to extract address from 138-field format or standard format
+        // Try to extract address from 168-field format or standard format
         const address = row['1_full_address'] || row['address'] || row['Address'] || '';
         const city = row['city'] || row['City'] || '';
         const state = row['state'] || row['State'] || 'FL';
@@ -2579,7 +2579,7 @@ Beautiful 3BR/2BA beach house at 290 41st Ave, St Pete Beach, FL 33706. Built in
               />
             </div>
             <p className="text-xs text-gray-500">
-              AI will extract all 138 property fields from your description
+              AI will extract all 168 property fields from your description
             </p>
 
             {/* LLM Selection - Cascade Order per Reliability Audit */}
@@ -2696,32 +2696,9 @@ Beautiful 3BR/2BA beach house at 290 41st Ave, St Pete Beach, FL 33706. Built in
               ))}
             </div>
             <div className="text-xs text-gray-500 mt-2">
-              {progress}% complete ({totalFieldsFound || Math.round(progress * 1.38)} of 138 fields)
+              {progress}% complete ({totalFieldsFound || Math.round(progress * 1.68)} of 168 fields)
             </div>
           </div>
-
-          {status === 'complete' && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="mt-6 pt-4 border-t border-white/10"
-            >
-              <div className="flex gap-4">
-                <button
-                  onClick={() => lastAddedId && navigate(`/property/${lastAddedId}`)}
-                  className="btn-quantum flex-1"
-                >
-                  View Property
-                </button>
-                <button
-                  onClick={resetForm}
-                  className="btn-glass flex-1"
-                >
-                  Add Another
-                </button>
-              </div>
-            </motion.div>
-          )}
 
           {/* Show View Partial Data button when error but we have some data */}
           {status === 'error' && Object.keys(accumulatedFields).length > 0 && (
