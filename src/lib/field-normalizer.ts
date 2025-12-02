@@ -262,6 +262,111 @@ FIELD_TO_PROPERTY_MAP.forEach(mapping => {
 });
 
 /**
+ * PERPLEXITY FIELD NAME TRANSLATION MAP
+ * Perplexity returns grouped field names (e.g., "property_basics_bedrooms")
+ * This map translates them to our numbered schema (e.g., "17_bedrooms")
+ */
+const PERPLEXITY_TO_NUMBERED_FIELDS: Record<string, string> = {
+  // Address & Identity
+  'address_identity_full_address': '1_full_address',
+  'address_identity_mls_primary': '2_mls_primary',
+  'address_identity_mls_secondary': '3_mls_secondary',
+  'address_identity_neighborhood': '6_neighborhood',
+  'address_identity_county': '7_county',
+  'address_identity_zip_code': '8_zip_code',
+  'address_identity_parcel_id': '9_parcel_id',
+  'address_identity_street_address': '1_full_address',
+  'address_identity_city': '1_full_address',
+  'address_identity_state': '1_full_address',
+  'address_identity_latitude': 'coordinates',
+  'address_identity_longitude': 'coordinates',
+
+  // Pricing & Value
+  'pricing_value_listing_status': '4_listing_status',
+  'pricing_value_listing_date': '5_listing_date',
+  'pricing_value_listing_price': '10_listing_price',
+  'pricing_value_price_per_sq_ft': '11_price_per_sqft',
+  'pricing_value_market_value_estimate': '12_market_value_estimate',
+  'pricing_value_last_sale_date': '13_last_sale_date',
+  'pricing_value_last_sale_price': '14_last_sale_price',
+  'pricing_value_assessed_value': '15_assessed_value',
+  'pricing_value_assessed_value_year': '15_assessed_value',
+
+  // Property Basics
+  'property_basics_bedrooms': '17_bedrooms',
+  'property_basics_full_bathrooms': '18_full_bathrooms',
+  'property_basics_half_bathrooms': '19_half_bathrooms',
+  'property_basics_total_bathrooms': '20_total_bathrooms',
+  'property_basics_living_sq_ft': '21_living_sqft',
+  'property_basics_total_sq_ft_under_roof': '22_total_sqft_under_roof',
+  'property_basics_lot_size_sq_ft': '23_lot_size_sqft',
+  'property_basics_lot_size_acres': '24_lot_size_acres',
+  'property_basics_year_built': '25_year_built',
+  'property_basics_property_type': '26_property_type',
+  'property_basics_stories': '27_stories',
+  'property_basics_garage_spaces': '28_garage_spaces',
+  'property_basics_parking_total': '29_parking_total',
+  'property_basics_ownership_type': '34_ownership_type',
+
+  // HOA & Taxes
+  'hoa_taxes_hoa': '30_hoa_yn',
+  'hoa_taxes_hoa_fee_monthly': '31_hoa_fee_annual',
+  'hoa_taxes_hoa_name': '32_hoa_name',
+  'hoa_taxes_hoa_includes': '33_hoa_includes',
+  'hoa_taxes_annual_taxes': '35_annual_taxes',
+  'hoa_taxes_tax_year': '36_tax_year',
+  'hoa_taxes_property_tax_rate_percent': '37_property_tax_rate',
+
+  // Structure & Systems
+  'structure_systems_roof_type': '39_roof_type',
+  'structure_systems_exterior_material': '41_exterior_material',
+  'structure_systems_foundation': '42_foundation',
+  'structure_systems_hvac_type': '45_hvac_type',
+  'structure_systems_water_heater_type': '43_water_heater_type',
+  'structure_systems_laundry_type': '47_laundry_type',
+
+  // Interior Features
+  'interior_features_flooring_type': '49_flooring_type',
+  'interior_features_kitchen_features': '50_kitchen_features',
+  'interior_features_appliances_included': '51_appliances_included',
+  'interior_features_fireplace': '52_fireplace_yn',
+  'interior_features_fireplace_count': '53_fireplace_count',
+
+  // Exterior Features
+  'exterior_features_pool': '54_pool_yn',
+  'exterior_features_pool_type': '55_pool_type',
+  'exterior_features_deck_patio': '56_deck_patio',
+  'exterior_features_waterfront': '155_water_frontage_yn',
+  'exterior_features_view': '131_view_type',
+
+  // Schools
+  'schools_scores_school_district': '63_school_district',
+  'schools_scores_elementary_school_name': '65_elementary_school',
+  'schools_scores_middle_school_name': '68_middle_school',
+  'schools_scores_high_school_name': '71_high_school',
+
+  // Market & Investment
+  'market_investment_median_home_price_neighborhood': '91_median_home_price_neighborhood',
+  'market_investment_avg_days_on_market': '95_days_on_market_avg',
+  'market_investment_insurance_estimate_annual': '97_insurance_est_annual',
+  'market_investment_rental_estimate_monthly': '98_rental_estimate_monthly',
+  'market_investment_rental_yield_percent': '99_rental_yield_est',
+  'market_investment_cap_rate_est_percent': '101_cap_rate_est',
+
+  // Utilities & Connectivity
+  'utilities_connectivity_electric_provider': '104_electric_provider',
+  'utilities_connectivity_water_provider': '106_water_provider',
+  'utilities_connectivity_internet_providers': '111_internet_providers_top3',
+  'utilities_connectivity_fiber_available': '113_fiber_available',
+
+  // Environment & Risk
+  'environment_risk_flood_zone_code': '119_flood_zone',
+  'environment_risk_flood_risk_level': '120_flood_risk_level',
+  'environment_risk_hurricane_risk': '124_hurricane_risk',
+  'environment_risk_elevation_feet': '64_elevation_feet',
+};
+
+/**
  * Create a properly typed DataField from raw API data
  */
 function createDataField<T>(
@@ -597,18 +702,24 @@ export function normalizeToProperty(
 
   console.log(`🔍 normalizeToProperty: Received ${Object.keys(flatFields).length} fields`);
 
-  for (const [apiKey, fieldData] of Object.entries(flatFields)) {
+  for (const [rawApiKey, fieldData] of Object.entries(flatFields)) {
     fieldsReceived++;
 
     if (!fieldData) {
-      console.log(`⚠️ Field ${apiKey}: No data`);
+      console.log(`⚠️ Field ${rawApiKey}: No data`);
       continue;
+    }
+
+    // 🔥 FIX: Translate Perplexity's grouped field names to numbered schema
+    const apiKey = PERPLEXITY_TO_NUMBERED_FIELDS[rawApiKey] || rawApiKey;
+    if (apiKey !== rawApiKey) {
+      console.log(`🔄 Translated ${rawApiKey} → ${apiKey}`);
     }
 
     const mapping = apiKeyToMappingMap.get(apiKey);
     if (!mapping) {
       fieldsMissingMapping++;
-      console.log(`⚠️ Field ${apiKey}: No mapping found`);
+      console.log(`⚠️ Field ${rawApiKey} (translated: ${apiKey}): No mapping found`);
       continue;
     }
 
