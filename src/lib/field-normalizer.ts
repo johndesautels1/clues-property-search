@@ -591,12 +591,24 @@ export function normalizeToProperty(
   };
 
   let fieldsPopulated = 0;
+  let fieldsReceived = 0;
+  let fieldsMissingMapping = 0;
+  let fieldsFailedValidation = 0;
+
+  console.log(`🔍 normalizeToProperty: Received ${Object.keys(flatFields).length} fields`);
 
   for (const [apiKey, fieldData] of Object.entries(flatFields)) {
-    if (!fieldData) continue;
+    fieldsReceived++;
+
+    if (!fieldData) {
+      console.log(`⚠️ Field ${apiKey}: No data`);
+      continue;
+    }
 
     const mapping = apiKeyToMappingMap.get(apiKey);
     if (!mapping) {
+      fieldsMissingMapping++;
+      console.log(`⚠️ Field ${apiKey}: No mapping found`);
       continue;
     }
 
@@ -604,6 +616,8 @@ export function normalizeToProperty(
     const { valid, coerced } = validateAndCoerce(rawValue, mapping);
 
     if (!valid) {
+      fieldsFailedValidation++;
+      console.log(`❌ Field ${apiKey} (${mapping.propName}): Validation failed for value:`, rawValue);
       continue;
     }
 
@@ -634,6 +648,7 @@ export function normalizeToProperty(
         if (mapping.propName in target) {
           target[mapping.propName] = dataField;
           fieldsPopulated++;
+          console.log(`✅ Field ${apiKey} → stellarMLS.${subGroup}.${mapping.propName} = ${coerced}`);
         }
       }
     } else {
@@ -641,9 +656,18 @@ export function normalizeToProperty(
       if (group && mapping.propName in group) {
         group[mapping.propName] = dataField;
         fieldsPopulated++;
+        console.log(`✅ Field ${apiKey} → ${mapping.group}.${mapping.propName} = ${coerced}`);
       }
     }
   }
+
+  console.log(`
+📊 normalizeToProperty Summary:
+   Received: ${fieldsReceived} fields
+   Missing mapping: ${fieldsMissingMapping}
+   Failed validation: ${fieldsFailedValidation}
+   Successfully populated: ${fieldsPopulated}
+  `);
 
   if (flatFields['1_full_address']?.value) {
     const fullAddr = String(flatFields['1_full_address'].value);
