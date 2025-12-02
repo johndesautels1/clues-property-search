@@ -26,7 +26,7 @@ import { TOTAL_FIELDS } from '../../src/types/fields-schema.js';
 
 // Vercel serverless config - Pro plan allows 60s
 export const config = {
-  maxDuration: 60, // Pro plan limit
+  maxDuration: 55, // 55s with buffer for response
 };
 
 // Timeout wrapper for API calls - prevents hanging
@@ -719,10 +719,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Parallel execution with per-call timeouts
     // ========================================
 
-    const API_TIMEOUT = 30000; // 30s per API call (HowLoud can be slow)
-    const LLM_TIMEOUT = 55000; // 55s per LLM call (all run in parallel, within 60s Vercel Pro limit)
+    const API_TIMEOUT = 25000; // 25s per API call (HowLoud can be slow)
+    const LLM_TIMEOUT = 48000; // 48s per LLM call (all run in parallel, with 7s buffer)
     const startTime = Date.now();
-    const DEADLINE = 59000; // 59s hard deadline (Vercel Pro allows 60s)
+    const DEADLINE = 54000; // 54s hard deadline (Vercel set to 55s)
 
     // Helper to create timeout fallback with correct source
     const createFallback = (source: string) => ({
@@ -759,6 +759,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           status: geoResult.success ? 'complete' : 'error',
           fieldsFound: newFields,
           totalFieldsSoFar: arbitrationPipeline.getFieldCount(),
+          currentFields: arbitrationPipeline.getResult().fields,  // 🔥 FIX: Send accumulated fields
           error: geoResult.error
         });
       } catch (e) {
@@ -806,6 +807,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             status: data.success ? 'complete' : 'error',
             fieldsFound: newFields,
             totalFieldsSoFar: arbitrationPipeline.getFieldCount(),
+            currentFields: arbitrationPipeline.getResult().fields,  // 🔥 FIX: Send accumulated fields
             error: data.error
           });
         } else {
@@ -893,12 +895,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
               console.log(`✅ [${processingOrder}] ${llm.id}: ${rawFieldCount} returned, ${newUniqueFields} new unique (total: ${arbitrationPipeline.getFieldCount()})`);
 
+              // 🔥 FIX: Send current accumulated fields so frontend can save incrementally
+              const currentAccumulatedFields = arbitrationPipeline.getResult().fields;
+
               sendEvent(res, 'progress', {
                 source: llm.id,
                 status: data.error ? 'error' : 'complete',
                 fieldsFound: rawFieldCount,
                 newUniqueFields: newUniqueFields,
                 totalFieldsSoFar: arbitrationPipeline.getFieldCount(),
+                currentFields: currentAccumulatedFields,  // Send ALL accumulated fields so far
                 error: data.error
               });
             } else {

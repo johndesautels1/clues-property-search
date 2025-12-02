@@ -423,8 +423,14 @@ export default function AddProperty() {
                 // Update cascade status for summary display - use startTransition for non-blocking updates
                 // fieldsFound = actual raw fields returned by source
                 // newUniqueFields = fields that weren't already found (for dedup tracking)
-                const { source, status: sourceStatus, fieldsFound, newUniqueFields } = data;
+                const { source, status: sourceStatus, fieldsFound, newUniqueFields, currentFields } = data;
                 const displayName = getSourceName(source);
+
+                // 🔥 FIX: Capture intermediate field data as it arrives
+                if (currentFields && Object.keys(currentFields).length > 0) {
+                  partialFields = { ...partialFields, ...currentFields };
+                  console.log(`💾 Captured ${Object.keys(currentFields).length} fields from ${displayName}, total now: ${Object.keys(partialFields).length}`);
+                }
 
                 startTransition(() => {
                   setCascadeStatus(prev => {
