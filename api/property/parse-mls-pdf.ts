@@ -663,11 +663,24 @@ function mapFieldsToSchema(rawFields: Record<string, any>): { fields: Record<str
 }
 
 // Parse PDF using Claude's vision capability
-async function parsePdfWithClaude(pdfBase64: string): Promise<Record<string, any>> {
+// Model options:
+// - claude-opus-4-20250514: Highest accuracy, slower, more expensive (~4x Sonnet cost)
+// - claude-sonnet-4-20250514: Fast, good accuracy, cost-effective
+async function parsePdfWithClaude(pdfBase64: string, useOpus: boolean = true): Promise<Record<string, any>> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error('ANTHROPIC_API_KEY not configured');
   }
+
+  // Use Opus by default for maximum accuracy (user is not worried about cost)
+  // Can be overridden with:
+  // 1. Function parameter: useOpus=false
+  // 2. Environment variable: PDF_PARSER_MODEL=sonnet
+  const envModel = process.env.PDF_PARSER_MODEL?.toLowerCase();
+  const shouldUseOpus = envModel === 'sonnet' ? false : (envModel === 'opus' ? true : useOpus);
+
+  const model = shouldUseOpus ? 'claude-opus-4-20250514' : 'claude-sonnet-4-20250514';
+  console.log(`[PDF PARSER] Using model: ${model} (Opus=${shouldUseOpus})`);
 
   const prompt = `You are a Stellar MLS data extraction expert. Extract EVERY SINGLE field and value from this Stellar MLS CustomerFull PDF sheet.
 
@@ -788,7 +801,7 @@ Return ONLY the JSON object, no markdown or explanation.`;
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: model,
         max_tokens: 8000,
         messages: [
           {
