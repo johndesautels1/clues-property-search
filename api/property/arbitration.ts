@@ -369,17 +369,19 @@ const validationRuleCache = new Map<string, ValidationRule | null>();
  * - "Pinellas County" vs "Pinellas" → both become "pinellas"
  * - "Central Air" vs "Central" → both become "central"
  * - "Wood" vs "Hardwood" → both become "wood"
+ * - "Active" vs "For Sale" → both become "active"
+ * - "Pinellas County Schools" vs "Pinellas County School District" → both become "pinellas schools"
  */
 export function normalizeValueForComparison(value: any, fieldKey: string = ''): string {
   if (value === null || value === undefined) return '';
 
   let str = String(value).toLowerCase().trim();
 
-  // Remove common abbreviation symbols
+  // Remove common abbreviation symbols and extra whitespace
   str = str.replace(/[#,\.]/g, '').replace(/\s+/g, ' ');
 
   // Property type normalizations
-  if (fieldKey.includes('property_type') || fieldKey.includes('26_')) {
+  if (fieldKey.includes('property_type') || fieldKey.includes('26_') || fieldKey.includes('ownership')) {
     if (str.includes('condo')) return 'condo';
     if (str.includes('single family')) return 'single-family';
     if (str.includes('townhouse') || str.includes('town home')) return 'townhouse';
@@ -396,21 +398,37 @@ export function normalizeValueForComparison(value: any, fieldKey: string = ''): 
     str = str.replace(/\bcounty\b/g, '');
   }
 
+  // School district normalizations
+  if (fieldKey.includes('school') || fieldKey.includes('63_')) {
+    str = str.replace(/\bschool district\b/g, 'schools');
+    str = str.replace(/\bcounty\b/g, '');
+  }
+
   // HVAC normalizations
-  if (fieldKey.includes('hvac') || fieldKey.includes('47_')) {
+  if (fieldKey.includes('hvac') || fieldKey.includes('45_')) {
     str = str.replace(/\bair\b/g, '');
   }
 
   // Flooring normalizations
-  if (fieldKey.includes('flooring') || fieldKey.includes('64_')) {
+  if (fieldKey.includes('flooring') || fieldKey.includes('49_')) {
     str = str.replace(/\bhardwood\b/g, 'wood');
     str = str.replace(/\bluxury vinyl\b/g, 'vinyl');
   }
 
-  // Status normalizations
+  // Status normalizations - "Active" and "For Sale" are the same
   if (fieldKey.includes('listing_status') || fieldKey.includes('4_')) {
-    if (str.includes('sale')) return 'for sale';
-    if (str.includes('active')) return 'active';
+    if (str.includes('sale') || str.includes('active')) return 'active';
+    if (str.includes('pending')) return 'pending';
+    if (str.includes('sold')) return 'sold';
+  }
+
+  // Price/money normalizations - ignore minor rounding differences
+  if (fieldKey.includes('price') || fieldKey.includes('_per_sqft') || fieldKey.includes('11_')) {
+    const num = parseFloat(str.replace(/[^0-9.]/g, ''));
+    if (!isNaN(num)) {
+      // Round to nearest $10 to ignore $1-2 differences
+      return Math.round(num / 10).toString();
+    }
   }
 
   return str.trim();
@@ -510,7 +528,17 @@ export function arbitrateField(
   // Same tier but different values - check if it's a real conflict after normalization
   if (newTier === existingField.tier && !areValuesEquivalent) {
     if (newTier === 4) {
-      // LLM conflict - add to conflict list
+      // LLM conflict - add to conflict list only if this source+value combo doesn't already exist
+      const existingConflicts = existingField.conflictValues || [];
+      const alreadyExists = existingConflicts.some(
+        cv => cv.source === newSource && normalizeValueForComparison(cv.value, fieldKey) === normalizedNew
+      );
+
+      // Don't add duplicate source+value combinations
+      if (alreadyExists) {
+        return { result: existingField, action: 'skip' };
+      }
+
       const updatedField: FieldValue = {
         ...existingField,
         llmSources: [...(existingField.llmSources || [existingField.source]), newSource],
