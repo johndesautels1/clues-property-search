@@ -105,7 +105,12 @@ function sendEvent(res: VercelResponse, event: string, data: any) {
 // LLM Call Functions
 async function callPerplexity(address: string): Promise<{ fields: Record<string, any>; error?: string }> {
   const apiKey = process.env.PERPLEXITY_API_KEY;
-  if (!apiKey) return { error: 'API key not set', fields: {} };
+  console.log('[SEARCH-STREAM][PERPLEXITY] API key present:', !!apiKey, 'length:', apiKey?.length || 0);
+  if (!apiKey) {
+    const envKeys = Object.keys(process.env).filter(k => k.includes('API') || k.includes('KEY'));
+    console.log('[SEARCH-STREAM][PERPLEXITY] Available API/KEY env vars:', envKeys);
+    return { error: 'API key not set', fields: {} };
+  }
 
   const systemPrompt = `You are a strict real-estate data extraction engine.
 Your only goal is to return a single, normalized JSON object for one residential property, with maximum accuracy and internal consistency.
