@@ -515,7 +515,15 @@ export function arbitrateField(
   const newTier = getSourceTier(newSource);
   const timestamp = new Date().toISOString();
 
+  // Reject null, undefined, empty, NaN, or invalid values
   if (newValue === null || newValue === undefined || newValue === '') {
+    return { result: null, action: 'skip' };
+  }
+
+  // Reject NaN values (both number NaN and string "NaN")
+  const strValue = String(newValue).trim().toLowerCase();
+  if (strValue === 'nan' || (typeof newValue === 'number' && isNaN(newValue))) {
+    console.warn(`[ARBITRATION] Rejecting NaN value for field ${fieldKey} from ${newSource}`);
     return { result: null, action: 'skip' };
   }
 
