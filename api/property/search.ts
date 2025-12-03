@@ -71,6 +71,28 @@ function valuesAreSemanticallySame(val1: any, val2: any): boolean {
 
   if (normalize(str1) === normalize(str2)) return true;
 
+  // Semantic equivalence rules for common real estate terms
+  const semanticRules = [
+    // County variations
+    { terms: ['county'], rule: (s: string) => s.replace(/\s*county$/i, '').trim() },
+    // School district variations
+    { terms: ['school'], rule: (s: string) => s.replace(/\s*school district$/i, '').replace(/\s*schools$/i, '').trim() },
+    // Property type abbreviations
+    { terms: ['condo', 'condominium'], rule: (s: string) => s.replace(/condominium/i, 'condo') },
+    // Listing status equivalents
+    { terms: ['active', 'for sale'], rule: () => 'active' },
+    { terms: ['pending', 'under contract'], rule: () => 'pending' },
+  ];
+
+  // Apply semantic rules
+  for (const { terms, rule } of semanticRules) {
+    if (terms.some(term => str1.includes(term) || str2.includes(term))) {
+      const normalized1 = rule(str1);
+      const normalized2 = rule(str2);
+      if (normalized1 === normalized2) return true;
+    }
+  }
+
   // Handle numeric comparisons with tolerance
   const num1 = parseFloat(str1.replace(/[^0-9.-]/g, ''));
   const num2 = parseFloat(str2.replace(/[^0-9.-]/g, ''));

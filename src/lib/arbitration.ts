@@ -134,9 +134,16 @@ const MEDIUM_CONFIDENCE_SOURCES = [
 
 // LOW CONFIDENCE sources (red) - everything else including:
 // gpt, claude-sonnet, gemini
+// NOTE: Gemini consistently returns incorrect data and should be treated as CODE RED
 
 export function getSourceConfidence(sourceName: string, hasCitations: boolean = false): 'High' | 'Medium' | 'Low' {
   const sourceKey = sourceName.toLowerCase();
+
+  // CODE RED: Gemini has shown consistent data quality issues
+  // Always return 'Low' and flag for review
+  if (sourceKey.includes('gemini')) {
+    return 'Low'; // Explicitly mark as lowest confidence
+  }
 
   // Perplexity and Grok with citations = High
   if ((sourceKey.includes('perplexity') || sourceKey.includes('grok')) && hasCitations) {
@@ -158,7 +165,7 @@ export function getSourceConfidence(sourceName: string, hasCitations: boolean = 
     return 'Medium';
   }
 
-  // Everything else (GPT, Claude Sonnet, Gemini) = Low
+  // Everything else (GPT, Claude Sonnet) = Low
   return 'Low';
 }
 

@@ -1,0 +1,134 @@
+/**
+ * Bridge Interactive MLS API Endpoint
+ * Fetches property data from Bridge Interactive RESO Web API
+ * Maps to CLUES 168-field schema
+ */
+
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { createBridgeAPIClient, type BridgePropertySearchParams } from '../../src/lib/bridge-api-client.js';
+import { mapBridgePropertyToSchema } from '../../src/lib/bridge-field-mapper.js';
+
+// Vercel serverless config
+export const config = {
+  maxDuration: 60, // 1 minute for API calls
+};
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // CORS headers
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST' && req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    // Get search parameters from request
+    const params: BridgePropertySearchParams = req.method === 'POST' ? req.body : req.query;
+
+    console.log('[Bridge MLS API] Search params:', params);
+
+    // Validate required parameters
+    if (!params.address && !params.mlsNumber && !params.zipCode && !params.city) {
+      return res.status(400).json({
+        success: false,
+        error: 'At least one search parameter required: address, mlsNumber, zipCode, or city',
+      });
+    }
+
+    // Create Bridge API client
+    const client = createBridgeAPIClient();
+
+    // Search for properties
+    let response;
+    if (params.mlsNumber) {
+      console.log('[Bridge MLS API] Searching by MLS number:', params.mlsNumber);
+      const property = await client.getPropertyByMLS(params.mlsNumber);
+      response = property ? { value: [property], '@odata.count': 1, '@odata.context': '' } : { value: [], '@odata.count': 0, '@odata.context': '' };
+    } else if (params.address) {
+      console.log('[Bridge MLS API] Searching by address:', params.address);
+      const property = await client.getPropertyByAddress(params.address, params.city, params.state);
+      response = property ? { value: [property], '@odata.count': 1, '@odata.context': '' } : { value: [], '@odata.count': 0, '@odata.context': '' };
+    } else {
+      console.log('[Bridge MLS API] Searching with filters');
+      response = await client.searchProperties(params);
+    }
+
+    if (!response || response.value.length === 0) {
+      console.log('[Bridge MLS API] No properties found');
+      return res.status(404).json({
+        success: false,
+        error: 'No properties found matching search criteria',
+        results: [],
+        totalCount: 0,
+      });
+    }
+
+    console.log(`[Bridge MLS API] Found ${response.value.length} properties`);
+
+    // Map properties to CLUES schema
+    const mappedProperties = response.value.map(property => {
+      const mapped = mapBridgePropertyToSchema(property);
+      return {
+        fields: mapped.fields,
+        mappedCount: mapped.mappedCount,
+        unmappedCount: mapped.unmappedCount,
+      };
+    });
+
+    // If single result, return as primary property
+    if (mappedProperties.length === 1) {
+      return res.status(200).json({
+        success: true,
+        fields: mappedProperties[0].fields,
+        mappedFieldCount: mappedProperties[0].mappedCount,
+        unmappedFieldCount: mappedProperties[0].unmappedCount,
+        source: 'Bridge Interactive API',
+        sourceType: 'bridge_mls',
+        totalResults: 1,
+      });
+    }
+
+    // Multiple results
+    return res.status(200).json({
+      success: true,
+      results: mappedProperties,
+      totalCount: response['@odata.count'] || response.value.length,
+      source: 'Bridge Interactive API',
+      sourceType: 'bridge_mls',
+    });
+
+  } catch (error) {
+    console.error('[Bridge MLS API] Error:', error);
+
+    // Check for authentication errors
+    if (error instanceof Error && error.message.includes('Authentication failed')) {
+      return res.status(401).json({
+        success: false,
+        error: 'Bridge API authentication failed. Check your credentials.',
+        details: error.message,
+      });
+    }
+
+    // Check for API errors
+    if (error instanceof Error && error.message.includes('Property search failed')) {
+      return res.status(502).json({
+        success: false,
+        error: 'Bridge API search failed',
+        details: error.message,
+      });
+    }
+
+    // Generic error
+    return res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch property data from Bridge Interactive',
+    });
+  }
+}

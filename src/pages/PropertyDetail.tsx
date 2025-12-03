@@ -947,7 +947,7 @@ export default function PropertyDetail() {
           </div>
           <div className="glass-card p-6 text-center">
             <Ruler className="w-6 h-6 text-quantum-cyan mx-auto mb-2" />
-            <span className="text-2xl font-bold text-white block">{property.sqft.toLocaleString()}</span>
+            <span className="text-2xl font-bold text-white block">{fullProperty?.details.livingSqft.value?.toLocaleString() || property.sqft.toLocaleString()}</span>
             <p className="text-sm text-gray-500">Sq Ft</p>
           </div>
           <div className="glass-card p-6 text-center">
@@ -1316,6 +1316,92 @@ export default function PropertyDetail() {
                   {renderDataField("Age Restrictions", fullProperty.utilities.ageRestrictions, "text", undefined, "137_age_restrictions")}
                   {renderDataField("Special Assessments", fullProperty.financial.specialAssessments, "text", undefined, "138_special_assessments")}
                 </div>
+              </div>
+            </Section>
+
+            {/* Stellar MLS - Parking & Garage (Fields 139-143) */}
+            <Section title="Stellar MLS - Parking & Garage" icon={<Building2 className="w-6 h-6" />} defaultExpanded={false}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  {renderDataField("Carport", fullProperty.stellarMLS?.parking?.carportYn, "text", undefined, "139_carport_yn")}
+                  {renderDataField("Carport Spaces", fullProperty.stellarMLS?.parking?.carportSpaces, "number", undefined, "140_carport_spaces")}
+                  {renderDataField("Garage Attached", fullProperty.stellarMLS?.parking?.garageAttachedYn, "text", undefined, "141_garage_attached_yn")}
+                </div>
+                <div>
+                  {renderDataField("Parking Features", fullProperty.stellarMLS?.parking?.parkingFeatures, "text", undefined, "142_parking_features")}
+                  {renderDataField("Assigned Parking Spaces", fullProperty.stellarMLS?.parking?.assignedParkingSpaces, "number", undefined, "143_assigned_parking_spaces")}
+                </div>
+              </div>
+            </Section>
+
+            {/* Stellar MLS - Building Info (Fields 144-148) */}
+            <Section title="Stellar MLS - Building Info" icon={<Building2 className="w-6 h-6" />} defaultExpanded={false}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  {renderDataField("Floor Number", fullProperty.stellarMLS?.building?.floorNumber, "number", undefined, "144_floor_number")}
+                  {renderDataField("Building Total Floors", fullProperty.stellarMLS?.building?.buildingTotalFloors, "number", undefined, "145_building_total_floors")}
+                  {renderDataField("Building Name/Number", fullProperty.stellarMLS?.building?.buildingNameNumber, "text", undefined, "146_building_name_number")}
+                </div>
+                <div>
+                  {renderDataField("Building Elevator", fullProperty.stellarMLS?.building?.buildingElevatorYn, "text", undefined, "147_building_elevator_yn")}
+                  {renderDataField("Floors in Unit", fullProperty.stellarMLS?.building?.floorsInUnit, "number", undefined, "148_floors_in_unit")}
+                </div>
+              </div>
+            </Section>
+
+            {/* Stellar MLS - Legal & Tax (Fields 149-154) */}
+            <Section title="Stellar MLS - Legal & Tax" icon={<Shield className="w-6 h-6" />} defaultExpanded={false}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  {renderDataField("Subdivision Name", fullProperty.stellarMLS?.legal?.subdivisionName, "text", undefined, "149_subdivision_name")}
+                  {renderDataField("Legal Description", fullProperty.stellarMLS?.legal?.legalDescription, "text", undefined, "150_legal_description")}
+                  {renderDataField("Homestead Exemption", fullProperty.stellarMLS?.legal?.homesteadYn, "text", undefined, "151_homestead_yn")}
+                </div>
+                <div>
+                  {renderDataField("CDD (Community Development District)", fullProperty.stellarMLS?.legal?.cddYn, "text", undefined, "152_cdd_yn")}
+                  {renderDataField("Annual CDD Fee", fullProperty.stellarMLS?.legal?.annualCddFee, "currency", undefined, "153_annual_cdd_fee")}
+                  {renderDataField("Front Exposure", fullProperty.stellarMLS?.legal?.frontExposure, "text", undefined, "154_front_exposure")}
+                </div>
+              </div>
+            </Section>
+
+            {/* Stellar MLS - Waterfront (Fields 155-159) */}
+            <Section title="Stellar MLS - Waterfront" icon={<Trees className="w-6 h-6" />} defaultExpanded={false}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  {renderDataField("Water Frontage", fullProperty.stellarMLS?.waterfront?.waterFrontageYn, "text", undefined, "155_water_frontage_yn")}
+                  {renderDataField("Waterfront Feet", fullProperty.stellarMLS?.waterfront?.waterfrontFeet, "number", undefined, "156_waterfront_feet")}
+                  {renderDataField("Water Access", fullProperty.stellarMLS?.waterfront?.waterAccessYn, "text", undefined, "157_water_access_yn")}
+                </div>
+                <div>
+                  {renderDataField("Water View", fullProperty.stellarMLS?.waterfront?.waterViewYn, "text", undefined, "158_water_view_yn")}
+                  {renderDataField("Water Body Name", fullProperty.stellarMLS?.waterfront?.waterBodyName, "text", undefined, "159_water_body_name")}
+                </div>
+              </div>
+            </Section>
+
+            {/* Stellar MLS - Leasing & Pets (Fields 160-165) */}
+            <Section title="Stellar MLS - Leasing & Pets" icon={<Home className="w-6 h-6" />} defaultExpanded={false}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  {renderDataField("Can Be Leased", fullProperty.stellarMLS?.leasing?.canBeLeasedYn, "text", undefined, "160_can_be_leased_yn")}
+                  {renderDataField("Minimum Lease Period", fullProperty.stellarMLS?.leasing?.minimumLeasePeriod, "text", undefined, "161_minimum_lease_period")}
+                  {renderDataField("Lease Restrictions", fullProperty.stellarMLS?.leasing?.leaseRestrictionsYn, "text", undefined, "162_lease_restrictions_yn")}
+                </div>
+                <div>
+                  {renderDataField("Pet Size Limit", fullProperty.stellarMLS?.leasing?.petSizeLimit, "text", undefined, "163_pet_size_limit")}
+                  {renderDataField("Max Pet Weight (lbs)", fullProperty.stellarMLS?.leasing?.maxPetWeight, "number", undefined, "164_max_pet_weight")}
+                  {renderDataField("Association Approval Required", fullProperty.stellarMLS?.leasing?.associationApprovalYn, "text", undefined, "165_association_approval_yn")}
+                </div>
+              </div>
+            </Section>
+
+            {/* Stellar MLS - Community & Features (Fields 166-168) */}
+            <Section title="Stellar MLS - Community & Features" icon={<Sparkles className="w-6 h-6" />} defaultExpanded={false}>
+              <div className="grid grid-cols-1 gap-6">
+                {renderDataField("Community Features", fullProperty.stellarMLS?.features?.communityFeatures, "text", undefined, "166_community_features")}
+                {renderDataField("Interior Features", fullProperty.stellarMLS?.features?.interiorFeatures, "text", undefined, "167_interior_features")}
+                {renderDataField("Exterior Features", fullProperty.stellarMLS?.features?.exteriorFeatures, "text", undefined, "168_exterior_features")}
               </div>
             </Section>
           </div>
