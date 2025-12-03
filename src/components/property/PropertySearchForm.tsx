@@ -296,6 +296,9 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
       };
 
       if (data.fields) {
+        console.log('📊 Mapping API fields to form - Total fields:', Object.keys(data.fields).length);
+        const sourceSample: Record<string, string> = {};
+
         for (const [apiKey, fieldData] of Object.entries(data.fields)) {
           const field = fieldData as any;
           const formKey = mapApiFieldToFormKey(apiKey);
@@ -304,6 +307,11 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
             // Parse source to get a valid DataSource
             let source: DataSource = 'Other';
             const sourceStr = field.source || '';
+
+            // Log first few sources for debugging
+            if (Object.keys(sourceSample).length < 5) {
+              sourceSample[apiKey] = sourceStr;
+            }
 
             // Try to match known sources
             for (const knownSource of DATA_SOURCES) {
@@ -329,6 +337,9 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
             };
           }
         }
+
+        console.log('📋 Sample sources from API:', sourceSample);
+        console.log('✅ Total fields mapped to form:', Object.keys(newFormData).length);
       }
 
       setFormData(prev => ({ ...prev, ...newFormData }));
