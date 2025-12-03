@@ -863,22 +863,38 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lon: numb
 
 async function getWalkScore(lat: number, lon: number, address: string): Promise<Record<string, any>> {
   const apiKey = process.env.WALKSCORE_API_KEY;
-  if (!apiKey) return {};
+  if (!apiKey) {
+    console.log('❌ [WalkScore] WALKSCORE_API_KEY not set in environment variables');
+    return {};
+  }
+
+  console.log(`🔵 [WalkScore] Calling API for: ${address} (${lat}, ${lon})`);
 
   try {
     const url = `https://api.walkscore.com/score?format=json&address=${encodeURIComponent(address)}&lat=${lat}&lon=${lon}&wsapikey=${apiKey}`;
     const response = await fetch(url);
     const data = await response.json();
-    if (data.status !== 1) return {};
+
+    console.log(`🔵 [WalkScore] Response:`, JSON.stringify(data).substring(0, 300));
+    console.log(`🔵 [WalkScore] Status: ${data.status}, Walk: ${data.walkscore}, Transit: ${data.transit?.score || 'N/A'}, Bike: ${data.bike?.score || 'N/A'}`);
+
+    if (data.status !== 1) {
+      console.log(`⚠️ [WalkScore] API returned non-success status: ${data.status}`);
+      return {};
+    }
 
     // UPDATED: 2025-11-30 - Corrected field numbers to match fields-schema.ts
-    return {
+    const fields = {
       '74_walk_score': { value: `${data.walkscore} - ${data.description}`, source: 'WalkScore', confidence: 'High' },
       '75_transit_score': { value: data.transit?.score ? `${data.transit.score} - ${data.transit.description}` : null, source: 'WalkScore', confidence: 'High' },
       '76_bike_score': { value: data.bike?.score ? `${data.bike.score} - ${data.bike.description}` : null, source: 'WalkScore', confidence: 'High' },
       '80_walkability_description': { value: data.description, source: 'WalkScore', confidence: 'High' }
     };
+
+    console.log(`✅ [WalkScore] Returning 4 fields (transit/bike may be null)`);
+    return fields;
   } catch (e) {
+    console.error('❌ [WalkScore] Exception:', e);
     return {};
   }
 }
@@ -930,9 +946,11 @@ async function getAirQuality(lat: number, lon: number): Promise<Record<string, a
 async function getNoiseData(lat: number, lon: number): Promise<Record<string, any>> {
   const apiKey = process.env.HOWLOUD_API_KEY;
   if (!apiKey) {
-    console.log('HOWLOUD_API_KEY not set');
+    console.log('❌ [HowLoud] HOWLOUD_API_KEY not set in environment variables');
     return {};
   }
+
+  console.log(`🔵 [HowLoud] Calling API for coordinates: ${lat}, ${lon}`);
 
   try {
     // Use x-api-key header as per HowLoud API docs
@@ -942,7 +960,17 @@ async function getNoiseData(lat: number, lon: number): Promise<Record<string, an
         'x-api-key': apiKey
       }
     });
+
+    console.log(`🔵 [HowLoud] Response status: ${response.status} ${response.statusText}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log(`❌ [HowLoud] API error: ${response.status} - ${errorText.substring(0, 200)}`);
+      return {};
+    }
+
     const data = await response.json();
+    console.log(`🔵 [HowLoud] Response data:`, JSON.stringify(data).substring(0, 500));
 
     const fields: Record<string, any> = {};
 
@@ -989,9 +1017,10 @@ async function getNoiseData(lat: number, lon: number): Promise<Record<string, an
       }
     }
 
+    console.log(`✅ [HowLoud] Returning ${Object.keys(fields).length} fields`);
     return fields;
   } catch (e) {
-    console.error('HowLoud error:', e);
+    console.error('❌ [HowLoud] Exception:', e);
     return {};
   }
 }
@@ -1171,53 +1200,74 @@ async function getSchoolDistances(lat: number, lon: number): Promise<Record<stri
 async function getCrimeData(lat: number, lon: number, address: string): Promise<Record<string, any>> {
   const fields: Record<string, any> = {};
 
+  console.log(`🔵 [Crime] Starting crime data lookup for: ${address}`);
+
   try {
     // Try CrimeGrade.org scrape (free)
     const zipMatch = address.match(/\b(\d{5})\b/);
-    if (zipMatch) {
-      const zip = zipMatch[1];
-      const crimeUrl = `https://crimegrade.org/safest-places-in-${zip}/`;
+    if (!zipMatch) {
+      console.log(`⚠️ [Crime] No ZIP code found in address: ${address}`);
+      return {};
+    }
 
-      const res = await fetch(crimeUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        }
-      });
+    const zip = zipMatch[1];
+    const crimeUrl = `https://crimegrade.org/safest-places-in-${zip}/`;
+    console.log(`🔵 [Crime] Fetching from: ${crimeUrl}`);
 
-      if (res.ok) {
-        const html = await res.text();
+    const res = await fetch(crimeUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      }
+    });
+
+    console.log(`🔵 [Crime] Response status: ${res.status} ${res.statusText}`);
+
+    if (res.ok) {
+      const html = await res.text();
+      console.log(`🔵 [Crime] Received HTML (${html.length} chars), parsing for crime data...`);
 
         // Extract overall crime grade
         // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Safety & Crime (88-90)
         const gradeMatch = html.match(/Overall Crime Grade[^A-F]*([A-F][+-]?)/i) ||
                           html.match(/crime grade[^A-F]*([A-F][+-]?)/i);
         if (gradeMatch) {
+          console.log(`✅ [Crime] Found overall grade: ${gradeMatch[1]}`);
           fields['90_neighborhood_safety_rating'] = {
             value: `Grade ${gradeMatch[1]}`,
             source: 'CrimeGrade.org',
             confidence: 'Medium'
           };
+        } else {
+          console.log(`⚠️ [Crime] No overall crime grade found in HTML`);
         }
 
         // Extract violent crime grade
         const violentMatch = html.match(/Violent Crime[^A-F]*([A-F][+-]?)/i);
         if (violentMatch) {
+          console.log(`✅ [Crime] Found violent crime grade: ${violentMatch[1]}`);
           fields['88_violent_crime_index'] = {
             value: `Grade ${violentMatch[1]}`,
             source: 'CrimeGrade.org',
             confidence: 'Medium'
           };
+        } else {
+          console.log(`⚠️ [Crime] No violent crime grade found in HTML`);
         }
 
         // Extract property crime grade
         const propertyMatch = html.match(/Property Crime[^A-F]*([A-F][+-]?)/i);
         if (propertyMatch) {
+          console.log(`✅ [Crime] Found property crime grade: ${propertyMatch[1]}`);
           fields['89_property_crime_index'] = {
             value: `Grade ${propertyMatch[1]}`,
             source: 'CrimeGrade.org',
             confidence: 'Medium'
           };
+        } else {
+          console.log(`⚠️ [Crime] No property crime grade found in HTML`);
         }
+      } else {
+        console.log(`❌ [Crime] HTTP ${res.status} - Failed to fetch crime data`);
       }
     }
 
@@ -1259,9 +1309,10 @@ async function getCrimeData(lat: number, lon: number, address: string): Promise<
       }
     }
   } catch (e) {
-    console.error('Crime data error:', e);
+    console.error('❌ [Crime] Exception:', e);
   }
 
+  console.log(`✅ [Crime] Returning ${Object.keys(fields).length} fields`);
   return fields;
 }
 
