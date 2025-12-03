@@ -5,8 +5,9 @@
  */
 
 export interface BridgeAPIConfig {
-  clientId: string;
-  clientSecret: string;
+  clientId?: string;
+  clientSecret?: string;
+  serverToken?: string; // Pre-generated server token (recommended)
   baseUrl: string;
   dataSystem: string;
 }
@@ -177,12 +178,23 @@ export class BridgeAPIClient {
    * Authenticate and get access token
    */
   private async authenticate(): Promise<BridgeAuthToken> {
+    // If using pre-generated server token, return it directly
+    if (this.config.serverToken) {
+      console.log('[Bridge API] Using pre-generated server token');
+      return {
+        access_token: this.config.serverToken,
+        token_type: 'Bearer',
+        expires_in: 999999999, // Server tokens don't expire
+        expiresAt: Date.now() + 999999999000,
+      };
+    }
+
     // Check if we have a valid cached token
     if (this.token && this.token.expiresAt > Date.now()) {
       return this.token;
     }
 
-    console.log('[Bridge API] Authenticating...');
+    console.log('[Bridge API] Authenticating with Client ID/Secret...');
     console.log('[Bridge API] Base URL:', this.config.baseUrl);
     console.log('[Bridge API] Data System:', this.config.dataSystem);
     console.log('[Bridge API] Client ID:', this.config.clientId ? `${this.config.clientId.substring(0, 8)}...` : 'MISSING');
@@ -383,24 +395,28 @@ export class BridgeAPIClient {
 export function createBridgeAPIClient(): BridgeAPIClient {
   console.log('[Bridge API Client] Creating client...');
   console.log('[Bridge API Client] Checking environment variables...');
+  console.log('[Bridge API Client] BRIDGE_SERVER_TOKEN:', process.env.BRIDGE_SERVER_TOKEN ? 'SET (recommended)' : 'NOT SET');
   console.log('[Bridge API Client] BRIDGE_CLIENT_ID:', process.env.BRIDGE_CLIENT_ID ? 'SET' : 'MISSING');
   console.log('[Bridge API Client] BRIDGE_CLIENT_SECRET:', process.env.BRIDGE_CLIENT_SECRET ? 'SET' : 'MISSING');
   console.log('[Bridge API Client] BRIDGE_API_BASE_URL:', process.env.BRIDGE_API_BASE_URL || 'using default');
   console.log('[Bridge API Client] BRIDGE_DATA_SYSTEM:', process.env.BRIDGE_DATA_SYSTEM || 'using default');
 
   const config: BridgeAPIConfig = {
-    clientId: process.env.BRIDGE_CLIENT_ID || '',
-    clientSecret: process.env.BRIDGE_CLIENT_SECRET || '',
+    serverToken: process.env.BRIDGE_SERVER_TOKEN,
+    clientId: process.env.BRIDGE_CLIENT_ID,
+    clientSecret: process.env.BRIDGE_CLIENT_SECRET,
     baseUrl: process.env.BRIDGE_API_BASE_URL || 'https://api.bridgedataoutput.com/api/v2',
-    dataSystem: process.env.BRIDGE_DATA_SYSTEM || 'abor',
+    dataSystem: process.env.BRIDGE_DATA_SYSTEM || 'stellar',
   };
 
-  if (!config.clientId || !config.clientSecret) {
-    const error = 'Bridge API credentials not configured. Set BRIDGE_CLIENT_ID and BRIDGE_CLIENT_SECRET environment variables.';
+  // Either server token OR client credentials must be provided
+  if (!config.serverToken && (!config.clientId || !config.clientSecret)) {
+    const error = 'Bridge API credentials not configured. Set either BRIDGE_SERVER_TOKEN (recommended) or both BRIDGE_CLIENT_ID and BRIDGE_CLIENT_SECRET.';
     console.error('[Bridge API Client] ERROR:', error);
     throw new Error(error);
   }
 
   console.log('[Bridge API Client] Client created successfully');
+  console.log('[Bridge API Client] Using:', config.serverToken ? 'Server Token (direct)' : 'Client ID/Secret (will authenticate)');
   return new BridgeAPIClient(config);
 }
