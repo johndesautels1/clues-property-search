@@ -600,11 +600,35 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
         );
 
       case 'date':
-        // Convert ISO date to yyyy-MM-dd format for HTML date input
+        // Convert various date formats to yyyy-MM-dd for HTML date input
         let dateValue = value as string || '';
-        if (dateValue && dateValue.includes('T')) {
-          // Extract yyyy-MM-dd from ISO format (2025-12-02T00:00:00.000Z)
-          dateValue = dateValue.split('T')[0];
+        if (dateValue) {
+          try {
+            if (dateValue.includes('T')) {
+              // Extract yyyy-MM-dd from ISO format (2025-12-02T00:00:00.000Z)
+              dateValue = dateValue.split('T')[0];
+            } else if (/^[A-Za-z]/.test(dateValue)) {
+              // Parse text dates like "April 16, 1998" to yyyy-MM-dd
+              const parsed = new Date(dateValue);
+              if (!isNaN(parsed.getTime())) {
+                const year = parsed.getFullYear();
+                const month = String(parsed.getMonth() + 1).padStart(2, '0');
+                const day = String(parsed.getDate()).padStart(2, '0');
+                dateValue = `${year}-${month}-${day}`;
+              }
+            } else if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+              // Try parsing any other format
+              const parsed = new Date(dateValue);
+              if (!isNaN(parsed.getTime())) {
+                const year = parsed.getFullYear();
+                const month = String(parsed.getMonth() + 1).padStart(2, '0');
+                const day = String(parsed.getDate()).padStart(2, '0');
+                dateValue = `${year}-${month}-${day}`;
+              }
+            }
+          } catch (e) {
+            console.error('Date parsing error:', e);
+          }
         }
         return (
           <input
