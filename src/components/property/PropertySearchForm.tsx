@@ -264,13 +264,43 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
 
           // Mark all sources as complete (since we get final result only)
           if (data.source_breakdown) {
-            Object.keys(data.source_breakdown).forEach(source => {
-              updateSource(source, {
-                status: 'complete',
-                fieldsFound: data.source_breakdown[source] || 0
-              });
+            console.log('📊 Updating progress tracker from source_breakdown:', data.source_breakdown);
+
+            Object.entries(data.source_breakdown).forEach(([sourceName, count]) => {
+              console.log(`  - Trying to map "${sourceName}" to source ID...`);
+
+              // Find matching source by name (case-insensitive)
+              const matchingSource = DEFAULT_SOURCES.find(s =>
+                s.name.toLowerCase() === sourceName.toLowerCase() ||
+                sourceName.toLowerCase().includes(s.name.toLowerCase()) ||
+                s.name.toLowerCase().includes(sourceName.toLowerCase())
+              );
+
+              if (matchingSource) {
+                console.log(`    ✅ Matched to ID: "${matchingSource.id}" (${matchingSource.name}) - ${count} fields`);
+                updateSource(matchingSource.id, {
+                  status: 'complete',
+                  fieldsFound: count as number || 0
+                });
+              } else {
+                console.log(`    ❌ No match found for "${sourceName}"`);
+              }
             });
+          } else {
+            console.log('⚠️ No source_breakdown in response');
           }
+
+          // Mark any sources still in "searching" state as complete with 0 fields
+          setSourcesProgress(prev => {
+            const updated = prev.map(s => {
+              if (s.status === 'searching' || s.status === 'pending') {
+                console.log(`⚠️ Source "${s.name}" (${s.id}) still ${s.status} - marking complete with 0 fields`);
+                return { ...s, status: 'complete' as const, fieldsFound: 0 };
+              }
+              return s;
+            });
+            return updated;
+          });
 
           // Resolve with the complete data
           resolve(data);

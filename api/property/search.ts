@@ -1365,13 +1365,23 @@ async function getCommuteTime(lat: number, lon: number, county: string): Promise
 }
 
 async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>> {
+  console.log('🔵 [enrichWithFreeAPIs] START - Address:', address);
+
   const geo = await geocodeAddress(address);
-  if (!geo) return {};
+  if (!geo) {
+    console.log('❌ [enrichWithFreeAPIs] FAILED - Geocoding returned null');
+    return {};
+  }
+
+  console.log('✅ [enrichWithFreeAPIs] Geocoding success:', { lat: geo.lat, lon: geo.lon, county: geo.county });
 
   const fields: Record<string, any> = {};
   // Field 7 = county per fields-schema.ts
   fields['7_county'] = { value: geo.county, source: 'Google Maps', confidence: 'High' };
   fields['coordinates'] = { value: { lat: geo.lat, lon: geo.lon }, source: 'Google Maps', confidence: 'High' };
+
+  console.log('🔵 [enrichWithFreeAPIs] Calling 10 APIs in parallel...');
+  const apiStartTime = Date.now();
 
   // Call all APIs in parallel
   const [walkScore, floodZone, airQuality, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeData] = await Promise.all([
@@ -1387,12 +1397,31 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
     getCrimeData(geo.lat, geo.lon, address)
   ]);
 
+  const apiEndTime = Date.now();
+  console.log(`✅ [enrichWithFreeAPIs] All APIs completed in ${apiEndTime - apiStartTime}ms`);
+
   Object.assign(fields, walkScore, floodZone, airQuality, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeData);
 
+  console.log('🔵 [enrichWithFreeAPIs] Raw field count before filtering:', Object.keys(fields).length);
+  console.log('🔵 [enrichWithFreeAPIs] Field breakdown:');
+  console.log('  - WalkScore fields:', Object.keys(walkScore || {}).length);
+  console.log('  - FloodZone fields:', Object.keys(floodZone || {}).length);
+  console.log('  - AirQuality fields:', Object.keys(airQuality || {}).length);
+  console.log('  - NoiseData fields:', Object.keys(noiseData || {}).length);
+  console.log('  - ClimateData fields:', Object.keys(climateData || {}).length);
+  console.log('  - Distances fields:', Object.keys(distances || {}).length);
+  console.log('  - CommuteTime fields:', Object.keys(commuteTime || {}).length);
+  console.log('  - SchoolDistances fields:', Object.keys(schoolDistances || {}).length);
+  console.log('  - TransitAccess fields:', Object.keys(transitAccess || {}).length);
+  console.log('  - CrimeData fields:', Object.keys(crimeData || {}).length);
+
   // Filter out nulls
-  return Object.fromEntries(
+  const filteredFields = Object.fromEntries(
     Object.entries(fields).filter(([_, v]) => v.value !== null && v.value !== undefined)
   );
+
+  console.log('✅ [enrichWithFreeAPIs] END - Returning', Object.keys(filteredFields).length, 'fields after filtering nulls');
+  return filteredFields;
 }
 
 // ============================================
@@ -2671,10 +2700,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Skip if we're only adding LLM data to existing session
     // ========================================
     if (!skipApis) {
-      console.log('Step 2: Enriching with free APIs (Tier 2 & 3)...');
+      console.log('========================================');
+      console.log('TIER 2 & 3: FREE APIs (Google, WalkScore, FEMA, etc.)');
+      console.log('========================================');
+      console.log('🔍 Calling enrichWithFreeAPIs for:', searchQuery);
       try {
         const enrichedData = await enrichWithFreeAPIs(searchQuery);
-      if (Object.keys(enrichedData).length > 0) {
+        console.log('📦 enrichWithFreeAPIs returned', Object.keys(enrichedData).length, 'fields');
+
+      if (Object.keys(enrichedData).length === 0) {
+        console.log('⚠️ WARNING: enrichWithFreeAPIs returned ZERO fields - no API data available');
+      } else {
+        console.log('✅ Processing', Object.keys(enrichedData).length, 'fields from enrichWithFreeAPIs');
+
         // Separate Google fields from other API fields for proper tier assignment
         const googleFields: Record<string, FieldValue> = {};
         const apiFields: Record<string, FieldValue> = {};
@@ -2698,10 +2736,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
         }
 
+        console.log('🔵 Separated into:', Object.keys(googleFields).length, 'Google fields,', Object.keys(apiFields).length, 'other API fields');
+
         // Add Google fields as Tier 2
         if (Object.keys(googleFields).length > 0) {
           const googleAdded = arbitrationPipeline.addFieldsFromSource(googleFields, 'Google Maps');
-          console.log(`Added ${googleAdded} fields from Google Maps (Tier 2)`);
+          console.log(`✅ TIER 2: Added ${googleAdded} fields from Google Maps`);
+        } else {
+          console.log('⚠️ TIER 2: No Google fields to add');
         }
 
         // Add other API fields as Tier 3
@@ -2714,9 +2756,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             sourceGroups[src][key] = field;
           }
 
+          console.log('🔵 TIER 3: Source groups:', Object.keys(sourceGroups));
+
           for (const [source, fields] of Object.entries(sourceGroups)) {
             const added = arbitrationPipeline.addFieldsFromSource(fields, source);
-            console.log(`Added ${added} fields from ${source} (Tier 3)`);
+            console.log(`✅ TIER 3: Added ${added} fields from ${source}`);
           }
         }
       }
@@ -2873,6 +2917,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const source = field.source || 'Unknown';
       sourceBreakdown[source] = (sourceBreakdown[source] || 0) + 1;
     }
+
+    console.log('========================================');
+    console.log('SOURCE BREAKDOWN (for progress tracker):');
+    console.log('========================================');
+    console.log(JSON.stringify(sourceBreakdown, null, 2));
+    console.log('Total fields:', totalFields);
+    console.log('Completion:', completionPercentage + '%');
+    console.log('========================================');
 
     // FIX #8: Build lookup maps once before loop instead of O(n) lookups per field
     // Previously: .find(), .some() calls inside loop = O(n*m) complexity
