@@ -963,13 +963,12 @@ async function getNoiseData(lat: number, lon: number): Promise<Record<string, an
 
     console.log(`🔵 [HowLoud] Response status: ${response.status} ${response.statusText}`);
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const errorText = await response.text();
-      console.log(`❌ [HowLoud] API error: ${response.status} - ${errorText.substring(0, 200)}`);
+      console.log(`❌ [HowLoud] API error: ${response.status} - ${JSON.stringify(data).substring(0, 200)}`);
       return {};
     }
-
-    const data = await response.json();
     console.log(`🔵 [HowLoud] Response data:`, JSON.stringify(data).substring(0, 500));
 
     const fields: Record<string, any> = {};
