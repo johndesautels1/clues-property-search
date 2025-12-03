@@ -12,6 +12,7 @@ import PropertySearchForm from '@/components/property/PropertySearchForm';
 import { usePropertyStore } from '@/store/propertyStore';
 import { useCurrentUser } from '@/store/authStore';
 import type { PropertyCard } from '@/types/property';
+import { normalizeToProperty } from '@/lib/field-normalizer';
 
 // Generate unique ID
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -23,7 +24,7 @@ export default function SearchProperty() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [savedPropertyId, setSavedPropertyId] = useState<string | null>(null);
 
-  const handleSubmit = (formData: Record<string, { value: any; source: string }>) => {
+  const handleSubmit = (formData: Record<string, { value: any; source: string }>, apiFields?: Record<string, any>) => {
     // Extract values from form data
     const getValue = (key: string, defaultVal: any = '') => {
       return formData[key]?.value ?? defaultVal;
@@ -41,9 +42,11 @@ export default function SearchProperty() {
     const state = stateZipMatch?.[1] || 'FL';
     const zip = stateZipMatch?.[2] || '';
 
+    const propertyId = generateId();
+
     // Create property card
     const newProperty: PropertyCard = {
-      id: generateId(),
+      id: propertyId,
       address: street || fullAddress,
       city,
       state,
@@ -61,13 +64,24 @@ export default function SearchProperty() {
       daysOnMarket: 0,
     };
 
-    // Save to store
-    addProperty(newProperty);
-    setSavedPropertyId(newProperty.id);
-    setShowSuccess(true);
+    // Convert API fields to proper Property structure if available
+    let fullProperty = undefined;
+    if (apiFields && Object.keys(apiFields).length > 0) {
+      console.log('✅ Converting', Object.keys(apiFields).length, 'API fields to Property structure');
+      try {
+        fullProperty = normalizeToProperty(apiFields, propertyId);
+        console.log('✅ Successfully created fullProperty structure');
+      } catch (error) {
+        console.error('❌ Error normalizing property:', error);
+      }
+    } else {
+      console.log('⚠️ No API fields available - property will have limited data');
+    }
 
-    // Also save full 138-field data (would go to separate store/DB in production)
-    console.log('Full 138-field data:', formData);
+    // Save to store with full property data
+    addProperty(newProperty, fullProperty);
+    setSavedPropertyId(propertyId);
+    setShowSuccess(true);
   };
 
   // Calculate SMART score based on data quality

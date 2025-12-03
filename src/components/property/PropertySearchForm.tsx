@@ -35,7 +35,7 @@ interface FieldValue {
 }
 
 interface PropertySearchFormProps {
-  onSubmit: (data: Record<string, FieldValue>) => void;
+  onSubmit: (data: Record<string, FieldValue>, apiFields?: Record<string, any>) => void;
   initialData?: Record<string, FieldValue>;
 }
 
@@ -52,6 +52,7 @@ const API_BASE = '/api/property';
 export default function PropertySearchForm({ onSubmit, initialData }: PropertySearchFormProps) {
   const isAdmin = useIsAdmin();
   const [formData, setFormData] = useState<Record<string, FieldValue>>({});
+  const [apiResponseFields, setApiResponseFields] = useState<Record<string, any> | null>(null); // Store raw API response with numbered keys
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['A', 'B', 'C']);
   const [isSearching, setIsSearching] = useState(false);
   const [searchProgress, setSearchProgress] = useState('');
@@ -297,6 +298,11 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
 
       if (data.fields) {
         console.log('📊 Mapping API fields to form - Total fields:', Object.keys(data.fields).length);
+
+        // Store the raw API response fields (with numbered keys) for later use
+        setApiResponseFields(data.fields);
+        console.log('💾 Stored raw API response fields for Property conversion');
+
         const sourceSample: Record<string, string> = {};
 
         for (const [apiKey, fieldData] of Object.entries(data.fields)) {
@@ -372,7 +378,8 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    console.log('📤 Submitting form with', Object.keys(formData).length, 'UI fields and', apiResponseFields ? Object.keys(apiResponseFields).length : 0, 'API fields');
+    onSubmit(formData, apiResponseFields || undefined);
   };
 
   const renderField = (field: FieldDefinition) => {
