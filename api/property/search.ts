@@ -1266,9 +1266,8 @@ async function getCrimeData(lat: number, lon: number, address: string): Promise<
         } else {
           console.log(`⚠️ [Crime] No property crime grade found in HTML`);
         }
-      } else {
-        console.log(`❌ [Crime] HTTP ${res.status} - Failed to fetch crime data`);
-      }
+    } else {
+      console.log(`❌ [Crime] HTTP ${res.status} - Failed to fetch crime data`);
     }
 
     // If CrimeGrade didn't work, try AreaVibes (also free)
@@ -2815,9 +2814,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
         }
       }
-      } catch (e) {
-        console.error('Free APIs enrichment failed:', e);
-      }
+    } catch (e) {
+      console.error('Free APIs enrichment failed:', e);
+    }
     } else {
       console.log('Skipping free APIs - using cached data from previous session');
     }
