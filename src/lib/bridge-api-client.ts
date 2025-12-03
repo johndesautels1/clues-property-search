@@ -354,6 +354,17 @@ export class BridgeAPIClient {
 
       const data: BridgePropertyResponse = await response.json();
       console.log(`[Bridge API] Found ${data.value.length} properties`);
+      console.log('[Bridge API] Response @odata.count:', data['@odata.count']);
+      console.log('[Bridge API] Response @odata.context:', data['@odata.context']);
+
+      if (data.value.length === 0) {
+        console.log('[Bridge API] NO PROPERTIES FOUND - This could mean:');
+        console.log('  1. Property not in approved feed type (check IDX/VOW restrictions)');
+        console.log('  2. Search query not matching any records');
+        console.log('  3. Data access not fully provisioned yet');
+        console.log('[Bridge API] Try this test query in Bridge API Explorer:');
+        console.log(`  ${this.config.baseUrl}/OData/${this.config.dataSystem}/Property?$top=5`);
+      }
 
       return data;
     } catch (error) {
