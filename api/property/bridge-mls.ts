@@ -82,6 +82,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Map properties to CLUES schema
     const mappedProperties = response.value.map(property => {
       const mapped = mapBridgePropertyToSchema(property);
+
+      // Log unmapped data warning
+      if (mapped.unmappedCount > 0) {
+        console.log(`⚠️ [Bridge MLS] ${mapped.unmappedCount} fields from MLS not mapped to schema`);
+        console.log(`✅ [Bridge MLS] ${mapped.mappedCount} fields successfully mapped`);
+      }
       return {
         fields: mapped.fields,
         mappedCount: mapped.mappedCount,

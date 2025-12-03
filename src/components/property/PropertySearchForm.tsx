@@ -406,11 +406,24 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
               source,
               confidence: field.confidence,
             };
+
+            // Debug: Log first few field-source mappings
+            if (Object.keys(newFormData).length <= 5) {
+              console.log(`  🔍 Mapped ${formKey}: source="${source}" (from API: "${field.source || 'MISSING'}")`);
+            }
           }
         }
 
         console.log('📋 Sample sources from API:', sourceSample);
         console.log('✅ Total fields mapped to form:', Object.keys(newFormData).length);
+
+        // Count sources in newFormData
+        const sourceCounts: Record<string, number> = {};
+        for (const [key, fieldData] of Object.entries(newFormData)) {
+          const src = fieldData.source || 'UNDEFINED';
+          sourceCounts[src] = (sourceCounts[src] || 0) + 1;
+        }
+        console.log('📊 Source distribution in form data:', sourceCounts);
       }
 
       setFormData(prev => ({ ...prev, ...newFormData }));
@@ -866,7 +879,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
       {/* Expand/Collapse Controls */}
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-white">
-          All 138 Property Fields
+          All 168 Property Fields
         </h3>
         <div className="flex gap-2">
           <button
@@ -970,7 +983,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
           {Object.keys(formData).filter(k => {
             const val = formData[k]?.value;
             return val !== undefined && val !== '' && val !== null;
-          }).length} / 138 fields completed
+          }).length} / 168 fields completed
         </div>
         <button
           type="submit"

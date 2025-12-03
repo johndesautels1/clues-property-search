@@ -2896,6 +2896,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 // Convert to FieldValue format for arbitration
                 const formattedFields: Record<string, FieldValue> = {};
                 let skippedNulls = 0;
+                let invalidKeys = 0;
 
                 for (const [key, value] of Object.entries(llmFields)) {
                   const fieldData = value as any;
@@ -2904,6 +2905,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   // Skip null/empty responses
                   if (fieldValue === null || fieldValue === undefined || fieldValue === '' || fieldValue === 'Not available') {
                     skippedNulls++;
+                    continue;
+                  }
+
+                  // Validate field key format (should be like "10_listing_price")
+                  if (!/^\d+_/.test(key)) {
+                    console.log(`⚠️ [${llm.id}] Invalid field key (not in schema): "${key}"`);
+                    invalidKeys++;
                     continue;
                   }
 
@@ -2925,7 +2933,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   success: !llmError
                 });
 
-                console.log(`✅ [${processingOrder}] ${llm.id}: ${rawFieldCount} returned, ${skippedNulls} nulls skipped, ${newUniqueFields} new unique added (total now: ${totalAfter})`);
+                console.log(`✅ [${processingOrder}] ${llm.id}: ${rawFieldCount} returned, ${skippedNulls} nulls skipped, ${invalidKeys} invalid keys, ${newUniqueFields} new unique added (total now: ${totalAfter})`);
               } else {
                 llmResponses.push({
                   llm: llm.id,

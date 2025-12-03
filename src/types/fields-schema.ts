@@ -467,12 +467,12 @@ export const UI_FIELD_GROUPS = [
   { id: 'O', name: 'Environment & Risk', fields: [117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130], color: 'orange' },
   { id: 'P', name: 'Additional Features', fields: [131, 132, 133, 134, 135, 136, 137, 138], color: 'purple' },
   // NEW: Stellar MLS Groups (139-168)
-  { id: 'Q', name: 'Stellar MLS - Parking', fields: [139, 140, 141, 142, 143], color: 'slate' },
-  { id: 'R', name: 'Stellar MLS - Building', fields: [144, 145, 146, 147, 148], color: 'zinc' },
-  { id: 'S', name: 'Stellar MLS - Legal', fields: [149, 150, 151, 152, 153, 154], color: 'stone' },
-  { id: 'T', name: 'Stellar MLS - Waterfront', fields: [155, 156, 157, 158, 159], color: 'sky' },
-  { id: 'U', name: 'Stellar MLS - Leasing', fields: [160, 161, 162, 163, 164, 165], color: 'amber' },
-  { id: 'V', name: 'Stellar MLS - Features', fields: [166, 167, 168], color: 'emerald' },
+  { id: 'Q', name: 'Parking', fields: [139, 140, 141, 142, 143], color: 'slate' },
+  { id: 'R', name: 'Building', fields: [144, 145, 146, 147, 148], color: 'zinc' },
+  { id: 'S', name: 'Legal', fields: [149, 150, 151, 152, 153, 154], color: 'stone' },
+  { id: 'T', name: 'Waterfront', fields: [155, 156, 157, 158, 159], color: 'sky' },
+  { id: 'U', name: 'Leasing', fields: [160, 161, 162, 163, 164, 165], color: 'amber' },
+  { id: 'V', name: 'Features', fields: [166, 167, 168], color: 'emerald' },
 ];
 
 // Source-based color coding for data reliability
@@ -480,8 +480,8 @@ export const UI_FIELD_GROUPS = [
 // YELLOW: Claude Opus/Sonnet - needs verification
 // RED: GPT, Gemini, Other - may be hallucinated
 export const getSourceColor = (source: DataSource): { bg: string; text: string; label: string } => {
-  const trusted: DataSource[] = ['Perplexity', 'Grok', 'Stellar MLS', 'County Assessor', 'County Tax Collector', 'County Clerk', 'County Permits', 'Google Geocode', 'Google Places', 'Google Maps', 'WalkScore', 'SchoolDigger', 'GreatSchools', 'Niche', 'NeighborhoodScout', 'FBI Crime', 'FEMA', 'First Street', 'AirNow', 'IQAir', 'HowLoud', 'Weather', 'RentCafe', 'Zumper', 'Census', 'Redfin', 'Manual Entry'];
-  const caution: DataSource[] = ['Claude Opus', 'Claude Sonnet'];
+  const trusted: DataSource[] = ['Perplexity', 'Grok', 'Stellar MLS', 'County Assessor', 'County Tax Collector', 'County Clerk', 'County Permits', 'Google Geocode', 'Google Places', 'Google Maps', 'WalkScore', 'SchoolDigger', 'GreatSchools', 'Niche', 'NeighborhoodScout', 'FBI Crime', 'FEMA', 'First Street', 'AirNow', 'IQAir', 'HowLoud', 'Weather', 'RentCafe', 'Zumper', 'Census', 'Redfin'];
+  const caution: DataSource[] = ['Claude Opus', 'Claude Sonnet', 'Manual Entry'];
   if (trusted.includes(source)) return { bg: 'bg-green-500/20', text: 'text-green-400', label: 'Verified' };
   if (caution.includes(source)) return { bg: 'bg-yellow-500/20', text: 'text-yellow-400', label: 'Review' };
   return { bg: 'bg-red-500/20', text: 'text-red-400', label: 'Unverified' };
