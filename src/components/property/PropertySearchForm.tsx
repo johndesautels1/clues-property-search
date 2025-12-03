@@ -269,12 +269,37 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
             Object.entries(data.source_breakdown).forEach(([sourceName, count]) => {
               console.log(`  - Trying to map "${sourceName}" to source ID...`);
 
-              // Find matching source by name (case-insensitive)
-              const matchingSource = DEFAULT_SOURCES.find(s =>
-                s.name.toLowerCase() === sourceName.toLowerCase() ||
-                sourceName.toLowerCase().includes(s.name.toLowerCase()) ||
-                s.name.toLowerCase().includes(sourceName.toLowerCase())
-              );
+              // Normalize source name for matching
+              const normalizedSourceName = sourceName.toLowerCase()
+                .replace(/\./g, '')  // Remove dots
+                .replace(/\s+/g, ''); // Remove spaces
+
+              // Find matching source with flexible matching rules
+              const matchingSource = DEFAULT_SOURCES.find(s => {
+                const normalizedId = s.id.replace(/-/g, '');
+                const normalizedName = s.name.toLowerCase().replace(/\s+/g, '');
+
+                // Direct match by ID or name
+                if (normalizedId === normalizedSourceName || normalizedName === normalizedSourceName) {
+                  return true;
+                }
+
+                // Special case mappings
+                const mappings: Record<string, string[]> = {
+                  'google-geocode': ['googlemaps', 'googlegeocoding'],
+                  'google-places': ['googleplaces'],
+                  'walkscore': ['walkscore'],
+                  'fema': ['fema', 'femanfhl', 'femaflood'],
+                  'airnow': ['airnow'],
+                  'howloud': ['howloud'],
+                  'weather': ['weathercom', 'weather'],
+                  'crime': ['crimegradeorg', 'crimegrade', 'fbicrime'],
+                  'schooldigger': ['schooldigger'],
+                };
+
+                const validMappings = mappings[s.id] || [];
+                return validMappings.some(mapping => normalizedSourceName.includes(mapping) || mapping.includes(normalizedSourceName));
+              });
 
               if (matchingSource) {
                 console.log(`    ✅ Matched to ID: "${matchingSource.id}" (${matchingSource.name}) - ${count} fields`);
@@ -283,7 +308,8 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
                   fieldsFound: count as number || 0
                 });
               } else {
-                console.log(`    ❌ No match found for "${sourceName}"`);
+                console.log(`    ❌ No match found for "${sourceName}" (normalized: "${normalizedSourceName}")`);
+                console.log(`       Available source IDs:`, DEFAULT_SOURCES.map(s => s.id).join(', '));
               }
             });
           } else {
