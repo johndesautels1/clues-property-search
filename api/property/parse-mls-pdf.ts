@@ -218,7 +218,8 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   // ================================================================
   // GROUP 7: EXTERIOR FEATURES (Fields 54-58)
   // ================================================================
-  'Pool': '54_pool_yn',
+  // NOTE: 'Pool' is handled by special logic below (lines 550+) to support combinations
+  // 'Pool': '54_pool_yn',  // ❌ REMOVED: Causes "Community" string → boolean conversion bug
   'Pool Y/N': '54_pool_yn',
   'Pool Type': '55_pool_type',
   'Pool Features': '55_pool_type',
@@ -547,16 +548,57 @@ function mapFieldsToSchema(rawFields: Record<string, any>): { fields: Record<str
     }
   }
 
-  // Handle Pool field - if value is "Community" or "Private", set Pool Y/N to Yes
+  // Handle Pool field - supports combinations like "Private + Community"
+  // Field 55 is now multiselect, can contain: "In-ground, Community"
   if (rawFields['Pool']) {
-    const poolValue = String(rawFields['Pool']).trim();
-    if (poolValue === 'Community' || poolValue === 'Private' || poolValue === 'Yes') {
-      if (!rawFields['Pool Y/N']) {
-        rawFields['Pool Y/N'] = 'Yes';
+    const poolValue = String(rawFields['Pool']).trim().toLowerCase();
+    const poolTypes: string[] = [];
+
+    // Check for community pool
+    if (poolValue.includes('community')) {
+      poolTypes.push('Community');
+    }
+
+    // Check for private pool types (order matters for specificity)
+    if (poolValue.includes('in-ground') && poolValue.includes('heated')) {
+      poolTypes.push('In-ground Heated');
+    } else if (poolValue.includes('in-ground') || poolValue.includes('inground')) {
+      poolTypes.push('In-ground');
+    } else if (poolValue.includes('above-ground') || poolValue.includes('aboveground')) {
+      poolTypes.push('Above-ground');
+    } else if (poolValue.includes('private') && !poolTypes.includes('In-ground') && !poolTypes.includes('Above-ground')) {
+      // Generic "Private" without specific type - default to in-ground
+      poolTypes.push('In-ground');
+    }
+
+    // Set fields based on what we found
+    if (poolTypes.length > 0) {
+      rawFields['Pool Y/N'] = 'Yes';
+      // Use existing Pool Type if already set, otherwise set from our detection
+      if (!rawFields['Pool Type']) {
+        rawFields['Pool Type'] = poolTypes.join(', ');
+        console.log(`[PDF PARSER] Pool "${rawFields['Pool']}" → Pool Y/N: Yes, Pool Type: ${rawFields['Pool Type']}`);
       }
-      if (!rawFields['Pool Type'] && (poolValue === 'Community' || poolValue === 'Private')) {
-        rawFields['Pool Type'] = poolValue;
-        console.log(`[PDF PARSER] Pool "${poolValue}" → Pool Y/N: Yes, Pool Type: ${poolValue}`);
+    } else if (poolValue === 'yes') {
+      // Generic "Yes" with no type specified
+      rawFields['Pool Y/N'] = 'Yes';
+      console.log(`[PDF PARSER] Pool "Yes" → Pool Y/N: Yes`);
+    }
+  }
+
+  // Also check Community Features for pool (in case Pool field wasn't explicit)
+  if (rawFields['Community Features']) {
+    const communityFeats = String(rawFields['Community Features']).toLowerCase();
+    if (communityFeats.includes('pool')) {
+      // Community has pool amenity
+      if (!rawFields['Pool Y/N'] || rawFields['Pool Y/N'] === 'No') {
+        rawFields['Pool Y/N'] = 'Yes';
+        rawFields['Pool Type'] = 'Community';
+        console.log(`[PDF PARSER] Community Features includes Pool → Pool Y/N: Yes, Pool Type: Community`);
+      } else if (rawFields['Pool Type'] && !rawFields['Pool Type'].toLowerCase().includes('community')) {
+        // Has private pool already, add community
+        rawFields['Pool Type'] = rawFields['Pool Type'] + ', Community';
+        console.log(`[PDF PARSER] Community Features includes Pool → Added Community to Pool Type: ${rawFields['Pool Type']}`);
       }
     }
   }

@@ -113,7 +113,7 @@ export const ALL_FIELDS: readonly FieldDefinition[] = [
   // GROUP 7: Exterior Features (Fields 54-58)
   // ================================================================
   { num: 54, key: 'pool_yn',      label: 'Pool',        group: 'Exterior Features', type: 'boolean', required: false },
-  { num: 55, key: 'pool_type',    label: 'Pool Type',   group: 'Exterior Features', type: 'select',  required: false, options: ['N/A', 'In-ground', 'Above-ground', 'In-ground Heated', 'Community'] },
+  { num: 55, key: 'pool_type',    label: 'Pool Type',   group: 'Exterior Features', type: 'multiselect',  required: false, options: ['N/A', 'In-ground', 'Above-ground', 'In-ground Heated', 'Community'] },
   { num: 56, key: 'deck_patio',   label: 'Deck/Patio',  group: 'Exterior Features', type: 'text',    required: false },
   { num: 57, key: 'fence',        label: 'Fence',       group: 'Exterior Features', type: 'text',    required: false },
   { num: 58, key: 'landscaping',  label: 'Landscaping', group: 'Exterior Features', type: 'text',    required: false },

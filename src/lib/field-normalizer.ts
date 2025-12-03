@@ -435,6 +435,11 @@ function validateAndCoerce(value: any, mapping: FieldPathMapping): { valid: bool
     case 'boolean':
       if (typeof value === 'string') {
         const lower = value.toLowerCase();
+        // Reject pool type strings that should never be converted to boolean
+        // (prevents "Community", "Private", "In-ground" from becoming boolean true/false)
+        if (['community', 'private', 'in-ground', 'above-ground', 'heated', 'inground', 'aboveground'].some(t => lower.includes(t))) {
+          return { valid: false, coerced: null };
+        }
         coerced = lower === 'true' || lower === 'yes' || lower === '1';
       } else {
         coerced = Boolean(value);
@@ -452,7 +457,28 @@ function validateAndCoerce(value: any, mapping: FieldPathMapping): { valid: bool
     case 'date':
     case 'string':
     default:
-      coerced = String(value);
+      // Handle objects returned by LLMs (prevents "[object Object]" display)
+      if (typeof value === 'object' && value !== null) {
+        // If it's an object with nested data, stringify it properly
+        if (Array.isArray(value)) {
+          coerced = value.join(', ');
+        } else {
+          // Try to extract meaningful string from object
+          // Check for common patterns: { value: "foo" }, { text: "foo" }, etc.
+          if ('value' in value && value.value) {
+            coerced = String(value.value);
+          } else if ('text' in value && value.text) {
+            coerced = String(value.text);
+          } else if ('name' in value && value.name) {
+            coerced = String(value.name);
+          } else {
+            // Last resort: JSON stringify for debugging
+            coerced = JSON.stringify(value);
+          }
+        }
+      } else {
+        coerced = String(value);
+      }
       break;
   }
 
