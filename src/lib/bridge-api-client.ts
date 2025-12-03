@@ -251,9 +251,11 @@ export class BridgeAPIClient {
   private buildODataQuery(params: BridgePropertySearchParams): string {
     const filters: string[] = [];
 
-    // Address search
+    // Address search - use tolower for case-insensitive matching
     if (params.address) {
-      filters.push(`contains(UnparsedAddress, '${params.address}')`);
+      // Extract just the street number and name (first part before comma)
+      const addressParts = params.address.split(',')[0].trim();
+      filters.push(`contains(tolower(UnparsedAddress), tolower('${addressParts}'))`);
     }
     if (params.city) {
       filters.push(`City eq '${params.city}'`);
