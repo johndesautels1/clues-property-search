@@ -368,7 +368,10 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
           if (formKey && field.value !== null && field.value !== undefined) {
             // Parse source to get a valid DataSource
             let source: DataSource = 'Other';
-            const sourceStr = field.source || '';
+            // API returns sources as array, get first one
+            const sourceStr = (Array.isArray(field.sources) && field.sources.length > 0)
+              ? field.sources[0]
+              : (field.source || '');
 
             // Log first few sources for debugging
             if (Object.keys(sourceSample).length < 5) {
