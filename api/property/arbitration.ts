@@ -469,6 +469,15 @@ export function normalizeValueForComparison(value: any, fieldKey: string = ''): 
     }
   }
 
+  // Air Quality Index - round to nearest 10 to ignore 1-5 point differences
+  if (fieldKey.includes('air_quality') || fieldKey.includes('aqi') || fieldKey.includes('101_')) {
+    const num = parseFloat(str.replace(/[^0-9.]/g, ''));
+    if (!isNaN(num)) {
+      // Round to nearest 10 (27→30, 28→30, 32→30, 35→40, 44→40, 45→50)
+      return (Math.round(num / 10) * 10).toString();
+    }
+  }
+
   return str.trim();
 }
 
@@ -572,12 +581,31 @@ export function arbitrateField(
     if (newTier === 4) {
       // LLM conflict - add to conflict list only if this source+value combo doesn't already exist
       const existingConflicts = existingField.conflictValues || [];
+
+      // Check for exact duplicates (same source + normalized value)
       const alreadyExists = existingConflicts.some(
         cv => cv.source === newSource && normalizeValueForComparison(cv.value, fieldKey) === normalizedNew
       );
 
-      // Don't add duplicate source+value combinations
-      if (alreadyExists) {
+      // Check for near-duplicates from same source (e.g., Gemini: $665 vs $666)
+      const isNearDuplicate = existingConflicts.some(cv => {
+        if (cv.source !== newSource) return false; // Different source = not a duplicate
+
+        // Extract numeric values for comparison
+        const existingNum = parseFloat(String(cv.value).replace(/[^0-9.-]/g, ''));
+        const newNum = parseFloat(String(newValue).replace(/[^0-9.-]/g, ''));
+
+        // If both are numbers, check if within 1% tolerance
+        if (!isNaN(existingNum) && !isNaN(newNum) && existingNum > 0) {
+          const percentDiff = Math.abs(existingNum - newNum) / existingNum;
+          if (percentDiff < 0.01) return true; // Within 1% = near-duplicate
+        }
+
+        return false;
+      });
+
+      // Don't add duplicate or near-duplicate source+value combinations
+      if (alreadyExists || isNearDuplicate) {
         return { result: existingField, action: 'skip' };
       }
 
