@@ -431,19 +431,22 @@ export function normalizeValueForComparison(value: any, fieldKey: string = ''): 
     }
   }
 
-  // Address normalization - APT = Apt, ignore ", USA"
-  if (fieldKey.includes('address') || fieldKey.includes('1_')) {
+  // Address normalization - APT = Apt, ignore ", USA", Saint = St
+  if (fieldKey.includes('address') || fieldKey.includes('1_') || fieldKey.includes('city') || fieldKey.includes('neighborhood')) {
     str = str.replace(/,\s*USA$/i, ''); // Remove ", USA"
     str = str.replace(/\bAPT\b/gi, 'Apt'); // APT → Apt
     str = str.replace(/\bApartment\b/gi, 'Apt'); // Apartment → Apt
     str = str.replace(/\bUnit\b/gi, 'Apt'); // Unit → Apt
+    str = str.replace(/\bSaint\b/gi, 'St'); // Saint Pete Beach → St Pete Beach
+    str = str.replace(/\bSt\.\s*/gi, 'St '); // St. → St (normalize periods)
   }
 
-  // Property type - Condo = Condominium
+  // Property type - Residential = Single Family = Single Family Residence = Single Family Home
   if (fieldKey.includes('property_type') || fieldKey.includes('26_') || fieldKey.includes('ownership') || fieldKey.includes('34_')) {
     if (str.includes('condo')) return 'condo';
     if (str.includes('townhouse') || str.includes('townhome')) return 'townhouse';
-    if (str.includes('single') || str.includes('sfr')) return 'single family';
+    if (str.includes('single') || str.includes('residential') || str.includes('sfr')) return 'single family';
+    if (str.includes('multi') || str.includes('duplex') || str.includes('triplex')) return 'multi-family';
   }
 
   // Walkability - semantic equivalence
@@ -595,10 +598,10 @@ export function arbitrateField(
         const existingNum = parseFloat(String(cv.value).replace(/[^0-9.-]/g, ''));
         const newNum = parseFloat(String(newValue).replace(/[^0-9.-]/g, ''));
 
-        // If both are numbers, check if within 1% tolerance
+        // If both are numbers, check if within 3% tolerance (handles sqft 1519 vs 1500 = 1.3%)
         if (!isNaN(existingNum) && !isNaN(newNum) && existingNum > 0) {
           const percentDiff = Math.abs(existingNum - newNum) / existingNum;
-          if (percentDiff < 0.01) return true; // Within 1% = near-duplicate
+          if (percentDiff < 0.03) return true; // Within 3% = near-duplicate
         }
 
         return false;

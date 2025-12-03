@@ -272,14 +272,64 @@ Rules:
           {
             role: 'user',
             content: (address.startsWith('http://') || address.startsWith('https://'))
-              ? `CRITICAL: I am providing a DIRECT URL to the property listing. You MUST:
-1. Extract the full address from this URL: ${address}
-2. Read the ENTIRE page at that URL to extract ALL available property data
-3. Use that URL page as your PRIMARY data source (highest reliability)
-4. Cross-reference with county property appraiser records if available
-5. Return the extracted address in the "full_address" field
+              ? `CRITICAL: I am providing a DIRECT PROPERTY LISTING URL. Scrape THIS EXACT PAGE:
+${address}
 
-Scrape every detail from that specific listing page. This is a DIRECT link to the property.`
+EXTRACTION PRIORITY (look for these SPECIFIC fields on the page):
+
+**FROM LISTING PAGE HEADER:**
+- Full address (including unit number if present)
+- List price, price/sqft
+- Beds, baths, sqft
+- Property type (Single Family, Condo, Townhouse)
+- MLS number (if shown)
+- Listing status (Active, Pending, Sold, Off Market)
+- Days on market
+
+**FROM FACTS & FEATURES SECTION:**
+- Year built, stories, lot size (sqft and acres)
+- Parking (garage spaces, carport, driveway)
+- HOA (yes/no, fees, what's included)
+- Heating/cooling type
+- Appliances included (list all mentioned)
+- Flooring types
+- Fireplace (yes/no, count)
+- Pool, patio/deck, fence
+- Roof type, exterior material, foundation
+
+**FROM PRICE/TAX HISTORY:**
+- Last sale date & price
+- Tax assessed value & year
+- Annual property taxes
+- Price history (all price changes)
+
+**FROM ZESTIMATE/ESTIMATES:**
+- Zestimate value
+- Rent Zestimate
+- Any other value estimates shown
+
+**FROM SCHOOLS SECTION:**
+- School district name
+- Elementary, middle, high school names AND ratings
+- Distance to each school
+
+**FROM NEIGHBORHOOD SECTION:**
+- Neighborhood/subdivision name
+- Walk Score, Transit Score, Bike Score (with numbers)
+- Nearby amenities with distances
+
+**FROM DESCRIPTION:**
+- Recent renovations/updates
+- Special features mentioned
+- View type (water, golf, garden, etc.)
+
+**CRITICAL RULES:**
+1. Extract the FULL ADDRESS from the page first
+2. Look for EVERY field listed above on this specific page
+3. Include numeric ratings/scores when shown (e.g., Walk Score: 46)
+4. Return appliances as comma-separated list
+5. OMIT any field you cannot find on this page - do not guess
+6. This is a ZILLOW/REDFIN/REALTOR page - these sites have standard layouts`
               : `Identify and extract all available verified data for the residential property at: ${address}`
           }
         ],
