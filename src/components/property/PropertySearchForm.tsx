@@ -313,22 +313,31 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
               sourceSample[apiKey] = sourceStr;
             }
 
-            // Try to match known sources
+            // Normalize source string for matching (remove common suffixes)
+            const normalizedSource = sourceStr
+              .replace(/ API$/i, '')
+              .replace(/ \(.*?\)$/i, '')
+              .trim();
+
+            // Try to match known sources (case-insensitive, partial match)
             for (const knownSource of DATA_SOURCES) {
-              if (sourceStr.toLowerCase().includes(knownSource.toLowerCase())) {
+              if (normalizedSource.toLowerCase().includes(knownSource.toLowerCase()) ||
+                  knownSource.toLowerCase().includes(normalizedSource.toLowerCase())) {
                 source = knownSource;
                 break;
               }
             }
 
-            // Handle LLM sources
-            if (sourceStr.includes('Claude') && sourceStr.includes('Opus')) source = 'Claude Opus';
-            else if (sourceStr.includes('Claude') && sourceStr.includes('Sonnet')) source = 'Claude Sonnet';
-            else if (sourceStr.includes('Claude')) source = 'Claude Opus';
-            else if (sourceStr.includes('GPT')) source = 'GPT';
-            else if (sourceStr.includes('Gemini')) source = 'Gemini';
-            else if (sourceStr.includes('Perplexity')) source = 'Perplexity';
-            else if (sourceStr.includes('Grok')) source = 'Grok';
+            // Handle specific LLM sources (if not matched above)
+            if (source === 'Other') {
+              if (sourceStr.includes('Claude') && sourceStr.includes('Opus')) source = 'Claude Opus';
+              else if (sourceStr.includes('Claude') && sourceStr.includes('Sonnet')) source = 'Claude Sonnet';
+              else if (sourceStr.includes('Claude')) source = 'Claude Opus';
+              else if (sourceStr.includes('GPT')) source = 'GPT';
+              else if (sourceStr.includes('Gemini')) source = 'Gemini';
+              else if (sourceStr.includes('Perplexity')) source = 'Perplexity';
+              else if (sourceStr.includes('Grok')) source = 'Grok';
+            }
 
             newFormData[formKey] = {
               value: field.value,
