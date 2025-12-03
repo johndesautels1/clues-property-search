@@ -483,14 +483,20 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
       case 'number':
       case 'currency':
       case 'percentage':
-        // Extract numeric value from strings like "55 - Somewhat Walkable"
-        let numericValue: number | string = value;
-        if (typeof value === 'string' && value) {
-          // Try to extract leading number from descriptive strings
+        // Extract numeric value from various input types
+        let numericValue: number | string = '';
+        if (typeof value === 'number') {
+          numericValue = value;
+        } else if (typeof value === 'string' && value) {
+          // Try to extract leading number from descriptive strings like "55 - Somewhat Walkable"
           const match = value.match(/^(\d+(?:\.\d+)?)/);
           if (match) {
             numericValue = parseFloat(match[1]);
+          } else {
+            numericValue = value;
           }
+        } else if (typeof value === 'boolean') {
+          numericValue = value ? 1 : 0;
         }
         return (
           <div className="relative">
