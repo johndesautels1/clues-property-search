@@ -43,7 +43,7 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   let mappedCount = 0;
   let unmappedCount = 0;
 
-  const source = 'Bridge Interactive API';
+  const source = 'Stellar MLS';
 
   // Helper to add field
   const addField = (key: string, value: any, confidence: 'High' | 'Medium-High' | 'Medium' | 'Low' = 'High') => {

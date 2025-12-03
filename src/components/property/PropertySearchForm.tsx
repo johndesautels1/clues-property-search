@@ -634,7 +634,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
               <label className="text-xs font-semibold text-yellow-400">Tier 1: MLS Data</label>
               <span className="text-xs text-gray-500">(Highest Authority)</span>
             </div>
-            <p className="text-xs text-white/70 ml-6">Stellar MLS, Bridge Interactive - searches first when available</p>
+            <p className="text-xs text-white/70 ml-6">Stellar MLS (via Bridge Interactive RESO API) - searches first</p>
           </div>
 
           {/* Tier 2 & 3: Free APIs Toggle */}

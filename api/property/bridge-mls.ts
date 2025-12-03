@@ -96,7 +96,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         fields: mappedProperties[0].fields,
         mappedFieldCount: mappedProperties[0].mappedCount,
         unmappedFieldCount: mappedProperties[0].unmappedCount,
-        source: 'Bridge Interactive API',
+        source: 'Stellar MLS',
         sourceType: 'bridge_mls',
         totalResults: 1,
       });
@@ -107,7 +107,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       success: true,
       results: mappedProperties,
       totalCount: response['@odata.count'] || response.value.length,
-      source: 'Bridge Interactive API',
+      source: 'Stellar MLS',
       sourceType: 'bridge_mls',
     });
 

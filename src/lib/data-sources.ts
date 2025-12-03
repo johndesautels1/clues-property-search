@@ -13,16 +13,16 @@ export interface DataSource {
 }
 
 export const DATA_SOURCES: DataSource[] = [
-  // Tier 1: MLS (Authoritative - awaiting eKey)
-  { 
-    id: 'stellar-mls', 
-    name: 'Stellar MLS', 
-    type: 'mls', 
-    tier: 1, 
-    icon: 'database', 
+  // Tier 1: MLS (Authoritative - via Bridge Interactive API)
+  {
+    id: 'stellar-mls',
+    name: 'Stellar MLS',
+    type: 'mls',
+    tier: 1,
+    icon: 'database',
     color: 'yellow',
-    enabled: false,
-    description: 'Authoritative MLS data (awaiting eKey)'
+    enabled: true,
+    description: 'Authoritative MLS data via Bridge Interactive RESO API'
   },
 
   // Tier 2: Google APIs

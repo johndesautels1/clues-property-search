@@ -2592,12 +2592,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // ========================================
-    // TIER 1: MLS DATA (Bridge Interactive API)
+    // TIER 1: MLS DATA (Stellar MLS via Bridge Interactive API)
     // Highest authority - search first for property listings
     // ========================================
     if (!skipApis) {
       console.log('========================================');
-      console.log('TIER 1: BRIDGE INTERACTIVE MLS API CALL');
+      console.log('TIER 1: STELLAR MLS (via Bridge Interactive API)');
       console.log('========================================');
       console.log('🔍 Searching for address:', searchQuery);
       try {
@@ -2623,14 +2623,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               const field = fieldData as any;
               mlsFields[key] = {
                 value: field.value,
-                source: field.source || 'Bridge Interactive',
+                source: field.source || 'Stellar MLS',
                 confidence: field.confidence || 'High',
                 tier: 1
               };
             }
 
-            const mlsAdded = arbitrationPipeline.addFieldsFromSource(mlsFields, 'Bridge Interactive MLS');
-            console.log(`✅ TIER 1 COMPLETE: Added ${mlsAdded} fields from Bridge Interactive (MLS Data)`);
+            const mlsAdded = arbitrationPipeline.addFieldsFromSource(mlsFields, 'Stellar MLS');
+            console.log(`✅ TIER 1 COMPLETE: Added ${mlsAdded} fields from Stellar MLS (via Bridge Interactive)`);
             console.log('📊 Sample MLS field values:', JSON.stringify(Object.fromEntries(Object.entries(mlsFields).slice(0, 3)), null, 2));
           } else {
             console.log('⚠️ Bridge Interactive: No property found or no data returned');
