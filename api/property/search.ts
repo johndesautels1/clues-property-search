@@ -22,13 +22,13 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// Vercel serverless config - extend timeout for multi-API cascade
+// Vercel serverless config - use global 300s limit from vercel.json for LLM cascade
 export const config = {
-  maxDuration: 55, // 55 seconds max (gives buffer for response)
+  maxDuration: 300, // 5 minutes (Vercel Pro allows up to 300s)
 };
 
 // Timeout wrapper for API/LLM calls - prevents hanging
-const LLM_TIMEOUT = 52000; // 52 seconds per LLM call (Claude Opus/Sonnet need extra time)
+const LLM_TIMEOUT = 120000; // 120 seconds (2 minutes) per LLM call - allows complex queries to complete
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([
     promise,

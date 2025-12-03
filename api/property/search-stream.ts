@@ -24,9 +24,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { TOTAL_FIELDS } from '../../src/types/fields-schema.js';
 
-// Vercel serverless config - Pro plan allows 60s
+// Vercel serverless config - use global 300s limit from vercel.json
 export const config = {
-  maxDuration: 55, // 55s with buffer for response
+  maxDuration: 300, // 5 minutes (Vercel Pro allows up to 300s)
 };
 
 // Timeout wrapper for API calls - prevents hanging
@@ -789,14 +789,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // ========================================
-    // OPTIMIZED FOR VERCEL PRO (60s limit)
+    // OPTIMIZED FOR VERCEL PRO (300s / 5 minute limit)
     // Parallel execution with per-call timeouts
     // ========================================
 
-    const API_TIMEOUT = 25000; // 25s per API call (HowLoud can be slow)
-    const LLM_TIMEOUT = 52000; // 52s per LLM call (Claude Opus/Sonnet need extra time)
+    const API_TIMEOUT = 30000; // 30s per API call (HowLoud can be slow)
+    const LLM_TIMEOUT = 120000; // 120s (2 min) per LLM call - allows complex queries to complete
     const startTime = Date.now();
-    const DEADLINE = 54000; // 54s hard deadline (Vercel set to 55s)
+    const DEADLINE = 290000; // 290s hard deadline (Vercel set to 300s, leave 10s buffer)
 
     // Helper to create timeout fallback with correct source
     const createFallback = (source: string) => ({
