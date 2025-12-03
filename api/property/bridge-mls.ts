@@ -29,6 +29,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    console.log('========================================');
+    console.log('[Bridge MLS API] ENDPOINT CALLED');
+    console.log('========================================');
+
     // Get search parameters from request
     const params: BridgePropertySearchParams = req.method === 'POST' ? req.body : req.query;
 
@@ -36,6 +40,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Validate required parameters
     if (!params.address && !params.mlsNumber && !params.zipCode && !params.city) {
+      console.log('[Bridge MLS API] ERROR: No search parameters provided');
       return res.status(400).json({
         success: false,
         error: 'At least one search parameter required: address, mlsNumber, zipCode, or city',
@@ -43,7 +48,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Create Bridge API client
+    console.log('[Bridge MLS API] Creating Bridge API client...');
     const client = createBridgeAPIClient();
+    console.log('[Bridge MLS API] Client created successfully');
 
     // Search for properties
     let response;
