@@ -183,10 +183,17 @@ export class BridgeAPIClient {
     }
 
     console.log('[Bridge API] Authenticating...');
+    console.log('[Bridge API] Base URL:', this.config.baseUrl);
+    console.log('[Bridge API] Data System:', this.config.dataSystem);
+    console.log('[Bridge API] Client ID:', this.config.clientId ? `${this.config.clientId.substring(0, 8)}...` : 'MISSING');
+    console.log('[Bridge API] Client Secret:', this.config.clientSecret ? 'Present (length: ' + this.config.clientSecret.length + ')' : 'MISSING');
 
     const authUrl = `${this.config.baseUrl}/OData/authenticate`;
     const credentials = `${this.config.clientId}:${this.config.clientSecret}`;
     const base64Credentials = Buffer.from(credentials).toString('base64');
+
+    console.log('[Bridge API] Auth URL:', authUrl);
+    console.log('[Bridge API] Credentials length:', credentials.length);
 
     try {
       const response = await fetch(authUrl, {
@@ -197,8 +204,11 @@ export class BridgeAPIClient {
         },
       });
 
+      console.log('[Bridge API] Auth response status:', response.status, response.statusText);
+
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('[Bridge API] Auth failed - Response:', errorText);
         throw new Error(`Authentication failed: ${response.status} - ${errorText}`);
       }
 
