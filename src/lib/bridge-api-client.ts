@@ -255,19 +255,24 @@ export class BridgeAPIClient {
     if (params.address) {
       // Extract just the street number and name (first part before comma)
       const addressParts = params.address.split(',')[0].trim();
-      filters.push(`contains(tolower(UnparsedAddress), tolower('${addressParts}'))`);
+      // Escape single quotes for OData (replace ' with '')
+      const escapedAddress = addressParts.replace(/'/g, "''");
+      filters.push(`contains(tolower(UnparsedAddress), tolower('${escapedAddress}'))`);
     }
     if (params.city) {
-      filters.push(`City eq '${params.city}'`);
+      const escapedCity = params.city.replace(/'/g, "''");
+      filters.push(`City eq '${escapedCity}'`);
     }
     if (params.state) {
-      filters.push(`StateOrProvince eq '${params.state}'`);
+      const escapedState = params.state.replace(/'/g, "''");
+      filters.push(`StateOrProvince eq '${escapedState}'`);
     }
     if (params.zipCode) {
       filters.push(`PostalCode eq '${params.zipCode}'`);
     }
     if (params.mlsNumber) {
-      filters.push(`ListingId eq '${params.mlsNumber}'`);
+      const escapedMls = params.mlsNumber.replace(/'/g, "''");
+      filters.push(`ListingId eq '${escapedMls}'`);
     }
 
     // Price range
@@ -294,12 +299,14 @@ export class BridgeAPIClient {
 
     // Property type
     if (params.propertyType) {
-      filters.push(`PropertyType eq '${params.propertyType}'`);
+      const escapedType = params.propertyType.replace(/'/g, "''");
+      filters.push(`PropertyType eq '${escapedType}'`);
     }
 
     // Status
     if (params.status) {
-      filters.push(`StandardStatus eq '${params.status}'`);
+      const escapedStatus = params.status.replace(/'/g, "''");
+      filters.push(`StandardStatus eq '${escapedStatus}'`);
     }
 
     // Geographic search (radius)
