@@ -197,6 +197,7 @@ export class BridgeAPIClient {
     console.log('[Bridge API] Credentials length:', credentials.length);
 
     try {
+      console.log('[Bridge API] Attempting authentication with Basic Auth...');
       const response = await fetch(authUrl, {
         method: 'GET',
         headers: {
@@ -206,6 +207,7 @@ export class BridgeAPIClient {
       });
 
       console.log('[Bridge API] Auth response status:', response.status, response.statusText);
+      console.log('[Bridge API] Auth response headers:', JSON.stringify(Object.fromEntries(response.headers.entries())));
 
       if (!response.ok) {
         const errorText = await response.text();
