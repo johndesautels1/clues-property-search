@@ -483,6 +483,15 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
       case 'number':
       case 'currency':
       case 'percentage':
+        // Extract numeric value from strings like "55 - Somewhat Walkable"
+        let numericValue: number | string = value;
+        if (typeof value === 'string' && value) {
+          // Try to extract leading number from descriptive strings
+          const match = value.match(/^(\d+(?:\.\d+)?)/);
+          if (match) {
+            numericValue = parseFloat(match[1]);
+          }
+        }
         return (
           <div className="relative">
             {field.type === 'currency' && (
@@ -490,7 +499,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
             )}
             <input
               type="number"
-              value={value as number || ''}
+              value={numericValue as number || ''}
               onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
               placeholder={field.placeholder}
               className={`${baseClass} ${field.type === 'currency' ? 'pl-7' : ''}`}
@@ -502,10 +511,16 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
         );
 
       case 'date':
+        // Convert ISO date to yyyy-MM-dd format for HTML date input
+        let dateValue = value as string || '';
+        if (dateValue && dateValue.includes('T')) {
+          // Extract yyyy-MM-dd from ISO format (2025-12-02T00:00:00.000Z)
+          dateValue = dateValue.split('T')[0];
+        }
         return (
           <input
             type="date"
-            value={value as string || ''}
+            value={dateValue}
             onChange={(e) => onChange(e.target.value)}
             className={baseClass}
           />

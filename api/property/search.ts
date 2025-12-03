@@ -2596,7 +2596,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Highest authority - search first for property listings
     // ========================================
     if (!skipApis) {
-      console.log('Step 1: Searching Bridge Interactive MLS...');
+      console.log('========================================');
+      console.log('TIER 1: BRIDGE INTERACTIVE MLS API CALL');
+      console.log('========================================');
+      console.log('🔍 Searching for address:', searchQuery);
       try {
         const bridgeResponse = await fetch(`${req.headers.host?.includes('localhost') ? 'http://localhost:3000' : 'https://' + req.headers.host}/api/property/bridge-mls`, {
           method: 'POST',
@@ -2604,9 +2607,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           body: JSON.stringify({ address: searchQuery })
         });
 
+        console.log('📡 Bridge API Response Status:', bridgeResponse.status, bridgeResponse.statusText);
+
         if (bridgeResponse.ok) {
           const bridgeData = await bridgeResponse.json();
+          console.log('📦 Bridge API Response Data:', JSON.stringify(bridgeData, null, 2));
+
           if (bridgeData.success && bridgeData.fields) {
+            console.log('✅ Bridge returned fields:', Object.keys(bridgeData.fields).length, 'fields');
+            console.log('📋 Field keys sample:', Object.keys(bridgeData.fields).slice(0, 10));
+
             // Convert Bridge fields to arbitration format
             const mlsFields: Record<string, FieldValue> = {};
             for (const [key, fieldData] of Object.entries(bridgeData.fields)) {
@@ -2620,16 +2630,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
 
             const mlsAdded = arbitrationPipeline.addFieldsFromSource(mlsFields, 'Bridge Interactive MLS');
-            console.log(`✅ Added ${mlsAdded} fields from Bridge Interactive (Tier 1 - MLS Data)`);
+            console.log(`✅ TIER 1 COMPLETE: Added ${mlsAdded} fields from Bridge Interactive (MLS Data)`);
+            console.log('📊 Sample MLS field values:', JSON.stringify(Object.fromEntries(Object.entries(mlsFields).slice(0, 3)), null, 2));
           } else {
             console.log('⚠️ Bridge Interactive: No property found or no data returned');
+            console.log('   - success:', bridgeData.success);
+            console.log('   - fields:', bridgeData.fields ? 'exists but empty' : 'null/undefined');
           }
         } else {
-          console.log('⚠️ Bridge Interactive API call failed:', bridgeResponse.status);
+          const errorText = await bridgeResponse.text();
+          console.log('❌ Bridge Interactive API call failed');
+          console.log('   - Status:', bridgeResponse.status, bridgeResponse.statusText);
+          console.log('   - Error:', errorText);
         }
       } catch (error) {
-        console.log('⚠️ Bridge Interactive error (continuing to other sources):', error instanceof Error ? error.message : String(error));
+        console.log('❌ Bridge Interactive error (continuing to other sources)');
+        console.log('   - Error:', error instanceof Error ? error.message : String(error));
+        console.log('   - Stack:', error instanceof Error ? error.stack : 'N/A');
       }
+      console.log('========================================');
+      console.log('');
     }
 
     // ========================================
