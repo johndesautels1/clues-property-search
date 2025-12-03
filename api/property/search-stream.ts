@@ -269,7 +269,19 @@ Rules:
         model: 'sonar',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Identify and extract all available verified data for the residential property at: ${address}` }
+          {
+            role: 'user',
+            content: (address.startsWith('http://') || address.startsWith('https://'))
+              ? `CRITICAL: I am providing a DIRECT URL to the property listing. You MUST:
+1. Extract the full address from this URL: ${address}
+2. Read the ENTIRE page at that URL to extract ALL available property data
+3. Use that URL page as your PRIMARY data source (highest reliability)
+4. Cross-reference with county property appraiser records if available
+5. Return the extracted address in the "full_address" field
+
+Scrape every detail from that specific listing page. This is a DIRECT link to the property.`
+              : `Identify and extract all available verified data for the residential property at: ${address}`
+          }
         ],
         temperature: 0.1,
       }),

@@ -431,6 +431,44 @@ export function normalizeValueForComparison(value: any, fieldKey: string = ''): 
     }
   }
 
+  // Address normalization - APT = Apt, ignore ", USA"
+  if (fieldKey.includes('address') || fieldKey.includes('1_')) {
+    str = str.replace(/,\s*USA$/i, ''); // Remove ", USA"
+    str = str.replace(/\bAPT\b/gi, 'Apt'); // APT → Apt
+    str = str.replace(/\bApartment\b/gi, 'Apt'); // Apartment → Apt
+    str = str.replace(/\bUnit\b/gi, 'Apt'); // Unit → Apt
+  }
+
+  // Property type - Condo = Condominium
+  if (fieldKey.includes('property_type') || fieldKey.includes('26_') || fieldKey.includes('ownership') || fieldKey.includes('34_')) {
+    if (str.includes('condo')) return 'condo';
+    if (str.includes('townhouse') || str.includes('townhome')) return 'townhouse';
+    if (str.includes('single') || str.includes('sfr')) return 'single family';
+  }
+
+  // Walkability - semantic equivalence
+  if (fieldKey.includes('walkability') || fieldKey.includes('75_')) {
+    if (str.includes('moderate') || str.includes('somewhat')) return 'moderate';
+    if (str.includes('very walkable') || str.includes('highly')) return 'high';
+    if (str.includes('car-dependent') || str.includes('low')) return 'low';
+  }
+
+  // Risk levels - High = Very High for practical purposes
+  if (fieldKey.includes('risk') || fieldKey.includes('hurricane') || fieldKey.includes('flood')) {
+    if (str.includes('very high') || str.includes('high')) return 'high';
+    if (str.includes('very low') || str.includes('low')) return 'low';
+    if (str.includes('moderate') || str.includes('medium')) return 'moderate';
+  }
+
+  // Numeric estimates - round to nearest $100 for estimates (reduces noise)
+  if (fieldKey.includes('estimate') || fieldKey.includes('median') || fieldKey.includes('rental') || fieldKey.includes('insurance')) {
+    const num = parseFloat(str.replace(/[^0-9.]/g, ''));
+    if (!isNaN(num)) {
+      // Round to nearest $100 to ignore minor variations
+      return Math.round(num / 100).toString();
+    }
+  }
+
   return str.trim();
 }
 
@@ -493,8 +531,12 @@ export function arbitrateField(
   }
 
   // Normalize values for comparison to avoid false conflicts
-  const normalizedNew = normalizeValueForComparison(newValue, fieldKey);
-  const normalizedExisting = normalizeValueForComparison(existingField.value, fieldKey);
+  // Coerce objects to strings first (fixes Grok's [object Object] bug)
+  const safeNewValue = typeof newValue === 'object' && newValue !== null ? JSON.stringify(newValue) : newValue;
+  const safeExistingValue = typeof existingField.value === 'object' && existingField.value !== null ? JSON.stringify(existingField.value) : existingField.value;
+
+  const normalizedNew = normalizeValueForComparison(safeNewValue, fieldKey);
+  const normalizedExisting = normalizeValueForComparison(safeExistingValue, fieldKey);
   const areValuesEquivalent = normalizedNew === normalizedExisting;
 
   if (newTier < existingField.tier) {

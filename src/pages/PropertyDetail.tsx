@@ -121,6 +121,17 @@ const DataField = ({ label, value, icon, format = 'text', confidence, llmSources
       );
     } else if (hasConflict && conflictValues && conflictValues.length > 0) {
       // 🟡 YELLOW: Conflicting data from multiple LLMs
+      // Deduplicate conflicts (same source + value) to prevent "Washer, Dryer" x7 bug
+      const uniqueConflicts = conflictValues.reduce((acc, cv) => {
+        const key = `${cv.source}::${String(cv.value)}`;
+        if (!acc.has(key)) {
+          acc.set(key, cv);
+        }
+        return acc;
+      }, new Map<string, typeof conflictValues[0]>());
+
+      const deduplicatedConflicts = Array.from(uniqueConflicts.values());
+
       bgColor = 'bg-yellow-500/10';
       borderColor = 'border-yellow-500/30';
       statusBadge = (
@@ -130,7 +141,7 @@ const DataField = ({ label, value, icon, format = 'text', confidence, llmSources
             CONFLICT DETECTED
           </div>
           <div className="text-gray-300">
-            {conflictValues.map((cv, idx) => (
+            {deduplicatedConflicts.map((cv, idx) => (
               <div key={idx} className="ml-4">
                 • {cv.source}: {formatValue(cv.value, format)}
               </div>
