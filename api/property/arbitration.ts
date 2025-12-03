@@ -481,6 +481,10 @@ export function normalizeValueForComparison(value: any, fieldKey: string = ''): 
     }
   }
 
+  // FIX #10: Substring/Subset matching for fields that commonly have variations
+  // (e.g., "Belle Vista" vs "Belle Vista Beach", "Water view" vs "Water view, river view")
+  // This is applied AFTER all normalization to handle natural language variations
+  // NOTE: We store the original string for this check to avoid false positives from normalized values
   return str.trim();
 }
 
@@ -610,6 +614,19 @@ export function arbitrateField(
         if (!isNaN(existingNum) && !isNaN(newNum) && existingNum > 0) {
           const percentDiff = Math.abs(existingNum - newNum) / existingNum;
           if (percentDiff < 0.03) return true; // Within 3% = near-duplicate
+        }
+
+        // FIX #10: Substring/Subset matching - if one string contains the other, treat as duplicate
+        // (e.g., "Belle Vista" ⊂ "Belle Vista Beach", "Water view" ⊂ "Water view, river view")
+        const existingStr = String(cv.value).toLowerCase().trim();
+        const newStr = String(newValue).toLowerCase().trim();
+
+        // Only apply to non-numeric text fields (avoid false positives on numbers/codes)
+        if (existingStr.length > 3 && newStr.length > 3 && isNaN(parseFloat(existingStr))) {
+          // Check if one is a substring of the other
+          if (existingStr.includes(newStr) || newStr.includes(existingStr)) {
+            return true; // Subset match = near-duplicate
+          }
         }
 
         return false;
