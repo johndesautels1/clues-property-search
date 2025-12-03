@@ -2396,15 +2396,29 @@ Return null for property-specific data you don't have. Return JSON only.`,
     const data = await response.json();
     if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
       const text = data.candidates[0].content.parts[0].text;
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
+
+      // Try extracting JSON from markdown code block first
+      let jsonStr = null;
+      const codeBlockMatch = text.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+      if (codeBlockMatch) {
+        jsonStr = codeBlockMatch[1];
+      } else {
+        // Fallback: try to find first complete JSON object (non-greedy)
+        const jsonMatch = text.match(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/);
+        if (jsonMatch) {
+          jsonStr = jsonMatch[0];
+        }
+      }
+
+      if (jsonStr) {
         try {
-          const parsed = JSON.parse(jsonMatch[0]);
+          const parsed = JSON.parse(jsonStr);
           // 🛡️ NULL BLOCKING: Filter all null values before returning
           const filteredFields = filterNullValues(parsed, 'Gemini');
           return { fields: filteredFields, llm: 'Gemini' };
         } catch (parseError) {
           console.error('❌ Gemini JSON.parse error:', parseError);
+          console.error('   Failed JSON string:', jsonStr.substring(0, 200));
           return { error: `JSON parse error: ${String(parseError)}`, fields: {}, llm: 'Gemini' };
         }
       }

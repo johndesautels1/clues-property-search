@@ -85,18 +85,25 @@ export function extractAndParseJson<T = unknown>(
 
   let jsonStr = text.trim();
 
-  // Try to extract JSON from markdown code blocks
-  const codeBlockMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
+  // Try to extract JSON from markdown code blocks (non-greedy)
+  const codeBlockMatch = jsonStr.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
   if (codeBlockMatch) {
     jsonStr = codeBlockMatch[1].trim();
+    console.log(`[extractAndParseJson]${context ? ` [${context}]` : ''} Extracted JSON from markdown code block`);
+    return safeJsonParse<T>(jsonStr, context);
   }
 
-  // Try to find JSON object in text
-  const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+  // Try to find first complete JSON object (non-greedy, balanced braces)
+  // This regex matches a JSON object with balanced nested braces
+  const jsonMatch = jsonStr.match(/\{(?:[^{}]|\{(?:[^{}]|\{[^{}]*\})*\})*\}/);
   if (jsonMatch) {
     jsonStr = jsonMatch[0];
+    console.log(`[extractAndParseJson]${context ? ` [${context}]` : ''} Extracted JSON object from text`);
+    return safeJsonParse<T>(jsonStr, context);
   }
 
+  // Fallback: try to parse the whole text as-is
+  console.log(`[extractAndParseJson]${context ? ` [${context}]` : ''} No JSON pattern found, attempting to parse whole text`);
   return safeJsonParse<T>(jsonStr, context);
 }
 
