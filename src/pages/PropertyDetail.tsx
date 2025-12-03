@@ -274,13 +274,18 @@ let globalIsAdmin = false; // Controls source visibility (admin vs user view)
 
 const renderDataField = (
   label: string,
-  field: DataFieldInput<any>,
+  field: DataFieldInput<any> | undefined,
   format: 'currency' | 'number' | 'percent' | 'date' | 'text' = 'text',
   icon?: React.ReactNode,
   fieldKey?: string
 ) => {
+  // Handle undefined fields (allows arbitration system to fill gaps from lower tiers)
+  if (!field) {
+    field = { value: null };
+  }
+
   // Map API validationStatus values to DataField prop format
-  const validationStatus = field.validationStatus === 'single_source_warning' ? undefined : 
+  const validationStatus = field.validationStatus === 'single_source_warning' ? undefined :
     (field.validationStatus === 'valid' ? 'passed' : field.validationStatus);
   const singleSourceWarning = field.validationStatus === 'single_source_warning';
 
