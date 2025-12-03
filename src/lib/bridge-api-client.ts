@@ -378,6 +378,13 @@ export class BridgeAPIClient {
  * Create Bridge API client from environment variables
  */
 export function createBridgeAPIClient(): BridgeAPIClient {
+  console.log('[Bridge API Client] Creating client...');
+  console.log('[Bridge API Client] Checking environment variables...');
+  console.log('[Bridge API Client] BRIDGE_CLIENT_ID:', process.env.BRIDGE_CLIENT_ID ? 'SET' : 'MISSING');
+  console.log('[Bridge API Client] BRIDGE_CLIENT_SECRET:', process.env.BRIDGE_CLIENT_SECRET ? 'SET' : 'MISSING');
+  console.log('[Bridge API Client] BRIDGE_API_BASE_URL:', process.env.BRIDGE_API_BASE_URL || 'using default');
+  console.log('[Bridge API Client] BRIDGE_DATA_SYSTEM:', process.env.BRIDGE_DATA_SYSTEM || 'using default');
+
   const config: BridgeAPIConfig = {
     clientId: process.env.BRIDGE_CLIENT_ID || '',
     clientSecret: process.env.BRIDGE_CLIENT_SECRET || '',
@@ -386,8 +393,11 @@ export function createBridgeAPIClient(): BridgeAPIClient {
   };
 
   if (!config.clientId || !config.clientSecret) {
-    throw new Error('Bridge API credentials not configured. Set BRIDGE_CLIENT_ID and BRIDGE_CLIENT_SECRET environment variables.');
+    const error = 'Bridge API credentials not configured. Set BRIDGE_CLIENT_ID and BRIDGE_CLIENT_SECRET environment variables.';
+    console.error('[Bridge API Client] ERROR:', error);
+    throw new Error(error);
   }
 
+  console.log('[Bridge API Client] Client created successfully');
   return new BridgeAPIClient(config);
 }
