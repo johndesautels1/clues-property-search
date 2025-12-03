@@ -188,7 +188,8 @@ export class BridgeAPIClient {
     console.log('[Bridge API] Client ID:', this.config.clientId ? `${this.config.clientId.substring(0, 8)}...` : 'MISSING');
     console.log('[Bridge API] Client Secret:', this.config.clientSecret ? 'Present (length: ' + this.config.clientSecret.length + ')' : 'MISSING');
 
-    const authUrl = `${this.config.baseUrl}/OData/authenticate`;
+    // Bridge API requires data system in auth URL: /api/v2/{dataSystem}/OData/authenticate
+    const authUrl = `${this.config.baseUrl}/${this.config.dataSystem}/OData/authenticate`;
     const credentials = `${this.config.clientId}:${this.config.clientSecret}`;
     const base64Credentials = Buffer.from(credentials).toString('base64');
 
