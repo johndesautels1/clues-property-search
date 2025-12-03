@@ -238,56 +238,56 @@ export const ALL_FIELDS: readonly FieldDefinition[] = [
   // GROUP 17: Stellar MLS - Parking & Garage (Fields 139-143)
   // Added: 2025-11-30 for Stellar MLS integration
   // ================================================================
-  { num: 139, key: 'carport_yn',           label: 'Carport Y/N',           group: 'Stellar MLS - Parking', type: 'boolean', required: false },
-  { num: 140, key: 'carport_spaces',       label: 'Carport Spaces',        group: 'Stellar MLS - Parking', type: 'number',  required: false },
-  { num: 141, key: 'garage_attached_yn',   label: 'Garage Attached Y/N',   group: 'Stellar MLS - Parking', type: 'boolean', required: false },
-  { num: 142, key: 'parking_features',     label: 'Parking Features',      group: 'Stellar MLS - Parking', type: 'multiselect', required: false, options: ['Assigned Parking', 'Covered Parking', 'Ground Level', 'Guest Parking', 'Garage Door Opener', 'Circular Driveway', 'Driveway', 'On Street', 'Off Street'] },
-  { num: 143, key: 'assigned_parking_spaces', label: 'Assigned Parking Spaces', group: 'Stellar MLS - Parking', type: 'number', required: false },
+  { num: 139, key: 'carport_yn',           label: 'Carport Y/N',           group: 'Parking Details', type: 'boolean', required: false },
+  { num: 140, key: 'carport_spaces',       label: 'Carport Spaces',        group: 'Parking Details', type: 'number',  required: false },
+  { num: 141, key: 'garage_attached_yn',   label: 'Garage Attached Y/N',   group: 'Parking Details', type: 'boolean', required: false },
+  { num: 142, key: 'parking_features',     label: 'Parking Features',      group: 'Parking Details', type: 'multiselect', required: false, options: ['Assigned Parking', 'Covered Parking', 'Ground Level', 'Guest Parking', 'Garage Door Opener', 'Circular Driveway', 'Driveway', 'On Street', 'Off Street'] },
+  { num: 143, key: 'assigned_parking_spaces', label: 'Assigned Parking Spaces', group: 'Parking Details', type: 'number', required: false },
 
   // ================================================================
   // GROUP 18: Stellar MLS - Building Info (Fields 144-148)
   // ================================================================
-  { num: 144, key: 'floor_number',          label: 'Floor Number',          group: 'Stellar MLS - Building', type: 'number', required: false },
-  { num: 145, key: 'building_total_floors', label: 'Building Total Floors', group: 'Stellar MLS - Building', type: 'number', required: false },
-  { num: 146, key: 'building_name_number',  label: 'Building Name/Number',  group: 'Stellar MLS - Building', type: 'text',   required: false },
-  { num: 147, key: 'building_elevator_yn',  label: 'Building Elevator Y/N', group: 'Stellar MLS - Building', type: 'boolean', required: false },
-  { num: 148, key: 'floors_in_unit',        label: 'Floors in Unit',        group: 'Stellar MLS - Building', type: 'number', required: false },
+  { num: 144, key: 'floor_number',          label: 'Floor Number',          group: 'Building Details', type: 'number', required: false },
+  { num: 145, key: 'building_total_floors', label: 'Building Total Floors', group: 'Building Details', type: 'number', required: false },
+  { num: 146, key: 'building_name_number',  label: 'Building Name/Number',  group: 'Building Details', type: 'text',   required: false },
+  { num: 147, key: 'building_elevator_yn',  label: 'Building Elevator Y/N', group: 'Building Details', type: 'boolean', required: false },
+  { num: 148, key: 'floors_in_unit',        label: 'Floors in Unit',        group: 'Building Details', type: 'number', required: false },
 
   // ================================================================
   // GROUP 19: Stellar MLS - Legal & Tax (Fields 149-154)
   // ================================================================
-  { num: 149, key: 'subdivision_name',      label: 'Subdivision Name',      group: 'Stellar MLS - Legal', type: 'text',    required: false },
-  { num: 150, key: 'legal_description',     label: 'Legal Description',     group: 'Stellar MLS - Legal', type: 'text',    required: false },
-  { num: 151, key: 'homestead_yn',          label: 'Homestead Exemption',   group: 'Stellar MLS - Legal', type: 'boolean', required: false },
-  { num: 152, key: 'cdd_yn',                label: 'CDD Y/N',               group: 'Stellar MLS - Legal', type: 'boolean', required: false },
-  { num: 153, key: 'annual_cdd_fee',        label: 'Annual CDD Fee',        group: 'Stellar MLS - Legal', type: 'currency', required: false },
-  { num: 154, key: 'front_exposure',        label: 'Front Exposure',        group: 'Stellar MLS - Legal', type: 'select',  required: false, options: ['North', 'South', 'East', 'West', 'Northeast', 'Northwest', 'Southeast', 'Southwest'] },
+  { num: 149, key: 'subdivision_name',      label: 'Subdivision Name',      group: 'Legal & Compliance', type: 'text',    required: false },
+  { num: 150, key: 'legal_description',     label: 'Legal Description',     group: 'Legal & Compliance', type: 'text',    required: false },
+  { num: 151, key: 'homestead_yn',          label: 'Homestead Exemption',   group: 'Legal & Compliance', type: 'boolean', required: false },
+  { num: 152, key: 'cdd_yn',                label: 'CDD Y/N',               group: 'Legal & Compliance', type: 'boolean', required: false },
+  { num: 153, key: 'annual_cdd_fee',        label: 'Annual CDD Fee',        group: 'Legal & Compliance', type: 'currency', required: false },
+  { num: 154, key: 'front_exposure',        label: 'Front Exposure',        group: 'Legal & Compliance', type: 'select',  required: false, options: ['North', 'South', 'East', 'West', 'Northeast', 'Northwest', 'Southeast', 'Southwest'] },
 
   // ================================================================
   // GROUP 20: Stellar MLS - Waterfront (Fields 155-159)
   // ================================================================
-  { num: 155, key: 'water_frontage_yn',     label: 'Water Frontage Y/N',    group: 'Stellar MLS - Waterfront', type: 'boolean', required: false },
-  { num: 156, key: 'waterfront_feet',       label: 'Waterfront Feet',       group: 'Stellar MLS - Waterfront', type: 'number',  required: false },
-  { num: 157, key: 'water_access_yn',       label: 'Water Access Y/N',      group: 'Stellar MLS - Waterfront', type: 'boolean', required: false },
-  { num: 158, key: 'water_view_yn',         label: 'Water View Y/N',        group: 'Stellar MLS - Waterfront', type: 'boolean', required: false },
-  { num: 159, key: 'water_body_name',       label: 'Water Body Name',       group: 'Stellar MLS - Waterfront', type: 'text',    required: false },
+  { num: 155, key: 'water_frontage_yn',     label: 'Water Frontage Y/N',    group: 'Waterfront', type: 'boolean', required: false },
+  { num: 156, key: 'waterfront_feet',       label: 'Waterfront Feet',       group: 'Waterfront', type: 'number',  required: false },
+  { num: 157, key: 'water_access_yn',       label: 'Water Access Y/N',      group: 'Waterfront', type: 'boolean', required: false },
+  { num: 158, key: 'water_view_yn',         label: 'Water View Y/N',        group: 'Waterfront', type: 'boolean', required: false },
+  { num: 159, key: 'water_body_name',       label: 'Water Body Name',       group: 'Waterfront', type: 'text',    required: false },
 
   // ================================================================
   // GROUP 21: Stellar MLS - Leasing & Pets (Fields 160-165)
   // ================================================================
-  { num: 160, key: 'can_be_leased_yn',        label: 'Can Be Leased Y/N',        group: 'Stellar MLS - Leasing', type: 'boolean', required: false },
-  { num: 161, key: 'minimum_lease_period',    label: 'Minimum Lease Period',     group: 'Stellar MLS - Leasing', type: 'text',    required: false },
-  { num: 162, key: 'lease_restrictions_yn',   label: 'Lease Restrictions Y/N',   group: 'Stellar MLS - Leasing', type: 'boolean', required: false },
-  { num: 163, key: 'pet_size_limit',          label: 'Pet Size Limit',           group: 'Stellar MLS - Leasing', type: 'text',    required: false },
-  { num: 164, key: 'max_pet_weight',          label: 'Max Pet Weight (lbs)',     group: 'Stellar MLS - Leasing', type: 'number',  required: false },
-  { num: 165, key: 'association_approval_yn', label: 'Association Approval Req', group: 'Stellar MLS - Leasing', type: 'boolean', required: false },
+  { num: 160, key: 'can_be_leased_yn',        label: 'Can Be Leased Y/N',        group: 'Leasing & Rentals', type: 'boolean', required: false },
+  { num: 161, key: 'minimum_lease_period',    label: 'Minimum Lease Period',     group: 'Leasing & Rentals', type: 'text',    required: false },
+  { num: 162, key: 'lease_restrictions_yn',   label: 'Lease Restrictions Y/N',   group: 'Leasing & Rentals', type: 'boolean', required: false },
+  { num: 163, key: 'pet_size_limit',          label: 'Pet Size Limit',           group: 'Leasing & Rentals', type: 'text',    required: false },
+  { num: 164, key: 'max_pet_weight',          label: 'Max Pet Weight (lbs)',     group: 'Leasing & Rentals', type: 'number',  required: false },
+  { num: 165, key: 'association_approval_yn', label: 'Association Approval Req', group: 'Leasing & Rentals', type: 'boolean', required: false },
 
   // ================================================================
   // GROUP 22: Stellar MLS - Features & Flood (Fields 166-168)
   // ================================================================
-  { num: 166, key: 'community_features',    label: 'Community Features',    group: 'Stellar MLS - Features', type: 'multiselect', required: false, options: ['Pool', 'Clubhouse', 'Tennis Courts', 'Golf', 'Fitness Center', 'Gated', 'Sidewalks', 'Playground', 'Dog Park', 'Marina', 'Beach Access'] },
-  { num: 167, key: 'interior_features',     label: 'Interior Features',     group: 'Stellar MLS - Features', type: 'multiselect', required: false, options: ['Cathedral Ceiling(s)', 'Walk-In Closet(s)', 'Primary Bedroom Main Floor', 'Open Floor Plan', 'Crown Molding', 'Skylight(s)', 'Wet Bar', 'Built-in Features'] },
-  { num: 168, key: 'exterior_features',     label: 'Exterior Features',     group: 'Stellar MLS - Features', type: 'multiselect', required: false, options: ['Balcony', 'Outdoor Shower', 'Sidewalk', 'Sliding Doors', 'Hurricane Shutters', 'Sprinkler System', 'Outdoor Kitchen', 'Private Dock'] },
+  { num: 166, key: 'community_features',    label: 'Community Features',    group: 'Community & Features', type: 'multiselect', required: false, options: ['Pool', 'Clubhouse', 'Tennis Courts', 'Golf', 'Fitness Center', 'Gated', 'Sidewalks', 'Playground', 'Dog Park', 'Marina', 'Beach Access'] },
+  { num: 167, key: 'interior_features',     label: 'Interior Features',     group: 'Community & Features', type: 'multiselect', required: false, options: ['Cathedral Ceiling(s)', 'Walk-In Closet(s)', 'Primary Bedroom Main Floor', 'Open Floor Plan', 'Crown Molding', 'Skylight(s)', 'Wet Bar', 'Built-in Features'] },
+  { num: 168, key: 'exterior_features',     label: 'Exterior Features',     group: 'Community & Features', type: 'multiselect', required: false, options: ['Balcony', 'Outdoor Shower', 'Sidewalk', 'Sliding Doors', 'Hurricane Shutters', 'Sprinkler System', 'Outdoor Kitchen', 'Private Dock'] },
 ] as const;
 
 // ================================================================
