@@ -2592,11 +2592,52 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // ========================================
+    // TIER 1: MLS DATA (Bridge Interactive API)
+    // Highest authority - search first for property listings
+    // ========================================
+    if (!skipApis) {
+      console.log('Step 1: Searching Bridge Interactive MLS...');
+      try {
+        const bridgeResponse = await fetch(`${req.headers.host?.includes('localhost') ? 'http://localhost:3000' : 'https://' + req.headers.host}/api/property/bridge-mls`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ address: searchQuery })
+        });
+
+        if (bridgeResponse.ok) {
+          const bridgeData = await bridgeResponse.json();
+          if (bridgeData.success && bridgeData.fields) {
+            // Convert Bridge fields to arbitration format
+            const mlsFields: Record<string, FieldValue> = {};
+            for (const [key, fieldData] of Object.entries(bridgeData.fields)) {
+              const field = fieldData as any;
+              mlsFields[key] = {
+                value: field.value,
+                source: field.source || 'Bridge Interactive',
+                confidence: field.confidence || 'High',
+                tier: 1
+              };
+            }
+
+            const mlsAdded = arbitrationPipeline.addFieldsFromSource(mlsFields, 'Bridge Interactive MLS');
+            console.log(`✅ Added ${mlsAdded} fields from Bridge Interactive (Tier 1 - MLS Data)`);
+          } else {
+            console.log('⚠️ Bridge Interactive: No property found or no data returned');
+          }
+        } else {
+          console.log('⚠️ Bridge Interactive API call failed:', bridgeResponse.status);
+        }
+      } catch (error) {
+        console.log('⚠️ Bridge Interactive error (continuing to other sources):', error instanceof Error ? error.message : String(error));
+      }
+    }
+
+    // ========================================
     // TIER 2 & 3: FREE APIs (Google, WalkScore, FEMA, etc.)
     // Skip if we're only adding LLM data to existing session
     // ========================================
     if (!skipApis) {
-      console.log('Step 1: Enriching with free APIs...');
+      console.log('Step 2: Enriching with free APIs (Tier 2 & 3)...');
       try {
         const enrichedData = await enrichWithFreeAPIs(searchQuery);
       if (Object.keys(enrichedData).length > 0) {

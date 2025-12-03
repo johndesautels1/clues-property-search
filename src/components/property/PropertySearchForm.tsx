@@ -229,8 +229,8 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
     setLiveFieldsFound(0);
     setLiveCompletionPct(0);
 
-    // Use SSE streaming endpoint for real-time progress
-    const searchWithSSE = () => {
+    // Call search API and get JSON response
+    const performSearch = () => {
       return new Promise<any>((resolve, reject) => {
         // Create POST request body
         const body = JSON.stringify({
@@ -239,144 +239,46 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
           skipLLMs,
         });
 
-        // Use fetch with streaming for SSE (EventSource doesn't support POST)
-        fetch(`${API_BASE}/search-stream`, {
+        // Use regular JSON fetch (search.ts returns JSON, not SSE)
+        fetch(`${API_BASE}/search`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body,
-        }).then(response => {
+        }).then(async response => {
           if (!response.ok) {
             throw new Error('Search failed');
           }
 
-          const reader = response.body?.getReader();
-          const decoder = new TextDecoder();
-          let buffer = '';
-          let finalData: any = null;
-          // Track partial fields as they arrive (for 504 recovery)
-          let lastKnownFields: Record<string, any> = {};
-          let lastFieldCount = 0;
+          // Parse JSON response directly
+          const data = await response.json();
 
-          const processStream = async () => {
-            if (!reader) {
-              reject(new Error('No response body'));
-              return;
-            }
+          // Update progress message
+          setSearchProgress('Search complete - processing results...');
 
-            try {
-              while (true) {
-                const { done, value } = await reader.read();
+          // Update final field counts
+          if (data.total_fields_found) {
+            setLiveFieldsFound(data.total_fields_found);
+            setLiveCompletionPct(data.completion_percentage || Math.round((data.total_fields_found / 168) * 100));
+          }
 
-                if (done) {
-                  if (finalData) {
-                    resolve(finalData);
-                  } else if (lastFieldCount > 0) {
-                    // Stream ended without complete event but we have partial data
-                    resolve({
-                      partial: true,
-                      streamDied: true,
-                      fields: lastKnownFields,
-                      total_fields_found: lastFieldCount,
-                      completion_percentage: Math.round((lastFieldCount / 168) * 100),
-                      error: 'Connection lost - showing partial results'
-                    });
-                  } else {
-                    reject(new Error('Stream ended without complete event'));
-                  }
-                  break;
-                }
+          // Mark all sources as complete (since we get final result only)
+          if (data.source_breakdown) {
+            Object.keys(data.source_breakdown).forEach(source => {
+              updateSource(source, {
+                status: 'complete',
+                fieldsFound: data.source_breakdown[source] || 0
+              });
+            });
+          }
 
-                buffer += decoder.decode(value, { stream: true });
-
-                // Parse SSE events from buffer
-                const lines = buffer.split('\n');
-                buffer = lines.pop() || ''; // Keep incomplete line in buffer
-
-                let eventType = '';
-                for (const line of lines) {
-                  if (line.startsWith('event: ')) {
-                    eventType = line.slice(7).trim();
-                  } else if (line.startsWith('data: ')) {
-                    const dataStr = line.slice(6);
-                    try {
-                      const data = JSON.parse(dataStr);
-
-                      if (eventType === 'progress') {
-                        // Update progress tracker in real-time
-                        const { source, status, fieldsFound, error, message, newUniqueFields, fields, totalFieldsSoFar } = data;
-                        updateSource(source, {
-                          status: status as SourceStatus,
-                          fieldsFound: fieldsFound || 0,
-                          error
-                        });
-                        if (message) {
-                          setSearchProgress(message);
-                        }
-                        // Use totalFieldsSoFar from backend if available (most accurate)
-                        // Otherwise accumulate live totals from completed sources
-                        if (typeof totalFieldsSoFar === 'number') {
-                          setLiveFieldsFound(totalFieldsSoFar);
-                          setLiveCompletionPct(Math.round((totalFieldsSoFar / 168) * 100));
-                        } else if (status === 'complete' && (newUniqueFields > 0 || fieldsFound > 0)) {
-                          // Fallback: accumulate incrementally
-                          const increment = typeof newUniqueFields === 'number' ? newUniqueFields : (fieldsFound || 0);
-                          setLiveFieldsFound(prev => {
-                            const newTotal = prev + increment;
-                            setLiveCompletionPct(Math.round((newTotal / 168) * 100));
-                            return newTotal;
-                          });
-                        }
-                        // Track cumulative fields for 504 recovery (if backend sends them)
-                        if (fields && typeof fields === 'object') {
-                          lastKnownFields = { ...lastKnownFields, ...fields };
-                          lastFieldCount = Object.keys(lastKnownFields).length;
-                        }
-                      } else if (eventType === 'complete') {
-                        finalData = data;
-                      } else if (eventType === 'error') {
-                        // On error, still resolve with partial data if available
-                        if (lastFieldCount > 0) {
-                          resolve({
-                            partial: true,
-                            fields: lastKnownFields,
-                            total_fields_found: lastFieldCount,
-                            completion_percentage: Math.round((lastFieldCount / 168) * 100),
-                            error: data.error || 'Search error'
-                          });
-                        } else {
-                          reject(new Error(data.error || 'Search error'));
-                        }
-                      }
-                    } catch (e) {
-                      console.error('Failed to parse SSE data:', e);
-                    }
-                  }
-                }
-              }
-            } catch (streamError) {
-              // Stream read error (504 gateway timeout, network disconnect, etc.)
-              if (lastFieldCount > 0) {
-                resolve({
-                  partial: true,
-                  streamDied: true,
-                  fields: lastKnownFields,
-                  total_fields_found: lastFieldCount,
-                  completion_percentage: Math.round((lastFieldCount / 168) * 100),
-                  error: 'Connection timeout - showing partial results'
-                });
-              } else {
-                reject(streamError);
-              }
-            }
-          };
-
-          processStream().catch(reject);
+          // Resolve with the complete data
+          resolve(data);
         }).catch(reject);
       });
     };
 
     try {
-      const data = await searchWithSSE();
+      const data = await performSearch();
 
       setSearchResults(data);
 
@@ -682,13 +584,28 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
           </div>
         </div>
 
-        {/* Data Source Options */}
+        {/* Data Source Options - 4-Tier Arbitration System */}
         <div className="mt-4 p-3 bg-white/5 rounded-xl space-y-3">
-          {/* Free Data Only Toggle */}
+          {/* Tier 1: MLS Data (Always searched first if available) */}
+          <div className="pb-2 border-b border-white/10">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-yellow-400">🥇</span>
+              <label className="text-xs font-semibold text-yellow-400">Tier 1: MLS Data</label>
+              <span className="text-xs text-gray-500">(Highest Authority)</span>
+            </div>
+            <p className="text-xs text-white/70 ml-6">Stellar MLS, Bridge Interactive - searches first when available</p>
+          </div>
+
+          {/* Tier 2 & 3: Free APIs Toggle */}
           <div className="flex items-center justify-between">
             <div>
-              <label className="text-sm text-white font-medium">Free Data Only (Fast)</label>
-              <p className="text-xs text-gray-500">Google APIs + FEMA + WalkScore + AirNow - no AI costs</p>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-cyan-400">🥈</span>
+                <label className="text-sm text-white font-medium">Tier 2 & 3: Free APIs (Fast)</label>
+              </div>
+              <p className="text-xs text-gray-500 ml-6">
+                Google (Geocode, Places, Distance) + FEMA, WalkScore, SchoolDigger, AirNow, HowLoud, FBI Crime
+              </p>
             </div>
             <button
               type="button"
@@ -705,18 +622,22 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
             </button>
           </div>
 
-          {/* AI Engine Selection (only shown if not skipping LLMs) */}
+          {/* Tier 4: AI Engine Selection (only shown if not skipping LLMs) */}
           {!skipLLMs && (
             <div>
-              <label className="block text-xs text-gray-500 mb-2">AI Engines to Fill Gaps (costs $):</label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-purple-400">🤖</span>
+                <label className="text-xs font-semibold text-purple-400">Tier 4: AI Engines</label>
+                <span className="text-xs text-gray-500">(Fires in order, costs $):</span>
+              </div>
+              <div className="flex flex-wrap gap-2 ml-6">
                 {[
-                  { id: 'grok', name: 'Grok', color: 'blue' },
-                  { id: 'perplexity', name: 'Perplexity', color: 'cyan' },
-                  { id: 'claude-opus', name: 'Claude Opus', color: 'orange' },
-                  { id: 'gpt', name: 'GPT-5.1', color: 'green' },
-                  { id: 'claude-sonnet', name: 'Claude Sonnet', color: 'pink' },
-                  { id: 'gemini', name: 'Gemini', color: 'purple' },
+                  { id: 'perplexity', name: '1. Perplexity', color: 'cyan' },
+                  { id: 'grok', name: '2. Grok', color: 'blue' },
+                  { id: 'claude-opus', name: '3. Claude Opus', color: 'orange' },
+                  { id: 'gpt', name: '4. GPT-4', color: 'green' },
+                  { id: 'claude-sonnet', name: '5. Claude Sonnet', color: 'pink' },
+                  { id: 'gemini', name: '6. Gemini', color: 'purple' },
                 ].map(engine => (
                   <button
                     key={engine.id}
@@ -809,8 +730,8 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
 
         <p className="text-xs text-gray-500 mt-3">
           {skipLLMs
-            ? '📊 Free sources: Google APIs, FEMA flood maps, WalkScore, AirNow, HowLoud'
-            : '🔍 Data from Google + APIs first, then AI fills remaining gaps'}
+            ? '🔍 Search order: MLS Data (Tier 1) → Google APIs (Tier 2) → Free APIs (Tier 3) - no AI costs'
+            : '🔍 Search order: MLS Data (Tier 1) → Google + Free APIs (Tiers 2 & 3) → AI Engines (Tier 4)'}
         </p>
       </div>
 
