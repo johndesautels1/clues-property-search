@@ -2528,7 +2528,7 @@ Return null for property-specific data you don't have. Return JSON only.`,
             },
           ],
           generationConfig: {
-            maxOutputTokens: 8000,
+            maxOutputTokens: 16000, // Increased from 8000 to handle 168 fields
           },
         }),
       }
@@ -2554,8 +2554,13 @@ Return null for property-specific data you don't have. Return JSON only.`,
       if (jsonStr) {
         try {
           const parsed = JSON.parse(jsonStr);
+          console.log('🔍 Gemini parsed structure keys:', Object.keys(parsed));
+          if (parsed.fields) {
+            console.log('🔍 Gemini parsed.fields keys (first 10):', Object.keys(parsed.fields).slice(0, 10));
+          }
           // 🛡️ NULL BLOCKING: Filter all null values before returning
           const filteredFields = filterNullValues(parsed, 'Gemini');
+          console.log('🔍 Gemini filteredFields keys (first 10):', Object.keys(filteredFields).slice(0, 10));
           return { fields: filteredFields, llm: 'Gemini' };
         } catch (parseError) {
           console.error('❌ Gemini JSON.parse error:', parseError);
