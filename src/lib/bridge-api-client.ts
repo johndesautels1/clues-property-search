@@ -251,22 +251,26 @@ export class BridgeAPIClient {
   private buildODataQuery(params: BridgePropertySearchParams): string {
     const filters: string[] = [];
 
-    // Address search - use tolower for case-insensitive matching
+    // Address search - use case-insensitive contains for flexible matching
     if (params.address) {
-      // Extract just the street number and name (first part before comma)
-      const addressParts = params.address.split(',')[0].trim();
-      // Escape single quotes for OData (replace ' with '')
-      const escapedAddress = addressParts.replace(/'/g, "''");
+      // Use the full street address (caller has already parsed it)
+      const escapedAddress = params.address.replace(/'/g, "''");
       filters.push(`contains(tolower(UnparsedAddress), tolower('${escapedAddress}'))`);
     }
+
+    // City filter - exact match (case-insensitive)
     if (params.city) {
       const escapedCity = params.city.replace(/'/g, "''");
-      filters.push(`City eq '${escapedCity}'`);
+      filters.push(`tolower(City) eq tolower('${escapedCity}')`);
     }
+
+    // State filter - exact match
     if (params.state) {
       const escapedState = params.state.replace(/'/g, "''");
       filters.push(`StateOrProvince eq '${escapedState}'`);
     }
+
+    // ZIP code filter - exact match
     if (params.zipCode) {
       filters.push(`PostalCode eq '${params.zipCode}'`);
     }

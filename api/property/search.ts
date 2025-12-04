@@ -2763,11 +2763,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('TIER 1: STELLAR MLS (via Bridge Interactive API)');
       console.log('========================================');
       console.log('🔍 Searching for address:', searchQuery);
+
+      // Parse address into components for better MLS search
+      // Format: "7791 W Gulf Blvd, Treasure Island, FL 33706"
+      const addressParts = searchQuery.split(',').map(p => p.trim());
+      const street = addressParts[0] || searchQuery;
+      const city = addressParts[1] || undefined;
+      const stateZip = addressParts[2] || '';
+      const stateMatch = stateZip.match(/([A-Z]{2})\s*(\d{5})?/);
+      const state = stateMatch ? stateMatch[1] : undefined;
+      const zipCode = stateMatch && stateMatch[2] ? stateMatch[2] : undefined;
+
+      console.log('📍 Parsed address components:', { street, city, state, zipCode });
+
       try {
         const bridgeResponse = await fetch(`${req.headers.host?.includes('localhost') ? 'http://localhost:3000' : 'https://' + req.headers.host}/api/property/bridge-mls`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ address: searchQuery })
+          body: JSON.stringify({
+            address: street,
+            city: city,
+            state: state,
+            zipCode: zipCode
+          })
         });
 
         console.log('📡 Bridge API Response Status:', bridgeResponse.status, bridgeResponse.statusText);
