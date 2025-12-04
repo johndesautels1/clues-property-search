@@ -70,9 +70,19 @@ function valuesAreSemanticallySame(val1: any, val2: any): boolean {
     .replace(/\s*-\s*.*$/, '')  // Remove " - anything"
     .replace(/\s*\(.*\)$/, '')   // Remove "(anything)"
     .replace(/[,;].*$/, '')      // Remove after comma/semicolon
+    .replace(/\s+/g, ' ')        // Normalize whitespace
     .trim();
 
   if (normalize(str1) === normalize(str2)) return true;
+
+  // Additional fuzzy matching for minor differences
+  // "Duke Energy" vs "Duke Energy Florida" or "Spectrum" vs "Spectrum Cable"
+  const removeCompanyWords = (s: string) => s
+    .replace(/\b(inc|llc|corp|corporation|company|co|ltd)\b\.?/gi, '')
+    .replace(/\s+(florida|fl|usa|us|america)\b/gi, '')
+    .trim();
+
+  if (removeCompanyWords(str1) === removeCompanyWords(str2)) return true;
 
   // Semantic equivalence rules for common real estate terms
   const semanticRules = [

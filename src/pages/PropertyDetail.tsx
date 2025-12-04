@@ -165,23 +165,29 @@ const DataField = ({ label, value, icon, format = 'text', confidence, llmSources
         </div>
       );
     } else if (confidence === 'Low' || confidence === 'Unverified') {
-      // 🔴 RED: Suspected hallucination (low confidence)
-      bgColor = 'bg-red-500/10';
-      borderColor = 'border-red-500/30';
-      statusBadge = (
-        <div className="flex items-center justify-between">
-          <div className="text-xs text-red-400 flex items-center gap-1">
-            <AlertCircle className="w-3 h-3" />
-            Low confidence - verify this data
-          </div>
-          <button
-            onClick={() => setShowRetry(!showRetry)}
-            className="text-xs text-quantum-cyan hover:underline"
-          >
-            Retry with LLM
-          </button>
-        </div>
+      // 🔴 RED: Suspected hallucination (low confidence) - but SKIP for Perplexity/Grok (they use web search)
+      const isWebSearchLLM = llmSources && llmSources.some(s =>
+        s.toLowerCase().includes('perplexity') || s.toLowerCase().includes('grok')
       );
+
+      if (!isWebSearchLLM) {
+        bgColor = 'bg-red-500/10';
+        borderColor = 'border-red-500/30';
+        statusBadge = (
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-red-400 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              Low confidence - verify this data
+            </div>
+            <button
+              onClick={() => setShowRetry(!showRetry)}
+              className="text-xs text-quantum-cyan hover:underline"
+            >
+              Retry with LLM
+            </button>
+          </div>
+        );
+      }
     } else if (confidence === 'High' && !hasConflict) {
       // 🟢 GREEN: Good data (high confidence, no conflicts)
       bgColor = 'bg-green-500/5';
@@ -918,7 +924,7 @@ export default function PropertyDetail() {
             </div>
             <div className="text-left md:text-right">
               <div className="text-3xl md:text-4xl font-bold text-white mb-1">
-                {formatValue(property.price, 'currency')}
+                {formatValue(fullProperty?.address.listingPrice.value || property.price, 'currency')}
               </div>
               {property.pricePerSqft > 0 && (
                 <p className="text-gray-400">
@@ -950,12 +956,12 @@ export default function PropertyDetail() {
         >
           <div className="glass-card p-6 text-center">
             <Bed className="w-6 h-6 text-quantum-cyan mx-auto mb-2" />
-            <span className="text-2xl font-bold text-white block">{property.bedrooms}</span>
+            <span className="text-2xl font-bold text-white block">{fullProperty?.details.bedrooms.value || property.bedrooms || 0}</span>
             <p className="text-sm text-gray-500">Bedrooms</p>
           </div>
           <div className="glass-card p-6 text-center">
             <Bath className="w-6 h-6 text-quantum-cyan mx-auto mb-2" />
-            <span className="text-2xl font-bold text-white block">{property.bathrooms}</span>
+            <span className="text-2xl font-bold text-white block">{fullProperty?.details.totalBathrooms.value || property.bathrooms || 0}</span>
             <p className="text-sm text-gray-500">Bathrooms</p>
           </div>
           <div className="glass-card p-6 text-center">
@@ -974,7 +980,7 @@ export default function PropertyDetail() {
         {fullProperty ? (
           <div className="space-y-6">
             {/* Address & Identity (Fields 1-9) */}
-            <Section title="Address & Identity" icon={<MapPin className="w-6 h-6" />}>
+            <Section title="Address & Identity" defaultExpanded={false} icon={<MapPin className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   {renderDataField("Full Address", fullProperty.address.fullAddress, "text", undefined, "1_full_address")}
@@ -993,7 +999,7 @@ export default function PropertyDetail() {
             </Section>
 
             {/* Pricing & Value (Fields 10-16) */}
-            <Section title="Pricing & Value" icon={<DollarSign className="w-6 h-6" />}>
+            <Section title="Pricing & Value" defaultExpanded={false} icon={<DollarSign className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   {renderDataField("Listing Price", fullProperty.address.listingPrice, 'currency', undefined, "10_listing_price")}
@@ -1010,7 +1016,7 @@ export default function PropertyDetail() {
             </Section>
 
             {/* Property Basics (Fields 17-29) */}
-            <Section title="Property Basics" icon={<Home className="w-6 h-6" />}>
+            <Section title="Property Basics" defaultExpanded={false} icon={<Home className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   {renderDataField("Bedrooms", fullProperty.details.bedrooms, "number", undefined, "17_bedrooms")}
@@ -1035,7 +1041,7 @@ export default function PropertyDetail() {
             </Section>
 
             {/* HOA & Taxes (Fields 30-38) */}
-            <Section title="HOA & Taxes" icon={<Shield className="w-6 h-6" />}>
+            <Section title="HOA & Taxes" defaultExpanded={false} icon={<Shield className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   {renderDataField("HOA", fullProperty.details.hoaYn, "text", undefined, "30_hoa_yn")}
@@ -1054,7 +1060,7 @@ export default function PropertyDetail() {
             </Section>
 
             {/* Structure & Systems (Fields 39-48) */}
-            <Section title="Structure & Systems" icon={<Building2 className="w-6 h-6" />}>
+            <Section title="Structure & Systems" defaultExpanded={false} icon={<Building2 className="w-6 h-6" />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   {renderDataField("Roof Type", fullProperty.structural.roofType, "text", undefined, "39_roof_type")}
@@ -1074,7 +1080,7 @@ export default function PropertyDetail() {
             </Section>
 
             {/* Interior Features (Fields 49-53) */}
-            <Section title="Interior Features" icon={<Home className="w-6 h-6" />}>
+            <Section title="Interior Features" icon={<Home className="w-6 h-6" />} defaultExpanded={false}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   {renderDataField("Flooring Type", fullProperty.structural.flooringType, "text", undefined, "49_flooring_type")}
@@ -1089,7 +1095,7 @@ export default function PropertyDetail() {
             </Section>
 
             {/* Exterior Features (Fields 54-58) */}
-            <Section title="Exterior Features" icon={<Trees className="w-6 h-6" />}>
+            <Section title="Exterior Features" icon={<Trees className="w-6 h-6" />} defaultExpanded={false}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   {renderDataField("Pool", fullProperty.structural.poolYn, "text", undefined, "54_pool_yn")}
@@ -1118,7 +1124,7 @@ export default function PropertyDetail() {
             </Section>
 
             {/* Assigned Schools (Fields 63-73) */}
-            <Section title="Assigned Schools" icon={<School className="w-6 h-6" />}>
+            <Section title="Assigned Schools" icon={<School className="w-6 h-6" />} defaultExpanded={false}>
               <div className="space-y-4">
                 <div className="mb-4">
                   {renderDataField("School District", fullProperty.location.schoolDistrictName, "text", undefined, "63_school_district")}
@@ -1170,7 +1176,7 @@ export default function PropertyDetail() {
             </Section>
 
             {/* Location Scores (Fields 74-82) */}
-            <Section title="Location Scores" icon={<Target className="w-6 h-6" />}>
+            <Section title="Location Scores" icon={<Target className="w-6 h-6" />} defaultExpanded={false}>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div className="text-center">
                   <div className="text-3xl font-bold text-quantum-cyan mb-1">
@@ -1236,7 +1242,7 @@ export default function PropertyDetail() {
             </Section>
 
             {/* Safety & Crime (Fields 88-90) */}
-            <Section title="Safety & Crime" icon={<Shield className="w-6 h-6" />}>
+            <Section title="Safety & Crime" icon={<Shield className="w-6 h-6" />} defaultExpanded={false}>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {renderDataField("Violent Crime Index", fullProperty.location.crimeIndexViolent, "text", undefined, "88_violent_crime_index")}
                 {renderDataField("Property Crime Index", fullProperty.location.crimeIndexProperty, "text", undefined, "89_property_crime_index")}
@@ -1245,7 +1251,7 @@ export default function PropertyDetail() {
             </Section>
 
             {/* Market & Investment Data (Fields 91-103) */}
-            <Section title="Market & Investment Data" icon={<TrendingUp className="w-6 h-6" />}>
+            <Section title="Market & Investment Data" icon={<TrendingUp className="w-6 h-6" />} defaultExpanded={false}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   {renderDataField("Median Home Price (Neighborhood)", fullProperty.financial.medianHomePriceNeighborhood, "currency", undefined, "91_median_home_price_neighborhood")}
@@ -1268,7 +1274,7 @@ export default function PropertyDetail() {
             </Section>
 
             {/* Utilities & Connectivity (Fields 104-116) */}
-            <Section title="Utilities & Connectivity" icon={<Wifi className="w-6 h-6" />}>
+            <Section title="Utilities & Connectivity" icon={<Wifi className="w-6 h-6" />} defaultExpanded={false}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   {renderDataField("Electric Provider", fullProperty.utilities.electricProvider, "text", <Zap className="w-4 h-4" />, "104_electric_provider")}
@@ -1291,7 +1297,7 @@ export default function PropertyDetail() {
             </Section>
 
             {/* Environment & Risk (Fields 117-130) */}
-            <Section title="Environment & Risk" icon={<Sun className="w-6 h-6" />}>
+            <Section title="Environment & Risk" icon={<Sun className="w-6 h-6" />} defaultExpanded={false}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   {renderDataField("Air Quality Index", fullProperty.utilities.airQualityIndexCurrent, "text", undefined, "117_air_quality_index")}
