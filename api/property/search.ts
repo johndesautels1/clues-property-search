@@ -2934,11 +2934,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const totalFields = Object.keys(arbitrationResult.fields).length;
     const completionPercentage = Math.round((totalFields / 168) * 100);
 
-    // Build source breakdown from arbitration result
+    // Build source breakdown from ALL sources that submitted data (not just winners)
+    // This ensures progress tracker shows all sources that attempted to provide data
     const sourceBreakdown: Record<string, number> = {};
+
+    // Track winning fields
     for (const [_, field] of Object.entries(arbitrationResult.fields)) {
       const source = field.source || 'Unknown';
       sourceBreakdown[source] = (sourceBreakdown[source] || 0) + 1;
+    }
+
+    // Also track sources that submitted data but lost arbitration
+    for (const audit of arbitrationResult.auditTrail) {
+      if (audit.action === 'skip' && audit.source && audit.source !== 'Unknown') {
+        // Initialize to 0 if not already tracked (shows they participated but didn't win any fields)
+        if (!sourceBreakdown[audit.source]) {
+          sourceBreakdown[audit.source] = 0;
+        }
+      }
     }
 
     console.log('========================================');
