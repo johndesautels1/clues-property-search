@@ -2963,16 +2963,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // CRITICAL: Also track LLM responses explicitly (even if they returned 0 fields)
-    for (const llmResponse of llmResponses) {
-      const llmSourceName = {
-        'perplexity': 'Perplexity',
-        'grok': 'Grok',
-        'claude-opus': 'Claude Opus',
-        'gpt': 'GPT',
-        'claude-sonnet': 'Claude Sonnet',
-        'gemini': 'Gemini'
-      }[llmResponse.llm];
+    const llmSourceNameMap: Record<string, string> = {
+      'perplexity': 'Perplexity',
+      'grok': 'Grok',
+      'claude-opus': 'Claude Opus',
+      'gpt': 'GPT',
+      'claude-sonnet': 'Claude Sonnet',
+      'gemini': 'Gemini'
+    };
 
+    for (const llmResponse of llmResponses) {
+      const llmSourceName = llmSourceNameMap[llmResponse.llm];
       if (llmSourceName && !sourceBreakdown[llmSourceName]) {
         sourceBreakdown[llmSourceName] = 0;
       }
