@@ -2778,6 +2778,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const added = arbitrationPipeline.addFieldsFromSource(fields, source);
           console.log(`✅ TIER 3: Added ${added} fields from ${source}`);
         }
+
+        // CRITICAL: Track sources that were called but returned 0 fields
+        // This ensures SchoolDigger, FBI Crime, etc. show up even if they fail or return nothing
+        const allTier3Sources = ['SchoolDigger', 'FBI UCR', 'FBI Crime Data', 'WalkScore', 'FEMA', 'AirNow', 'HowLoud', 'Weather'];
+        for (const sourceName of allTier3Sources) {
+          if (!tier3Groups[sourceName]) {
+            // Source returned 0 fields - add to audit trail so it shows in source_breakdown
+            arbitrationPipeline.addFieldsFromSource({}, sourceName);
+          }
+        }
       }
     } catch (e) {
       console.error('Free APIs enrichment failed:', e);
@@ -2944,13 +2954,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sourceBreakdown[source] = (sourceBreakdown[source] || 0) + 1;
     }
 
-    // Also track sources that submitted data but lost arbitration
+    // Track ALL sources from audit trail (including those that lost or returned 0 fields)
     for (const audit of arbitrationResult.auditTrail) {
-      if (audit.action === 'skip' && audit.source && audit.source !== 'Unknown') {
-        // Initialize to 0 if not already tracked (shows they participated but didn't win any fields)
-        if (!sourceBreakdown[audit.source]) {
-          sourceBreakdown[audit.source] = 0;
-        }
+      if (audit.source && audit.source !== 'Unknown' && !sourceBreakdown[audit.source]) {
+        // Initialize to 0 to show they ran but won no fields
+        sourceBreakdown[audit.source] = 0;
+      }
+    }
+
+    // CRITICAL: Also track LLM responses explicitly (even if they returned 0 fields)
+    for (const llmResponse of llmResponses) {
+      const llmSourceName = {
+        'perplexity': 'Perplexity',
+        'grok': 'Grok',
+        'claude-opus': 'Claude Opus',
+        'gpt': 'GPT',
+        'claude-sonnet': 'Claude Sonnet',
+        'gemini': 'Gemini'
+      }[llmResponse.llm];
+
+      if (llmSourceName && !sourceBreakdown[llmSourceName]) {
+        sourceBreakdown[llmSourceName] = 0;
       }
     }
 
