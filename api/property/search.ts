@@ -41,6 +41,7 @@ import { LLM_CASCADE_ORDER } from './llm-constants.js';
 import { createArbitrationPipeline, type FieldValue, type ArbitrationResult } from './arbitration.js';
 import { sanitizeAddress, isValidAddress } from '../../src/lib/safe-json-parse.js';
 import { callCrimeGrade, callSchoolDigger } from './free-apis.js';
+import { STELLAR_MLS_SOURCE } from './source-constants.js';
 
 
 // ============================================
@@ -2692,21 +2693,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               const field = fieldData as any;
               mlsFields[key] = {
                 value: field.value,
-                source: field.source || 'Stellar MLS',
+                source: field.source || STELLAR_MLS_SOURCE,
                 confidence: field.confidence || 'High',
                 tier: 1
               };
             }
 
-            const mlsAdded = arbitrationPipeline.addFieldsFromSource(mlsFields, 'Stellar MLS');
-            console.log(`✅ TIER 1 COMPLETE: Added ${mlsAdded} fields from Stellar MLS (via Bridge Interactive)`);
+            const mlsAdded = arbitrationPipeline.addFieldsFromSource(mlsFields, STELLAR_MLS_SOURCE);
+            console.log(`✅ TIER 1 COMPLETE: Added ${mlsAdded} fields from ${STELLAR_MLS_SOURCE} (via Bridge Interactive)`);
             console.log('📊 Sample MLS field values:', JSON.stringify(Object.fromEntries(Object.entries(mlsFields).slice(0, 3)), null, 2));
           } else {
             console.log('⚠️ Bridge Interactive: No property found or no data returned');
             console.log('   - success:', bridgeData.success);
             console.log('   - fields:', bridgeData.fields ? 'exists but empty' : 'null/undefined');
             // Track that Stellar MLS was called even though it returned 0 fields
-            arbitrationPipeline.addFieldsFromSource({}, 'Stellar MLS');
+            arbitrationPipeline.addFieldsFromSource({}, STELLAR_MLS_SOURCE);
           }
         } else {
           const errorText = await bridgeResponse.text();
@@ -2714,14 +2715,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           console.log('   - Status:', bridgeResponse.status, bridgeResponse.statusText);
           console.log('   - Error:', errorText);
           // Track that Stellar MLS was attempted even though it errored
-          arbitrationPipeline.addFieldsFromSource({}, 'Stellar MLS');
+          arbitrationPipeline.addFieldsFromSource({}, STELLAR_MLS_SOURCE);
         }
       } catch (error) {
         console.log('❌ Bridge Interactive error (continuing to other sources)');
         console.log('   - Error:', error instanceof Error ? error.message : String(error));
         console.log('   - Stack:', error instanceof Error ? error.stack : 'N/A');
         // Track that Stellar MLS was attempted even though it threw exception
-        arbitrationPipeline.addFieldsFromSource({}, 'Stellar MLS');
+        arbitrationPipeline.addFieldsFromSource({}, STELLAR_MLS_SOURCE);
       }
       console.log('========================================');
       console.log('');

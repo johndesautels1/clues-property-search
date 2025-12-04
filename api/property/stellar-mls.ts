@@ -1,23 +1,25 @@
 /**
  * CLUES Property Dashboard - Stellar MLS Adapter Stub
- * 
+ *
  * TIER 1 DATA SOURCE (Highest Priority)
- * 
+ *
  * This adapter is ready for when the Stellar MLS eKey is obtained.
  * Stellar MLS is the primary data source for the Tampa Bay area and provides
  * the most authoritative property data.
- * 
+ *
  * Integration Requirements:
  * - eKey API credentials (obtain from Stellar MLS)
  * - RETS or Web API access
  * - Rate limiting compliance
- * 
+ *
  * Environment Variables Needed:
  * - STELLAR_MLS_EKEY: API key/eKey from Stellar MLS
  * - STELLAR_MLS_USER: Username for MLS access
  * - STELLAR_MLS_PASSWORD: Password for MLS access
  * - STELLAR_MLS_ENDPOINT: API endpoint URL
  */
+
+import { STELLAR_MLS_SOURCE } from './source-constants.js';
 
 export interface StellarMLSConfig {
   eKey: string;
@@ -28,7 +30,7 @@ export interface StellarMLSConfig {
 
 export interface StellarMLSResult {
   success: boolean;
-  source: 'Stellar MLS';
+  source: typeof STELLAR_MLS_SOURCE;
   fields: Record<string, { value: any; source: string; confidence: 'High' }>;
   error?: string;
   mlsNumber?: string;
@@ -59,22 +61,22 @@ export function getStellarMLSConfig(): StellarMLSConfig | null {
 
 export async function searchStellarMLS(address: string): Promise<StellarMLSResult> {
   const config = getStellarMLSConfig();
-  
+
   if (!config) {
     return {
       success: false,
-      source: 'Stellar MLS',
+      source: STELLAR_MLS_SOURCE,
       fields: {},
       error: 'Stellar MLS not configured - awaiting eKey',
     };
   }
-  
+
   const fields: Record<string, { value: any; source: string; confidence: 'High' }> = {};
-  
+
   try {
     console.log('[Stellar MLS] Searching for:', address);
     console.log('[Stellar MLS] Endpoint:', config.endpoint);
-    
+
     // TODO: Implement actual Stellar MLS API call when eKey is obtained
     // The implementation will depend on whether using RETS or Web API
     //
@@ -94,19 +96,19 @@ export async function searchStellarMLS(address: string): Promise<StellarMLSResul
     // - And many more...
     //
     // MLS data should be mapped using the field-normalizer.ts FIELD_TO_PROPERTY_MAP
-    
+
     return {
       success: false,
-      source: 'Stellar MLS',
+      source: STELLAR_MLS_SOURCE,
       fields,
       error: 'Stellar MLS integration pending - stub only',
     };
-    
+
   } catch (error) {
     console.error('[Stellar MLS] Error:', error);
     return {
       success: false,
-      source: 'Stellar MLS',
+      source: STELLAR_MLS_SOURCE,
       fields,
       error: String(error),
     };
@@ -115,34 +117,34 @@ export async function searchStellarMLS(address: string): Promise<StellarMLSResul
 
 export async function getMLSListingByNumber(mlsNumber: string): Promise<StellarMLSResult> {
   const config = getStellarMLSConfig();
-  
+
   if (!config) {
     return {
       success: false,
-      source: 'Stellar MLS',
+      source: STELLAR_MLS_SOURCE,
       fields: {},
       error: 'Stellar MLS not configured - awaiting eKey',
     };
   }
-  
+
   try {
     console.log('[Stellar MLS] Looking up MLS#:', mlsNumber);
-    
+
     // TODO: Implement actual MLS lookup by number
-    
+
     return {
       success: false,
-      source: 'Stellar MLS',
+      source: STELLAR_MLS_SOURCE,
       fields: {},
       mlsNumber,
       error: 'Stellar MLS integration pending - stub only',
     };
-    
+
   } catch (error) {
     console.error('[Stellar MLS] Error:', error);
     return {
       success: false,
-      source: 'Stellar MLS',
+      source: STELLAR_MLS_SOURCE,
       fields: {},
       error: String(error),
     };

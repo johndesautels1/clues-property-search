@@ -7,6 +7,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createBridgeAPIClient, type BridgePropertySearchParams } from '../../src/lib/bridge-api-client.js';
 import { mapBridgePropertyToSchema } from '../../src/lib/bridge-field-mapper.js';
+import { STELLAR_MLS_SOURCE } from './source-constants.js';
 
 // Vercel serverless config
 export const config = {
@@ -102,7 +103,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         fields: mappedProperties[0].fields,
         mappedFieldCount: mappedProperties[0].mappedCount,
         unmappedFieldCount: mappedProperties[0].unmappedCount,
-        source: 'Stellar MLS',
+        source: STELLAR_MLS_SOURCE,
         sourceType: 'bridge_mls',
         totalResults: 1,
       });
@@ -113,7 +114,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       success: true,
       results: mappedProperties,
       totalCount: response['@odata.count'] || response.value.length,
-      source: 'Stellar MLS',
+      source: STELLAR_MLS_SOURCE,
       sourceType: 'bridge_mls',
     });
 
