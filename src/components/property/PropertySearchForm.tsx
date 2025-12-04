@@ -295,7 +295,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
                   'airnow': ['airnow'],
                   'howloud': ['howloud'],
                   'weather': ['weathercom', 'weather'],
-                  'crime': ['fbiucr', 'fbicrime', 'fbicrimedata'],
+                  'crime': ['fbicrime'],
                   'schooldigger': ['schooldigger'],
                   'perplexity': ['perplexity'],
                   'grok': ['grok'],

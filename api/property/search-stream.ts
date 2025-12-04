@@ -63,6 +63,7 @@ import {
   isValidAddress,
   safeGet
 } from '../../src/lib/safe-json-parse.js';
+import { FBI_CRIME_SOURCE } from './source-constants.js';
 
 // Use shared field mapping from field-map-flat-to-numbered.ts
 // HOA monthly→annual conversion and field mapping are handled in the shared module
@@ -916,7 +917,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         { call: callAirNow(lat, lon), source: 'airnow', name: 'AirNow' },
         { call: callHowLoud(lat, lon), source: 'howloud', name: 'HowLoud' },
         { call: callWeather(lat, lon), source: 'weather', name: 'Weather' },
-        { call: callCrimeGrade(lat, lon, searchAddress), source: 'crime', name: 'FBI Crime' },
+        { call: callCrimeGrade(lat, lon, searchAddress), source: 'crime', name: FBI_CRIME_SOURCE },
       ];
 
       const results = await Promise.allSettled(
