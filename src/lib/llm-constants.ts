@@ -32,7 +32,7 @@ export const LLM_DISPLAY_NAMES: Record<LLMEngine, string> = {
 // API key environment variables
 export const LLM_ENV_VARS: Record<LLMEngine, string> = {
   'perplexity': 'PERPLEXITY_API_KEY',
-  'grok': 'GROK_API_KEY',
+  'grok': 'XAI_API_KEY', // CORRECT - Vercel uses XAI_API_KEY not GROK_API_KEY
   'claude-opus': 'ANTHROPIC_API_KEY',
   'gpt': 'OPENAI_API_KEY',
   'claude-sonnet': 'ANTHROPIC_API_KEY',

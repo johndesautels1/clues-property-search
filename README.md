@@ -1,6 +1,20 @@
 # CLUES PROPERTY DASHBOARD - MASTER CONTEXT
-**Last Updated**: 2025-12-02
+**Last Updated**: 2025-12-04
 **Purpose**: Core reference for all future conversations - READ THIS FIRST
+
+---
+
+## 🔑 API KEY NAMES (NEVER ASK ABOUT THESE AGAIN)
+
+**CRITICAL - THESE ARE CORRECT IN VERCEL:**
+- ✅ **Grok API Key**: `XAI_API_KEY` (NOT `GROK_API_KEY`)
+- ✅ **FBI Crime API Key**: `FBI_CRIME_API_KEY` (value: `P27MsaAHe4XRlqtem65e3MZoTcy9xOZo2C02BTl8`)
+- ✅ **Gemini API Key**: `GEMINI_API_KEY`
+- ✅ **OpenAI API Key**: `OPENAI_API_KEY`
+- ✅ **Anthropic API Key**: `ANTHROPIC_API_KEY`
+- ✅ **Perplexity API Key**: `PERPLEXITY_API_KEY`
+
+**ALL KEYS ARE PROPERLY CONFIGURED - DO NOT QUESTION THEM**
 
 ---
 
