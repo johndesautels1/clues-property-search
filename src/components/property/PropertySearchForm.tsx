@@ -286,15 +286,23 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
 
                 // Special case mappings
                 const mappings: Record<string, string[]> = {
-                  'google-geocode': ['googlemaps', 'googlegeocoding'],
+                  'stellar-mls': ['stellarmls', 'stellar'],
+                  'google-geocode': ['googlemaps', 'googlegeocoding', 'googlegeoc'],
                   'google-places': ['googleplaces'],
+                  'google-distance': ['googledistance', 'googledistancematrix'],
                   'walkscore': ['walkscore'],
                   'fema': ['fema', 'femanfhl', 'femaflood'],
                   'airnow': ['airnow'],
                   'howloud': ['howloud'],
                   'weather': ['weathercom', 'weather'],
-                  'crime': ['crimegradeorg', 'crimegrade', 'fbicrime'],
+                  'crime': ['fbiucr', 'fbicrime', 'fbicrimedata'],
                   'schooldigger': ['schooldigger'],
+                  'perplexity': ['perplexity'],
+                  'grok': ['grok'],
+                  'claude-opus': ['claudeopus', 'opus'],
+                  'gpt': ['gpt', 'gpt4o'],
+                  'claude-sonnet': ['claudesonnet', 'sonnet'],
+                  'gemini': ['gemini'],
                 };
 
                 const validMappings = mappings[s.id] || [];

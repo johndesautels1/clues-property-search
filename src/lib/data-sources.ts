@@ -36,15 +36,25 @@ export const DATA_SOURCES: DataSource[] = [
     enabled: true,
     description: 'Coordinates and address verification'
   },
-  { 
-    id: 'google-places', 
-    name: 'Google Places', 
-    type: 'free-api', 
-    tier: 2, 
-    icon: 'mappin', 
+  {
+    id: 'google-places',
+    name: 'Google Places',
+    type: 'free-api',
+    tier: 2,
+    icon: 'mappin',
     color: 'blue',
     enabled: true,
     description: 'Nearby places and POIs'
+  },
+  {
+    id: 'google-distance',
+    name: 'Google Distance',
+    type: 'free-api',
+    tier: 2,
+    icon: 'car',
+    color: 'blue',
+    enabled: true,
+    description: 'Commute times and distances'
   },
 
   // Tier 3: Paid/Free APIs ("Hard Truth")
