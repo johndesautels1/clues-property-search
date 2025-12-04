@@ -348,6 +348,36 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
     addField('longitude', property.Longitude, 'High');
   }
 
+  // ================================================================
+  // PHOTOS - Extract from Media resource (Field 169)
+  // ================================================================
+  if (property.Media && Array.isArray(property.Media) && property.Media.length > 0) {
+    console.log(`[Bridge Mapper] Found ${property.Media.length} photos for listing`);
+
+    // Sort by order
+    const sortedMedia = property.Media
+      .filter(m => m.MediaURL)  // Only photos with URLs
+      .sort((a, b) => (a.Order || 999) - (b.Order || 999));
+
+    // Find preferred photo (marked by MLS)
+    const preferredPhoto = sortedMedia.find(m => m.PreferredPhotoYN === true);
+
+    // Use preferred photo, or first photo if no preferred
+    const primaryPhotoUrl = preferredPhoto?.MediaURL || sortedMedia[0]?.MediaURL;
+
+    if (primaryPhotoUrl) {
+      addField('property_photo_url', primaryPhotoUrl, 'High');
+      console.log('[Bridge Mapper] ✅ Primary photo URL extracted');
+    }
+
+    // Store all photo URLs for future gallery feature
+    const allPhotoUrls = sortedMedia.map(m => m.MediaURL).filter(Boolean) as string[];
+    if (allPhotoUrls.length > 0) {
+      addField('property_photos', allPhotoUrls, 'High');
+      console.log(`[Bridge Mapper] ✅ Stored ${allPhotoUrls.length} photos in gallery`);
+    }
+  }
+
   // Count unmapped fields
   const allPropertyKeys = Object.keys(property);
   unmappedCount = allPropertyKeys.length - mappedCount;

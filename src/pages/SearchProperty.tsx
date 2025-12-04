@@ -71,6 +71,12 @@ export default function SearchProperty() {
       try {
         fullProperty = normalizeToProperty(apiFields, propertyId);
         console.log('✅ Successfully created fullProperty structure');
+
+        // Extract photo URL from Stellar MLS data if available
+        if (fullProperty.address.primaryPhotoUrl?.value) {
+          newProperty.thumbnail = fullProperty.address.primaryPhotoUrl.value;
+          console.log('📸 Property photo extracted from Stellar MLS');
+        }
       } catch (error) {
         console.error('❌ Error normalizing property:', error);
       }

@@ -10,6 +10,7 @@
  */
 
 import type { Property, DataField, ConfidenceLevel } from '@/types/property';
+import { enrichWithCalculatedFields } from './field-calculations';
 
 export interface FlatFieldData {
   value: any;
@@ -52,6 +53,10 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
   // ========== GROUP 2: Pricing & Value (Fields 10-16) ==========
   { fieldNumber: 10, apiKey: '10_listing_price', group: 'address', propName: 'listingPrice', type: 'number', validation: (v) => v > 0 && v < 1000000000 },
   { fieldNumber: 11, apiKey: '11_price_per_sqft', group: 'address', propName: 'pricePerSqft', type: 'number', validation: (v) => v > 0 && v < 50000 },
+
+  // ========== PHOTOS (Fields 169-170) - Stellar MLS Media ==========
+  { fieldNumber: 169, apiKey: 'property_photo_url', group: 'address', propName: 'primaryPhotoUrl', type: 'string' },
+  { fieldNumber: 170, apiKey: 'property_photos', group: 'address', propName: 'photoGallery', type: 'array' },
   { fieldNumber: 12, apiKey: '12_market_value_estimate', group: 'details', propName: 'marketValueEstimate', type: 'number', validation: (v) => v > 0 && v < 1000000000 },
   { fieldNumber: 13, apiKey: '13_last_sale_date', group: 'details', propName: 'lastSaleDate', type: 'date' },
   { fieldNumber: 14, apiKey: '14_last_sale_price', group: 'details', propName: 'lastSalePrice', type: 'number', validation: (v) => v > 0 && v < 1000000000 },
@@ -532,6 +537,7 @@ export function normalizeToProperty(
       latitude: emptyDataField(),
       longitude: emptyDataField(),
       neighborhoodName: emptyDataField(),
+      // Photos are optional - only populated from Stellar MLS API
     },
     details: {
       bedrooms: emptyDataField(),
@@ -839,7 +845,36 @@ export function normalizeToProperty(
   property.dataCompleteness = Math.round((fieldsPopulated / 168) * 100);
   property.smartScore = Math.min(100, fieldsPopulated + 20);
 
-  return property;
+  // 🔥 AUTOMATIC FIELD CALCULATIONS - Run after all API data is normalized
+  // This fills data gaps with calculated values, FL regional defaults, and property-type inferences
+  const { enrichWithCalculatedFields } = require('./field-calculations');
+  const enrichedProperty = enrichWithCalculatedFields(property);
+
+  // Recalculate data completeness after adding calculated fields
+  let totalFields = 0;
+  let populatedFields = 0;
+  Object.values(enrichedProperty).forEach(group => {
+    if (typeof group === 'object' && group !== null && !Array.isArray(group) && 'value' in group) {
+      totalFields++;
+      if (group.value !== null && group.value !== undefined && group.value !== '') {
+        populatedFields++;
+      }
+    } else if (typeof group === 'object' && group !== null) {
+      Object.values(group).forEach(field => {
+        if (typeof field === 'object' && field !== null && 'value' in field) {
+          totalFields++;
+          if (field.value !== null && field.value !== undefined && field.value !== '') {
+            populatedFields++;
+          }
+        }
+      });
+    }
+  });
+
+  enrichedProperty.dataCompleteness = Math.round((populatedFields / totalFields) * 100);
+  console.log(`[FIELD-NORMALIZER] ✅ Data completeness: ${enrichedProperty.dataCompleteness}% (${populatedFields}/${totalFields} fields)`);
+
+  return enrichedProperty;
 }
 
 /**

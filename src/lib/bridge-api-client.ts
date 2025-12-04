@@ -159,6 +159,16 @@ export interface BridgeProperty {
   PublicRemarks?: string;
   PrivateRemarks?: string;
 
+  // Media & Photos
+  Media?: Array<{
+    MediaURL?: string;
+    Order?: number;
+    MediaCategory?: string;
+    ShortDescription?: string;
+    PreferredPhotoYN?: boolean;
+    MediaModificationTimestamp?: string;
+  }>;
+
   // Many more RESO fields available...
   [key: string]: any;
 }

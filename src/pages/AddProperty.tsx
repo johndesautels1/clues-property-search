@@ -1107,6 +1107,7 @@ export default function AddProperty() {
         latitude: createDataField(row['latitude'] ? parseFloat(row['latitude']) : null),
         longitude: createDataField(row['longitude'] ? parseFloat(row['longitude']) : null),
         neighborhoodName: createDataField(row['6_neighborhood'] || ''),
+        // Photos will be populated from Stellar MLS API, not CSV
       },
       details: {
         bedrooms: createDataField(row['17_bedrooms'] ? parseInt(row['17_bedrooms']) : null),

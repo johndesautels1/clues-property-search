@@ -41,6 +41,8 @@ export interface AddressData {
   latitude: DataField<number>;           // Coordinates
   longitude: DataField<number>;          // Coordinates
   neighborhoodName: DataField<string>;   // #6 neighborhood
+  primaryPhotoUrl?: DataField<string>;   // #169 property_photo_url (from Stellar MLS Media) - OPTIONAL
+  photoGallery?: DataField<string[]>;    // #170 property_photos (all listing photos) - OPTIONAL
 }
 
 // Pricing & Value (12-16) + Property Basics (17-29) + HOA & Taxes (30-38) per fields-schema.ts

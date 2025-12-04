@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import { usePropertyStore } from '@/store/propertyStore';
 import { useIsAdmin } from '@/store/authStore';
+import { isCalculatedField, getCalculationBadge } from '@/lib/field-calculations';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -206,8 +207,17 @@ const DataField = ({ label, value, icon, format = 'text', confidence, llmSources
           </p>
           {/* SOURCE INFO - ADMIN ONLY */}
           {isAdmin && llmSources && llmSources.length > 0 && (
-            <div className="mt-1 text-xs text-gray-500">
-              Source: {llmSources.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')}
+            <div className="mt-1 flex items-center gap-2">
+              <span className="text-xs text-gray-500">
+                Source: {llmSources.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')}
+              </span>
+              {/* Calculated Field Badge */}
+              {isCalculatedField({ sources: llmSources }) && (
+                <span className="px-2 py-0.5 bg-quantum-cyan/20 text-quantum-cyan text-[10px] font-semibold rounded-full flex items-center gap-1">
+                  <Zap className="w-3 h-3" />
+                  {getCalculationBadge({ sources: llmSources })}
+                </span>
+              )}
             </div>
           )}
         </div>
