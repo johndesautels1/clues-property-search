@@ -538,19 +538,13 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
 
     const data = fetchResult.data;
 
-    console.log('🔍 FBI Crime API Response for', stateCode);
-    console.log('   - Full response keys:', Object.keys(data || {}));
-    console.log('   - data.offenses exists:', !!data.offenses);
-    console.log('   - data.offenses.rates exists:', !!data.offenses?.rates);
-    if (data.offenses?.rates) {
-      console.log('   - Available states in rates:', Object.keys(data.offenses.rates));
-    }
-    console.log('   - Looking for state:', stateCode);
+    // FBI API returns keys like "Florida Offenses", "United States Offenses" (not "FL")
+    const stateOffensesKey = 'Florida Offenses';
+    const usOffensesKey = 'United States Offenses';
 
-    // New API format returns monthly rates in offenses.rates[State]
-    if (data.offenses?.rates?.[stateCode] || data.offenses?.rates?.Florida) {
-      const stateRates = data.offenses.rates[stateCode] || data.offenses.rates.Florida;
-      const usRates = data.offenses.rates['United States'];
+    if (data.offenses?.rates?.[stateOffensesKey]) {
+      const stateRates = data.offenses.rates[stateOffensesKey];
+      const usRates = data.offenses.rates[usOffensesKey];
 
       // Calculate annual average from monthly rates
       const monthlyRates = Object.values(stateRates).filter((v): v is number => typeof v === 'number');
