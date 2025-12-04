@@ -60,7 +60,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       response = property ? { value: [property], '@odata.count': 1, '@odata.context': '' } : { value: [], '@odata.count': 0, '@odata.context': '' };
     } else if (params.address) {
       console.log('[Bridge MLS API] Searching by address:', params.address);
-      const property = await client.getPropertyByAddress(params.address, params.city, params.state);
+      const property = await client.getPropertyByAddress(params.address, params.city, params.state, params.zipCode);
       response = property ? { value: [property], '@odata.count': 1, '@odata.context': '' } : { value: [], '@odata.count': 0, '@odata.context': '' };
     } else {
       console.log('[Bridge MLS API] Searching with filters');

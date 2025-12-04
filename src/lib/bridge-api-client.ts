@@ -251,6 +251,8 @@ export class BridgeAPIClient {
   private buildODataQuery(params: BridgePropertySearchParams): string {
     const filters: string[] = [];
 
+    console.log('[Bridge API] buildODataQuery received params:', JSON.stringify(params, null, 2));
+
     // Address search - use case-insensitive contains for flexible matching
     if (params.address) {
       // Use the full street address (caller has already parsed it)
@@ -272,7 +274,10 @@ export class BridgeAPIClient {
 
     // ZIP code filter - exact match
     if (params.zipCode) {
+      console.log('[Bridge API] Adding PostalCode filter:', params.zipCode);
       filters.push(`PostalCode eq '${params.zipCode}'`);
+    } else {
+      console.log('[Bridge API] ⚠️ params.zipCode is undefined/null/empty');
     }
     if (params.mlsNumber) {
       const escapedMls = params.mlsNumber.replace(/'/g, "''");
@@ -399,17 +404,80 @@ export class BridgeAPIClient {
   }
 
   /**
-   * Get property by address
+   * Get property by address with fallback strategies
+   * Tries multiple search variations to handle different MLS formats
    */
-  async getPropertyByAddress(address: string, city?: string, state?: string): Promise<BridgeProperty | null> {
-    const response = await this.searchProperties({
+  async getPropertyByAddress(address: string, city?: string, state?: string, zipCode?: string): Promise<BridgeProperty | null> {
+    console.log('[Bridge API] Smart search - trying multiple strategies for:', address);
+
+    // Strategy 1: Try FULL address as-is (handles "Apt 106", "#106", "Unit 106" etc)
+    console.log('[Bridge API] Strategy 1: Full address');
+    let response = await this.searchProperties({
       address,
       city,
       state,
+      zipCode,
       top: 1,
     });
 
-    return response.value.length > 0 ? response.value[0] : null;
+    if (response.value.length > 0) {
+      console.log('[Bridge API] ✅ Found with full address');
+      return response.value[0];
+    }
+
+    // Strategy 2: Try without unit/apt number (strip common patterns)
+    const unitPatterns = [
+      / apt \d+$/i,
+      / apartment \d+$/i,
+      / unit \d+$/i,
+      / #\d+$/i,
+      / suite \d+$/i,
+      / ste \d+$/i,
+    ];
+
+    for (const pattern of unitPatterns) {
+      if (pattern.test(address)) {
+        const baseAddress = address.replace(pattern, '').trim();
+        console.log(`[Bridge API] Strategy 2: Without unit - "${baseAddress}"`);
+        response = await this.searchProperties({
+          address: baseAddress,
+          city,
+          state,
+          zipCode,
+          top: 1,
+        });
+
+        if (response.value.length > 0) {
+          console.log('[Bridge API] ✅ Found without unit number');
+          return response.value[0];
+        }
+        break; // Only try one unit pattern
+      }
+    }
+
+    // Strategy 3: Try with just street number and name (no directional suffix variations)
+    // e.g., "10399 Paradise Blvd" could be stored as "10399 Paradise Boulevard"
+    const streetMatch = address.match(/^(\d+)\s+(.+?)(?:\s+(?:apt|unit|#|suite|ste).+)?$/i);
+    if (streetMatch) {
+      const [, number, street] = streetMatch;
+      const baseStreet = `${number} ${street.split(' ').slice(0, 2).join(' ')}`; // Just number + first 2 words
+      console.log(`[Bridge API] Strategy 3: Base street - "${baseStreet}"`);
+      response = await this.searchProperties({
+        address: baseStreet,
+        city,
+        state,
+        zipCode,
+        top: 5, // Get multiple to handle variations
+      });
+
+      if (response.value.length > 0) {
+        console.log(`[Bridge API] ✅ Found ${response.value.length} matches with base street`);
+        return response.value[0]; // Return first match
+      }
+    }
+
+    console.log('[Bridge API] ❌ No matches found with any strategy');
+    return null;
   }
 }
 
