@@ -1333,7 +1333,7 @@ export default function PropertyDetail() {
             </Section>
 
             {/* Stellar MLS - Parking & Garage (Fields 139-143) */}
-            <Section title="Stellar MLS - Parking & Garage" icon={<Building2 className="w-6 h-6" />} defaultExpanded={false}>
+            <Section title="Parking & Garage" icon={<Building2 className="w-6 h-6" />} defaultExpanded={false}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   {renderDataField("Carport", fullProperty.stellarMLS?.parking?.carportYn, "text", undefined, "139_carport_yn")}
@@ -1348,7 +1348,7 @@ export default function PropertyDetail() {
             </Section>
 
             {/* Stellar MLS - Building Info (Fields 144-148) */}
-            <Section title="Stellar MLS - Building Info" icon={<Building2 className="w-6 h-6" />} defaultExpanded={false}>
+            <Section title="Building Info" icon={<Building2 className="w-6 h-6" />} defaultExpanded={false}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   {renderDataField("Floor Number", fullProperty.stellarMLS?.building?.floorNumber, "number", undefined, "144_floor_number")}
@@ -1363,7 +1363,7 @@ export default function PropertyDetail() {
             </Section>
 
             {/* Stellar MLS - Legal & Tax (Fields 149-154) */}
-            <Section title="Stellar MLS - Legal & Tax" icon={<Shield className="w-6 h-6" />} defaultExpanded={false}>
+            <Section title="Legal & Tax" icon={<Shield className="w-6 h-6" />} defaultExpanded={false}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   {renderDataField("Subdivision Name", fullProperty.stellarMLS?.legal?.subdivisionName, "text", undefined, "149_subdivision_name")}
@@ -1379,7 +1379,7 @@ export default function PropertyDetail() {
             </Section>
 
             {/* Stellar MLS - Waterfront (Fields 155-159) */}
-            <Section title="Stellar MLS - Waterfront" icon={<Trees className="w-6 h-6" />} defaultExpanded={false}>
+            <Section title="Waterfront" icon={<Trees className="w-6 h-6" />} defaultExpanded={false}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   {renderDataField("Water Frontage", fullProperty.stellarMLS?.waterfront?.waterFrontageYn, "text", undefined, "155_water_frontage_yn")}
@@ -1394,7 +1394,7 @@ export default function PropertyDetail() {
             </Section>
 
             {/* Stellar MLS - Leasing & Pets (Fields 160-165) */}
-            <Section title="Stellar MLS - Leasing & Pets" icon={<Home className="w-6 h-6" />} defaultExpanded={false}>
+            <Section title="Leasing & Pets" icon={<Home className="w-6 h-6" />} defaultExpanded={false}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   {renderDataField("Can Be Leased", fullProperty.stellarMLS?.leasing?.canBeLeasedYn, "text", undefined, "160_can_be_leased_yn")}
@@ -1410,7 +1410,7 @@ export default function PropertyDetail() {
             </Section>
 
             {/* Stellar MLS - Community & Features (Fields 166-168) */}
-            <Section title="Stellar MLS - Community & Features" icon={<Sparkles className="w-6 h-6" />} defaultExpanded={false}>
+            <Section title="Community & Features" icon={<Sparkles className="w-6 h-6" />} defaultExpanded={false}>
               <div className="grid grid-cols-1 gap-6">
                 {renderDataField("Community Features", fullProperty.stellarMLS?.features?.communityFeatures, "text", undefined, "166_community_features")}
                 {renderDataField("Interior Features", fullProperty.stellarMLS?.features?.interiorFeatures, "text", undefined, "167_interior_features")}
