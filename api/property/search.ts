@@ -2457,7 +2457,7 @@ CITE YOUR SOURCES for every field you populate`;
       },
       body: JSON.stringify({
         model: 'grok-4',
-        max_tokens: 8000,
+        max_tokens: 16000, // Increased from 8000 to handle 168 fields (was causing truncated JSON)
         temperature: 0.1, // Low temperature for factual consistency
         messages: [
           { role: 'system', content: grokSystemPrompt },
@@ -2485,6 +2485,9 @@ Search Zillow, Redfin, Realtor.com, county records, and other public sources. Re
           return { fields: filteredFields, llm: 'Grok' };
         } catch (parseError) {
           console.error('❌ Grok JSON.parse error:', parseError);
+          console.error('   JSON length:', jsonMatch[0].length, 'chars');
+          console.error('   JSON sample (first 500 chars):', jsonMatch[0].substring(0, 500));
+          console.error('   JSON sample (last 500 chars):', jsonMatch[0].substring(jsonMatch[0].length - 500));
           return { error: `JSON parse error: ${String(parseError)}`, fields: {}, llm: 'Grok' };
         }
       }
