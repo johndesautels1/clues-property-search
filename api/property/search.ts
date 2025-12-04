@@ -902,7 +902,8 @@ async function getWalkScore(lat: number, lon: number, address: string): Promise<
 async function getFloodZone(lat: number, lon: number): Promise<Record<string, any>> {
   console.log(`🔵 [FEMA] Calling API for coordinates: ${lat}, ${lon}`);
   try {
-    const url = `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?where=1%3D1&geometry=${lon}%2C${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE%2CZONE_SUBTY%2CSFHA_TF&returnGeometry=false&f=json`;
+    // Updated 2025-12-04: FEMA changed URL from /gis/nfhl/rest to /arcgis/rest
+    const url = `https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query?where=1%3D1&geometry=${lon}%2C${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE%2CZONE_SUBTY%2CSFHA_TF&returnGeometry=false&f=json`;
     const response = await fetch(url);
 
     if (!response.ok) {
