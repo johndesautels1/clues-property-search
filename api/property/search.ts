@@ -986,8 +986,10 @@ async function getNoiseData(lat: number, lon: number): Promise<Record<string, an
 
     const fields: Record<string, any> = {};
 
-    // Response structure: { status: "OK", result: { score, traffic, local, airports, ... } }
-    const result = data.result || data;
+    // Response structure: { status: "OK", result: [{ score, traffic, local, airports, ... }] }
+    // Note: result is an array, take first element
+    const resultArray = data.result || [];
+    const result = Array.isArray(resultArray) ? resultArray[0] : resultArray;
 
     if (result && result.score !== undefined) {
       // HowLoud score: 0-100 (higher = quieter)
