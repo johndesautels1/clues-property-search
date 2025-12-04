@@ -40,7 +40,7 @@ import { scrapeFloridaCounty } from './florida-counties.js';
 import { LLM_CASCADE_ORDER } from './llm-constants.js';
 import { createArbitrationPipeline, type FieldValue, type ArbitrationResult } from './arbitration.js';
 import { sanitizeAddress, isValidAddress } from '../../src/lib/safe-json-parse.js';
-import { callCrimeGrade } from './free-apis.js';
+import { callCrimeGrade, callSchoolDigger } from './free-apis.js';
 
 
 // ============================================
@@ -1375,7 +1375,7 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   const apiStartTime = Date.now();
 
   // Call all APIs in parallel
-  const [walkScore, floodZone, airQuality, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeData] = await Promise.all([
+  const [walkScore, floodZone, airQuality, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeDataResult, schoolDiggerResult] = await Promise.all([
     getWalkScore(geo.lat, geo.lon, address),
     getFloodZone(geo.lat, geo.lon),
     getAirQuality(geo.lat, geo.lon),
@@ -1385,13 +1385,18 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
     getCommuteTime(geo.lat, geo.lon, geo.county),
     getSchoolDistances(geo.lat, geo.lon),
     getTransitAccess(geo.lat, geo.lon),
-    callCrimeGrade(geo.lat, geo.lon, address).then(r => r.fields)
+    callCrimeGrade(geo.lat, geo.lon, address),
+    callSchoolDigger(geo.lat, geo.lon)
   ]);
+
+  // Extract fields from API result objects
+  const crimeData = crimeDataResult.fields || {};
+  const schoolDiggerData = schoolDiggerResult.fields || {};
 
   const apiEndTime = Date.now();
   console.log(`✅ [enrichWithFreeAPIs] All APIs completed in ${apiEndTime - apiStartTime}ms`);
 
-  Object.assign(fields, walkScore, floodZone, airQuality, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeData);
+  Object.assign(fields, walkScore, floodZone, airQuality, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeData, schoolDiggerData);
 
   console.log('🔵 [enrichWithFreeAPIs] Raw field count before filtering:', Object.keys(fields).length);
   console.log('🔵 [enrichWithFreeAPIs] Field breakdown:');
@@ -1405,6 +1410,7 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   console.log('  - SchoolDistances fields:', Object.keys(schoolDistances || {}).length);
   console.log('  - TransitAccess fields:', Object.keys(transitAccess || {}).length);
   console.log('  - CrimeData fields:', Object.keys(crimeData || {}).length);
+  console.log('  - SchoolDigger fields:', Object.keys(schoolDiggerData || {}).length);
 
   // Filter out nulls
   const filteredFields = Object.fromEntries(
