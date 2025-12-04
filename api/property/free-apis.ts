@@ -538,6 +538,15 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
 
     const data = fetchResult.data;
 
+    console.log('🔍 FBI Crime API Response for', stateCode);
+    console.log('   - Full response keys:', Object.keys(data || {}));
+    console.log('   - data.offenses exists:', !!data.offenses);
+    console.log('   - data.offenses.rates exists:', !!data.offenses?.rates);
+    if (data.offenses?.rates) {
+      console.log('   - Available states in rates:', Object.keys(data.offenses.rates));
+    }
+    console.log('   - Looking for state:', stateCode);
+
     // New API format returns monthly rates in offenses.rates[State]
     if (data.offenses?.rates?.[stateCode] || data.offenses?.rates?.Florida) {
       const stateRates = data.offenses.rates[stateCode] || data.offenses.rates.Florida;
