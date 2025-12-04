@@ -904,6 +904,13 @@ async function getFloodZone(lat: number, lon: number): Promise<Record<string, an
   try {
     const url = `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?where=1%3D1&geometry=${lon}%2C${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE%2CZONE_SUBTY%2CSFHA_TF&returnGeometry=false&f=json`;
     const response = await fetch(url);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ [FEMA] HTTP ${response.status}: ${errorText.substring(0, 200)}`);
+      return {};
+    }
+
     const data = await response.json();
     console.log(`🔵 [FEMA] Response status: ${response.status}, features: ${data.features?.length || 0}`);
 
@@ -1203,6 +1210,12 @@ async function getSchoolDistances(lat: number, lon: number): Promise<Record<stri
       const searchRes = await fetch(searchUrl);
       const searchData = await searchRes.json();
 
+      // Check for API errors
+      if (searchData.status && searchData.status !== 'OK' && searchData.status !== 'ZERO_RESULTS') {
+        console.log(`⚠️ [Google Places/Schools] API error for ${school.name}: ${searchData.status} - ${searchData.error_message || 'No error message'}`);
+        continue;
+      }
+
       if (searchData.results && searchData.results.length > 0) {
         const nearest = searchData.results[0];
         const destLat = nearest.geometry.location.lat;
@@ -1211,6 +1224,12 @@ async function getSchoolDistances(lat: number, lon: number): Promise<Record<stri
         const distUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destLat},${destLon}&units=imperial&key=${apiKey}`;
         const distRes = await fetch(distUrl);
         const distData = await distRes.json();
+
+        // Check for Distance Matrix API errors
+        if (distData.status && distData.status !== 'OK') {
+          console.log(`⚠️ [Google Places/Schools] Distance Matrix error for ${school.name}: ${distData.status} - ${distData.error_message || 'No error message'}`);
+          continue;
+        }
 
         if (distData.rows?.[0]?.elements?.[0]?.distance) {
           const meters = distData.rows[0].elements[0].distance.value;
