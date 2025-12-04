@@ -6,7 +6,7 @@
 
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   ArrowLeft,
   Share2,
@@ -353,7 +353,7 @@ const Section = ({ title, icon, children, defaultExpanded = true }: SectionProps
 export default function PropertyDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getPropertyById, getFullPropertyById, removeProperty, updateFullProperty, updateProperty } = usePropertyStore();
+  const { getPropertyById, getFullPropertyById, removeProperty, updateFullProperty, updateProperty, markPropertyAsViewed } = usePropertyStore();
   const [isRetrying, setIsRetrying] = useState(false);
   const [isEnriching, setIsEnriching] = useState(false);
   const [enrichProgress, setEnrichProgress] = useState(0);
@@ -362,6 +362,13 @@ export default function PropertyDetail() {
 
   const property = id ? getPropertyById(id) : undefined;
   const fullProperty = id ? getFullPropertyById(id) : undefined;
+
+  // Mark property as viewed when component mounts or id changes
+  useEffect(() => {
+    if (id) {
+      markPropertyAsViewed(id);
+    }
+  }, [id, markPropertyAsViewed]);
 
   // Handler for "Enrich with APIs" button - calls search API to add more data
   const handleEnrichWithApis = async () => {

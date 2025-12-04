@@ -75,8 +75,18 @@ export default function Dashboard() {
     return computeDataQualityByRange(fullPropertiesArray);
   }, [fullPropertiesArray]);
 
-  // Get recent properties (up to 3)
-  const recentProperties = filteredProperties.slice(0, 3);
+  // Get recently viewed properties (up to 3)
+  // Sort by lastViewedAt timestamp (most recent first), fallback to original order
+  const recentProperties = useMemo(() => {
+    return [...filteredProperties]
+      .sort((a, b) => {
+        if (!a.lastViewedAt && !b.lastViewedAt) return 0;
+        if (!a.lastViewedAt) return 1;
+        if (!b.lastViewedAt) return -1;
+        return new Date(b.lastViewedAt).getTime() - new Date(a.lastViewedAt).getTime();
+      })
+      .slice(0, 3);
+  }, [filteredProperties]);
 
   return (
     <motion.div

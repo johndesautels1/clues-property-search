@@ -315,6 +315,7 @@ interface PropertyState {
   removeProperty: (id: string) => void;
   updateProperty: (id: string, updates: Partial<PropertyCard>) => void;
   updateFullProperty: (id: string, property: Property) => void;
+  markPropertyAsViewed: (id: string) => void;
   selectProperty: (id: string | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -502,6 +503,13 @@ export const usePropertyStore = create<PropertyState>()(
 
           return { fullProperties: newFullProperties };
         }),
+
+      markPropertyAsViewed: (id) =>
+        set((state) => ({
+          properties: state.properties.map((p) =>
+            p.id === id ? { ...p, lastViewedAt: new Date().toISOString() } : p
+          ),
+        })),
 
       selectProperty: (id) =>
         set({ selectedPropertyId: id }),
