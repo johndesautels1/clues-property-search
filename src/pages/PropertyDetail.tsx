@@ -711,7 +711,8 @@ export default function PropertyDetail() {
                 value: (fieldData as any).value,
                 confidence: 'Medium',
                 notes: `Updated by ${llmName}`,
-                sources: [llmName]
+                sources: [llmName],
+                llmSources: [llmName]
               };
               fieldsUpdated++;
 
