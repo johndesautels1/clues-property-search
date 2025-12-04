@@ -1414,6 +1414,10 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   console.log('  - CrimeData fields:', Object.keys(crimeData || {}).length);
   console.log('  - SchoolDigger fields:', Object.keys(schoolDiggerData || {}).length);
 
+  // Store actual field counts in fields object for later tracking
+  fields['__FBI_CRIME_COUNT__'] = { value: Object.keys(crimeData).length, source: 'INTERNAL', confidence: 'High' };
+  fields['__SCHOOLDIGGER_COUNT__'] = { value: Object.keys(schoolDiggerData).length, source: 'INTERNAL', confidence: 'High' };
+
   // Filter out nulls
   const filteredFields = Object.fromEntries(
     Object.entries(fields).filter(([_, v]) => v.value !== null && v.value !== undefined)
@@ -2751,6 +2755,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       try {
         const enrichedData = await enrichWithFreeAPIs(searchQuery);
         console.log('📦 enrichWithFreeAPIs returned', Object.keys(enrichedData).length, 'fields');
+
+      // Extract actual field counts from special tracking fields
+      const fbiCrimeActualCount = (enrichedData['__FBI_CRIME_COUNT__'] as any)?.value || 0;
+      const schoolDiggerActualCount = (enrichedData['__SCHOOLDIGGER_COUNT__'] as any)?.value || 0;
+      actualFieldCounts[FBI_CRIME_SOURCE] = fbiCrimeActualCount;
+      actualFieldCounts['SchoolDigger'] = schoolDiggerActualCount;
+      console.log(`🔢 Actual field counts: FBI Crime=${fbiCrimeActualCount}, SchoolDigger=${schoolDiggerActualCount}`);
+
+      // Remove tracking fields from enrichedData
+      delete enrichedData['__FBI_CRIME_COUNT__'];
+      delete enrichedData['__SCHOOLDIGGER_COUNT__'];
 
       if (Object.keys(enrichedData).length === 0) {
         console.log('⚠️ WARNING: enrichWithFreeAPIs returned ZERO fields - no API data available');
