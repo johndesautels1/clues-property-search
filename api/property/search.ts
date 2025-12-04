@@ -40,6 +40,7 @@ import { scrapeFloridaCounty } from './florida-counties.js';
 import { LLM_CASCADE_ORDER } from './llm-constants.js';
 import { createArbitrationPipeline, type FieldValue, type ArbitrationResult } from './arbitration.js';
 import { sanitizeAddress, isValidAddress } from '../../src/lib/safe-json-parse.js';
+import { callCrimeGrade } from './free-apis.js';
 
 
 // ============================================
@@ -1255,125 +1256,6 @@ async function getSchoolDistances(lat: number, lon: number): Promise<Record<stri
   return fields;
 }
 
-// FREE Crime Data - Uses FBI UCR data via community-crime-map or similar free sources
-async function getCrimeData(lat: number, lon: number, address: string): Promise<Record<string, any>> {
-  const fields: Record<string, any> = {};
-
-  console.log(`🔵 [Crime] Starting crime data lookup for: ${address}`);
-
-  try {
-    // Try CrimeGrade.org scrape (free)
-    const zipMatch = address.match(/\b(\d{5})\b/);
-    if (!zipMatch) {
-      console.log(`⚠️ [Crime] No ZIP code found in address: ${address}`);
-      return {};
-    }
-
-    const zip = zipMatch[1];
-    const crimeUrl = `https://crimegrade.org/safest-places-in-${zip}/`;
-    console.log(`🔵 [Crime] Fetching from: ${crimeUrl}`);
-
-    const res = await fetch(crimeUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      }
-    });
-
-    console.log(`🔵 [Crime] Response status: ${res.status} ${res.statusText}`);
-
-    if (res.ok) {
-      const html = await res.text();
-      console.log(`🔵 [Crime] Received HTML (${html.length} chars), parsing for crime data...`);
-
-        // Extract overall crime grade
-        // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Safety & Crime (88-90)
-        const gradeMatch = html.match(/Overall Crime Grade[^A-F]*([A-F][+-]?)/i) ||
-                          html.match(/crime grade[^A-F]*([A-F][+-]?)/i);
-        if (gradeMatch) {
-          console.log(`✅ [Crime] Found overall grade: ${gradeMatch[1]}`);
-          fields['90_neighborhood_safety_rating'] = {
-            value: `Grade ${gradeMatch[1]}`,
-            source: 'CrimeGrade.org',
-            confidence: 'Medium'
-          };
-        } else {
-          console.log(`⚠️ [Crime] No overall crime grade found in HTML`);
-        }
-
-        // Extract violent crime grade
-        const violentMatch = html.match(/Violent Crime[^A-F]*([A-F][+-]?)/i);
-        if (violentMatch) {
-          console.log(`✅ [Crime] Found violent crime grade: ${violentMatch[1]}`);
-          fields['88_violent_crime_index'] = {
-            value: `Grade ${violentMatch[1]}`,
-            source: 'CrimeGrade.org',
-            confidence: 'Medium'
-          };
-        } else {
-          console.log(`⚠️ [Crime] No violent crime grade found in HTML`);
-        }
-
-        // Extract property crime grade
-        const propertyMatch = html.match(/Property Crime[^A-F]*([A-F][+-]?)/i);
-        if (propertyMatch) {
-          console.log(`✅ [Crime] Found property crime grade: ${propertyMatch[1]}`);
-          fields['89_property_crime_index'] = {
-            value: `Grade ${propertyMatch[1]}`,
-            source: 'CrimeGrade.org',
-            confidence: 'Medium'
-          };
-        } else {
-          console.log(`⚠️ [Crime] No property crime grade found in HTML`);
-        }
-    } else {
-      console.log(`❌ [Crime] HTTP ${res.status} - Failed to fetch crime data`);
-    }
-
-    // If CrimeGrade didn't work, try AreaVibes (also free)
-    if (Object.keys(fields).length === 0) {
-      const cityMatch = address.match(/,\s*([^,]+),\s*[A-Z]{2}/i);
-      if (cityMatch) {
-        const city = cityMatch[1].trim().toLowerCase().replace(/\s+/g, '-');
-        const state = address.match(/,\s*([A-Z]{2})\s*\d{5}/i)?.[1]?.toLowerCase();
-
-        if (city && state) {
-          const areaVibesUrl = `https://www.areavibes.com/${city}-${state}/crime/`;
-          const res = await fetch(areaVibesUrl, {
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            }
-          });
-
-          if (res.ok) {
-            const html = await res.text();
-
-            // Extract livability score
-            const scoreMatch = html.match(/Crime[^0-9]*(\d+)/i);
-            if (scoreMatch) {
-              const score = parseInt(scoreMatch[1]);
-              let rating = 'Poor';
-              if (score >= 80) rating = 'Excellent';
-              else if (score >= 60) rating = 'Good';
-              else if (score >= 40) rating = 'Fair';
-
-              fields['90_neighborhood_safety_rating'] = {
-                value: `${rating} (Score: ${score}/100)`,
-                source: 'AreaVibes',
-                confidence: 'Medium'
-              };
-            }
-          }
-        }
-      }
-    }
-  } catch (e) {
-    console.error('❌ [Crime] Exception:', e);
-  }
-
-  console.log(`✅ [Crime] Returning ${Object.keys(fields).length} fields`);
-  return fields;
-}
-
 // Google Places - Public transit access
 async function getTransitAccess(lat: number, lon: number): Promise<Record<string, any>> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
@@ -1503,7 +1385,7 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
     getCommuteTime(geo.lat, geo.lon, geo.county),
     getSchoolDistances(geo.lat, geo.lon),
     getTransitAccess(geo.lat, geo.lon),
-    getCrimeData(geo.lat, geo.lon, address)
+    callCrimeGrade(geo.lat, geo.lon, address).then(r => r.fields)
   ]);
 
   const apiEndTime = Date.now();
