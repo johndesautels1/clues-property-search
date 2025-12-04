@@ -1042,15 +1042,41 @@ async function getClimateData(lat: number, lon: number): Promise<Record<string, 
   console.log(`🔵 [Weather] Calling API for coordinates: ${lat}, ${lon}`);
 
   try {
-    // Get current conditions and monthly averages
-    const url = `https://api.weather.com/v3/wx/observations/current?geocode=${lat},${lon}&units=e&language=en-US&format=json&apiKey=${apiKey}`;
-    const response = await fetch(url);
-    const data = await response.json();
+    // Use OpenWeatherMap API if available, otherwise Weather.com
+    const isOpenWeather = !process.env.WEATHERCOM_API_KEY && process.env.OPENWEATHERMAP_API_KEY;
+    const url = isOpenWeather
+      ? `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=imperial&appid=${apiKey}`
+      : `https://api.weather.com/v3/wx/observations/current?geocode=${lat},${lon}&units=e&language=en-US&format=json&apiKey=${apiKey}`;
 
+    console.log(`🔵 [Weather] Using ${isOpenWeather ? 'OpenWeatherMap' : 'Weather.com'} API`);
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ [Weather] API error ${response.status}: ${errorText.substring(0, 200)}`);
+      return {};
+    }
+
+    const data = await response.json();
     const fields: Record<string, any> = {};
 
-    if (data) {
-      // Current temperature and conditions
+    if (isOpenWeather && data.main) {
+      // OpenWeatherMap format
+      const conditions: string[] = [];
+      if (data.main.temp) conditions.push(`Current: ${Math.round(data.main.temp)}°F`);
+      if (data.main.feels_like) conditions.push(`Feels like: ${Math.round(data.main.feels_like)}°F`);
+      if (data.main.humidity) conditions.push(`Humidity: ${data.main.humidity}%`);
+      if (data.weather?.[0]?.description) conditions.push(data.weather[0].description);
+
+      if (conditions.length > 0) {
+        fields['121_climate_risk'] = {
+          value: conditions.join(', '),
+          source: 'OpenWeatherMap',
+          confidence: 'High'
+        };
+      }
+    } else if (!isOpenWeather && data) {
+      // Weather.com format
       const conditions: string[] = [];
       if (data.temperature) conditions.push(`Current: ${data.temperature}°F`);
       if (data.temperatureFeelsLike) conditions.push(`Feels like: ${data.temperatureFeelsLike}°F`);
@@ -1066,7 +1092,7 @@ async function getClimateData(lat: number, lon: number): Promise<Record<string, 
         };
       }
 
-      // UV Index for solar potential estimate
+      // UV Index for solar potential estimate (Weather.com only)
       if (data.uvIndex !== undefined) {
         let solarPotential = 'Low';
         if (data.uvIndex >= 6) solarPotential = 'High';
