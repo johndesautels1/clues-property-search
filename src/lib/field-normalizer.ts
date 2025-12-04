@@ -847,7 +847,6 @@ export function normalizeToProperty(
 
   // 🔥 AUTOMATIC FIELD CALCULATIONS - Run after all API data is normalized
   // This fills data gaps with calculated values, FL regional defaults, and property-type inferences
-  const { enrichWithCalculatedFields } = require('./field-calculations');
   const enrichedProperty = enrichWithCalculatedFields(property);
 
   // Recalculate data completeness after adding calculated fields
