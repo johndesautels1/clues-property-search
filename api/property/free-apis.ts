@@ -84,13 +84,13 @@ export async function callGoogleGeocode(address: string): Promise<ApiResult & { 
     }
 
     // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH)
-    setField(fields, '7_county', county, 'Google Maps');
-    setField(fields, '6_neighborhood', neighborhood, 'Google Maps');
-    setField(fields, '1_full_address', result.formatted_address, 'Google Maps');
-    setField(fields, '8_zip_code', zip, 'Google Maps');
+    setField(fields, '7_county', county, 'Google Geocode');
+    setField(fields, '6_neighborhood', neighborhood, 'Google Geocode');
+    setField(fields, '1_full_address', result.formatted_address, 'Google Geocode');
+    setField(fields, '8_zip_code', zip, 'Google Geocode');
 
     if (geometry?.location) {
-      setField(fields, 'coordinates', { lat: geometry.location.lat, lon: geometry.location.lng }, 'Google Maps');
+      setField(fields, 'coordinates', { lat: geometry.location.lat, lon: geometry.location.lng }, 'Google Geocode');
     }
 
     return {
