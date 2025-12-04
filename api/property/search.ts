@@ -1486,8 +1486,8 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
 
   const fields: Record<string, any> = {};
   // Field 7 = county per fields-schema.ts
-  fields['7_county'] = { value: geo.county, source: 'Google Maps', confidence: 'High' };
-  fields['coordinates'] = { value: { lat: geo.lat, lon: geo.lon }, source: 'Google Maps', confidence: 'High' };
+  fields['7_county'] = { value: geo.county, source: 'Google Geocode', confidence: 'High' };
+  fields['coordinates'] = { value: { lat: geo.lat, lon: geo.lon }, source: 'Google Geocode', confidence: 'High' };
 
   console.log('🔵 [enrichWithFreeAPIs] Calling 10 APIs in parallel...');
   const apiStartTime = Date.now();
@@ -2851,9 +2851,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } else {
         console.log('✅ Processing', Object.keys(enrichedData).length, 'fields from enrichWithFreeAPIs');
 
-        // Separate Google fields from other API fields for proper tier assignment
-        const googleFields: Record<string, FieldValue> = {};
-        const apiFields: Record<string, FieldValue> = {};
+        // Separate Tier 2 (Google) from Tier 3 (other APIs) and group by source
+        const tier2Groups: Record<string, Record<string, FieldValue>> = {}; // Google sources
+        const tier3Groups: Record<string, Record<string, FieldValue>> = {}; // Other API sources
 
         for (const [key, value] of Object.entries(enrichedData)) {
           const fieldData = value as any;
@@ -2866,40 +2866,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             tier: tier as 1 | 2 | 3 | 4
           };
 
-          // Route to appropriate tier based on source
+          // Group by actual source name to track each independently
           if (source.includes('Google')) {
-            googleFields[key] = fieldValue;
+            if (!tier2Groups[source]) tier2Groups[source] = {};
+            tier2Groups[source][key] = fieldValue;
           } else {
-            apiFields[key] = fieldValue;
+            if (!tier3Groups[source]) tier3Groups[source] = {};
+            tier3Groups[source][key] = fieldValue;
           }
         }
 
-        console.log('🔵 Separated into:', Object.keys(googleFields).length, 'Google fields,', Object.keys(apiFields).length, 'other API fields');
+        console.log('🔵 TIER 2 Google sources:', Object.keys(tier2Groups).map(src => `${src} (${Object.keys(tier2Groups[src]).length} fields)`).join(', '));
+        console.log('🔵 TIER 3 API sources:', Object.keys(tier3Groups).map(src => `${src} (${Object.keys(tier3Groups[src]).length} fields)`).join(', '));
 
-        // Add Google fields as Tier 2
-        if (Object.keys(googleFields).length > 0) {
-          const googleAdded = arbitrationPipeline.addFieldsFromSource(googleFields, 'Google Maps');
-          console.log(`✅ TIER 2: Added ${googleAdded} fields from Google Maps`);
-        } else {
-          console.log('⚠️ TIER 2: No Google fields to add');
+        // Add each Google source independently as Tier 2
+        for (const [source, fields] of Object.entries(tier2Groups)) {
+          const added = arbitrationPipeline.addFieldsFromSource(fields, source);
+          console.log(`✅ TIER 2: Added ${added} fields from ${source}`);
         }
 
-        // Add other API fields as Tier 3
-        if (Object.keys(apiFields).length > 0) {
-          // Group by source for proper tracking
-          const sourceGroups: Record<string, Record<string, FieldValue>> = {};
-          for (const [key, field] of Object.entries(apiFields)) {
-            const src = field.source;
-            if (!sourceGroups[src]) sourceGroups[src] = {};
-            sourceGroups[src][key] = field;
-          }
-
-          console.log('🔵 TIER 3: Source groups:', Object.keys(sourceGroups));
-
-          for (const [source, fields] of Object.entries(sourceGroups)) {
-            const added = arbitrationPipeline.addFieldsFromSource(fields, source);
-            console.log(`✅ TIER 3: Added ${added} fields from ${source}`);
-          }
+        // Add each other API source independently as Tier 3
+        for (const [source, fields] of Object.entries(tier3Groups)) {
+          const added = arbitrationPipeline.addFieldsFromSource(fields, source);
+          console.log(`✅ TIER 3: Added ${added} fields from ${source}`);
         }
       }
     } catch (e) {
