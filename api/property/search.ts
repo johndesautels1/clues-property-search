@@ -900,10 +900,12 @@ async function getWalkScore(lat: number, lon: number, address: string): Promise<
 }
 
 async function getFloodZone(lat: number, lon: number): Promise<Record<string, any>> {
+  console.log(`🔵 [FEMA] Calling API for coordinates: ${lat}, ${lon}`);
   try {
     const url = `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?where=1%3D1&geometry=${lon}%2C${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE%2CZONE_SUBTY%2CSFHA_TF&returnGeometry=false&f=json`;
     const response = await fetch(url);
     const data = await response.json();
+    console.log(`🔵 [FEMA] Response status: ${response.status}, features: ${data.features?.length || 0}`);
 
     // UPDATED: 2025-11-30 - Corrected field numbers to match fields-schema.ts
     if (data.features?.[0]) {
@@ -915,11 +917,13 @@ async function getFloodZone(lat: number, lon: number): Promise<Record<string, an
         '120_flood_risk_level': { value: isHighRisk ? 'High Risk (Special Flood Hazard Area)' : 'Minimal Risk', source: 'FEMA NFHL', confidence: 'High' }
       };
     }
+    console.log(`✅ [FEMA] Returning default minimal risk zone`);
     return {
       '119_flood_zone': { value: 'Zone X (Minimal Risk)', source: 'FEMA NFHL', confidence: 'Medium' },
       '120_flood_risk_level': { value: 'Minimal', source: 'FEMA NFHL', confidence: 'Medium' }
     };
   } catch (e) {
+    console.error('❌ [FEMA] Exception:', e);
     return {};
   }
 }
@@ -1030,11 +1034,12 @@ async function getNoiseData(lat: number, lon: number): Promise<Record<string, an
 
 // Weather.com API - Climate data
 async function getClimateData(lat: number, lon: number): Promise<Record<string, any>> {
-  const apiKey = process.env.WEATHERCOM_API_KEY;
+  const apiKey = process.env.WEATHERCOM_API_KEY || process.env.OPENWEATHERMAP_API_KEY;
   if (!apiKey) {
-    console.log('WEATHERCOM_API_KEY not set');
+    console.log('❌ [Weather] Neither WEATHERCOM_API_KEY nor OPENWEATHERMAP_API_KEY set in environment variables');
     return {};
   }
+  console.log(`🔵 [Weather] Calling API for coordinates: ${lat}, ${lon}`);
 
   try {
     // Get current conditions and monthly averages
@@ -1075,9 +1080,10 @@ async function getClimateData(lat: number, lon: number): Promise<Record<string, 
       }
     }
 
+    console.log(`✅ [Weather] Returning ${Object.keys(fields).length} fields`);
     return fields;
   } catch (e) {
-    console.error('Weather.com error:', e);
+    console.error('❌ [Weather] Exception:', e);
     return {};
   }
 }
@@ -1145,8 +1151,12 @@ async function getDistances(lat: number, lon: number): Promise<Record<string, an
 // Google Places - School distances
 async function getSchoolDistances(lat: number, lon: number): Promise<Record<string, any>> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-  if (!apiKey) return {};
+  if (!apiKey) {
+    console.log('❌ [Google Places/Schools] GOOGLE_MAPS_API_KEY not set');
+    return {};
+  }
 
+  console.log(`🔵 [Google Places/Schools] Searching for schools near: ${lat}, ${lon}`);
   const origin = `${lat},${lon}`;
   const fields: Record<string, any> = {};
 
@@ -1189,10 +1199,11 @@ async function getSchoolDistances(lat: number, lon: number): Promise<Record<stri
         }
       }
     } catch (e) {
-      console.error(`Error getting ${school.name} distance:`, e);
+      console.error(`❌ [Google Places/Schools] Error getting ${school.name}:`, e);
     }
   }
 
+  console.log(`✅ [Google Places/Schools] Returning ${Object.keys(fields).length} fields`);
   return fields;
 }
 
