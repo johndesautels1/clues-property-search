@@ -2705,17 +2705,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             console.log('⚠️ Bridge Interactive: No property found or no data returned');
             console.log('   - success:', bridgeData.success);
             console.log('   - fields:', bridgeData.fields ? 'exists but empty' : 'null/undefined');
+            // Track that Stellar MLS was called even though it returned 0 fields
+            arbitrationPipeline.addFieldsFromSource({}, 'Stellar MLS');
           }
         } else {
           const errorText = await bridgeResponse.text();
           console.log('❌ Bridge Interactive API call failed');
           console.log('   - Status:', bridgeResponse.status, bridgeResponse.statusText);
           console.log('   - Error:', errorText);
+          // Track that Stellar MLS was attempted even though it errored
+          arbitrationPipeline.addFieldsFromSource({}, 'Stellar MLS');
         }
       } catch (error) {
         console.log('❌ Bridge Interactive error (continuing to other sources)');
         console.log('   - Error:', error instanceof Error ? error.message : String(error));
         console.log('   - Stack:', error instanceof Error ? error.stack : 'N/A');
+        // Track that Stellar MLS was attempted even though it threw exception
+        arbitrationPipeline.addFieldsFromSource({}, 'Stellar MLS');
       }
       console.log('========================================');
       console.log('');
