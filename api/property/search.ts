@@ -28,7 +28,7 @@ export const config = {
 };
 
 // Timeout wrapper for API/LLM calls - prevents hanging
-const LLM_TIMEOUT = 120000; // 120 seconds (2 minutes) per LLM call - allows complex queries to complete
+const LLM_TIMEOUT = 180000; // 180 seconds (3 minutes) per LLM call - allows web-search LLMs (Perplexity, Grok) to complete their searches
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([
     promise,
@@ -2424,6 +2424,9 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
           return { fields: filteredFields, llm: 'GPT' };
         } catch (parseError) {
           console.error('❌ GPT JSON.parse error:', parseError);
+          console.error('   JSON length:', jsonMatch[0].length, 'chars');
+          console.error('   JSON sample (first 500 chars):', jsonMatch[0].substring(0, 500));
+          console.error('   JSON sample (last 500 chars):', jsonMatch[0].substring(jsonMatch[0].length - 500));
           return { error: `JSON parse error: ${String(parseError)}`, fields: {}, llm: 'GPT' };
         }
       }
