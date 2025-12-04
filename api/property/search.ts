@@ -2236,7 +2236,7 @@ async function callClaudeOpus(address: string): Promise<any> {
       },
       body: JSON.stringify({
         model: 'claude-opus-4-5-20251101',
-        max_tokens: 8000,
+        max_tokens: 16000, // Increased from 8000 to handle 168 fields
         system: PROMPT_CLAUDE_OPUS,
         messages: [
           {
@@ -2286,7 +2286,7 @@ async function callClaudeSonnet(address: string): Promise<any> {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 8000,
+        max_tokens: 16000, // Increased from 8000 to handle 168 fields
         system: PROMPT_CLAUDE_SONNET,
         messages: [
           {
@@ -2350,7 +2350,7 @@ async function callCopilot(address: string): Promise<any> {
       headers,
       body: JSON.stringify({
         model: 'gpt-4',
-        max_tokens: 8000,
+        max_tokens: 16000, // Increased from 8000 to handle 168 fields
         messages: [
           { role: 'system', content: PROMPT_COPILOT },
           {
@@ -2399,7 +2399,7 @@ async function callGPT(address: string): Promise<any> {
       },
       body: JSON.stringify({
         model: 'gpt-4o',
-        max_tokens: 8000,
+        max_tokens: 16000, // Increased from 8000 to handle 168 fields
         messages: [
           { role: 'system', content: PROMPT_GPT },
           {
@@ -2715,7 +2715,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const {
     address: rawAddress,
     url: rawUrl,
-    engines = ['perplexity', 'grok'],  // Web-search LLMs with citations. Add back: [...LLM_CASCADE_ORDER] for all
+    engines = [...LLM_CASCADE_ORDER],  // All 6 LLMs enabled: Perplexity → Grok → Claude Opus → GPT → Claude Sonnet → Gemini
     skipLLMs = false,
     useCascade = true, // Enable cascade mode by default
     existingFields = {},  // Previously accumulated fields from prior LLM calls
