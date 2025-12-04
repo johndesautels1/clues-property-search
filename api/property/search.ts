@@ -2637,6 +2637,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Initialize arbitration pipeline with LLM quorum threshold of 2
     const arbitrationPipeline = createArbitrationPipeline(2);
     const llmResponses: any[] = [];
+    const actualFieldCounts: Record<string, number> = {}; // Track ACTUAL fields returned by each source
 
     // Pre-load existing fields into the pipeline (from previous LLM calls)
     if (existingFields && Object.keys(existingFields).length > 0) {
@@ -2689,7 +2690,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           console.log('📦 Bridge API Response Data:', JSON.stringify(bridgeData, null, 2));
 
           if (bridgeData.success && bridgeData.fields) {
-            console.log('✅ Bridge returned fields:', Object.keys(bridgeData.fields).length, 'fields');
+            const mlsFieldCount = Object.keys(bridgeData.fields).length;
+            console.log('✅ Bridge returned fields:', mlsFieldCount, 'fields');
             console.log('📋 Field keys sample:', Object.keys(bridgeData.fields).slice(0, 10));
 
             // Convert Bridge fields to arbitration format
@@ -2705,6 +2707,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
 
             const mlsAdded = arbitrationPipeline.addFieldsFromSource(mlsFields, STELLAR_MLS_SOURCE);
+            actualFieldCounts[STELLAR_MLS_SOURCE] = mlsFieldCount; // Track ACTUAL fields returned
             console.log(`✅ TIER 1 COMPLETE: Added ${mlsAdded} fields from ${STELLAR_MLS_SOURCE} (via Bridge Interactive)`);
             console.log('📊 Sample MLS field values:', JSON.stringify(Object.fromEntries(Object.entries(mlsFields).slice(0, 3)), null, 2));
           } else {
@@ -2713,6 +2716,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             console.log('   - fields:', bridgeData.fields ? 'exists but empty' : 'null/undefined');
             // Track that Stellar MLS was called even though it returned 0 fields
             arbitrationPipeline.addFieldsFromSource({}, STELLAR_MLS_SOURCE);
+            actualFieldCounts[STELLAR_MLS_SOURCE] = 0;
           }
         } else {
           const errorText = await bridgeResponse.text();
@@ -2721,6 +2725,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           console.log('   - Error:', errorText);
           // Track that Stellar MLS was attempted even though it errored
           arbitrationPipeline.addFieldsFromSource({}, STELLAR_MLS_SOURCE);
+          actualFieldCounts[STELLAR_MLS_SOURCE] = 0;
         }
       } catch (error) {
         console.log('❌ Bridge Interactive error (continuing to other sources)');
@@ -2728,6 +2733,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log('   - Stack:', error instanceof Error ? error.stack : 'N/A');
         // Track that Stellar MLS was attempted even though it threw exception
         arbitrationPipeline.addFieldsFromSource({}, STELLAR_MLS_SOURCE);
+        actualFieldCounts[STELLAR_MLS_SOURCE] = 0;
       }
       console.log('========================================');
       console.log('');
@@ -2974,7 +2980,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // CRITICAL: Also track LLM responses explicitly (even if they returned 0 fields)
+    // CRITICAL: Override with ACTUAL field counts (not arbitration winners)
+    // This shows how many fields each source actually returned, regardless of who won
+    for (const [sourceName, actualCount] of Object.entries(actualFieldCounts)) {
+      sourceBreakdown[sourceName] = actualCount;
+    }
+
+    // Track ACTUAL field counts from LLM responses
     const llmSourceNameMap: Record<string, string> = {
       'perplexity': 'Perplexity',
       'grok': 'Grok',
@@ -2986,8 +2998,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     for (const llmResponse of llmResponses) {
       const llmSourceName = llmSourceNameMap[llmResponse.llm];
-      if (llmSourceName && !sourceBreakdown[llmSourceName]) {
-        sourceBreakdown[llmSourceName] = 0;
+      if (llmSourceName) {
+        // Use fields_found (actual fields returned) NOT new_unique_fields (only winners)
+        sourceBreakdown[llmSourceName] = llmResponse.fields_found || 0;
       }
     }
 
