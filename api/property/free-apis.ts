@@ -4,6 +4,7 @@
  */
 
 import { safeFetch } from '../../src/lib/safe-json-parse.js';
+import { FBI_CRIME_SOURCE } from './source-constants.js';
 
 export interface ApiField {
   value: string | number | boolean | object | null;
@@ -516,13 +517,13 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
   const apiKey = process.env.FBI_CRIME_API_KEY;
 
   if (!apiKey) {
-    return { success: false, source: 'FBI Crime Data', fields, error: 'FBI_CRIME_API_KEY not configured' };
+    return { success: false, source: FBI_CRIME_SOURCE, fields, error: 'FBI_CRIME_API_KEY not configured' };
   }
 
   try {
     const stateMatch = address.match(/,\s*([A-Z]{2})\s*\d{5}?/i) || address.match(/,\s*([A-Z]{2})\s*$/i);
     if (!stateMatch) {
-      return { success: false, source: 'FBI Crime Data', fields, error: 'Could not extract state' };
+      return { success: false, source: FBI_CRIME_SOURCE, fields, error: 'Could not extract state' };
     }
 
     const stateCode = stateMatch[1].toUpperCase();
@@ -532,7 +533,7 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
     const fetchResult = await safeFetch<any>(url, undefined, 'FBI-Crime');
 
     if (!fetchResult.success || !fetchResult.data) {
-      return { success: false, source: 'FBI UCR', fields, error: fetchResult.error || 'Fetch failed' };
+      return { success: false, source: FBI_CRIME_SOURCE, fields, error: fetchResult.error || 'Fetch failed' };
     }
 
     const data = fetchResult.data;
@@ -548,7 +549,7 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
         // Sum monthly rates for annual rate (rates are per 100k per month)
         const annualRate = Math.round(monthlyRates.reduce((a, b) => a + b, 0));
         // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Safety & Crime (88-90)
-        setField(fields, '88_violent_crime_index', annualRate.toString(), 'FBI UCR');
+        setField(fields, '88_violent_crime_index', annualRate.toString(), FBI_CRIME_SOURCE);
 
         // Grade based on annual violent crime rate per 100k → Field 90 neighborhood_safety_rating
         let grade = 'A';
@@ -557,7 +558,7 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
         else if (annualRate > 300) grade = 'C';
         else if (annualRate > 200) grade = 'B';
 
-        setField(fields, '90_neighborhood_safety_rating', grade, 'FBI UCR');
+        setField(fields, '90_neighborhood_safety_rating', grade, FBI_CRIME_SOURCE);
 
         // Compare to US average
         if (usRates) {
@@ -569,10 +570,10 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
       }
     }
 
-    return { success: Object.keys(fields).length > 0, source: 'FBI UCR', fields };
+    return { success: Object.keys(fields).length > 0, source: FBI_CRIME_SOURCE, fields };
 
   } catch (error) {
-    return { success: false, source: 'FBI Crime Data', fields, error: String(error) };
+    return { success: false, source: FBI_CRIME_SOURCE, fields, error: String(error) };
   }
 }
 

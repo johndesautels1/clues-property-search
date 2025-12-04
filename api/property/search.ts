@@ -41,7 +41,7 @@ import { LLM_CASCADE_ORDER } from './llm-constants.js';
 import { createArbitrationPipeline, type FieldValue, type ArbitrationResult } from './arbitration.js';
 import { sanitizeAddress, isValidAddress } from '../../src/lib/safe-json-parse.js';
 import { callCrimeGrade, callSchoolDigger } from './free-apis.js';
-import { STELLAR_MLS_SOURCE } from './source-constants.js';
+import { STELLAR_MLS_SOURCE, FBI_CRIME_SOURCE } from './source-constants.js';
 
 
 // ============================================
@@ -2788,7 +2788,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // CRITICAL: Track sources that were called but returned 0 fields
         // This ensures SchoolDigger, FBI Crime, etc. show up even if they fail or return nothing
-        const allTier3Sources = ['SchoolDigger', 'FBI UCR', 'FBI Crime Data', 'WalkScore', 'FEMA', 'AirNow', 'HowLoud', 'Weather'];
+        const allTier3Sources = ['SchoolDigger', FBI_CRIME_SOURCE, 'WalkScore', 'FEMA NFHL', 'AirNow', 'HowLoud', 'OpenWeatherMap'];
         for (const sourceName of allTier3Sources) {
           if (!tier3Groups[sourceName]) {
             // Source returned 0 fields - add to audit trail so it shows in source_breakdown
