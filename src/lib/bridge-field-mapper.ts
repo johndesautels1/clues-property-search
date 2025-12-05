@@ -128,7 +128,15 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
     addField('39_roof_type', property.Roof);
   }
 
-  addField('40_roof_age_est', property.RoofYear);
+  // Field 40: Calculate roof age from year
+  if (property.RoofYear || property.YearRoofInstalled) {
+    const roofYear = property.RoofYear || property.YearRoofInstalled;
+    const currentYear = new Date().getFullYear();
+    const age = currentYear - roofYear;
+    addField('40_roof_age_est', `${age} years (installed ${roofYear})`);
+  } else if (property.PermitRoof) {
+    addField('40_roof_age_est', `Recent permit: ${property.PermitRoof}`, 'Medium');
+  }
 
   if (property.ConstructionMaterials && Array.isArray(property.ConstructionMaterials)) {
     addField('41_exterior_material', property.ConstructionMaterials.join(', '));
@@ -213,6 +221,21 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   }
 
   // ================================================================
+  // GROUP 8: Permits & Renovations (Fields 59-62)
+  // ================================================================
+  addField('60_permit_history_roof', property.PermitRoof);
+  addField('61_permit_history_hvac', property.PermitHVAC);
+  addField('62_permit_history_other', property.PermitAdditions);
+
+  // Alternative: Extract from remarks if not in structured fields
+  if (!property.PermitRoof && property.PublicRemarks) {
+    const roofMatch = property.PublicRemarks.match(/roof.*(?:permit|replace|install|new).*(20\d{2})/i);
+    if (roofMatch) {
+      addField('60_permit_history_roof', `Roof work mentioned: ${roofMatch[0]}`, 'Medium');
+    }
+  }
+
+  // ================================================================
   // GROUP 9: Schools (Fields 63-73)
   // ================================================================
   addField('63_school_district', property.SchoolDistrict);
@@ -282,6 +305,8 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   if (property.ParkingFeatures && Array.isArray(property.ParkingFeatures)) {
     addField('142_parking_features', property.ParkingFeatures.join(', '));
   }
+
+  addField('143_assigned_parking_spaces', property.AssignedParkingSpaces);
 
   // ================================================================
   // GROUP 19: Building Details (Fields 144-148)

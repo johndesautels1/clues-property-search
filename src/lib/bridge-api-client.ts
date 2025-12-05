@@ -74,17 +74,25 @@ export interface BridgeProperty {
   BathroomsHalf?: number;
   BathroomsTotalInteger?: number;
   LivingArea?: number;
+  BuildingAreaTotal?: number;
   LotSizeAcres?: number;
   LotSizeSquareFeet?: number;
   YearBuilt?: number;
   PropertyType?: string;
   PropertySubType?: string;
+  PropertyCondition?: string;
   Stories?: number;
+  StoriesTotal?: number;
 
   // Parking & Garage
   GarageSpaces?: number;
+  GarageType?: string;
   ParkingTotal?: number;
   CarportSpaces?: number;
+  CarportYN?: boolean;
+  AttachedGarageYN?: boolean;
+  ParkingFeatures?: string[];
+  AssignedParkingSpaces?: number;
 
   // Status & Dates
   StandardStatus?: string;
@@ -100,19 +108,37 @@ export interface BridgeProperty {
   AssociationFee?: number;
   AssociationFeeFrequency?: string;
   AssociationName?: string;
+  AssociationFeeIncludes?: string[];
 
   // Taxes
   TaxAnnualAmount?: number;
   TaxYear?: number;
+  TaxAssessedValue?: number;
   ParcelNumber?: string;
+
+  // Legal & Compliance
+  LegalDescription?: string;
+  Ownership?: string;
+  HomesteadYN?: boolean;
+  CDDYN?: boolean;
+  CDDAnnualFee?: number;
+  BuyerFinancingYN?: boolean;
 
   // Structure & Systems
   RoofType?: string[];
+  Roof?: string;
+  RoofYear?: number;
+  YearRoofInstalled?: number;
+  PermitRoof?: string;
+  PermitHVAC?: string;
+  PermitAdditions?: string;
   ExteriorFeatures?: string[];
   ConstructionMaterials?: string[];
   FoundationType?: string[];
+  FoundationDetails?: string;
   Heating?: string[];
   Cooling?: string[];
+  CoolingYN?: boolean;
 
   // Interior Features
   InteriorFeatures?: string[];
@@ -121,17 +147,25 @@ export interface BridgeProperty {
   FireplacesTotal?: number;
   FireplaceYN?: boolean;
   LaundryFeatures?: string[];
+  WaterHeaterType?: string;
+  WaterHeaterFeatures?: string[];
+  AccessibilityFeatures?: string[];
 
   // Exterior Features
   PoolPrivateYN?: boolean;
   PoolFeatures?: string[];
   PatioAndPorchFeatures?: string[];
   Fencing?: string[];
+  LotFeatures?: string[];
+  View?: string[];
+  GreenEnergyGeneration?: string[];
 
   // Location
   Latitude?: number;
   Longitude?: number;
   Directions?: string;
+  DirectionFaces?: string;
+  Elevation?: number;
 
   // Schools
   ElementarySchool?: string;
@@ -139,13 +173,25 @@ export interface BridgeProperty {
   HighSchool?: string;
   SchoolDistrict?: string;
 
+  // Building Details
+  UnitFloor?: number;
+  BuildingFloors?: number;
+  BuildingName?: string;
+  BuildingNumber?: string;
+  ElevatorYN?: boolean;
+  FloorsInUnit?: number;
+
   // Community
   CommunityFeatures?: string[];
+  SubdivisionName?: string;
 
   // Waterfront
   WaterfrontYN?: boolean;
   WaterfrontFeatures?: string[];
   WaterBodyName?: string;
+  WaterfrontFeet?: number;
+  WaterAccessYN?: boolean;
+  WaterViewYN?: boolean;
 
   // Environmental
   FloodZone?: string;
@@ -153,6 +199,11 @@ export interface BridgeProperty {
   // Leasing
   LeaseConsideredYN?: boolean;
   PetsAllowed?: string[];
+  MinimumLeaseType?: string;
+  LeaseTerm?: string;
+  LeaseRestrictionsYN?: boolean;
+  PetSizeLimit?: string;
+  MaxPetWeight?: number;
 
   // Additional
   Remarks?: string;
