@@ -314,11 +314,24 @@ export class BridgeAPIClient {
 
     console.log('[Bridge API] buildODataQuery received params:', JSON.stringify(params, null, 2));
 
-    // Address search - use case-insensitive contains for flexible matching
+    // Address search - try BOTH UnparsedAddress AND structured fields
     if (params.address) {
-      // Use the full street address (caller has already parsed it)
       const escapedAddress = params.address.replace(/'/g, "''");
-      filters.push(`contains(tolower(UnparsedAddress), tolower('${escapedAddress}'))`);
+
+      // Try to parse street number and name
+      const streetMatch = params.address.match(/^(\d+)\s+(.+)$/);
+      if (streetMatch) {
+        const [, streetNumber, streetName] = streetMatch;
+        const escapedNumber = streetNumber.replace(/'/g, "''");
+        const escapedName = streetName.replace(/'/g, "''");
+
+        // Search BOTH UnparsedAddress AND structured fields (StreetNumber + StreetName)
+        // Use OR so it matches if property is stored either way
+        filters.push(`(contains(tolower(UnparsedAddress), tolower('${escapedAddress}')) or (StreetNumber eq '${escapedNumber}' and contains(tolower(StreetName), tolower('${escapedName}'))))`);
+      } else {
+        // Fallback to UnparsedAddress only if we can't parse street number
+        filters.push(`contains(tolower(UnparsedAddress), tolower('${escapedAddress}'))`);
+      }
     }
 
     // City filter - exact match (case-insensitive)
