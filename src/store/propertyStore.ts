@@ -43,12 +43,12 @@ const SOURCE_TIERS: Record<string, number> = {
   'Weather': 3,
   'BroadbandNow': 3,
   'CrimeGrade': 3,
-  'Perplexity': 4,
-  'Grok': 4,
-  'Claude': 4,
-  'GPT': 4,
-  'Gemini': 4,
-  'Manual': 5,
+  'Perplexity': 4,      // Tier 4 - Most accurate LLM (uses web search)
+  'Grok': 5,            // Tier 5 - Prone to hallucination, demoted
+  'Claude': 5,          // Tier 5 - Standard LLMs, can only fill gaps
+  'GPT': 5,             // Tier 5 - Standard LLMs, can only fill gaps
+  'Gemini': 5,          // Tier 5 - Standard LLMs, can only fill gaps
+  'Manual': 6,          // Tier 6 - Lowest priority (user entry)
 };
 
 /**
@@ -80,10 +80,11 @@ function getSourceTier(source: string): number {
       tier = 2;
     } else if (lowerSource.includes('google') || lowerSource.includes('walk') || lowerSource.includes('score')) {
       tier = 3;
-    } else if (lowerSource.includes('perplexity') || lowerSource.includes('grok') ||
-        lowerSource.includes('claude') || lowerSource.includes('gpt') ||
-        lowerSource.includes('gemini')) {
-      tier = 4;
+    } else if (lowerSource.includes('perplexity')) {
+      tier = 4;  // Perplexity gets Tier 4 (higher priority than other LLMs)
+    } else if (lowerSource.includes('grok') || lowerSource.includes('claude') ||
+        lowerSource.includes('gpt') || lowerSource.includes('gemini')) {
+      tier = 5;  // Other LLMs get Tier 5 (lower priority, prone to hallucination)
     } else {
       tier = DEFAULTS.TIER; // FIX #11: Use centralized default
     }
