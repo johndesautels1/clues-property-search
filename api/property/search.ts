@@ -32,7 +32,7 @@ export const config = {
 
 // Timeout wrapper for API/LLM calls - prevents hanging
 const LLM_TIMEOUT = 180000; // 180 seconds (3 minutes) per LLM call - allows web-search LLMs (Perplexity, Grok) to complete their searches
-const STELLAR_MLS_TIMEOUT = 120000; // 120 seconds (2 minutes) for Stellar MLS via Bridge API
+const STELLAR_MLS_TIMEOUT = 90000; // 90 seconds (1.5 minutes) for Stellar MLS via Bridge API
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([
     promise,
@@ -2795,7 +2795,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             })
           }),
           STELLAR_MLS_TIMEOUT,
-          new Response(JSON.stringify({ success: false, error: 'Timeout after 120s' }), { status: 408 })
+          new Response(JSON.stringify({ success: false, error: 'Timeout after 90s' }), { status: 408 })
         );
 
         console.log('📡 Bridge API Response Status:', bridgeResponse.status, bridgeResponse.statusText);
