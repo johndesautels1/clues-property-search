@@ -516,10 +516,16 @@ export function arbitrateField(
   newValue: any,
   newSource: string,
   auditTrail: AuditEntry[],
-  fieldKey: string = ''
+  fieldKey: string = '',
+  explicitTier?: DataTier
 ): { result: FieldValue | null; action: 'set' | 'skip' | 'override' | 'conflict' | 'validation_fail' } {
-  const newTier = getSourceTier(newSource);
+  const newTier = explicitTier !== undefined ? explicitTier : getSourceTier(newSource);
   const timestamp = new Date().toISOString();
+
+  // CRITICAL DEBUG: Log tier assignment for Stellar MLS fields
+  if (newSource === 'Stellar MLS' || newSource.toLowerCase().includes('stellar')) {
+    console.log(`[ARBITRATION-DEBUG] Field: ${fieldKey}, Source: ${newSource}, Tier: ${newTier}, Explicit: ${explicitTier}, Value: ${JSON.stringify(newValue).slice(0, 100)}`);
+  }
 
   // Reject null, undefined, empty, NaN, or invalid values
   if (newValue === null || newValue === undefined || newValue === '') {
@@ -566,6 +572,15 @@ export function arbitrateField(
   const areValuesEquivalent = normalizedNew === normalizedExisting;
 
   if (newTier < existingField.tier) {
+    // CRITICAL DEBUG: Log when Stellar MLS is being overridden OR when it's overriding
+    if (newSource === 'Stellar MLS' || existingField.source === 'Stellar MLS' ||
+        newSource.toLowerCase().includes('stellar') || existingField.source.toLowerCase().includes('stellar')) {
+      console.warn(`[ARBITRATION-OVERRIDE] Field: ${fieldKey}`);
+      console.warn(`  → OLD: ${existingField.source} (Tier ${existingField.tier}): ${JSON.stringify(existingField.value).slice(0, 100)}`);
+      console.warn(`  → NEW: ${newSource} (Tier ${newTier}): ${JSON.stringify(newValue).slice(0, 100)}`);
+      console.warn(`  → RESULT: ${newSource} wins (higher priority tier)`);
+    }
+
     const overrideField: FieldValue = {
       value: newValue,
       source: newSource,
@@ -687,6 +702,16 @@ export function arbitrateField(
     };
 
     return { result: updatedField, action: 'skip' };
+  }
+
+  // CRITICAL DEBUG: Log when LLM tries to override Stellar MLS (BLOCKED)
+  if ((newSource.includes('GPT') || newSource.includes('Claude') || newSource.includes('Gemini') ||
+       newSource.includes('Grok') || newSource.includes('Perplexity')) &&
+      (existingField.source === 'Stellar MLS' || existingField.source.toLowerCase().includes('stellar'))) {
+    console.log(`[ARBITRATION-BLOCKED] ✅ LLM Override Prevented - Field: ${fieldKey}`);
+    console.log(`  → EXISTING: ${existingField.source} (Tier ${existingField.tier}): ${JSON.stringify(existingField.value).slice(0, 100)}`);
+    console.log(`  → REJECTED: ${newSource} (Tier ${newTier}): ${JSON.stringify(newValue).slice(0, 100)}`);
+    console.log(`  → RESULT: ${existingField.source} protected (higher priority tier)`);
   }
 
   auditTrail.push({
@@ -818,7 +843,7 @@ export function createArbitrationPipeline(minLLMQuorum: number = 2): {
   const conflictIndexMap = new Map<string, number>();
 
   return {
-    addField(fieldKey: string, value: any, source: string) {
+    addField(fieldKey: string, value: any, source: string, explicitTier?: DataTier) {
       const validation = validateField(fieldKey, value);
 
       if (!validation.valid) {
@@ -832,7 +857,7 @@ export function createArbitrationPipeline(minLLMQuorum: number = 2): {
           field: fieldKey,
           action: 'validation_fail',
           source,
-          tier: getSourceTier(source),
+          tier: explicitTier !== undefined ? explicitTier : getSourceTier(source),
           value,
           reason: validation.message || 'Validation failed',
           timestamp: new Date().toISOString(),
@@ -841,7 +866,7 @@ export function createArbitrationPipeline(minLLMQuorum: number = 2): {
         return;
       }
 
-      const { result, action } = arbitrateField(fields[fieldKey], value, source, auditTrail, fieldKey);
+      const { result, action } = arbitrateField(fields[fieldKey], value, source, auditTrail, fieldKey, explicitTier);
 
       if (result) {
         if (auditTrail.length > 0) {
@@ -878,20 +903,28 @@ export function createArbitrationPipeline(minLLMQuorum: number = 2): {
     addFieldsFromSource(sourceFields: Record<string, any>, sourceName: string): number {
       let addedCount = 0;
       for (const [key, fieldData] of Object.entries(sourceFields)) {
-        const value = typeof fieldData === 'object' && fieldData !== null && 'value' in fieldData
-          ? fieldData.value
-          : fieldData;
-        
+        // CRITICAL FIX: Extract tier if present in FieldValue object
+        let value = fieldData;
+        let explicitTier: DataTier | undefined = undefined;
+
+        if (typeof fieldData === 'object' && fieldData !== null && 'value' in fieldData) {
+          value = fieldData.value;
+          // Preserve the tier if it was explicitly set (e.g., for Stellar MLS = Tier 1)
+          if ('tier' in fieldData && typeof fieldData.tier === 'number') {
+            explicitTier = fieldData.tier as DataTier;
+          }
+        }
+
         if (value === null || value === undefined || value === '') continue;
-        
+
         const strVal = String(value).toLowerCase().trim();
-        const isBadValue = strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || 
-          strVal === 'na' || strVal === 'nan' || strVal === 'unknown' || 
-          strVal === 'not available' || strVal === 'not found' || strVal === 'none' || 
+        const isBadValue = strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' ||
+          strVal === 'na' || strVal === 'nan' || strVal === 'unknown' ||
+          strVal === 'not available' || strVal === 'not found' || strVal === 'none' ||
           strVal === '-' || strVal === '--' || strVal === 'tbd';
-        
+
         if (!isBadValue) {
-          this.addField(key, value, sourceName);
+          this.addField(key, value, sourceName, explicitTier);
           addedCount++;
         }
       }
