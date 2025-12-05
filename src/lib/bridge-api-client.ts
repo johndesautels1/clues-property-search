@@ -323,11 +323,19 @@ export class BridgeAPIClient {
       if (streetMatch) {
         const [, streetNumber, streetName] = streetMatch;
         const escapedNumber = streetNumber.replace(/'/g, "''");
+
+        // Extract just the street name base without suffix (e.g., "111th" from "111th Ln")
+        const streetNameBase = streetName.replace(/\s+(Ln|Lane|St|Street|Dr|Drive|Ave|Avenue|Rd|Road|Blvd|Boulevard|Ct|Court|Cir|Circle|Way|Pl|Place|Ter|Terrace)$/i, '').trim();
+        const escapedNameBase = streetNameBase.replace(/'/g, "''");
         const escapedName = streetName.replace(/'/g, "''");
 
-        // Search BOTH UnparsedAddress AND structured fields (StreetNumber + StreetName)
-        // Use OR so it matches if property is stored either way
-        filters.push(`(contains(tolower(UnparsedAddress), tolower('${escapedAddress}')) or (StreetNumber eq '${escapedNumber}' and contains(tolower(StreetName), tolower('${escapedName}'))))`);
+        // Search with multiple strategies:
+        // 1. UnparsedAddress contains full address
+        // 2. StreetNumber + StreetName exact
+        // 3. StreetNumber + just the street base (e.g., "111th" without "Ln")
+        filters.push(`(contains(tolower(UnparsedAddress), tolower('${escapedAddress}')) or ` +
+          `(StreetNumber eq '${escapedNumber}' and contains(tolower(StreetName), tolower('${escapedName}'))) or ` +
+          `(StreetNumber eq '${escapedNumber}' and contains(tolower(StreetName), tolower('${escapedNameBase}'))))`);
       } else {
         // Fallback to UnparsedAddress only if we can't parse street number
         filters.push(`contains(tolower(UnparsedAddress), tolower('${escapedAddress}'))`);
@@ -550,6 +558,37 @@ export class BridgeAPIClient {
       if (response.value.length > 0) {
         console.log(`[Bridge API] ✅ Found ${response.value.length} matches with base street`);
         return response.value[0]; // Return first match
+      }
+    }
+
+    // Strategy 4: Last resort - search ONLY by zip code + street number (most lenient)
+    // This handles cases where StreetName is stored in a completely different format
+    const numberMatch = address.match(/^(\d+)/);
+    if (numberMatch && zipCode) {
+      const streetNumber = numberMatch[1];
+      console.log(`[Bridge API] Strategy 4: Zip + street number only - ${zipCode} / ${streetNumber}`);
+
+      // Build a manual query that ONLY requires zip + street number
+      const query = `PostalCode eq '${zipCode}' and StreetNumber eq '${streetNumber}'`;
+      const url = `${this.config.baseUrl}/OData/${this.config.dataSystem}/Property?$filter=${query}&$top=10&$count=true&$expand=Media`;
+
+      console.log('[Bridge API] Lenient search URL:', url);
+
+      const token = await this.authenticate();
+      const lenientResponse = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token.access_token}`,
+          'Accept': 'application/json',
+        },
+      });
+
+      if (lenientResponse.ok) {
+        const data = await lenientResponse.json();
+        if (data.value && data.value.length > 0) {
+          console.log(`[Bridge API] ✅ Found ${data.value.length} matches with lenient search (zip + number only)`);
+          console.log(`[Bridge API] First match address: ${data.value[0].UnparsedAddress}`);
+          return data.value[0]; // Return first match
+        }
       }
     }
 
