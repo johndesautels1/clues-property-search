@@ -1605,14 +1605,18 @@ ${JSON_RESPONSE_FORMAT_PERPLEXITY}`;
 
     if (data.choices?.[0]?.message?.content) {
       const text = data.choices[0].message.content;
-      console.log('Perplexity content preview:', text.substring(0, 500));
+      console.log('📝 Perplexity full response (first 2000 chars):', text.substring(0, 2000));
 
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         try {
           const parsed = JSON.parse(jsonMatch[0]);
+          console.log('✅ Perplexity JSON parsed successfully, raw field count:', Object.keys(parsed).length);
+
           // Use shared filterNullValues with type coercion
           const filteredFields = filterNullValues(parsed, 'Perplexity');
+          console.log('✅ Perplexity after filterNullValues:', Object.keys(filteredFields).length, 'fields');
+
           // Upgrade confidence to High for Perplexity (has web search)
           for (const key of Object.keys(filteredFields)) {
             filteredFields[key].confidence = 'High';
@@ -1620,16 +1624,19 @@ ${JSON_RESPONSE_FORMAT_PERPLEXITY}`;
               filteredFields[key].source = `${filteredFields[key].source} (via Perplexity)`;
             }
           }
+          console.log('✅ Perplexity final return:', Object.keys(filteredFields).length, 'fields');
           return filteredFields;
         } catch (parseError) {
           console.error('❌ Failed to parse Perplexity JSON:', parseError);
-          console.error('Raw text:', text);
+          console.error('❌ Raw text that failed:', text);
         }
       } else {
         console.log('❌ No JSON found in Perplexity response');
+        console.log('❌ Full text received:', text);
       }
     } else {
       console.log('❌ No content in Perplexity response');
+      console.log('❌ Full data object:', JSON.stringify(data));
     }
     return {};
   } catch (error) {
