@@ -17,7 +17,7 @@
  *   - Full audit trail with sources, confidence, and conflicts
  */
 
-export type DataTier = 1 | 2 | 3 | 4;
+export type DataTier = 1 | 2 | 3 | 4 | 5;
 
 export interface TierConfig {
   tier: DataTier;
@@ -38,12 +38,12 @@ export const DATA_TIERS: Record<string, TierConfig> = {
   'howloud': { tier: 3, name: 'HowLoud', description: 'Noise levels', reliability: 85 },
   'weather': { tier: 3, name: 'Weather API', description: 'Climate data', reliability: 85 },
   'fbi-crime': { tier: 3, name: 'FBI Crime', description: 'Crime statistics', reliability: 90 },
-  'perplexity': { tier: 4, name: 'Perplexity', description: 'LLM with web search', reliability: 75 },
-  'grok': { tier: 4, name: 'Grok/xAI', description: 'LLM with real-time data', reliability: 70 },
-  'claude-opus': { tier: 4, name: 'Claude Opus', description: 'High-quality LLM', reliability: 65 },
-  'gpt': { tier: 4, name: 'GPT-4', description: 'OpenAI LLM', reliability: 60 },
-  'claude-sonnet': { tier: 4, name: 'Claude Sonnet', description: 'Fast LLM fallback', reliability: 55 },
-  'gemini': { tier: 4, name: 'Gemini', description: 'Google LLM', reliability: 50 },
+  'perplexity': { tier: 4, name: 'Perplexity', description: 'LLM with web search (HIGHEST LLM PRIORITY)', reliability: 75 },
+  'grok': { tier: 5, name: 'Grok/xAI', description: 'LLM with real-time data', reliability: 70 },
+  'claude-opus': { tier: 5, name: 'Claude Opus', description: 'High-quality LLM', reliability: 65 },
+  'gpt': { tier: 5, name: 'GPT-4', description: 'OpenAI LLM', reliability: 60 },
+  'claude-sonnet': { tier: 5, name: 'Claude Sonnet', description: 'Fast LLM fallback', reliability: 55 },
+  'gemini': { tier: 5, name: 'Gemini', description: 'Google LLM', reliability: 50 },
 };
 
 export interface FieldValue {
@@ -578,6 +578,7 @@ export function getTierDisplayInfo(tier: DataTier): { label: string; color: stri
     case 1: return { label: 'MLS', color: 'text-quantum-gold' };
     case 2: return { label: 'Google', color: 'text-quantum-green' };
     case 3: return { label: 'API', color: 'text-quantum-cyan' };
-    case 4: return { label: 'LLM', color: 'text-quantum-purple' };
+    case 4: return { label: 'LLM (High)', color: 'text-quantum-purple' };
+    case 5: return { label: 'LLM (Low)', color: 'text-quantum-pink' };
   }
 }

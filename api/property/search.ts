@@ -2874,9 +2874,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       actualFieldCounts['SchoolDigger'] = schoolDiggerActualCount;
       console.log(`🔢 Actual field counts: FBI Crime=${fbiCrimeActualCount}, SchoolDigger=${schoolDiggerActualCount}`);
 
-      // Remove tracking fields from enrichedData
+      // Remove internal tracking/metadata fields from enrichedData
       delete enrichedData['__FBI_CRIME_COUNT__'];
       delete enrichedData['__SCHOOLDIGGER_COUNT__'];
+      delete enrichedData['__CENSUS_COUNT__'];
+      delete enrichedData['coordinates']; // Lat/lon stored separately in address.latitude/longitude
 
       if (Object.keys(enrichedData).length === 0) {
         console.log('⚠️ WARNING: enrichWithFreeAPIs returned ZERO fields - no API data available');
@@ -3034,11 +3036,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     continue;
                   }
 
+                  // Assign tier based on LLM: Perplexity = 4, others = 5
+                  const llmTier = llm.id === 'perplexity' ? 4 : 5;
+
                   formattedFields[key] = {
                     value: fieldValue,
                     source: llmSourceNames[llm.id],
                     confidence: fieldData?.confidence || 'Medium',
-                    tier: 4 as const
+                    tier: llmTier as 4 | 5
                   };
                 }
 
