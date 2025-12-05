@@ -352,6 +352,9 @@ export class BridgeAPIClient {
     // Always request count
     queryParts.push('$count=true');
 
+    // IMPORTANT: Request Media (photos) to be included in response
+    queryParts.push('$expand=Media');
+
     return queryParts.join('&');
   }
 
