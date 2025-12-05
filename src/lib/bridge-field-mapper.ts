@@ -132,10 +132,12 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
 
   // Field 40: Calculate roof age from year
   if (property.RoofYear || property.YearRoofInstalled) {
-    const roofYear = property.RoofYear || property.YearRoofInstalled;
-    const currentYear = new Date().getFullYear();
-    const age = currentYear - roofYear;
-    addField('40_roof_age_est', `${age} years (installed ${roofYear})`);
+    const roofYear = property.RoofYear ?? property.YearRoofInstalled;
+    if (roofYear !== undefined) {
+      const currentYear = new Date().getFullYear();
+      const age = currentYear - roofYear;
+      addField('40_roof_age_est', `${age} years (installed ${roofYear})`);
+    }
   } else if (property.PermitRoof) {
     addField('40_roof_age_est', `Recent permit: ${property.PermitRoof}`, 'Medium');
   }
