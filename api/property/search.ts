@@ -2768,7 +2768,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('========================================');
       console.log('TIER 1: STELLAR MLS (via Bridge Interactive API)');
       console.log('========================================');
-      console.log('🔍 Searching for address:', searchQuery);
+      console.log('🔍 [v1] Searching for address:', searchQuery);
 
       // Parse address into components for better MLS search
       // Format: "7791 W Gulf Blvd, Treasure Island, FL 33706"
