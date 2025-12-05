@@ -32,7 +32,7 @@ export const config = {
 
 // Timeout wrapper for API/LLM calls - prevents hanging
 const LLM_TIMEOUT = 180000; // 180 seconds (3 minutes) per LLM call - allows web-search LLMs (Perplexity, Grok) to complete their searches
-const STELLAR_MLS_TIMEOUT = 150000; // 150 seconds (2.5 minutes) for Stellar MLS via Bridge API - increased from 2min to prevent premature timeouts
+const STELLAR_MLS_TIMEOUT = 120000; // 120 seconds (2 minutes) for Stellar MLS via Bridge API
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([
     promise,
