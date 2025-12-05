@@ -11,7 +11,7 @@ import { STELLAR_MLS_SOURCE } from './source-constants.js';
 
 // Vercel serverless config
 export const config = {
-  maxDuration: 60, // 1 minute for API calls
+  maxDuration: 180, // 3 minutes - must exceed STELLAR_MLS_TIMEOUT (150s) in search.ts to prevent premature kills
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
