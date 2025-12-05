@@ -1027,6 +1027,30 @@ export default function PropertyDetail() {
           </div>
         </motion.div>
 
+        {/* Photo Gallery - From Stellar MLS Media */}
+        {fullProperty?.address.primaryPhotoUrl?.value && (
+          <motion.div variants={itemVariants} className="mb-8">
+            <div className="glass-card overflow-hidden">
+              <img
+                src={fullProperty.address.primaryPhotoUrl.value}
+                alt={`${fullProperty.address.fullAddress.value || property.address} - Primary Photo`}
+                className="w-full h-auto max-h-[600px] object-cover"
+                onError={(e) => {
+                  // Hide image if it fails to load
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+              {fullProperty.address.photoGallery?.value && fullProperty.address.photoGallery.value.length > 1 && (
+                <div className="p-4 bg-quantum-dark/50 border-t border-white/5">
+                  <p className="text-sm text-gray-400 text-center">
+                    {fullProperty.address.photoGallery.value.length} photos available from Stellar MLS
+                  </p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
         {/* Full Property Data Sections */}
         {fullProperty ? (
           <div className="space-y-6">
