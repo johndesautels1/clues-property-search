@@ -148,10 +148,12 @@ export function getSourceTier(sourceName: string): DataTier {
     const lowerName = sourceName.toLowerCase();
     if (lowerName.includes('google')) {
       tier = 2;
-    } else if (['perplexity', 'grok', 'claude', 'gpt', 'gemini', 'anthropic', 'openai'].some(
+    } else if (lowerName.includes('perplexity')) {
+      tier = 4;  // Perplexity = Tier 4 (web search verified)
+    } else if (['grok', 'claude', 'gpt', 'gemini', 'anthropic', 'openai'].some(
       llm => lowerName.includes(llm)
     )) {
-      tier = 4;
+      tier = 5;  // All other LLMs = Tier 5 (prone to hallucination)
     }
   }
 
