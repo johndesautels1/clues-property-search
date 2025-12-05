@@ -286,6 +286,10 @@ export interface Property {
   images?: string[];
   virtualTourUrl?: string;
 
+  // MLS Listing Remarks - METADATA (NOT numbered fields)
+  publicRemarks?: string;           // Full original remarks from MLS
+  publicRemarksExtracted?: string;  // Remarks with parsed data removed (show to user)
+
   // Source tracking
   llmSources?: {
     claude?: boolean;

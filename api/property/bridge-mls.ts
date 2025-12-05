@@ -93,6 +93,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         fields: mapped.fields,
         mappedCount: mapped.mappedCount,
         unmappedCount: mapped.unmappedCount,
+        publicRemarks: mapped.publicRemarks,
+        publicRemarksExtracted: mapped.publicRemarksExtracted,
       };
     });
 
@@ -103,6 +105,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         fields: mappedProperties[0].fields,
         mappedFieldCount: mappedProperties[0].mappedCount,
         unmappedFieldCount: mappedProperties[0].unmappedCount,
+        publicRemarks: mappedProperties[0].publicRemarks,
+        publicRemarksExtracted: mappedProperties[0].publicRemarksExtracted,
         source: STELLAR_MLS_SOURCE,
         sourceType: 'bridge_mls',
         totalResults: 1,

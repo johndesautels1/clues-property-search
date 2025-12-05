@@ -37,6 +37,8 @@ import {
   Search,
   Sparkles,
   Loader2,
+  FileText,
+  Info,
 } from 'lucide-react';
 import { usePropertyStore } from '@/store/propertyStore';
 import { useIsAdmin } from '@/store/authStore';
@@ -491,6 +493,14 @@ export default function PropertyDetail() {
       // Convert API response to Property format and merge
       const { normalizeToProperty } = await import('@/lib/field-normalizer');
       const enrichedProperty = normalizeToProperty(finalData.fields || {}, id, {}, []);
+
+      // Add publicRemarks metadata if available
+      if (finalData.publicRemarks) {
+        enrichedProperty.publicRemarks = finalData.publicRemarks;
+      }
+      if (finalData.publicRemarksExtracted) {
+        enrichedProperty.publicRemarksExtracted = finalData.publicRemarksExtracted;
+      }
 
       // This will trigger additive merge due to our updated store
       updateFullProperty(id, enrichedProperty);
@@ -1433,6 +1443,28 @@ export default function PropertyDetail() {
                 {renderDataField("Exterior Features", fullProperty.stellarMLS?.features?.exteriorFeatures, "text", undefined, "168_exterior_features")}
               </div>
             </Section>
+
+            {/* Listing Remarks - NOT a numbered field, metadata only */}
+            {fullProperty.publicRemarksExtracted && fullProperty.publicRemarksExtracted.length > 50 && (
+              <Section title="Listing Remarks" icon={<FileText className="w-6 h-6" />} defaultExpanded={false}>
+                <div className="bg-quantum-dark/30 p-6 rounded-lg border border-quantum-cyan/20">
+                  <div className="flex items-start gap-3 mb-3">
+                    <Info className="w-5 h-5 text-quantum-cyan mt-1 flex-shrink-0" />
+                    <p className="text-sm text-gray-400">
+                      Original listing agent remarks from Stellar MLS. Data extracted to specific fields above has been removed from this display.
+                    </p>
+                  </div>
+                  <div className="text-white leading-relaxed whitespace-pre-wrap">
+                    {fullProperty.publicRemarksExtracted}
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-quantum-cyan/10">
+                    <span className="text-xs text-gray-500">
+                      Source: Stellar MLS Public Remarks
+                    </span>
+                  </div>
+                </div>
+              </Section>
+            )}
           </div>
         ) : (
           <motion.div variants={itemVariants} className="glass-card p-8 text-center">

@@ -17,6 +17,8 @@ export interface MappedPropertyData {
   rawData?: BridgeProperty;
   mappedCount: number;
   unmappedCount: number;
+  publicRemarks?: string;           // Original full remarks
+  publicRemarksExtracted?: string;  // Remarks with extracted data removed
 }
 
 /**
@@ -275,19 +277,98 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
     }
   }
 
-  // Smart Home
+  // ================================================================
+  // PARSE PUBLICREMARKS for rare fields (134, 135, 138)
+  // Track extracted sentences to remove from display
+  // ================================================================
+  const extractedSentences: string[] = [];
+
+  // Field 134: Smart Home Features
+  let smartHomeFound = false;
   if (property.InteriorFeatures && Array.isArray(property.InteriorFeatures)) {
     const smartFeatures = property.InteriorFeatures.filter(f =>
       f.toLowerCase().includes('smart') || f.toLowerCase().includes('automation')
     );
     if (smartFeatures.length > 0) {
       addField('134_smart_home_features', smartFeatures.join(', '));
+      smartHomeFound = true;
     }
   }
 
-  // Accessibility
+  // Fallback: Parse from PublicRemarks if not in structured data
+  if (!smartHomeFound && property.PublicRemarks) {
+    const smartKeywords = ['smart home', 'nest', 'ring doorbell', 'ring video', 'alexa', 'ecobee', 'smart thermostat', 'home automation', 'smart lock', 'smart lighting'];
+    const remarks = property.PublicRemarks;
+    const sentences = remarks.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 10);
+
+    const foundFeatures: string[] = [];
+    sentences.forEach(sentence => {
+      const lowerSentence = sentence.toLowerCase();
+      smartKeywords.forEach(keyword => {
+        if (lowerSentence.includes(keyword)) {
+          foundFeatures.push(keyword);
+          extractedSentences.push(sentence);
+        }
+      });
+    });
+
+    if (foundFeatures.length > 0) {
+      const uniqueFeatures = [...new Set(foundFeatures)];
+      addField('134_smart_home_features', uniqueFeatures.join(', '), 'Medium');
+    }
+  }
+
+  // Field 135: Accessibility Modifications
+  let accessibilityFound = false;
   if (property.AccessibilityFeatures && Array.isArray(property.AccessibilityFeatures)) {
     addField('135_accessibility_modifications', property.AccessibilityFeatures.join(', '));
+    accessibilityFound = true;
+  }
+
+  // Fallback: Parse from PublicRemarks
+  if (!accessibilityFound && property.PublicRemarks) {
+    const accessKeywords = ['wheelchair', 'accessible', 'ada compliant', 'ada', 'ramp', 'grab bar', 'wide doorway', 'roll-in shower', 'accessible bathroom'];
+    const remarks = property.PublicRemarks;
+    const sentences = remarks.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 10);
+
+    const foundFeatures: string[] = [];
+    sentences.forEach(sentence => {
+      const lowerSentence = sentence.toLowerCase();
+      accessKeywords.forEach(keyword => {
+        if (lowerSentence.includes(keyword)) {
+          foundFeatures.push(keyword);
+          if (!extractedSentences.includes(sentence)) {
+            extractedSentences.push(sentence);
+          }
+        }
+      });
+    });
+
+    if (foundFeatures.length > 0) {
+      const uniqueFeatures = [...new Set(foundFeatures)];
+      addField('135_accessibility_modifications', uniqueFeatures.join(', '), 'Medium');
+    }
+  }
+
+  // Field 138: Special Assessments - Parse from PublicRemarks
+  if (property.PublicRemarks) {
+    const assessmentKeywords = ['special assessment', 'assessment due', 'pending assessment', 'special fee', 'one-time assessment', 'capital assessment'];
+    const remarks = property.PublicRemarks;
+    const sentences = remarks.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 10);
+
+    let foundAssessment = false;
+    sentences.forEach(sentence => {
+      const lowerSentence = sentence.toLowerCase();
+      assessmentKeywords.forEach(keyword => {
+        if (lowerSentence.includes(keyword) && !foundAssessment) {
+          addField('138_special_assessments', sentence, 'Medium');
+          if (!extractedSentences.includes(sentence)) {
+            extractedSentences.push(sentence);
+          }
+          foundAssessment = true;
+        }
+      });
+    });
   }
 
   // Pet policy
@@ -403,6 +484,39 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
     }
   }
 
+  // ================================================================
+  // Clean PublicRemarks by removing extracted sentences
+  // ================================================================
+  let cleanedRemarks = '';
+  const originalRemarks = property.PublicRemarks || property.Remarks || '';
+
+  if (originalRemarks && extractedSentences.length > 0) {
+    // Split remarks into sentences
+    const allSentences = originalRemarks.split(/([.!?]+)/).filter(s => s.trim().length > 0);
+
+    // Rebuild remarks, excluding extracted sentences
+    let rebuiltRemarks = '';
+    for (let i = 0; i < allSentences.length; i += 2) {
+      const sentence = allSentences[i]?.trim() || '';
+      const punctuation = allSentences[i + 1] || '';
+
+      // Check if this sentence was extracted
+      const wasExtracted = extractedSentences.some(extracted =>
+        sentence.toLowerCase().includes(extracted.toLowerCase()) ||
+        extracted.toLowerCase().includes(sentence.toLowerCase())
+      );
+
+      if (!wasExtracted && sentence.length > 10) {
+        rebuiltRemarks += sentence + punctuation + ' ';
+      }
+    }
+
+    cleanedRemarks = rebuiltRemarks.trim();
+    console.log(`[Bridge Mapper] Removed ${extractedSentences.length} extracted sentences from PublicRemarks`);
+  } else {
+    cleanedRemarks = originalRemarks;
+  }
+
   // Count unmapped fields
   const allPropertyKeys = Object.keys(property);
   unmappedCount = allPropertyKeys.length - mappedCount;
@@ -412,6 +526,8 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
     rawData: property,
     mappedCount,
     unmappedCount,
+    publicRemarks: originalRemarks,
+    publicRemarksExtracted: cleanedRemarks,
   };
 }
 
