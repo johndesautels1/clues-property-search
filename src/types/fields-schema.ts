@@ -54,7 +54,7 @@ export const ALL_FIELDS: readonly FieldDefinition[] = [
   { num: 13, key: 'last_sale_date',        label: 'Last Sale Date',        group: 'Pricing & Value', type: 'date',     required: false },
   { num: 14, key: 'last_sale_price',       label: 'Last Sale Price',       group: 'Pricing & Value', type: 'currency', required: false },
   { num: 15, key: 'assessed_value',        label: 'Assessed Value',        group: 'Pricing & Value', type: 'currency', required: false },
-  { num: 16, key: 'redfin_estimate',       label: 'Market Value Est. (AI)',       group: 'Pricing & Value', type: 'currency', required: false },
+  { num: 16, key: 'redfin_estimate',       label: 'Redfin Estimate',       group: 'Pricing & Value', type: 'currency', required: false },
 
   // ================================================================
   // GROUP 3: Property Basics (Fields 17-29)
