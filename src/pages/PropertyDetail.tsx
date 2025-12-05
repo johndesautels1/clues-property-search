@@ -93,6 +93,12 @@ const DataField = ({ label, value, icon, format = 'text', confidence, llmSources
   let borderColor = 'border-white/5';
   let statusBadge = null;
 
+  // MISSING FIELDS - Orange highlight for ALL users (not just admins)
+  if (isMissing) {
+    bgColor = 'bg-orange-500/10';
+    borderColor = 'border-orange-400/30';
+  }
+
   // Only show color coding and status badges to admins
   if (isAdmin) {
     // VALIDATION FAILURES get highest priority - faint red highlight
