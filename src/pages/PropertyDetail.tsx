@@ -43,6 +43,7 @@ import {
 import { usePropertyStore } from '@/store/propertyStore';
 import { useIsAdmin } from '@/store/authStore';
 import { isCalculatedField, getCalculationBadge } from '@/lib/field-calculations';
+import { MultiSelectField } from '@/components/MultiSelectField';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -324,6 +325,30 @@ const renderDataField = (
       validationStatus={validationStatus as 'passed' | 'failed' | 'warning' | undefined}
       validationMessage={field.validationMessage}
       singleSourceWarning={singleSourceWarning}
+    />
+  );
+};
+
+// Helper to render multiselect fields with verification UI
+const renderMultiSelectField = (
+  label: string,
+  field: DataFieldInput<any> | undefined,
+  fieldKey?: string
+) => {
+  // Handle undefined fields
+  if (!field) {
+    field = { value: null };
+  }
+
+  return (
+    <MultiSelectField
+      label={label}
+      value={field.value}
+      fieldKey={fieldKey}
+      confidence={field.confidence}
+      llmSources={field.llmSources}
+      hasConflict={field.hasConflict}
+      isAdmin={globalIsAdmin}
     />
   );
 };
@@ -1105,7 +1130,7 @@ export default function PropertyDetail() {
                 <div>
                   {renderDataField("Flooring Type", fullProperty.structural.flooringType, "text", undefined, "49_flooring_type")}
                   {renderDataField("Kitchen Features", fullProperty.structural.kitchenFeatures, "text", undefined, "50_kitchen_features")}
-                  {renderDataField("Appliances Included", fullProperty.structural.appliancesIncluded, "text", undefined, "51_appliances_included")}
+                  {renderMultiSelectField("Appliances Included", fullProperty.structural.appliancesIncluded, "51_appliances_included")}
                 </div>
                 <div>
                   {renderDataField("Fireplace", fullProperty.structural.fireplaceYn, "text", undefined, "52_fireplace_yn")}
@@ -1119,7 +1144,7 @@ export default function PropertyDetail() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   {renderDataField("Pool", fullProperty.structural.poolYn, "text", undefined, "54_pool_yn")}
-                  {renderDataField("Pool Type", fullProperty.structural.poolType, "text", undefined, "55_pool_type")}
+                  {renderMultiSelectField("Pool Type", fullProperty.structural.poolType, "55_pool_type")}
                   {renderDataField("Deck/Patio", fullProperty.structural.deckPatio, "text", undefined, "56_deck_patio")}
                 </div>
                 <div>
@@ -1367,7 +1392,7 @@ export default function PropertyDetail() {
                   {renderDataField("Garage Attached", fullProperty.stellarMLS?.parking?.garageAttachedYn, "text", undefined, "141_garage_attached_yn")}
                 </div>
                 <div>
-                  {renderDataField("Parking Features", fullProperty.stellarMLS?.parking?.parkingFeatures, "text", undefined, "142_parking_features")}
+                  {renderMultiSelectField("Parking Features", fullProperty.stellarMLS?.parking?.parkingFeatures, "142_parking_features")}
                   {renderDataField("Assigned Parking Spaces", fullProperty.stellarMLS?.parking?.assignedParkingSpaces, "number", undefined, "143_assigned_parking_spaces")}
                 </div>
               </div>
@@ -1436,11 +1461,11 @@ export default function PropertyDetail() {
             </Section>
 
             {/* Stellar MLS - Community & Features (Fields 166-168) */}
-            <Section title="Community & Features" icon={<Sparkles className="w-6 h-6" />} defaultExpanded={false}>
-              <div className="grid grid-cols-1 gap-6">
-                {renderDataField("Community Features", fullProperty.stellarMLS?.features?.communityFeatures, "text", undefined, "166_community_features")}
-                {renderDataField("Interior Features", fullProperty.stellarMLS?.features?.interiorFeatures, "text", undefined, "167_interior_features")}
-                {renderDataField("Exterior Features", fullProperty.stellarMLS?.features?.exteriorFeatures, "text", undefined, "168_exterior_features")}
+            <Section title="Community & Features" icon={<Sparkles className="w-6 h-6" />} defaultExpanded={true}>
+              <div className="grid grid-cols-1 gap-4">
+                {renderMultiSelectField("Community Features", fullProperty.stellarMLS?.features?.communityFeatures, "166_community_features")}
+                {renderMultiSelectField("Interior Features", fullProperty.stellarMLS?.features?.interiorFeatures, "167_interior_features")}
+                {renderMultiSelectField("Exterior Features", fullProperty.stellarMLS?.features?.exteriorFeatures, "168_exterior_features")}
               </div>
             </Section>
 
