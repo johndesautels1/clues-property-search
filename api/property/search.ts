@@ -1,11 +1,14 @@
 /**
  * CLUES Property Search API (Non-Streaming Version)
- * 
+ *
  * DATA SOURCE ORDER (Most Reliable First):
  * Tier 1: Stellar MLS (when eKey obtained - future)
  * Tier 2: Google APIs (Geocode, Places)
- * Tier 3: Paid/Free APIs (WalkScore, SchoolDigger, AirNow, HowLoud, Weather, Crime, FEMA)
+ * Tier 3: Paid/Free APIs (WalkScore, SchoolDigger, AirNow, HowLoud, Weather, Crime, FEMA, Census)
  * Tier 4: LLMs (Perplexity, Grok, Claude Opus, GPT, Claude Sonnet, Gemini)
+ *
+ * ADDED (2025-12-05):
+ * - U.S. Census API (Vacancy Rate - Field 100) - Tier 3
  *
  * REMOVED (2025-11-27):
  * - Scrapers (Zillow, Redfin, Realtor) - blocked by anti-bot
@@ -848,7 +851,7 @@ function convertFlatToNestedStructure(flatFields: Record<string, any>): any {
 // FREE API ENRICHMENT
 // ============================================
 
-async function geocodeAddress(address: string): Promise<{ lat: number; lon: number; county: string } | null> {
+async function geocodeAddress(address: string): Promise<{ lat: number; lon: number; county: string; zipCode: string } | null> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) return null;
 
@@ -860,13 +863,16 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lon: numb
     if (data.results?.[0]) {
       const result = data.results[0];
       let county = '';
+      let zipCode = '';
       for (const component of result.address_components) {
         if (component.types.includes('administrative_area_level_2')) {
           county = component.long_name;
-          break;
+        }
+        if (component.types.includes('postal_code')) {
+          zipCode = component.long_name;
         }
       }
-      return { lat: result.geometry.location.lat, lon: result.geometry.location.lng, county };
+      return { lat: result.geometry.location.lat, lon: result.geometry.location.lng, county, zipCode };
     }
   } catch (e) {
     console.error('Geocode error:', e);
@@ -965,6 +971,95 @@ async function getAirQuality(lat: number, lon: number): Promise<Record<string, a
     }
   } catch (e) {}
   return {};
+}
+
+// U.S. Census API - Vacancy Rate
+async function getCensusData(zipCode: string): Promise<Record<string, any>> {
+  const apiKey = process.env.CENSUS_API_KEY;
+  if (!apiKey) {
+    console.log('❌ [Census] CENSUS_API_KEY not set in environment variables');
+    return {};
+  }
+
+  console.log(`🔵 [Census] Calling API for ZIP: ${zipCode}`);
+
+  try {
+    // Use ACS 5-year estimates (most recent complete dataset)
+    const year = 2023; // Most recent ACS5 data available
+
+    // B25002: OCCUPANCY STATUS
+    // B25002_001E = Total housing units
+    // B25002_002E = Occupied housing units
+    // B25002_003E = Vacant housing units
+    const variables = 'NAME,B25002_001E,B25002_002E,B25002_003E';
+
+    // Query by ZCTA (ZIP Code Tabulation Area)
+    const url = `https://api.census.gov/data/${year}/acs/acs5?get=${variables}&for=zip%20code%20tabulation%20area:${zipCode}&key=${apiKey}`;
+
+    console.log(`🔵 [Census] Requesting: ${url.replace(apiKey, 'REDACTED')}`);
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'CLUES Property Dashboard (contact: admin@clues.com)',
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ [Census] HTTP ${response.status}: ${errorText.substring(0, 200)}`);
+      return {};
+    }
+
+    const data = await response.json();
+    console.log(`🔵 [Census] Response:`, JSON.stringify(data).substring(0, 300));
+
+    // Census API returns data in format: [["NAME", "B25002_001E", ...], [actual values...]]
+    if (!Array.isArray(data) || data.length < 2) {
+      console.error('❌ [Census] Invalid response format');
+      return {};
+    }
+
+    const [headers, values] = data;
+
+    // Parse the values
+    const totalUnits = parseInt(values[1]) || 0;  // B25002_001E
+    const occupiedUnits = parseInt(values[2]) || 0;  // B25002_002E
+    const vacantUnits = parseInt(values[3]) || 0;  // B25002_003E
+
+    console.log(`🔵 [Census] Parsed - Total: ${totalUnits}, Occupied: ${occupiedUnits}, Vacant: ${vacantUnits}`);
+
+    if (totalUnits === 0) {
+      console.log('⚠️ [Census] No housing units data available for this ZIP code');
+      return {};
+    }
+
+    // Calculate vacancy rate as percentage
+    const vacancyRate = (vacantUnits / totalUnits) * 100;
+    const vacancyRateFormatted = vacancyRate.toFixed(2);
+
+    console.log(`✅ [Census] Vacancy Rate: ${vacancyRateFormatted}% (${vacantUnits}/${totalUnits} units vacant)`);
+
+    // Map to Field 100 in CLUES schema
+    return {
+      '100_vacancy_rate_neighborhood': {
+        value: `${vacancyRateFormatted}%`,
+        source: 'Census',
+        confidence: 'High',
+        metadata: {
+          totalUnits,
+          vacantUnits,
+          occupiedUnits,
+          year,
+          zcta: zipCode,
+        },
+      },
+    };
+
+  } catch (error) {
+    console.error('❌ [Census] Exception:', error);
+    return {};
+  }
 }
 
 // HowLoud API - Noise levels
@@ -1383,14 +1478,18 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   fields['7_county'] = { value: geo.county, source: 'Google Geocode', confidence: 'High' };
   fields['coordinates'] = { value: { lat: geo.lat, lon: geo.lon }, source: 'Google Geocode', confidence: 'High' };
 
-  console.log('🔵 [enrichWithFreeAPIs] Calling 10 APIs in parallel...');
+  console.log('🔵 [enrichWithFreeAPIs] Calling 11 APIs in parallel (including Census)...');
   const apiStartTime = Date.now();
 
+  // Extract ZIP code from geo object for Census API
+  const zipCode = geo.zipCode || geo.zip || '';
+
   // Call all APIs in parallel
-  const [walkScore, floodZone, airQuality, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeDataResult, schoolDiggerResult] = await Promise.all([
+  const [walkScore, floodZone, airQuality, censusData, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeDataResult, schoolDiggerResult] = await Promise.all([
     getWalkScore(geo.lat, geo.lon, address),
     getFloodZone(geo.lat, geo.lon),
     getAirQuality(geo.lat, geo.lon),
+    getCensusData(zipCode),
     getNoiseData(geo.lat, geo.lon),
     getClimateData(geo.lat, geo.lon),
     getDistances(geo.lat, geo.lon),
@@ -1408,13 +1507,14 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   const apiEndTime = Date.now();
   console.log(`✅ [enrichWithFreeAPIs] All APIs completed in ${apiEndTime - apiStartTime}ms`);
 
-  Object.assign(fields, walkScore, floodZone, airQuality, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeData, schoolDiggerData);
+  Object.assign(fields, walkScore, floodZone, airQuality, censusData, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeData, schoolDiggerData);
 
   console.log('🔵 [enrichWithFreeAPIs] Raw field count before filtering:', Object.keys(fields).length);
   console.log('🔵 [enrichWithFreeAPIs] Field breakdown:');
   console.log('  - WalkScore fields:', Object.keys(walkScore || {}).length);
   console.log('  - FloodZone fields:', Object.keys(floodZone || {}).length);
   console.log('  - AirQuality fields:', Object.keys(airQuality || {}).length);
+  console.log('  - Census fields:', Object.keys(censusData || {}).length);
   console.log('  - NoiseData fields:', Object.keys(noiseData || {}).length);
   console.log('  - ClimateData fields:', Object.keys(climateData || {}).length);
   console.log('  - Distances fields:', Object.keys(distances || {}).length);
@@ -1427,6 +1527,7 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   // Store actual field counts in fields object for later tracking
   fields['__FBI_CRIME_COUNT__'] = { value: Object.keys(crimeData).length, source: 'INTERNAL', confidence: 'High' };
   fields['__SCHOOLDIGGER_COUNT__'] = { value: Object.keys(schoolDiggerData).length, source: 'INTERNAL', confidence: 'High' };
+  fields['__CENSUS_COUNT__'] = { value: Object.keys(censusData || {}).length, source: 'INTERNAL', confidence: 'High' };
 
   // Filter out nulls
   const filteredFields = Object.fromEntries(

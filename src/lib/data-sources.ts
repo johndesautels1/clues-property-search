@@ -118,15 +118,25 @@ export const DATA_SOURCES: DataSource[] = [
     enabled: true,
     description: 'Climate data'
   },
-  { 
-    id: 'crime', 
-    name: 'FBI Crime', 
-    type: 'free-api', 
-    tier: 3, 
-    icon: 'alert', 
+  {
+    id: 'crime',
+    name: 'FBI Crime',
+    type: 'free-api',
+    tier: 3,
+    icon: 'alert',
     color: 'red',
     enabled: true,
     description: 'Crime statistics'
+  },
+  {
+    id: 'census',
+    name: 'U.S. Census',
+    type: 'free-api',
+    tier: 3,
+    icon: 'database',
+    color: 'indigo',
+    enabled: true,
+    description: 'Vacancy rate and housing data'
   },
 
   // Tier 4: LLMs (Fallback - with validation) - enabled, check keys at runtime
