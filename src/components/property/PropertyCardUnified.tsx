@@ -122,8 +122,8 @@ export default function PropertyCardUnified({
     listPrice: (fullProperty ? getFieldValue(fullProperty.address?.listingPrice) : property.price) as number | null,
     marketEstimate: (fullProperty ? getFieldValue(fullProperty.details?.marketValueEstimate) : null) as number | null,
 
-    // Location scores (fields 74-76)
-    walkScore: (fullProperty ? getFieldValue(fullProperty.location?.walkScore) : null) as number | null,
+    // Location scores (fields 74-76) - walkScore can be string like "6 - Car Dependent" or number
+    walkScore: (fullProperty ? getFieldValue(fullProperty.location?.walkScore) : null) as number | string | null,
     transitScore: (fullProperty ? getFieldValue(fullProperty.location?.transitScore) : null) as number | null,
     bikeScore: (fullProperty ? getFieldValue(fullProperty.location?.bikeScore) : null) as number | null,
 
@@ -408,7 +408,14 @@ export default function PropertyCardUnified({
                       <div className="grid grid-cols-4 gap-2">
                         {data.walkScore !== null && (
                           <div className="text-center p-2 rounded-lg bg-white/5 overflow-hidden">
-                            <p className="text-white font-bold text-lg">{data.walkScore}</p>
+                            <p className="text-white font-bold text-lg">
+                              {typeof data.walkScore === 'string' ? data.walkScore.split(/[\s-]+/)[0] : data.walkScore}
+                            </p>
+                            {typeof data.walkScore === 'string' && data.walkScore.includes('-') && (
+                              <p className="text-gray-400 text-[6px] font-medium truncate leading-tight">
+                                {data.walkScore.split('-').slice(1).join('-').trim()}
+                              </p>
+                            )}
                             <p className="text-cyan-300 text-[10px] font-medium truncate leading-tight">Walk</p>
                           </div>
                         )}
