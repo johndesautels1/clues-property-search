@@ -471,6 +471,42 @@ function coerceValue(key: string, value: any): any {
 // NO NULL VALUES ARE ALLOWED INTO THE FIELD SYSTEM
 // This function filters LLM responses to remove any nulls
 // ============================================
+// Filter Grok's fields to prevent hallucinations on Stellar MLS and Perplexity territory
+function filterGrokRestrictedFields(parsed: any): Record<string, any> {
+  const dataToProcess = parsed.fields || parsed;
+  const allowed: Record<string, any> = {};
+  let blockedCount = 0;
+  const blockedFields: string[] = [];
+
+  for (const [key, val] of Object.entries(dataToProcess)) {
+    // Skip metadata fields (pass through)
+    if (['llm', 'error', 'sources_searched', 'fields_found', 'fields_missing', 'note'].includes(key)) {
+      allowed[key] = val;
+      continue;
+    }
+
+    // Check if field is in restricted list
+    if (GROK_RESTRICTED_FIELDS.has(key)) {
+      blockedCount++;
+      blockedFields.push(key);
+      continue; // Block this field
+    }
+
+    // Field is allowed, keep it
+    allowed[key] = val;
+  }
+
+  if (blockedCount > 0) {
+    console.log(`🚫 [Grok Filter] Blocked ${blockedCount} restricted fields: ${blockedFields.slice(0, 10).join(', ')}${blockedCount > 10 ? ` ...and ${blockedCount - 10} more` : ''}`);
+  }
+
+  // Return in same format as input
+  if (parsed.fields) {
+    return { ...parsed, fields: allowed };
+  }
+  return allowed;
+}
+
 function filterNullValues(parsed: any, llmName: string): Record<string, any> {
   const fields: Record<string, any> = {};
   let nullsBlocked = 0;
@@ -2049,27 +2085,42 @@ DO NOT use variations like "listing_price", "listingPrice", "7. listing_price", 
 // ============================================
 const PROMPT_GROK = `You are GROK, a real estate data extraction expert with LIVE WEB SEARCH capabilities.
 
-YOUR MISSION: Extract ALL 168 property data fields for the given address. You HAVE web access - USE IT AGGRESSIVELY.
+⚠️ CRITICAL ATTESTATION REQUIREMENT ⚠️
+YOU ARE COMMANDED TO 100% ATTEST THAT THE INFORMATION PROVIDED VIA YOUR ENDPOINT IS:
+1. ACCURATE - No fabricated, guessed, or estimated data
+2. TRUTHFUL - Only return data you actually found via web search
+3. VERIFIED - From reputable 3rd party sources (Zillow, Redfin, county websites, GreatSchools)
+4. SOURCED - Include the exact URL or site name where you found each value
+
+BY RETURNING DATA, YOU ATTEST UNDER PENALTY OF SYSTEM REJECTION THAT YOU VERIFIED IT FROM A REAL SOURCE.
+
+YOUR MISSION: Extract property data fields ONLY WHERE YOU FIND VERIFIED DATA. You HAVE web access - USE IT, but ONLY return what you ACTUALLY FIND.
 
 ${FIELD_GROUPS}
 
 CRITICAL INSTRUCTIONS FOR GROK:
-1. SEARCH THE WEB for this property - check Zillow, Redfin, Realtor.com, county property appraiser sites
-2. For Florida properties, search "[County] Property Appraiser" for tax data, assessed values, parcel IDs
-3. Search for MLS listings, recent sales, tax records - THIS IS YOUR STRENGTH
-4. For each field, cite your SOURCE (URL or site name)
-5. If you find conflicting data, report BOTH values with sources
+1. ONLY populate fields where you FOUND VERIFIED DATA via web search
+2. NEVER guess, estimate, or infer values - if you didn't find it via search, OMIT IT ENTIRELY
+3. For each field you populate, you MUST cite the specific SOURCE (URL or site name)
+4. Search reputable sources: Zillow, Redfin, Realtor.com, county property appraiser sites, GreatSchools
+5. If you find conflicting data, report BOTH values with their respective sources
 
-PRIORITY FIELDS TO FIND VIA WEB SEARCH:
-- Listing price, MLS number, days on market (Zillow/Redfin/Realtor)
-- Tax value, assessed value, annual taxes, parcel ID (County Property Appraiser)
-- Recent sales history, last sale price/date
-- School assignments and ratings (GreatSchools, Zillow)
-- HOA fees, HOA name
-- Flood zone (FEMA flood maps)
+FIELDS YOU SHOULD FOCUS ON (where web search helps):
+- Utility providers (electric, water, sewer, internet) - search "[County] utilities"
+- Regional characteristics (noise, traffic, walkability) - search area descriptions
+- Neighborhood features - search community descriptions
+- Construction materials typical for the region - search regional building norms
 
-DO NOT HALLUCINATE - If you can't find it, return null with confidence "Unverified"
-DO cite your sources for every field you populate
+FIELDS YOU MUST NOT POPULATE (handled by other systems):
+- MLS numbers, listing prices, sale dates (Stellar MLS has authoritative data)
+- Bedrooms, bathrooms, square footage (Stellar MLS has exact measurements)
+- School assignments and ratings (Perplexity searches GreatSchools more reliably)
+- Tax amounts, assessed values, parcel IDs (Perplexity searches county sites more reliably)
+
+HONESTY OVER COMPLETENESS:
+- It is BETTER to return 10 verified fields than 100 guessed fields
+- If you cannot find verified data for a field, DO NOT INCLUDE IT in your response
+- NEVER return fields with null values - simply omit fields you cannot verify
 
 ${JSON_RESPONSE_FORMAT}`;
 
@@ -2481,6 +2532,48 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
   }
 }
 
+// ============================================
+// GROK FIELD RESTRICTIONS
+// Prevents Grok from hallucinating on fields that Stellar MLS and Perplexity handle authoritatively
+// Grok was hallucinating on 75% of fields - now restricted to gap-filling only
+// ============================================
+const GROK_RESTRICTED_FIELDS = new Set([
+  // Stellar MLS core listing data (Stellar is authoritative)
+  '2_mls_primary', '3_mls_secondary', '4_listing_status', '5_listing_date',
+  '10_listing_price', '13_last_sale_date', '14_last_sale_price',
+
+  // Stellar MLS property data (exact measurements from MLS)
+  '17_bedrooms', '18_full_bathrooms', '19_half_bathrooms',
+  '21_living_sqft', '22_total_sqft_under_roof', '23_lot_size_sqft',
+  '25_year_built', '26_property_type', '27_stories',
+  '28_garage_spaces', '29_parking_total',
+
+  // Stellar MLS HOA data
+  '30_hoa_yn', '31_hoa_fee_annual', '32_hoa_name', '33_hoa_includes', '34_ownership_type',
+
+  // Stellar MLS exclusive fields (139-168) - Grok has NO access to these
+  '139_carport_yn', '140_carport_spaces', '141_garage_attached_yn',
+  '142_parking_features', '143_assigned_parking_spaces',
+  '144_floor_number', '145_building_total_floors', '146_building_name_number',
+  '147_building_elevator_yn', '148_floors_in_unit',
+  '149_subdivision_name', '150_legal_description', '151_homestead_yn',
+  '152_cdd_yn', '153_annual_cdd_fee', '154_front_exposure',
+  '155_water_frontage_yn', '156_waterfront_feet', '157_water_access_yn',
+  '158_water_view_yn', '159_water_body_name',
+  '160_can_be_leased_yn', '161_minimum_lease_period', '162_lease_restrictions_yn',
+  '163_pet_size_limit', '164_max_pet_weight', '165_association_approval_yn',
+  '166_community_features', '167_interior_features', '168_exterior_features',
+
+  // Perplexity web search territory (Perplexity searches live sources)
+  '9_parcel_id', '11_price_per_sqft', '12_market_value_estimate',
+  '15_assessed_value', '16_redfin_estimate',
+  '35_annual_taxes', '36_tax_year', '37_property_tax_rate', '38_tax_exemptions',
+  '63_school_district', '65_elementary_school', '66_elementary_rating',
+  '68_middle_school', '69_middle_rating', '71_high_school', '72_high_rating',
+  '91_median_home_price_neighborhood', '92_price_per_sqft_recent_avg',
+  '95_days_on_market_avg', '98_rental_estimate_monthly', '103_comparable_sales'
+]);
+
 // Grok API call (xAI) - #2 in reliability, HAS WEB SEARCH
 async function callGrok(address: string): Promise<any> {
   const apiKey = process.env.XAI_API_KEY;
@@ -2527,8 +2620,12 @@ Search Zillow, Redfin, Realtor.com, county records, and other public sources. Re
       if (jsonMatch) {
         try {
           const parsed = JSON.parse(jsonMatch[0]);
+
+          // 🛡️ GROK RESTRICTION: Remove fields reserved for Stellar MLS and Perplexity
+          const restrictedFields = filterGrokRestrictedFields(parsed);
+
           // 🛡️ NULL BLOCKING: Filter all null values before returning
-          const filteredFields = filterNullValues(parsed, 'Grok');
+          const filteredFields = filterNullValues(restrictedFields, 'Grok');
           return { fields: filteredFields, llm: 'Grok' };
         } catch (parseError) {
           console.error('❌ Grok JSON.parse error:', parseError);
