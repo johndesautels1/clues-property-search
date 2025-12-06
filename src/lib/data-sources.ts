@@ -138,6 +138,36 @@ export const DATA_SOURCES: DataSource[] = [
     enabled: true,
     description: 'Vacancy rate and housing data'
   },
+  {
+    id: 'noaa-climate',
+    name: 'NOAA Climate',
+    type: 'free-api',
+    tier: 3,
+    icon: 'cloud',
+    color: 'blue',
+    enabled: true,
+    description: 'Climate risk assessment'
+  },
+  {
+    id: 'noaa-storm',
+    name: 'NOAA Storm Events',
+    type: 'free-api',
+    tier: 3,
+    icon: 'wind',
+    color: 'orange',
+    enabled: true,
+    description: 'Hurricane and tornado risk'
+  },
+  {
+    id: 'noaa-sealevel',
+    name: 'NOAA Sea Level',
+    type: 'free-api',
+    tier: 3,
+    icon: 'waves',
+    color: 'cyan',
+    enabled: true,
+    description: 'Sea level rise risk'
+  },
 
   // Tier 4: LLMs (Fallback - with validation) - enabled, check keys at runtime
   { 
