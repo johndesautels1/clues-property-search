@@ -1002,15 +1002,32 @@ export async function callEPAFRS(lat: number, lon: number): Promise<ApiResult> {
         ? data.Results.FRSFacility
         : [data.Results.FRSFacility];
 
-      // Find nearest Superfund site
-      const superfundSites = facilities.filter((f: any) =>
-        f.ProgramSystemAcronym && f.ProgramSystemAcronym.includes('SEMS')
-      );
+      // Since we filtered by pgm_sys_acrnm=SEMS in the query, all results are Superfund sites
+      if (facilities.length > 0) {
+        // Calculate distance to nearest site
+        const facilitiesWithDistance = facilities.map((f: any) => {
+          const facilityLat = parseFloat(f.Latitude83);
+          const facilityLon = parseFloat(f.Longitude83);
 
-      if (superfundSites.length > 0) {
-        const nearestSite = superfundSites[0];
+          // Haversine distance calculation
+          const R = 3959; // Earth's radius in miles
+          const dLat = (facilityLat - lat) * Math.PI / 180;
+          const dLon = (facilityLon - lon) * Math.PI / 180;
+          const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat * Math.PI / 180) * Math.cos(facilityLat * Math.PI / 180) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          const distance = R * c;
+
+          return { ...f, calculatedDistance: distance };
+        });
+
+        // Sort by distance
+        facilitiesWithDistance.sort((a, b) => a.calculatedDistance - b.calculatedDistance);
+
+        const nearestSite = facilitiesWithDistance[0];
         const facilityName = nearestSite.FacilityName || 'Unknown';
-        const distance = nearestSite.Distance || 'Unknown';
+        const distance = nearestSite.calculatedDistance.toFixed(1);
 
         // Field 127: superfund_site_nearby
         setField(fields, '127_superfund_site_nearby', `Yes - ${facilityName} (${distance} mi)`, 'EPA FRS', 'High');
@@ -1018,6 +1035,9 @@ export async function callEPAFRS(lat: number, lon: number): Promise<ApiResult> {
         // No Superfund sites within 5 miles
         setField(fields, '127_superfund_site_nearby', 'No sites within 5 miles', 'EPA FRS', 'High');
       }
+    } else {
+      // No results object means no sites found
+      setField(fields, '127_superfund_site_nearby', 'No sites within 5 miles', 'EPA FRS', 'High');
     }
 
     return { success: Object.keys(fields).length > 0, source: 'EPA FRS', fields };
