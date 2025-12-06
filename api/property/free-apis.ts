@@ -719,7 +719,183 @@ export async function callHudFairMarketRent(zip: string): Promise<ApiResult> {
 }
 
 // ============================================
-// NOAA CLIMATE DATA API - Environmental Risk
+// FLORIDA COUNTY FIPS CODE LOOKUP
+// ============================================
+const FLORIDA_COUNTY_FIPS: Record<string, string> = {
+  'Alachua': '12001',
+  'Baker': '12003',
+  'Bay': '12005',
+  'Bradford': '12007',
+  'Brevard': '12009',
+  'Broward': '12011',
+  'Calhoun': '12013',
+  'Charlotte': '12015',
+  'Citrus': '12017',
+  'Clay': '12019',
+  'Collier': '12021',
+  'Columbia': '12023',
+  'DeSoto': '12027',
+  'Dixie': '12029',
+  'Duval': '12031',
+  'Escambia': '12033',
+  'Flagler': '12035',
+  'Franklin': '12037',
+  'Gadsden': '12039',
+  'Gilchrist': '12041',
+  'Glades': '12043',
+  'Gulf': '12045',
+  'Hamilton': '12047',
+  'Hardee': '12049',
+  'Hendry': '12051',
+  'Hernando': '12053',
+  'Highlands': '12055',
+  'Hillsborough': '12057',
+  'Holmes': '12059',
+  'Indian River': '12061',
+  'Jackson': '12063',
+  'Jefferson': '12065',
+  'Lafayette': '12067',
+  'Lake': '12069',
+  'Lee': '12071',
+  'Leon': '12073',
+  'Levy': '12075',
+  'Liberty': '12077',
+  'Madison': '12079',
+  'Manatee': '12081',
+  'Marion': '12083',
+  'Martin': '12085',
+  'Miami-Dade': '12086',
+  'Monroe': '12087',
+  'Nassau': '12089',
+  'Okaloosa': '12091',
+  'Okeechobee': '12093',
+  'Orange': '12095',
+  'Osceola': '12097',
+  'Palm Beach': '12099',
+  'Pasco': '12101',
+  'Pinellas': '12103',
+  'Polk': '12105',
+  'Putnam': '12107',
+  'St. Johns': '12109',
+  'St. Lucie': '12111',
+  'Santa Rosa': '12113',
+  'Sarasota': '12115',
+  'Seminole': '12117',
+  'Sumter': '12119',
+  'Suwannee': '12121',
+  'Taylor': '12123',
+  'Union': '12125',
+  'Volusia': '12127',
+  'Wakulla': '12129',
+  'Walton': '12131',
+  'Washington': '12133'
+};
+
+function getCountyFIPS(countyName: string): string | null {
+  // Remove " County" suffix if present
+  const cleanName = countyName.replace(/ County$/i, '').trim();
+  return FLORIDA_COUNTY_FIPS[cleanName] || null;
+}
+
+// ============================================
+// FEMA NATIONAL RISK INDEX API - ALL Environmental Risks
+// ============================================
+export async function callFEMARiskIndex(county: string, state: string = 'FL'): Promise<ApiResult> {
+  const fields: Record<string, ApiField> = {};
+
+  try {
+    // Get FIPS code for county
+    const fipsCode = getCountyFIPS(county);
+
+    if (!fipsCode) {
+      return { success: false, source: 'FEMA Risk Index', fields, error: `Unknown county: ${county}` };
+    }
+
+    // FEMA National Risk Index API - provides ALL hazard risk scores
+    const url = `https://hazards.fema.gov/nri/api/v1/counties/${fipsCode}`;
+
+    const fetchResult = await safeFetch<any>(url, {
+      headers: {
+        'Accept': 'application/json'
+      }
+    }, 'FEMA-Risk', 10000); // 10 second timeout (FEMA is fast)
+
+    if (!fetchResult.success || !fetchResult.data) {
+      return { success: false, source: 'FEMA Risk Index', fields, error: fetchResult.error || 'Fetch failed' };
+    }
+
+    const data = fetchResult.data;
+
+    // FEMA returns risk ratings and scores for all hazards
+    // Risk Rating Scale: Very Low, Relatively Low, Relatively Moderate, Relatively High, Very High
+    // Risk Score: 0-100 (higher = more risk)
+
+    // Map FEMA risk ratings to our schema values
+    const mapRiskRating = (rating: string): string => {
+      if (!rating) return 'Unknown';
+      const lowerRating = rating.toLowerCase();
+      if (lowerRating.includes('very high')) return 'Very High';
+      if (lowerRating.includes('relatively high')) return 'High';
+      if (lowerRating.includes('relatively moderate')) return 'Moderate';
+      if (lowerRating.includes('relatively low')) return 'Low';
+      if (lowerRating.includes('very low')) return 'Minimal';
+      return rating;
+    };
+
+    // Extract risk data
+    const riskData = data.riskData || {};
+
+    // Field 121: climate_risk (overall climate-related risk)
+    if (riskData.climateRiskRating || riskData.riskScore) {
+      const climateRisk = mapRiskRating(riskData.climateRiskRating || '');
+      setField(fields, '121_climate_risk', climateRisk, 'FEMA Risk Index', 'High');
+    }
+
+    // Field 122: wildfire_risk
+    if (riskData.wildfireRiskRating || riskData.wildfireRiskScore) {
+      const wildfireRisk = mapRiskRating(riskData.wildfireRiskRating || '');
+      setField(fields, '122_wildfire_risk', wildfireRisk, 'FEMA Risk Index', 'High');
+    }
+
+    // Field 123: earthquake_risk
+    if (riskData.earthquakeRiskRating || riskData.earthquakeRiskScore) {
+      const earthquakeRisk = mapRiskRating(riskData.earthquakeRiskRating || '');
+      setField(fields, '123_earthquake_risk', earthquakeRisk, 'FEMA Risk Index', 'High');
+    }
+
+    // Field 124: hurricane_risk
+    if (riskData.hurricaneRiskRating || riskData.hurricaneRiskScore) {
+      const hurricaneRisk = mapRiskRating(riskData.hurricaneRiskRating || '');
+      setField(fields, '124_hurricane_risk', hurricaneRisk, 'FEMA Risk Index', 'High');
+    }
+
+    // Field 125: tornado_risk
+    if (riskData.tornadoRiskRating || riskData.tornadoRiskScore) {
+      const tornadoRisk = mapRiskRating(riskData.tornadoRiskRating || '');
+      setField(fields, '125_tornado_risk', tornadoRisk, 'FEMA Risk Index', 'High');
+    }
+
+    // Field 128: sea_level_rise_risk
+    if (riskData.coastalFloodingRiskRating || riskData.coastalFloodingRiskScore) {
+      const seaLevelRisk = mapRiskRating(riskData.coastalFloodingRiskRating || '');
+      setField(fields, '128_sea_level_rise_risk', seaLevelRisk, 'FEMA Risk Index', 'High');
+    }
+
+    // Field 120: flood_risk_level
+    if (riskData.riverineFloodingRiskRating || riskData.riverineFloodingRiskScore) {
+      const floodRisk = mapRiskRating(riskData.riverineFloodingRiskRating || '');
+      setField(fields, '120_flood_risk_level', floodRisk, 'FEMA Risk Index', 'High');
+    }
+
+    return { success: Object.keys(fields).length > 0, source: 'FEMA Risk Index', fields };
+
+  } catch (error) {
+    return { success: false, source: 'FEMA Risk Index', fields, error: String(error) };
+  }
+}
+
+// ============================================
+// NOAA CLIMATE DATA API - Environmental Risk (DEPRECATED - SLOW)
 // ============================================
 export async function callNOAAClimate(lat: number, lon: number, zip: string, county: string): Promise<ApiResult> {
   const apiToken = process.env.NOAA_API_TOKEN || 'LsycRMDcPOllKnOJZLkiyMocmHmtGSQL';
