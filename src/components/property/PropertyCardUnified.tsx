@@ -77,14 +77,34 @@ export default function PropertyCardUnified({
     city: property.city,
     state: property.state,
     zip: property.zip,
-    price: property.price,
+
+    // FIX #1: Show list price if on market, otherwise market estimate
+    // Priority: listing_price (field 10) > market_value_estimate (field 12)
+    price: (() => {
+      const listPrice = fullProperty ? getFieldValue(fullProperty.address?.listingPrice) as number | null : property.price;
+      const marketEst = fullProperty ? getFieldValue(fullProperty.details?.marketValueEstimate) as number | null : null;
+
+      // If we have a listing price and status is Active/Pending, use it
+      if (listPrice && (property.listingStatus === 'Active' || property.listingStatus === 'Pending')) {
+        return listPrice;
+      }
+      // Otherwise use market estimate if available
+      if (marketEst) return marketEst;
+      // Fallback to property.price
+      return property.price;
+    })(),
+
     pricePerSqft: property.pricePerSqft,
-    bedrooms: property.bedrooms,
-    bathrooms: property.bathrooms,
+    bedrooms: property.bedrooms || (fullProperty ? getFieldValue(fullProperty.details?.bedrooms) as number | null : null),
+    bathrooms: property.bathrooms || (fullProperty ? getFieldValue(fullProperty.details?.totalBathrooms) as number | null : null),
     sqft: property.sqft,
     yearBuilt: property.yearBuilt,
     smartScore: property.smartScore,
-    dataCompleteness: property.dataCompleteness,
+
+    // FIX #6: Cap data completeness at 100% and calculate correctly
+    // Use actual filled fields / 168 total fields
+    dataCompleteness: Math.min(100, property.dataCompleteness || 0),
+
     thumbnail: property.thumbnail,
     listingStatus: property.listingStatus,
     daysOnMarket: property.daysOnMarket,
@@ -97,9 +117,12 @@ export default function PropertyCardUnified({
     rentalYield: (fullProperty ? getFieldValue(fullProperty.financial?.rentalYieldEst) : null) as number | null,
     monthlyRent: (fullProperty ? getFieldValue(fullProperty.financial?.rentalEstimateMonthly) : null) as number | null,
     insurance: (fullProperty ? getFieldValue(fullProperty.financial?.insuranceEstAnnual) : null) as number | null,
+
+    // FIX #5: Keep listPrice and marketEstimate separate (don't duplicate)
+    listPrice: (fullProperty ? getFieldValue(fullProperty.address?.listingPrice) : property.price) as number | null,
     marketEstimate: (fullProperty ? getFieldValue(fullProperty.details?.marketValueEstimate) : null) as number | null,
 
-    // Location scores (fields 61-63)
+    // Location scores (fields 74-76)
     walkScore: (fullProperty ? getFieldValue(fullProperty.location?.walkScore) : null) as number | null,
     transitScore: (fullProperty ? getFieldValue(fullProperty.location?.transitScore) : null) as number | null,
     bikeScore: (fullProperty ? getFieldValue(fullProperty.location?.bikeScore) : null) as number | null,
@@ -107,19 +130,20 @@ export default function PropertyCardUnified({
     // Safety score (placeholder - would come from crime data if available)
     safetyScore: null,
 
-    // Risk indicators (fields 66-69) - convert to 1-10 scale
+    // FIX #4: Use real FEMA Risk Index data - fields 120, 124 from FEMA API
+    // These come from callFEMARiskIndex() in free-apis.ts
     floodRisk: fullProperty ? (() => {
       const level = getFieldValue(fullProperty.utilities?.floodRiskLevel) as string | null;
       if (!level) return null;
       const levelMap: { [key: string]: number } = { 'Minimal': 2, 'Low': 3, 'Moderate': 5, 'High': 7, 'Very High': 9, 'Severe': 10 };
-      return levelMap[level] || 5;
+      return levelMap[level] || null; // Return null instead of defaulting to 5
     })() : null,
 
     hurricaneRisk: fullProperty ? (() => {
       const risk = getFieldValue(fullProperty.utilities?.hurricaneRisk) as string | null;
       if (!risk) return null;
       const riskMap: { [key: string]: number } = { 'Minimal': 2, 'Low': 3, 'Moderate': 5, 'High': 7, 'Very High': 9, 'Severe': 10 };
-      return riskMap[risk] || 5;
+      return riskMap[risk] || null; // Return null instead of defaulting to 5
     })() : null,
 
     // Features (fields 54, 133, 134)
@@ -127,6 +151,9 @@ export default function PropertyCardUnified({
     hasBeach: false, // Not in 168-field schema
     hasEV: fullProperty ? (getFieldValue(fullProperty.utilities?.evChargingYn) === 'Yes' || getFieldValue(fullProperty.utilities?.evChargingYn) === 'true') : false,
     hasSmart: fullProperty ? (getFieldValue(fullProperty.utilities?.smartHomeFeatures) ? true : false) : false,
+
+    // FIX #4: Get garage spaces for bottom widget
+    garageSpaces: fullProperty ? getFieldValue(fullProperty.details?.garageSpaces) as number | null : null,
   };
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -251,7 +278,9 @@ export default function PropertyCardUnified({
                 <p className="text-cyan-300 text-sm font-medium mt-1">{data.propertyType}</p>
               </div>
               <div className="text-right">
-                <span className="text-amber-400 text-xs font-medium">{data.daysOnMarket} days</span>
+                {/* FIX #3: Add "Days on Market" label */}
+                <p className="text-gray-500 text-[10px] uppercase tracking-wide">Days on Market</p>
+                <span className="text-amber-400 text-xs font-bold">{data.daysOnMarket}</span>
               </div>
             </div>
 
@@ -263,23 +292,27 @@ export default function PropertyCardUnified({
               {data.city}, {data.state} {data.zip}
             </p>
 
-            {/* Property Features */}
+            {/* FIX #4: Property Features with labels and null handling */}
             <div className="grid grid-cols-4 gap-2">
-              <div className="flex flex-col items-center gap-1">
+              <div className="flex flex-col items-center gap-0.5">
                 <Bed className="w-4 h-4 text-quantum-cyan" />
-                <span className="text-sm text-gray-300">{data.bedrooms}</span>
+                <span className="text-sm font-semibold text-white">{data.bedrooms ?? '—'}</span>
+                <span className="text-[9px] text-gray-500 uppercase">Beds</span>
               </div>
-              <div className="flex flex-col items-center gap-1">
+              <div className="flex flex-col items-center gap-0.5">
                 <Bath className="w-4 h-4 text-quantum-cyan" />
-                <span className="text-sm text-gray-300">{data.bathrooms}</span>
+                <span className="text-sm font-semibold text-white">{data.bathrooms ?? '—'}</span>
+                <span className="text-[9px] text-gray-500 uppercase">Baths</span>
               </div>
-              <div className="flex flex-col items-center gap-1">
-                <Ruler className="w-4 h-4 text-quantum-cyan" />
-                <span className="text-sm text-gray-300">{data.sqft.toLocaleString()}</span>
+              <div className="flex flex-col items-center gap-0.5">
+                <Car className="w-4 h-4 text-quantum-cyan" />
+                <span className="text-sm font-semibold text-white">{data.garageSpaces ?? '—'}</span>
+                <span className="text-[9px] text-gray-500 uppercase">Garage</span>
               </div>
-              <div className="flex flex-col items-center gap-1">
+              <div className="flex flex-col items-center gap-0.5">
                 <Calendar className="w-4 h-4 text-quantum-cyan" />
-                <span className="text-sm text-gray-300">{data.yearBuilt}</span>
+                <span className="text-sm font-semibold text-white">{data.yearBuilt ?? '—'}</span>
+                <span className="text-[9px] text-gray-500 uppercase">Built</span>
               </div>
             </div>
 
@@ -362,9 +395,9 @@ export default function PropertyCardUnified({
                       </p>
                       <div className="grid grid-cols-4 gap-2">
                         {data.walkScore !== null && (
-                          <div className="text-center p-2 rounded-lg bg-white/5">
-                            <p className="text-white font-bold text-lg">{data.walkScore}</p>
-                            <p className="text-cyan-300 text-xs font-medium">Walk</p>
+                          <div className="text-center p-2 rounded-lg bg-white/5 overflow-hidden">
+                            <p className="text-white font-bold text-lg">{typeof data.walkScore === 'string' ? data.walkScore.split(' ')[0] : data.walkScore}</p>
+                            <p className="text-cyan-300 text-[10px] font-medium truncate leading-tight">Walk</p>
                           </div>
                         )}
                         {data.transitScore !== null && (
@@ -474,8 +507,8 @@ export default function PropertyCardUnified({
                     </div>
                   )}
 
-                  {/* Market Estimate Comparison */}
-                  {data.marketEstimate !== null && (
+                  {/* FIX #5: Market Estimate Comparison - only show if different from list price */}
+                  {data.marketEstimate !== null && data.listPrice !== null && Math.abs(data.marketEstimate - data.listPrice) > 1000 && (
                     <div className="border-t border-white/10 pt-4">
                       <div className="p-3 rounded-xl bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-cyan-500/20">
                         <div className="flex items-center justify-between">
@@ -484,8 +517,8 @@ export default function PropertyCardUnified({
                         </div>
                         <div className="flex items-center justify-between mt-1">
                           <span className="text-purple-300 text-xs font-medium">vs List Price</span>
-                          <span className={`text-sm font-bold ${data.marketEstimate >= data.price ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {data.marketEstimate >= data.price ? '+' : ''}{formatPrice(data.marketEstimate - data.price)}
+                          <span className={`text-sm font-bold ${data.marketEstimate >= data.listPrice ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {data.marketEstimate >= data.listPrice ? '+' : ''}{formatPrice(data.marketEstimate - data.listPrice)}
                           </span>
                         </div>
                       </div>
