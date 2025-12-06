@@ -31,8 +31,9 @@ export const config = {
 };
 
 // Timeout wrapper for API/LLM calls - prevents hanging
+const STELLAR_MLS_TIMEOUT = 90000; // 90 seconds (1.5 minutes) for Stellar MLS via Bridge API (Tier 1)
+const FREE_API_TIMEOUT = 60000; // 60 seconds for Redfin, Google, and all free APIs (Tier 2 & 3)
 const LLM_TIMEOUT = 180000; // 180 seconds (3 minutes) per LLM call - allows web-search LLMs (Perplexity, Grok) to complete their searches
-const STELLAR_MLS_TIMEOUT = 90000; // 90 seconds (1.5 minutes) for Stellar MLS via Bridge API
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([
     promise,
@@ -2903,9 +2904,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('========================================');
       console.log('TIER 2 & 3: FREE APIs (Google, WalkScore, FEMA, etc.)');
       console.log('========================================');
-      console.log('🔍 Calling enrichWithFreeAPIs for:', searchQuery);
+      console.log('🔍 Calling enrichWithFreeAPIs with 60s timeout for:', searchQuery);
       try {
-        const enrichedData = await enrichWithFreeAPIs(searchQuery);
+        const enrichedData = await withTimeout(
+          enrichWithFreeAPIs(searchQuery),
+          FREE_API_TIMEOUT,
+          {} // Empty object fallback if timeout
+        );
         console.log('📦 enrichWithFreeAPIs returned', Object.keys(enrichedData).length, 'fields');
 
       // Extract actual field counts from special tracking fields
