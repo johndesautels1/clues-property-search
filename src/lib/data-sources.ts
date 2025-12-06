@@ -56,6 +56,16 @@ export const DATA_SOURCES: DataSource[] = [
     enabled: true,
     description: 'Commute times and distances'
   },
+  {
+    id: 'redfin',
+    name: 'Redfin',
+    type: 'free-api',
+    tier: 2,
+    icon: 'home',
+    color: 'red',
+    enabled: true,
+    description: 'Redfin property estimates and details'
+  },
 
   // Tier 3: Paid/Free APIs ("Hard Truth")
   { 

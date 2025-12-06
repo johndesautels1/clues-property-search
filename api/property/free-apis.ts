@@ -1087,3 +1087,137 @@ export async function getRadonRisk(county: string, state: string = 'FL'): Promis
     return { success: false, source: 'EPA Radon', fields, error: String(error) };
   }
 }
+
+// ============================================
+// REDFIN API - Property Details & Estimates
+// ============================================
+export async function callRedfinProperty(address: string): Promise<ApiResult> {
+  const fields: Record<string, ApiField> = {};
+
+  try {
+    const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
+    const RAPIDAPI_HOST = process.env.RAPIDAPI_HOST || 'redfin5.p.rapidapi.com';
+
+    if (!RAPIDAPI_KEY) {
+      console.log('[Redfin] API key not configured, skipping');
+      return { success: false, source: 'Redfin', fields };
+    }
+
+    const headers = {
+      'x-rapidapi-host': RAPIDAPI_HOST,
+      'x-rapidapi-key': RAPIDAPI_KEY
+    };
+
+    // Step 1: Get Redfin property URL from autocomplete
+    const autocompleteUrl = `https://${RAPIDAPI_HOST}/auto-complete?query=${encodeURIComponent(address)}`;
+    const autocompleteResult = await safeFetch<any>(autocompleteUrl, { headers }, 'Redfin-Autocomplete');
+
+    if (!autocompleteResult.success || !autocompleteResult.data) {
+      console.log('[Redfin] Autocomplete failed:', autocompleteResult.error);
+      return { success: false, source: 'Redfin', fields };
+    }
+
+    // Get the property URL from autocomplete response
+    const exactMatch = autocompleteResult.data.payload?.exactMatch;
+    const redfinUrl = exactMatch?.url;
+
+    if (!redfinUrl) {
+      console.log('[Redfin] No property URL found in autocomplete');
+      return { success: false, source: 'Redfin', fields };
+    }
+
+    console.log('[Redfin] Found property URL:', redfinUrl);
+
+    // Step 2: Get comprehensive property details
+    const detailsUrl = `https://${RAPIDAPI_HOST}/properties/get-info?url=${encodeURIComponent(redfinUrl)}`;
+    const detailsResult = await safeFetch<any>(detailsUrl, { headers }, 'Redfin-Details');
+
+    if (!detailsResult.success || !detailsResult.data) {
+      console.log('[Redfin] Property details failed:', detailsResult.error);
+      return { success: false, source: 'Redfin', fields };
+    }
+
+    const addressInfo = detailsResult.data.aboveTheFold?.addressSectionInfo;
+
+    if (addressInfo) {
+      // Field 16: Redfin Estimate (AVM)
+      if (addressInfo.avmInfo?.predictedValue) {
+        setField(fields, '16_redfin_estimate', Math.round(addressInfo.avmInfo.predictedValue), 'Redfin', 'High');
+      }
+
+      // Field 14: Last Sale Price
+      if (addressInfo.latestPriceInfo?.amount) {
+        setField(fields, '14_last_sale_price', addressInfo.latestPriceInfo.amount, 'Redfin', 'High');
+      }
+
+      // Field 13: Last Sale Date
+      if (addressInfo.soldDate) {
+        const soldDate = new Date(addressInfo.soldDate);
+        setField(fields, '13_last_sale_date', soldDate.toISOString().split('T')[0], 'Redfin', 'High');
+      }
+
+      // Field 17: Bedrooms
+      if (addressInfo.beds) {
+        setField(fields, '17_bedrooms', addressInfo.beds, 'Redfin', 'High');
+      }
+
+      // Field 18: Total Bathrooms
+      if (addressInfo.baths) {
+        setField(fields, '18_total_bathrooms', addressInfo.baths, 'Redfin', 'High');
+      }
+
+      // Field 21: Living Square Feet
+      if (addressInfo.sqFt?.value) {
+        setField(fields, '21_living_sqft', addressInfo.sqFt.value, 'Redfin', 'High');
+      }
+
+      // Field 23: Lot Size (Square Feet)
+      if (addressInfo.lotSize) {
+        setField(fields, '23_lot_size_sqft', addressInfo.lotSize, 'Redfin', 'High');
+      }
+
+      // Field 25: Year Built
+      if (addressInfo.yearBuilt) {
+        setField(fields, '25_year_built', addressInfo.yearBuilt, 'Redfin', 'High');
+      }
+
+      // Field 34: Parcel ID (APN)
+      if (addressInfo.apn) {
+        setField(fields, '34_parcel_id', addressInfo.apn, 'Redfin', 'High');
+      }
+
+      // Field 11: Price Per Square Foot
+      if (addressInfo.pricePerSqFt) {
+        setField(fields, '11_price_per_sqft', addressInfo.pricePerSqFt, 'Redfin', 'High');
+      }
+    }
+
+    // Step 3: Get WalkScore data from Redfin
+    const walkScoreUrl = `https://${RAPIDAPI_HOST}/properties/get-walk-score?url=${encodeURIComponent(redfinUrl)}`;
+    const walkScoreResult = await safeFetch<any>(walkScoreUrl, { headers }, 'Redfin-WalkScore');
+
+    if (walkScoreResult.success && walkScoreResult.data) {
+      // Field 61: Walk Score
+      if (walkScoreResult.data.walkScore?.value) {
+        setField(fields, '61_walk_score', walkScoreResult.data.walkScore.value, 'Redfin', 'High');
+      }
+
+      // Field 62: Transit Score
+      if (walkScoreResult.data.transitScore?.value) {
+        setField(fields, '62_transit_score', walkScoreResult.data.transitScore.value, 'Redfin', 'High');
+      }
+
+      // Field 63: Bike Score
+      if (walkScoreResult.data.bikeScore?.value) {
+        setField(fields, '63_bike_score', walkScoreResult.data.bikeScore.value, 'Redfin', 'High');
+      }
+    }
+
+    console.log(`[Redfin] Successfully extracted ${Object.keys(fields).length} fields`);
+    return { success: Object.keys(fields).length > 0, source: 'Redfin', fields };
+
+  } catch (error) {
+    console.error('[Redfin] Error:', error);
+    return { success: false, source: 'Redfin', fields, error: String(error) };
+  }
+}
