@@ -154,6 +154,9 @@ export default function PropertyCardUnified({
 
     // FIX #4: Get garage spaces for bottom widget
     garageSpaces: fullProperty ? getFieldValue(fullProperty.details?.garageSpaces) as number | null : null,
+
+    // PHOTO: Get primary photo from Stellar MLS Media (field 169)
+    primaryPhotoUrl: fullProperty ? getFieldValue(fullProperty.address?.primaryPhotoUrl) as string | null : null,
   };
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -222,13 +225,22 @@ export default function PropertyCardUnified({
               COMPACT MODE (Always Visible)
               ======================================== */}
 
-          {/* Property Image */}
+          {/* Property Image - Prioritize Stellar MLS photo (field 169), fallback to thumbnail */}
           <div className="relative w-full h-40 flex-shrink-0">
-            {data.thumbnail ? (
+            {data.primaryPhotoUrl || data.thumbnail ? (
               <img
-                src={data.thumbnail}
+                src={data.primaryPhotoUrl || data.thumbnail}
                 alt={data.address}
                 className="w-full h-full object-cover rounded-t-2xl"
+                onError={(e) => {
+                  // If photo fails to load, show placeholder
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const parent = target.parentElement;
+                  if (parent) {
+                    parent.innerHTML = '<div class="w-full h-full bg-gradient-to-br from-quantum-dark to-quantum-card rounded-t-2xl flex items-center justify-center"><svg class="w-12 h-12 text-gray-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div>';
+                  }
+                }}
               />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-quantum-dark to-quantum-card rounded-t-2xl flex items-center justify-center">
