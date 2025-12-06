@@ -1052,27 +1052,38 @@ export default function Compare() {
                         const fullProp = fullProperties.get(id);
                         const cardProp = properties.find(p => p.id === id);
 
+                        // Handle special paths
+                        if (field.path === 'smartScore') {
+                          return cardProp?.smartScore ?? null;
+                        }
+                        if (field.path === 'dataCompleteness') {
+                          return cardProp?.dataCompleteness ?? null;
+                        }
+                        if (field.path.startsWith('calculated.')) {
+                          // Calculated fields - return null for now (marked as missing data source)
+                          return null;
+                        }
                         if (field.path.startsWith('card.')) {
                           return cardProp ? getNestedValue(cardProp, field.path) : null;
                         }
 
-                        // Try full property first, then fall back to card for basic fields
-                        if (fullProp) {
+                        // Handle fields.XX_fieldname.value paths
+                        if (field.path.startsWith('fields.') && fullProp) {
                           const val = getNestedValue(fullProp, field.path);
                           if (val !== null && val !== undefined) return val;
                         }
 
-                        // Map some common fields from card
-                        if (cardProp) {
-                          const cardMappings: Record<string, keyof PropertyCard> = {
-                            'address.listingPrice': 'price',
-                            'address.pricePerSqft': 'pricePerSqft',
-                            'details.bedrooms': 'bedrooms',
-                            'details.totalBathrooms': 'bathrooms',
-                            'details.livingSqft': 'sqft',
-                            'details.yearBuilt': 'yearBuilt',
+                        // Fallback: Try to map from PropertyCard using field number
+                        if (cardProp && field.fieldNum) {
+                          const fieldNumMappings: Record<number, keyof PropertyCard> = {
+                            10: 'price',           // listing_price
+                            11: 'pricePerSqft',    // price_per_sqft
+                            17: 'bedrooms',        // bedrooms
+                            20: 'bathrooms',       // total_bathrooms
+                            21: 'sqft',            // living_sqft
+                            25: 'yearBuilt',       // year_built
                           };
-                          const cardKey = cardMappings[field.path];
+                          const cardKey = fieldNumMappings[field.fieldNum];
                           if (cardKey && cardProp[cardKey] !== undefined) {
                             return cardProp[cardKey];
                           }
