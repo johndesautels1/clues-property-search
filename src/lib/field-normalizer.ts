@@ -340,14 +340,27 @@ const PERPLEXITY_TO_NUMBERED_FIELDS: Record<string, string> = {
   'exterior_features_pool': '54_pool_yn',
   'exterior_features_pool_type': '55_pool_type',
   'exterior_features_deck_patio': '56_deck_patio',
+  'exterior_features_fence': '57_fence',
+  'exterior_features_landscaping': '58_landscaping',
+  'exterior_features_landscaping_quality': '58_landscaping',
+  'exterior_features_yard_description': '58_landscaping',
   'exterior_features_waterfront': '155_water_frontage_yn',
+  'exterior_features_waterfront_feet': '156_waterfront_feet',
+  'exterior_features_water_access': '157_water_access_yn',
+  'exterior_features_water_view': '158_water_view_yn',
+  'exterior_features_water_body_name': '159_water_body_name',
   'exterior_features_view': '131_view_type',
+  'exterior_features_lot_features': '132_lot_features',
+  'exterior_features_lot_description': '132_lot_features',
 
   // Schools
   'schools_scores_school_district': '63_school_district',
   'schools_scores_elementary_school_name': '65_elementary_school',
+  'schools_scores_elementary_school_rating': '66_elementary_rating',
   'schools_scores_middle_school_name': '68_middle_school',
+  'schools_scores_middle_school_rating': '69_middle_rating',
   'schools_scores_high_school_name': '71_high_school',
+  'schools_scores_high_school_rating': '72_high_rating',
 
   // Market & Investment
   'market_investment_median_home_price_neighborhood': '91_median_home_price_neighborhood',

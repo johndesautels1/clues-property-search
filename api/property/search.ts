@@ -1129,14 +1129,17 @@ async function getNoiseData(lat: number, lon: number): Promise<Record<string, an
         };
       }
 
-      // Local noise component if available
-      if (result.local !== undefined) {
-        fields['129_noise_level_db_est'] = {
-          value: `Local noise score: ${result.local}/100 - ${result.localtext || 'N/A'}`,
-          source: 'HowLoud',
-          confidence: 'High'
-        };
-      }
+      // Convert HowLoud score (0-100, higher=quieter) to estimated dB
+      // Formula: dB ≈ 80 - (score * 0.4)
+      // Score 100 (very quiet) → ~40 dB
+      // Score 50 (moderate) → ~60 dB
+      // Score 0 (very noisy) → ~80 dB
+      const estimatedDb = Math.round(80 - (result.score * 0.4));
+      fields['129_noise_level_db_est'] = {
+        value: `${estimatedDb} dB`,
+        source: 'HowLoud',
+        confidence: 'Medium'
+      };
     }
 
     console.log(`✅ [HowLoud] Returning ${Object.keys(fields).length} fields`);

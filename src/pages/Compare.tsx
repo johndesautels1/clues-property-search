@@ -335,7 +335,7 @@ const comparisonFields: Record<string, Array<{
   ],
   condition: [
     { key: 'yearBuilt', label: 'Year Built', path: 'details.yearBuilt.value', fieldNum: 25, format: 'number', higherIsBetter: true },
-    { key: 'propertyAge', label: 'Property Age (Years)', path: 'calculated.propertyAge', format: 'number', higherIsBetter: false, missingDataSource: true },
+    { key: 'propertyAge', label: 'Property Age (Years)', path: 'calculated.propertyAge', format: 'number', higherIsBetter: false },
     { key: 'interiorCondition', label: 'Interior Condition', path: 'structural.interiorCondition.value', fieldNum: 48, format: 'text' },
     { key: 'recentRenovations', label: 'Recent Renovations', path: 'structural.recentRenovations.value', fieldNum: 59, format: 'text' },
     { key: 'roofType', label: 'Roof Type', path: 'structural.roofType.value', fieldNum: 39, format: 'text' },
@@ -1060,7 +1060,14 @@ export default function Compare() {
                           return cardProp?.dataCompleteness ?? null;
                         }
                         if (field.path.startsWith('calculated.')) {
-                          // Calculated fields - return null for now (marked as missing data source)
+                          // Calculated fields
+                          if (field.path === 'calculated.propertyAge') {
+                            const yearBuilt = fullProp ? getFieldValue<number>(fullProp.details?.yearBuilt) : cardProp?.yearBuilt;
+                            if (yearBuilt) {
+                              const currentYear = new Date().getFullYear();
+                              return currentYear - yearBuilt;
+                            }
+                          }
                           return null;
                         }
                         if (field.path.startsWith('card.')) {

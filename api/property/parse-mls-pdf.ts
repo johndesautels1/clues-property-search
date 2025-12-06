@@ -347,17 +347,30 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'Water Frontage': '155_water_frontage_yn',
   'Waterfront': '155_water_frontage_yn',
   'Waterfront Y/N': '155_water_frontage_yn',
+  'Water Front': '155_water_frontage_yn',
+  'Waterfrontage': '155_water_frontage_yn',
+  'On Water': '155_water_frontage_yn',
   'Waterfront Ft': '156_waterfront_feet',
   'Waterfront Feet': '156_waterfront_feet',
   'Water Feet': '156_waterfront_feet',
   'Frontage Feet': '156_waterfront_feet',
+  'Water Frontage Ft': '156_waterfront_feet',
+  'Water Frontage Feet': '156_waterfront_feet',
+  'Waterfront Linear Feet': '156_waterfront_feet',
+  'Linear Water Feet': '156_waterfront_feet',
   'Water Access': '157_water_access_yn',
   'Water Access Y/N': '157_water_access_yn',
+  'WaterAccess': '157_water_access_yn',
+  'Access to Water': '157_water_access_yn',
   'Water View': '158_water_view_yn',
   'Water View Y/N': '158_water_view_yn',
+  'WaterView': '158_water_view_yn',
+  'View of Water': '158_water_view_yn',
   'Water Name': '159_water_body_name',
   'Water Body': '159_water_body_name',
   'Body of Water': '159_water_body_name',
+  'Water Body Name': '159_water_body_name',
+  'Waterbody': '159_water_body_name',
   'Water Extras': 'water_extras',
   'Addtl Water Info': 'additional_water_info',
 
@@ -753,6 +766,14 @@ For **"Assigned Spcs"** field (parking spaces):
 
 For **"Subdiv/Condo"** field (may be blank):
 - Extract as: "Subdiv/Condo": "" (or the actual value if present)
+
+For **WATERFRONT fields** (CRITICAL - DO NOT MISS THESE):
+- Look for "Water Frontage", "Waterfront", "Water Front" fields → Extract as "Water Frontage": "Yes" or "No"
+- Look for "Waterfront Ft", "Waterfront Feet", "Water Frontage Feet" → Extract as "Waterfront Ft": 100 (number value)
+- Look for "Water Access", "WaterAccess" → Extract as "Water Access": "Yes" or "No"
+- Look for "Water View", "WaterView" → Extract as "Water View": "Yes" or "No"
+- Look for "Water Name", "Water Body", "Body of Water" → Extract as "Water Name": "Tampa Bay" (text value)
+- These fields may appear in different sections - check Land/Site section, Property Details section, or any "Waterfront" section
 
 **Sections to Extract From:**
 - Header section (MLS#, Address, County, Status, List Price, Subdiv, Beds, Baths, Year Built, Property Style, Pool, ADOM, CDOM, etc.)
