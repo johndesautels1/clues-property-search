@@ -5,7 +5,7 @@ export interface DataSource {
   id: string;
   name: string;
   type: SourceType;
-  tier: 1 | 2 | 3 | 4;
+  tier: 1 | 2 | 3 | 4 | 5;
   icon: string;
   color: string;
   enabled: boolean;
@@ -209,63 +209,65 @@ export const DATA_SOURCES: DataSource[] = [
     description: 'Radon risk zones'
   },
 
-  // Tier 4: LLMs (Fallback - with validation) - enabled, check keys at runtime
-  { 
-    id: 'perplexity', 
-    name: 'Perplexity', 
-    type: 'llm', 
-    tier: 4, 
-    icon: 'zap', 
+  // Tier 4: Perplexity ONLY (Web-grounded LLM - highest LLM priority)
+  {
+    id: 'perplexity',
+    name: 'Perplexity',
+    type: 'llm',
+    tier: 4,
+    icon: 'zap',
     color: 'cyan',
     enabled: true,
     description: 'Web-grounded AI (most reliable)'
   },
-  { 
-    id: 'grok', 
-    name: 'Grok', 
-    type: 'llm', 
-    tier: 4, 
-    icon: 'brain', 
+
+  // Tier 5: Other LLMs (Fallback - lower priority than Perplexity)
+  {
+    id: 'grok',
+    name: 'Grok',
+    type: 'llm',
+    tier: 5,
+    icon: 'brain',
     color: 'blue',
     enabled: true,
     description: 'xAI with web access'
   },
-  { 
-    id: 'claude-opus', 
-    name: 'Claude Opus', 
-    type: 'llm', 
-    tier: 4, 
-    icon: 'brain', 
+  {
+    id: 'claude-opus',
+    name: 'Claude Opus',
+    type: 'llm',
+    tier: 5,
+    icon: 'brain',
     color: 'orange',
     enabled: true,
     description: 'Anthropic flagship'
   },
-  { 
-    id: 'gpt', 
-    name: 'GPT-4o', 
-    type: 'llm', 
-    tier: 4, 
-    icon: 'brain', 
+  {
+    id: 'gpt',
+    name: 'GPT-4o',
+    type: 'llm',
+    tier: 5,
+    icon: 'brain',
     color: 'green',
     enabled: true,
     description: 'OpenAI flagship'
   },
-  { 
-    id: 'claude-sonnet', 
-    name: 'Claude Sonnet', 
-    type: 'llm', 
-    tier: 4, 
-    icon: 'brain', 
+  {
+    id: 'claude-sonnet',
+    name: 'Claude Sonnet',
+    type: 'llm',
+    tier: 5,
+    icon: 'brain',
     color: 'pink',
     enabled: true,
     description: 'Anthropic balanced'
   },
-  { 
-    id: 'gemini', 
-    name: 'Gemini', 
-    type: 'llm', 
-    tier: 4, 
-    icon: 'brain', 
+  {
+    id: 'gemini',
+    name: 'Gemini',
+    type: 'llm',
+    tier: 5,
+    icon: 'brain',
     color: 'purple',
     enabled: true,
     description: 'Google AI'
