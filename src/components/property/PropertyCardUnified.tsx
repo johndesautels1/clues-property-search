@@ -98,7 +98,7 @@ export default function PropertyCardUnified({
     bedrooms: property.bedrooms || (fullProperty ? getFieldValue(fullProperty.details?.bedrooms) as number | null : null),
     bathrooms: property.bathrooms || (fullProperty ? getFieldValue(fullProperty.details?.totalBathrooms) as number | null : null),
     sqft: property.sqft,
-    yearBuilt: property.yearBuilt,
+    yearBuilt: fullProperty ? (getFieldValue(fullProperty.details?.yearBuilt) as number | null) || property.yearBuilt : property.yearBuilt,
     smartScore: property.smartScore,
 
     // FIX #6: Cap data completeness at 100% and calculate correctly
