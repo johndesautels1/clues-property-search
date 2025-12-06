@@ -168,6 +168,46 @@ export const DATA_SOURCES: DataSource[] = [
     enabled: true,
     description: 'Sea level rise risk'
   },
+  {
+    id: 'usgs-elevation',
+    name: 'USGS Elevation',
+    type: 'free-api',
+    tier: 3,
+    icon: 'mountain',
+    color: 'brown',
+    enabled: true,
+    description: 'Elevation above sea level'
+  },
+  {
+    id: 'usgs-earthquake',
+    name: 'USGS Earthquake',
+    type: 'free-api',
+    tier: 3,
+    icon: 'activity',
+    color: 'red',
+    enabled: true,
+    description: 'Earthquake risk assessment'
+  },
+  {
+    id: 'epa-frs',
+    name: 'EPA FRS',
+    type: 'free-api',
+    tier: 3,
+    icon: 'alert-triangle',
+    color: 'orange',
+    enabled: true,
+    description: 'Superfund site proximity'
+  },
+  {
+    id: 'epa-radon',
+    name: 'EPA Radon',
+    type: 'free-api',
+    tier: 3,
+    icon: 'radiation',
+    color: 'yellow',
+    enabled: true,
+    description: 'Radon risk zones'
+  },
 
   // Tier 4: LLMs (Fallback - with validation) - enabled, check keys at runtime
   { 

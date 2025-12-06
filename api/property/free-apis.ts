@@ -893,3 +893,177 @@ export async function callNOAASeaLevel(lat: number, lon: number): Promise<ApiRes
     return { success: false, source: 'NOAA Sea Level', fields, error: String(error) };
   }
 }
+
+// ============================================
+// USGS ELEVATION API - Property Elevation
+// ============================================
+export async function callUSGSElevation(lat: number, lon: number): Promise<ApiResult> {
+  const fields: Record<string, ApiField> = {};
+
+  try {
+    // USGS National Map Elevation Point Query Service
+    const url = `https://epqs.nationalmap.gov/v1/json?x=${lon}&y=${lat}&units=Feet&output=json`;
+
+    const fetchResult = await safeFetch<any>(url, undefined, 'USGS-Elevation');
+
+    if (!fetchResult.success || !fetchResult.data) {
+      return { success: false, source: 'USGS Elevation', fields, error: fetchResult.error || 'Fetch failed' };
+    }
+
+    const data = fetchResult.data;
+
+    // Extract elevation (value field)
+    if (data.value !== undefined && data.value !== null) {
+      const elevation = Math.round(data.value);
+
+      // Only set if > 0 (0 means water or no data)
+      if (elevation > 0) {
+        // Field 64: elevation_feet
+        setField(fields, '64_elevation_feet', elevation, 'USGS Elevation', 'High');
+      }
+    }
+
+    return { success: Object.keys(fields).length > 0, source: 'USGS Elevation', fields };
+
+  } catch (error) {
+    return { success: false, source: 'USGS Elevation', fields, error: String(error) };
+  }
+}
+
+// ============================================
+// USGS EARTHQUAKE API - Seismic Risk
+// ============================================
+export async function callUSGSEarthquake(lat: number, lon: number): Promise<ApiResult> {
+  const fields: Record<string, ApiField> = {};
+
+  try {
+    // Query last 30 years of earthquakes within 100km radius
+    const endDate = new Date().toISOString().split('T')[0];
+    const startDate = new Date(Date.now() - 30 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // Create bounding box (roughly 100km radius)
+    const latBuffer = 0.9; // ~100km
+    const lonBuffer = 1.2; // ~100km (adjusted for latitude)
+
+    const url = `https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=${startDate}&endtime=${endDate}&minlatitude=${lat - latBuffer}&maxlatitude=${lat + latBuffer}&minlongitude=${lon - lonBuffer}&maxlongitude=${lon + lonBuffer}&minmagnitude=2.0`;
+
+    const fetchResult = await safeFetch<any>(url, undefined, 'USGS-Earthquake');
+
+    if (!fetchResult.success || !fetchResult.data) {
+      return { success: false, source: 'USGS Earthquake', fields, error: fetchResult.error || 'Fetch failed' };
+    }
+
+    const data = fetchResult.data;
+
+    // Analyze earthquake history
+    if (data.features && Array.isArray(data.features)) {
+      const earthquakes = data.features;
+      const count = earthquakes.length;
+
+      // Florida has VERY low seismic activity
+      let riskLevel = 'Minimal';
+      if (count > 10) riskLevel = 'Moderate';
+      else if (count > 5) riskLevel = 'Low';
+      else if (count > 0) riskLevel = 'Very Low';
+
+      // Field 123: earthquake_risk
+      setField(fields, '123_earthquake_risk', `${riskLevel} (${count} events in 30 years)`, 'USGS Earthquake', 'High');
+    }
+
+    return { success: Object.keys(fields).length > 0, source: 'USGS Earthquake', fields };
+
+  } catch (error) {
+    return { success: false, source: 'USGS Earthquake', fields, error: String(error) };
+  }
+}
+
+// ============================================
+// EPA FRS API - Superfund & Hazardous Sites
+// ============================================
+export async function callEPAFRS(lat: number, lon: number): Promise<ApiResult> {
+  const fields: Record<string, ApiField> = {};
+
+  try {
+    // EPA Facility Registry Service - search within 5 mile radius
+    // Filter for Superfund (SEMS) sites
+    const url = `https://frs-public.epa.gov/ords/frs_public2/frs_rest_services.get_facilities?latitude83=${lat}&longitude83=${lon}&search_radius=5&pgm_sys_acrnm=SEMS&output=JSON`;
+
+    const fetchResult = await safeFetch<any>(url, undefined, 'EPA-FRS');
+
+    if (!fetchResult.success || !fetchResult.data) {
+      return { success: false, source: 'EPA FRS', fields, error: fetchResult.error || 'Fetch failed' };
+    }
+
+    const data = fetchResult.data;
+
+    // Parse facilities
+    if (data.Results && data.Results.FRSFacility) {
+      const facilities = Array.isArray(data.Results.FRSFacility)
+        ? data.Results.FRSFacility
+        : [data.Results.FRSFacility];
+
+      // Find nearest Superfund site
+      const superfundSites = facilities.filter((f: any) =>
+        f.ProgramSystemAcronym && f.ProgramSystemAcronym.includes('SEMS')
+      );
+
+      if (superfundSites.length > 0) {
+        const nearestSite = superfundSites[0];
+        const facilityName = nearestSite.FacilityName || 'Unknown';
+        const distance = nearestSite.Distance || 'Unknown';
+
+        // Field 127: superfund_site_nearby
+        setField(fields, '127_superfund_site_nearby', `Yes - ${facilityName} (${distance} mi)`, 'EPA FRS', 'High');
+      } else {
+        // No Superfund sites within 5 miles
+        setField(fields, '127_superfund_site_nearby', 'No sites within 5 miles', 'EPA FRS', 'High');
+      }
+    }
+
+    return { success: Object.keys(fields).length > 0, source: 'EPA FRS', fields };
+
+  } catch (error) {
+    return { success: false, source: 'EPA FRS', fields, error: String(error) };
+  }
+}
+
+// ============================================
+// EPA RADON - County-Based Risk Assessment
+// ============================================
+export async function getRadonRisk(county: string, state: string = 'FL'): Promise<ApiResult> {
+  const fields: Record<string, ApiField> = {};
+
+  try {
+    // EPA Radon Zone Map (static data by county)
+    // Zone 1 = High, Zone 2 = Moderate, Zone 3 = Low
+
+    // Florida counties are predominantly Zone 3 (Low Risk)
+    // Source: EPA Map of Radon Zones
+    const FLORIDA_RADON_ZONES: Record<string, string> = {
+      // All Florida counties are Zone 3 (Low) per EPA
+      'Pinellas': 'Zone 3 (Low)',
+      'Hillsborough': 'Zone 3 (Low)',
+      'Pasco': 'Zone 3 (Low)',
+      'Polk': 'Zone 3 (Low)',
+      'Manatee': 'Zone 3 (Low)',
+      'Sarasota': 'Zone 3 (Low)',
+      'Miami-Dade': 'Zone 3 (Low)',
+      'Broward': 'Zone 3 (Low)',
+      'Palm Beach': 'Zone 3 (Low)',
+      'Orange': 'Zone 3 (Low)',
+      'Duval': 'Zone 3 (Low)',
+      // Default for all FL counties
+      'DEFAULT': 'Zone 3 (Low)'
+    };
+
+    const radonZone = FLORIDA_RADON_ZONES[county] || FLORIDA_RADON_ZONES['DEFAULT'];
+
+    // Field 126: radon_risk
+    setField(fields, '126_radon_risk', radonZone, 'EPA Radon', 'High');
+
+    return { success: true, source: 'EPA Radon', fields };
+
+  } catch (error) {
+    return { success: false, source: 'EPA Radon', fields, error: String(error) };
+  }
+}
