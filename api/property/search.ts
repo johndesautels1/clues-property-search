@@ -33,7 +33,8 @@ export const config = {
 // Timeout wrapper for API/LLM calls - prevents hanging
 const STELLAR_MLS_TIMEOUT = 90000; // 90 seconds (1.5 minutes) for Stellar MLS via Bridge API (Tier 1)
 const FREE_API_TIMEOUT = 60000; // 60 seconds for Redfin, Google, and all free APIs (Tier 2 & 3)
-const LLM_TIMEOUT = 180000; // 180 seconds (3 minutes) per LLM call - allows web-search LLMs (Perplexity, Grok) to complete their searches
+const LLM_TIMEOUT = 180000; // 180 seconds (3 minutes) for Claude, GPT-4, Gemini, Grok LLM enrichment (Tier 4)
+const PERPLEXITY_TIMEOUT = 195000; // 195 seconds (3.25 minutes) for Perplexity (needs extra time for deep web search)
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([
     promise,
@@ -3019,14 +3020,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const enabledLlms = llmCascade.filter(llm => llm.enabled);
 
         if (enabledLlms.length > 0) {
-          console.log(`\n=== Calling ${enabledLlms.length} LLMs in PARALLEL with ${LLM_TIMEOUT}ms timeout ===`);
+          console.log(`\n=== Calling ${enabledLlms.length} LLMs in PARALLEL (Perplexity: ${PERPLEXITY_TIMEOUT}ms, Others: ${LLM_TIMEOUT}ms) ===`);
 
           // Run ALL enabled LLMs in parallel with timeout wrapper
           const llmResults = await Promise.allSettled(
             enabledLlms.map(llm =>
               withTimeout(
                 llm.fn(searchQuery),
-                LLM_TIMEOUT,
+                llm.id === 'perplexity' ? PERPLEXITY_TIMEOUT : LLM_TIMEOUT,
                 { fields: {}, error: 'timeout' }
               )
             )
