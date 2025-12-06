@@ -34,6 +34,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
 }
 
 const LLM_TIMEOUT = 55000; // 55s per LLM call (within 60s Vercel Pro limit)
+const PERPLEXITY_TIMEOUT = 57000; // 57s for Perplexity (extra 2s for web search, still within 60s limit)
 
 // ============================================
 // COMPLETE TYPE MAP - ALL 168 FIELDS from fields-schema.ts
@@ -864,13 +865,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    console.log(`[RETRY-LLM] Calling ${engineId} for: ${address} (timeout: ${LLM_TIMEOUT}ms)`);
+    const timeout = engineId === 'perplexity' ? PERPLEXITY_TIMEOUT : LLM_TIMEOUT;
+    console.log(`[RETRY-LLM] Calling ${engineId} for: ${address} (timeout: ${timeout}ms)`);
 
     // Wrap LLM call with timeout to prevent hanging
     const result = await withTimeout(
       callFn(address),
-      LLM_TIMEOUT,
-      { fields: {}, error: `${engineId} timed out after ${LLM_TIMEOUT / 1000}s` }
+      timeout,
+      { fields: {}, error: `${engineId} timed out after ${timeout / 1000}s` }
     );
 
     console.log(`[RETRY-LLM] ${engineId} returned ${Object.keys(result.fields).length} fields`);
