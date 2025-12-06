@@ -10,7 +10,9 @@ import {
   Plus, X, Scale, TrendingUp, TrendingDown, Minus,
   ChevronDown, Search, Home, DollarSign, Ruler, Calendar,
   MapPin, Building, Zap, Shield, BarChart3, Eye, RefreshCw,
-  AlertTriangle, CheckCircle, Info, PieChart, Table2
+  AlertTriangle, CheckCircle, Info, PieChart, Table2, Receipt,
+  Maximize2, TreePine, Car, Waves, GraduationCap, Navigation,
+  Users, CloudRain, FileText
 } from 'lucide-react';
 import { usePropertyStore } from '@/store/propertyStore';
 import type { PropertyCard, Property } from '@/types/property';
@@ -256,100 +258,252 @@ function mapToAnalyticsProperty(cardProp: PropertyCard, fullProp?: Property): An
 
 // Comparison field categories
 const fieldCategories = [
-  { id: 'overview', label: 'Overview', icon: Home },
-  { id: 'financial', label: 'Financial', icon: DollarSign },
-  { id: 'details', label: 'Property Details', icon: Building },
-  { id: 'location', label: 'Location & Schools', icon: MapPin },
-  { id: 'structural', label: 'Structural', icon: Ruler },
-  { id: 'utilities', label: 'Utilities & Environment', icon: Zap },
-  { id: 'risks', label: 'Risk Assessment', icon: Shield },
+  { id: 'scores', label: 'Smart Scores & Rankings', icon: TrendingUp },
+  { id: 'price', label: 'Price & Value Analysis', icon: DollarSign },
+  { id: 'cost', label: 'Total Cost of Ownership', icon: Receipt },
+  { id: 'size', label: 'Size & Space', icon: Maximize2 },
+  { id: 'condition', label: 'Property Condition & Age', icon: Calendar },
+  { id: 'interior', label: 'Interior Features', icon: Home },
+  { id: 'exterior', label: 'Exterior & Outdoor Features', icon: TreePine },
+  { id: 'parking', label: 'Parking & Garage', icon: Car },
+  { id: 'building', label: 'Building Details (Condos)', icon: Building },
+  { id: 'waterfront', label: 'Waterfront & Views', icon: Waves },
+  { id: 'location', label: 'Location Scores', icon: MapPin },
+  { id: 'schools', label: 'Schools', icon: GraduationCap },
+  { id: 'distances', label: 'Distances & Amenities', icon: Navigation },
+  { id: 'safety', label: 'Safety & Crime', icon: Shield },
+  { id: 'community', label: 'Community & HOA', icon: Users },
+  { id: 'environmental', label: 'Environmental & Climate Risk', icon: CloudRain },
+  { id: 'utilities', label: 'Utilities & Infrastructure', icon: Zap },
+  { id: 'investment', label: 'Investment & Rental Metrics', icon: BarChart3 },
+  { id: 'leasing', label: 'Leasing & Restrictions', icon: FileText },
+  { id: 'legal', label: 'Legal & Compliance', icon: Scale },
 ];
 
-// Field definitions for comparison
+// Field definitions for comparison (mapped to 168-field schema)
 const comparisonFields: Record<string, Array<{
   key: string;
   label: string;
   path: string;
+  fieldNum?: number;
   format?: 'currency' | 'number' | 'percent' | 'text' | 'boolean' | 'rating';
   higherIsBetter?: boolean;
+  missingDataSource?: boolean;
 }>> = {
-  overview: [
-    { key: 'price', label: 'Listing Price', path: 'address.listingPrice', format: 'currency', higherIsBetter: false },
-    { key: 'pricePerSqft', label: 'Price per Sqft', path: 'address.pricePerSqft', format: 'currency', higherIsBetter: false },
+  scores: [
     { key: 'smartScore', label: 'Smart Score', path: 'smartScore', format: 'number', higherIsBetter: true },
-    { key: 'dataCompleteness', label: 'Data Completeness', path: 'dataCompleteness', format: 'percent', higherIsBetter: true },
-    { key: 'listingStatus', label: 'Listing Status', path: 'address.listingStatus', format: 'text' },
-    { key: 'daysOnMarket', label: 'Days on Market', path: 'card.daysOnMarket', format: 'number', higherIsBetter: false },
+    { key: 'dataCompleteness', label: 'Data Completeness %', path: 'dataCompleteness', format: 'percent', higherIsBetter: true },
+    { key: 'pricePerSqftRank', label: 'Price/Sqft Ranking', path: 'calculated.pricePerSqftRank', format: 'text', missingDataSource: true },
+    { key: 'valueScore', label: 'Value Score', path: 'calculated.valueScore', format: 'number', higherIsBetter: true, missingDataSource: true },
+    { key: 'locationScore', label: 'Location Score', path: 'calculated.locationScore', format: 'number', higherIsBetter: true, missingDataSource: true },
   ],
-  financial: [
-    { key: 'annualTaxes', label: 'Annual Taxes', path: 'details.annualTaxes', format: 'currency', higherIsBetter: false },
-    { key: 'hoaFeeAnnual', label: 'HOA Fee (Annual)', path: 'details.hoaFeeAnnual', format: 'currency', higherIsBetter: false },
-    { key: 'assessedValue', label: 'Assessed Value', path: 'details.assessedValue', format: 'currency', higherIsBetter: true },
-    { key: 'marketValueEstimate', label: 'Market Value Est.', path: 'details.marketValueEstimate', format: 'currency', higherIsBetter: true },
-    { key: 'rentalEstimateMonthly', label: 'Rental Est. (Monthly)', path: 'financial.rentalEstimateMonthly', format: 'currency', higherIsBetter: true },
-    { key: 'rentalYieldEst', label: 'Rental Yield Est.', path: 'financial.rentalYieldEst', format: 'percent', higherIsBetter: true },
-    { key: 'capRateEst', label: 'Cap Rate Est.', path: 'financial.capRateEst', format: 'percent', higherIsBetter: true },
-    { key: 'insuranceEstAnnual', label: 'Insurance Est. (Annual)', path: 'financial.insuranceEstAnnual', format: 'currency', higherIsBetter: false },
-    { key: 'lastSalePrice', label: 'Last Sale Price', path: 'details.lastSalePrice', format: 'currency' },
-    { key: 'lastSaleDate', label: 'Last Sale Date', path: 'details.lastSaleDate', format: 'text' },
+  price: [
+    { key: 'listingPrice', label: 'Listing Price', path: 'fields.10_listing_price.value', fieldNum: 10, format: 'currency', higherIsBetter: false },
+    { key: 'pricePerSqft', label: 'Price Per Sq Ft', path: 'fields.11_price_per_sqft.value', fieldNum: 11, format: 'currency', higherIsBetter: false },
+    { key: 'marketValueEstimate', label: 'Market Value Estimate', path: 'fields.12_market_value_estimate.value', fieldNum: 12, format: 'currency', higherIsBetter: true },
+    { key: 'assessedValue', label: 'Assessed Value', path: 'fields.15_assessed_value.value', fieldNum: 15, format: 'currency', higherIsBetter: true },
+    { key: 'redfinEstimate', label: 'Redfin Estimate', path: 'fields.16_redfin_estimate.value', fieldNum: 16, format: 'currency', higherIsBetter: true },
+    { key: 'lastSalePrice', label: 'Last Sale Price', path: 'fields.14_last_sale_price.value', fieldNum: 14, format: 'currency' },
+    { key: 'lastSaleDate', label: 'Last Sale Date', path: 'fields.13_last_sale_date.value', fieldNum: 13, format: 'text' },
+    { key: 'priceVsMedian', label: 'Price vs Median %', path: 'fields.94_price_vs_median_percent.value', fieldNum: 94, format: 'percent', higherIsBetter: false },
+    { key: 'medianHomePrice', label: 'Median Home Price (Neighborhood)', path: 'fields.91_median_home_price_neighborhood.value', fieldNum: 91, format: 'currency' },
+    { key: 'pricePerSqftAvg', label: 'Price Per Sq Ft (Recent Avg)', path: 'fields.92_price_per_sqft_recent_avg.value', fieldNum: 92, format: 'currency' },
   ],
-  details: [
-    { key: 'bedrooms', label: 'Bedrooms', path: 'details.bedrooms', format: 'number', higherIsBetter: true },
-    { key: 'totalBathrooms', label: 'Total Bathrooms', path: 'details.totalBathrooms', format: 'number', higherIsBetter: true },
-    { key: 'livingSqft', label: 'Living Sqft', path: 'details.livingSqft', format: 'number', higherIsBetter: true },
-    { key: 'lotSizeSqft', label: 'Lot Size (Sqft)', path: 'details.lotSizeSqft', format: 'number', higherIsBetter: true },
-    { key: 'yearBuilt', label: 'Year Built', path: 'details.yearBuilt', format: 'number', higherIsBetter: true },
-    { key: 'stories', label: 'Stories', path: 'details.stories', format: 'number' },
-    { key: 'garageSpaces', label: 'Garage Spaces', path: 'details.garageSpaces', format: 'number', higherIsBetter: true },
-    { key: 'propertyType', label: 'Property Type', path: 'details.propertyType', format: 'text' },
-    { key: 'hoaYn', label: 'HOA Required', path: 'details.hoaYn', format: 'boolean' },
+  cost: [
+    { key: 'annualTaxes', label: 'Annual Taxes', path: 'fields.35_annual_taxes.value', fieldNum: 35, format: 'currency', higherIsBetter: false },
+    { key: 'propertyTaxRate', label: 'Property Tax Rate', path: 'fields.37_property_tax_rate.value', fieldNum: 37, format: 'percent', higherIsBetter: false },
+    { key: 'hoaFeeAnnual', label: 'HOA Fee (Annual)', path: 'fields.31_hoa_fee_annual.value', fieldNum: 31, format: 'currency', higherIsBetter: false },
+    { key: 'insuranceEstAnnual', label: 'Insurance Estimate (Annual)', path: 'fields.97_insurance_est_annual.value', fieldNum: 97, format: 'currency', higherIsBetter: false },
+    { key: 'cddFee', label: 'Annual CDD Fee', path: 'fields.153_annual_cdd_fee.value', fieldNum: 153, format: 'currency', higherIsBetter: false },
+    { key: 'avgElectricBill', label: 'Avg Electric Bill', path: 'fields.105_avg_electric_bill.value', fieldNum: 105, format: 'text', higherIsBetter: false },
+    { key: 'avgWaterBill', label: 'Avg Water Bill', path: 'fields.107_avg_water_bill.value', fieldNum: 107, format: 'text', higherIsBetter: false },
+    { key: 'specialAssessments', label: 'Special Assessments', path: 'fields.138_special_assessments.value', fieldNum: 138, format: 'text' },
+    { key: 'monthlyCarryingCost', label: 'Monthly Carrying Cost', path: 'calculated.monthlyCarryingCost', format: 'currency', higherIsBetter: false, missingDataSource: true },
+    { key: 'annualCarryingCost', label: 'Annual Carrying Cost', path: 'calculated.annualCarryingCost', format: 'currency', higherIsBetter: false, missingDataSource: true },
+  ],
+  size: [
+    { key: 'livingSqft', label: 'Living Sq Ft', path: 'fields.21_living_sqft.value', fieldNum: 21, format: 'number', higherIsBetter: true },
+    { key: 'totalSqftUnderRoof', label: 'Total Sq Ft Under Roof', path: 'fields.22_total_sqft_under_roof.value', fieldNum: 22, format: 'number', higherIsBetter: true },
+    { key: 'lotSizeSqft', label: 'Lot Size (Sq Ft)', path: 'fields.23_lot_size_sqft.value', fieldNum: 23, format: 'number', higherIsBetter: true },
+    { key: 'lotSizeAcres', label: 'Lot Size (Acres)', path: 'fields.24_lot_size_acres.value', fieldNum: 24, format: 'number', higherIsBetter: true },
+    { key: 'bedrooms', label: 'Bedrooms', path: 'fields.17_bedrooms.value', fieldNum: 17, format: 'number', higherIsBetter: true },
+    { key: 'fullBathrooms', label: 'Full Bathrooms', path: 'fields.18_full_bathrooms.value', fieldNum: 18, format: 'number', higherIsBetter: true },
+    { key: 'halfBathrooms', label: 'Half Bathrooms', path: 'fields.19_half_bathrooms.value', fieldNum: 19, format: 'number', higherIsBetter: true },
+    { key: 'totalBathrooms', label: 'Total Bathrooms', path: 'fields.20_total_bathrooms.value', fieldNum: 20, format: 'number', higherIsBetter: true },
+    { key: 'stories', label: 'Stories', path: 'fields.27_stories.value', fieldNum: 27, format: 'number' },
+    { key: 'floorsInUnit', label: 'Floors in Unit', path: 'fields.148_floors_in_unit.value', fieldNum: 148, format: 'number' },
+  ],
+  condition: [
+    { key: 'yearBuilt', label: 'Year Built', path: 'fields.25_year_built.value', fieldNum: 25, format: 'number', higherIsBetter: true },
+    { key: 'propertyAge', label: 'Property Age (Years)', path: 'calculated.propertyAge', format: 'number', higherIsBetter: false, missingDataSource: true },
+    { key: 'interiorCondition', label: 'Interior Condition', path: 'fields.48_interior_condition.value', fieldNum: 48, format: 'text' },
+    { key: 'recentRenovations', label: 'Recent Renovations', path: 'fields.59_recent_renovations.value', fieldNum: 59, format: 'text' },
+    { key: 'roofType', label: 'Roof Type', path: 'fields.39_roof_type.value', fieldNum: 39, format: 'text' },
+    { key: 'roofAgeEst', label: 'Roof Age (Est)', path: 'fields.40_roof_age_est.value', fieldNum: 40, format: 'text' },
+    { key: 'hvacType', label: 'HVAC Type', path: 'fields.45_hvac_type.value', fieldNum: 45, format: 'text' },
+    { key: 'hvacAge', label: 'HVAC Age', path: 'fields.46_hvac_age.value', fieldNum: 46, format: 'text' },
+    { key: 'permitHistoryRoof', label: 'Permit History - Roof', path: 'fields.60_permit_history_roof.value', fieldNum: 60, format: 'text' },
+    { key: 'permitHistoryHvac', label: 'Permit History - HVAC', path: 'fields.61_permit_history_hvac.value', fieldNum: 61, format: 'text' },
+  ],
+  interior: [
+    { key: 'flooringType', label: 'Flooring Type', path: 'fields.49_flooring_type.value', fieldNum: 49, format: 'text' },
+    { key: 'kitchenFeatures', label: 'Kitchen Features', path: 'fields.50_kitchen_features.value', fieldNum: 50, format: 'text' },
+    { key: 'appliancesIncluded', label: 'Appliances Included', path: 'fields.51_appliances_included.value', fieldNum: 51, format: 'text' },
+    { key: 'fireplaceYn', label: 'Fireplace', path: 'fields.52_fireplace_yn.value', fieldNum: 52, format: 'boolean' },
+    { key: 'fireplaceCount', label: 'Fireplace Count', path: 'fields.53_fireplace_count.value', fieldNum: 53, format: 'number' },
+    { key: 'laundryType', label: 'Laundry Type', path: 'fields.47_laundry_type.value', fieldNum: 47, format: 'text' },
+    { key: 'interiorFeatures', label: 'Interior Features', path: 'fields.167_interior_features.value', fieldNum: 167, format: 'text' },
+    { key: 'smartHomeFeatures', label: 'Smart Home Features', path: 'fields.134_smart_home_features.value', fieldNum: 134, format: 'text' },
+    { key: 'waterHeaterType', label: 'Water Heater Type', path: 'fields.43_water_heater_type.value', fieldNum: 43, format: 'text' },
+  ],
+  exterior: [
+    { key: 'exteriorMaterial', label: 'Exterior Material', path: 'fields.41_exterior_material.value', fieldNum: 41, format: 'text' },
+    { key: 'foundation', label: 'Foundation', path: 'fields.42_foundation.value', fieldNum: 42, format: 'text' },
+    { key: 'poolYn', label: 'Pool', path: 'fields.54_pool_yn.value', fieldNum: 54, format: 'boolean' },
+    { key: 'poolType', label: 'Pool Type', path: 'fields.55_pool_type.value', fieldNum: 55, format: 'text' },
+    { key: 'deckPatio', label: 'Deck/Patio', path: 'fields.56_deck_patio.value', fieldNum: 56, format: 'text' },
+    { key: 'fence', label: 'Fence', path: 'fields.57_fence.value', fieldNum: 57, format: 'text' },
+    { key: 'landscaping', label: 'Landscaping', path: 'fields.58_landscaping.value', fieldNum: 58, format: 'text' },
+    { key: 'lotFeatures', label: 'Lot Features', path: 'fields.132_lot_features.value', fieldNum: 132, format: 'text' },
+    { key: 'exteriorFeatures', label: 'Exterior Features', path: 'fields.168_exterior_features.value', fieldNum: 168, format: 'text' },
+    { key: 'frontExposure', label: 'Front Exposure', path: 'fields.154_front_exposure.value', fieldNum: 154, format: 'text' },
+  ],
+  parking: [
+    { key: 'garageSpaces', label: 'Garage Spaces', path: 'fields.28_garage_spaces.value', fieldNum: 28, format: 'number', higherIsBetter: true },
+    { key: 'garageType', label: 'Garage Type', path: 'fields.44_garage_type.value', fieldNum: 44, format: 'text' },
+    { key: 'garageAttached', label: 'Garage Attached', path: 'fields.141_garage_attached_yn.value', fieldNum: 141, format: 'boolean' },
+    { key: 'parkingTotal', label: 'Parking Total', path: 'fields.29_parking_total.value', fieldNum: 29, format: 'text' },
+    { key: 'carportYn', label: 'Carport', path: 'fields.139_carport_yn.value', fieldNum: 139, format: 'boolean' },
+    { key: 'carportSpaces', label: 'Carport Spaces', path: 'fields.140_carport_spaces.value', fieldNum: 140, format: 'number' },
+    { key: 'parkingFeatures', label: 'Parking Features', path: 'fields.142_parking_features.value', fieldNum: 142, format: 'text' },
+    { key: 'assignedParkingSpaces', label: 'Assigned Parking Spaces', path: 'fields.143_assigned_parking_spaces.value', fieldNum: 143, format: 'number' },
+    { key: 'evCharging', label: 'EV Charging', path: 'fields.133_ev_charging.value', fieldNum: 133, format: 'text' },
+  ],
+  building: [
+    { key: 'propertyType', label: 'Property Type', path: 'fields.26_property_type.value', fieldNum: 26, format: 'text' },
+    { key: 'floorNumber', label: 'Floor Number', path: 'fields.144_floor_number.value', fieldNum: 144, format: 'number' },
+    { key: 'buildingTotalFloors', label: 'Building Total Floors', path: 'fields.145_building_total_floors.value', fieldNum: 145, format: 'number' },
+    { key: 'buildingNameNumber', label: 'Building Name/Number', path: 'fields.146_building_name_number.value', fieldNum: 146, format: 'text' },
+    { key: 'buildingElevator', label: 'Building Elevator', path: 'fields.147_building_elevator_yn.value', fieldNum: 147, format: 'boolean' },
+    { key: 'ownershipType', label: 'Ownership Type', path: 'fields.34_ownership_type.value', fieldNum: 34, format: 'text' },
+  ],
+  waterfront: [
+    { key: 'waterFrontageYn', label: 'Water Frontage', path: 'fields.155_water_frontage_yn.value', fieldNum: 155, format: 'boolean' },
+    { key: 'waterfrontFeet', label: 'Waterfront Feet', path: 'fields.156_waterfront_feet.value', fieldNum: 156, format: 'number', higherIsBetter: true },
+    { key: 'waterAccessYn', label: 'Water Access', path: 'fields.157_water_access_yn.value', fieldNum: 157, format: 'boolean' },
+    { key: 'waterViewYn', label: 'Water View', path: 'fields.158_water_view_yn.value', fieldNum: 158, format: 'boolean' },
+    { key: 'waterBodyName', label: 'Water Body Name', path: 'fields.159_water_body_name.value', fieldNum: 159, format: 'text' },
+    { key: 'viewType', label: 'View Type', path: 'fields.131_view_type.value', fieldNum: 131, format: 'text' },
+    { key: 'distanceBeach', label: 'Distance to Beach (mi)', path: 'fields.87_distance_beach_mi.value', fieldNum: 87, format: 'number', higherIsBetter: false },
   ],
   location: [
-    { key: 'walkScore', label: 'Walk Score', path: 'location.walkScore', format: 'number', higherIsBetter: true },
-    { key: 'transitScore', label: 'Transit Score', path: 'location.transitScore', format: 'number', higherIsBetter: true },
-    { key: 'bikeScore', label: 'Bike Score', path: 'location.bikeScore', format: 'number', higherIsBetter: true },
-    { key: 'elementaryRating', label: 'Elementary School Rating', path: 'location.elementaryRating', format: 'rating', higherIsBetter: true },
-    { key: 'middleRating', label: 'Middle School Rating', path: 'location.middleRating', format: 'rating', higherIsBetter: true },
-    { key: 'highRating', label: 'High School Rating', path: 'location.highRating', format: 'rating', higherIsBetter: true },
-    { key: 'distanceGroceryMiles', label: 'Nearest Grocery (mi)', path: 'location.distanceGroceryMiles', format: 'number', higherIsBetter: false },
-    { key: 'distanceHospitalMiles', label: 'Nearest Hospital (mi)', path: 'location.distanceHospitalMiles', format: 'number', higherIsBetter: false },
-    { key: 'distanceBeachMiles', label: 'Nearest Beach (mi)', path: 'location.distanceBeachMiles', format: 'number', higherIsBetter: false },
-    { key: 'neighborhoodSafetyRating', label: 'Neighborhood Safety', path: 'location.neighborhoodSafetyRating', format: 'text' },
+    { key: 'walkScore', label: 'Walk Score', path: 'fields.74_walk_score.value', fieldNum: 74, format: 'number', higherIsBetter: true },
+    { key: 'transitScore', label: 'Transit Score', path: 'fields.75_transit_score.value', fieldNum: 75, format: 'number', higherIsBetter: true },
+    { key: 'bikeScore', label: 'Bike Score', path: 'fields.76_bike_score.value', fieldNum: 76, format: 'number', higherIsBetter: true },
+    { key: 'walkabilityDesc', label: 'Walkability Description', path: 'fields.80_walkability_description.value', fieldNum: 80, format: 'text' },
+    { key: 'publicTransitAccess', label: 'Public Transit Access', path: 'fields.81_public_transit_access.value', fieldNum: 81, format: 'text' },
+    { key: 'commuteCityCenter', label: 'Commute to City Center', path: 'fields.82_commute_to_city_center.value', fieldNum: 82, format: 'text' },
+    { key: 'noiseLevel', label: 'Noise Level', path: 'fields.78_noise_level.value', fieldNum: 78, format: 'text', higherIsBetter: false },
+    { key: 'noiseLevelDb', label: 'Noise Level (dB Est)', path: 'fields.129_noise_level_db_est.value', fieldNum: 129, format: 'text', higherIsBetter: false },
+    { key: 'trafficLevel', label: 'Traffic Level', path: 'fields.79_traffic_level.value', fieldNum: 79, format: 'text', higherIsBetter: false },
+    { key: 'elevationFeet', label: 'Elevation (feet)', path: 'fields.64_elevation_feet.value', fieldNum: 64, format: 'number' },
   ],
-  structural: [
-    { key: 'roofType', label: 'Roof Type', path: 'structural.roofType', format: 'text' },
-    { key: 'roofAgeEst', label: 'Roof Age Est.', path: 'structural.roofAgeEst', format: 'text' },
-    { key: 'exteriorMaterial', label: 'Exterior Material', path: 'structural.exteriorMaterial', format: 'text' },
-    { key: 'foundation', label: 'Foundation', path: 'structural.foundation', format: 'text' },
-    { key: 'hvacType', label: 'HVAC Type', path: 'structural.hvacType', format: 'text' },
-    { key: 'hvacAge', label: 'HVAC Age', path: 'structural.hvacAge', format: 'text' },
-    { key: 'poolYn', label: 'Has Pool', path: 'structural.poolYn', format: 'boolean' },
-    { key: 'poolType', label: 'Pool Type', path: 'structural.poolType', format: 'text' },
-    { key: 'fireplaceYn', label: 'Has Fireplace', path: 'structural.fireplaceYn', format: 'boolean' },
-    { key: 'interiorCondition', label: 'Interior Condition', path: 'structural.interiorCondition', format: 'text' },
+  schools: [
+    { key: 'schoolDistrict', label: 'School District', path: 'fields.63_school_district.value', fieldNum: 63, format: 'text' },
+    { key: 'elementarySchool', label: 'Elementary School', path: 'fields.65_elementary_school.value', fieldNum: 65, format: 'text' },
+    { key: 'elementaryRating', label: 'Elementary Rating', path: 'fields.66_elementary_rating.value', fieldNum: 66, format: 'rating', higherIsBetter: true },
+    { key: 'elementaryDistance', label: 'Elementary Distance (mi)', path: 'fields.67_elementary_distance_mi.value', fieldNum: 67, format: 'number', higherIsBetter: false },
+    { key: 'middleSchool', label: 'Middle School', path: 'fields.68_middle_school.value', fieldNum: 68, format: 'text' },
+    { key: 'middleRating', label: 'Middle Rating', path: 'fields.69_middle_rating.value', fieldNum: 69, format: 'rating', higherIsBetter: true },
+    { key: 'middleDistance', label: 'Middle Distance (mi)', path: 'fields.70_middle_distance_mi.value', fieldNum: 70, format: 'number', higherIsBetter: false },
+    { key: 'highSchool', label: 'High School', path: 'fields.71_high_school.value', fieldNum: 71, format: 'text' },
+    { key: 'highRating', label: 'High Rating', path: 'fields.72_high_rating.value', fieldNum: 72, format: 'rating', higherIsBetter: true },
+    { key: 'highDistance', label: 'High Distance (mi)', path: 'fields.73_high_distance_mi.value', fieldNum: 73, format: 'number', higherIsBetter: false },
+  ],
+  distances: [
+    { key: 'distanceGrocery', label: 'Distance to Grocery (mi)', path: 'fields.83_distance_grocery_mi.value', fieldNum: 83, format: 'number', higherIsBetter: false },
+    { key: 'distanceHospital', label: 'Distance to Hospital (mi)', path: 'fields.84_distance_hospital_mi.value', fieldNum: 84, format: 'number', higherIsBetter: false },
+    { key: 'distanceAirport', label: 'Distance to Airport (mi)', path: 'fields.85_distance_airport_mi.value', fieldNum: 85, format: 'number', higherIsBetter: false },
+    { key: 'distancePark', label: 'Distance to Park (mi)', path: 'fields.86_distance_park_mi.value', fieldNum: 86, format: 'number', higherIsBetter: false },
+    { key: 'distanceBeach', label: 'Distance to Beach (mi)', path: 'fields.87_distance_beach_mi.value', fieldNum: 87, format: 'number', higherIsBetter: false },
+    { key: 'emergencyServicesDistance', label: 'Emergency Services Distance', path: 'fields.116_emergency_services_distance.value', fieldNum: 116, format: 'text', higherIsBetter: false },
+  ],
+  safety: [
+    { key: 'safetyScore', label: 'Safety Score', path: 'fields.77_safety_score.value', fieldNum: 77, format: 'number', higherIsBetter: true },
+    { key: 'violentCrimeIndex', label: 'Violent Crime Index', path: 'fields.88_violent_crime_index.value', fieldNum: 88, format: 'text', higherIsBetter: false },
+    { key: 'propertyCrimeIndex', label: 'Property Crime Index', path: 'fields.89_property_crime_index.value', fieldNum: 89, format: 'text', higherIsBetter: false },
+    { key: 'neighborhoodSafetyRating', label: 'Neighborhood Safety Rating', path: 'fields.90_neighborhood_safety_rating.value', fieldNum: 90, format: 'text', higherIsBetter: true },
+  ],
+  community: [
+    { key: 'hoaYn', label: 'HOA Required', path: 'fields.30_hoa_yn.value', fieldNum: 30, format: 'boolean' },
+    { key: 'hoaName', label: 'HOA Name', path: 'fields.32_hoa_name.value', fieldNum: 32, format: 'text' },
+    { key: 'hoaIncludes', label: 'HOA Includes', path: 'fields.33_hoa_includes.value', fieldNum: 33, format: 'text' },
+    { key: 'communityFeatures', label: 'Community Features', path: 'fields.166_community_features.value', fieldNum: 166, format: 'text' },
+    { key: 'neighborhood', label: 'Neighborhood', path: 'fields.6_neighborhood.value', fieldNum: 6, format: 'text' },
+    { key: 'subdivisionName', label: 'Subdivision Name', path: 'fields.149_subdivision_name.value', fieldNum: 149, format: 'text' },
+  ],
+  environmental: [
+    { key: 'airQualityIndex', label: 'Air Quality Index', path: 'fields.117_air_quality_index.value', fieldNum: 117, format: 'text', higherIsBetter: false },
+    { key: 'airQualityGrade', label: 'Air Quality Grade', path: 'fields.118_air_quality_grade.value', fieldNum: 118, format: 'text', higherIsBetter: true },
+    { key: 'floodZone', label: 'Flood Zone', path: 'fields.119_flood_zone.value', fieldNum: 119, format: 'text' },
+    { key: 'floodRiskLevel', label: 'Flood Risk Level', path: 'fields.120_flood_risk_level.value', fieldNum: 120, format: 'text', higherIsBetter: false },
+    { key: 'climateRisk', label: 'Climate Risk', path: 'fields.121_climate_risk.value', fieldNum: 121, format: 'text', higherIsBetter: false },
+    { key: 'wildfireRisk', label: 'Wildfire Risk', path: 'fields.122_wildfire_risk.value', fieldNum: 122, format: 'text', higherIsBetter: false },
+    { key: 'earthquakeRisk', label: 'Earthquake Risk', path: 'fields.123_earthquake_risk.value', fieldNum: 123, format: 'text', higherIsBetter: false },
+    { key: 'hurricaneRisk', label: 'Hurricane Risk', path: 'fields.124_hurricane_risk.value', fieldNum: 124, format: 'text', higherIsBetter: false },
+    { key: 'tornadoRisk', label: 'Tornado Risk', path: 'fields.125_tornado_risk.value', fieldNum: 125, format: 'text', higherIsBetter: false },
+    { key: 'radonRisk', label: 'Radon Risk', path: 'fields.126_radon_risk.value', fieldNum: 126, format: 'text', higherIsBetter: false },
+    { key: 'superfundSiteNearby', label: 'Superfund Site Nearby', path: 'fields.127_superfund_site_nearby.value', fieldNum: 127, format: 'text', higherIsBetter: false },
+    { key: 'seaLevelRiseRisk', label: 'Sea Level Rise Risk', path: 'fields.128_sea_level_rise_risk.value', fieldNum: 128, format: 'text', higherIsBetter: false },
+    { key: 'solarPotential', label: 'Solar Potential', path: 'fields.130_solar_potential.value', fieldNum: 130, format: 'text', higherIsBetter: true },
   ],
   utilities: [
-    { key: 'electricProvider', label: 'Electric Provider', path: 'utilities.electricProvider', format: 'text' },
-    { key: 'waterProvider', label: 'Water Provider', path: 'utilities.waterProvider', format: 'text' },
-    { key: 'naturalGas', label: 'Natural Gas', path: 'utilities.naturalGas', format: 'text' },
-    { key: 'maxInternetSpeed', label: 'Max Internet Speed', path: 'utilities.maxInternetSpeed', format: 'text' },
-    { key: 'fiberAvailable', label: 'Fiber Available', path: 'utilities.fiberAvailable', format: 'boolean' },
-    { key: 'avgElectricBill', label: 'Avg Electric Bill', path: 'utilities.avgElectricBill', format: 'text' },
-    { key: 'avgWaterBill', label: 'Avg Water Bill', path: 'utilities.avgWaterBill', format: 'text' },
-    { key: 'solarPotential', label: 'Solar Potential', path: 'utilities.solarPotential', format: 'text' },
-    { key: 'smartHomeFeatures', label: 'Smart Home Features', path: 'utilities.smartHomeFeatures', format: 'text' },
+    { key: 'electricProvider', label: 'Electric Provider', path: 'fields.104_electric_provider.value', fieldNum: 104, format: 'text' },
+    { key: 'waterProvider', label: 'Water Provider', path: 'fields.106_water_provider.value', fieldNum: 106, format: 'text' },
+    { key: 'sewerProvider', label: 'Sewer Provider', path: 'fields.108_sewer_provider.value', fieldNum: 108, format: 'text' },
+    { key: 'naturalGas', label: 'Natural Gas', path: 'fields.109_natural_gas.value', fieldNum: 109, format: 'text' },
+    { key: 'trashProvider', label: 'Trash Provider', path: 'fields.110_trash_provider.value', fieldNum: 110, format: 'text' },
+    { key: 'internetProvidersTop3', label: 'Internet Providers (Top 3)', path: 'fields.111_internet_providers_top3.value', fieldNum: 111, format: 'text' },
+    { key: 'maxInternetSpeed', label: 'Max Internet Speed', path: 'fields.112_max_internet_speed.value', fieldNum: 112, format: 'text', higherIsBetter: true },
+    { key: 'fiberAvailable', label: 'Fiber Available', path: 'fields.113_fiber_available.value', fieldNum: 113, format: 'text', higherIsBetter: true },
+    { key: 'cableTvProvider', label: 'Cable TV Provider', path: 'fields.114_cable_tv_provider.value', fieldNum: 114, format: 'text' },
+    { key: 'cellCoverageQuality', label: 'Cell Coverage Quality', path: 'fields.115_cell_coverage_quality.value', fieldNum: 115, format: 'text', higherIsBetter: true },
   ],
-  risks: [
-    { key: 'floodZone', label: 'Flood Zone', path: 'utilities.floodZone', format: 'text' },
-    { key: 'floodRiskLevel', label: 'Flood Risk Level', path: 'utilities.floodRiskLevel', format: 'text' },
-    { key: 'hurricaneRisk', label: 'Hurricane Risk', path: 'utilities.hurricaneRisk', format: 'text' },
-    { key: 'wildfireRisk', label: 'Wildfire Risk', path: 'utilities.wildfireRisk', format: 'text' },
-    { key: 'earthquakeRisk', label: 'Earthquake Risk', path: 'utilities.earthquakeRisk', format: 'text' },
-    { key: 'tornadoRisk', label: 'Tornado Risk', path: 'utilities.tornadoRisk', format: 'text' },
-    { key: 'radonRisk', label: 'Radon Risk', path: 'utilities.radonRisk', format: 'text' },
-    { key: 'seaLevelRiseRisk', label: 'Sea Level Rise Risk', path: 'utilities.seaLevelRiseRisk', format: 'text' },
-    { key: 'airQualityGrade', label: 'Air Quality Grade', path: 'utilities.airQualityGrade', format: 'text' },
-    { key: 'superfundNearby', label: 'Superfund Nearby', path: 'utilities.superfundNearby', format: 'boolean' },
+  investment: [
+    { key: 'rentalEstimateMonthly', label: 'Rental Estimate (Monthly)', path: 'fields.98_rental_estimate_monthly.value', fieldNum: 98, format: 'currency', higherIsBetter: true },
+    { key: 'rentalYieldEst', label: 'Rental Yield (Est)', path: 'fields.99_rental_yield_est.value', fieldNum: 99, format: 'percent', higherIsBetter: true },
+    { key: 'capRateEst', label: 'Cap Rate (Est)', path: 'fields.101_cap_rate_est.value', fieldNum: 101, format: 'percent', higherIsBetter: true },
+    { key: 'priceToRentRatio', label: 'Price to Rent Ratio', path: 'fields.93_price_to_rent_ratio.value', fieldNum: 93, format: 'number', higherIsBetter: false },
+    { key: 'vacancyRateNeighborhood', label: 'Vacancy Rate (Neighborhood)', path: 'fields.100_vacancy_rate_neighborhood.value', fieldNum: 100, format: 'percent', higherIsBetter: false },
+    { key: 'daysOnMarketAvg', label: 'Days on Market (Avg)', path: 'fields.95_days_on_market_avg.value', fieldNum: 95, format: 'number', higherIsBetter: false },
+    { key: 'inventorySurplus', label: 'Inventory Surplus', path: 'fields.96_inventory_surplus.value', fieldNum: 96, format: 'text' },
+    { key: 'financingTerms', label: 'Financing Terms', path: 'fields.102_financing_terms.value', fieldNum: 102, format: 'text' },
+    { key: 'comparableSales', label: 'Comparable Sales', path: 'fields.103_comparable_sales.value', fieldNum: 103, format: 'text' },
+  ],
+  leasing: [
+    { key: 'canBeLeasedYn', label: 'Can Be Leased', path: 'fields.160_can_be_leased_yn.value', fieldNum: 160, format: 'boolean' },
+    { key: 'minimumLeasePeriod', label: 'Minimum Lease Period', path: 'fields.161_minimum_lease_period.value', fieldNum: 161, format: 'text' },
+    { key: 'leaseRestrictionsYn', label: 'Lease Restrictions', path: 'fields.162_lease_restrictions_yn.value', fieldNum: 162, format: 'boolean' },
+    { key: 'petPolicy', label: 'Pet Policy', path: 'fields.136_pet_policy.value', fieldNum: 136, format: 'text' },
+    { key: 'petSizeLimit', label: 'Pet Size Limit', path: 'fields.163_pet_size_limit.value', fieldNum: 163, format: 'text' },
+    { key: 'maxPetWeight', label: 'Max Pet Weight (lbs)', path: 'fields.164_max_pet_weight.value', fieldNum: 164, format: 'number' },
+    { key: 'ageRestrictions', label: 'Age Restrictions', path: 'fields.137_age_restrictions.value', fieldNum: 137, format: 'text' },
+    { key: 'associationApprovalYn', label: 'Association Approval Required', path: 'fields.165_association_approval_yn.value', fieldNum: 165, format: 'boolean' },
+    { key: 'accessibilityModifications', label: 'Accessibility Modifications', path: 'fields.135_accessibility_modifications.value', fieldNum: 135, format: 'text' },
+  ],
+  legal: [
+    { key: 'parcelId', label: 'Parcel ID', path: 'fields.9_parcel_id.value', fieldNum: 9, format: 'text' },
+    { key: 'legalDescription', label: 'Legal Description', path: 'fields.150_legal_description.value', fieldNum: 150, format: 'text' },
+    { key: 'county', label: 'County', path: 'fields.7_county.value', fieldNum: 7, format: 'text' },
+    { key: 'taxYear', label: 'Tax Year', path: 'fields.36_tax_year.value', fieldNum: 36, format: 'number' },
+    { key: 'taxExemptions', label: 'Tax Exemptions', path: 'fields.38_tax_exemptions.value', fieldNum: 38, format: 'text' },
+    { key: 'homesteadYn', label: 'Homestead Exemption', path: 'fields.151_homestead_yn.value', fieldNum: 151, format: 'boolean' },
+    { key: 'cddYn', label: 'CDD', path: 'fields.152_cdd_yn.value', fieldNum: 152, format: 'boolean' },
+    { key: 'mlsPrimary', label: 'MLS Primary', path: 'fields.2_mls_primary.value', fieldNum: 2, format: 'text' },
+    { key: 'mlsSecondary', label: 'MLS Secondary', path: 'fields.3_mls_secondary.value', fieldNum: 3, format: 'text' },
+    { key: 'listingStatus', label: 'Listing Status', path: 'fields.4_listing_status.value', fieldNum: 4, format: 'text' },
+    { key: 'listingDate', label: 'Listing Date', path: 'fields.5_listing_date.value', fieldNum: 5, format: 'text' },
+    { key: 'permitHistoryOther', label: 'Permit History - Other', path: 'fields.62_permit_history_other.value', fieldNum: 62, format: 'text' },
   ],
 };
 
@@ -930,24 +1084,31 @@ export default function Compare() {
                     const comparisons = compareValues(values, field.higherIsBetter);
 
                     return (
-                      <tr key={field.key} className="border-b border-white/5 hover:bg-white/5">
-                        <td className="py-3 px-4 text-sm text-gray-400">
-                          {field.label}
+                      <tr key={field.key} className={`border-b border-white/5 hover:bg-white/5 ${field.missingDataSource ? 'bg-orange-500/10' : ''}`}>
+                        <td className={`py-3 px-4 text-sm ${field.missingDataSource ? 'text-orange-400' : 'text-gray-400'}`}>
+                          <div className="flex items-center gap-2">
+                            {field.label}
+                            {field.missingDataSource && (
+                              <span className="text-xs px-2 py-0.5 rounded bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                                Missing Data
+                              </span>
+                            )}
+                          </div>
                         </td>
                         {values.map((value, idx) => {
                           const comparison = comparisons[idx];
-                          const colorClass =
+                          const colorClass = field.missingDataSource ? 'text-orange-400' :
                             comparison === 'better' ? 'text-quantum-green' :
                             comparison === 'worse' ? 'text-quantum-red' :
                             comparison === 'equal' ? 'text-gray-400' :
                             'text-white';
 
                           return (
-                            <td key={idx} className={`py-3 px-4 text-sm ${colorClass}`}>
+                            <td key={idx} className={`py-3 px-4 text-sm ${colorClass} ${field.missingDataSource ? 'bg-orange-500/5' : ''}`}>
                               <div className="flex items-center gap-2">
                                 {formatValue(value, field.format)}
-                                {comparison === 'better' && <TrendingUp className="w-3 h-3" />}
-                                {comparison === 'worse' && <TrendingDown className="w-3 h-3" />}
+                                {!field.missingDataSource && comparison === 'better' && <TrendingUp className="w-3 h-3" />}
+                                {!field.missingDataSource && comparison === 'worse' && <TrendingDown className="w-3 h-3" />}
                                 {comparison === 'equal' && <Minus className="w-3 h-3" />}
                               </div>
                             </td>
