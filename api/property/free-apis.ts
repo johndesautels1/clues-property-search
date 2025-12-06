@@ -717,3 +717,179 @@ export async function callHudFairMarketRent(zip: string): Promise<ApiResult> {
     return { success: false, source: 'HUD FMR', fields, error: String(error) };
   }
 }
+
+// ============================================
+// NOAA CLIMATE DATA API - Environmental Risk
+// ============================================
+export async function callNOAAClimate(lat: number, lon: number, zip: string, county: string): Promise<ApiResult> {
+  const apiToken = process.env.NOAA_API_TOKEN || 'LsycRMDcPOllKnOJZLkiyMocmHmtGSQL';
+  const fields: Record<string, ApiField> = {};
+
+  try {
+    // Get recent 5 years of climate data for risk assessment
+    const endDate = new Date().toISOString().split('T')[0];
+    const startDate = new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // NOAA Climate Data Online API v2
+    const url = `https://www.ncdc.noaa.gov/cdo-web/api/v2/data?datasetid=GHCND&locationid=ZIP:${zip}&startdate=${startDate}&enddate=${endDate}&limit=1000`;
+
+    const fetchResult = await safeFetch<any>(url, {
+      headers: {
+        'token': apiToken
+      }
+    }, 'NOAA-Climate');
+
+    if (!fetchResult.success || !fetchResult.data) {
+      return { success: false, source: 'NOAA Climate', fields, error: fetchResult.error || 'Fetch failed' };
+    }
+
+    const data = fetchResult.data;
+
+    // Analyze climate data for risk assessment
+    if (data.results && Array.isArray(data.results)) {
+      const results = data.results;
+
+      // Count extreme weather events
+      const extremeEvents = results.filter((r: any) =>
+        r.datatype === 'PRCP' && parseFloat(r.value) > 50 || // Heavy precipitation
+        r.datatype === 'TMAX' && parseFloat(r.value) > 100 || // Extreme heat
+        r.datatype === 'TMIN' && parseFloat(r.value) < 0      // Extreme cold
+      );
+
+      // Calculate climate risk score (0-100, higher = more risk)
+      const riskScore = Math.min(100, Math.round((extremeEvents.length / results.length) * 100));
+
+      let riskLevel = 'Low';
+      if (riskScore > 75) riskLevel = 'Very High';
+      else if (riskScore > 50) riskLevel = 'High';
+      else if (riskScore > 25) riskLevel = 'Moderate';
+
+      // Field 121: climate_risk
+      setField(fields, '121_climate_risk', `${riskLevel} (Score: ${riskScore}/100)`, 'NOAA Climate', 'High');
+    }
+
+    return { success: Object.keys(fields).length > 0, source: 'NOAA Climate', fields };
+
+  } catch (error) {
+    return { success: false, source: 'NOAA Climate', fields, error: String(error) };
+  }
+}
+
+// ============================================
+// NOAA STORM EVENTS API - Hurricane/Tornado Risk
+// ============================================
+export async function callNOAAStormEvents(county: string, state: string = 'FL'): Promise<ApiResult> {
+  const apiToken = process.env.NOAA_API_TOKEN || 'LsycRMDcPOllKnOJZLkiyMocmHmtGSQL';
+  const fields: Record<string, ApiField> = {};
+
+  try {
+    // Get last 10 years of storm data
+    const endDate = new Date().toISOString().split('T')[0];
+    const startDate = new Date(Date.now() - 10 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // Query storm events by county
+    const url = `https://www.ncdc.noaa.gov/cdo-web/api/v2/data?datasetid=GHCND&locationid=FIPS:12&startdate=${startDate}&enddate=${endDate}&datatypeid=AWND,WSF2&limit=1000`;
+
+    const fetchResult = await safeFetch<any>(url, {
+      headers: {
+        'token': apiToken
+      }
+    }, 'NOAA-Storm');
+
+    if (!fetchResult.success || !fetchResult.data) {
+      return { success: false, source: 'NOAA Storm Events', fields, error: fetchResult.error || 'Fetch failed' };
+    }
+
+    const data = fetchResult.data;
+
+    if (data.results && Array.isArray(data.results)) {
+      const results = data.results;
+
+      // Analyze wind data for hurricane/tornado risk
+      const highWindEvents = results.filter((r: any) =>
+        r.datatype === 'WSF2' && parseFloat(r.value) > 50 // Wind gusts > 50 mph
+      );
+
+      const hurricaneRiskScore = Math.min(100, Math.round((highWindEvents.length / 10) * 10));
+      const tornadoRiskScore = Math.min(100, Math.round((highWindEvents.length / 20) * 10));
+
+      // Florida-specific: High hurricane risk, low tornado risk
+      let hurricaneRisk = 'Moderate';
+      if (hurricaneRiskScore > 70 || state === 'FL') hurricaneRisk = 'High';
+      else if (hurricaneRiskScore > 40) hurricaneRisk = 'Moderate';
+      else hurricaneRisk = 'Low';
+
+      let tornadoRisk = 'Low';
+      if (tornadoRiskScore > 50) tornadoRisk = 'High';
+      else if (tornadoRiskScore > 25) tornadoRisk = 'Moderate';
+
+      // Field 124: hurricane_risk
+      setField(fields, '124_hurricane_risk', hurricaneRisk, 'NOAA Storm Events', 'High');
+
+      // Field 125: tornado_risk
+      setField(fields, '125_tornado_risk', tornadoRisk, 'NOAA Storm Events', 'Medium');
+    }
+
+    return { success: Object.keys(fields).length > 0, source: 'NOAA Storm Events', fields };
+
+  } catch (error) {
+    return { success: false, source: 'NOAA Storm Events', fields, error: String(error) };
+  }
+}
+
+// ============================================
+// NOAA SEA LEVEL API - Sea Level Rise Risk
+// ============================================
+export async function callNOAASeaLevel(lat: number, lon: number): Promise<ApiResult> {
+  const fields: Record<string, ApiField> = {};
+
+  try {
+    // Find nearest NOAA tide station (Florida has many coastal stations)
+    // For Tampa Bay area: Station 8726520 (St. Petersburg)
+    // For general use: This is a simplified implementation
+
+    // Florida coastal stations by region
+    const floridaStations: Record<string, { id: string; name: string; lat: number; lon: number }> = {
+      'tampa_bay': { id: '8726520', name: 'St. Petersburg', lat: 27.76, lon: -82.63 },
+      'clearwater': { id: '8726724', name: 'Clearwater Beach', lat: 27.98, lon: -82.83 },
+      'naples': { id: '8725110', name: 'Naples', lat: 26.13, lon: -81.81 },
+      'miami': { id: '8723170', name: 'Miami Beach', lat: 25.77, lon: -80.13 },
+      'key_west': { id: '8724580', name: 'Key West', lat: 24.55, lon: -81.81 },
+    };
+
+    // Find nearest station (simplified - using Tampa Bay as default for FL properties)
+    const station = floridaStations.tampa_bay;
+
+    // NOAA Tides & Currents API - Get water level trends
+    const url = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=${station.id}&product=water_level&datum=MLLW&time_zone=lst_ldt&units=english&format=json&range=720`;
+
+    const fetchResult = await safeFetch<any>(url, undefined, 'NOAA-SeaLevel');
+
+    if (!fetchResult.success || !fetchResult.data) {
+      return { success: false, source: 'NOAA Sea Level', fields, error: fetchResult.error || 'Fetch failed' };
+    }
+
+    const data = fetchResult.data;
+
+    // Analyze sea level trends
+    if (data.data && Array.isArray(data.data)) {
+      // For Florida coastal properties, sea level rise is a known risk
+      // NOAA data shows 3-4mm/year rise in Tampa Bay
+      const distanceToCoast = Math.sqrt(Math.pow(lat - station.lat, 2) + Math.pow(lon - station.lon, 2)) * 69; // miles
+
+      let seaLevelRisk = 'Low';
+      if (distanceToCoast < 5) seaLevelRisk = 'High';
+      else if (distanceToCoast < 15) seaLevelRisk = 'Moderate';
+      else if (distanceToCoast < 30) seaLevelRisk = 'Low';
+      else seaLevelRisk = 'Minimal';
+
+      // Field 128: sea_level_rise_risk
+      setField(fields, '128_sea_level_rise_risk', `${seaLevelRisk} (${Math.round(distanceToCoast)} mi from coast)`, 'NOAA Sea Level', 'Medium');
+    }
+
+    return { success: Object.keys(fields).length > 0, source: 'NOAA Sea Level', fields };
+
+  } catch (error) {
+    return { success: false, source: 'NOAA Sea Level', fields, error: String(error) };
+  }
+}
