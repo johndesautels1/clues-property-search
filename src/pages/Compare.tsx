@@ -15,8 +15,9 @@ import {
   Users, CloudRain, FileText
 } from 'lucide-react';
 import { usePropertyStore } from '@/store/propertyStore';
-import type { PropertyCard, Property } from '@/types/property';
+import type { PropertyCard, Property, DataField } from '@/types/property';
 import { PropertyComparisonAnalytics, type Property as AnalyticsProperty } from '@/components/analytics';
+import { ALL_FIELDS, TOTAL_FIELDS, type FieldDefinition } from '@/types/fields-schema';
 
 // View modes for comparison
 type CompareViewMode = 'table' | 'visual';
@@ -710,6 +711,40 @@ function formatValue(value: any, format?: string): string {
   }
 }
 
+interface QuestionAnswerRow {
+  field: FieldDefinition;
+  value: any;
+  confidence?: string;
+  sources: string[];
+}
+
+function hasAnswerValue(value: unknown): boolean {
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'string') return value.trim() !== '';
+  if (Array.isArray(value)) return value.length > 0;
+  return true;
+}
+
+function formatAnswerValue(value: any): string {
+  if (value === null || value === undefined) return '—';
+  if (Array.isArray(value)) return value.join(', ');
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  return value.toString();
+}
+
+function buildQuestionAnswers(property?: Property): QuestionAnswerRow[] {
+  return ALL_FIELDS.map((field) => {
+    const key = `${field.num}_${field.key}`;
+    const dataField = property?.fields?.[key] as DataField<any> | undefined;
+    return {
+      field,
+      value: dataField?.value ?? null,
+      confidence: dataField?.confidence,
+      sources: dataField?.sources || [],
+    };
+  });
+}
+
 // Compare values and determine which is better
 function compareValues(
   values: (any)[],
@@ -861,6 +896,15 @@ export default function Compare() {
     }) as [AnalyticsProperty, AnalyticsProperty, AnalyticsProperty];
   }, [selectedProperties, fullProperties]);
 
+  const questionAnswerSummaries = useMemo(() => {
+    return selectedProperties.map((card) => {
+      const fullProp = fullProperties.get(card.id);
+      const rows = buildQuestionAnswers(fullProp);
+      const answered = rows.filter(row => hasAnswerValue(row.value)).length;
+      return { card, answered, rows };
+    });
+  }, [selectedProperties, fullProperties]);
+
   const handleSelect = (slot: number, id: string) => {
     const newIds = [...selectedIds];
     newIds[slot] = id;
@@ -945,6 +989,67 @@ export default function Compare() {
           selectedProperties={selectedProperties}
           fullProperties={fullProperties}
         />
+      )}
+
+      {questionAnswerSummaries.length > 0 && (
+        <div className="glass-card p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <FileText className="w-5 h-5 text-quantum-cyan" />
+              <div>
+                <h3 className="font-semibold text-white">168 Question-Answer Schema</h3>
+                <p className="text-xs text-gray-400">Live coverage from the master field list</p>
+              </div>
+            </div>
+            <span className="text-xs text-gray-400">Schema-linked</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {questionAnswerSummaries.map((summary) => {
+              const answeredPct = Math.round((summary.answered / TOTAL_FIELDS) * 100);
+              const sampleAnswers = summary.rows.filter(row => hasAnswerValue(row.value)).slice(0, 3);
+
+              return (
+                <div
+                  key={summary.card.id}
+                  className="bg-white/5 rounded-xl p-4 border border-white/5"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="text-sm font-semibold text-white">{summary.card.address}</p>
+                      <p className="text-xs text-gray-400">{summary.card.city}, {summary.card.state}</p>
+                    </div>
+                    <span className="text-xs text-quantum-cyan">{answeredPct}%</span>
+                  </div>
+
+                  <div className="h-2 rounded-full bg-white/10 overflow-hidden mb-2">
+                    <div
+                      className="h-full bg-quantum-cyan"
+                      style={{ width: `${answeredPct}%` }}
+                    />
+                  </div>
+
+                  <p className="text-xs text-gray-400 mb-3">
+                    {summary.answered} / {TOTAL_FIELDS} questions answered
+                  </p>
+
+                  <div className="space-y-2">
+                    {sampleAnswers.length > 0 ? (
+                      sampleAnswers.map((row) => (
+                        <div key={row.field.num} className="text-xs text-gray-300">
+                          <span className="text-gray-400 mr-1">#{row.field.num} {row.field.label}:</span>
+                          <span className="text-white">{formatAnswerValue(row.value)}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs text-gray-500">No answers captured yet.</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       {/* Visual Analytics Mode */}

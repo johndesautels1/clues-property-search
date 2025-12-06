@@ -274,6 +274,9 @@ export interface Property {
   location: LocationData;
   financial: FinancialData;
   utilities: UtilitiesData;
+  // Flat 168-field question/answer map keyed as `${num}_${key}` (e.g., `10_listing_price`)
+  // Used by comparison analytics to show the full schema coverage
+  fields?: Record<string, DataField<any>>;
   // NEW: Stellar MLS fields (139-168) - Added 2025-11-30
   stellarMLS?: StellarMLSData;
 
