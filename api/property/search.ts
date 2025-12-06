@@ -45,7 +45,7 @@ import { scrapeFloridaCounty } from './florida-counties.js';
 import { LLM_CASCADE_ORDER } from './llm-constants.js';
 import { createArbitrationPipeline, type FieldValue, type ArbitrationResult } from './arbitration.js';
 import { sanitizeAddress, isValidAddress } from '../../src/lib/safe-json-parse.js';
-import { callCrimeGrade, callSchoolDigger, callNOAAClimate, callNOAAStormEvents, callNOAASeaLevel, callUSGSElevation, callUSGSEarthquake, callEPAFRS, getRadonRisk, callRedfinProperty } from './free-apis.js';
+import { callCrimeGrade, callSchoolDigger, callNOAAClimate, callNOAAStormEvents, callNOAASeaLevel, callUSGSElevation, callUSGSEarthquake, callEPAFRS, getRadonRisk/*, callRedfinProperty*/ } from './free-apis.js';
 import { STELLAR_MLS_SOURCE, FBI_CRIME_SOURCE } from './source-constants.js';
 
 
@@ -1489,7 +1489,7 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   const zipCode = geo.zipCode || geo.zip || '';
 
   // Call all APIs in parallel
-  const [walkScore, floodZone, airQuality, censusData, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeDataResult, schoolDiggerResult, noaaClimateResult, noaaStormResult, noaaSeaLevelResult, usgsElevationResult, usgsEarthquakeResult, epaFRSResult, epaRadonResult, redfinResult] = await Promise.all([
+  const [walkScore, floodZone, airQuality, censusData, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeDataResult, schoolDiggerResult, noaaClimateResult, noaaStormResult, noaaSeaLevelResult, usgsElevationResult, usgsEarthquakeResult, epaFRSResult, epaRadonResult/*, redfinResult*/] = await Promise.all([
     getWalkScore(geo.lat, geo.lon, address),
     getFloodZone(geo.lat, geo.lon),
     getAirQuality(geo.lat, geo.lon),
@@ -1508,8 +1508,8 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
     callUSGSElevation(geo.lat, geo.lon),
     callUSGSEarthquake(geo.lat, geo.lon),
     callEPAFRS(geo.lat, geo.lon),
-    getRadonRisk(geo.county, 'FL'),
-    callRedfinProperty(address)
+    getRadonRisk(geo.county, 'FL')
+    // callRedfinProperty(address) // DISABLED: Redfin API autocomplete not working - returns dummy school data
   ]);
 
   // Extract fields from API result objects
@@ -1522,12 +1522,12 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   const usgsEarthquakeData = usgsEarthquakeResult.fields || {};
   const epaFRSData = epaFRSResult.fields || {};
   const epaRadonData = epaRadonResult.fields || {};
-  const redfinData = redfinResult.fields || {};
+  // const redfinData = redfinResult.fields || {}; // DISABLED: Redfin API not working
 
   const apiEndTime = Date.now();
   console.log(`✅ [enrichWithFreeAPIs] All APIs completed in ${apiEndTime - apiStartTime}ms`);
 
-  Object.assign(fields, walkScore, floodZone, airQuality, censusData, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeData, schoolDiggerData, noaaClimateData, noaaStormData, noaaSeaLevelData, usgsElevationData, usgsEarthquakeData, epaFRSData, epaRadonData, redfinData);
+  Object.assign(fields, walkScore, floodZone, airQuality, censusData, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeData, schoolDiggerData, noaaClimateData, noaaStormData, noaaSeaLevelData, usgsElevationData, usgsEarthquakeData, epaFRSData, epaRadonData/*, redfinData*/);
 
   console.log('🔵 [enrichWithFreeAPIs] Raw field count before filtering:', Object.keys(fields).length);
   console.log('🔵 [enrichWithFreeAPIs] Field breakdown:');
@@ -1550,7 +1550,7 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   console.log('  - USGS Earthquake fields:', Object.keys(usgsEarthquakeData || {}).length);
   console.log('  - EPA FRS fields:', Object.keys(epaFRSData || {}).length);
   console.log('  - EPA Radon fields:', Object.keys(epaRadonData || {}).length);
-  console.log('  - Redfin fields:', Object.keys(redfinData || {}).length);
+  // console.log('  - Redfin fields:', Object.keys(redfinData || {}).length); // DISABLED
 
   // Store actual field counts in fields object for later tracking
   fields['__FBI_CRIME_COUNT__'] = { value: Object.keys(crimeData).length, source: 'INTERNAL', confidence: 'High' };

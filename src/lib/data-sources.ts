@@ -56,16 +56,17 @@ export const DATA_SOURCES: DataSource[] = [
     enabled: true,
     description: 'Commute times and distances'
   },
-  {
-    id: 'redfin',
-    name: 'Redfin',
-    type: 'free-api',
-    tier: 2,
-    icon: 'home',
-    color: 'red',
-    enabled: true,
-    description: 'Redfin property estimates and details'
-  },
+  // DISABLED: Redfin API autocomplete not working
+  // {
+  //   id: 'redfin',
+  //   name: 'Redfin',
+  //   type: 'free-api',
+  //   tier: 2,
+  //   icon: 'home',
+  //   color: 'red',
+  //   enabled: false,
+  //   description: 'Redfin property estimates and details (DISABLED - API issue)'
+  // },
 
   // Tier 3: Paid/Free APIs ("Hard Truth")
   { 

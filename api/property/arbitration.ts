@@ -34,7 +34,7 @@ export const DATA_TIERS: Record<string, TierConfig> = {
   'google-places': { tier: 2, name: 'Google Places', description: 'Nearby amenities', reliability: 95 },
   'google-distance': { tier: 2, name: 'Google Distance Matrix', description: 'Commute times', reliability: 95 },
   'google-maps': { tier: 2, name: 'Google Maps', description: 'Google Maps API', reliability: 95 },
-  'redfin': { tier: 2, name: 'Redfin', description: 'Redfin property data and estimates', reliability: 90 },
+  // 'redfin': { tier: 2, name: 'Redfin', description: 'Redfin property data and estimates', reliability: 90 }, // DISABLED: API not working
   'walkscore': { tier: 3, name: 'WalkScore', description: 'Walkability scores', reliability: 90 },
   'schooldigger': { tier: 3, name: 'SchoolDigger', description: 'School ratings', reliability: 85 },
   'fema': { tier: 3, name: 'FEMA NFHL', description: 'Flood zones', reliability: 95 },
