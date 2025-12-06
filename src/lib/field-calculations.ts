@@ -81,7 +81,7 @@ export function calculateDerivedFinancialFields(property: FullProperty): Partial
   if (listingPrice && rentalMonthly) {
     const yieldPct = ((rentalMonthly * 12) / listingPrice) * 100;
     derived.financial.rentalYieldEst = {
-      value: yieldPct.toFixed(2),
+      value: parseFloat(yieldPct.toFixed(2)),
       confidence: 'High',
       notes: 'Auto-calculated: (Annual Rent ÷ Listing Price) × 100. Good rental yields: 5-8% (strong), 3-5% (moderate), <3% (weak)',
       sources: ['Auto-Calculated'],
@@ -112,7 +112,7 @@ export function calculateDerivedFinancialFields(property: FullProperty): Partial
     ].filter(Boolean).join(', ');
 
     derived.financial.capRateEst = {
-      value: capRate.toFixed(2),
+      value: parseFloat(capRate.toFixed(2)),
       confidence: 'Medium',
       notes: `Auto-calculated: (Annual Rent $${annualRent.toLocaleString()} - Operating Expenses $${operatingExpenses.toLocaleString()}) ÷ Price. Expenses: ${expenseBreakdown}. Good cap rates: 8-12% (excellent), 5-8% (good), <5% (appreciation play)`,
       sources: ['Auto-Calculated'],
