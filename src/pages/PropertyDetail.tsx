@@ -995,7 +995,7 @@ export default function PropertyDetail() {
               {property.listingStatus}
             </span>
             <span className="text-sm text-gray-400">
-              {property.dataCompleteness}% Data Complete ({Math.round(property.dataCompleteness * 1.68)}/168 fields)
+              {Math.min(100, property.dataCompleteness)}% Data Complete ({Math.round(Math.min(100, property.dataCompleteness) * 1.68)}/168 fields)
             </span>
           </div>
         </motion.div>

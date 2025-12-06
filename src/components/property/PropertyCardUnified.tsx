@@ -396,7 +396,7 @@ export default function PropertyCardUnified({
                       <div className="grid grid-cols-4 gap-2">
                         {data.walkScore !== null && (
                           <div className="text-center p-2 rounded-lg bg-white/5 overflow-hidden">
-                            <p className="text-white font-bold text-lg">{typeof data.walkScore === 'string' ? data.walkScore.split(' ')[0] : data.walkScore}</p>
+                            <p className="text-white font-bold text-lg">{data.walkScore}</p>
                             <p className="text-cyan-300 text-[10px] font-medium truncate leading-tight">Walk</p>
                           </div>
                         )}
