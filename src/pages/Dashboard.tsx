@@ -17,7 +17,7 @@ import {
   ChevronRight,
   Zap,
 } from 'lucide-react';
-import PropertyCard from '@/components/property/PropertyCard';
+import PropertyCardUnified from '@/components/property/PropertyCardUnified';
 import { useFilteredProperties, useProperties, useFullProperties } from '@/store/propertyStore';
 import { computeDataQualityByRange } from '@/lib/field-normalizer';
 
@@ -167,7 +167,7 @@ export default function Dashboard() {
         <div className="space-y-4">
           {recentProperties.length > 0 ? (
             recentProperties.map((property) => (
-              <PropertyCard key={property.id} property={property} />
+              <PropertyCardUnified key={property.id} property={property} />
             ))
           ) : (
             <div className="glass-card p-8 text-center">

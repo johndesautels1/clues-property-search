@@ -15,7 +15,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import PropertyCard from '@/components/property/PropertyCard';
+import PropertyCardUnified from '@/components/property/PropertyCardUnified';
 import {
   usePropertyStore,
   useFilteredProperties,
@@ -224,7 +224,7 @@ export default function PropertyList() {
           }
         >
           {filteredProperties.map((property) => (
-            <PropertyCard key={property.id} property={property} />
+            <PropertyCardUnified key={property.id} property={property} />
           ))}
         </div>
       ) : (

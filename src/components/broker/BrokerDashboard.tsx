@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 
 import ExecutiveKPICards from './ExecutiveKPICards';
-import PropertyComparisonPanels from './PropertyComparisonPanels';
+import PropertyCardUnified from '../property/PropertyCardUnified';
 import RiskDashboard from './RiskDashboard';
 import ROITimeline from './ROITimeline';
 import PropertySelector from './PropertySelector';
@@ -512,10 +512,37 @@ export default function BrokerDashboard({ initialProperties, demoMode = false }:
 
           {/* 2. Property Comparison Panels */}
           <section>
-            <PropertyComparisonPanels
-              properties={dashboardData.properties}
-              title="Property Comparison"
-            />
+            <h2 className="text-2xl font-bold text-white mb-4">Property Comparison</h2>
+            <div className="overflow-x-auto">
+              <div className="flex gap-4 pb-4 min-w-max">
+                {dashboardData.properties.map((prop: any) => {
+                  // Map broker chart property format to PropertyCard format
+                  const propertyCard = {
+                    id: prop.id || String(Math.random()),
+                    address: prop.address || '',
+                    city: prop.city || '',
+                    state: prop.state || '',
+                    zip: prop.zip || '',
+                    price: prop.listPrice || prop.price || 0,
+                    pricePerSqft: prop.pricePerSqft || 0,
+                    bedrooms: prop.bedrooms || 0,
+                    bathrooms: prop.bathrooms || 0,
+                    sqft: prop.sqft || 0,
+                    yearBuilt: prop.yearBuilt || 0,
+                    smartScore: prop.smartScore || 70,
+                    dataCompleteness: prop.dataCompleteness || 0,
+                    thumbnail: prop.thumbnail,
+                    listingStatus: prop.listingStatus || 'Active',
+                    daysOnMarket: prop.daysOnMarket || 0,
+                  };
+                  return (
+                    <div key={prop.id} className="flex-shrink-0 w-80">
+                      <PropertyCardUnified property={propertyCard} />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </section>
 
           {/* 3. Pricing History */}
