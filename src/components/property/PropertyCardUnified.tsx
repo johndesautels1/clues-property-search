@@ -156,7 +156,14 @@ export default function PropertyCardUnified({
     garageSpaces: fullProperty ? getFieldValue(fullProperty.details?.garageSpaces) as number | null : null,
 
     // PHOTO: Get primary photo from Stellar MLS Media (field 169)
-    primaryPhotoUrl: fullProperty ? getFieldValue(fullProperty.address?.primaryPhotoUrl) as string | null : null,
+    primaryPhotoUrl: (() => {
+      const photoUrl = fullProperty ? getFieldValue(fullProperty.address?.primaryPhotoUrl) as string | null : null;
+      if (fullProperty) {
+        console.log('[PropertyCard] Photo URL for', property.address, ':', photoUrl);
+        console.log('[PropertyCard] fullProperty.address:', fullProperty.address);
+      }
+      return photoUrl;
+    })(),
   };
 
   const handleDelete = (e: React.MouseEvent) => {
