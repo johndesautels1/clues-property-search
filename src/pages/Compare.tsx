@@ -1,6 +1,6 @@
 /**
  * CLUES Property Dashboard - Advanced Comparison Analytics Page
- * Full 138-field comparison with property dropdown selectors
+ * Full 168-field comparison with property dropdown selectors
  * Plus 32 hi-tech visual chart comparisons
  */
 
@@ -1179,7 +1179,7 @@ export default function Compare() {
             <div>
               <p className="text-sm text-white font-medium">Limited Data Available</p>
               <p className="text-xs text-gray-400 mt-1">
-                Some properties only have basic card data. Full 138-field comparison requires complete property data.
+                Some properties only have basic card data. Full 168-field comparison requires complete property data.
                 View individual property details to see all available fields.
               </p>
             </div>
