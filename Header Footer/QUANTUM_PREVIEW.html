@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLUES Quantum Header & Footer - John E. Desautels & Associates</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: linear-gradient(135deg, 
+                #0a0a0f 0%,
+                #13141f 50%,
+                #0a0a0f 100%
+            );
+            min-height: 100vh;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(0, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(255, 0, 128, 0.05) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+            animation: quantum-ambient 10s ease-in-out infinite alternate;
+        }
+
+        @keyframes quantum-ambient {
+            0% { opacity: 0.5; }
+            100% { opacity: 0.8; }
+        }
+
+        /* HEADER STYLES */
+        .clues-header {
+            position: relative;
+            width: 100%;
+            background: linear-gradient(135deg, 
+                rgba(10, 10, 15, 0.95) 0%,
+                rgba(30, 31, 46, 0.90) 50%,
+                rgba(10, 10, 15, 0.95) 100%
+            );
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.6),
+                0 0 80px rgba(0, 255, 255, 0.15),
+                0 0 40px rgba(139, 92, 246, 0.1),
+                inset 0 1px 0 rgba(0, 255, 255, 0.1);
+            padding: 1.5rem 2rem;
+            z-index: 1000;
+        }
+
+        .clues-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .dolphin-logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #00ffff 0%, #0080ff 50%, #8b5cf6 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 800;
+            color: #0a0a0f;
+            box-shadow: 
+                0 0 30px rgba(0, 255, 255, 0.6),
+                0 0 60px rgba(0, 255, 255, 0.4),
+                0 0 90px rgba(139, 92, 246, 0.3),
+                inset 0 -2px 10px rgba(0, 0, 0, 0.4),
+                inset 0 2px 10px rgba(255, 255, 255, 0.3);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: quantum-pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes quantum-pulse {
+            0%, 100% {
+                box-shadow: 
+                    0 0 30px rgba(0, 255, 255, 0.6),
+                    0 0 60px rgba(0, 255, 255, 0.4),
+                    0 0 90px rgba(139, 92, 246, 0.3);
+            }
+            50% {
+                box-shadow: 
+                    0 0 40px rgba(0, 255, 255, 0.8),
+                    0 0 80px rgba(0, 255, 255, 0.6),
+                    0 0 120px rgba(139, 92, 246, 0.4);
+            }
+        }
+
+        .dolphin-logo:hover {
+            transform: scale(1.05);
+            box-shadow: 
+                0 0 50px rgba(0, 255, 255, 0.9),
+                0 0 100px rgba(0, 255, 255, 0.6),
+                0 0 150px rgba(139, 92, 246, 0.5);
+        }
+
+        .brand-section {
+            text-align: center;
+        }
+
+        .company-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, #00ffff 0%, #67e8f9 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0 0 0.75rem 0;
+            filter: drop-shadow(0 0 20px rgba(0, 255, 255, 0.4));
+        }
+
+        .clues-brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .clues-logo {
+            font-size: 1.5rem;
+            filter: drop-shadow(0 0 15px rgba(139, 92, 246, 0.8));
+        }
+
+        .clues-text {
+            font-size: 1.25rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #8b5cf6 0%, #ff0080 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 3px;
+            filter: drop-shadow(0 0 20px rgba(255, 0, 128, 0.4));
+        }
+
+        .clues-tagline {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #00ff88;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            opacity: 0.9;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.6);
+        }
+
+        .contact-section {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: flex-end;
+        }
+
+        .contact-item {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+        }
+
+        .contact-item:hover {
+            background: rgba(0, 255, 255, 0.2);
+            border-color: rgba(0, 255, 255, 0.6);
+            color: #00ffff;
+            transform: translateY(-2px);
+            box-shadow: 
+                0 4px 20px rgba(0, 255, 255, 0.4),
+                0 0 40px rgba(0, 255, 255, 0.3);
+        }
+
+        /* MAIN CONTENT */
+        .main-content {
+            min-height: 60vh;
+            padding: 4rem 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .preview-notice {
+            max-width: 1400px;
+            margin: 0 auto;
+            text-align: center;
+            background: rgba(30, 31, 46, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.6),
+                0 0 80px rgba(0, 255, 255, 0.2),
+                0 0 40px rgba(139, 92, 246, 0.15);
+        }
+
+        .preview-notice h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #00ffff 0%, #8b5cf6 50%, #ff0080 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            filter: drop-shadow(0 0 20px rgba(0, 255, 255, 0.4));
+        }
+
+        .preview-notice p {
+            font-size: 1.1rem;
+            color: #ffffff;
+            line-height: 1.8;
+            margin: 1rem 0;
+        }
+
+        .preview-notice strong {
+            color: #00ffff;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        /* FOOTER STYLES */
+        .clues-footer {
+            position: relative;
+            width: 100%;
+            background: linear-gradient(135deg, 
+                rgba(10, 10, 15, 0.98) 0%,
+                rgba(30, 31, 46, 0.95) 50%,
+                rgba(10, 10, 15, 0.98) 100%
+            );
+            backdrop-filter: blur(20px) saturate(180%);
+            border-top: 1px solid rgba(0, 255, 255, 0.3);
+            box-shadow: 
+                0 -8px 32px rgba(0, 0, 0, 0.6),
+                0 0 80px rgba(0, 255, 255, 0.15);
+            padding: 3rem 2rem 0;
+            margin-top: 4rem;
+        }
+
+        .footer-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 3rem;
+            padding-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00ffff 0%, #67e8f9 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.4));
+        }
+
+        .footer-section p,
+        .footer-section a {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin: 0.5rem 0;
+            line-height: 1.6;
+        }
+
+        .footer-section a {
+            text-decoration: none;
+            display: block;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .footer-section a:hover {
+            color: #00ffff;
+            background: rgba(0, 255, 255, 0.15);
+            transform: translateX(4px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+
+        .clues-branding {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.4);
+            border-radius: 12px;
+            box-shadow: 
+                0 0 20px rgba(139, 92, 246, 0.2),
+                inset 0 0 20px rgba(139, 92, 246, 0.1);
+        }
+
+        .clues-title {
+            font-size: 1rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #8b5cf6 0%, #ff0080 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            letter-spacing: 2px;
+            filter: drop-shadow(0 0 10px rgba(255, 0, 128, 0.4));
+        }
+
+        .clues-subtitle {
+            font-size: 0.75rem;
+            color: #00ff88;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        .service-item {
+            padding-left: 0.5rem;
+            border-left: 2px solid rgba(0, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .service-item:hover {
+            color: #00ffff;
+            border-left-color: rgba(0, 255, 255, 0.8);
+            padding-left: 1rem;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .tech-title {
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffd700 0%, #00ff88 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.4));
+        }
+
+        .copyright-bar {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem 0;
+            border-top: 1px solid rgba(0, 255, 255, 0.2);
+            text-align: center;
+        }
+
+        .copyright-text,
+        .trademark-text {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin: 0.5rem 0;
+        }
+
+        .trademark-text {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        @media (max-width: 1024px) {
+            .header-container {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .contact-section {
+                align-items: center;
+            }
+
+            .footer-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .footer-container {
+                grid-template-columns: 1fr;
+            }
+
+            .preview-notice h1 {
+                font-size: 1.75rem;
+            }
+
+            .company-name {
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="clues-header">
+        <div class="header-container">
+            <div class="logo-section">
+                <div class="dolphin-logo">D</div>
+            </div>
+
+            <div class="brand-section">
+                <h1 class="company-name">JOHN E. DESAUTELS & ASSOCIATES</h1>
+                <div class="clues-brand">
+                    <span class="clues-logo">🔍🌍</span>
+                    <span class="clues-text">CLUES™</span>
+                    <span class="clues-tagline">Comprehensive Location & Utility Evaluation System</span>
+                </div>
+            </div>
+
+            <div class="contact-section">
+                <a href="tel:7274523506" class="contact-item">📞 (727) 452-3506</a>
+                <a href="https://cluesnomad.com" target="_blank" class="contact-item">🌐 cluesnomad.com</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <div class="preview-notice">
+            <h1>⚡ QUANTUM THEME ACTIVATED</h1>
+            <p><strong>Cyberpunk Neon Design:</strong> Dark quantum black background with neon cyan accents, purple highlights, and hot pink energy.</p>
+            <p><strong>100% Authentic Branding:</strong> John E. Desautels & Associates information with quantum property dashboard color scheme.</p>
+            <p><strong>Features:</strong> Animated quantum pulse effects, 5D glassmorphic depth, neon glow shadows, and ambient background animations.</p>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="clues-footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h3 class="section-title">Company Information</h3>
+                <p style="font-weight: 700; color: #cbd5e1;">JOHN E. DESAUTELS & ASSOCIATES</p>
+                <p>Real Estate Intelligence</p>
+                <p>Empowering Your Global Journey</p>
+                <div class="clues-branding">
+                    <p class="clues-title">CLUES™ Technology</p>
+                    <p class="clues-subtitle">Comprehensive Location &<br/>Utility Evaluation System</p>
+                </div>
+            </div>
+
+            <div class="footer-section">
+                <h3 class="section-title">Contact Information</h3>
+                <a href="mailto:brokerpinellas@gmail.com">📧 brokerpinellas@gmail.com</a>
+                <a href="mailto:cluesnomads@gmail.com">📧 cluesnomads@gmail.com</a>
+                <a href="tel:7274523506">📞 (727) 452-3506</a>
+                <a href="https://cluesnomad.com">🌐 cluesnomad.com</a>
+                <p>📍 290 41st Ave, St. Pete Beach, FL 33706</p>
+                <p>YouTube: @modernlodges</p>
+            </div>
+
+            <div class="footer-section">
+                <h3 class="section-title">Professional Services</h3>
+                <p class="service-item">✓ Licensed Real Estate Broker FL/CO</p>
+                <p class="service-item">✓ CLUES™ Relocation Intelligence</p>
+                <p class="service-item">✓ International Relocation Specialist</p>
+                <p class="service-item">✓ AI-Powered Market Analysis</p>
+                <p class="service-item">✓ SMART Property Scoring</p>
+            </div>
+
+            <div class="footer-section">
+                <h3 class="section-title">Technology</h3>
+                <p class="tech-title">SMART Scoring Model</p>
+                <p style="font-weight: 600; color: #cbd5e1;">Strategic Market Assessment<br/>& Rating Technology</p>
+                <p style="font-style: italic; margin-top: 1rem;">Powered by advanced analytics<br/>and real-time market data</p>
+            </div>
+        </div>
+
+        <div class="copyright-bar">
+            <p class="copyright-text">© 2025 John E. Desautels & Associates. All Rights Reserved.</p>
+            <p class="trademark-text">CLUES™ and SMART™ are registered trademarks.</p>
+        </div>
+    </footer>
+</body>
+</html>
