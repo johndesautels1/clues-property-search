@@ -313,6 +313,11 @@ const renderDataField = (
     field = { value: null };
   }
 
+  // Filter out boolean values for text fields (prevent "true"/"false" display)
+  if (format === 'text' && typeof field.value === 'boolean') {
+    field = { value: null };
+  }
+
   // Map API validationStatus values to DataField prop format
   const validationStatus = field.validationStatus === 'single_source_warning' ? undefined :
     (field.validationStatus === 'valid' ? 'passed' : field.validationStatus);
