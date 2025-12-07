@@ -586,7 +586,7 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
     const url = `https://api.usa.gov/crime/fbi/cde/summarized/state/${stateCode}/violent-crime?from=01-2022&to=12-2022&API_KEY=${apiKey}`;
 
     console.log(`[FBI Crime] Fetching from: ${url.replace(apiKey, 'API_KEY_HIDDEN')}`);
-    const fetchResult = await safeFetch<any>(url, undefined, 'FBI-Crime', 75000); // 75s timeout (increased from 60s)
+    const fetchResult = await safeFetch<any>(url, undefined, 'FBI-Crime', 60000); // 60s timeout
 
     if (!fetchResult.success || !fetchResult.data) {
       return { success: false, source: FBI_CRIME_SOURCE, fields, error: fetchResult.error || 'Fetch failed' };
