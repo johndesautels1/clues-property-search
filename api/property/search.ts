@@ -46,7 +46,7 @@ import { scrapeFloridaCounty } from './florida-counties.js';
 import { LLM_CASCADE_ORDER } from './llm-constants.js';
 import { createArbitrationPipeline, type FieldValue, type ArbitrationResult } from './arbitration.js';
 import { sanitizeAddress, isValidAddress } from '../../src/lib/safe-json-parse.js';
-import { callCrimeGrade, callSchoolDigger, callFEMARiskIndex, callNOAAClimate, callNOAAStormEvents, callNOAASeaLevel, callUSGSElevation, callUSGSEarthquake, callEPAFRS, getRadonRisk, callGoogleStreetView/*, callRedfinProperty*/ } from './free-apis.js';
+import { callCrimeGrade, callSchoolDigger, callFEMARiskIndex, callNOAAClimate, callNOAAStormEvents, callNOAASeaLevel, callUSGSElevation, callUSGSEarthquake, callEPAFRS, getRadonRisk, callGoogleStreetView, callGoogleSolarAPI/*, callRedfinProperty*/ } from './free-apis.js';
 import { STELLAR_MLS_SOURCE, FBI_CRIME_SOURCE } from './source-constants.js';
 
 
@@ -1519,14 +1519,14 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   fields['7_county'] = { value: geo.county, source: 'Google Geocode', confidence: 'High' };
   fields['coordinates'] = { value: { lat: geo.lat, lon: geo.lon }, source: 'Google Geocode', confidence: 'High' };
 
-  console.log('🔵 [enrichWithFreeAPIs] Calling 11 APIs in parallel (including Census)...');
+  console.log('🔵 [enrichWithFreeAPIs] Calling 22 APIs in parallel (including Google Solar API)...');
   const apiStartTime = Date.now();
 
   // Extract ZIP code from geo object for Census API
   const zipCode = geo.zipCode || geo.zip || '';
 
   // Call all APIs in parallel
-  const [walkScore, floodZone, airQuality, censusData, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeDataResult, schoolDiggerResult, femaRiskResult, noaaClimateResult, noaaStormResult, noaaSeaLevelResult, usgsElevationResult, usgsEarthquakeResult, epaFRSResult, epaRadonResult, streetViewResult/*, redfinResult*/] = await Promise.all([
+  const [walkScore, floodZone, airQuality, censusData, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeDataResult, schoolDiggerResult, femaRiskResult, noaaClimateResult, noaaStormResult, noaaSeaLevelResult, usgsElevationResult, usgsEarthquakeResult, epaFRSResult, epaRadonResult, streetViewResult, googleSolarResult/*, redfinResult*/] = await Promise.all([
     getWalkScore(geo.lat, geo.lon, address),
     getFloodZone(geo.lat, geo.lon),
     getAirQuality(geo.lat, geo.lon),
@@ -1547,7 +1547,8 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
     callUSGSEarthquake(geo.lat, geo.lon),
     callEPAFRS(geo.lat, geo.lon),
     getRadonRisk(geo.county, 'FL'),
-    callGoogleStreetView(geo.lat, geo.lon, address) // FALLBACK: Property front photo from Google Street View
+    callGoogleStreetView(geo.lat, geo.lon, address), // FALLBACK: Property front photo from Google Street View
+    callGoogleSolarAPI(geo.lat, geo.lon) // Google Solar API: Rooftop solar potential
     // callRedfinProperty(address) // DISABLED: Redfin API autocomplete not working - returns dummy school data
   ]);
 
@@ -1563,12 +1564,13 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   const epaFRSData = epaFRSResult.fields || {};
   const epaRadonData = epaRadonResult.fields || {};
   const streetViewData = streetViewResult.fields || {}; // Google Street View fallback photos
+  const googleSolarData = googleSolarResult.fields || {}; // Google Solar API: Rooftop solar potential
   // const redfinData = redfinResult.fields || {}; // DISABLED: Redfin API not working
 
   const apiEndTime = Date.now();
   console.log(`✅ [enrichWithFreeAPIs] All APIs completed in ${apiEndTime - apiStartTime}ms`);
 
-  Object.assign(fields, walkScore, floodZone, airQuality, censusData, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeData, schoolDiggerData, femaRiskData, noaaClimateData, noaaStormData, noaaSeaLevelData, usgsElevationData, usgsEarthquakeData, epaFRSData, epaRadonData, streetViewData/*, redfinData*/);
+  Object.assign(fields, walkScore, floodZone, airQuality, censusData, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeData, schoolDiggerData, femaRiskData, noaaClimateData, noaaStormData, noaaSeaLevelData, usgsElevationData, usgsEarthquakeData, epaFRSData, epaRadonData, streetViewData, googleSolarData/*, redfinData*/);
 
   console.log('🔵 [enrichWithFreeAPIs] Raw field count before filtering:', Object.keys(fields).length);
   console.log('🔵 [enrichWithFreeAPIs] Field breakdown:');
@@ -1593,6 +1595,7 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   console.log('  - EPA FRS fields:', Object.keys(epaFRSData || {}).length);
   console.log('  - EPA Radon fields:', Object.keys(epaRadonData || {}).length);
   console.log('  - Google Street View fields:', Object.keys(streetViewData || {}).length);
+  console.log('  - Google Solar API fields:', Object.keys(googleSolarData || {}).length);
   // console.log('  - Redfin fields:', Object.keys(redfinData || {}).length); // DISABLED
 
   // Store actual field counts in fields object for later tracking
@@ -1605,6 +1608,7 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   fields['__USGS_EARTHQUAKE_COUNT__'] = { value: Object.keys(usgsEarthquakeData || {}).length, source: 'INTERNAL', confidence: 'High' };
   fields['__EPA_FRS_COUNT__'] = { value: Object.keys(epaFRSData || {}).length, source: 'INTERNAL', confidence: 'High' };
   fields['__EPA_RADON_COUNT__'] = { value: Object.keys(epaRadonData || {}).length, source: 'INTERNAL', confidence: 'High' };
+  fields['__GOOGLE_SOLAR_COUNT__'] = { value: Object.keys(googleSolarData || {}).length, source: 'INTERNAL', confidence: 'High' };
 
   // Filter out nulls
   const filteredFields = Object.fromEntries(

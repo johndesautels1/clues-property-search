@@ -1522,3 +1522,80 @@ export async function callRedfinProperty(address: string): Promise<ApiResult> {
     return { success: false, source: 'Redfin', fields, error: String(error) };
   }
 }
+
+// ============================================
+// GOOGLE SOLAR API - Solar Potential
+// ============================================
+export async function callGoogleSolarAPI(lat: number, lon: number): Promise<ApiResult> {
+  const fields: Record<string, ApiField> = {};
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+
+  if (!apiKey) {
+    return { success: false, source: 'Google Solar API', fields, error: 'GOOGLE_MAPS_API_KEY not configured' };
+  }
+
+  try {
+    // Google Solar API endpoint
+    const url = `https://solar.googleapis.com/v1/buildingInsights:findClosest?location.latitude=${lat}&location.longitude=${lon}&key=${apiKey}`;
+
+    console.log(`[Google Solar] Fetching solar data for lat=${lat}, lon=${lon}`);
+    const fetchResult = await safeFetch<any>(url, undefined, 'Google-Solar');
+
+    if (!fetchResult.success || !fetchResult.data) {
+      console.error('[Google Solar] Fetch failed:', fetchResult.error);
+      return { success: false, source: 'Google Solar API', fields, error: fetchResult.error || 'Fetch failed' };
+    }
+
+    const data = fetchResult.data;
+
+    // Check if we got valid solar data
+    if (!data.solarPotential) {
+      console.log('[Google Solar] No solar potential data available for this location');
+      return { success: false, source: 'Google Solar API', fields, error: 'No solar data available' };
+    }
+
+    const solar = data.solarPotential;
+
+    // Calculate solar potential rating based on annual sunshine hours
+    let solarRating = 'Unknown';
+    if (solar.maxSunshineHoursPerYear) {
+      const sunHours = solar.maxSunshineHoursPerYear;
+      if (sunHours >= 2000) {
+        solarRating = 'Excellent';
+      } else if (sunHours >= 1800) {
+        solarRating = 'High';
+      } else if (sunHours >= 1600) {
+        solarRating = 'Good';
+      } else if (sunHours >= 1400) {
+        solarRating = 'Moderate';
+      } else {
+        solarRating = 'Low';
+      }
+    }
+
+    // Field 130: Solar Potential
+    setField(fields, '130_solar_potential', solarRating, 'Google Solar API', 'High');
+
+    // Optional: Store additional solar data if available
+    if (solar.maxArrayPanelsCount) {
+      setField(fields, 'solar_max_panels', solar.maxArrayPanelsCount, 'Google Solar API', 'High');
+    }
+
+    if (solar.maxArrayAreaMeters2) {
+      setField(fields, 'solar_max_area_m2', solar.maxArrayAreaMeters2, 'Google Solar API', 'High');
+    }
+
+    // Calculate estimated system size in kW (rough estimate: 1 panel ≈ 0.35 kW)
+    if (solar.maxArrayPanelsCount) {
+      const estimatedKw = (solar.maxArrayPanelsCount * 0.35).toFixed(1);
+      setField(fields, 'solar_system_size_kw', `${estimatedKw} kW`, 'Google Solar API', 'Medium');
+    }
+
+    console.log(`[Google Solar] Successfully extracted solar potential: ${solarRating}`);
+    return { success: true, source: 'Google Solar API', fields };
+
+  } catch (error) {
+    console.error('[Google Solar] Error:', error);
+    return { success: false, source: 'Google Solar API', fields, error: String(error) };
+  }
+}
