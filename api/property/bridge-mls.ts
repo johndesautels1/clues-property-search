@@ -80,6 +80,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log(`[Bridge MLS API] Found ${response.value.length} properties`);
 
+    // Fetch Media separately for each property if Media is empty
+    for (const property of response.value) {
+      if (!property.Media || property.Media.length === 0) {
+        const listingKey = property.ListingKey || property.ListingId;
+        if (listingKey) {
+          console.log(`[Bridge MLS] Property has no Media, fetching separately for ListingKey: ${listingKey}`);
+          try {
+            const media = await client.getPropertyMedia(listingKey);
+            if (media && media.length > 0) {
+              property.Media = media;
+              console.log(`[Bridge MLS] ✅ Fetched ${media.length} photos separately`);
+            }
+          } catch (error) {
+            console.log(`[Bridge MLS] Failed to fetch Media separately:`, error);
+          }
+        }
+      }
+    }
+
     // Map properties to CLUES schema
     const mappedProperties = response.value.map(property => {
       const mapped = mapBridgePropertyToSchema(property);

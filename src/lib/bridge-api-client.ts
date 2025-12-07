@@ -595,6 +595,45 @@ export class BridgeAPIClient {
     console.log('[Bridge API] ❌ No matches found with any strategy');
     return null;
   }
+
+  /**
+   * Fetch Media (photos) for a specific property
+   * Uses ListingKey to fetch photos separately
+   */
+  async getPropertyMedia(listingKey: string): Promise<Array<{MediaURL?: string; Order?: number; PreferredPhotoYN?: boolean}>> {
+    try {
+      console.log(`[Bridge API] Fetching Media for ListingKey: ${listingKey}`);
+
+      const authToken = await this.authenticate();
+      const url = `${this.config.baseUrl}/OData/${this.config.dataSystem}/Property('${listingKey}')/Media`;
+
+      console.log(`[Bridge API] Media URL: ${url}`);
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${authToken.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        console.log(`[Bridge API] Media fetch failed: ${response.status} ${response.statusText}`);
+        return [];
+      }
+
+      const data = await response.json();
+      console.log(`[Bridge API] Media response:`, data);
+
+      // Handle both array response and OData response with value array
+      const mediaArray = Array.isArray(data) ? data : (data.value || []);
+      console.log(`[Bridge API] ✅ Found ${mediaArray.length} photos for property`);
+
+      return mediaArray;
+    } catch (error) {
+      console.error('[Bridge API] Error fetching Media:', error);
+      return [];
+    }
+  }
 }
 
 /**
