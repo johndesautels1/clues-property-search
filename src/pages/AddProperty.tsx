@@ -1626,13 +1626,17 @@ export default function AddProperty() {
       );
       const listingStatus = (statusRaw || 'Active') as 'Active' | 'Pending' | 'Sold';
 
-      // Get days on market (Stellar MLS Bridge API: DaysOnMarket or CumulativeDaysOnMarket)
-      // Check both Bridge API field names AND parsed PDF field names
+      // Get days on market (DOM) - Current listing period
       const domRaw = getFieldValue(pdfParsedFields,
-        'DaysOnMarket', 'CumulativeDaysOnMarket', // Stellar MLS Bridge API field names
-        '95_days_on_market_avg', 'days_on_market', 'adom', 'cdom', 'dom' // PDF field names
+        'DaysOnMarket', 'days_on_market', 'dom'
       );
       const daysOnMarket = parseInt(String(domRaw || '0')) || 0;
+
+      // Get cumulative days on market (CDOM) - Total time on market including relists
+      const cdomRaw = getFieldValue(pdfParsedFields,
+        'CumulativeDaysOnMarket', 'cdom', 'adom', '95_days_on_market_avg'
+      );
+      const cumulativeDaysOnMarket = parseInt(String(cdomRaw || '0')) || 0;
 
       // Create property card
       const propertyCard: PropertyCard = {
@@ -1651,6 +1655,7 @@ export default function AddProperty() {
         dataCompleteness: Math.round((Object.keys(pdfParsedFields).length / 168) * 100),
         listingStatus: listingStatus,
         daysOnMarket: daysOnMarket,
+        cumulativeDaysOnMarket: cumulativeDaysOnMarket,
       };
 
       setProgress(75);

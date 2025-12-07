@@ -108,6 +108,7 @@ export default function PropertyCardUnified({
     thumbnail: property.thumbnail,
     listingStatus: property.listingStatus,
     daysOnMarket: property.daysOnMarket,
+    cumulativeDaysOnMarket: property.cumulativeDaysOnMarket,
 
     // Enhanced data (from full Property if enriched)
     propertyType: fullProperty ? getFieldValue(fullProperty.details?.propertyType) : 'Single Family',
@@ -298,9 +299,18 @@ export default function PropertyCardUnified({
                 <p className="text-cyan-300 text-sm font-medium mt-1">{data.propertyType}</p>
               </div>
               <div className="text-right">
-                {/* FIX #3: Add "Days on Market" label */}
-                <p className="text-gray-500 text-[10px] uppercase tracking-wide">Days on Market</p>
-                <span className="text-amber-400 text-xs font-bold">{data.daysOnMarket}</span>
+                {/* Show both DOM and CDOM if available */}
+                {data.cumulativeDaysOnMarket && data.cumulativeDaysOnMarket !== data.daysOnMarket ? (
+                  <>
+                    <p className="text-gray-500 text-[10px] uppercase tracking-wide">DOM / CDOM</p>
+                    <span className="text-amber-400 text-xs font-bold">{data.daysOnMarket} / {data.cumulativeDaysOnMarket}</span>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-gray-500 text-[10px] uppercase tracking-wide">Days on Market</p>
+                    <span className="text-amber-400 text-xs font-bold">{data.daysOnMarket}</span>
+                  </>
+                )}
               </div>
             </div>
 

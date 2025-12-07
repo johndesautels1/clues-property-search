@@ -317,6 +317,7 @@ export interface PropertyCard {
   thumbnail?: string;
   listingStatus: string;
   daysOnMarket: number;
+  cumulativeDaysOnMarket?: number; // CDOM from Stellar MLS
   lastViewedAt?: string; // ISO 8601 timestamp when property was last viewed
 }
 
