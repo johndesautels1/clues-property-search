@@ -46,7 +46,7 @@ import { scrapeFloridaCounty } from './florida-counties.js';
 import { LLM_CASCADE_ORDER } from './llm-constants.js';
 import { createArbitrationPipeline, type FieldValue, type ArbitrationResult } from './arbitration.js';
 import { sanitizeAddress, isValidAddress } from '../../src/lib/safe-json-parse.js';
-import { callCrimeGrade, callSchoolDigger, callFEMARiskIndex, callNOAASeaLevel, callUSGSElevation, callUSGSEarthquake, callEPAFRS, getRadonRisk/*, callRedfinProperty*/ } from './free-apis.js';
+import { callCrimeGrade, callSchoolDigger, callFEMARiskIndex, callNOAAClimate, callNOAAStormEvents, callNOAASeaLevel, callUSGSElevation, callUSGSEarthquake, callEPAFRS, getRadonRisk/*, callRedfinProperty*/ } from './free-apis.js';
 import { STELLAR_MLS_SOURCE, FBI_CRIME_SOURCE } from './source-constants.js';
 
 
@@ -1539,7 +1539,9 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
     getTransitAccess(geo.lat, geo.lon),
     callCrimeGrade(geo.lat, geo.lon, address),
     callSchoolDigger(geo.lat, geo.lon),
-    callFEMARiskIndex(geo.county, 'FL'), // REPLACED: callNOAAClimate + callNOAAStormEvents - FEMA is 60x faster
+    callFEMARiskIndex(geo.county, 'FL'),
+    callNOAAClimate(geo.lat, geo.lon, geo.zip, geo.county), // RE-ENABLED: Detailed climate risk analysis
+    callNOAAStormEvents(geo.county, geo.state || 'FL'), // RE-ENABLED: Historical hurricane/tornado data
     callNOAASeaLevel(geo.lat, geo.lon),
     callUSGSElevation(geo.lat, geo.lon),
     callUSGSEarthquake(geo.lat, geo.lon),
