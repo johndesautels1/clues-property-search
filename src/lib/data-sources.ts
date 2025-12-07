@@ -56,6 +56,16 @@ export const DATA_SOURCES: DataSource[] = [
     enabled: true,
     description: 'Commute times and distances'
   },
+  {
+    id: 'google-streetview',
+    name: 'Google Street View',
+    type: 'free-api',
+    tier: 2,
+    icon: 'camera',
+    color: 'blue',
+    enabled: true,
+    description: 'Property front photo fallback'
+  },
   // DISABLED: Redfin API autocomplete not working
   // {
   //   id: 'redfin',

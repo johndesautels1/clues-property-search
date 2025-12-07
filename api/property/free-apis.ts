@@ -585,7 +585,8 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
     // Use 2022 data (most complete available) with MM-YYYY format
     const url = `https://api.usa.gov/crime/fbi/cde/summarized/state/${stateCode}/violent-crime?from=01-2022&to=12-2022&API_KEY=${apiKey}`;
 
-    const fetchResult = await safeFetch<any>(url, undefined, 'FBI-Crime');
+    console.log(`[FBI Crime] Fetching from: ${url.replace(apiKey, 'API_KEY_HIDDEN')}`);
+    const fetchResult = await safeFetch<any>(url, undefined, 'FBI-Crime', 60000); // 60s timeout
 
     if (!fetchResult.success || !fetchResult.data) {
       return { success: false, source: FBI_CRIME_SOURCE, fields, error: fetchResult.error || 'Fetch failed' };
@@ -993,11 +994,12 @@ export async function callNOAAClimate(lat: number, lon: number, zip: string, cou
     // NOAA Climate Data Online API v2
     const url = `https://www.ncdc.noaa.gov/cdo-web/api/v2/data?datasetid=GHCND&locationid=ZIP:${zip}&startdate=${startDate}&enddate=${endDate}&limit=1000`;
 
+    console.log(`[NOAA Climate] Fetching climate data for ZIP ${zip} from ${startDate} to ${endDate}`);
     const fetchResult = await safeFetch<any>(url, {
       headers: {
         'token': apiToken
       }
-    }, 'NOAA-Climate');
+    }, 'NOAA-Climate', 90000); // 90s timeout - NOAA is slow
 
     if (!fetchResult.success || !fetchResult.data) {
       return { success: false, source: 'NOAA Climate', fields, error: fetchResult.error || 'Fetch failed' };
@@ -1050,11 +1052,12 @@ export async function callNOAAStormEvents(county: string, state: string = 'FL'):
     // Query storm events by county
     const url = `https://www.ncdc.noaa.gov/cdo-web/api/v2/data?datasetid=GHCND&locationid=FIPS:12&startdate=${startDate}&enddate=${endDate}&datatypeid=AWND,WSF2&limit=1000`;
 
+    console.log(`[NOAA Storm] Fetching storm data for ${county}, ${state} from ${startDate} to ${endDate}`);
     const fetchResult = await safeFetch<any>(url, {
       headers: {
         'token': apiToken
       }
-    }, 'NOAA-Storm');
+    }, 'NOAA-Storm', 90000); // 90s timeout - NOAA is slow
 
     if (!fetchResult.success || !fetchResult.data) {
       return { success: false, source: 'NOAA Storm Events', fields, error: fetchResult.error || 'Fetch failed' };
