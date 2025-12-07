@@ -22,6 +22,7 @@ const Compare = lazy(() => import('@/pages/Compare'));
 const Settings = lazy(() => import('@/pages/Settings'));
 const BrokerDashboardPage = lazy(() => import('@/pages/BrokerDashboardPage'));
 const PerplexityAnalysis = lazy(() => import('@/pages/PerplexityAnalysis'));
+const Visuals = lazy(() => import('@/pages/Visuals'));
 
 // Protected route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -78,6 +79,7 @@ function App() {
                     <Route path="/compare" element={<Compare />} />
                     <Route path="/broker" element={<BrokerDashboardPage />} />
                     <Route path="/perplexity" element={<PerplexityAnalysis />} />
+                    <Route path="/visuals" element={<Visuals />} />
                     <Route path="/settings" element={<Settings />} />
                   </Routes>
                 </Layout>

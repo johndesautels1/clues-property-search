@@ -12,6 +12,7 @@ import {
   GitCompare,
   User,
   Sparkles,
+  BarChart3,
 } from 'lucide-react';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
@@ -27,7 +28,7 @@ const navItems: NavItem[] = [
   { path: '/properties', icon: Building2, label: 'Properties' },
   { path: '/search', icon: Search, label: 'Search' },
   { path: '/compare', icon: GitCompare, label: 'Compare' },
-  { path: '/perplexity', icon: Sparkles, label: 'Perplexity' },
+  { path: '/visuals', icon: BarChart3, label: 'Visuals' },
   { path: '/settings', icon: User, label: 'Account' },
 ];
 
