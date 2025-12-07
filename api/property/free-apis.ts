@@ -202,8 +202,8 @@ export async function callGoogleStreetView(lat: number, lon: number, address: st
       console.log(`[Google Street View] ✅ Found street view for ${address}`);
 
       // Store the Street View URL as primary photo (Field 169)
-      setField(fields, '169_property_photo_url', streetViewUrl, 'Google Street View');
-      setField(fields, '170_property_photos', [streetViewUrl], 'Google Street View');
+      setField(fields, 'property_photo_url', streetViewUrl, 'Google Street View');
+      setField(fields, 'property_photos', [streetViewUrl], 'Google Street View');
 
       console.log(`[Google Street View] 📸 Street View URL: ${streetViewUrl}`);
       console.log(`[Google Street View] 📸 Fields set:`, fields);
@@ -1002,10 +1002,13 @@ export async function callNOAAClimate(lat: number, lon: number, zip: string, cou
     }, 'NOAA-Climate', 90000); // 90s timeout - NOAA is slow
 
     if (!fetchResult.success || !fetchResult.data) {
+      console.log(`[NOAA Climate] ❌ Fetch failed: ${fetchResult.error || 'Unknown error'}`);
+      console.log(`[NOAA Climate] Status: ${fetchResult.status}`);
       return { success: false, source: 'NOAA Climate', fields, error: fetchResult.error || 'Fetch failed' };
     }
 
     const data = fetchResult.data;
+    console.log(`[NOAA Climate] ✅ Received data:`, data);
 
     // Analyze climate data for risk assessment
     if (data.results && Array.isArray(data.results)) {
@@ -1060,10 +1063,13 @@ export async function callNOAAStormEvents(county: string, state: string = 'FL'):
     }, 'NOAA-Storm', 90000); // 90s timeout - NOAA is slow
 
     if (!fetchResult.success || !fetchResult.data) {
+      console.log(`[NOAA Storm] ❌ Fetch failed: ${fetchResult.error || 'Unknown error'}`);
+      console.log(`[NOAA Storm] Status: ${fetchResult.status}`);
       return { success: false, source: 'NOAA Storm Events', fields, error: fetchResult.error || 'Fetch failed' };
     }
 
     const data = fetchResult.data;
+    console.log(`[NOAA Storm] ✅ Received data:`, data);
 
     if (data.results && Array.isArray(data.results)) {
       const results = data.results;
