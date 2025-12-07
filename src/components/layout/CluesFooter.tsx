@@ -63,9 +63,14 @@ const CluesFooter: React.FC = () => {
             <p className="font-montserrat text-sm font-normal text-slate-400 my-2">
               📍 290 41st Ave, St. Pete Beach, FL 33706
             </p>
-            <p className="font-montserrat text-sm font-normal text-slate-400 my-2">
-              YouTube: @modernlodges
-            </p>
+            <a
+              href="https://www.youtube.com/@modernlodges"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block font-montserrat text-sm font-medium text-slate-400 my-2 px-3 py-2 rounded-lg transition-all duration-300 hover:text-cyan-400 hover:bg-cyan-400/15 hover:translate-x-1 hover:shadow-[0_0_20px_rgba(0,255,255,0.3),0_0_40px_rgba(0,255,255,0.15)]"
+            >
+              📺 YouTube: @modernlodges
+            </a>
           </div>
 
           {/* Professional Services */}

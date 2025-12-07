@@ -1613,10 +1613,13 @@ export default function PropertyDetail() {
                     <span className="px-2 py-0.5 bg-purple-500/20 border border-purple-400/30 rounded text-purple-300 text-xs font-bold">E.D.</span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {fullProperty.extendedMLS.architecturalStyle && (
+                    {fullProperty.extendedMLS.architecturalStyle &&
+                     fullProperty.extendedMLS.architecturalStyle.value !== 'ARCHITECTUAL STYLE' &&
+                     fullProperty.extendedMLS.architecturalStyle.value !== 'Architectural Style' &&
+                     fullProperty.extendedMLS.architecturalStyle.value && (
                       <div className="px-4 py-3 bg-indigo-500/10 border border-indigo-400/20 rounded-lg">
                         <div className="text-xs text-gray-400 mb-1">Architectural Style</div>
-                        <div className="text-base font-semibold text-indigo-300">{fullProperty.extendedMLS.architecturalStyle}</div>
+                        <div className="text-base font-semibold text-indigo-300">{fullProperty.extendedMLS.architecturalStyle.value || fullProperty.extendedMLS.architecturalStyle}</div>
                       </div>
                     )}
                     {fullProperty.extendedMLS.masterBedroomLevel && (

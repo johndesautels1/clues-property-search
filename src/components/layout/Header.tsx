@@ -92,7 +92,7 @@ export default function Header() {
                       />
                     )}
                     <Icon className="w-5 h-5 relative z-10" />
-                    <span className="relative z-10 font-medium">{item.label}</span>
+                    <span className="relative z-10 font-medium text-sm">{item.label}</span>
                   </Link>
                 );
               })}
