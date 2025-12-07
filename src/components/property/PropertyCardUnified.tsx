@@ -233,13 +233,13 @@ export default function PropertyCardUnified({
               ======================================== */}
 
           {/* Property Image - Prioritize Stellar MLS photo (field 169), fallback to thumbnail */}
-          <div className={`relative flex-shrink-0 ${isExpanded ? 'w-full max-w-sm mx-auto' : 'w-full h-40'}`}>
+          <div className={`relative flex-shrink-0 ${isExpanded ? 'w-full max-w-xs mx-auto' : 'w-full h-40'}`}>
             {data.primaryPhotoUrl || data.thumbnail ? (
               <img
                 src={data.primaryPhotoUrl || data.thumbnail}
                 alt={data.address}
                 className={`object-cover rounded-t-2xl ${isExpanded ? 'w-full h-auto' : 'w-full h-full'}`}
-                style={isExpanded ? { aspectRatio: '3/2' } : undefined}
+                style={isExpanded ? { aspectRatio: '3/2', maxWidth: '320px' } : undefined}
                 onError={(e) => {
                   // If photo fails to load, show placeholder
                   const target = e.target as HTMLImageElement;
