@@ -10,7 +10,7 @@
 import { useState, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePropertyStore } from '@/store/propertyStore';
-import { mapPropertiesToChart } from '@/lib/visualsDataMapper';
+import { mapPropertiesToChart, type ChartProperty } from '@/lib/visualsDataMapper';
 import {
   MapPin, DollarSign, Home, Building2, Wrench,
   Sofa, Trees, Hammer, GraduationCap, Navigation,
@@ -40,6 +40,11 @@ const Category18_BuildingDetails = lazy(() => import('@/components/visuals/Categ
 const Category19_LegalTax = lazy(() => import('@/components/visuals/Category19_Placeholder'));
 const Category20_WaterfrontLeasing = lazy(() => import('@/components/visuals/Category20_Placeholder'));
 
+// Category component props
+interface CategoryComponentProps {
+  properties: ChartProperty[];
+}
+
 // Category metadata
 interface Category {
   id: string;
@@ -47,7 +52,7 @@ interface Category {
   icon: typeof MapPin;
   color: string;
   description: string;
-  component: React.LazyExoticComponent<any>;
+  component: React.LazyExoticComponent<React.ComponentType<CategoryComponentProps>>;
 }
 
 const categories: Category[] = [
