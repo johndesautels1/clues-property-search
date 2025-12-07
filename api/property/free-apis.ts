@@ -999,7 +999,7 @@ export async function callNOAAClimate(lat: number, lon: number, zip: string, cou
       headers: {
         'token': apiToken
       }
-    }, 'NOAA-Climate', 90000); // 90s timeout - NOAA is slow
+    }, 'NOAA-Climate'); // Using default 30s timeout
 
     if (!fetchResult.success || !fetchResult.data) {
       console.log(`[NOAA Climate] ❌ Fetch failed: ${fetchResult.error || 'Unknown error'}`);
@@ -1060,7 +1060,7 @@ export async function callNOAAStormEvents(county: string, state: string = 'FL'):
       headers: {
         'token': apiToken
       }
-    }, 'NOAA-Storm', 90000); // 90s timeout - NOAA is slow
+    }, 'NOAA-Storm'); // Using default 30s timeout
 
     if (!fetchResult.success || !fetchResult.data) {
       console.log(`[NOAA Storm] ❌ Fetch failed: ${fetchResult.error || 'Unknown error'}`);
