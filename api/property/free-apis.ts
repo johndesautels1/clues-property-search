@@ -166,6 +166,60 @@ export async function callGooglePlaces(lat: number, lon: number): Promise<ApiRes
 }
 
 // ============================================
+// GOOGLE STREET VIEW API - Property Front Photo
+// ============================================
+export async function callGoogleStreetView(lat: number, lon: number, address: string): Promise<ApiResult> {
+  const fields: Record<string, ApiField> = {};
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+
+  if (!apiKey) {
+    return { success: false, source: 'Google Street View', fields, error: 'GOOGLE_MAPS_API_KEY not configured' };
+  }
+
+  try {
+    // Google Street View Static API URL
+    // Returns a photo looking at the property from the street
+    const size = '600x400'; // Width x Height
+    const fov = 90; // Field of view (wider angle)
+    const pitch = 0; // Camera pitch (0 = horizontal)
+    const heading = 0; // Auto-determine best heading
+
+    // Build Street View image URL
+    const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=${size}&location=${lat},${lon}&fov=${fov}&pitch=${pitch}&key=${apiKey}`;
+
+    // Check if Street View imagery exists for this location using metadata API
+    const metadataUrl = `https://maps.googleapis.com/maps/api/streetview/metadata?location=${lat},${lon}&key=${apiKey}`;
+    const metadataResult = await safeFetch<any>(metadataUrl, undefined, 'Google-StreetView-Metadata');
+
+    if (!metadataResult.success || !metadataResult.data) {
+      return { success: false, source: 'Google Street View', fields, error: 'Metadata fetch failed' };
+    }
+
+    const metadata = metadataResult.data;
+
+    // Check if Street View is available
+    if (metadata.status === 'OK') {
+      console.log(`[Google Street View] ✅ Found street view for ${address}`);
+
+      // Store the Street View URL as primary photo (Field 169)
+      setField(fields, '169_property_photo_url', streetViewUrl, 'Google Street View');
+      setField(fields, '170_property_photos', [streetViewUrl], 'Google Street View');
+
+      console.log(`[Google Street View] Street View URL: ${streetViewUrl}`);
+
+      return { success: true, source: 'Google Street View', fields };
+    } else {
+      console.log(`[Google Street View] No imagery available for ${address}`);
+      return { success: false, source: 'Google Street View', fields, error: `No Street View imagery: ${metadata.status}` };
+    }
+
+  } catch (error) {
+    console.error('[Google Street View] Error:', error);
+    return { success: false, source: 'Google Street View', fields, error: String(error) };
+  }
+}
+
+// ============================================
 // WALKSCORE API
 // ============================================
 export async function callWalkScore(lat: number, lon: number, address: string): Promise<ApiResult> {
