@@ -550,7 +550,9 @@ export function normalizeToProperty(
       latitude: emptyDataField(),
       longitude: emptyDataField(),
       neighborhoodName: emptyDataField(),
-      // Photos are optional - only populated from Stellar MLS API
+      // Photos (Fields 169-170) - Populated from Stellar MLS or Google Street View
+      primaryPhotoUrl: emptyDataField(),
+      photoGallery: emptyDataField([]),
     },
     details: {
       bedrooms: emptyDataField(),
