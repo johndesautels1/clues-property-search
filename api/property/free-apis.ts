@@ -987,9 +987,9 @@ export async function callNOAAClimate(lat: number, lon: number, zip: string, cou
   const fields: Record<string, ApiField> = {};
 
   try {
-    // Get recent 5 years of climate data for risk assessment
+    // Get recent 1 year of climate data (NOAA API limit: max 1 year range)
     const endDate = new Date().toISOString().split('T')[0];
-    const startDate = new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const startDate = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     // NOAA Climate Data Online API v2
     const url = `https://www.ncdc.noaa.gov/cdo-web/api/v2/data?datasetid=GHCND&locationid=ZIP:${zip}&startdate=${startDate}&enddate=${endDate}&limit=1000`;
@@ -1048,9 +1048,9 @@ export async function callNOAAStormEvents(county: string, state: string = 'FL'):
   const fields: Record<string, ApiField> = {};
 
   try {
-    // Get last 10 years of storm data
+    // Get last 1 year of storm data (NOAA API limit: max 1 year range)
     const endDate = new Date().toISOString().split('T')[0];
-    const startDate = new Date(Date.now() - 10 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const startDate = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     // Query storm events by county
     const url = `https://www.ncdc.noaa.gov/cdo-web/api/v2/data?datasetid=GHCND&locationid=FIPS:12&startdate=${startDate}&enddate=${endDate}&datatypeid=AWND,WSF2&limit=1000`;
