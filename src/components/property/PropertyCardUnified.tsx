@@ -189,6 +189,9 @@ export default function PropertyCardUnified({
     floodRiskLevel: fullProperty ? getFieldValue(fullProperty.utilities?.floodRiskLevel) as string | null : null,
     hurricaneRiskText: fullProperty ? getFieldValue(fullProperty.utilities?.hurricaneRisk) as string | null : null,
     seaLevelRiseRisk: fullProperty ? getFieldValue(fullProperty.utilities?.seaLevelRiseRisk) as string | null : null,
+
+    // Solar potential (field 130)
+    solarPotential: fullProperty ? getFieldValue(fullProperty.utilities?.solarPotential) as string | null : null,
   };
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -671,7 +674,7 @@ export default function PropertyCardUnified({
                   )}
 
                   {/* Features Section */}
-                  {(data.hasPool || data.hasBeach || data.hasEV || data.hasSmart || data.isWaterfront || data.hasWaterView || data.hasWaterAccess) && (
+                  {(data.hasPool || data.hasBeach || data.hasEV || data.hasSmart || data.isWaterfront || data.hasWaterView || data.hasWaterAccess || data.solarPotential) && (
                     <div className="border-t border-white/10 pt-4">
                       <p className="text-emerald-400 text-xs uppercase tracking-wider mb-3 font-bold">FEATURES</p>
                       <div className="flex flex-wrap gap-2">
@@ -715,6 +718,18 @@ export default function PropertyCardUnified({
                           <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-cyan-500/20 text-cyan-400 text-xs">
                             <Zap className="w-3 h-3" />
                             <span>Smart</span>
+                          </div>
+                        )}
+                        {data.solarPotential && (
+                          <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
+                            String(data.solarPotential).toLowerCase().includes('excellent') || String(data.solarPotential).toLowerCase().includes('high') ?
+                              'bg-yellow-500/20 text-yellow-400' :
+                            String(data.solarPotential).toLowerCase().includes('good') || String(data.solarPotential).toLowerCase().includes('moderate') ?
+                              'bg-orange-500/20 text-orange-400' :
+                              'bg-gray-500/20 text-gray-400'
+                          }`}>
+                            <Sun className="w-3 h-3" />
+                            <span>Solar: {data.solarPotential}</span>
                           </div>
                         )}
                       </div>

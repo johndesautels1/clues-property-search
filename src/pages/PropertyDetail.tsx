@@ -1214,6 +1214,34 @@ export default function PropertyDetail() {
                 </span>
               </div>
             )}
+
+            {/* Solar Potential Badge */}
+            {fullProperty?.utilities.solarPotential?.value && (
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${
+                String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('excellent') || String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('high') ?
+                  'bg-yellow-500/10 border-yellow-400/30' :
+                String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('good') || String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('moderate') ?
+                  'bg-orange-500/10 border-orange-400/30' :
+                  'bg-gray-500/10 border-gray-400/30'
+              }`}>
+                <Zap className={`w-4 h-4 ${
+                  String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('excellent') || String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('high') ?
+                    'text-yellow-400' :
+                  String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('good') || String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('moderate') ?
+                    'text-orange-400' :
+                    'text-gray-400'
+                }`} />
+                <span className={`text-sm font-semibold ${
+                  String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('excellent') || String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('high') ?
+                    'text-yellow-300' :
+                  String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('good') || String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('moderate') ?
+                    'text-orange-300' :
+                    'text-gray-300'
+                }`}>
+                  Solar: {fullProperty.utilities.solarPotential.value}
+                </span>
+              </div>
+            )}
           </div>
         </motion.div>
 
