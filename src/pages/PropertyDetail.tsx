@@ -932,16 +932,41 @@ export default function PropertyDetail() {
         </motion.div>
       )}
 
-      {/* Hero Image */}
+      {/* Hero Image with Property Photo and CLUES Score */}
       <motion.div
         variants={itemVariants}
-        className="relative h-64 md:h-96 bg-gradient-to-br from-quantum-dark to-quantum-card"
+        className="relative bg-gradient-to-br from-quantum-dark to-quantum-card"
       >
-        <div className="absolute inset-0 flex items-center justify-center">
-          <MapPin className="w-24 h-24 text-gray-600" />
-        </div>
+        {/* Property Photo - Centered */}
+        {fullProperty?.address.primaryPhotoUrl?.value ? (
+          <div className="flex justify-center pt-6 pb-20">
+            <div className="glass-card overflow-hidden max-w-md">
+              <img
+                src={fullProperty.address.primaryPhotoUrl.value}
+                alt={`${fullProperty.address.fullAddress.value || property.address} - Primary Photo`}
+                className="w-full h-auto object-cover"
+                style={{ aspectRatio: '3/2' }}
+                onError={(e) => {
+                  // Hide image if it fails to load
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+              {fullProperty.address.photoGallery?.value && fullProperty.address.photoGallery.value.length > 1 && (
+                <div className="p-3 bg-quantum-dark/50 border-t border-white/5">
+                  <p className="text-xs text-gray-400 text-center">
+                    {fullProperty.address.photoGallery.value.length} photos available from Stellar MLS
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="h-64 md:h-96 flex items-center justify-center">
+            <MapPin className="w-24 h-24 text-gray-600" />
+          </div>
+        )}
 
-        {/* SMART Score Badge */}
+        {/* SMART Score Badge - Bottom Right */}
         <div className="absolute bottom-4 right-4 glass-card px-6 py-3">
           <div className="flex items-center gap-3">
             <Zap className="w-6 h-6 text-quantum-cyan" />
@@ -962,32 +987,8 @@ export default function PropertyDetail() {
 
       {/* Content */}
       <div className="px-4 py-6 md:px-8 md:py-10 max-w-7xl mx-auto">
-        {/* Address & Price Header with Centered Photo */}
+        {/* Address & Price Header */}
         <motion.div variants={itemVariants} className="mb-8">
-          {/* Photo Gallery - From Stellar MLS Media or Google Street View - Centered at top */}
-          {fullProperty?.address.primaryPhotoUrl?.value && (
-            <div className="mb-6 flex justify-center">
-              <div className="glass-card overflow-hidden max-w-md">
-                <img
-                  src={fullProperty.address.primaryPhotoUrl.value}
-                  alt={`${fullProperty.address.fullAddress.value || property.address} - Primary Photo`}
-                  className="w-full h-auto object-cover"
-                  style={{ aspectRatio: '3/2' }}
-                  onError={(e) => {
-                    // Hide image if it fails to load
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
-                {fullProperty.address.photoGallery?.value && fullProperty.address.photoGallery.value.length > 1 && (
-                  <div className="p-3 bg-quantum-dark/50 border-t border-white/5">
-                    <p className="text-xs text-gray-400 text-center">
-                      {fullProperty.address.photoGallery.value.length} photos available from Stellar MLS
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
 
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
             <div className="flex-1">

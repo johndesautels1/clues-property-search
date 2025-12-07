@@ -1627,16 +1627,24 @@ export default function AddProperty() {
       const listingStatus = (statusRaw || 'Active') as 'Active' | 'Pending' | 'Sold';
 
       // Get days on market (DOM) - Current listing period
+      // Stellar MLS Bridge API uses: DaysOnMarket
+      // Stellar MLS PDF uses: DOM, Days on Market
       const domRaw = getFieldValue(pdfParsedFields,
-        'DaysOnMarket', 'days_on_market', 'dom'
+        'DaysOnMarket', 'DOM', 'days_on_market', 'dom', 'Days on Market'
       );
       const daysOnMarket = parseInt(String(domRaw || '0')) || 0;
 
       // Get cumulative days on market (CDOM) - Total time on market including relists
+      // Stellar MLS Bridge API uses: CumulativeDaysOnMarket
+      // Stellar MLS PDF uses: CDOM, ADOM, 95_days_on_market_avg
       const cdomRaw = getFieldValue(pdfParsedFields,
-        'CumulativeDaysOnMarket', 'cdom', 'adom', '95_days_on_market_avg'
+        'CumulativeDaysOnMarket', 'CDOM', 'ADOM', 'cdom', 'adom', '95_days_on_market_avg'
       );
       const cumulativeDaysOnMarket = parseInt(String(cdomRaw || '0')) || 0;
+
+      // Debug logging
+      console.log('[AddProperty] DOM extraction:', { domRaw, daysOnMarket, cdomRaw, cumulativeDaysOnMarket });
+      console.log('[AddProperty] Available field keys:', Object.keys(pdfParsedFields).filter(k => k.toLowerCase().includes('day') || k.toLowerCase().includes('dom') || k.toLowerCase().includes('market')));
 
       // Create property card
       const propertyCard: PropertyCard = {
