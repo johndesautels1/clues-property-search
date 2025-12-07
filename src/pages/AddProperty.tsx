@@ -1643,7 +1643,8 @@ export default function AddProperty() {
       const domRaw = getFieldValue(pdfParsedFields,
         'DaysOnMarket', 'DOM', 'days_on_market', 'dom', 'Days on Market'
       );
-      const daysOnMarket = parseInt(String(domRaw || '0')) || 0;
+      const domValue = parseInt(String(domRaw || ''));
+      const daysOnMarket = isNaN(domValue) ? undefined : domValue;
 
       // Get cumulative days on market (CDOM) - Total time on market including relists
       // Stellar MLS Bridge API uses: CumulativeDaysOnMarket
@@ -1651,7 +1652,8 @@ export default function AddProperty() {
       const cdomRaw = getFieldValue(pdfParsedFields,
         'CumulativeDaysOnMarket', 'CDOM', 'ADOM', 'cdom', 'adom', '95_days_on_market_avg'
       );
-      const cumulativeDaysOnMarket = parseInt(String(cdomRaw || '0')) || 0;
+      const cdomValue = parseInt(String(cdomRaw || ''));
+      const cumulativeDaysOnMarket = isNaN(cdomValue) ? undefined : cdomValue;
 
       // Debug logging
       console.log('[AddProperty] DOM extraction:', { domRaw, daysOnMarket, cdomRaw, cumulativeDaysOnMarket });

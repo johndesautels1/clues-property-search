@@ -347,15 +347,22 @@ export default function PropertyCardUnified({
               </div>
               <div className="text-right">
                 {/* Show both DOM and CDOM if available */}
-                {data.cumulativeDaysOnMarket && data.cumulativeDaysOnMarket !== data.daysOnMarket ? (
-                  <>
-                    <p className="text-gray-500 text-[10px] uppercase tracking-wide">DOM / CDOM</p>
-                    <span className="text-amber-400 text-xs font-bold">{data.daysOnMarket} / {data.cumulativeDaysOnMarket}</span>
-                  </>
+                {data.daysOnMarket !== undefined ? (
+                  data.cumulativeDaysOnMarket && data.cumulativeDaysOnMarket !== data.daysOnMarket ? (
+                    <>
+                      <p className="text-gray-500 text-[10px] uppercase tracking-wide">DOM / CDOM</p>
+                      <span className="text-amber-400 text-xs font-bold">{data.daysOnMarket} / {data.cumulativeDaysOnMarket}</span>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-gray-500 text-[10px] uppercase tracking-wide">Days on Market</p>
+                      <span className="text-amber-400 text-xs font-bold">{data.daysOnMarket}</span>
+                    </>
+                  )
                 ) : (
                   <>
                     <p className="text-gray-500 text-[10px] uppercase tracking-wide">Days on Market</p>
-                    <span className="text-amber-400 text-xs font-bold">{data.daysOnMarket}</span>
+                    <span className="text-gray-400 text-xs">N/A</span>
                   </>
                 )}
               </div>

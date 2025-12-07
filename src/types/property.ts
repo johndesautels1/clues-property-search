@@ -319,7 +319,7 @@ export interface PropertyCard {
   dataCompleteness: number;
   thumbnail?: string;
   listingStatus: string;
-  daysOnMarket: number;
+  daysOnMarket?: number; // DOM from Stellar MLS - undefined if not available
   cumulativeDaysOnMarket?: number; // CDOM from Stellar MLS
   lastViewedAt?: string; // ISO 8601 timestamp when property was last viewed
   viewCount?: number; // Total views counter

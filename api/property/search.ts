@@ -1285,6 +1285,36 @@ async function getDistances(lat: number, lon: number): Promise<Record<string, an
   const origin = `${lat},${lon}`;
   const fields: Record<string, any> = {};
 
+  // Helper: Calculate straight-line distance to nearest coastline point
+  // Florida Gulf Coast approximate coordinates (Tampa Bay to Naples area)
+  const calculateCoastlineDistance = (lat: number, lon: number): number => {
+    const coastlinePoints = [
+      { lat: 27.9506, lon: -82.4572 }, // Tampa Bay
+      { lat: 27.7676, lon: -82.6403 }, // St. Pete Beach
+      { lat: 27.3364, lon: -82.5307 }, // Sarasota
+      { lat: 26.9342, lon: -82.2810 }, // Fort Myers Beach
+      { lat: 26.1420, lon: -81.7948 }, // Naples
+    ];
+
+    let minDistance = Infinity;
+    for (const point of coastlinePoints) {
+      const R = 3959; // Earth radius in miles
+      const dLat = (point.lat - lat) * Math.PI / 180;
+      const dLon = (point.lon - lon) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat * Math.PI / 180) * Math.cos(point.lat * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      const distance = R * c;
+      minDistance = Math.min(minDistance, distance);
+    }
+    return minDistance;
+  };
+
+  const [lat, lon] = origin.split(',').map(Number);
+  const actualCoastDistance = calculateCoastlineDistance(lat, lon);
+  console.log(`getDistances: Actual coastline distance: ${actualCoastDistance.toFixed(1)} mi`);
+
   // UPDATED: 2025-11-30 - Corrected field numbers to match fields-schema.ts
   const placeTypes = [
     { type: 'supermarket', field: '83_distance_grocery_mi', name: 'Grocery' },
@@ -1316,12 +1346,23 @@ async function getDistances(lat: number, lon: number): Promise<Record<string, an
           const meters = distData.rows[0].elements[0].distance.value;
           const miles = (meters / 1609.34).toFixed(1);
 
-          fields[place.field] = {
-            value: parseFloat(miles),
-            source: 'Google Places',
-            confidence: 'High',
-            details: nearest.name
-          };
+          // BEACH VALIDATION: If Google says beach is nearby but coastline is far, use coastline distance
+          if (place.type === 'beach' && parseFloat(miles) < actualCoastDistance * 0.5) {
+            console.log(`⚠️ Beach validation: Google says ${miles} mi but coastline is ${actualCoastDistance.toFixed(1)} mi - using coastline`);
+            fields[place.field] = {
+              value: parseFloat(actualCoastDistance.toFixed(1)),
+              source: 'Coastline Calculation',
+              confidence: 'High',
+              details: `Nearest Gulf Coast point (${actualCoastDistance.toFixed(1)} mi)`
+            };
+          } else {
+            fields[place.field] = {
+              value: parseFloat(miles),
+              source: 'Google Places',
+              confidence: 'High',
+              details: nearest.name
+            };
+          }
         }
       }
     } catch (e) {

@@ -179,7 +179,7 @@ export default function PropertyDetail() {
             }`}>
               {property.listingStatus}
             </span>
-            {property.daysOnMarket > 0 && (
+            {property.daysOnMarket !== undefined && property.daysOnMarket > 0 && (
               <span className="text-xs text-gray-500">
                 {property.daysOnMarket} days on market
               </span>

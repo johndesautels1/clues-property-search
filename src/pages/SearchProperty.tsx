@@ -46,18 +46,20 @@ export default function SearchProperty() {
 
     // Create property card
     // Extract Days on Market from Stellar MLS API if available
-    let daysOnMarket = 0;
+    let daysOnMarket: number | undefined = undefined;
     let cumulativeDaysOnMarket: number | undefined = undefined;
 
     if (apiFields) {
       // Try raw Stellar MLS Bridge API fields first (these are the accurate values)
-      if (apiFields['DaysOnMarket']?.value !== undefined) {
-        daysOnMarket = parseInt(String(apiFields['DaysOnMarket'].value || '0')) || 0;
+      if (apiFields['DaysOnMarket']?.value !== undefined && apiFields['DaysOnMarket'].value !== null) {
+        const domValue = parseInt(String(apiFields['DaysOnMarket'].value));
+        daysOnMarket = isNaN(domValue) ? undefined : domValue;
       }
 
       // Get CDOM if available
-      if (apiFields['CumulativeDaysOnMarket']?.value !== undefined) {
-        cumulativeDaysOnMarket = parseInt(String(apiFields['CumulativeDaysOnMarket'].value || '0')) || undefined;
+      if (apiFields['CumulativeDaysOnMarket']?.value !== undefined && apiFields['CumulativeDaysOnMarket'].value !== null) {
+        const cdomValue = parseInt(String(apiFields['CumulativeDaysOnMarket'].value));
+        cumulativeDaysOnMarket = isNaN(cdomValue) ? undefined : cdomValue;
       }
 
       console.log('[SearchProperty] Extracted DOM/CDOM:', { daysOnMarket, cumulativeDaysOnMarket });
