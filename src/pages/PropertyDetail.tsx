@@ -962,8 +962,33 @@ export default function PropertyDetail() {
 
       {/* Content */}
       <div className="px-4 py-6 md:px-8 md:py-10 max-w-7xl mx-auto">
-        {/* Address & Price Header */}
+        {/* Address & Price Header with Centered Photo */}
         <motion.div variants={itemVariants} className="mb-8">
+          {/* Photo Gallery - From Stellar MLS Media or Google Street View - Centered at top */}
+          {fullProperty?.address.primaryPhotoUrl?.value && (
+            <div className="mb-6 flex justify-center">
+              <div className="glass-card overflow-hidden max-w-md">
+                <img
+                  src={fullProperty.address.primaryPhotoUrl.value}
+                  alt={`${fullProperty.address.fullAddress.value || property.address} - Primary Photo`}
+                  className="w-full h-auto object-cover"
+                  style={{ aspectRatio: '3/2' }}
+                  onError={(e) => {
+                    // Hide image if it fails to load
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+                {fullProperty.address.photoGallery?.value && fullProperty.address.photoGallery.value.length > 1 && (
+                  <div className="p-3 bg-quantum-dark/50 border-t border-white/5">
+                    <p className="text-xs text-gray-400 text-center">
+                      {fullProperty.address.photoGallery.value.length} photos available from Stellar MLS
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
             <div className="flex-1">
               <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
@@ -999,31 +1024,6 @@ export default function PropertyDetail() {
             </span>
           </div>
         </motion.div>
-
-        {/* Photo Gallery - From Stellar MLS Media or Google Street View */}
-        {fullProperty?.address.primaryPhotoUrl?.value && (
-          <motion.div variants={itemVariants} className="mb-8">
-            <div className="glass-card overflow-hidden max-w-md">
-              <img
-                src={fullProperty.address.primaryPhotoUrl.value}
-                alt={`${fullProperty.address.fullAddress.value || property.address} - Primary Photo`}
-                className="w-full h-auto object-cover"
-                style={{ aspectRatio: '3/2' }}
-                onError={(e) => {
-                  // Hide image if it fails to load
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-              />
-              {fullProperty.address.photoGallery?.value && fullProperty.address.photoGallery.value.length > 1 && (
-                <div className="p-3 bg-quantum-dark/50 border-t border-white/5">
-                  <p className="text-xs text-gray-400 text-center">
-                    {fullProperty.address.photoGallery.value.length} photos available from Stellar MLS
-                  </p>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
 
         {/* Quick Stats */}
         <motion.div

@@ -1626,9 +1626,11 @@ export default function AddProperty() {
       );
       const listingStatus = (statusRaw || 'Active') as 'Active' | 'Pending' | 'Sold';
 
-      // Get days on market (Stellar MLS: "ADOM" or "CDOM" -> "95_days_on_market_avg")
+      // Get days on market (Stellar MLS Bridge API: DaysOnMarket or CumulativeDaysOnMarket)
+      // Check both Bridge API field names AND parsed PDF field names
       const domRaw = getFieldValue(pdfParsedFields,
-        '95_days_on_market_avg', 'days_on_market', 'adom', 'cdom', 'dom'
+        'DaysOnMarket', 'CumulativeDaysOnMarket', // Stellar MLS Bridge API field names
+        '95_days_on_market_avg', 'days_on_market', 'adom', 'cdom', 'dom' // PDF field names
       );
       const daysOnMarket = parseInt(String(domRaw || '0')) || 0;
 
