@@ -1219,7 +1219,14 @@ export default function PropertyDetail() {
             </div>
             <div className="text-left md:text-right">
               <div className="text-3xl md:text-4xl font-bold text-white mb-1">
-                {formatValue(fullProperty?.address.listingPrice.value || property.price, 'currency')}
+                {(() => {
+                  const listingStatus = fullProperty?.address.listingStatus.value || property.listingStatus;
+                  // For Closed listings, show Last Sale Price. Otherwise show Listing Price.
+                  if (listingStatus === 'Closed' && fullProperty?.details.lastSalePrice) {
+                    return formatValue(fullProperty.details.lastSalePrice.value, 'currency');
+                  }
+                  return formatValue(fullProperty?.address.listingPrice.value || property.price, 'currency');
+                })()}
               </div>
               {property.pricePerSqft > 0 && (
                 <p className="text-gray-400">
@@ -1502,6 +1509,17 @@ export default function PropertyDetail() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   {renderDataField("Full Address", fullProperty.address.fullAddress, "text", undefined, "1_full_address")}
+                  {/* Extract and display Unit Number if present */}
+                  {(() => {
+                    const fullAddr = fullProperty.address.fullAddress.value;
+                    if (fullAddr) {
+                      const unitMatch = fullAddr.match(/(?:UNIT|APT|#)\s*(\w+)/i);
+                      if (unitMatch) {
+                        return renderDataField("Unit #", { value: unitMatch[1], confidence: 'High' }, "text");
+                      }
+                    }
+                    return null;
+                  })()}
                   {renderDataField("MLS Primary", fullProperty.address.mlsPrimary, "text", undefined, "2_mls_primary")}
                   {renderDataField("MLS Secondary", fullProperty.address.mlsSecondary, "text", undefined, "3_mls_secondary")}
                   {renderDataField("Listing Status", fullProperty.address.listingStatus, "text", undefined, "4_listing_status")}
