@@ -2945,6 +2945,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             console.log('✅ Bridge returned fields:', mlsFieldCount, 'fields');
             console.log('📋 Field keys sample:', Object.keys(bridgeData.fields).slice(0, 10));
 
+            // 🔍 DEBUG: Check for photo fields specifically
+            const hasPhotoUrl = 'property_photo_url' in bridgeData.fields;
+            const hasPhotoGallery = 'property_photos' in bridgeData.fields;
+            console.log('📸 Photo fields check:', { hasPhotoUrl, hasPhotoGallery });
+            if (hasPhotoUrl) {
+              console.log('  ✅ property_photo_url:', bridgeData.fields.property_photo_url);
+            }
+            if (hasPhotoGallery) {
+              console.log('  ✅ property_photos:', bridgeData.fields.property_photos);
+            }
+
             // Convert Bridge fields to arbitration format
             const mlsFields: Record<string, FieldValue> = {};
             for (const [key, fieldData] of Object.entries(bridgeData.fields)) {
