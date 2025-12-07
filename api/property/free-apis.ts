@@ -205,11 +205,12 @@ export async function callGoogleStreetView(lat: number, lon: number, address: st
       setField(fields, '169_property_photo_url', streetViewUrl, 'Google Street View');
       setField(fields, '170_property_photos', [streetViewUrl], 'Google Street View');
 
-      console.log(`[Google Street View] Street View URL: ${streetViewUrl}`);
+      console.log(`[Google Street View] 📸 Street View URL: ${streetViewUrl}`);
+      console.log(`[Google Street View] 📸 Fields set:`, fields);
 
       return { success: true, source: 'Google Street View', fields };
     } else {
-      console.log(`[Google Street View] No imagery available for ${address}`);
+      console.log(`[Google Street View] ⚠️ No imagery available for ${address} - Status: ${metadata.status}`);
       return { success: false, source: 'Google Street View', fields, error: `No Street View imagery: ${metadata.status}` };
     }
 
@@ -593,8 +594,29 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
     const data = fetchResult.data;
 
     // FBI API returns keys like "Florida Offenses", "United States Offenses" (not "FL")
-    const stateOffensesKey = 'Florida Offenses';
+    // Map state code to full state name
+    const stateNames: { [key: string]: string } = {
+      'FL': 'Florida', 'CA': 'California', 'TX': 'Texas', 'NY': 'New York',
+      'PA': 'Pennsylvania', 'IL': 'Illinois', 'OH': 'Ohio', 'GA': 'Georgia',
+      'NC': 'North Carolina', 'MI': 'Michigan', 'NJ': 'New Jersey', 'VA': 'Virginia',
+      'WA': 'Washington', 'AZ': 'Arizona', 'MA': 'Massachusetts', 'TN': 'Tennessee',
+      'IN': 'Indiana', 'MO': 'Missouri', 'MD': 'Maryland', 'WI': 'Wisconsin',
+      'CO': 'Colorado', 'MN': 'Minnesota', 'SC': 'South Carolina', 'AL': 'Alabama',
+      'LA': 'Louisiana', 'KY': 'Kentucky', 'OR': 'Oregon', 'OK': 'Oklahoma',
+      'CT': 'Connecticut', 'UT': 'Utah', 'IA': 'Iowa', 'NV': 'Nevada',
+      'AR': 'Arkansas', 'MS': 'Mississippi', 'KS': 'Kansas', 'NM': 'New Mexico',
+      'NE': 'Nebraska', 'WV': 'West Virginia', 'ID': 'Idaho', 'HI': 'Hawaii',
+      'NH': 'New Hampshire', 'ME': 'Maine', 'MT': 'Montana', 'RI': 'Rhode Island',
+      'DE': 'Delaware', 'SD': 'South Dakota', 'ND': 'North Dakota', 'AK': 'Alaska',
+      'VT': 'Vermont', 'WY': 'Wyoming'
+    };
+
+    const stateName = stateNames[stateCode] || stateCode;
+    const stateOffensesKey = `${stateName} Offenses`;
     const usOffensesKey = 'United States Offenses';
+
+    console.log(`[FBI Crime] Looking for key: "${stateOffensesKey}"`);
+    console.log(`[FBI Crime] Available keys:`, Object.keys(data.offenses?.rates || {}));
 
     if (data.offenses?.rates?.[stateOffensesKey]) {
       const stateRates = data.offenses.rates[stateOffensesKey];
@@ -602,9 +624,13 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
 
       // Calculate annual average from monthly rates
       const monthlyRates = Object.values(stateRates).filter((v): v is number => typeof v === 'number');
+      console.log(`[FBI Crime] Found ${monthlyRates.length} monthly rates`);
+
       if (monthlyRates.length > 0) {
         // Sum monthly rates for annual rate (rates are per 100k per month)
         const annualRate = Math.round(monthlyRates.reduce((a, b) => a + b, 0));
+        console.log(`[FBI Crime] ✅ Annual violent crime rate: ${annualRate} per 100k`);
+
         // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Safety & Crime (88-90)
         setField(fields, '88_violent_crime_index', annualRate.toString(), FBI_CRIME_SOURCE);
 
@@ -615,6 +641,7 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
         else if (annualRate > 300) grade = 'C';
         else if (annualRate > 200) grade = 'B';
 
+        console.log(`[FBI Crime] Safety grade: ${grade}`);
         setField(fields, '90_neighborhood_safety_rating', grade, FBI_CRIME_SOURCE);
 
         // Compare to US average
@@ -625,8 +652,11 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
           // Note: No direct field for crime_vs_national_percent in 168-field schema
         }
       }
+    } else {
+      console.log(`[FBI Crime] ⚠️ No data found for key "${stateOffensesKey}"`);
     }
 
+    console.log(`[FBI Crime] Returning ${Object.keys(fields).length} fields`);
     return { success: Object.keys(fields).length > 0, source: FBI_CRIME_SOURCE, fields };
 
   } catch (error) {
