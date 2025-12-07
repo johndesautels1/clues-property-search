@@ -40,6 +40,7 @@ import {
   FileText,
   Info,
   Waves,
+  Wind,
 } from 'lucide-react';
 import { usePropertyStore } from '@/store/propertyStore';
 import { useIsAdmin } from '@/store/authStore';
@@ -1032,6 +1033,91 @@ export default function PropertyDetail() {
                   <p className="text-sm text-cyan-300 font-medium">
                     {fullProperty.stellarMLS.waterfront.waterBodyName.value}
                   </p>
+                </div>
+              )}
+
+              {/* Climate Risk Badges - Florida Critical Risks */}
+              {(fullProperty?.utilities.floodRiskLevel?.value || fullProperty?.utilities.hurricaneRisk?.value || fullProperty?.utilities.seaLevelRiseRisk?.value) && (
+                <div className="flex flex-wrap items-center gap-2 mt-3">
+                  <span className="text-xs text-gray-500 uppercase tracking-wider">Climate Risks:</span>
+                  {fullProperty.utilities.floodRiskLevel?.value && (
+                    <div className={`px-3 py-1.5 rounded-lg border flex items-center gap-2 ${
+                      String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('low') ?
+                        'bg-emerald-500/10 border-emerald-500/30' :
+                      String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('moderate') ?
+                        'bg-amber-500/10 border-amber-500/30' :
+                        'bg-red-500/10 border-red-500/30'
+                    }`}>
+                      <Waves className={`w-4 h-4 ${
+                        String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('low') ?
+                          'text-emerald-400' :
+                        String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('moderate') ?
+                          'text-amber-400' :
+                          'text-red-400'
+                      }`} />
+                      <span className={`text-xs font-semibold ${
+                        String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('low') ?
+                          'text-emerald-300' :
+                        String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('moderate') ?
+                          'text-amber-300' :
+                          'text-red-300'
+                      }`}>
+                        Flood: {fullProperty.utilities.floodRiskLevel.value}
+                      </span>
+                    </div>
+                  )}
+                  {fullProperty.utilities.hurricaneRisk?.value && (
+                    <div className={`px-3 py-1.5 rounded-lg border flex items-center gap-2 ${
+                      String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('low') ?
+                        'bg-emerald-500/10 border-emerald-500/30' :
+                      String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('moderate') ?
+                        'bg-amber-500/10 border-amber-500/30' :
+                        'bg-red-500/10 border-red-500/30'
+                    }`}>
+                      <Wind className={`w-4 h-4 ${
+                        String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('low') ?
+                          'text-emerald-400' :
+                        String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('moderate') ?
+                          'text-amber-400' :
+                          'text-red-400'
+                      }`} />
+                      <span className={`text-xs font-semibold ${
+                        String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('low') ?
+                          'text-emerald-300' :
+                        String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('moderate') ?
+                          'text-amber-300' :
+                          'text-red-300'
+                      }`}>
+                        Hurricane: {fullProperty.utilities.hurricaneRisk.value}
+                      </span>
+                    </div>
+                  )}
+                  {fullProperty.utilities.seaLevelRiseRisk?.value && (
+                    <div className={`px-3 py-1.5 rounded-lg border flex items-center gap-2 ${
+                      String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('low') ?
+                        'bg-emerald-500/10 border-emerald-500/30' :
+                      String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('moderate') ?
+                        'bg-amber-500/10 border-amber-500/30' :
+                        'bg-red-500/10 border-red-500/30'
+                    }`}>
+                      <TrendingUp className={`w-4 h-4 ${
+                        String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('low') ?
+                          'text-emerald-400' :
+                        String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('moderate') ?
+                          'text-amber-400' :
+                          'text-red-400'
+                      }`} />
+                      <span className={`text-xs font-semibold ${
+                        String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('low') ?
+                          'text-emerald-300' :
+                        String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('moderate') ?
+                          'text-amber-300' :
+                          'text-red-300'
+                      }`}>
+                        Sea Level: {fullProperty.utilities.seaLevelRiseRisk.value}
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
 

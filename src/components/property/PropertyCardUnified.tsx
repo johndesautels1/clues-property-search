@@ -184,6 +184,11 @@ export default function PropertyCardUnified({
 
     // Noise level (field 78)
     noiseLevel: fullProperty ? getFieldValue(fullProperty.location?.noiseLevel) as string | null : null,
+
+    // Climate risk text fields (fields 120, 124, 128)
+    floodRiskLevel: fullProperty ? getFieldValue(fullProperty.utilities?.floodRiskLevel) as string | null : null,
+    hurricaneRiskText: fullProperty ? getFieldValue(fullProperty.utilities?.hurricaneRisk) as string | null : null,
+    seaLevelRiseRisk: fullProperty ? getFieldValue(fullProperty.utilities?.seaLevelRiseRisk) as string | null : null,
   };
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -528,52 +533,140 @@ export default function PropertyCardUnified({
                   )}
 
                   {/* Risk Section */}
-                  {(data.floodRisk !== null || data.hurricaneRisk !== null) && (
+                  {(data.floodRisk !== null || data.hurricaneRisk !== null || data.floodRiskLevel || data.hurricaneRiskText || data.seaLevelRiseRisk) && (
                     <div className="border-t border-white/10 pt-4">
                       <p className="text-red-400 text-xs uppercase tracking-wider mb-3 font-bold flex items-center gap-2">
                         <Shield className="w-4 h-4" />
-                        RISK (1-10)
+                        CLIMATE RISK
                       </p>
-                      <div className="space-y-3">
-                        {data.floodRisk !== null && (
-                          <div>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-blue-300 text-xs font-medium flex items-center gap-1">
-                                <Waves className="w-3 h-3" />
-                                Flood
-                              </span>
-                              <span className={`text-sm font-bold ${getRiskColor(data.floodRisk)}`}>
-                                {data.floodRisk}/10
-                              </span>
-                            </div>
-                            <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full ${getRiskBg(data.floodRisk)}`}
-                                style={{ width: `${data.floodRisk * 10}%` }}
-                              />
-                            </div>
-                          </div>
-                        )}
-                        {data.hurricaneRisk !== null && (
-                          <div>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-blue-300 text-xs font-medium flex items-center gap-1">
-                                <Flame className="w-3 h-3" />
-                                Hurricane
-                              </span>
-                              <span className={`text-sm font-bold ${getRiskColor(data.hurricaneRisk)}`}>
-                                {data.hurricaneRisk}/10
+
+                      {/* Text-based climate risk badges (Florida-specific) */}
+                      {(data.floodRiskLevel || data.hurricaneRiskText || data.seaLevelRiseRisk) && (
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {data.floodRiskLevel && (
+                            <div className={`px-2 py-1 rounded border flex items-center gap-1 ${
+                              String(data.floodRiskLevel).toLowerCase().includes('minimal') || String(data.floodRiskLevel).toLowerCase().includes('low') ?
+                                'bg-emerald-500/10 border-emerald-500/30' :
+                              String(data.floodRiskLevel).toLowerCase().includes('moderate') ?
+                                'bg-amber-500/10 border-amber-500/30' :
+                                'bg-red-500/10 border-red-500/30'
+                            }`}>
+                              <Waves className={`w-3 h-3 ${
+                                String(data.floodRiskLevel).toLowerCase().includes('minimal') || String(data.floodRiskLevel).toLowerCase().includes('low') ?
+                                  'text-emerald-400' :
+                                String(data.floodRiskLevel).toLowerCase().includes('moderate') ?
+                                  'text-amber-400' :
+                                  'text-red-400'
+                              }`} />
+                              <span className={`text-[10px] font-semibold ${
+                                String(data.floodRiskLevel).toLowerCase().includes('minimal') || String(data.floodRiskLevel).toLowerCase().includes('low') ?
+                                  'text-emerald-300' :
+                                String(data.floodRiskLevel).toLowerCase().includes('moderate') ?
+                                  'text-amber-300' :
+                                  'text-red-300'
+                              }`}>
+                                {data.floodRiskLevel}
                               </span>
                             </div>
-                            <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full ${getRiskBg(data.hurricaneRisk)}`}
-                                style={{ width: `${data.hurricaneRisk * 10}%` }}
-                              />
+                          )}
+                          {data.hurricaneRiskText && (
+                            <div className={`px-2 py-1 rounded border flex items-center gap-1 ${
+                              String(data.hurricaneRiskText).toLowerCase().includes('minimal') || String(data.hurricaneRiskText).toLowerCase().includes('low') ?
+                                'bg-emerald-500/10 border-emerald-500/30' :
+                              String(data.hurricaneRiskText).toLowerCase().includes('moderate') ?
+                                'bg-amber-500/10 border-amber-500/30' :
+                                'bg-red-500/10 border-red-500/30'
+                            }`}>
+                              <Flame className={`w-3 h-3 ${
+                                String(data.hurricaneRiskText).toLowerCase().includes('minimal') || String(data.hurricaneRiskText).toLowerCase().includes('low') ?
+                                  'text-emerald-400' :
+                                String(data.hurricaneRiskText).toLowerCase().includes('moderate') ?
+                                  'text-amber-400' :
+                                  'text-red-400'
+                              }`} />
+                              <span className={`text-[10px] font-semibold ${
+                                String(data.hurricaneRiskText).toLowerCase().includes('minimal') || String(data.hurricaneRiskText).toLowerCase().includes('low') ?
+                                  'text-emerald-300' :
+                                String(data.hurricaneRiskText).toLowerCase().includes('moderate') ?
+                                  'text-amber-300' :
+                                  'text-red-300'
+                              }`}>
+                                {data.hurricaneRiskText}
+                              </span>
                             </div>
-                          </div>
-                        )}
-                      </div>
+                          )}
+                          {data.seaLevelRiseRisk && (
+                            <div className={`px-2 py-1 rounded border flex items-center gap-1 ${
+                              String(data.seaLevelRiseRisk).toLowerCase().includes('minimal') || String(data.seaLevelRiseRisk).toLowerCase().includes('low') ?
+                                'bg-emerald-500/10 border-emerald-500/30' :
+                              String(data.seaLevelRiseRisk).toLowerCase().includes('moderate') ?
+                                'bg-amber-500/10 border-amber-500/30' :
+                                'bg-red-500/10 border-red-500/30'
+                            }`}>
+                              <TrendingUp className={`w-3 h-3 ${
+                                String(data.seaLevelRiseRisk).toLowerCase().includes('minimal') || String(data.seaLevelRiseRisk).toLowerCase().includes('low') ?
+                                  'text-emerald-400' :
+                                String(data.seaLevelRiseRisk).toLowerCase().includes('moderate') ?
+                                  'text-amber-400' :
+                                  'text-red-400'
+                              }`} />
+                              <span className={`text-[10px] font-semibold ${
+                                String(data.seaLevelRiseRisk).toLowerCase().includes('minimal') || String(data.seaLevelRiseRisk).toLowerCase().includes('low') ?
+                                  'text-emerald-300' :
+                                String(data.seaLevelRiseRisk).toLowerCase().includes('moderate') ?
+                                  'text-amber-300' :
+                                  'text-red-300'
+                              }`}>
+                                Sea Level
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Numeric risk scores (1-10) */}
+                      {(data.floodRisk !== null || data.hurricaneRisk !== null) && (
+                        <div className="space-y-3">
+                          {data.floodRisk !== null && (
+                            <div>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-blue-300 text-xs font-medium flex items-center gap-1">
+                                  <Waves className="w-3 h-3" />
+                                  Flood
+                                </span>
+                                <span className={`text-sm font-bold ${getRiskColor(data.floodRisk)}`}>
+                                  {data.floodRisk}/10
+                                </span>
+                              </div>
+                              <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full ${getRiskBg(data.floodRisk)}`}
+                                  style={{ width: `${data.floodRisk * 10}%` }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                          {data.hurricaneRisk !== null && (
+                            <div>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-blue-300 text-xs font-medium flex items-center gap-1">
+                                  <Flame className="w-3 h-3" />
+                                  Hurricane
+                                </span>
+                                <span className={`text-sm font-bold ${getRiskColor(data.hurricaneRisk)}`}>
+                                  {data.hurricaneRisk}/10
+                                </span>
+                              </div>
+                              <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full ${getRiskBg(data.hurricaneRisk)}`}
+                                  style={{ width: `${data.hurricaneRisk * 10}%` }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
 
