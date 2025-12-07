@@ -460,6 +460,23 @@ export class BridgeAPIClient {
       console.log('[Bridge API] Response @odata.count:', data['@odata.count']);
       console.log('[Bridge API] Response @odata.context:', data['@odata.context']);
 
+      // DEBUG: Check if Media is actually in the response from $expand=Media
+      if (data.value.length > 0) {
+        const firstProperty = data.value[0];
+        console.log('[Bridge API] 🔍 MEDIA DEBUG - First property Media check:', {
+          hasMedia: !!firstProperty.Media,
+          mediaType: typeof firstProperty.Media,
+          isArray: Array.isArray(firstProperty.Media),
+          length: firstProperty.Media?.length || 0,
+          ListingKey: firstProperty.ListingKey || firstProperty.ListingId,
+        });
+        if (firstProperty.Media && Array.isArray(firstProperty.Media) && firstProperty.Media.length > 0) {
+          console.log('[Bridge API] 📸 Media[0] sample:', firstProperty.Media[0]);
+        } else {
+          console.log('[Bridge API] ⚠️ Media is EMPTY in $expand response despite properties having photos in MLS!');
+        }
+      }
+
       if (data.value.length === 0) {
         console.log('[Bridge API] NO PROPERTIES FOUND - This could mean:');
         console.log('  1. Property not in approved feed type (check IDX/VOW restrictions)');
