@@ -1359,7 +1359,7 @@ export default function PropertyDetail() {
 
             {/* Location Scores (Fields 74-82) */}
             <Section title="Location Scores" icon={<Target className="w-6 h-6" />} defaultExpanded={false}>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
                 <div className="text-center">
                   <div className="text-3xl font-bold text-quantum-cyan mb-1">
                     {fullProperty.location.walkScore.value || '--'}
@@ -1401,6 +1401,33 @@ export default function PropertyDetail() {
                     {fullProperty.location.neighborhoodSafetyRating.value || '--'}
                   </div>
                   <p className="text-sm text-gray-400">Safety</p>
+                </div>
+                <div className="text-center">
+                  {fullProperty.location.noiseLevel.value && (
+                    <>
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <div className={`text-2xl font-bold ${
+                          String(fullProperty.location.noiseLevel.value).toLowerCase().includes('quiet') ? 'text-quantum-green' :
+                          String(fullProperty.location.noiseLevel.value).toLowerCase().includes('moderate') ? 'text-amber-400' :
+                          'text-red-400'
+                        }`}>
+                          {String(fullProperty.location.noiseLevel.value).match(/\d+/) ?
+                            String(fullProperty.location.noiseLevel.value).match(/\d+/)?.[0] :
+                            '--'}
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-400">Noise Level</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {String(fullProperty.location.noiseLevel.value).replace(/\d+\s*-?\s*/,'')}
+                      </p>
+                    </>
+                  )}
+                  {!fullProperty.location.noiseLevel.value && (
+                    <>
+                      <div className="text-3xl font-bold text-gray-500 mb-1">--</div>
+                      <p className="text-sm text-gray-400">Noise Level</p>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="mt-6 pt-6 border-t border-white/10 grid grid-cols-1 md:grid-cols-2 gap-4">

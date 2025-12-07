@@ -181,6 +181,9 @@ export default function PropertyCardUnified({
 
     // Front exposure (field 154)
     frontExposure: fullProperty ? getFieldValue(fullProperty.stellarMLS?.legal?.frontExposure) as string | null : null,
+
+    // Noise level (field 78)
+    noiseLevel: fullProperty ? getFieldValue(fullProperty.location?.noiseLevel) as string | null : null,
   };
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -464,7 +467,7 @@ export default function PropertyCardUnified({
                   )}
 
                   {/* Scores Section */}
-                  {(data.walkScore || data.transitScore || data.bikeScore || data.safetyScore) && (
+                  {(data.walkScore || data.transitScore || data.bikeScore || data.safetyScore || data.noiseLevel) && (
                     <div className="border-t border-white/10 pt-4">
                       <p className="text-purple-400 text-xs uppercase tracking-wider mb-3 font-bold flex items-center gap-2">
                         <TrendingUp className="w-4 h-4" />
@@ -505,6 +508,22 @@ export default function PropertyCardUnified({
                           </div>
                         )}
                       </div>
+                      {/* Noise Level - Full Width Below */}
+                      {data.noiseLevel && (
+                        <div className="mt-3 p-2 bg-white/5 rounded-lg border border-white/10">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-400">Noise Level:</span>
+                            <span className={`text-sm font-bold ${
+                              String(data.noiseLevel).toLowerCase().includes('quiet') ? 'text-emerald-400' :
+                              String(data.noiseLevel).toLowerCase().includes('moderate') ? 'text-amber-400' :
+                              'text-red-400'
+                            }`}>
+                              {data.noiseLevel}
+                            </span>
+                          </div>
+                          <p className="text-[9px] text-gray-500 mt-1">Based on traffic, airport, industry</p>
+                        </div>
+                      )}
                     </div>
                   )}
 
