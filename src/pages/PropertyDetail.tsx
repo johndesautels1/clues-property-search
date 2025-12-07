@@ -1267,6 +1267,16 @@ export default function PropertyDetail() {
               </div>
             )}
 
+            {/* Extended Data - Occupancy Badge */}
+            {fullProperty?.extendedMLS?.occupantType && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-500/20 border border-purple-400/30">
+                <span className="px-1.5 py-0.5 bg-purple-500/30 border border-purple-400/40 rounded text-purple-200 text-xs font-bold">E.D.</span>
+                <span className="text-sm font-semibold text-purple-300">
+                  {fullProperty.extendedMLS.occupantType}
+                </span>
+              </div>
+            )}
+
             {/* View Count Badge */}
             {property?.viewCount && property.viewCount > 0 && (
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/30">
@@ -1350,6 +1360,60 @@ export default function PropertyDetail() {
             )}
           </div>
         </motion.div>
+
+        {/* Extended Data - Virtual Tour CTA */}
+        {fullProperty?.extendedMLS?.virtualTourURLUnbranded && (
+          <motion.div variants={itemVariants} className="mb-8">
+            <a
+              href={fullProperty.extendedMLS.virtualTourURLUnbranded}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block glass-card p-6 hover:bg-purple-500/10 transition-all group border-2 border-purple-400/30 hover:border-purple-400/60"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center group-hover:bg-purple-500/30 transition-all">
+                    <Eye className="w-6 h-6 text-purple-300" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-xl font-bold text-white">Take a Virtual Tour</h3>
+                      <span className="px-2 py-0.5 bg-purple-500/20 border border-purple-400/30 rounded text-purple-300 text-xs font-bold">E.D.</span>
+                    </div>
+                    <p className="text-gray-400">Explore this property in 3D from anywhere</p>
+                  </div>
+                </div>
+                <div className="text-purple-300 group-hover:translate-x-1 transition-transform">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            </a>
+          </motion.div>
+        )}
+
+        {/* Extended Data - Showing Instructions Banner */}
+        {fullProperty?.extendedMLS?.showingInstructions && (
+          <motion.div variants={itemVariants} className="mb-8">
+            <div className="glass-card p-6 border-2 border-blue-400/30 bg-blue-500/5">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                  <svg className="w-5 h-5 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-lg font-bold text-white">Showing Instructions</h3>
+                    <span className="px-2 py-0.5 bg-purple-500/20 border border-purple-400/30 rounded text-purple-300 text-xs font-bold">E.D.</span>
+                  </div>
+                  <p className="text-gray-300">{fullProperty.extendedMLS.showingInstructions}</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Recent Improvements / System Ages */}
         {fullProperty && (fullProperty.structural?.roofAgeEst?.value || fullProperty.structural?.hvacAge?.value) && (
@@ -1454,6 +1518,36 @@ export default function PropertyDetail() {
                   {renderDataField("Redfin Estimate", fullProperty.financial.redfinEstimate, 'currency', undefined, "16_redfin_estimate")}
                 </div>
               </div>
+
+              {/* Extended Data - Price History */}
+              {fullProperty?.extendedMLS?.originalListPrice && (
+                <div className="mt-6 pt-6 border-t border-white/10">
+                  <div className="flex items-center gap-2 mb-3">
+                    <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Price History</h4>
+                    <span className="px-2 py-0.5 bg-purple-500/20 border border-purple-400/30 rounded text-purple-300 text-xs font-bold">E.D.</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {fullProperty.extendedMLS.originalListPrice && (
+                      <div className="px-4 py-3 bg-yellow-500/10 border border-yellow-400/20 rounded-lg">
+                        <div className="text-xs text-gray-400 mb-1">Original Price</div>
+                        <div className="text-lg font-bold text-yellow-300">${fullProperty.extendedMLS.originalListPrice.toLocaleString()}</div>
+                      </div>
+                    )}
+                    {fullProperty.extendedMLS.currentPrice && (
+                      <div className="px-4 py-3 bg-green-500/10 border border-green-400/20 rounded-lg">
+                        <div className="text-xs text-gray-400 mb-1">Current Price</div>
+                        <div className="text-lg font-bold text-green-300">${fullProperty.extendedMLS.currentPrice.toLocaleString()}</div>
+                      </div>
+                    )}
+                    {fullProperty.extendedMLS.priceChangeTimestamp && (
+                      <div className="px-4 py-3 bg-blue-500/10 border border-blue-400/20 rounded-lg">
+                        <div className="text-xs text-gray-400 mb-1">Last Price Change</div>
+                        <div className="text-sm font-semibold text-blue-300">{new Date(fullProperty.extendedMLS.priceChangeTimestamp).toLocaleDateString()}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </Section>
 
             {/* Property Basics (Fields 17-29) */}
@@ -1479,6 +1573,30 @@ export default function PropertyDetail() {
                   {renderDataField("Parking Total", fullProperty.details.parkingTotal, "text", undefined, "29_parking_total")}
                 </div>
               </div>
+
+              {/* Extended Data - Architectural Style & Master Bedroom */}
+              {(fullProperty?.extendedMLS?.architecturalStyle || fullProperty?.extendedMLS?.masterBedroomLevel) && (
+                <div className="mt-6 pt-6 border-t border-white/10">
+                  <div className="flex items-center gap-2 mb-3">
+                    <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Additional Property Details</h4>
+                    <span className="px-2 py-0.5 bg-purple-500/20 border border-purple-400/30 rounded text-purple-300 text-xs font-bold">E.D.</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {fullProperty.extendedMLS.architecturalStyle && (
+                      <div className="px-4 py-3 bg-indigo-500/10 border border-indigo-400/20 rounded-lg">
+                        <div className="text-xs text-gray-400 mb-1">Architectural Style</div>
+                        <div className="text-base font-semibold text-indigo-300">{fullProperty.extendedMLS.architecturalStyle}</div>
+                      </div>
+                    )}
+                    {fullProperty.extendedMLS.masterBedroomLevel && (
+                      <div className="px-4 py-3 bg-violet-500/10 border border-violet-400/20 rounded-lg">
+                        <div className="text-xs text-gray-400 mb-1">Master Bedroom Level</div>
+                        <div className="text-base font-semibold text-violet-300">{fullProperty.extendedMLS.masterBedroomLevel}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </Section>
 
             {/* HOA & Taxes (Fields 30-38) */}
@@ -1865,6 +1983,23 @@ export default function PropertyDetail() {
                   {renderDataField("Water Body Name", fullProperty.stellarMLS?.waterfront?.waterBodyName, "text", undefined, "159_water_body_name")}
                 </div>
               </div>
+
+              {/* Extended Data - Waterfront Features */}
+              {fullProperty?.extendedMLS?.waterfrontFeatures && fullProperty.extendedMLS.waterfrontFeatures.length > 0 && (
+                <div className="mt-6 pt-6 border-t border-white/10">
+                  <div className="flex items-center gap-2 mb-3">
+                    <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Waterfront Features</h4>
+                    <span className="px-2 py-0.5 bg-purple-500/20 border border-purple-400/30 rounded text-purple-300 text-xs font-bold">E.D.</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {fullProperty.extendedMLS.waterfrontFeatures.map((feature: string, idx: number) => (
+                      <span key={idx} className="px-3 py-1.5 bg-cyan-500/20 border border-cyan-400/30 rounded-lg text-cyan-300 text-sm font-semibold">
+                        {feature}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </Section>
 
             {/* Stellar MLS - Leasing & Pets (Fields 160-165) */}
