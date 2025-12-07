@@ -1575,12 +1575,23 @@ export default function AddProperty() {
       const state = stateMatch?.[1] || getFieldValue(pdfParsedFields, 'state') || 'FL';
       const zip = zipMatch?.[1] || getFieldValue(pdfParsedFields, 'zip_code', 'zip', 'postal_code') || '';
 
-      // Get price with fallbacks (Stellar MLS: "List Price" -> "7_listing_price")
-      // UPDATED: 2025-11-30 - Corrected field numbers to match fields-schema.ts
+      // Get price with fallbacks
+      // IMPORTANT: ListPrice from Bridge API or 10_listing_price from PDF = CURRENT listing price
+      // NEVER use ClosePrice (14_last_sale_price) which is the old sale price
+      // UPDATED: 2025-12-07 - Added 'ListPrice' from Bridge API as highest priority
       const priceRaw = getFieldValue(pdfParsedFields,
-        '10_listing_price', 'listing_price', 'list_price', 'price', 'current_price'
+        'ListPrice', '10_listing_price', 'listing_price', 'list_price', 'current_price'
       );
       const price = parseFloat(String(priceRaw || '0').replace(/[^0-9.]/g, '')) || 0;
+
+      // Debug logging to catch price field confusion
+      console.log('[AddProperty] Price extraction:', {
+        priceRaw,
+        price,
+        availablePriceFields: Object.keys(pdfParsedFields).filter(k =>
+          k.toLowerCase().includes('price') || k.toLowerCase().includes('list')
+        ).map(k => ({ key: k, value: pdfParsedFields[k]?.value }))
+      });
 
       // Get price per sqft (Stellar MLS: "LP/SqFt" -> "11_price_per_sqft")
       const pricePerSqftRaw = getFieldValue(pdfParsedFields,
