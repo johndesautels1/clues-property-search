@@ -39,6 +39,7 @@ import {
   Loader2,
   FileText,
   Info,
+  Waves,
 } from 'lucide-react';
 import { usePropertyStore } from '@/store/propertyStore';
 import { useIsAdmin } from '@/store/authStore';
@@ -966,6 +967,32 @@ export default function PropertyDetail() {
           </div>
         )}
 
+        {/* Waterfront Badge - Top Left (if waterfront property) */}
+        {String(fullProperty?.stellarMLS?.waterfront?.waterFrontageYn?.value || '').toLowerCase() === 'yes' && (
+          <div className="absolute top-4 left-4 glass-card px-4 py-3 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 backdrop-blur-lg border-2 border-cyan-400/40">
+            <div className="flex items-center gap-3">
+              <Waves className="w-6 h-6 text-cyan-400" />
+              <div className="text-left">
+                <span className="text-lg font-bold text-cyan-300 block">WATERFRONT</span>
+                {fullProperty?.stellarMLS?.waterfront?.waterfrontFeet?.value && (
+                  <span className="text-xs text-cyan-400">{fullProperty?.stellarMLS?.waterfront?.waterfrontFeet?.value} ft frontage</span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Water View Badge - Top Left (if water view but not waterfront) */}
+        {String(fullProperty?.stellarMLS?.waterfront?.waterViewYn?.value || '').toLowerCase() === 'yes' &&
+         String(fullProperty?.stellarMLS?.waterfront?.waterFrontageYn?.value || '').toLowerCase() !== 'yes' && (
+          <div className="absolute top-4 left-4 glass-card px-4 py-2 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 backdrop-blur-lg border border-blue-400/30">
+            <div className="flex items-center gap-2">
+              <Waves className="w-5 h-5 text-blue-400" />
+              <span className="text-sm font-semibold text-blue-300">WATER VIEW</span>
+            </div>
+          </div>
+        )}
+
         {/* SMART Score Badge - Bottom Right */}
         <div className="absolute bottom-4 right-4 glass-card px-6 py-3">
           <div className="flex items-center gap-3">
@@ -998,6 +1025,15 @@ export default function PropertyDetail() {
               <p className="text-lg text-gray-400">
                 {property.city}, {property.state} {property.zip}
               </p>
+              {/* Waterfront Location Info */}
+              {fullProperty?.stellarMLS?.waterfront?.waterBodyName?.value && (
+                <div className="flex items-center gap-2 mt-2">
+                  <Waves className="w-4 h-4 text-cyan-400" />
+                  <p className="text-sm text-cyan-300 font-medium">
+                    {fullProperty.stellarMLS.waterfront.waterBodyName.value}
+                  </p>
+                </div>
+              )}
             </div>
             <div className="text-left md:text-right">
               <div className="text-3xl md:text-4xl font-bold text-white mb-1">

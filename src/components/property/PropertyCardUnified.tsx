@@ -165,6 +165,13 @@ export default function PropertyCardUnified({
       }
       return photoUrl;
     })(),
+
+    // Waterfront data (fields 155-159)
+    isWaterfront: fullProperty ? String(getFieldValue(fullProperty.stellarMLS?.waterfront?.waterFrontageYn) || '').toLowerCase() === 'yes' : false,
+    waterfrontFeet: fullProperty ? getFieldValue(fullProperty.stellarMLS?.waterfront?.waterfrontFeet) as number | null : null,
+    hasWaterView: fullProperty ? String(getFieldValue(fullProperty.stellarMLS?.waterfront?.waterViewYn) || '').toLowerCase() === 'yes' : false,
+    hasWaterAccess: fullProperty ? String(getFieldValue(fullProperty.stellarMLS?.waterfront?.waterAccessYn) || '').toLowerCase() === 'yes' : false,
+    waterBodyName: fullProperty ? getFieldValue(fullProperty.stellarMLS?.waterfront?.waterBodyName) as string | null : null,
   };
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -281,6 +288,26 @@ export default function PropertyCardUnified({
                 {data.listingStatus}
               </span>
             </div>
+
+            {/* Waterfront Badge - Bottom Right (if waterfront) */}
+            {data.isWaterfront && (
+              <div className="absolute bottom-3 right-3 px-2 py-1 rounded-full bg-cyan-500/30 backdrop-blur-lg border border-cyan-400/40 flex items-center gap-1">
+                <Waves className="w-3 h-3 text-cyan-300" />
+                <span className="text-xs font-bold text-cyan-200">
+                  WATERFRONT
+                </span>
+              </div>
+            )}
+
+            {/* Water View Badge - Bottom Right (if water view but not waterfront) */}
+            {!data.isWaterfront && data.hasWaterView && (
+              <div className="absolute bottom-3 right-3 px-2 py-1 rounded-full bg-blue-500/20 backdrop-blur-lg border border-blue-400/30 flex items-center gap-1">
+                <Waves className="w-3 h-3 text-blue-300" />
+                <span className="text-xs font-semibold text-blue-200">
+                  WATER VIEW
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Basic Property Info */}
@@ -512,10 +539,28 @@ export default function PropertyCardUnified({
                   )}
 
                   {/* Features Section */}
-                  {(data.hasPool || data.hasBeach || data.hasEV || data.hasSmart) && (
+                  {(data.hasPool || data.hasBeach || data.hasEV || data.hasSmart || data.isWaterfront || data.hasWaterView || data.hasWaterAccess) && (
                     <div className="border-t border-white/10 pt-4">
                       <p className="text-emerald-400 text-xs uppercase tracking-wider mb-3 font-bold">FEATURES</p>
                       <div className="flex flex-wrap gap-2">
+                        {data.isWaterfront && (
+                          <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gradient-to-r from-cyan-500/30 to-blue-500/30 border border-cyan-400/40 text-cyan-300 text-xs font-bold">
+                            <Waves className="w-3 h-3" />
+                            <span>Waterfront {data.waterfrontFeet ? `(${data.waterfrontFeet} ft)` : ''}</span>
+                          </div>
+                        )}
+                        {data.hasWaterView && !data.isWaterfront && (
+                          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs">
+                            <Waves className="w-3 h-3" />
+                            <span>Water View</span>
+                          </div>
+                        )}
+                        {data.hasWaterAccess && (
+                          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-cyan-500/20 text-cyan-400 text-xs">
+                            <Waves className="w-3 h-3" />
+                            <span>Water Access</span>
+                          </div>
+                        )}
                         {data.hasPool && (
                           <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-cyan-500/20 text-cyan-400 text-xs">
                             <Waves className="w-3 h-3" />
@@ -541,6 +586,15 @@ export default function PropertyCardUnified({
                           </div>
                         )}
                       </div>
+                      {/* Water Body Name */}
+                      {data.waterBodyName && (
+                        <div className="mt-3 p-2 bg-cyan-500/10 rounded-lg border border-cyan-400/20">
+                          <p className="text-xs text-cyan-400 font-medium">
+                            <Waves className="w-3 h-3 inline mr-1" />
+                            {data.waterBodyName}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
 
