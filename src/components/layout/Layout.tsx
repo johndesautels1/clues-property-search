@@ -5,6 +5,7 @@
 
 import { ReactNode } from 'react';
 import MobileNav from './MobileNav';
+import Header from './Header';
 import CluesHeader from './CluesHeader';
 import CluesFooter from './CluesFooter';
 import QuantumBackground from '@/components/ui/QuantumBackground';
@@ -19,8 +20,11 @@ export default function Layout({ children }: LayoutProps) {
       {/* Quantum animated background */}
       <QuantumBackground />
 
-      {/* CLUES Company Header */}
+      {/* CLUES Company Branding Header */}
       <CluesHeader />
+
+      {/* Navigation Header - hidden on mobile, visible on desktop */}
+      <Header />
 
       {/* Main content area */}
       <main className="relative z-10 pb-20 md:pb-0 pt-safe flex-1">
