@@ -1263,7 +1263,12 @@ export default function PropertyDetail() {
           <div className="glass-card p-6 text-center">
             <Ruler className="w-6 h-6 text-quantum-cyan mx-auto mb-2" />
             <span className="text-2xl font-bold text-white block">{fullProperty?.details.livingSqft.value?.toLocaleString() || property.sqft.toLocaleString()}</span>
-            <p className="text-sm text-gray-500">Sq Ft</p>
+            <p className="text-sm text-gray-500">Living Sq Ft</p>
+            {fullProperty?.details.totalSqftUnderRoof?.value && fullProperty.details.totalSqftUnderRoof.value !== fullProperty.details.livingSqft.value && (
+              <p className="text-xs text-gray-400 mt-1">
+                {fullProperty.details.totalSqftUnderRoof.value.toLocaleString()} total
+              </p>
+            )}
           </div>
           <div className="glass-card p-6 text-center">
             <Calendar className="w-6 h-6 text-quantum-cyan mx-auto mb-2" />
