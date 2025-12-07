@@ -233,12 +233,13 @@ export default function PropertyCardUnified({
               ======================================== */}
 
           {/* Property Image - Prioritize Stellar MLS photo (field 169), fallback to thumbnail */}
-          <div className="relative w-full h-40 flex-shrink-0">
+          <div className={`relative flex-shrink-0 ${isExpanded ? 'w-full max-w-sm mx-auto' : 'w-full h-40'}`}>
             {data.primaryPhotoUrl || data.thumbnail ? (
               <img
                 src={data.primaryPhotoUrl || data.thumbnail}
                 alt={data.address}
-                className="w-full h-full object-cover rounded-t-2xl"
+                className={`object-cover rounded-t-2xl ${isExpanded ? 'w-full h-auto' : 'w-full h-full'}`}
+                style={isExpanded ? { aspectRatio: '3/2' } : undefined}
                 onError={(e) => {
                   // If photo fails to load, show placeholder
                   const target = e.target as HTMLImageElement;
@@ -250,7 +251,7 @@ export default function PropertyCardUnified({
                 }}
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-quantum-dark to-quantum-card rounded-t-2xl flex items-center justify-center">
+              <div className={`bg-gradient-to-br from-quantum-dark to-quantum-card rounded-t-2xl flex items-center justify-center ${isExpanded ? 'w-full aspect-[3/2]' : 'w-full h-full'}`}>
                 <MapPin className="w-12 h-12 text-gray-600" />
               </div>
             )}
