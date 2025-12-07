@@ -28,6 +28,7 @@ import {
   Zap,
   Shield,
   Flame,
+  Sun,
 } from 'lucide-react';
 import type { PropertyCard as PropertyCardType, Property, DataField } from '@/types/property';
 import { usePropertyStore } from '@/store/propertyStore';
@@ -177,6 +178,9 @@ export default function PropertyCardUnified({
     mlsPrimary: fullProperty ? getFieldValue(fullProperty.address?.mlsPrimary) as string | null : null,
     mlsSecondary: fullProperty ? getFieldValue(fullProperty.address?.mlsSecondary) as string | null : null,
     parcelId: fullProperty ? getFieldValue(fullProperty.details?.parcelId) as string | null : null,
+
+    // Front exposure (field 154)
+    frontExposure: fullProperty ? getFieldValue(fullProperty.stellarMLS?.legal?.frontExposure) as string | null : null,
   };
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -350,9 +354,20 @@ export default function PropertyCardUnified({
             <h3 className="font-semibold text-white mb-1">
               {data.address}
             </h3>
-            <p className="text-sm text-gray-400 mb-3">
-              {data.city}, {data.state} {data.zip}
-            </p>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm text-gray-400">
+                {data.city}, {data.state} {data.zip}
+              </p>
+              {/* Front Exposure Badge */}
+              {data.frontExposure && (
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/10 border border-orange-400/30">
+                  <Sun className="w-3 h-3 text-orange-400" />
+                  <span className="text-[10px] font-semibold text-orange-300">
+                    {data.frontExposure}
+                  </span>
+                </div>
+              )}
+            </div>
 
             {/* FIX #4: Property Features with labels and null handling */}
             <div className="grid grid-cols-4 gap-2">

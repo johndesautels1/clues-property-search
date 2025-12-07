@@ -1107,7 +1107,7 @@ export default function PropertyDetail() {
           </div>
 
           {/* Status Badge */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <span className={`px-3 py-1.5 rounded-full text-sm font-semibold ${
               property.listingStatus === 'Active' ? 'bg-quantum-green/20 text-quantum-green' :
               property.listingStatus === 'Pending' ? 'bg-quantum-gold/20 text-quantum-gold' :
@@ -1118,6 +1118,16 @@ export default function PropertyDetail() {
             <span className="text-sm text-gray-400">
               {Math.min(100, property.dataCompleteness)}% Data Complete ({Math.round(Math.min(100, property.dataCompleteness) * 1.68)}/168 fields)
             </span>
+
+            {/* Front Exposure Badge */}
+            {fullProperty?.stellarMLS?.legal?.frontExposure?.value && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-500/10 border border-orange-400/30">
+                <Sun className="w-4 h-4 text-orange-400" />
+                <span className="text-sm font-semibold text-orange-300">
+                  Faces {fullProperty.stellarMLS.legal.frontExposure.value}
+                </span>
+              </div>
+            )}
           </div>
         </motion.div>
 
