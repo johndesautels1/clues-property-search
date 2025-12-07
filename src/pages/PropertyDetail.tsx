@@ -1277,6 +1277,72 @@ export default function PropertyDetail() {
           </div>
         </motion.div>
 
+        {/* Recent Improvements / System Ages */}
+        {fullProperty && (fullProperty.structural?.roofAgeEst?.value || fullProperty.structural?.hvacAge?.value) && (
+          <motion.div
+            variants={itemVariants}
+            className="mb-8"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <Hammer className="w-6 h-6 text-quantum-cyan" />
+              <h2 className="text-2xl font-bold text-white">Recent Improvements</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Roof Age */}
+              {fullProperty.structural?.roofAgeEst?.value && (
+                <div className="glass-card p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-400 mb-1">Roof</p>
+                      <p className="text-lg text-white font-semibold">{fullProperty.structural.roofAgeEst.value}</p>
+                    </div>
+                    <div className={`px-3 py-1 rounded-lg text-xs font-semibold ${
+                      String(fullProperty.structural.roofAgeEst.value).includes('Recent permit') ||
+                      (String(fullProperty.structural.roofAgeEst.value).match(/(\d+)\s*year/) &&
+                       parseInt(String(fullProperty.structural.roofAgeEst.value).match(/(\d+)\s*year/)?.[1] || '999') < 5)
+                        ? 'bg-green-500/20 text-green-300'
+                        : (String(fullProperty.structural.roofAgeEst.value).match(/(\d+)\s*year/) &&
+                           parseInt(String(fullProperty.structural.roofAgeEst.value).match(/(\d+)\s*year/)?.[1] || '999') <= 15)
+                          ? 'bg-yellow-500/20 text-yellow-300'
+                          : 'bg-red-500/20 text-red-300'
+                    }`}>
+                      {String(fullProperty.structural.roofAgeEst.value).includes('Recent permit') ||
+                       (String(fullProperty.structural.roofAgeEst.value).match(/(\d+)\s*year/) &&
+                        parseInt(String(fullProperty.structural.roofAgeEst.value).match(/(\d+)\s*year/)?.[1] || '999') < 5)
+                        ? '✓ Recent'
+                        : (String(fullProperty.structural.roofAgeEst.value).match(/(\d+)\s*year/) &&
+                           parseInt(String(fullProperty.structural.roofAgeEst.value).match(/(\d+)\s*year/)?.[1] || '999') <= 15)
+                          ? '⚠ Aging'
+                          : '⚠ Replace Soon'}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* HVAC Age */}
+              {fullProperty.structural?.hvacAge?.value && (
+                <div className="glass-card p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-400 mb-1">HVAC System</p>
+                      <p className="text-lg text-white font-semibold">{fullProperty.structural.hvacAge.value}</p>
+                    </div>
+                    <div className={`px-3 py-1 rounded-lg text-xs font-semibold ${
+                      String(fullProperty.structural.hvacAge.value).includes('Recent permit')
+                        ? 'bg-green-500/20 text-green-300'
+                        : 'bg-gray-500/20 text-gray-300'
+                    }`}>
+                      {String(fullProperty.structural.hvacAge.value).includes('Recent permit')
+                        ? '✓ Recent'
+                        : 'ℹ Info Available'}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
         {/* Full Property Data Sections */}
         {fullProperty ? (
           <div className="space-y-6">

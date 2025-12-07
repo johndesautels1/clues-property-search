@@ -169,7 +169,11 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
     addField('45_hvac_type', hvacParts.join(', '));
   }
 
-  addField('46_hvac_age', property.CoolingYN);
+  // Field 46: HVAC Age - use permit data if available
+  // Note: Stellar MLS doesn't provide direct HVAC year installed
+  if (property.PermitHVAC) {
+    addField('46_hvac_age', `Recent permit: ${property.PermitHVAC}`, 'Medium');
+  }
 
   if (property.LaundryFeatures && Array.isArray(property.LaundryFeatures)) {
     addField('47_laundry_type', property.LaundryFeatures.join(', '));
