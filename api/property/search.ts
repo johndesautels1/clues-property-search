@@ -1019,6 +1019,12 @@ async function getCensusData(zipCode: string): Promise<Record<string, any>> {
     return {};
   }
 
+  // Validate ZIP code
+  if (!zipCode || zipCode.length !== 5 || !/^\d{5}$/.test(zipCode)) {
+    console.log(`⚠️ [Census] Invalid ZIP code: "${zipCode}" - skipping Census API call`);
+    return {};
+  }
+
   console.log(`🔵 [Census] Calling API for ZIP: ${zipCode}`);
 
   try {
