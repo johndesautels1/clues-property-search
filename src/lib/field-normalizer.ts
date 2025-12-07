@@ -888,6 +888,13 @@ export function normalizeToProperty(
   enrichedProperty.dataCompleteness = Math.round((populatedFields / totalFields) * 100);
   console.log(`[FIELD-NORMALIZER] ✅ Data completeness: ${enrichedProperty.dataCompleteness}% (${populatedFields}/${totalFields} fields)`);
 
+  // Attach extended MLS data if available (not part of 168-field schema)
+  if (flatFields['_extendedMLSData']?.value) {
+    enrichedProperty.extendedMLS = flatFields['_extendedMLSData'].value;
+    const fieldCount = Object.keys(enrichedProperty.extendedMLS || {}).length;
+    console.log(`[FIELD-NORMALIZER] ✅ Extended MLS data attached (${fieldCount} fields)`);
+  }
+
   return enrichedProperty;
 }
 

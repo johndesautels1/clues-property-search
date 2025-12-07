@@ -562,3 +562,235 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
 export function mapBridgePropertiesToSchema(properties: BridgeProperty[]): MappedPropertyData[] {
   return properties.map(property => mapBridgePropertyToSchema(property));
 }
+
+/**
+ * Extract Extended MLS Data (fields not in 168-schema)
+ * Stores ALL available Stellar MLS fields that don't map to numbered fields
+ * These can be displayed selectively in UI without affecting the 168-field architecture
+ */
+export function extractExtendedMLSData(property: BridgeProperty): Record<string, any> {
+  const extended: Record<string, any> = {};
+
+  // === WATERFRONT (Priority 1) ===
+  if (property.WaterfrontFeatures && Array.isArray(property.WaterfrontFeatures)) {
+    extended.waterfrontFeatures = property.WaterfrontFeatures;
+  }
+  if (property.DockType) extended.dockType = property.DockType;
+  if (property.NavigableWaterYN) extended.navigableWaterYN = property.NavigableWaterYN;
+  if (property.BoatLiftCapacity) extended.boatLiftCapacity = property.BoatLiftCapacity;
+  if (property.BridgeClearance) extended.bridgeClearance = property.BridgeClearance;
+  if (property.CanalFrontage) extended.canalFrontage = property.CanalFrontage;
+  if (property.IntracoastalAccess) extended.intracoastalAccess = property.IntracoastalAccess;
+
+  // === PRICE HISTORY (Priority 1) ===
+  if (property.OriginalListPrice) extended.originalListPrice = property.OriginalListPrice;
+  if (property.PreviousListPrice) extended.previousListPrice = property.PreviousListPrice;
+  if (property.ListPriceLow) extended.listPriceLow = property.ListPriceLow;
+  if (property.CloseTerms) extended.closeTerms = property.CloseTerms;
+
+  // === ARCHITECTURAL STYLE (Priority 1) ===
+  if (property.ArchitecturalStyle) {
+    extended.architecturalStyle = Array.isArray(property.ArchitecturalStyle)
+      ? property.ArchitecturalStyle
+      : [property.ArchitecturalStyle];
+  }
+  if (property.BodyType) extended.bodyType = property.BodyType;
+  if (property.Levels) extended.levels = property.Levels;
+
+  // === SHOWING INSTRUCTIONS (Priority 1) ===
+  if (property.ShowingInstructions) extended.showingInstructions = property.ShowingInstructions;
+  if (property.LockBoxType) extended.lockBoxType = property.LockBoxType;
+  if (property.ShowingRequirements) {
+    extended.showingRequirements = Array.isArray(property.ShowingRequirements)
+      ? property.ShowingRequirements
+      : [property.ShowingRequirements];
+  }
+
+  // === VIRTUAL TOUR (Priority 1) ===
+  if (property.VirtualTourURLUnbranded) extended.virtualTourURL = property.VirtualTourURLUnbranded;
+  if (property.VirtualTourURLBranded) extended.virtualTourURLBranded = property.VirtualTourURLBranded;
+
+  // === OCCUPANCY (Priority 1) ===
+  if (property.OccupantType) extended.occupantType = property.OccupantType;
+  if (property.TenantPays) {
+    extended.tenantPays = Array.isArray(property.TenantPays) ? property.TenantPays : [property.TenantPays];
+  }
+  if (property.OwnerPays) {
+    extended.ownerPays = Array.isArray(property.OwnerPays) ? property.OwnerPays : [property.OwnerPays];
+  }
+  if (property.FurnishedYN) extended.furnishedYN = property.FurnishedYN;
+
+  // === ROOM DETAILS (Priority 1) ===
+  if (property.MasterBedroomLevel) extended.masterBedroomLevel = property.MasterBedroomLevel;
+  if (property.BedroomMain) extended.bedroomMain = property.BedroomMain;
+  if (property.BedroomsPossible) extended.bedroomsPossible = property.BedroomsPossible;
+  if (property.DiningRoomType) extended.diningRoomType = property.DiningRoomType;
+  if (property.KitchenLevel) extended.kitchenLevel = property.KitchenLevel;
+  if (property.LivingRoomType) extended.livingRoomType = property.LivingRoomType;
+  if (property.RoomsTotal) extended.roomsTotal = property.RoomsTotal;
+
+  // === LISTING AGENT (Priority 2) ===
+  if (property.ListAgentFullName) extended.listingAgentName = property.ListAgentFullName;
+  if (property.ListOfficeName) extended.listingOfficeName = property.ListOfficeName;
+  if (property.BuyerAgentDesignation) extended.buyerAgentDesignation = property.BuyerAgentDesignation;
+
+  // === UTILITIES DETAILS (Priority 2) ===
+  if (property.Sewer) extended.sewerProvider = Array.isArray(property.Sewer) ? property.Sewer.join(', ') : property.Sewer;
+  if (property.Water) extended.waterProvider = Array.isArray(property.Water) ? property.Water.join(', ') : property.Water;
+  if (property.Electric) extended.electricProvider = property.Electric;
+  if (property.Gas) extended.gasProvider = property.Gas;
+
+  // === SPECIAL LISTING CONDITIONS (Priority 2) ===
+  if (property.SpecialListingConditions) {
+    extended.specialListingConditions = Array.isArray(property.SpecialListingConditions)
+      ? property.SpecialListingConditions
+      : [property.SpecialListingConditions];
+  }
+  if (property.Disclosures) {
+    extended.disclosures = Array.isArray(property.Disclosures) ? property.Disclosures : [property.Disclosures];
+  }
+
+  // === SECOND HOA (Priority 2) ===
+  if (property.AssociationFee2) extended.associationFee2 = property.AssociationFee2;
+  if (property.AssociationName2) extended.associationName2 = property.AssociationName2;
+
+  // === SPA / HOT TUB (Priority 2) ===
+  if (property.SpaYN) extended.spaYN = property.SpaYN;
+  if (property.SpaFeatures) {
+    extended.spaFeatures = Array.isArray(property.SpaFeatures) ? property.SpaFeatures : [property.SpaFeatures];
+  }
+
+  // === NEW CONSTRUCTION (Priority 2) ===
+  if (property.NewConstructionYN) extended.newConstructionYN = property.NewConstructionYN;
+
+  // === LOT DETAILS (Priority 2) ===
+  if (property.LotSizeDimensions) extended.lotSizeDimensions = property.LotSizeDimensions;
+  if (property.LotSizeSource) extended.lotSizeSource = property.LotSizeSource;
+  if (property.Topography) {
+    extended.topography = Array.isArray(property.Topography) ? property.Topography : [property.Topography];
+  }
+  if (property.Vegetation) {
+    extended.vegetation = Array.isArray(property.Vegetation) ? property.Vegetation : [property.Vegetation];
+  }
+
+  // === BASEMENT (Priority 3) ===
+  if (property.BasementYN) extended.basementYN = property.BasementYN;
+  if (property.BasementFeatures) {
+    extended.basementFeatures = Array.isArray(property.BasementFeatures)
+      ? property.BasementFeatures
+      : [property.BasementFeatures];
+  }
+
+  // === WINDOW/DOOR FEATURES (Priority 3) ===
+  if (property.WindowFeatures) {
+    extended.windowFeatures = Array.isArray(property.WindowFeatures)
+      ? property.WindowFeatures
+      : [property.WindowFeatures];
+  }
+  if (property.DoorFeatures) {
+    extended.doorFeatures = Array.isArray(property.DoorFeatures)
+      ? property.DoorFeatures
+      : [property.DoorFeatures];
+  }
+
+  // === CEILING FEATURES (Priority 3) ===
+  if (property.CeilingFeatures) {
+    extended.ceilingFeatures = Array.isArray(property.CeilingFeatures)
+      ? property.CeilingFeatures
+      : [property.CeilingFeatures];
+  }
+
+  // === GARAGE DETAILS (Priority 3) ===
+  if (property.AttachedGarageYN) extended.attachedGarageYN = property.AttachedGarageYN;
+  if (property.GarageLength) extended.garageLength = property.GarageLength;
+  if (property.GarageWidth) extended.garageWidth = property.GarageWidth;
+
+  // === CONSTRUCTION DETAILS (Priority 3) ===
+  if (property.YearBuiltDetails) extended.yearBuiltDetails = property.YearBuiltDetails;
+  if (property.ConstructionMaterialsSource) extended.constructionMaterialsSource = property.ConstructionMaterialsSource;
+  if (property.BuildingAreaSource) extended.buildingAreaSource = property.BuildingAreaSource;
+
+  // === WATER HEATER (Priority 3) ===
+  if (property.WaterHeaterFeatures) {
+    extended.waterHeaterFeatures = Array.isArray(property.WaterHeaterFeatures)
+      ? property.WaterHeaterFeatures
+      : [property.WaterHeaterFeatures];
+  }
+
+  // === LAUNDRY (Priority 3) ===
+  if (property.LaundryLevel) extended.laundryLevel = property.LaundryLevel;
+
+  // === OUTDOOR (Priority 3) ===
+  if (property.PatioArea) extended.patioArea = property.PatioArea;
+  if (property.PorchFeatures) {
+    extended.porchFeatures = Array.isArray(property.PorchFeatures)
+      ? property.PorchFeatures
+      : [property.PorchFeatures];
+  }
+  if (property.RoadSurfaceType) extended.roadSurfaceType = property.RoadSurfaceType;
+  if (property.RoadResponsibility) extended.roadResponsibility = property.RoadResponsibility;
+
+  // === LAND LEASE (Priority 3) ===
+  if (property.LandLeaseYN) extended.landLeaseYN = property.LandLeaseYN;
+  if (property.LandLeaseAmount) extended.landLeaseAmount = property.LandLeaseAmount;
+  if (property.LandLeaseExpirationDate) extended.landLeaseExpirationDate = property.LandLeaseExpirationDate;
+
+  // === PERMITS (Priority 3) ===
+  if (property.PermitElectrical) extended.permitElectrical = property.PermitElectrical;
+  if (property.PermitPlumbing) extended.permitPlumbing = property.PermitPlumbing;
+  if (property.PermitPool) extended.permitPool = property.PermitPool;
+  if (property.PermitStructural) extended.permitStructural = property.PermitStructural;
+  if (property.BuildingPermitYN) extended.buildingPermitYN = property.BuildingPermitYN;
+
+  // === SCHOOL DISTRICTS (Priority 3) ===
+  if (property.ElementarySchoolDistrict) extended.elementarySchoolDistrict = property.ElementarySchoolDistrict;
+  if (property.MiddleSchoolDistrict) extended.middleSchoolDistrict = property.MiddleSchoolDistrict;
+  if (property.HighSchoolDistrict) extended.highSchoolDistrict = property.HighSchoolDistrict;
+  if (property.SchoolChoice) extended.schoolChoice = property.SchoolChoice;
+
+  // === ZONING (Priority 3) ===
+  if (property.Zoning) extended.zoning = property.Zoning;
+  if (property.ZoningDescription) extended.zoningDescription = property.ZoningDescription;
+  if (property.LandUseZoning) extended.landUseZoning = property.LandUseZoning;
+
+  // === UNIT FEATURES (Priority 3) ===
+  if (property.CommonWalls) {
+    extended.commonWalls = Array.isArray(property.CommonWalls) ? property.CommonWalls : [property.CommonWalls];
+  }
+  if (property.UnitTypeType) extended.unitType = property.UnitTypeType;
+  if (property.UnitFeatures) {
+    extended.unitFeatures = Array.isArray(property.UnitFeatures)
+      ? property.UnitFeatures
+      : [property.UnitFeatures];
+  }
+
+  // === BATHROOM/BEDROOM FEATURES (Priority 3) ===
+  if (property.BathroomFeatures) {
+    extended.bathroomFeatures = Array.isArray(property.BathroomFeatures)
+      ? property.BathroomFeatures
+      : [property.BathroomFeatures];
+  }
+  if (property.BedroomFeatures) {
+    extended.bedroomFeatures = Array.isArray(property.BedroomFeatures)
+      ? property.BedroomFeatures
+      : [property.BedroomFeatures];
+  }
+
+  // === RENTAL EQUIPMENT (Priority 3) ===
+  if (property.RentalEquipment) {
+    extended.rentalEquipment = Array.isArray(property.RentalEquipment)
+      ? property.RentalEquipment
+      : [property.RentalEquipment];
+  }
+
+  // === LEASE TYPE (Priority 3) ===
+  if (property.ExistingLeaseType) extended.existingLeaseType = property.ExistingLeaseType;
+
+  // === TAX DETAILS (Priority 3) ===
+  if (property.TaxLegalDescription) extended.taxLegalDescription = property.TaxLegalDescription;
+  if (property.TaxMapNumber) extended.taxMapNumber = property.TaxMapNumber;
+  if (property.TaxBlock) extended.taxBlock = property.TaxBlock;
+  if (property.TaxLot) extended.taxLot = property.TaxLot;
+
+  return extended;
+}

@@ -297,6 +297,9 @@ export interface Property {
     grok?: boolean;
     gemini?: boolean;
   };
+
+  // Extended MLS Data (not part of 168-field schema)
+  extendedMLS?: Record<string, any>;
 }
 
 // Simplified property card for lists

@@ -6,7 +6,7 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createBridgeAPIClient, type BridgePropertySearchParams } from '../../src/lib/bridge-api-client.js';
-import { mapBridgePropertyToSchema } from '../../src/lib/bridge-field-mapper.js';
+import { mapBridgePropertyToSchema, extractExtendedMLSData } from '../../src/lib/bridge-field-mapper.js';
 import { STELLAR_MLS_SOURCE } from './source-constants.js';
 
 // Vercel serverless config
@@ -103,13 +103,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const mappedProperties = response.value.map(property => {
       const mapped = mapBridgePropertyToSchema(property);
 
+      // Extract extended MLS data (not part of 168-field schema)
+      const extendedData = extractExtendedMLSData(property);
+      const extendedFieldCount = Object.keys(extendedData).length;
+
       // Log unmapped data warning
       if (mapped.unmappedCount > 0) {
         console.log(`⚠️ [Bridge MLS] ${mapped.unmappedCount} fields from MLS not mapped to schema`);
         console.log(`✅ [Bridge MLS] ${mapped.mappedCount} fields successfully mapped`);
       }
+      if (extendedFieldCount > 0) {
+        console.log(`✅ [Bridge MLS] ${extendedFieldCount} extended fields extracted`);
+      }
+
+      // Add extended data to fields as special field (not numbered)
+      const fieldsWithExtended = {
+        ...mapped.fields,
+        '_extendedMLSData': {
+          value: extendedData,
+          source: 'Stellar MLS',
+          confidence: 'High' as const,
+        },
+      };
+
       return {
-        fields: mapped.fields,
+        fields: fieldsWithExtended,
         mappedCount: mapped.mappedCount,
         unmappedCount: mapped.unmappedCount,
         publicRemarks: mapped.publicRemarks,
