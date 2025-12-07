@@ -1526,7 +1526,7 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   const zipCode = geo.zipCode || geo.zip || '';
 
   // Call all APIs in parallel
-  const [walkScore, floodZone, airQuality, censusData, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeDataResult, schoolDiggerResult, femaRiskResult, noaaSeaLevelResult, usgsElevationResult, usgsEarthquakeResult, epaFRSResult, epaRadonResult/*, redfinResult*/] = await Promise.all([
+  const [walkScore, floodZone, airQuality, censusData, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeDataResult, schoolDiggerResult, femaRiskResult, noaaClimateResult, noaaStormResult, noaaSeaLevelResult, usgsElevationResult, usgsEarthquakeResult, epaFRSResult, epaRadonResult/*, redfinResult*/] = await Promise.all([
     getWalkScore(geo.lat, geo.lon, address),
     getFloodZone(geo.lat, geo.lon),
     getAirQuality(geo.lat, geo.lon),
@@ -1553,7 +1553,9 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   // Extract fields from API result objects
   const crimeData = crimeDataResult.fields || {};
   const schoolDiggerData = schoolDiggerResult.fields || {};
-  const femaRiskData = femaRiskResult.fields || {}; // NEW: FEMA Risk Index (replaces NOAA Climate + Storm)
+  const femaRiskData = femaRiskResult.fields || {}; // FEMA Risk Index
+  const noaaClimateData = noaaClimateResult.fields || {}; // NOAA Climate risk analysis
+  const noaaStormData = noaaStormResult.fields || {}; // NOAA Storm Events (hurricanes/tornadoes)
   const noaaSeaLevelData = noaaSeaLevelResult.fields || {};
   const usgsElevationData = usgsElevationResult.fields || {};
   const usgsEarthquakeData = usgsEarthquakeResult.fields || {};
@@ -1564,7 +1566,7 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   const apiEndTime = Date.now();
   console.log(`✅ [enrichWithFreeAPIs] All APIs completed in ${apiEndTime - apiStartTime}ms`);
 
-  Object.assign(fields, walkScore, floodZone, airQuality, censusData, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeData, schoolDiggerData, femaRiskData, noaaSeaLevelData, usgsElevationData, usgsEarthquakeData, epaFRSData, epaRadonData/*, redfinData*/);
+  Object.assign(fields, walkScore, floodZone, airQuality, censusData, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeData, schoolDiggerData, femaRiskData, noaaClimateData, noaaStormData, noaaSeaLevelData, usgsElevationData, usgsEarthquakeData, epaFRSData, epaRadonData/*, redfinData*/);
 
   console.log('🔵 [enrichWithFreeAPIs] Raw field count before filtering:', Object.keys(fields).length);
   console.log('🔵 [enrichWithFreeAPIs] Field breakdown:');
@@ -1581,6 +1583,8 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   console.log('  - CrimeData fields:', Object.keys(crimeData || {}).length);
   console.log('  - SchoolDigger fields:', Object.keys(schoolDiggerData || {}).length);
   console.log('  - FEMA Risk Index fields:', Object.keys(femaRiskData || {}).length);
+  console.log('  - NOAA Climate fields:', Object.keys(noaaClimateData || {}).length);
+  console.log('  - NOAA Storm Events fields:', Object.keys(noaaStormData || {}).length);
   console.log('  - NOAA Sea Level fields:', Object.keys(noaaSeaLevelData || {}).length);
   console.log('  - USGS Elevation fields:', Object.keys(usgsElevationData || {}).length);
   console.log('  - USGS Earthquake fields:', Object.keys(usgsEarthquakeData || {}).length);
