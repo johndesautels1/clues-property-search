@@ -1287,7 +1287,7 @@ async function getDistances(lat: number, lon: number): Promise<Record<string, an
 
   // Helper: Calculate straight-line distance to nearest coastline point
   // Florida Gulf Coast approximate coordinates (Tampa Bay to Naples area)
-  const calculateCoastlineDistance = (lat: number, lon: number): number => {
+  const calculateCoastlineDistance = (propLat: number, propLon: number): number => {
     const coastlinePoints = [
       { lat: 27.9506, lon: -82.4572 }, // Tampa Bay
       { lat: 27.7676, lon: -82.6403 }, // St. Pete Beach
@@ -1299,10 +1299,10 @@ async function getDistances(lat: number, lon: number): Promise<Record<string, an
     let minDistance = Infinity;
     for (const point of coastlinePoints) {
       const R = 3959; // Earth radius in miles
-      const dLat = (point.lat - lat) * Math.PI / 180;
-      const dLon = (point.lon - lon) * Math.PI / 180;
+      const dLat = (point.lat - propLat) * Math.PI / 180;
+      const dLon = (point.lon - propLon) * Math.PI / 180;
       const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(lat * Math.PI / 180) * Math.cos(point.lat * Math.PI / 180) *
+                Math.cos(propLat * Math.PI / 180) * Math.cos(point.lat * Math.PI / 180) *
                 Math.sin(dLon/2) * Math.sin(dLon/2);
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
       const distance = R * c;
@@ -1311,7 +1311,6 @@ async function getDistances(lat: number, lon: number): Promise<Record<string, an
     return minDistance;
   };
 
-  const [lat, lon] = origin.split(',').map(Number);
   const actualCoastDistance = calculateCoastlineDistance(lat, lon);
   console.log(`getDistances: Actual coastline distance: ${actualCoastDistance.toFixed(1)} mi`);
 
