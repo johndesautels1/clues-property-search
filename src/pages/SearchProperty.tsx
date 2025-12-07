@@ -45,6 +45,24 @@ export default function SearchProperty() {
     const propertyId = generateId();
 
     // Create property card
+    // Extract Days on Market from Stellar MLS API if available
+    let daysOnMarket = 0;
+    let cumulativeDaysOnMarket: number | undefined = undefined;
+
+    if (apiFields) {
+      // Try raw Stellar MLS Bridge API fields first (these are the accurate values)
+      if (apiFields['DaysOnMarket']?.value !== undefined) {
+        daysOnMarket = parseInt(String(apiFields['DaysOnMarket'].value || '0')) || 0;
+      }
+
+      // Get CDOM if available
+      if (apiFields['CumulativeDaysOnMarket']?.value !== undefined) {
+        cumulativeDaysOnMarket = parseInt(String(apiFields['CumulativeDaysOnMarket'].value || '0')) || undefined;
+      }
+
+      console.log('[SearchProperty] Extracted DOM/CDOM:', { daysOnMarket, cumulativeDaysOnMarket });
+    }
+
     const newProperty: PropertyCard = {
       id: propertyId,
       address: street || fullAddress,
@@ -61,7 +79,8 @@ export default function SearchProperty() {
       smartScore: calculateSmartScore(formData),
       dataCompleteness: calculateCompleteness(formData),
       listingStatus: getValue('addressIdentity.listingStatus', 'Active') || 'Active',
-      daysOnMarket: 0,
+      daysOnMarket: daysOnMarket,
+      cumulativeDaysOnMarket: cumulativeDaysOnMarket,
     };
 
     // Convert API fields to proper Property structure if available

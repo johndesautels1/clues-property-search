@@ -251,7 +251,19 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // ================================================================
   // GROUP 13: Market & Investment (Fields 91-103)
   // ================================================================
-  addField('95_days_on_market_avg', property.DaysOnMarket || property.CumulativeDaysOnMarket);
+  // NOTE: Field 95 is for NEIGHBORHOOD average DOM, not individual listing DOM
+  // Individual listing DOM is stored as raw fields (not in 168-schema)
+
+  // ================================================================
+  // RAW MLS FIELDS (Not part of 168-schema, used by PropertyCard)
+  // ================================================================
+  // These are NOT numbered fields - they're raw metadata for PropertyCard
+  if (property.DaysOnMarket !== undefined && property.DaysOnMarket !== null) {
+    addField('DaysOnMarket', property.DaysOnMarket);
+  }
+  if (property.CumulativeDaysOnMarket !== undefined && property.CumulativeDaysOnMarket !== null) {
+    addField('CumulativeDaysOnMarket', property.CumulativeDaysOnMarket);
+  }
 
   // ================================================================
   // GROUP 15: Environment & Risk (Fields 117-130)
