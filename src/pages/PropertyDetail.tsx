@@ -856,6 +856,14 @@ export default function PropertyDetail() {
     console.log('  - Bedrooms:', fullProperty.details.bedrooms.value);
     console.log('  - Living Sqft:', fullProperty.details.livingSqft.value);
     console.log('  - Elementary School:', fullProperty.location.assignedElementary.value);
+    console.log('🆕 EXTENDED MLS DATA CHECK:');
+    console.log('  - Has extendedMLS?:', !!fullProperty.extendedMLS);
+    if (fullProperty.extendedMLS) {
+      console.log('  - Extended MLS keys:', Object.keys(fullProperty.extendedMLS));
+      console.log('  - Extended MLS data:', fullProperty.extendedMLS);
+    } else {
+      console.log('  ⚠️ NO EXTENDED MLS DATA - Property may need to be re-searched from Stellar MLS');
+    }
   } else {
     console.log('❌ NO FULL PROPERTY DATA FOUND!');
   }
@@ -1219,11 +1227,11 @@ export default function PropertyDetail() {
           {/* Status Badge */}
           <div className="flex items-center gap-3 flex-wrap">
             <span className={`px-3 py-1.5 rounded-full text-sm font-semibold ${
-              property.listingStatus === 'Active' ? 'bg-quantum-green/20 text-quantum-green' :
-              property.listingStatus === 'Pending' ? 'bg-quantum-gold/20 text-quantum-gold' :
+              (fullProperty?.address.listingStatus.value || property.listingStatus) === 'Active' ? 'bg-quantum-green/20 text-quantum-green' :
+              (fullProperty?.address.listingStatus.value || property.listingStatus) === 'Pending' ? 'bg-quantum-gold/20 text-quantum-gold' :
               'bg-gray-500/20 text-gray-400'
             }`}>
-              {property.listingStatus}
+              {fullProperty?.address.listingStatus.value || property.listingStatus}
             </span>
             <span className="text-sm text-gray-400">
               {Math.min(100, property.dataCompleteness)}% Data Complete ({Math.round(Math.min(100, property.dataCompleteness) * 1.68)}/168 fields)
@@ -1332,7 +1340,7 @@ export default function PropertyDetail() {
           </div>
           <div className="glass-card p-6 text-center">
             <Calendar className="w-6 h-6 text-quantum-cyan mx-auto mb-2" />
-            <span className="text-2xl font-bold text-white block">{property.yearBuilt}</span>
+            <span className="text-2xl font-bold text-white block">{fullProperty?.details.yearBuilt.value || property.yearBuilt}</span>
             <p className="text-sm text-gray-500">Year Built</p>
           </div>
           <div className="glass-card p-6 text-center">
@@ -1458,7 +1466,7 @@ export default function PropertyDetail() {
               )}
 
               {/* HVAC Age */}
-              {fullProperty.structural?.hvacAge?.value && (
+              {fullProperty.structural?.hvacAge?.value && typeof fullProperty.structural.hvacAge.value !== 'boolean' && (
                 <div className="glass-card p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
