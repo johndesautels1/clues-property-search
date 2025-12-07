@@ -459,6 +459,13 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // ================================================================
   // PHOTOS - Extract from Media resource (Field 169)
   // ================================================================
+  console.log('[Bridge Mapper] 🔍 Checking for Media in property:', {
+    hasMedia: !!property.Media,
+    isArray: Array.isArray(property.Media),
+    length: property.Media?.length || 0,
+    mediaType: typeof property.Media
+  });
+
   if (property.Media && Array.isArray(property.Media) && property.Media.length > 0) {
     console.log(`[Bridge Mapper] Found ${property.Media.length} photos for listing`);
 
