@@ -317,6 +317,8 @@ interface PropertyState {
   updateProperty: (id: string, updates: Partial<PropertyCard>) => void;
   updateFullProperty: (id: string, property: Property) => void;
   markPropertyAsViewed: (id: string) => void;
+  saveProperty: (id: string, userId?: string) => void;
+  unsaveProperty: (id: string, userId?: string) => void;
   selectProperty: (id: string | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -507,9 +509,46 @@ export const usePropertyStore = create<PropertyState>()(
 
       markPropertyAsViewed: (id) =>
         set((state) => ({
-          properties: state.properties.map((p) =>
-            p.id === id ? { ...p, lastViewedAt: new Date().toISOString() } : p
-          ),
+          properties: state.properties.map((p) => {
+            if (p.id === id) {
+              const now = new Date().toISOString();
+              const viewHistory = [...(p.viewHistory || []), now];
+              const viewCount = (p.viewCount || 0) + 1;
+              return { ...p, lastViewedAt: now, viewCount, viewHistory };
+            }
+            return p;
+          }),
+        })),
+
+      saveProperty: (id, userId = 'anonymous') =>
+        set((state) => ({
+          properties: state.properties.map((p) => {
+            if (p.id === id) {
+              const savedByUsers = p.savedByUsers || [];
+              if (!savedByUsers.includes(userId)) {
+                return {
+                  ...p,
+                  savedByUsers: [...savedByUsers, userId],
+                  saveCount: (p.saveCount || 0) + 1,
+                };
+              }
+            }
+            return p;
+          }),
+        })),
+
+      unsaveProperty: (id, userId = 'anonymous') =>
+        set((state) => ({
+          properties: state.properties.map((p) => {
+            if (p.id === id && p.savedByUsers?.includes(userId)) {
+              return {
+                ...p,
+                savedByUsers: p.savedByUsers.filter(u => u !== userId),
+                saveCount: Math.max(0, (p.saveCount || 0) - 1),
+              };
+            }
+            return p;
+          }),
         })),
 
       selectProperty: (id) =>

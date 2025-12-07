@@ -11,6 +11,8 @@ import {
   ArrowLeft,
   Share2,
   Heart,
+  Eye,
+  Bookmark,
   MapPin,
   Bed,
   Bath,
@@ -404,7 +406,7 @@ const Section = ({ title, icon, children, defaultExpanded = true }: SectionProps
 export default function PropertyDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getPropertyById, getFullPropertyById, removeProperty, updateFullProperty, updateProperty, markPropertyAsViewed } = usePropertyStore();
+  const { getPropertyById, getFullPropertyById, removeProperty, updateFullProperty, updateProperty, markPropertyAsViewed, saveProperty, unsaveProperty } = usePropertyStore();
   const [isRetrying, setIsRetrying] = useState(false);
   const [isEnriching, setIsEnriching] = useState(false);
   const [enrichProgress, setEnrichProgress] = useState(0);
@@ -420,6 +422,28 @@ export default function PropertyDetail() {
       markPropertyAsViewed(id);
     }
   }, [id, markPropertyAsViewed]);
+
+  // Calculate views in last 7 days
+  const getViewsLast7Days = () => {
+    if (!property?.viewHistory) return 0;
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    return property.viewHistory.filter(timestamp => new Date(timestamp) >= sevenDaysAgo).length;
+  };
+
+  // Check if property is saved by current user
+  const currentUserId = 'anonymous'; // TODO: Replace with actual user ID from auth store
+  const isSaved = property?.savedByUsers?.includes(currentUserId) || false;
+
+  // Toggle save/unsave
+  const handleToggleSave = () => {
+    if (!id) return;
+    if (isSaved) {
+      unsaveProperty(id, currentUserId);
+    } else {
+      saveProperty(id, currentUserId);
+    }
+  };
 
   // Handler for "Enrich with APIs" button - calls search API to add more data
   const handleEnrichWithApis = async () => {
@@ -1242,6 +1266,32 @@ export default function PropertyDetail() {
                 </span>
               </div>
             )}
+
+            {/* View Count Badge */}
+            {property?.viewCount && property.viewCount > 0 && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/30">
+                <Eye className="w-4 h-4 text-blue-400" />
+                <span className="text-sm font-semibold text-blue-300">
+                  {getViewsLast7Days()} {getViewsLast7Days() === 1 ? 'view' : 'views'} (7d)
+                </span>
+              </div>
+            )}
+
+            {/* Save Button */}
+            <button
+              onClick={handleToggleSave}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all hover:scale-105 ${
+                isSaved
+                  ? 'bg-quantum-purple/20 border-quantum-purple/50 text-quantum-purple'
+                  : 'bg-white/5 border-white/20 text-gray-300 hover:bg-white/10'
+              }`}
+            >
+              <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
+              <span className="text-sm font-semibold">
+                {isSaved ? 'Saved' : 'Save'}
+                {property?.saveCount && property.saveCount > 0 && ` (${property.saveCount})`}
+              </span>
+            </button>
           </div>
         </motion.div>
 

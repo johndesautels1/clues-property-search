@@ -319,6 +319,10 @@ export interface PropertyCard {
   daysOnMarket: number;
   cumulativeDaysOnMarket?: number; // CDOM from Stellar MLS
   lastViewedAt?: string; // ISO 8601 timestamp when property was last viewed
+  viewCount?: number; // Total views counter
+  viewHistory?: string[]; // Array of ISO timestamps for "last 7 days" calculations
+  savedByUsers?: string[]; // Array of user IDs who saved this property
+  saveCount?: number; // Total number of saves
 }
 
 // API Response types
