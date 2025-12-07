@@ -980,57 +980,93 @@ export async function callFEMARiskIndex(county: string, state: string = 'FL'): P
 }
 
 // ============================================
-// NOAA CLIMATE DATA API - Environmental Risk (DEPRECATED - SLOW)
+// NOAA CLIMATE DATA API - Environmental Risk (NCEI API v1 - 2025)
 // ============================================
+
+// Florida major cities GHCND station mapping
+const FLORIDA_STATIONS: Record<string, string> = {
+  'miami-dade': 'USW00012839', // Miami International Airport
+  'miami': 'USW00012839',
+  'broward': 'USW00012849', // Fort Lauderdale International Airport
+  'fort lauderdale': 'USW00012849',
+  'palm beach': 'USW00012849',
+  'orange': 'USW00012815', // Orlando International Airport
+  'orlando': 'USW00012815',
+  'seminole': 'USW00012815',
+  'osceola': 'USW00012815',
+  'hillsborough': 'USW00012842', // Tampa International Airport
+  'tampa': 'USW00012842',
+  'pinellas': 'USW00012842',
+  'pasco': 'USW00012842',
+  'hernando': 'USW00012842',
+  'polk': 'USW00012842',
+  'duval': 'USW00013889', // Jacksonville International Airport
+  'jacksonville': 'USW00013889',
+  'st. johns': 'USW00013889',
+  'clay': 'USW00013889',
+  'nassau': 'USW00013889',
+  'leon': 'USW00093805', // Tallahassee Regional Airport
+  'tallahassee': 'USW00093805',
+  'alachua': 'USW00012816', // Gainesville Regional Airport
+  'gainesville': 'USW00012816',
+};
+
+function getStationForCounty(county: string): string {
+  const normalized = county.toLowerCase().trim();
+  return FLORIDA_STATIONS[normalized] || 'USW00012842'; // Default to Tampa
+}
+
 export async function callNOAAClimate(lat: number, lon: number, zip: string, county: string): Promise<ApiResult> {
-  const apiToken = process.env.NOAA_API_TOKEN || 'LsycRMDcPOllKnOJZLkiyMocmHmtGSQL';
   const fields: Record<string, ApiField> = {};
 
   try {
-    // Get recent 1 year of climate data (NOAA API limit: max 1 year range)
+    // Get nearest NOAA weather station
+    const station = getStationForCounty(county);
+
+    // Get recent 1 year of climate data
     const endDate = new Date().toISOString().split('T')[0];
     const startDate = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-    // NOAA Climate Data Online API v2
-    const url = `https://www.ncdc.noaa.gov/cdo-web/api/v2/data?datasetid=GHCND&locationid=ZIP:${zip}&startdate=${startDate}&enddate=${endDate}&limit=1000`;
+    // NCEI Access Data Service API v1 (replaces deprecated CDO v2 API)
+    const url = `https://www.ncei.noaa.gov/access/services/data/v1?dataset=daily-summaries&stations=${station}&startDate=${startDate}&endDate=${endDate}&format=json&dataTypes=TMAX,TMIN,PRCP,AWND,WSF2&units=standard`;
 
-    console.log(`[NOAA Climate] Fetching climate data for ZIP ${zip} from ${startDate} to ${endDate}`);
-    const fetchResult = await safeFetch<any>(url, {
-      headers: {
-        'token': apiToken
-      }
-    }, 'NOAA-Climate'); // Using default 30s timeout
+    console.log(`[NOAA Climate] Fetching climate data for ${county} County (station: ${station})`);
+    const fetchResult = await safeFetch<any[]>(url, undefined, 'NOAA-Climate');
 
     if (!fetchResult.success || !fetchResult.data) {
       console.log(`[NOAA Climate] ❌ Fetch failed: ${fetchResult.error || 'Unknown error'}`);
-      console.log(`[NOAA Climate] Status: ${fetchResult.status}`);
       return { success: false, source: 'NOAA Climate', fields, error: fetchResult.error || 'Fetch failed' };
     }
 
     const data = fetchResult.data;
-    console.log(`[NOAA Climate] ✅ Received data:`, data);
+    console.log(`[NOAA Climate] ✅ Received ${data.length} days of data`);
 
-    // Analyze climate data for risk assessment
-    if (data.results && Array.isArray(data.results)) {
-      const results = data.results;
+    if (Array.isArray(data) && data.length > 0) {
+      // Analyze climate data for risk assessment
+      let extremeHeat = 0;
+      let heavyRain = 0;
+      let highWinds = 0;
 
-      // Count extreme weather events
-      const extremeEvents = results.filter((r: any) =>
-        r.datatype === 'PRCP' && parseFloat(r.value) > 50 || // Heavy precipitation
-        r.datatype === 'TMAX' && parseFloat(r.value) > 100 || // Extreme heat
-        r.datatype === 'TMIN' && parseFloat(r.value) < 0      // Extreme cold
-      );
+      data.forEach((day: any) => {
+        if (day.TMAX && parseFloat(day.TMAX) > 95) extremeHeat++; // Over 95°F
+        if (day.PRCP && parseFloat(day.PRCP) > 1.0) heavyRain++; // Over 1 inch
+        if (day.WSF2 && parseFloat(day.WSF2) > 40) highWinds++; // Gusts over 40 mph
+      });
 
       // Calculate climate risk score (0-100, higher = more risk)
-      const riskScore = Math.min(100, Math.round((extremeEvents.length / results.length) * 100));
+      const totalDays = data.length;
+      const extremePercent = ((extremeHeat + heavyRain + highWinds) / (totalDays * 3)) * 100;
+      const riskScore = Math.min(100, Math.round(extremePercent));
 
       let riskLevel = 'Low';
-      if (riskScore > 75) riskLevel = 'Very High';
-      else if (riskScore > 50) riskLevel = 'High';
-      else if (riskScore > 25) riskLevel = 'Moderate';
+      if (riskScore > 15) riskLevel = 'Very High';
+      else if (riskScore > 10) riskLevel = 'High';
+      else if (riskScore > 5) riskLevel = 'Moderate';
 
       // Field 121: climate_risk
-      setField(fields, '121_climate_risk', `${riskLevel} (Score: ${riskScore}/100)`, 'NOAA Climate', 'High');
+      setField(fields, 'climate_risk', `${riskLevel} (Score: ${riskScore}/100)`, 'NOAA Climate', 'High');
+
+      console.log(`[NOAA Climate] Climate Risk: ${riskLevel} (${riskScore}/100) - Heat: ${extremeHeat}d, Rain: ${heavyRain}d, Wind: ${highWinds}d`);
     }
 
     return { success: Object.keys(fields).length > 0, source: 'NOAA Climate', fields };
@@ -1041,62 +1077,58 @@ export async function callNOAAClimate(lat: number, lon: number, zip: string, cou
 }
 
 // ============================================
-// NOAA STORM EVENTS API - Hurricane/Tornado Risk
+// NOAA STORM EVENTS API - Hurricane/Tornado Risk (NCEI API v1 - 2025)
 // ============================================
 export async function callNOAAStormEvents(county: string, state: string = 'FL'): Promise<ApiResult> {
-  const apiToken = process.env.NOAA_API_TOKEN || 'LsycRMDcPOllKnOJZLkiyMocmHmtGSQL';
   const fields: Record<string, ApiField> = {};
 
   try {
-    // Get last 1 year of storm data (NOAA API limit: max 1 year range)
+    // Get nearest NOAA weather station
+    const station = getStationForCounty(county);
+
+    // Get last 1 year of wind/storm data
     const endDate = new Date().toISOString().split('T')[0];
     const startDate = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-    // Query storm events by county
-    const url = `https://www.ncdc.noaa.gov/cdo-web/api/v2/data?datasetid=GHCND&locationid=FIPS:12&startdate=${startDate}&enddate=${endDate}&datatypeid=AWND,WSF2&limit=1000`;
+    // NCEI Access Data Service API v1 - Focus on wind data for storm analysis
+    const url = `https://www.ncei.noaa.gov/access/services/data/v1?dataset=daily-summaries&stations=${station}&startDate=${startDate}&endDate=${endDate}&format=json&dataTypes=AWND,WSF2,WSF5&units=standard`;
 
-    console.log(`[NOAA Storm] Fetching storm data for ${county}, ${state} from ${startDate} to ${endDate}`);
-    const fetchResult = await safeFetch<any>(url, {
-      headers: {
-        'token': apiToken
-      }
-    }, 'NOAA-Storm'); // Using default 30s timeout
+    console.log(`[NOAA Storm] Fetching storm data for ${county} County (station: ${station})`);
+    const fetchResult = await safeFetch<any[]>(url, undefined, 'NOAA-Storm');
 
     if (!fetchResult.success || !fetchResult.data) {
       console.log(`[NOAA Storm] ❌ Fetch failed: ${fetchResult.error || 'Unknown error'}`);
-      console.log(`[NOAA Storm] Status: ${fetchResult.status}`);
       return { success: false, source: 'NOAA Storm Events', fields, error: fetchResult.error || 'Fetch failed' };
     }
 
     const data = fetchResult.data;
-    console.log(`[NOAA Storm] ✅ Received data:`, data);
+    console.log(`[NOAA Storm] ✅ Received ${data.length} days of wind data`);
 
-    if (data.results && Array.isArray(data.results)) {
-      const results = data.results;
-
+    if (Array.isArray(data) && data.length > 0) {
       // Analyze wind data for hurricane/tornado risk
-      const highWindEvents = results.filter((r: any) =>
-        r.datatype === 'WSF2' && parseFloat(r.value) > 50 // Wind gusts > 50 mph
-      );
+      let highWindDays = 0; // Wind gusts > 40 mph (tropical storm force)
+      let extremeWindDays = 0; // Wind gusts > 74 mph (hurricane force)
 
-      const hurricaneRiskScore = Math.min(100, Math.round((highWindEvents.length / 10) * 10));
-      const tornadoRiskScore = Math.min(100, Math.round((highWindEvents.length / 20) * 10));
+      data.forEach((day: any) => {
+        if (day.WSF2 && parseFloat(day.WSF2) > 40) highWindDays++;
+        if (day.WSF2 && parseFloat(day.WSF2) > 74) extremeWindDays++;
+      });
 
-      // Florida-specific: High hurricane risk, low tornado risk
-      let hurricaneRisk = 'Moderate';
-      if (hurricaneRiskScore > 70 || state === 'FL') hurricaneRisk = 'High';
-      else if (hurricaneRiskScore > 40) hurricaneRisk = 'Moderate';
-      else hurricaneRisk = 'Low';
+      // Florida-specific: High hurricane risk (coastal state)
+      const hurricaneRisk = state === 'FL' ? 'High' : 'Moderate';
 
+      // Tornado risk based on actual wind events
       let tornadoRisk = 'Low';
-      if (tornadoRiskScore > 50) tornadoRisk = 'High';
-      else if (tornadoRiskScore > 25) tornadoRisk = 'Moderate';
+      if (extremeWindDays > 5) tornadoRisk = 'High';
+      else if (highWindDays > 20) tornadoRisk = 'Moderate';
 
       // Field 124: hurricane_risk
-      setField(fields, '124_hurricane_risk', hurricaneRisk, 'NOAA Storm Events', 'High');
+      setField(fields, 'hurricane_risk', hurricaneRisk, 'NOAA Storm Events', 'High');
 
       // Field 125: tornado_risk
-      setField(fields, '125_tornado_risk', tornadoRisk, 'NOAA Storm Events', 'Medium');
+      setField(fields, 'tornado_risk', tornadoRisk, 'NOAA Storm Events', 'Medium');
+
+      console.log(`[NOAA Storm] Hurricane: ${hurricaneRisk}, Tornado: ${tornadoRisk} (High winds: ${highWindDays}d, Extreme: ${extremeWindDays}d)`);
     }
 
     return { success: Object.keys(fields).length > 0, source: 'NOAA Storm Events', fields };
