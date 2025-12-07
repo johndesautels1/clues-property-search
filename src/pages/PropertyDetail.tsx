@@ -1034,6 +1034,65 @@ export default function PropertyDetail() {
                   </p>
                 </div>
               )}
+
+              {/* MLS# and APN Badges */}
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                {fullProperty?.address.mlsPrimary?.value && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigator.clipboard.writeText(String(fullProperty.address.mlsPrimary.value));
+                      // Visual feedback
+                      const btn = e.currentTarget;
+                      const originalText = btn.innerHTML;
+                      btn.innerHTML = '<span class="text-quantum-green">✓ Copied!</span>';
+                      setTimeout(() => { btn.innerHTML = originalText; }, 1500);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-quantum-cyan/10 hover:bg-quantum-cyan/20 border border-quantum-cyan/30 transition-colors cursor-pointer group"
+                    title="Click to copy MLS#"
+                  >
+                    <span className="text-xs font-semibold text-quantum-cyan group-hover:text-quantum-cyan">
+                      MLS# {fullProperty.address.mlsPrimary.value}
+                    </span>
+                  </button>
+                )}
+                {fullProperty?.address.mlsSecondary?.value && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigator.clipboard.writeText(String(fullProperty.address.mlsSecondary.value));
+                      const btn = e.currentTarget;
+                      const originalText = btn.innerHTML;
+                      btn.innerHTML = '<span class="text-quantum-green">✓ Copied!</span>';
+                      setTimeout(() => { btn.innerHTML = originalText; }, 1500);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 transition-colors cursor-pointer group"
+                    title="Click to copy Secondary MLS#"
+                  >
+                    <span className="text-xs font-semibold text-purple-400 group-hover:text-purple-300">
+                      MLS2# {fullProperty.address.mlsSecondary.value}
+                    </span>
+                  </button>
+                )}
+                {fullProperty?.details.parcelId?.value && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigator.clipboard.writeText(String(fullProperty.details.parcelId.value));
+                      const btn = e.currentTarget;
+                      const originalText = btn.innerHTML;
+                      btn.innerHTML = '<span class="text-quantum-green">✓ Copied!</span>';
+                      setTimeout(() => { btn.innerHTML = originalText; }, 1500);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-colors cursor-pointer group"
+                    title="Click to copy Parcel ID (APN)"
+                  >
+                    <span className="text-xs font-semibold text-amber-400 group-hover:text-amber-300">
+                      APN: {fullProperty.details.parcelId.value}
+                    </span>
+                  </button>
+                )}
+              </div>
             </div>
             <div className="text-left md:text-right">
               <div className="text-3xl md:text-4xl font-bold text-white mb-1">

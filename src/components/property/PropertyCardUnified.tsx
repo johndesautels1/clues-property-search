@@ -172,6 +172,11 @@ export default function PropertyCardUnified({
     hasWaterView: fullProperty ? String(getFieldValue(fullProperty.stellarMLS?.waterfront?.waterViewYn) || '').toLowerCase() === 'yes' : false,
     hasWaterAccess: fullProperty ? String(getFieldValue(fullProperty.stellarMLS?.waterfront?.waterAccessYn) || '').toLowerCase() === 'yes' : false,
     waterBodyName: fullProperty ? getFieldValue(fullProperty.stellarMLS?.waterfront?.waterBodyName) as string | null : null,
+
+    // MLS and Parcel data (fields 2, 3, 9)
+    mlsPrimary: fullProperty ? getFieldValue(fullProperty.address?.mlsPrimary) as string | null : null,
+    mlsSecondary: fullProperty ? getFieldValue(fullProperty.address?.mlsSecondary) as string | null : null,
+    parcelId: fullProperty ? getFieldValue(fullProperty.details?.parcelId) as string | null : null,
   };
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -629,6 +634,36 @@ export default function PropertyCardUnified({
                       />
                     </div>
                   </div>
+
+                  {/* MLS# and APN Info */}
+                  {(data.mlsPrimary || data.mlsSecondary || data.parcelId) && (
+                    <div className="border-t border-white/10 pt-4">
+                      <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">LISTING INFO</p>
+                      <div className="flex flex-wrap gap-2">
+                        {data.mlsPrimary && (
+                          <div className="px-2 py-1 rounded bg-quantum-cyan/10 border border-quantum-cyan/30">
+                            <span className="text-[10px] font-semibold text-quantum-cyan">
+                              MLS# {data.mlsPrimary}
+                            </span>
+                          </div>
+                        )}
+                        {data.mlsSecondary && (
+                          <div className="px-2 py-1 rounded bg-purple-500/10 border border-purple-500/30">
+                            <span className="text-[10px] font-semibold text-purple-400">
+                              MLS2# {data.mlsSecondary}
+                            </span>
+                          </div>
+                        )}
+                        {data.parcelId && (
+                          <div className="px-2 py-1 rounded bg-amber-500/10 border border-amber-500/30">
+                            <span className="text-[10px] font-semibold text-amber-400">
+                              APN: {data.parcelId}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                 </div>
               </motion.div>
