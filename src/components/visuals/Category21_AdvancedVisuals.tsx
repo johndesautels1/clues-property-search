@@ -35,7 +35,7 @@ interface Category21Props {
 }
 
 // Map ChartProperty to RealEstateDashboard Home interface
-// VERIFIED AGAINST SCHEMA: Fields 10, 11, 12, 13, 14, 15
+// VERIFIED AGAINST SCHEMA: Fields 10, 11, 12, 13, 14, 15, 25
 function mapToRealEstateHomes(properties: ChartProperty[]) {
   return properties.map((p) => ({
     id: p.id,
@@ -47,6 +47,7 @@ function mapToRealEstateHomes(properties: ChartProperty[]) {
     lastSalePrice: p.lastSalePrice || 0,                                           // Field 14: last_sale_price
     assessedValue: p.assessedValue || 0,                                           // Field 15: assessed_value
     redfinEstimate: p.redfinEstimate || p.marketValueEstimate || 0,                // Field 12 fallback
+    yearBuilt: p.yearBuilt || new Date().getFullYear(),                            // Field 25: year_built
   }));
 }
 
@@ -165,17 +166,6 @@ export default function Category21_AdvancedVisuals({ properties }: Category21Pro
 
   return (
     <div className="space-y-8">
-      {/* DEBUG INFO */}
-      <div style={{
-        padding: '20px',
-        background: 'red',
-        color: 'white',
-        fontSize: '20px',
-        fontWeight: 'bold'
-      }}>
-        DEBUG: Available Properties: {availableProperties.length} | Selected: {selectedChartProperties.length}
-      </div>
-
       {/* Property Comparison Selector - 3 dropdown fields - ALWAYS VISIBLE */}
       <PropertyComparisonSelector
         properties={availableProperties}

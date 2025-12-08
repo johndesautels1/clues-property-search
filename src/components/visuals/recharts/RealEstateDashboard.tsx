@@ -38,17 +38,12 @@ import {
  *     redfinEstimate: number,  // Redfin estimate (used in Price Components)
  *   }
  *
- * CHARTS INCLUDED (10 total):
+ * CHARTS INCLUDED (5 total):
  *   1. Listing Price Comparison - vertical bars, lower is better
  *   2. $/Sq Ft Leaderboard - horizontal bars, lower is better
  *   3. List Price vs Market Value - dual bars with color-coded pricing
- *   4. Value Score (0-100) - horizontal score bars
- *   5. Price Components - stacked comparison (Listing/Redfin/Market/Assessed)
- *   6. Comparative Radar - 3-axis radar chart
- *   7. Value Gauges - circular gauge per property
- *   8. Appreciation Since Last Sale - vertical bars
- *   9. Overall Value Score - composite score
- *  10. Value Pyramid - stacked Assessed → Market → Listing
+ *   4. Property Age Gauges - circular gauge per property (newness score)
+ *   5. Appreciation Since Last Sale - vertical bars
  *
  * COLOR SYSTEM:
  *   Property 1: Teal (#14b8a6)
@@ -74,6 +69,7 @@ interface Home {
   lastSalePrice: number;
   assessedValue: number;
   redfinEstimate: number;
+  yearBuilt: number; // Field 25: year_built
 }
 
 // Sample Data (preview only) – in the real app, charts should receive real homes via props
@@ -88,6 +84,7 @@ const sampleHomes: Home[] = [
     lastSalePrice: 2500000,
     assessedValue: 2700000,
     redfinEstimate: 2850000,
+    yearBuilt: 2015,
   },
   {
     id: '2',
@@ -99,6 +96,7 @@ const sampleHomes: Home[] = [
     lastSalePrice: 2400000,
     assessedValue: 2600000,
     redfinEstimate: 2700000,
+    yearBuilt: 2016,
   },
   {
     id: '3',
@@ -110,6 +108,7 @@ const sampleHomes: Home[] = [
     lastSalePrice: 2200000,
     assessedValue: 2500000,
     redfinEstimate: 2550000,
+    yearBuilt: 2014,
   },
 ];
 
@@ -685,233 +684,102 @@ function ListVsMarketChart({ homes }: { homes: Home[] }) {
   );
 }
 
-// Chart 4: List vs Market Score Bars (0–100)
-function EquityScoreChart({ homes }: { homes: Home[] }) {
+
+
+// Chart 6: Property Age Gauges (per home, 0–100 newness score)
+// VERIFIED AGAINST SCHEMA: Field 25 (year_built)
+// ECONOMIC USEFUL LIFE: 50 years for residential structures
+function PropertyAgeGaugeChart({ homes }: { homes: Home[] }) {
+  // VERIFICATION: Log incoming data from 168-field schema
+  console.log('🔍 Chart 2-6: Property Age Gauges - Data Verification:');
+
+  const currentYear = new Date().getFullYear();
+  const ECONOMIC_USEFUL_LIFE = 50; // Years
+
   const data = homes.map((h, index) => {
-    // How much is list price over/under market? Lower is better.
-    const percentDiff = ((h.listingPrice - h.marketValue) / h.marketValue) * 100;
+    const yearBuilt = h.yearBuilt || currentYear;
+    const age = currentYear - yearBuilt;
+    const usefulLifeConsumed = (age / ECONOMIC_USEFUL_LIFE) * 100; // Percentage of useful life used
+
+    console.log(`\n📊 Property ${index + 1}: ${h.name}`);
+    console.log(`  Field 25 (year_built): ${yearBuilt}`);
+    console.log(`  Calculated Age: ${age} years old`);
+    console.log(`  Useful Life Consumed: ${usefulLifeConsumed.toFixed(1)}% of ${ECONOMIC_USEFUL_LIFE} years`);
+
     return {
-      name: h.name,
+      home: h,
+      yearBuilt,
+      age,
+      usefulLifeConsumed,
       index,
-      percentDiff,
     };
   });
 
-  const percentDiffs = data.map((d) => d.percentDiff);
-  if (!percentDiffs.length) return null;
+  const usefulLifePercentages = data.map(d => d.usefulLifeConsumed);
 
-  // Lower percentDiff (more under market) = better score
-  const scores = scoreLowerIsBetter(percentDiffs);
+  // 5-TIER CLUES-Smart Scoring: LOWER % of useful life consumed = BETTER score
+  console.log('\n🧠 Chart 2-6: Smart Score Calculation (5-Tier System):');
+  console.log('  Economic Useful Life: 50 years');
+  console.log('  Scoring Method: Based on % of useful life consumed');
+  console.log('  Lower % consumed (newer) = Higher score (Green)');
+  console.log('  Higher % consumed (older) = Lower score (Red)');
+
+  // Calculate scores based on percentage of useful life consumed (lower = better)
+  const scores = usefulLifePercentages.map((pct) => {
+    // Direct scoring: 0% consumed = 100 score, 100% consumed = 0 score
+    const rawScore = Math.max(0, Math.min(100, 100 - pct));
+
+    // Map to 5-tier bands for consistency with other charts
+    if (rawScore >= 80) return 100; // 0-20% consumed = Green (Excellent)
+    if (rawScore >= 60) return 75;  // 20-40% consumed = Blue (Good)
+    if (rawScore >= 40) return 50;  // 40-60% consumed = Yellow (Average)
+    if (rawScore >= 20) return 25;  // 60-80% consumed = Orange (Below Average)
+    return 0;                        // 80-100% consumed = Red (Poor)
+  });
+
+  // Log scoring details
+  data.forEach((d, idx) => {
+    const rawScore = 100 - d.usefulLifeConsumed;
+    console.log(`\n📊 Property ${idx + 1}: ${d.home.name}`);
+    console.log(`  Year Built: ${d.yearBuilt}`);
+    console.log(`  Age: ${d.age} years (${d.usefulLifeConsumed.toFixed(1)}% of ${ECONOMIC_USEFUL_LIFE}-year life)`);
+    console.log(`  Raw Score: ${rawScore.toFixed(1)}/100`);
+    console.log(`  🎯 5-Tier Smart Score: ${scores[idx]}/100`);
+
+    const scoreColor = scores[idx] >= 80 ? 'Green (Excellent)' :
+                       scores[idx] >= 60 ? 'Blue (Good)' :
+                       scores[idx] >= 40 ? 'Yellow (Average)' :
+                       scores[idx] >= 20 ? 'Orange (Below Average)' : 'Red (Poor)';
+    console.log(`  Color Band: ${scoreColor}`);
+  });
+
   const { bestIndex, secondBestIndex } = findBestIndex(scores);
-  const bestHome = homes[bestIndex];
+
+  const bestData = data[bestIndex];
   const bestScore = scores[bestIndex];
   const secondScore =
     secondBestIndex !== null && secondBestIndex >= 0 ? scores[secondBestIndex] : bestScore;
   const scoreDelta = bestScore - secondScore;
 
-  const chartData = data.map((d, i) => ({
-    ...d,
-    score: scores[i],
-  }));
-
-  return (
-    <>
-      <div className="relative">
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart
-            data={chartData}
-            layout="vertical"
-            margin={{ top: 10, right: 30, left: 80, bottom: 10 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} />
-            <XAxis
-              type="number"
-              domain={[0, 100]}
-              tick={{ fill: COLORS.muted, fontSize: 10 }}
-            />
-            <YAxis
-              dataKey="name"
-              type="category"
-              tick={{ fill: COLORS.muted, fontSize: 10 }}
-              width={80}
-            />
-            <Tooltip
-              formatter={(value) => [`${(value as number).toFixed(0)}/100`, 'Value score']}
-              wrapperStyle={tooltipWrapperStyle}
-              contentStyle={tooltipContentStyle}
-              labelStyle={tooltipLabelStyle}
-              itemStyle={tooltipItemStyle}
-            />
-            <Bar dataKey="score" radius={[0, 4, 4, 0]}>
-              {chartData.map((entry) => (
-                <Cell
-                  key={entry.name}
-                  fill={PROPERTY_COLORS[entry.index] || COLORS.muted}
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-      <p className="mt-2 text-xs">
-        <span style={{ color: COLORS.scoreGreen }}>✅ Best:</span>{' '}
-        <span style={{ color: COLORS.text }}>{bestHome.name}</span>{' '}
-        <span style={{ color: COLORS.muted }}>
-          (Value score{' '}
-          <span style={{ color: scoreToBandColor(bestScore) }}>{bestScore.toFixed(0)}</span>
-          {scoreDelta > 0 ? ` · +${scoreDelta.toFixed(1)} pts vs next` : ''})
-        </span>
-      </p>
-    </>
-  );
-}
-
-// Chart 5: Price Components (Listing vs Redfin vs Market vs Assessed)
-function PriceComponentsChart({ homes }: { homes: Home[] }) {
-  return (
-    <div className="space-y-4">
-      {homes.map((h) => {
-        const values = [
-          { label: 'Listing', value: h.listingPrice },
-          { label: 'Redfin', value: h.redfinEstimate },
-          { label: 'Market', value: h.marketValue },
-          { label: 'Assessed', value: h.assessedValue },
-        ];
-        const max = Math.max(...values.map((v) => v.value));
-
-        return (
-          <div key={h.id}>
-            <p className="text-xs font-medium mb-1" style={{ color: COLORS.muted }}>
-              {h.name}
-            </p>
-            <div className="flex gap-1 h-6 rounded overflow-hidden">
-              {values.map((v) => (
-                <div
-                  key={v.label}
-                  className="relative group transition-all duration-300"
-                  style={{
-                    backgroundColor: COLORS.border,
-                    width: `${(v.value / max) * 100}%`,
-                  }}
-                  title={`${v.label}: ${formatCurrency(v.value)}`}
-                >
-                  <span
-                    className="absolute inset-0 flex items-center justify-center text-xs font-medium"
-                    style={{ color: COLORS.text }}
-                  >
-                    {v.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })}
-      <p className="text-xs mt-1" style={{ color: COLORS.muted }}>
-        This view shows how each pricing reference (Listing, Redfin, Market, Assessed) compares for every
-        home.
-      </p>
-    </div>
-  );
-}
-
-// Chart 6: Comparative Radar (normalized scores 0–100)
-function RadarChartComponent({ homes }: { homes: Home[] }) {
-  // Base metrics
-  const listingPrices = homes.map((h) => h.listingPrice);
-  const pricePerSqFt = homes.map((h) => h.pricePerSqFt);
-  // List vs Market: lower (more under market) is better
-  const listVsMarketPercents = homes.map(
-    (h) => ((h.listingPrice - h.marketValue) / h.marketValue) * 100,
-  );
-
-  const listingScores = scoreLowerIsBetter(listingPrices);
-  const sqftScores = scoreLowerIsBetter(pricePerSqFt);
-  const marketScores = scoreLowerIsBetter(listVsMarketPercents);
-
-  const radarData = [
-    {
-      metric: 'Listing Price',
-      ...Object.fromEntries(homes.map((h, i) => [h.name, listingScores[i]])),
-    },
-    {
-      metric: '$/SqFt',
-      ...Object.fromEntries(homes.map((h, i) => [h.name, sqftScores[i]])),
-    },
-    {
-      metric: 'List vs Market',
-      ...Object.fromEntries(homes.map((h, i) => [h.name, marketScores[i]])),
-    },
-  ];
-
-  return (
-    <ResponsiveContainer width="100%" height={280}>
-      <RadarChart data={radarData} outerRadius="70%">
-        <PolarGrid stroke={COLORS.border} />
-        <PolarAngleAxis dataKey="metric" tick={{ fill: COLORS.muted, fontSize: 10 }} />
-        <PolarRadiusAxis
-          angle={30}
-          domain={[0, 100]}
-          tick={{ fill: COLORS.muted, fontSize: 8 }}
-        />
-        {homes.map((home, i) => (
-          <Radar
-            key={home.id}
-            name={home.name}
-            dataKey={home.name}
-            stroke={PROPERTY_COLORS[i] || COLORS.muted}
-            fill={PROPERTY_COLORS[i] || COLORS.muted}
-            fillOpacity={0.15}
-            strokeWidth={2}
-          />
-        ))}
-        <Legend
-          wrapperStyle={{ fontSize: '10px', color: COLORS.muted }}
-          formatter={(value) => <span style={{ color: COLORS.muted }}>{value}</span>}
-        />
-        <Tooltip
-          wrapperStyle={tooltipWrapperStyle}
-          contentStyle={tooltipContentStyle}
-          labelStyle={tooltipLabelStyle}
-          itemStyle={tooltipItemStyle}
-          formatter={(value) => [`${(value as number).toFixed(0)}/100`, 'Score']}
-        />
-      </RadarChart>
-    </ResponsiveContainer>
-  );
-}
-
-// Chart 7: Value Gauges (per home, 0–100 score)
-function EquityGaugeChart({ homes }: { homes: Home[] }) {
-  // List vs Market: lower (more under market) is better
-  const listVsMarketPercents = homes.map(
-    (h) => ((h.listingPrice - h.marketValue) / h.marketValue) * 100,
-  );
-  const scores = scoreLowerIsBetter(listVsMarketPercents);
-  const { bestIndex, secondBestIndex } = findBestIndex(scores);
-
-  const bestHome = homes[bestIndex];
-  const bestScore = scores[bestIndex];
-  const secondScore =
-    secondBestIndex !== null && secondBestIndex >= 0 ? scores[secondBestIndex] : bestScore;
-  const scoreDelta = bestScore - secondScore;
+  console.log(`\n🏆 Winner: ${bestData.home.name} - Built ${bestData.yearBuilt} (${bestData.age} years old, ${bestData.usefulLifeConsumed.toFixed(1)}% of useful life consumed) - Score: ${bestScore}/100`);
 
   return (
     <>
       <div className="relative flex justify-around items-center py-4">
-        {homes.map((h, i) => {
+        {data.map((d, i) => {
           const score = scores[i] || 0;
           const arcLength = Math.max(0, Math.min(100, score)) * 2.51; // ~251 circumference units
           const color = scoreToBandColor(score);
 
           return (
-            <div key={h.id} className="flex flex-col items-center">
+            <div key={d.home.id} className="flex flex-col items-center">
               <div className="relative w-20 h-20">
                 <svg
                   viewBox="0 0 100 100"
                   className="w-full h-full"
                   style={{ transform: 'rotate(-90deg)' }}
                 >
+                  {/* Background circle */}
                   <circle
                     cx="50"
                     cy="50"
@@ -920,6 +788,7 @@ function EquityGaugeChart({ homes }: { homes: Home[] }) {
                     stroke={COLORS.border}
                     strokeWidth="8"
                   />
+                  {/* Score arc - 5-tier color */}
                   <circle
                     cx="50"
                     cy="50"
@@ -940,18 +809,24 @@ function EquityGaugeChart({ homes }: { homes: Home[] }) {
                   </span>
                 </div>
               </div>
-              <p className="text-xs mt-2" style={{ color: COLORS.muted }}>
-                {h.name.split(' ')[1]}
+              <p className="text-xs mt-2 font-semibold" style={{ color: COLORS.text }}>
+                {d.home.name.split(',')[0].split(' ').slice(-2).join(' ')}
+              </p>
+              <p className="text-xs" style={{ color: COLORS.muted }}>
+                Built {d.yearBuilt}
+              </p>
+              <p className="text-xs" style={{ color: COLORS.muted }}>
+                ({d.age} yrs / {d.usefulLifeConsumed.toFixed(0)}%)
               </p>
             </div>
           );
         })}
       </div>
       <p className="mt-1 text-xs">
-        <span style={{ color: COLORS.scoreGreen }}>✅ Best value:</span>{' '}
-        <span style={{ color: COLORS.text }}>{bestHome.name}</span>{' '}
+        <span style={{ color: COLORS.scoreGreen }}>✅ Newest property:</span>{' '}
+        <span style={{ color: COLORS.text }}>{bestData.home.name}</span>{' '}
         <span style={{ color: COLORS.muted }}>
-          (Score{' '}
+          (Built {bestData.yearBuilt}, {bestData.age} years old, {bestData.usefulLifeConsumed.toFixed(1)}% of 50-year useful life; Score{' '}
           <span style={{ color: scoreToBandColor(bestScore) }}>{bestScore.toFixed(0)}</span>
           {scoreDelta > 0 ? ` · +${scoreDelta.toFixed(1)} pts vs next` : ''})
         </span>
@@ -960,13 +835,28 @@ function EquityGaugeChart({ homes }: { homes: Home[] }) {
   );
 }
 
-// Chart 8: Appreciation Since Last Sale
+// Chart 7: Appreciation Since Last Sale
+// VERIFIED AGAINST SCHEMA: Field 10 (listing_price), Field 13 (last_sale_date), Field 14 (last_sale_price)
 function AppreciationChart({ homes }: { homes: Home[] }) {
+  // VERIFICATION: Log incoming data from 168-field schema
+  console.log('🔍 Chart 2-7: Appreciation Since Last Sale - Data Verification:');
+  homes.slice(0, 3).forEach((home, idx) => {
+    console.log(`\n📊 Property ${idx + 1}: ${home.name}`);
+    console.log(`  Field 10 (listing_price): $${home.listingPrice?.toLocaleString() || 'N/A'}`);
+    console.log(`  Field 13 (last_sale_date): ${home.lastSaleDate || 'N/A'}`);
+    console.log(`  Field 14 (last_sale_price): $${home.lastSalePrice?.toLocaleString() || 'N/A'}`);
+  });
+
   const data = homes.map((h, index) => {
     const appreciation = ((h.listingPrice - h.lastSalePrice) / h.lastSalePrice) * 100;
+    const dollarAppreciation = h.listingPrice - h.lastSalePrice;
     return {
       name: h.name,
       appreciation,
+      dollarAppreciation,
+      lastSaleDate: h.lastSaleDate || 'N/A',
+      lastSalePrice: h.lastSalePrice,
+      listingPrice: h.listingPrice,
       index,
     };
   });
@@ -974,7 +864,18 @@ function AppreciationChart({ homes }: { homes: Home[] }) {
   const values = data.map((d) => d.appreciation);
   if (!values.length) return null;
 
+  // 5-TIER CLUES-Smart Scoring for Appreciation (higher is better)
+  console.log('\n🧠 Chart 2-7: Smart Score Calculation (5-Tier System):');
   const scores = scoreHigherIsBetter(values);
+
+  // Log scoring details
+  data.forEach((d, idx) => {
+    console.log(`\n📊 Property ${idx + 1}: ${d.name}`);
+    console.log(`  Appreciation: ${d.appreciation.toFixed(2)}%`);
+    console.log(`  Dollar Value: $${d.dollarAppreciation.toLocaleString()}`);
+    console.log(`  🎯 Smart Score: ${scores[idx].toFixed(1)}/100`);
+  });
+
   const { bestIndex, secondBestIndex } = findBestIndex(scores);
   const bestHome = homes[bestIndex];
   const bestAppreciation = values[bestIndex];
@@ -983,19 +884,41 @@ function AppreciationChart({ homes }: { homes: Home[] }) {
   const appreciationDelta = bestAppreciation - secondAppreciation;
   const bestScore = scores[bestIndex];
 
+  console.log(`\n🏆 Winner: ${bestHome.name} - Score: ${bestScore.toFixed(1)}/100`);
+
   const minApp = Math.min(...values);
   const maxApp = Math.max(...values);
   const [domainMin, domainMax] = getNiceDomain([minApp, maxApp]);
 
+  // Custom X-axis tick to show name + last sale date
+  const CustomXAxisTick = ({ x, y, payload }: any) => {
+    const entry = data.find(d => d.name === payload.value);
+    const color = entry ? PROPERTY_COLORS[entry.index] || COLORS.muted : COLORS.muted;
+    const shortName = payload.value.split(',')[0];
+    const saleDate = entry?.lastSaleDate || 'N/A';
+
+    return (
+      <g transform={`translate(${x},${y})`}>
+        <text x={0} y={0} dy={8} textAnchor="middle" fill={color} fontSize={10} fontWeight={600}>
+          {shortName}
+        </text>
+        <text x={0} y={0} dy={20} textAnchor="middle" fill={COLORS.muted} fontSize={8}>
+          ({saleDate})
+        </text>
+      </g>
+    );
+  };
+
   return (
     <>
       <div className="relative">
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+        <ResponsiveContainer width="100%" height={250}>
+          <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 30 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} />
             <XAxis
               dataKey="name"
-              tick={{ fill: COLORS.muted, fontSize: 10 }}
+              tick={<CustomXAxisTick />}
+              height={50}
             />
             <YAxis
               domain={[domainMin, domainMax]}
@@ -1003,7 +926,17 @@ function AppreciationChart({ homes }: { homes: Home[] }) {
               tickFormatter={(v) => formatPercent(v)}
             />
             <Tooltip
-              formatter={(value) => [formatPercent(value as number), 'Appreciation since last sale']}
+              formatter={(value, name, props) => {
+                const dollarValue = props.payload.dollarAppreciation;
+                return [
+                  `${formatPercent(value as number)} (${formatCurrency(dollarValue)})`,
+                  'Appreciation'
+                ];
+              }}
+              labelFormatter={(label) => {
+                const entry = data.find(d => d.name === label);
+                return entry ? `${entry.name} - Last Sale: ${entry.lastSaleDate}` : label;
+              }}
               wrapperStyle={tooltipWrapperStyle}
               contentStyle={tooltipContentStyle}
               labelStyle={tooltipLabelStyle}
@@ -1036,156 +969,7 @@ function AppreciationChart({ homes }: { homes: Home[] }) {
   );
 }
 
-// Chart 9: Overall Value Score (0–100)
-function OverallScoreChart({ homes }: { homes: Home[] }) {
-  const listingPrices = homes.map((h) => h.listingPrice);
-  const sqftPrices = homes.map((h) => h.pricePerSqFt);
-  // List vs Market: lower (more under market) is better
-  const listVsMarketPercents = homes.map(
-    (h) => ((h.listingPrice - h.marketValue) / h.marketValue) * 100,
-  );
-  const appreciations = homes.map(
-    (h) => ((h.listingPrice - h.lastSalePrice) / h.lastSalePrice) * 100,
-  );
 
-  const listingScores = scoreLowerIsBetter(listingPrices);
-  const sqftScores = scoreLowerIsBetter(sqftPrices);
-  const marketScores = scoreLowerIsBetter(listVsMarketPercents);
-  const appreciationScores = scoreHigherIsBetter(appreciations);
-
-  const scores = homes.map((_, i) => {
-    const components = [
-      listingScores[i],
-      sqftScores[i],
-      marketScores[i],
-      appreciationScores[i],
-    ];
-    const valid = components.filter((s) => Number.isFinite(s));
-    const avg = valid.length ? valid.reduce((sum, s) => sum + s, 0) / valid.length : 0;
-    return avg;
-  });
-
-  const { bestIndex, secondBestIndex } = findBestIndex(scores);
-  const bestHome = homes[bestIndex];
-  const bestScore = scores[bestIndex];
-  const secondScore =
-    secondBestIndex !== null && secondBestIndex >= 0 ? scores[secondBestIndex] : bestScore;
-  const scoreDelta = bestScore - secondScore;
-
-  const data = homes.map((h, index) => ({
-    name: h.name,
-    index,
-    score: scores[index],
-  }));
-
-  return (
-    <>
-      <div className="relative">
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart
-            data={data}
-            layout="vertical"
-            margin={{ top: 10, right: 30, left: 80, bottom: 10 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} />
-            <XAxis
-              type="number"
-              domain={[0, 100]}
-              tick={{ fill: COLORS.muted, fontSize: 10 }}
-            />
-            <YAxis
-              dataKey="name"
-              type="category"
-              tick={{ fill: COLORS.muted, fontSize: 10 }}
-              width={80}
-            />
-            <Tooltip
-              formatter={(value) => [`${(value as number).toFixed(0)}/100`, 'Overall score']}
-              wrapperStyle={tooltipWrapperStyle}
-              contentStyle={tooltipContentStyle}
-              labelStyle={tooltipLabelStyle}
-              itemStyle={tooltipItemStyle}
-            />
-            <Bar dataKey="score" radius={[0, 4, 4, 0]}>
-              {data.map((entry) => (
-                <Cell
-                  key={entry.name}
-                  fill={PROPERTY_COLORS[entry.index] || COLORS.muted}
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-      <p className="mt-2 text-xs">
-        <span style={{ color: COLORS.scoreGreen }}>✅ Overall best:</span>{' '}
-        <span style={{ color: COLORS.text }}>{bestHome.name}</span>{' '}
-        <span style={{ color: COLORS.muted }}>
-          (Overall score{' '}
-          <span style={{ color: scoreToBandColor(bestScore) }}>{bestScore.toFixed(0)}</span>
-          {scoreDelta > 0 ? ` · +${scoreDelta.toFixed(1)} pts vs next` : ''})
-        </span>
-      </p>
-    </>
-  );
-}
-
-// Chart 10: Value Pyramid – Assessed → Market → Listing
-function ValuePyramidChart({ homes }: { homes: Home[] }) {
-  const data = homes.map((h) => ({
-    name: h.name.split(' ')[1],
-    assessed: h.assessedValue,
-    marketDelta: Math.max(0, h.marketValue - h.assessedValue),
-    listingDelta: Math.max(0, h.listingPrice - h.marketValue),
-  }));
-
-  const allValues = [
-    ...data.map((d) => d.assessed),
-    ...data.map((d) => d.assessed + d.marketDelta + d.listingDelta),
-  ];
-  const [domainMin, domainMax] = getNiceDomain(allValues);
-
-  return (
-    <ResponsiveContainer width="100%" height={200}>
-      <BarChart
-        data={data}
-        layout="vertical"
-        margin={{ top: 10, right: 30, left: 80, bottom: 10 }}
-      >
-        <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} />
-        <XAxis
-          type="number"
-          domain={[domainMin, domainMax]}
-          tick={{ fill: COLORS.muted, fontSize: 10 }}
-          tickFormatter={(v) => formatCurrencyShort(v)}
-        />
-        <YAxis
-          dataKey="name"
-          type="category"
-          tick={{ fill: COLORS.muted, fontSize: 10 }}
-          width={80}
-        />
-        <Tooltip
-          formatter={(value) => [formatCurrency(value as number), 'Value']}
-          wrapperStyle={tooltipWrapperStyle}
-          contentStyle={tooltipContentStyle}
-          labelStyle={tooltipLabelStyle}
-          itemStyle={tooltipItemStyle}
-        />
-        <Legend wrapperStyle={{ fontSize: '10px', color: COLORS.muted }} />
-        <Bar dataKey="assessed" stackId="a" fill={COLORS.scoreRed} name="Assessed" />
-        <Bar dataKey="marketDelta" stackId="a" fill={COLORS.scoreYellow} name="Market Δ" />
-        <Bar
-          dataKey="listingDelta"
-          stackId="a"
-          fill={COLORS.scoreBlue}
-          name="Listing Δ"
-          radius={[0, 4, 4, 0]}
-        />
-      </BarChart>
-    </ResponsiveContainer>
-  );
-}
 
 // Main App Component - accepts homes prop or uses sample data for preview
 export default function RealEstateDashboard({ homes = sampleHomes }: { homes?: Home[] }) {
@@ -1218,6 +1002,24 @@ export default function RealEstateDashboard({ homes = sampleHomes }: { homes?: H
   const appreciationScores = scoreHigherIsBetter(appreciations);
   const { bestIndex: bestAppIndex } = findBestIndex(appreciationScores);
   const bestAppScore = bestAppIndex >= 0 ? appreciationScores[bestAppIndex] : 0;
+
+  // Property Age scores (based on economic useful life of 50 years)
+  const currentYear = new Date().getFullYear();
+  const ECONOMIC_USEFUL_LIFE = 50;
+  const ageScores = homes.map((h) => {
+    const age = currentYear - (h.yearBuilt || currentYear);
+    const usefulLifeConsumed = (age / ECONOMIC_USEFUL_LIFE) * 100;
+    const rawScore = Math.max(0, Math.min(100, 100 - usefulLifeConsumed));
+
+    // Map to 5-tier bands
+    if (rawScore >= 80) return 100; // 0-20% consumed = Green
+    if (rawScore >= 60) return 75;  // 20-40% consumed = Blue
+    if (rawScore >= 40) return 50;  // 40-60% consumed = Yellow
+    if (rawScore >= 20) return 25;  // 60-80% consumed = Orange
+    return 0;                        // 80-100% consumed = Red
+  });
+  const { bestIndex: bestAgeIndex } = findBestIndex(ageScores);
+  const bestAgeScore = bestAgeIndex >= 0 ? ageScores[bestAgeIndex] : 0;
 
   const overallScores = homes.map((_, i) => {
     const components = [
@@ -1282,59 +1084,33 @@ export default function RealEstateDashboard({ homes = sampleHomes }: { homes?: H
             <ListVsMarketChart homes={homes} />
           </Card>
 
-          <Card>
-            <CardTitle
-              title="4. Value Score (0–100)"
-              right={<SmartScoreBadge value={bestEquityScore} />}
-            />
-            <EquityScoreChart homes={homes} />
-            <LegendsRow homes={homes} />
-          </Card>
 
-          <Card className="md:col-span-2">
-            <CardTitle title="5. Price Components" />
-            <PriceComponentsChart homes={homes} />
-            <LegendsRow homes={homes} />
-          </Card>
-
-          <Card className="md:col-span-2">
-            <CardTitle title="6. Comparative Radar (Scores)" />
-            <RadarChartComponent homes={homes} />
-            <LegendsRow homes={homes} />
-          </Card>
 
           <Card>
-            <CardTitle
-              title="7. Value Gauges"
-              right={<SmartScoreBadge value={bestEquityScore} />}
-            />
-            <EquityGaugeChart homes={homes} />
+            <div className="relative">
+              <div className="absolute -top-3 left-3 text-[10px] font-mono text-gray-500">Chart 2-6</div>
+              <CardTitle
+                title="Property Age Gauges"
+                right={<SmartScoreBadge value={bestAgeScore} />}
+              />
+            </div>
+            <PropertyAgeGaugeChart homes={homes} />
             <LegendsRow homes={homes} />
           </Card>
 
           <Card className="md:col-span-2">
-            <CardTitle
-              title="8. Appreciation Since Last Sale"
-              right={<SmartScoreBadge value={bestAppScore} />}
-            />
+            <div className="relative">
+              <div className="absolute -top-3 left-3 text-[10px] font-mono text-gray-500">Chart 2-7</div>
+              <CardTitle
+                title="Appreciation Since Last Sale"
+                right={<SmartScoreBadge value={bestAppScore} />}
+              />
+            </div>
             <AppreciationChart homes={homes} />
             <LegendsRow homes={homes} />
           </Card>
 
-          <Card>
-            <CardTitle
-              title="9. Overall Value Score"
-              right={<SmartScoreBadge value={bestOverallScore} />}
-            />
-            <OverallScoreChart homes={homes} />
-            <LegendsRow homes={homes} />
-          </Card>
 
-          <Card className="lg:col-span-3">
-            <CardTitle title="10. Value Pyramid" />
-            <ValuePyramidChart homes={homes} />
-            <LegendsRow homes={homes} />
-          </Card>
         </div>
       </div>
     </div>
