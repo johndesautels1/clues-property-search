@@ -267,13 +267,8 @@ export default function Visuals() {
 
             {/* Charts */}
             <Suspense fallback={<CategoryLoader />}>
-              {ActiveComponent && selectedChartProperties.length > 0 && (
+              {ActiveComponent && (
                 <ActiveComponent properties={selectedChartProperties} />
-              )}
-              {ActiveComponent && selectedChartProperties.length === 0 && (
-                <div className="text-center py-12 text-gray-400">
-                  Please select at least one property to compare
-                </div>
               )}
             </Suspense>
           </motion.div>
