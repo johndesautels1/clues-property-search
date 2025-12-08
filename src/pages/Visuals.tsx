@@ -7,7 +7,7 @@
  * Real data from usePropertyStore → visualsDataMapper → Charts
  */
 
-import { useState, Suspense, lazy } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePropertyStore } from '@/store/propertyStore';
 import { mapPropertiesToChart, type ChartProperty } from '@/lib/visualsDataMapper';
@@ -18,8 +18,9 @@ import {
   ParkingCircle, Building, FileText, Waves, ChevronDown
 } from 'lucide-react';
 
-// Import SMART Score section (displayed at top)
+// Import SMART Score section and Property Selector (displayed at top)
 import SMARTScoreSection from '@/components/visuals/SMARTScoreSection';
+import PropertyComparisonSelector from '@/components/visuals/PropertyComparisonSelector';
 
 // Lazy load category components
 const Category01_AddressIdentity = lazy(() => import('@/components/visuals/Category01_AddressIdentity'));
@@ -98,9 +99,39 @@ export default function Visuals() {
   const { fullProperties } = usePropertyStore();
   const [activeCategory, setActiveCategory] = useState<string>('01');
 
+  // State for 3 selected properties to compare
+  const [selectedProperties, setSelectedProperties] = useState<[string | null, string | null, string | null]>([null, null, null]);
+
   // Convert Map to array and map to chart format
   const properties = Array.from(fullProperties.values());
   const chartProperties = mapPropertiesToChart(properties);
+
+  // Auto-select first 3 properties if none selected and properties exist
+  useEffect(() => {
+    if (chartProperties.length >= 3 && !selectedProperties[0] && !selectedProperties[1] && !selectedProperties[2]) {
+      setSelectedProperties([
+        chartProperties[0].id,
+        chartProperties[1].id,
+        chartProperties[2].id,
+      ]);
+    } else if (chartProperties.length === 2 && !selectedProperties[0] && !selectedProperties[1]) {
+      setSelectedProperties([chartProperties[0].id, chartProperties[1].id, null]);
+    } else if (chartProperties.length === 1 && !selectedProperties[0]) {
+      setSelectedProperties([chartProperties[0].id, null, null]);
+    }
+  }, [chartProperties.length]);
+
+  // Handle property selection change
+  const handlePropertySelect = (index: 0 | 1 | 2, propertyId: string | null) => {
+    const newSelected = [...selectedProperties] as [string | null, string | null, string | null];
+    newSelected[index] = propertyId;
+    setSelectedProperties(newSelected);
+  };
+
+  // Get only the selected properties for charts
+  const selectedChartProperties = chartProperties.filter(p =>
+    selectedProperties.includes(p.id)
+  );
 
   const activeTab = categories.find(c => c.id === activeCategory);
   const ActiveComponent = activeTab?.component;
@@ -132,6 +163,15 @@ export default function Visuals() {
         {/* SMART Score Section - Top of page, outside category tabs */}
         {chartProperties.length > 0 && (
           <SMARTScoreSection properties={chartProperties} />
+        )}
+
+        {/* Property Comparison Selector - 3 dropdown fields */}
+        {chartProperties.length > 0 && (
+          <PropertyComparisonSelector
+            properties={chartProperties}
+            selectedProperties={selectedProperties}
+            onPropertySelect={handlePropertySelect}
+          />
         )}
 
         {/* Category Tabs - Horizontal scroll on mobile, wrapped on desktop */}
@@ -225,8 +265,13 @@ export default function Visuals() {
 
             {/* Charts */}
             <Suspense fallback={<CategoryLoader />}>
-              {ActiveComponent && (
-                <ActiveComponent properties={chartProperties} />
+              {ActiveComponent && selectedChartProperties.length > 0 && (
+                <ActiveComponent properties={selectedChartProperties} />
+              )}
+              {ActiveComponent && selectedChartProperties.length === 0 && (
+                <div className="text-center py-12 text-gray-400">
+                  Please select at least one property to compare
+                </div>
               )}
             </Suspense>
           </motion.div>
