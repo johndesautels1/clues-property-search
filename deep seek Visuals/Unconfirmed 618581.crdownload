@@ -1,0 +1,203 @@
+// Main Application Logic
+class RealEstateApp {
+    constructor() {
+        this.selectedProperties = ["property1", "property2", "property3"];
+        this.chartViews = {
+            marketRadar: "radar",
+            valueMomentum: "vector",
+            priceTopography: "contour",
+            timeSeries: "line",
+            compAnalysis: "matrix"
+        };
+        
+        this.init();
+    }
+    
+    // Initialize the application
+    init() {
+        this.generatePropertyCards();
+        this.setupEventListeners();
+        this.updateAllCharts();
+        aiInsights.displayInsights(this.selectedProperties);
+        
+        // Add CSS animation for pulse effect
+        this.addAnimationStyles();
+    }
+    
+    // Generate property cards in the sidebar
+    generatePropertyCards() {
+        const container = d3.select("#propertyCards");
+        container.html("");
+        
+        propertyData.getAllPropertyIds().forEach(propertyId => {
+            const property = propertyData.getProperty(propertyId);
+            const isSelected = this.selectedProperties.includes(propertyId);
+            
+            const card = container.append("div")
+                .attr("class", `property-card ${isSelected ? "selected" : ""}`)
+                .attr("data-id", propertyId)
+                .on("click", () => this.togglePropertySelection(propertyId));
+            
+            card.html(`
+                <div class="property-header">
+                    <div class="property-name">${property.name}</div>
+                    <div class="property-price">${propertyData.formatCurrency(property.listingPrice)}</div>
+                </div>
+                <div class="property-meta">
+                    <span><i class="fas fa-bed"></i> ${property.bedrooms} bd</span>
+                    <span><i class="fas fa-bath"></i> ${property.bathrooms} ba</span>
+                    <span><i class="fas fa-ruler-combined"></i> ${property.sqft.toLocaleString()} sqft</span>
+                </div>
+                <div style="font-size: 12px; color: #64748b; margin-bottom: 8px;">
+                    ${property.neighborhood} • ${property.propertyType}
+                </div>
+                <div class="property-tags">
+                    ${property.tags.map(tag => `
+                        <div class="tag ${tag === "High ROI" || tag === "Good Value" ? "highlight" : ""}">
+                            ${tag}
+                        </div>
+                    `).join("")}
+                </div>
+            `);
+        });
+    }
+    
+    // Toggle property selection
+    togglePropertySelection(propertyId) {
+        if (this.selectedProperties.includes(propertyId)) {
+            this.selectedProperties = this.selectedProperties.filter(id => id !== propertyId);
+        } else if (this.selectedProperties.length < 3) {
+            this.selectedProperties.push(propertyId);
+        } else {
+            this.selectedProperties = [propertyId, ...this.selectedProperties.slice(1)];
+        }
+        
+        this.generatePropertyCards();
+        this.updateAllCharts();
+        aiInsights.displayInsights(this.selectedProperties);
+    }
+    
+    // Setup event listeners
+    setupEventListeners() {
+        // Chart controls
+        document.querySelectorAll(".chart-control").forEach(control => {
+            control.addEventListener("click", (e) => {
+                const chart = e.target.getAttribute("data-chart");
+                const view = e.target.getAttribute("data-view");
+                
+                // Update active state
+                e.target.parentElement.querySelectorAll(".chart-control").forEach(c => c.classList.remove("active"));
+                e.target.classList.add("active");
+                
+                // Update chart view
+                this.chartViews[chart] = view;
+                this.updateChart(chart, view);
+            });
+        });
+        
+        // Comparison mode dropdown
+        document.getElementById("comparisonMode").addEventListener("change", (e) => {
+            const mode = e.target.value;
+            this.handleComparisonModeChange(mode);
+        });
+        
+        // Analysis focus dropdown
+        document.getElementById("analysisFocus").addEventListener("change", (e) => {
+            aiInsights.displayInsights(this.selectedProperties);
+        });
+        
+        // Run analysis button
+        document.getElementById("runAnalysis").addEventListener("click", () => {
+            this.runAnalysis();
+        });
+        
+        // Export report button
+        document.getElementById("exportReport").addEventListener("click", () => {
+            this.exportReport();
+        });
+    }
+    
+    // Handle comparison mode change
+    handleComparisonModeChange(mode) {
+        if (mode === "quick" && this.selectedProperties.length > 2) {
+            this.selectedProperties = this.selectedProperties.slice(0, 2);
+            this.generatePropertyCards();
+            this.updateAllCharts();
+        } else if (mode === "portfolio" && this.selectedProperties.length < 5) {
+            const availableProps = propertyData.getAllPropertyIds().filter(id => !this.selectedProperties.includes(id));
+            this.selectedProperties = [...this.selectedProperties, ...availableProps.slice(0, 5 - this.selectedProperties.length)];
+            this.generatePropertyCards();
+            this.updateAllCharts();
+        }
+    }
+    
+    // Update specific chart
+    updateChart(chartName, view) {
+        switch(chartName) {
+            case "marketRadar":
+                chartGenerator.createMarketRadar(this.selectedProperties, view);
+                break;
+            case "valueMomentum":
+                chartGenerator.createValueMomentum(this.selectedProperties, view);
+                break;
+            case "priceTopography":
+                chartGenerator.createPriceTopography(this.selectedProperties, view);
+                break;
+            case "timeSeries":
+                chartGenerator.createTimeSeries(this.selectedProperties, view);
+                break;
+            case "compAnalysis":
+                chartGenerator.createComparativeAnalysis(this.selectedProperties, view);
+                break;
+        }
+    }
+    
+    // Update all charts
+    updateAllCharts() {
+        chartGenerator.createMarketRadar(this.selectedProperties, this.chartViews.marketRadar);
+        chartGenerator.createValueMomentum(this.selectedProperties, this.chartViews.valueMomentum);
+        chartGenerator.createPriceTopography(this.selectedProperties, this.chartViews.priceTopography);
+        chartGenerator.createTimeSeries(this.selectedProperties, this.chartViews.timeSeries);
+        chartGenerator.createComparativeAnalysis(this.selectedProperties, this.chartViews.compAnalysis);
+    }
+    
+    // Run analysis
+    runAnalysis() {
+        const runBtn = document.getElementById("runAnalysis");
+        const originalText = runBtn.innerHTML;
+        runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+        runBtn.disabled = true;
+        
+        // Simulate analysis processing
+        setTimeout(() => {
+            this.updateAllCharts();
+            aiInsights.displayInsights(this.selectedProperties);
+            
+            runBtn.innerHTML = originalText;
+            runBtn.disabled = false;
+        }, 1500);
+    }
+    
+    // Export report
+    exportReport() {
+        alert("Export functionality would generate a comprehensive PDF report with all charts and insights.\n\nIn a production environment, this would:\n1. Capture all charts as images\n2. Generate a PDF with insights\n3. Include property details and comparisons\n4. Allow email or download of the report");
+    }
+    
+    // Add animation styles
+    addAnimationStyles() {
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.02); }
+                100% { transform: scale(1); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+}
+
+// Initialize the application when the DOM is loaded
+document.addEventListener("DOMContentLoaded", () => {
+    const app = new RealEstateApp();
+});

@@ -1,0 +1,19 @@
+real-estate-analytics-platform/
+│
+├── index.html                    # Main professional dashboard
+├── fighter-jet-dashboard.html    # Original fighter jet version
+├── README.md                     # Documentation
+│
+├── css/
+│   ├── professional.css         # Main professional styles
+│   └── fighter-jet.css          # Fighter jet theme styles
+│
+├── js/
+│   ├── app.js                   # Main application logic
+│   ├── charts.js               # Chart generation functions
+│   ├── data.js                 # Property data and utilities
+│   └── ai-insights.js          # AI insights generation
+│
+└── assets/
+    ├── fonts/                   # Custom fonts
+    └── images/                  # Any images/logos

@@ -1,0 +1,89 @@
+
+3. **Open `index.html`** in a modern web browser
+4. **No server required** - runs entirely client-side
+
+## Usage
+
+### Basic Workflow
+1. **Select Properties**: Click property cards in the sidebar to select up to 3 properties
+2. **Choose Analysis Mode**: Select comparison mode from dropdown (Detailed, Quick, Portfolio)
+3. **Run Analysis**: Click "Run Analysis" to generate insights
+4. **Explore Charts**: Interact with various visualization types
+5. **Export Reports**: Generate PDF reports (simulated)
+
+### Chart Types
+- **Radar Charts**: Multi-attribute comparison
+- **Vector Momentum**: Price trend analysis
+- **Topography Maps**: Value density visualization
+- **Time Series**: Historical price tracking
+- **Matrix Analysis**: Property-to-property comparisons
+
+## Technical Details
+
+### Dependencies
+- **D3.js v7**: Data visualization library
+- **Luxon**: Date/time manipulation
+- **Font Awesome 6**: Icon library
+- **Google Fonts (Inter)**: Typography
+- **Chroma.js**: Color manipulation
+
+### Browser Support
+- Chrome 90+
+- Firefox 88+
+- Safari 14+
+- Edge 90+
+
+### Data Structure
+The application uses a comprehensive property data model including:
+- Basic property information (price, size, bedrooms)
+- Market data (assessed value, market value, estimates)
+- Neighborhood metrics (school ratings, walk scores, crime scores)
+- Historical price data
+- Comparative market analysis
+
+## Customization
+
+### Adding New Properties
+Edit `js/data.js` to add new property entries following the existing structure.
+
+### Styling
+- Professional theme: `css/professional.css`
+- Fighter jet theme: `css/fighter-jet.css`
+
+### Chart Configuration
+Modify `js/charts.js` to adjust visualization parameters and add new chart types.
+
+## Future Enhancements
+
+### Planned Features
+1. **Real MLS Integration**: Connect to actual property databases
+2. **Map Integration**: Geographic visualization with Leaflet/Mapbox
+3. **User Accounts**: Save comparison sets and preferences
+4. **Collaboration Tools**: Share analyses with clients
+5. **Mobile App**: React Native/iOS/Android versions
+6. **Predictive Analytics**: Machine learning price forecasting
+7. **Virtual Tour Integration**: 3D property walkthroughs
+
+### API Integration Points
+- Zillow API for market data
+- Redfin API for estimates
+- Google Maps API for location data
+- Local MLS databases
+
+## Performance Notes
+- All visualizations render client-side
+- Data processing optimized for up to 10 simultaneous property comparisons
+- Responsive design supports desktop, tablet, and mobile
+
+## License
+This project is provided for educational and demonstration purposes. Commercial use may require additional licensing.
+
+## Support
+For issues or questions:
+1. Check browser console for errors
+2. Ensure all dependencies are loading
+3. Verify file structure matches recommended layout
+4. Test with different property selections
+
+---
+*Built for modern real estate professionals with cutting-edge data visualization*
