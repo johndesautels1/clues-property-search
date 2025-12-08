@@ -15,7 +15,7 @@ import {
   MapPin, DollarSign, Home, Building2, Wrench,
   Sofa, Trees, Hammer, GraduationCap, Navigation,
   Car, Shield, TrendingUp, Zap, CloudRain, Sparkles,
-  ParkingCircle, Building, FileText, Waves, ChevronDown
+  ParkingCircle, Building, FileText, Waves, ChevronDown, Rocket
 } from 'lucide-react';
 
 // Import SMART Score section and Property Selector (displayed at top)
@@ -43,6 +43,7 @@ const Category17_ParkingGarage = lazy(() => import('@/components/visuals/Categor
 const Category18_BuildingDetails = lazy(() => import('@/components/visuals/Category18_Placeholder'));
 const Category19_LegalTax = lazy(() => import('@/components/visuals/Category19_Placeholder'));
 const Category20_WaterfrontLeasing = lazy(() => import('@/components/visuals/Category20_Placeholder'));
+const Category21_AdvancedVisuals = lazy(() => import('@/components/visuals/Category21_AdvancedVisuals'));
 
 // Category component props
 interface CategoryComponentProps {
@@ -80,6 +81,7 @@ const categories: Category[] = [
   { id: '18', title: 'Building Details', icon: Building, color: '#A855F7', description: 'Floor, Elevator, Building Info', component: Category18_BuildingDetails },
   { id: '19', title: 'Legal & Tax (Stellar)', icon: FileText, color: '#00D9FF', description: 'Homestead, CDD, Subdivision', component: Category19_LegalTax },
   { id: '20', title: 'Waterfront & Leasing', icon: Waves, color: '#10B981', description: 'Water Access, Lease Rules, Pets', component: Category20_WaterfrontLeasing },
+  { id: '21', title: 'Advanced Visuals (DeepSeek)', icon: Rocket, color: '#FF00FF', description: '5 D3.js Charts - Radar, Momentum, Topography', component: Category21_AdvancedVisuals },
 ];
 
 // Loading spinner
@@ -156,7 +158,7 @@ export default function Visuals() {
             Advanced Analytics
           </h1>
           <p className="text-gray-400 text-sm md:text-base">
-            175 Visualizations • 20 Categories • {chartProperties.length} Properties
+            180 Visualizations • 21 Categories • {chartProperties.length} Properties
           </p>
         </motion.div>
 
