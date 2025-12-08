@@ -18,6 +18,17 @@ export default function ValueMomentumChart({ properties }: ValueMomentumChartPro
   useEffect(() => {
     if (!containerRef.current || properties.length === 0) return;
 
+    // VERIFICATION: Log incoming data from 168-field schema
+    console.log('🔍 ValueMomentumChart - Data Verification:');
+    properties.slice(0, 3).forEach((prop, idx) => {
+      console.log(`\n📊 Property ${idx + 1}: ${prop.address}`);
+      console.log(`  Field 10 (listing_price): $${prop.listingPrice?.toLocaleString() || 'N/A'}`);
+      console.log(`  Field 12 (market_value_estimate): $${prop.marketValueEstimate?.toLocaleString() || 'N/A'}`);
+      console.log(`  Field 13 (last_sale_date): ${prop.lastSaleDate || 'N/A'}`);
+      console.log(`  Field 14 (last_sale_price): $${prop.lastSalePrice?.toLocaleString() || 'N/A'}`);
+      console.log(`  Field 15 (assessed_value): $${prop.assessedValue?.toLocaleString() || 'N/A'}`);
+    });
+
     // Clear previous chart
     d3.select(containerRef.current).selectAll('*').remove();
 
@@ -243,34 +254,67 @@ export default function ValueMomentumChart({ properties }: ValueMomentumChartPro
     });
 
     // Calculate CLUES-Smart Scores (0-100 scale) - MOMENTUM-SPECIFIC METRICS
-    const propertyScores = properties.slice(0, 3).map((property) => {
+    console.log('\n🧠 Smart Score Calculation (5-Tier System):');
+    const propertyScores = properties.slice(0, 3).map((property, idx) => {
       const lastSale = property.lastSalePrice || 0;
       const assessed = property.assessedValue || 0;
       const marketEst = property.marketValueEstimate || 0;
       const listing = property.listingPrice || 0;
 
-      if (listing === 0) return 50; // No data = average
+      console.log(`\n📊 Property ${idx + 1}: ${property.address?.split(',')[0]}`);
+
+      if (listing === 0) {
+        console.log('  ⚠️ No listing price - defaulting to 50 (Yellow/Average)');
+        return 50; // No data = average
+      }
 
       // Metric 1: Appreciation from last sale (higher = better)
       const appreciation = lastSale > 0 ? ((listing - lastSale) / lastSale) * 100 : 0;
+      console.log(`  📈 Metric 1 - Appreciation: ${appreciation.toFixed(2)}%`);
 
       // Metric 2: Listing vs Market Estimate (closer to 1.0 = better, underpriced is good)
       const vsMarket = marketEst > 0 ? marketEst / listing : 1;
+      console.log(`  📊 Metric 2 - Market/Listing Ratio: ${vsMarket.toFixed(3)}`);
 
       // Metric 3: Listing vs Assessed (closer to 1.0 = better)
       const vsAssessed = assessed > 0 ? assessed / listing : 1;
+      console.log(`  📊 Metric 3 - Assessed/Listing Ratio: ${vsAssessed.toFixed(3)}`);
 
-      // Normalize appreciation: -20% = 0, 0% = 50, +20% = 100
-      const appreciationScore = Math.max(0, Math.min(100, 50 + (appreciation * 2.5)));
+      // 5-TIER SCALE NORMALIZATION (matching 5 color bands)
+      // -20% or worse = 0 (Red), -10% = 25 (Orange), 0% = 50 (Yellow), +10% = 75 (Blue), +20% or better = 100 (Green)
 
-      // Normalize vsMarket: 0.8 = 0 (overpriced 20%), 1.0 = 50, 1.2 = 100 (underpriced 20%)
-      const marketScore = Math.max(0, Math.min(100, ((vsMarket - 0.8) / 0.4) * 100));
+      // Appreciation Score: Map to 5 tiers
+      let appreciationScore = 50; // Default: 0% = Yellow
+      if (appreciation <= -20) appreciationScore = 0;        // -20% or worse = Red
+      else if (appreciation <= -10) appreciationScore = 25;  // -10% = Orange
+      else if (appreciation <= 0) appreciationScore = 50;    // 0% = Yellow
+      else if (appreciation <= 10) appreciationScore = 75;   // +10% = Blue
+      else appreciationScore = 100;                          // +20% or better = Green
+      console.log(`     → Score: ${appreciationScore} (50% weight)`);
 
-      // Normalize vsAssessed: same logic
-      const assessedScore = Math.max(0, Math.min(100, ((vsAssessed - 0.8) / 0.4) * 100));
+      // Market Score: Convert ratio to percentage difference
+      const marketDiff = (vsMarket - 1) * 100; // e.g., 1.1 = +10%, 0.9 = -10%
+      let marketScore = 50;
+      if (marketDiff <= -20) marketScore = 0;
+      else if (marketDiff <= -10) marketScore = 25;
+      else if (marketDiff <= 0) marketScore = 50;
+      else if (marketDiff <= 10) marketScore = 75;
+      else marketScore = 100;
+      console.log(`     → Score: ${marketScore} (30% weight)`);
+
+      // Assessed Score: Same logic
+      const assessedDiff = (vsAssessed - 1) * 100;
+      let assessedScore = 50;
+      if (assessedDiff <= -20) assessedScore = 0;
+      else if (assessedDiff <= -10) assessedScore = 25;
+      else if (assessedDiff <= 0) assessedScore = 50;
+      else if (assessedDiff <= 10) assessedScore = 75;
+      else assessedScore = 100;
+      console.log(`     → Score: ${assessedScore} (20% weight)`);
 
       // Weighted average: appreciation 50%, market 30%, assessed 20%
       const score = (appreciationScore * 0.5) + (marketScore * 0.3) + (assessedScore * 0.2);
+      console.log(`  🎯 Final Weighted Score: ${score.toFixed(1)}/100`);
       return score;
     });
 

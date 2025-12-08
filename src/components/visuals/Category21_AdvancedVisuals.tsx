@@ -3,12 +3,9 @@
  * Combines DeepSeek D3.js charts (5) + Claude Recharts (10) + future expansions
  *
  * Charts:
- * DEEPSEEK D3.js (Charts 1-5):
+ * DEEPSEEK D3.js (Charts 1-2):
  * 1. Market Radar - Multi-dimensional property comparison
  * 2. Value Momentum - Price progression visualization
- * 3. Price Topography - Value density contour mapping
- * 4. Time Series - Historical price timeline
- * 5. Comparative Analysis Matrix - Side-by-side property comparison
  *
  * CLAUDE RECHARTS (Charts 6-15):
  * 6. Listing Price Comparison
@@ -31,9 +28,6 @@ import { mapPropertiesToChart } from '@/lib/visualsDataMapper';
 import PropertyComparisonSelector from './PropertyComparisonSelector';
 import MarketRadarChart from './deepseek/MarketRadarChart';
 import ValueMomentumChart from './deepseek/ValueMomentumChart';
-import PriceTopographyChart from './deepseek/PriceTopographyChart';
-import TimeSeriesChart from './deepseek/TimeSeriesChart';
-import ComparativeAnalysisMatrix from './deepseek/ComparativeAnalysisMatrix';
 import RealEstateDashboard from './recharts/RealEstateDashboard';
 
 interface Category21Props {
@@ -41,17 +35,18 @@ interface Category21Props {
 }
 
 // Map ChartProperty to RealEstateDashboard Home interface
+// VERIFIED AGAINST SCHEMA: Fields 10, 11, 12, 13, 14, 15
 function mapToRealEstateHomes(properties: ChartProperty[]) {
   return properties.map((p) => ({
     id: p.id,
     name: p.address || 'Unknown Address',
-    listingPrice: p.listingPrice || 0,
-    pricePerSqFt: p.listingPrice && p.livingSqft ? p.listingPrice / p.livingSqft : 0,
-    marketValue: p.zillowEstimate || p.redfinEstimate || p.listingPrice || 0,
-    lastSaleDate: p.lastSaleDate || 'N/A',
-    lastSalePrice: p.lastSalePrice || p.listingPrice || 0,
-    assessedValue: p.assessedValue || p.listingPrice || 0,
-    redfinEstimate: p.redfinEstimate || p.listingPrice || 0,
+    listingPrice: p.listingPrice || 0,                                              // Field 10: listing_price
+    pricePerSqFt: p.pricePerSqft || (p.listingPrice && p.livingSqft ? Math.round((p.listingPrice / p.livingSqft) * 100) / 100 : 0), // Field 11: price_per_sqft (calculated if not present, rounded to 2 decimals)
+    marketValue: p.marketValueEstimate || 0,                                        // Field 12: market_value_estimate
+    lastSaleDate: p.lastSaleDate || 'N/A',                                         // Field 13: last_sale_date
+    lastSalePrice: p.lastSalePrice || 0,                                           // Field 14: last_sale_price
+    assessedValue: p.assessedValue || 0,                                           // Field 15: assessed_value
+    redfinEstimate: p.redfinEstimate || p.marketValueEstimate || 0,                // Field 12 fallback
   }));
 }
 
@@ -278,10 +273,10 @@ export default function Category21_AdvancedVisuals({ properties }: Category21Pro
           </div>
           <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/30">
             <p className="text-xs text-purple-200">
-              <span className="font-bold">🧠 Smart Score Calculation:</span> Weighted average of 3 momentum metrics:
-              <span className="font-semibold"> (1) Appreciation</span> from last sale (50% weight): -20% = 0 pts, 0% = 50 pts, +20% = 100 pts.
-              <span className="font-semibold"> (2) Market Est vs Listing</span> (30% weight): ratio &gt; 1.0 = underpriced (better).
-              <span className="font-semibold"> (3) Assessed vs Listing</span> (20% weight): ratio &gt; 1.0 = underpriced (better).
+              <span className="font-bold">🧠 Smart Score Calculation:</span> Weighted average of 3 momentum metrics using 5-tier scale:
+              <span className="font-semibold"> (1) Appreciation</span> from last sale (50% weight): -20% = 0 pts (Red), -10% = 25 pts (Orange), 0% = 50 pts (Yellow), +10% = 75 pts (Blue), +20% = 100 pts (Green).
+              <span className="font-semibold"> (2) Market Est vs Listing</span> (30% weight): Same 5-tier scale based on % difference from 1.0 ratio.
+              <span className="font-semibold"> (3) Assessed vs Listing</span> (20% weight): Same 5-tier scale based on % difference from 1.0 ratio.
               <span className="font-semibold"> Score Bands:</span>
               <span style={{ color: '#ef4444', fontWeight: 700 }}> 0-20 Red (Poor)</span>,
               <span style={{ color: '#f97316', fontWeight: 700 }}> 21-40 Orange (Below Average)</span>,
@@ -291,54 +286,6 @@ export default function Category21_AdvancedVisuals({ properties }: Category21Pro
               Higher momentum = stronger price trajectory.
             </p>
           </div>
-        </div>
-      </motion.div>
-
-      {/* Chart 3: Price Topography */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10"
-      >
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-white mb-1">Value Density Topography</h3>
-          <p className="text-sm text-gray-400">Contour visualization of property value distributions</p>
-        </div>
-        <div className="flex justify-center">
-          <PriceTopographyChart properties={selectedChartProperties} />
-        </div>
-      </motion.div>
-
-      {/* Chart 4: Time Series */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10"
-      >
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-white mb-1">Price Evolution Timeline</h3>
-          <p className="text-sm text-gray-400">Historical price changes over time</p>
-        </div>
-        <div className="flex justify-center">
-          <TimeSeriesChart properties={selectedChartProperties} />
-        </div>
-      </motion.div>
-
-      {/* Chart 5: Comparative Analysis Matrix */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10"
-      >
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-white mb-1">Comparative Analysis Matrix</h3>
-          <p className="text-sm text-gray-400">Side-by-side property comparison grid with percentage differences</p>
-        </div>
-        <div className="flex justify-center">
-          <ComparativeAnalysisMatrix properties={selectedChartProperties} />
         </div>
       </motion.div>
 
@@ -356,28 +303,13 @@ export default function Category21_AdvancedVisuals({ properties }: Category21Pro
         </p>
       </motion.div>
 
-      {/* Separator Badge */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7 }}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-teal-500/20 to-violet-500/20 border border-teal-500/30"
-      >
-        <div className="w-2 h-2 bg-teal-400 rounded-full animate-pulse" />
-        <span className="text-sm font-medium text-teal-300">Claude Recharts Dashboard (10 Charts)</span>
-      </motion.div>
-
-      {/* Chart 6-15: Real Estate Dashboard with 10 integrated charts */}
+      {/* Recharts Dashboard - Only showing the 3 verified charts */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.8 }}
         className="p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10"
       >
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-white mb-1">Comprehensive Property Analysis Dashboard</h3>
-          <p className="text-sm text-gray-400">10 interactive Recharts visualizations for deep property comparison</p>
-        </div>
         {selectedChartProperties.length > 0 ? (
           <RealEstateDashboard homes={mapToRealEstateHomes(selectedChartProperties)} />
         ) : (

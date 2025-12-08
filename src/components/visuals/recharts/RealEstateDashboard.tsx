@@ -193,20 +193,54 @@ function scoreToBandColor(score: number) {
   return COLORS.scoreGreen;
 }
 
+/**
+ * CLUES-Smart 5-Tier Scoring System
+ * Maps values to 5-tier scale: 0 (Red), 25 (Orange), 50 (Yellow), 75 (Blue), 100 (Green)
+ * For affordability metrics (lower is better): cheapest = 100, most expensive = 0
+ */
 function scoreLowerIsBetter(values: number[]) {
   if (!values.length) return [];
   const min = Math.min(...values);
   const max = Math.max(...values);
-  if (max === min) return values.map(() => 50);
-  return values.map((v) => ((max - v) / (max - min)) * 100);
+  if (max === min) return values.map(() => 50); // All equal = Yellow/Average
+
+  // Map to 5-tier scale based on percentile position
+  return values.map((v) => {
+    const percentile = (max - v) / (max - min); // 0 = worst (most expensive), 1 = best (cheapest)
+
+    // 5-TIER MAPPING:
+    // 0-20% = 0 pts (Red/Poor)
+    // 20-40% = 25 pts (Orange/Below Average)
+    // 40-60% = 50 pts (Yellow/Average)
+    // 60-80% = 75 pts (Blue/Good)
+    // 80-100% = 100 pts (Green/Excellent)
+
+    if (percentile <= 0.2) return 0;
+    if (percentile <= 0.4) return 25;
+    if (percentile <= 0.6) return 50;
+    if (percentile <= 0.8) return 75;
+    return 100;
+  });
 }
 
+/**
+ * For value metrics (higher is better): highest value = 100, lowest = 0
+ */
 function scoreHigherIsBetter(values: number[]) {
   if (!values.length) return [];
   const min = Math.min(...values);
   const max = Math.max(...values);
   if (max === min) return values.map(() => 50);
-  return values.map((v) => ((v - min) / (max - min)) * 100);
+
+  return values.map((v) => {
+    const percentile = (v - min) / (max - min); // 0 = worst (lowest value), 1 = best (highest)
+
+    if (percentile <= 0.2) return 0;
+    if (percentile <= 0.4) return 25;
+    if (percentile <= 0.6) return 50;
+    if (percentile <= 0.8) return 75;
+    return 100;
+  });
 }
 
 function getNiceDomain(values: number[]) {
@@ -356,7 +390,19 @@ function PriceSpectrumChart({ homes }: { homes: Home[] }) {
   const values = data.map((d) => d.listingPrice);
   if (!values.length) return null;
 
+  // VERIFICATION: Log data and scoring
+  console.log('\n📊 Chart 2-3: Listing Price Comparison - Data Verification');
+  homes.forEach((h, idx) => {
+    console.log(`  Property ${idx + 1}: ${h.name}`);
+    console.log(`    Field 10 (listing_price): $${h.listingPrice.toLocaleString()}`);
+  });
+
   const scores = scoreLowerIsBetter(values);
+  console.log('\n🧠 Smart Score Calculation (5-Tier System):');
+  scores.forEach((score, idx) => {
+    console.log(`  ${homes[idx].name}: ${score}/100`);
+  });
+
   const { bestIndex, secondBestIndex } = findBestIndex(scores);
   const min = Math.min(...values);
   const max = Math.max(...values);
@@ -438,7 +484,19 @@ function PricePerSqFtChart({ homes }: { homes: Home[] }) {
   const values = data.map((d) => d.pricePerSqFt);
   if (!values.length) return null;
 
+  // VERIFICATION: Log data and scoring
+  console.log('\n📊 Chart 2-4: $/Sq Ft Leaderboard - Data Verification');
+  homes.forEach((h, idx) => {
+    console.log(`  Property ${idx + 1}: ${h.name}`);
+    console.log(`    Field 11 (price_per_sqft): $${h.pricePerSqFt.toFixed(2)}/sqft`);
+  });
+
   const scores = scoreLowerIsBetter(values);
+  console.log('\n🧠 Smart Score Calculation (5-Tier System):');
+  scores.forEach((score, idx) => {
+    console.log(`  ${homes[idx].name}: ${score}/100`);
+  });
+
   const { bestIndex, secondBestIndex } = findBestIndex(scores);
   const [domainMin, domainMax] = getNiceDomain(values);
 
@@ -512,6 +570,16 @@ function PricePerSqFtChart({ homes }: { homes: Home[] }) {
 
 // Chart 3: List Price vs Market Value (simple comparison)
 function ListVsMarketChart({ homes }: { homes: Home[] }) {
+  // VERIFICATION: Log data
+  console.log('\n📊 Chart 2-5: List Price vs Market Value - Data Verification');
+  homes.forEach((h, idx) => {
+    console.log(`  Property ${idx + 1}: ${h.name}`);
+    console.log(`    Field 10 (listing_price): $${h.listingPrice.toLocaleString()}`);
+    console.log(`    Field 12 (market_value_estimate): $${h.marketValue.toLocaleString()}`);
+    const percentDiff = ((h.listingPrice - h.marketValue) / h.marketValue) * 100;
+    console.log(`    % Difference: ${percentDiff.toFixed(2)}%`);
+  });
+
   // Calculate how much list price is over/under market value
   const getListingColor = (listPrice: number, marketValue: number) => {
     const percentOver = ((listPrice - marketValue) / marketValue) * 100;
@@ -534,6 +602,14 @@ function ListVsMarketChart({ homes }: { homes: Home[] }) {
     };
   });
 
+  // Calculate Smart Scores (lower % diff = better)
+  const percentDiffs = data.map(d => d.percentDiff);
+  const scores = scoreLowerIsBetter(percentDiffs);
+  console.log('\n🧠 Smart Score Calculation (5-Tier System):');
+  scores.forEach((score, idx) => {
+    console.log(`  ${homes[idx].name}: ${score}/100 (${percentDiffs[idx].toFixed(2)}% ${percentDiffs[idx] > 0 ? 'over' : 'under'} market)`);
+  });
+
   const allValues = [...data.map(d => d.listingPrice), ...data.map(d => d.marketValue)];
   const [domainMin, domainMax] = getNiceDomain(allValues);
 
@@ -545,9 +621,11 @@ function ListVsMarketChart({ homes }: { homes: Home[] }) {
   const CustomXAxisTick = ({ x, y, payload }: any) => {
     const index = data.findIndex(d => d.name === payload.value);
     const color = PROPERTY_COLORS[index] || COLORS.muted;
+    // Shorten name to first part of address (before comma)
+    const shortName = payload.value.split(',')[0];
     return (
-      <text x={x} y={y + 10} textAnchor="middle" fill={color} fontSize={10}>
-        {payload.value}
+      <text x={x} y={y + 10} textAnchor="middle" fill={color} fontSize={8} fontWeight={600}>
+        {shortName}
       </text>
     );
   };
@@ -1170,28 +1248,37 @@ export default function RealEstateDashboard({ homes = sampleHomes }: { homes?: H
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Card>
-            <CardTitle
-              title="1. Listing Price Comparison"
-              right={<SmartScoreBadge value={bestListingScore} />}
-            />
+            <div className="relative">
+              <div className="absolute -top-3 left-3 text-[10px] font-mono text-gray-500">Chart 2-3</div>
+              <CardTitle
+                title="Listing Price Comparison"
+                right={<SmartScoreBadge value={bestListingScore} />}
+              />
+            </div>
             <PriceSpectrumChart homes={homes} />
             <LegendsRow homes={homes} />
           </Card>
 
           <Card>
-            <CardTitle
-              title="2. $/Sq Ft Leaderboard"
-              right={<SmartScoreBadge value={bestSqftScore} />}
-            />
+            <div className="relative">
+              <div className="absolute -top-3 left-3 text-[10px] font-mono text-gray-500">Chart 2-4</div>
+              <CardTitle
+                title="$/Sq Ft Leaderboard"
+                right={<SmartScoreBadge value={bestSqftScore} />}
+              />
+            </div>
             <PricePerSqFtChart homes={homes} />
             <LegendsRow homes={homes} />
           </Card>
 
           <Card>
-            <CardTitle
-              title="3. List Price vs Market Value"
-              right={<SmartScoreBadge value={bestEquityScore} />}
-            />
+            <div className="relative">
+              <div className="absolute -top-3 left-3 text-[10px] font-mono text-gray-500">Chart 2-5</div>
+              <CardTitle
+                title="List Price vs Market Value"
+                right={<SmartScoreBadge value={bestEquityScore} />}
+              />
+            </div>
             <ListVsMarketChart homes={homes} />
           </Card>
 
