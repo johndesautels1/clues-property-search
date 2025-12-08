@@ -26,6 +26,7 @@ export interface ChartProperty {
   neighborhood: string;
   mlsNumber: string;
   listingStatus: string;
+  listingDate: string;
 
   // Pricing & Value
   listingPrice: number;
@@ -224,6 +225,7 @@ export function mapPropertyToChart(property: Property): ChartProperty {
     neighborhood: getVal(addr?.neighborhoodName, ''),
     mlsNumber: getVal(addr?.mlsPrimary, ''),
     listingStatus: getVal(addr?.listingStatus, 'Active'),
+    listingDate: getVal(addr?.listingDate, ''),
 
     // Pricing & Value
     listingPrice: getVal(addr?.listingPrice, 0),

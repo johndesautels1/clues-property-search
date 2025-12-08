@@ -18,12 +18,15 @@ import {
   ParkingCircle, Building, FileText, Waves, ChevronDown
 } from 'lucide-react';
 
+// Import SMART Score section (displayed at top)
+import SMARTScoreSection from '@/components/visuals/SMARTScoreSection';
+
 // Lazy load category components
 const Category01_AddressIdentity = lazy(() => import('@/components/visuals/Category01_AddressIdentity'));
-const Category02_PricingValue = lazy(() => import('@/components/visuals/Category02_Placeholder'));
-const Category03_PropertyBasics = lazy(() => import('@/components/visuals/Category03_Placeholder'));
-const Category04_HOATaxes = lazy(() => import('@/components/visuals/Category04_Placeholder'));
-const Category05_StructureSystems = lazy(() => import('@/components/visuals/Category05_Placeholder'));
+const Category02_PricingValue = lazy(() => import('@/components/visuals/Category02_PricingValue'));
+const Category03_PropertyBasics = lazy(() => import('@/components/visuals/Category03_PropertyBasics'));
+const Category04_HOATaxes = lazy(() => import('@/components/visuals/Category04_HOATaxes'));
+const Category05_StructureSystems = lazy(() => import('@/components/visuals/Category05_StructureSystems'));
 const Category06_InteriorFeatures = lazy(() => import('@/components/visuals/Category06_Placeholder'));
 const Category07_ExteriorFeatures = lazy(() => import('@/components/visuals/Category07_Placeholder'));
 const Category08_PermitsRenovations = lazy(() => import('@/components/visuals/Category08_Placeholder'));
@@ -125,6 +128,11 @@ export default function Visuals() {
             175 Visualizations • 20 Categories • {chartProperties.length} Properties
           </p>
         </motion.div>
+
+        {/* SMART Score Section - Top of page, outside category tabs */}
+        {chartProperties.length > 0 && (
+          <SMARTScoreSection properties={chartProperties} />
+        )}
 
         {/* Category Tabs - Horizontal scroll on mobile, wrapped on desktop */}
         <motion.div
