@@ -80,8 +80,12 @@ const SAMPLE_PROPERTIES: ChartProperty[] = [
     listingPrice: 2849000,
     bedrooms: 4,
     bathrooms: 3.5,
+    fullBathrooms: 3,
+    halfBathrooms: 1,
     livingSqft: 2698,
+    totalSqftUnderRoof: 2698,
     lotSizeSqft: 7200,
+    lotSizeAcres: 0.17,
     marketValueEstimate: 2800000, // Field 12: market_value_estimate
     redfinEstimate: 2850000,      // Field 16: redfin_estimate
     lastSalePrice: 2500000,
@@ -89,6 +93,9 @@ const SAMPLE_PROPERTIES: ChartProperty[] = [
     assessedValue: 2700000,
     yearBuilt: 2015,
     propertyType: 'Single Family',
+    stories: 2,
+    garageSpaces: 2,              // Field 28: garage_spaces
+    parkingTotal: '2 Car Garage', // Field 29: parking_total
     hoaFeeAnnual: 0,
     annualTaxes: 35000,
   } as ChartProperty,
@@ -101,8 +108,12 @@ const SAMPLE_PROPERTIES: ChartProperty[] = [
     listingPrice: 2695000,
     bedrooms: 4,
     bathrooms: 3,
+    fullBathrooms: 3,
+    halfBathrooms: 0,
     livingSqft: 2728,
+    totalSqftUnderRoof: 2728,
     lotSizeSqft: 8100,
+    lotSizeAcres: 0.19,
     marketValueEstimate: 2650000, // Field 12: market_value_estimate
     redfinEstimate: 2700000,      // Field 16: redfin_estimate
     lastSalePrice: 2400000,
@@ -110,6 +121,9 @@ const SAMPLE_PROPERTIES: ChartProperty[] = [
     assessedValue: 2600000,
     yearBuilt: 2016,
     propertyType: 'Single Family',
+    stories: 2,
+    garageSpaces: 2,              // Field 28: garage_spaces
+    parkingTotal: '2 Car Garage', // Field 29: parking_total
     hoaFeeAnnual: 0,
     annualTaxes: 33000,
   } as ChartProperty,
@@ -122,8 +136,12 @@ const SAMPLE_PROPERTIES: ChartProperty[] = [
     listingPrice: 2549000,
     bedrooms: 3,
     bathrooms: 3,
+    fullBathrooms: 3,
+    halfBathrooms: 0,
     livingSqft: 2795,
+    totalSqftUnderRoof: 2795,
     lotSizeSqft: 9500,
+    lotSizeAcres: 0.22,
     marketValueEstimate: 2600000, // Field 12: market_value_estimate
     redfinEstimate: 2550000,      // Field 16: redfin_estimate
     lastSalePrice: 2200000,
@@ -131,6 +149,9 @@ const SAMPLE_PROPERTIES: ChartProperty[] = [
     assessedValue: 2500000,
     yearBuilt: 2014,
     propertyType: 'Single Family',
+    stories: 1,
+    garageSpaces: 3,              // Field 28: garage_spaces
+    parkingTotal: '3 Car Garage', // Field 29: parking_total
     hoaFeeAnnual: 0,
     annualTaxes: 31000,
   } as ChartProperty,
