@@ -122,8 +122,8 @@ const SAMPLE_PROPERTIES: ChartProperty[] = [
     annualTaxes: 35000,
     // Section 4: HOA & Taxes (Fields 30-38)
     hoaYn: false,
-    hoaName: '',
-    hoaIncludes: '',
+    hoaName: 'None',
+    hoaIncludes: 'None',
     ownershipType: 'Fee Simple',
     taxYear: 2024,
     propertyTaxRate: 0.88,
@@ -154,13 +154,13 @@ const SAMPLE_PROPERTIES: ChartProperty[] = [
     stories: 2,
     garageSpaces: 2,              // Field 28: garage_spaces
     parkingTotal: '2 Car Garage', // Field 29: parking_total
-    hoaFeeAnnual: 0,
+    hoaFeeAnnual: 1200,
     annualTaxes: 33000,
     // Section 4: HOA & Taxes (Fields 30-38)
-    hoaYn: false,
-    hoaName: '',
-    hoaIncludes: '',
-    ownershipType: 'Fee Simple',
+    hoaYn: true,
+    hoaName: 'Oakwood Estates HOA',
+    hoaIncludes: 'Common area maintenance, landscaping, pool',
+    ownershipType: 'Condo',
     taxYear: 2024,
     propertyTaxRate: 0.85,
     taxExemptions: '',
@@ -190,12 +190,12 @@ const SAMPLE_PROPERTIES: ChartProperty[] = [
     stories: 1,
     garageSpaces: 3,              // Field 28: garage_spaces
     parkingTotal: '3 Car Garage', // Field 29: parking_total
-    hoaFeeAnnual: 0,
+    hoaFeeAnnual: 600,
     annualTaxes: 31000,
     // Section 4: HOA & Taxes (Fields 30-38)
-    hoaYn: false,
-    hoaName: '',
-    hoaIncludes: '',
+    hoaYn: true,
+    hoaName: 'Live Oak Community Association',
+    hoaIncludes: 'Security, common area landscaping',
     ownershipType: 'Fee Simple',
     taxYear: 2024,
     propertyTaxRate: 0.82,

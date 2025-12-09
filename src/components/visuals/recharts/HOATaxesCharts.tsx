@@ -104,6 +104,15 @@ function getColorFromScore(score: number): string {
   return '#FF4444'; // Red - Poor
 }
 
+// Label from score
+function getScoreLabel(score: number): string {
+  if (score >= 81) return 'Excellent';
+  if (score >= 61) return 'Good';
+  if (score >= 41) return 'Average';
+  if (score >= 21) return 'Fair';
+  return 'Poor';
+}
+
 // Format currency
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('en-US', {
@@ -178,21 +187,33 @@ const BrainWidget: React.FC<{ score: number; label?: string }> = ({
 // ============================================
 // WINNER BADGE COMPONENT
 // ============================================
-const WinnerBadge: React.FC<{ winnerName: string; score: number }> = ({
+const WinnerBadge: React.FC<{ winnerName: string; score: number; reason: string }> = ({
   winnerName,
   score,
+  reason,
 }) => {
   const color = getColorFromScore(score);
   return (
-    <div className="mt-3 flex items-center justify-center gap-2 text-xs">
-      <span className="text-yellow-400 text-lg">🏆</span>
-      <span className="font-bold text-white">Winner:</span>
-      <span className="font-bold" style={{ color }}>
-        {winnerName}
-      </span>
-      <span className="text-gray-400">
-        (Score: {Math.round(score)})
-      </span>
+    <div className="mt-4 flex justify-center">
+      <div
+        className="flex items-center gap-3 px-5 py-3 rounded-xl"
+        style={{
+          background: `${color}20`,
+          border: `2px solid ${color}`
+        }}
+      >
+        <span className="text-2xl">🏆</span>
+        <div>
+          <div className="text-sm font-bold text-white">
+            Winner: {winnerName}
+          </div>
+          <div className="text-xs text-gray-300">
+            CLUES-Smart Score: <span style={{ color, fontWeight: 700 }}>
+              {Math.round(score)}/100
+            </span> ({getScoreLabel(score)}) - {reason}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
@@ -278,7 +299,7 @@ const Chart41_AnnualCostBreakdown: React.FC<{ homes: Home[] }> = ({ homes }) => 
           <Bar dataKey="HOA" stackId="a" fill="#4CAF50" radius={[0, 4, 4, 0]} />
         </BarChart>
       </ResponsiveContainer>
-      {winner && <WinnerBadge winnerName={winner.name} score={winner.score} />}
+      {winner && <WinnerBadge winnerName={winner.name} score={winner.score} reason="Lowest total annual cost" />}
       <SmartScaleLegend
         title="Annual Cost Breakdown Score"
         description="Lower total cost (Taxes + HOA) = Higher score. Best value home scores highest."
@@ -291,12 +312,28 @@ const Chart41_AnnualCostBreakdown: React.FC<{ homes: Home[] }> = ({ homes }) => 
 // CHART 4-2: TAX RATE COMPARISON (VERTICAL BAR)
 // ============================================
 const Chart42_TaxRateComparison: React.FC<{ homes: Home[] }> = ({ homes }) => {
-  const chartData = homes.map((home) => ({
-    name: home.name,
-    'Tax Rate': home.propertyTaxRate,
-    score: scoreTaxRate(home.propertyTaxRate),
-    fill: getColorFromScore(scoreTaxRate(home.propertyTaxRate)),
-  }));
+  // RELATIVE SCORING: lowest tax rate = 100, highest = 0
+  const rates = homes.map(h => h.propertyTaxRate);
+  const minRate = Math.min(...rates);
+  const maxRate = Math.max(...rates);
+
+  const chartData = homes.map((home) => {
+    // Reverse score: lower rate = higher score
+    const relativeScore = maxRate === minRate ? 50 : ((maxRate - home.propertyTaxRate) / (maxRate - minRate)) * 100;
+    // Apply 5-tier thresholds
+    let score: number;
+    if (relativeScore >= 75) score = 100;
+    else if (relativeScore >= 50) score = 75;
+    else if (relativeScore >= 25) score = 50;
+    else score = 25;
+
+    return {
+      name: home.name,
+      'Tax Rate': home.propertyTaxRate,
+      score: score,
+      fill: home.color,
+    };
+  });
 
   // Find winner (highest score)
   const maxScore = Math.max(...chartData.map((d) => d.score));
@@ -337,9 +374,10 @@ const Chart42_TaxRateComparison: React.FC<{ homes: Home[] }> = ({ homes }) => {
               <Cell key={`cell-${index}`} fill={entry.fill} />
             ))}
           </Bar>
+          <Legend wrapperStyle={{ color: '#ffffff' }} />
         </BarChart>
       </ResponsiveContainer>
-      {winner && <WinnerBadge winnerName={winner.name} score={winner.score} />}
+      {winner && <WinnerBadge winnerName={winner.name} score={winner.score} reason="Lowest property tax rate" />}
       <SmartScaleLegend
         title="Tax Rate Score"
         description="Lower tax rate = Higher score. Efficient tax jurisdictions score 81-100 (green)."
@@ -358,7 +396,7 @@ const Chart43_HOAVsTaxBurden: React.FC<{ homes: Home[] }> = ({ homes }) => {
     y: home.hoaFeeAnnual,
     z: home.annualTaxes + home.hoaFeeAnnual,
     score: scoreTrueCostIndex(home, homes),
-    fill: getColorFromScore(scoreTrueCostIndex(home, homes)),
+    fill: home.color, // Use property color for consistency
   }));
 
   // Find winner (highest score)
@@ -382,39 +420,47 @@ const Chart43_HOAVsTaxBurden: React.FC<{ homes: Home[] }> = ({ homes }) => {
         Chart 4-3: HOA vs Tax Burden
       </div>
       <div className="text-sm text-gray-400 mt-3 mb-4">
-        Bubble size = total annual cost
+        X-axis = Annual Property Taxes • Y-axis = Annual HOA Fees • Bubble Size = Total Cost
       </div>
-      <ResponsiveContainer width="100%" height={300}>
-        <ScatterChart margin={{ top: 20, right: 50, bottom: 70, left: 65 }}>
+      <ResponsiveContainer width="100%" height={400}>
+        <ScatterChart margin={{ top: 20, right: 50, bottom: 80, left: 80 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#333" />
           <XAxis
             dataKey="x"
             name="Annual Taxes"
+            type="number"
             stroke="#666"
-            tick={{ fill: '#ffffff', fontSize: 8 }}
+            tick={{ fill: '#ffffff', fontSize: 12 }}
+            tickFormatter={(value) => formatCurrency(value)}
             label={{
-              value: 'Annual Taxes →',
+              value: 'Annual Property Taxes ($)',
               position: 'bottom',
               fill: '#ffffff',
               fontWeight: 'bold',
-              offset: 0,
+              offset: 10,
             }}
           />
           <YAxis
             dataKey="y"
-            name="HOA"
+            name="HOA Annual Fee"
+            type="number"
+            domain={[0, 36000]}
+            ticks={[0, 6000, 12000, 18000, 24000, 30000, 36000]}
             stroke="#666"
-            tick={{ fill: '#ffffff', fontSize: 8 }}
+            tick={{ fill: '#ffffff', fontSize: 12 }}
+            tickFormatter={(value) => formatCurrency(value)}
             label={{
-              value: '↑ HOA',
+              value: 'Annual HOA Fees ($)',
               angle: -90,
               position: 'insideLeft',
               fill: '#ffffff',
-              fontWeight: 'bold',
+              fontSize: 11,
+              offset: -10,
             }}
           />
-          <ZAxis dataKey="z" range={[200, 800]} />
+          <ZAxis dataKey="z" range={[400, 1200]} name="Total Cost" />
           <Tooltip content={<CustomTooltip />} />
+          <Legend wrapperStyle={{ color: '#ffffff' }} />
           <Scatter data={chartData}>
             {chartData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry.fill} fillOpacity={0.7} />
@@ -422,7 +468,7 @@ const Chart43_HOAVsTaxBurden: React.FC<{ homes: Home[] }> = ({ homes }) => {
           </Scatter>
         </ScatterChart>
       </ResponsiveContainer>
-      {winner && <WinnerBadge winnerName={winner.name} score={winner.score} />}
+      {winner && <WinnerBadge winnerName={winner.name} score={winner.score} reason="Lowest combined HOA and tax burden" />}
       <SmartScaleLegend
         title="True Cost Index"
         description="Lowest total annual cost scores 100 (green). Higher cost scores lower (red)."
@@ -439,7 +485,7 @@ const Chart44_OwnershipTypeScore: React.FC<{ homes: Home[] }> = ({ homes }) => {
     name: home.name,
     Score: scoreOwnershipType(home.ownershipType),
     ownershipType: home.ownershipType,
-    fill: getColorFromScore(scoreOwnershipType(home.ownershipType)),
+    fill: home.color,
   }));
 
   // Find winner (highest score)
@@ -481,9 +527,10 @@ const Chart44_OwnershipTypeScore: React.FC<{ homes: Home[] }> = ({ homes }) => {
               <Cell key={`cell-${index}`} fill={entry.fill} />
             ))}
           </Bar>
+          <Legend wrapperStyle={{ color: '#ffffff' }} />
         </BarChart>
       </ResponsiveContainer>
-      {winner && <WinnerBadge winnerName={winner.name} score={winner.Score} />}
+      {winner && <WinnerBadge winnerName={winner.name} score={winner.Score} reason="Best ownership type (Fee Simple)" />}
       <SmartScaleLegend
         title="Ownership Type Score"
         description="Fee Simple=100. Condo=75. Leasehold/Co-op=50. Affects mortgage & control."
@@ -493,65 +540,83 @@ const Chart44_OwnershipTypeScore: React.FC<{ homes: Home[] }> = ({ homes }) => {
 };
 
 // ============================================
-// CHART 4-5: COST DISTRIBUTION DONUT (PIE WITH INNER RADIUS)
+// CHART 4-4: COST DISTRIBUTION - 3 SEPARATE DONUTS
 // ============================================
 const Chart45_CostDistributionDonut: React.FC<{ homes: Home[] }> = ({ homes }) => {
-  const totalTax = homes.reduce((sum, h) => sum + h.annualTaxes, 0);
-  const totalHOA = homes.reduce((sum, h) => sum + h.hoaFeeAnnual, 0);
-  const totalCost = totalTax + totalHOA;
-
-  const chartData = [
-    { name: 'Taxes', value: totalTax, fill: '#2196F3' },
-    { name: 'HOA', value: totalHOA, fill: '#4CAF50' },
-  ];
-
   useEffect(() => {
-    console.log('🔍 Chart 4-5 - Cost Distribution Donut');
-    console.log(
-      `  🧠 Taxes: ${formatCurrency(totalTax)} (${((totalTax / totalCost) * 100).toFixed(1)}%)`
-    );
-    console.log(
-      `  🧠 HOA: ${formatCurrency(totalHOA)} (${((totalHOA / totalCost) * 100).toFixed(1)}%)`
-    );
-    console.log(`  🧠 Total Portfolio: ${formatCurrency(totalCost)}`);
+    console.log('🔍 Chart 4-4 - Cost Distribution: Taxes vs HOA (3 properties)');
+    homes.forEach((home) => {
+      const totalCost = home.annualTaxes + home.hoaFeeAnnual;
+      console.log(
+        `  🧠 ${home.name}: Taxes=${formatCurrency(home.annualTaxes)} (${((home.annualTaxes / totalCost) * 100).toFixed(1)}%), HOA=${formatCurrency(home.hoaFeeAnnual)} (${((home.hoaFeeAnnual / totalCost) * 100).toFixed(1)}%)`
+      );
+    });
   }, [homes]);
 
   return (
-    <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-      <BrainWidget score={100} label="SMART Score: Portfolio" />
+    <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 lg:col-span-2">
       <div className="text-lg font-semibold text-white mb-1">
-        Chart 4-5: Cost Distribution: Taxes vs HOA
+        Chart 4-4: Cost Distribution: Taxes vs HOA
       </div>
-      <div className="text-sm text-gray-400 mt-3 mb-4">What % of total is each?</div>
-      <ResponsiveContainer width="100%" height={300}>
-        <PieChart>
-          <Pie
-            data={chartData}
-            dataKey="value"
-            nameKey="name"
-            cx="50%"
-            cy="50%"
-            innerRadius={60}
-            outerRadius={100}
-            label={(entry) =>
-              `${entry.name} ${((entry.value / totalCost) * 100).toFixed(1)}%`
-            }
-            labelLine={false}
-            labelStyle={{ fill: '#ffffff' }}
-          >
-            {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.fill} />
-            ))}
-          </Pie>
-          <Tooltip content={<CustomTooltip />} />
-        </PieChart>
-      </ResponsiveContainer>
-      <div className="text-center text-white font-bold mt-2">
-        Portfolio Total: {formatCurrency(totalCost)}
+      <div className="text-sm text-gray-400 mt-3 mb-4">What % of total cost is each?</div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {homes.map((home) => {
+          const totalCost = home.annualTaxes + home.hoaFeeAnnual;
+          const chartData = [
+            { name: 'Taxes', value: home.annualTaxes, fill: '#2196F3' },
+            { name: 'HOA', value: home.hoaFeeAnnual, fill: '#4CAF50' },
+          ];
+
+          return (
+            <div key={home.id} className="flex flex-col items-center">
+              <div
+                className="text-sm font-bold mb-2 px-3 py-1 rounded"
+                style={{
+                  color: home.color,
+                  border: `2px solid ${home.color}`,
+                  background: `${home.color}15`
+                }}
+              >
+                {home.name}
+              </div>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    label={(entry) =>
+                      `${entry.name}\n${((entry.value / totalCost) * 100).toFixed(1)}%`
+                    }
+                    labelLine={false}
+                    labelStyle={{ fill: '#ffffff', fontSize: 11 }}
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CustomTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="text-center text-white font-bold text-sm mt-2">
+                Total: {formatCurrency(totalCost)}
+              </div>
+              <div className="text-center text-gray-400 text-xs mt-1">
+                Taxes: {formatCurrency(home.annualTaxes)} | HOA: {formatCurrency(home.hoaFeeAnnual)}
+              </div>
+            </div>
+          );
+        })}
       </div>
+
       <SmartScaleLegend
-        title="Portfolio Composition"
-        description="Pie shows Taxes vs HOA % of total portfolio spending across all 3 homes."
+        title="Cost Distribution per Property"
+        description="Each donut shows the percentage breakdown of Taxes vs HOA fees for that individual property."
       />
     </div>
   );
@@ -565,7 +630,7 @@ const Chart46_TrueCostOwnershipIndex: React.FC<{ homes: Home[] }> = ({ homes }) 
     name: home.name,
     Score: scoreTrueCostIndex(home, homes),
     totalCost: home.annualTaxes + home.hoaFeeAnnual,
-    fill: getColorFromScore(scoreTrueCostIndex(home, homes)),
+    fill: home.color,
   }));
 
   // Find winner (highest score)
@@ -609,9 +674,10 @@ const Chart46_TrueCostOwnershipIndex: React.FC<{ homes: Home[] }> = ({ homes }) 
               <Cell key={`cell-${index}`} fill={entry.fill} />
             ))}
           </Bar>
+          <Legend wrapperStyle={{ color: '#ffffff' }} />
         </BarChart>
       </ResponsiveContainer>
-      {winner && <WinnerBadge winnerName={winner.name} score={winner.Score} />}
+      {winner && <WinnerBadge winnerName={winner.name} score={winner.Score} reason="Lowest total annual ownership cost" />}
       <SmartScaleLegend
         title="True Cost of Ownership Index"
         description="Combined metric: lower (Taxes + HOA) annual burden = higher score (81-100)."
@@ -626,7 +692,7 @@ const Chart46_TrueCostOwnershipIndex: React.FC<{ homes: Home[] }> = ({ homes }) 
 const Chart47_MonthlyVsAnnualCost: React.FC<{ homes: Home[] }> = ({ homes }) => {
   const chartData = homes.map((home) => ({
     name: home.name,
-    Monthly: (home.annualTaxes + home.hoaFeeAnnual) / 12,
+    Monthly: Math.round((home.annualTaxes + home.hoaFeeAnnual) / 12),
     Annual: home.annualTaxes + home.hoaFeeAnnual,
     score: scoreTrueCostIndex(home, homes),
   }));
@@ -649,10 +715,10 @@ const Chart47_MonthlyVsAnnualCost: React.FC<{ homes: Home[] }> = ({ homes }) => 
     <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
       <BrainWidget score={maxScore} />
       <div className="text-lg font-semibold text-white mb-1">
-        Chart 4-7: Monthly vs Annual Cost
+        Chart 4-5: Monthly vs Annual Cost
       </div>
       <div className="text-sm text-gray-400 mt-3 mb-4">
-        Simplified monthly breakdown
+        Total ownership cost (Taxes + HOA) shown monthly vs annually
       </div>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={chartData} margin={{ top: 20, right: 30, bottom: 80, left: 60 }}>
@@ -665,14 +731,18 @@ const Chart47_MonthlyVsAnnualCost: React.FC<{ homes: Home[] }> = ({ homes }) => 
             textAnchor="middle"
             height={70}
           />
-          <YAxis stroke="#666" tick={{ fill: '#ffffff', fontSize: 12 }} />
+          <YAxis
+            stroke="#666"
+            tick={{ fill: '#ffffff', fontSize: 12 }}
+            tickFormatter={(value) => `$${Math.round(value).toLocaleString()}`}
+          />
           <Tooltip content={<CustomTooltip />} />
           <Legend wrapperStyle={{ color: '#ffffff' }} iconType="rect" />
           <Bar dataKey="Monthly" fill="#FF9800" radius={[4, 4, 0, 0]} />
           <Bar dataKey="Annual" fill="#2196F3" radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
-      {winner && <WinnerBadge winnerName={winner.name} score={winner.score} />}
+      {winner && <WinnerBadge winnerName={winner.name} score={winner.score} reason="Lowest monthly and annual costs" />}
       <SmartScaleLegend
         title="Monthly vs Annual View"
         description="Monthly = annual cost ÷ 12. Visualizes monthly cash flow impact of ownership."
@@ -749,7 +819,7 @@ const Chart48_FinancialEfficiencyRadar: React.FC<{ homes: Home[] }> = ({ homes }
         Chart 4-8: Financial Efficiency Radar
       </div>
       <div className="text-sm text-gray-400 mt-3 mb-4">
-        Multi-factor ownership profile
+        Compares: (1) Annual HOA fees, (2) Property tax %, (3) Deed type (Fee Simple vs Condo), (4) Total annual cost (Taxes+HOA). Larger area = better value.
       </div>
       <ResponsiveContainer width="100%" height={300}>
         <RadarChart data={radarData}>
@@ -774,7 +844,7 @@ const Chart48_FinancialEfficiencyRadar: React.FC<{ homes: Home[] }> = ({ homes }
           <Legend wrapperStyle={{ color: '#ffffff' }} />
         </RadarChart>
       </ResponsiveContainer>
-      {winner && <WinnerBadge winnerName={winner.name} score={winner.avgScore} />}
+      {winner && <WinnerBadge winnerName={winner.name} score={winner.avgScore} reason="Best overall financial efficiency across all factors" />}
       <SmartScaleLegend
         title="Financial Efficiency Profile"
         description="4-factor radar: HOA Score + Tax Rate + Ownership Type + Cost Index. Fuller shape = better overall."
@@ -802,11 +872,8 @@ const HOATaxesCharts: React.FC<{ homes: Home[] }> = ({ homes }) => {
         <Chart41_AnnualCostBreakdown homes={homes} />
         <Chart42_TaxRateComparison homes={homes} />
         <Chart43_HOAVsTaxBurden homes={homes} />
-        <Chart44_OwnershipTypeScore homes={homes} />
         <Chart45_CostDistributionDonut homes={homes} />
-        <Chart46_TrueCostOwnershipIndex homes={homes} />
         <Chart47_MonthlyVsAnnualCost homes={homes} />
-        <Chart48_FinancialEfficiencyRadar homes={homes} />
       </div>
     </div>
   );
