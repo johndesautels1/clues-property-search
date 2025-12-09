@@ -227,7 +227,7 @@ function PropertyProfileRadar({ homes }: { homes: Home[] }) {
         </div>
       </div>
 
-      <h3 className="text-lg font-semibold text-white mb-1">Property Profile Radar</h3>
+      <h3 className="text-lg font-semibold text-white mb-1">Chart 3-8: Property Profile Radar</h3>
       <p className="text-xs text-gray-400 mb-4 mt-3">6-dimensional comparison with aggregate scoring (larger filled area = better overall)</p>
 
       <ResponsiveContainer width="100%" height={320}>
@@ -382,7 +382,7 @@ function SpaceEfficiencyBubble({ homes }: { homes: Home[] }) {
         </div>
       </div>
 
-      <h3 className="text-lg font-semibold text-white mb-2">Space Efficiency Correlation</h3>
+      <h3 className="text-lg font-semibold text-white mb-2">Chart 3-9: Space Efficiency Correlation</h3>
       <p className="text-xs text-gray-400 mb-4">Bubble size = price | Scored by living sqft per lot acre (higher = better utilization)</p>
 
       <ResponsiveContainer width="100%" height={320}>
@@ -551,7 +551,7 @@ function TotalCapacityDonut({ homes }: { homes: Home[] }) {
         </div>
       </div>
 
-      <h3 className="text-lg font-semibold text-white mb-2">Total Capacity Distribution</h3>
+      <h3 className="text-lg font-semibold text-white mb-2">Chart 3-10: Total Capacity Distribution</h3>
       <p className="text-xs text-gray-400 mb-4">Bedrooms + bathrooms + garage spaces scored by total capacity</p>
 
       <div className="relative">
@@ -702,7 +702,7 @@ function AgeModernizationBalance({ homes }: { homes: Home[] }) {
         </div>
       </div>
 
-      <h3 className="text-lg font-semibold text-white mb-2">Age vs Modernization Balance</h3>
+      <h3 className="text-lg font-semibold text-white mb-2">Chart 3-11: Age vs Modernization Balance</h3>
       <p className="text-xs text-gray-400 mb-4">Balance of newness (age score) and modern amenities (garage score)</p>
 
       <ResponsiveContainer width="100%" height={320}>
@@ -854,7 +854,7 @@ function IndoorOutdoorBalance({ homes }: { homes: Home[] }) {
         </div>
       </div>
 
-      <h3 className="text-lg font-semibold text-white mb-2">Indoor vs Outdoor Space Balance</h3>
+      <h3 className="text-lg font-semibold text-white mb-2">Chart 3-12: Indoor vs Outdoor Space Balance</h3>
       <p className="text-xs text-gray-400 mb-4">Living space vs outdoor space with optimal balance scoring (30-40% coverage ideal)</p>
 
       <ResponsiveContainer width="100%" height={320}>
