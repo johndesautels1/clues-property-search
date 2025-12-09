@@ -426,7 +426,7 @@ function SpaceEfficiencyBubble({ homes }: { homes: Home[] }) {
           {bubbleData.map((entry, index) => (
             <Scatter
               key={index}
-              name={`${entry.name} (Score: ${entry.score})`}
+              name={entry.name}
               data={[entry]}
               fill={entry.color}
             />
