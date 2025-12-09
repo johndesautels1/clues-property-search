@@ -1064,16 +1064,16 @@ function ParkingCapacity({ homes }: { homes: Home[] }) {
           <CartesianGrid stroke={COLORS.grid} strokeDasharray="3 3" opacity={0.3} />
           <XAxis
             dataKey="name"
-            stroke={COLORS.text}
+            stroke="#e2e8f0"
             fontSize={12}
             fontWeight={600}
-            tick={{ fill: COLORS.text }}
+            tick={{ fill: '#e2e8f0' }}
           />
           <YAxis
-            stroke={COLORS.text}
+            stroke="#e2e8f0"
             fontSize={12}
             fontWeight={600}
-            tick={{ fill: COLORS.text }}
+            tick={{ fill: '#e2e8f0' }}
             domain={[0, 4]}
           />
           <Tooltip
