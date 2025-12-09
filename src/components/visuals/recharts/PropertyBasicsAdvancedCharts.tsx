@@ -659,147 +659,7 @@ function TotalCapacityDonut({ homes }: { homes: Home[] }) {
 }
 
 // ============================================
-// CHART A-4: AGE VS MODERNIZATION BALANCE
-// Stacked bar showing age category AND garage/parking as proxy for modern amenities
-// ============================================
-function AgeModernizationBalance({ homes }: { homes: Home[] }) {
-  const currentYear = new Date().getFullYear();
-
-  // Age scoring (newer = better)
-  const ages = homes.map(h => currentYear - h.yearBuilt);
-  const ageScores = ages.map(age => Math.max(0, 100 - (age * 2)));
-
-  // Modernization proxy: garage spaces (more garage = more modern parking infrastructure)
-  const garageScores = scoreHigherIsBetter(homes.map(h => h.garageSpaces));
-
-  // Balance score: average of age and modernization
-  const balanceScores = homes.map((_, idx) =>
-    Math.round((ageScores[idx] + garageScores[idx]) / 2)
-  );
-
-  const maxScore = Math.max(...balanceScores);
-  const winnerIndices = balanceScores
-    .map((s, i) => (s === maxScore ? i : -1))
-    .filter(i => i !== -1);
-
-  const stackedData = homes.map((h, idx) => ({
-    name: h.name.split(',')[0],
-    yearBuilt: h.yearBuilt,
-    age: ages[idx],
-    ageScore: ageScores[idx],
-    garageSpaces: h.garageSpaces,
-    garageScore: garageScores[idx],
-    balanceScore: balanceScores[idx],
-    color: h.color || '#22c55e',
-  }));
-
-  useEffect(() => {
-    console.log('🔍 Chart A-4: Age vs Modernization Balance - SMART SCORING:');
-    stackedData.forEach((d) => {
-      console.log(`📊 ${d.name}:`);
-      console.log('  Raw values:', {
-        yearBuilt: d.yearBuilt,
-        age: d.age,
-        garageSpaces: d.garageSpaces,
-      });
-      console.log('  Component scores:', {
-        age: d.ageScore,
-        garage: d.garageScore,
-      });
-      console.log(`  🧠 BALANCE SCORE: ${d.balanceScore}/100 (${getScoreLabel(d.balanceScore)})`);
-    });
-    console.log(`🏆 WINNER: ${winnerIndices.map(i => homes[i].name.split(',')[0]).join(' & ')} with score ${maxScore}`);
-  }, [homes]);
-
-  return (
-    <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-      {/* Brain Widget - Top Right */}
-      <div className="absolute top-4 right-4 flex items-center gap-2 px-3 py-2 rounded-lg"
-        style={{
-          background: `${getScoreColor(maxScore)}20`,
-          border: `2px solid ${getScoreColor(maxScore)}`
-        }}
-      >
-        <span className="text-xl">🧠</span>
-        <div className="text-xs">
-          <div className="font-bold text-white">SMART Score</div>
-          <div style={{ color: getScoreColor(maxScore), fontWeight: 700 }}>
-            {maxScore}/100
-          </div>
-        </div>
-      </div>
-
-      <h3 className="text-lg font-semibold text-white mb-2">Chart 3-11: Age vs Modernization Balance</h3>
-      <p className="text-xs text-gray-400 mb-4">Balance of newness (age score) and modern amenities (garage score)</p>
-
-      <ResponsiveContainer width="100%" height={320}>
-        <BarChart data={stackedData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} />
-          <XAxis
-            dataKey="name"
-            stroke={COLORS.text}
-            tick={{ fill: COLORS.text }}
-            fontSize={12}
-            fontWeight={600}
-          />
-          <YAxis stroke={COLORS.text} tick={{ fill: COLORS.text, fontSize: 11 }} label={{ value: 'Score', angle: -90, position: 'insideLeft', fill: COLORS.text }} />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: COLORS.tooltip,
-              border: `1px solid ${COLORS.border}`,
-              borderRadius: '8px',
-              color: '#ffffff',
-            }}
-            labelStyle={{ color: '#ffffff' }}
-            itemStyle={{ color: '#ffffff' }}
-            formatter={(value: any, name: string, props: any) => {
-              if (name === 'Age Score') return [`${value}/100 (${props.payload.age} years old)`, name];
-              if (name === 'Garage Score') return [`${value}/100 (${props.payload.garageSpaces} spaces)`, name];
-              return [value, name];
-            }}
-          />
-          <Legend wrapperStyle={{ color: COLORS.text }} />
-          <Bar dataKey="ageScore" fill="#2196F3" name="Age Score (Newer = Better)" />
-          <Bar dataKey="garageScore" fill="#4CAF50" name="Garage Score (More = Modern)" />
-        </BarChart>
-      </ResponsiveContainer>
-
-      {/* Winner Badge */}
-      <div className="mt-4 flex justify-center">
-        <div
-          className="flex items-center gap-3 px-5 py-3 rounded-xl"
-          style={{
-            background: `${getScoreColor(maxScore)}20`,
-            border: `2px solid ${getScoreColor(maxScore)}`
-          }}
-        >
-          <span className="text-2xl">🏆</span>
-          <div>
-            <div className="text-sm font-bold text-white">
-              Winner: {winnerIndices.map(i => homes[i].name.split(',')[0]).join(' & ')}
-            </div>
-            <div className="text-xs text-gray-300">
-              CLUES-Smart Score: <span style={{ color: getScoreColor(maxScore), fontWeight: 700 }}>
-                {maxScore}/100
-              </span> ({getScoreLabel(maxScore)}) - Best age/modernization balance
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Smart Scale Legend */}
-      <div className="mt-4 p-3 bg-white/5 rounded-lg border-l-4 border-orange-400">
-        <p className="text-xs text-gray-300">
-          <strong className="text-orange-300">Balance Scoring:</strong> Blue = age score (50-year depreciation scale).
-          Green = garage score (proxy for modern parking). Balance score = average of both. Best balance wins.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ============================================
-// CHART A-5: INDOOR VS OUTDOOR SPACE BALANCE
+// CHART A-4: INDOOR VS OUTDOOR SPACE BALANCE
 // Paired bars showing living sqft vs lot sqft with balance scoring
 // ============================================
 function IndoorOutdoorBalance({ homes }: { homes: Home[] }) {
@@ -883,7 +743,7 @@ function IndoorOutdoorBalance({ homes }: { homes: Home[] }) {
         </div>
       </div>
 
-      <h3 className="text-lg font-semibold text-white mb-2">Chart 3-12: Indoor vs Outdoor Space Balance</h3>
+      <h3 className="text-lg font-semibold text-white mb-2">Chart 3-11: Indoor vs Outdoor Space Balance</h3>
       <p className="text-xs text-gray-400 mb-4">Living space vs outdoor space with optimal balance scoring (30-40% coverage ideal)</p>
 
       <ResponsiveContainer width="100%" height={320}>
@@ -981,7 +841,6 @@ export default function PropertyBasicsAdvancedCharts({ homes }: PropertyBasicsAd
         <PropertyProfileRadar homes={homes} />
         <SpaceEfficiencyBubble homes={homes} />
         <TotalCapacityDonut homes={homes} />
-        <AgeModernizationBalance homes={homes} />
         <IndoorOutdoorBalance homes={homes} />
       </div>
 
