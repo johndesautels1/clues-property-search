@@ -252,8 +252,10 @@ function PropertyProfileRadar({ homes }: { homes: Home[] }) {
               backgroundColor: COLORS.tooltip,
               border: `1px solid ${COLORS.border}`,
               borderRadius: '8px',
-              color: COLORS.text,
+              color: '#ffffff',
             }}
+            labelStyle={{ color: '#ffffff' }}
+            itemStyle={{ color: '#ffffff' }}
           />
         </RadarChart>
       </ResponsiveContainer>
@@ -599,8 +601,10 @@ function TotalCapacityDonut({ homes }: { homes: Home[] }) {
                 backgroundColor: COLORS.tooltip,
                 border: `1px solid ${COLORS.border}`,
                 borderRadius: '8px',
-                color: COLORS.text,
+                color: '#ffffff',
               }}
+              labelStyle={{ color: '#ffffff' }}
+              itemStyle={{ color: '#ffffff' }}
               formatter={(value: any, name: string, props: any) => {
                 const data = props.payload;
                 return [
@@ -744,8 +748,10 @@ function AgeModernizationBalance({ homes }: { homes: Home[] }) {
               backgroundColor: COLORS.tooltip,
               border: `1px solid ${COLORS.border}`,
               borderRadius: '8px',
-              color: COLORS.text,
+              color: '#ffffff',
             }}
+            labelStyle={{ color: '#ffffff' }}
+            itemStyle={{ color: '#ffffff' }}
             formatter={(value: any, name: string, props: any) => {
               if (name === 'Age Score') return [`${value}/100 (${props.payload.age} years old)`, name];
               if (name === 'Garage Score') return [`${value}/100 (${props.payload.garageSpaces} spaces)`, name];
@@ -900,8 +906,10 @@ function IndoorOutdoorBalance({ homes }: { homes: Home[] }) {
               backgroundColor: COLORS.tooltip,
               border: `1px solid ${COLORS.border}`,
               borderRadius: '8px',
-              color: COLORS.text,
+              color: '#ffffff',
             }}
+            labelStyle={{ color: '#ffffff' }}
+            itemStyle={{ color: '#ffffff' }}
             formatter={(value: any, name: string, props: any) => {
               if (name === 'Indoor Space') return [`${value.toLocaleString()} sqft (Score: ${props.payload.indoorScore})`, name];
               if (name === 'Outdoor Space') return [`${value.toLocaleString()} sqft (Score: ${props.payload.outdoorScore})`, name];
