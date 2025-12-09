@@ -462,9 +462,31 @@ function SpaceEfficiencyBubble({ homes }: { homes: Home[] }) {
 
       {/* Smart Scale Legend */}
       <div className="mt-4 p-3 bg-white/5 rounded-lg border-l-4 border-purple-400">
-        <p className="text-xs text-gray-300">
-          <strong className="text-purple-300">Home/Lot Ratio Scoring:</strong> Lower home coverage % = more yard space = higher score.
-          Bubble color shows property. Larger bubbles = higher listing price. Lowest ratio wins.
+        <p className="text-xs font-bold text-purple-300 mb-2">CLUES-Smart Score Scale:</p>
+        <div className="grid grid-cols-5 gap-2 text-xs">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded" style={{ background: '#4CAF50' }}></div>
+            <span className="text-gray-300">81-100: Excellent</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded" style={{ background: '#2196F3' }}></div>
+            <span className="text-gray-300">61-80: Good</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded" style={{ background: '#FFEB3B' }}></div>
+            <span className="text-gray-300">41-60: Average</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded" style={{ background: '#FF9800' }}></div>
+            <span className="text-gray-300">21-40: Fair</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded" style={{ background: '#FF4444' }}></div>
+            <span className="text-gray-300">0-20: Poor</span>
+          </div>
+        </div>
+        <p className="text-xs text-gray-400 mt-2">
+          Lower home coverage % = more yard space = higher score. Bubble color shows property. Larger bubbles = higher listing price.
         </p>
       </div>
     </div>
