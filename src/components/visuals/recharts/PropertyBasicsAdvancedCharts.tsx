@@ -315,18 +315,19 @@ function PropertyProfileRadar({ homes }: { homes: Home[] }) {
 }
 
 // ============================================
-// CHART A-2: SPACE EFFICIENCY BUBBLE WITH VALUE SCORING
+// CHART A-2: HOME/LOT RATIO BUBBLE WITH VALUE SCORING
 // Scatter plot: Lot Size (X) vs Living Space (Y), Bubble Size = Price
-// Score based on space utilization efficiency
+// Score based on home coverage percentage (lower = better, more yard space)
 // ============================================
 function SpaceEfficiencyBubble({ homes }: { homes: Home[] }) {
-  // Calculate space efficiency: living sqft per lot acre (higher = better utilization)
-  const efficiencies = homes.map(h => {
-    if (!h.lotSizeAcres || h.lotSizeAcres <= 0) return 0;
-    return h.livingSqft / h.lotSizeAcres;
+  // Calculate home/lot ratio as percentage: (living sqft / lot sqft) * 100
+  // Lower ratio = more yard space = more desirable (except condos/townhouses)
+  const ratios = homes.map(h => {
+    if (!h.lotSizeSqft || h.lotSizeSqft <= 0) return 100; // Worst case for invalid data
+    return (h.livingSqft / h.lotSizeSqft) * 100;
   });
 
-  const efficiencyScores = scoreHigherIsBetter(efficiencies);
+  const efficiencyScores = scoreLowerIsBetter(ratios);
 
   const maxScore = Math.max(...efficiencyScores);
   const winnerIndices = efficiencyScores
@@ -338,7 +339,7 @@ function SpaceEfficiencyBubble({ homes }: { homes: Home[] }) {
     lotSqft: h.lotSizeSqft || 0,
     livingSqft: h.livingSqft || 0,
     price: h.listingPrice || 0,
-    efficiency: efficiencies[idx],
+    ratio: ratios[idx],
     score: efficiencyScores[idx],
     color: h.color || '#22c55e',
   }));
@@ -350,7 +351,7 @@ function SpaceEfficiencyBubble({ homes }: { homes: Home[] }) {
   const bubbleRange: [number, number] = prices.length > 0 ? [300, 1000] : [500, 500];
 
   useEffect(() => {
-    console.log('🔍 Chart A-2: Space Efficiency Bubble - SMART SCORING:');
+    console.log('🔍 Chart A-2: Home/Lot Ratio Bubble - SMART SCORING:');
     bubbleData.forEach((d) => {
       console.log(`📊 ${d.name}:`);
       console.log('  Raw values:', {
@@ -358,10 +359,10 @@ function SpaceEfficiencyBubble({ homes }: { homes: Home[] }) {
         livingSqft: d.livingSqft,
         price: d.price,
       });
-      console.log(`  Efficiency: ${d.efficiency.toFixed(0)} sqft/acre`);
+      console.log(`  Home/Lot Ratio: ${d.ratio.toFixed(1)}%`);
       console.log(`  🧠 SMART SCORE: ${d.score}/100 (${getScoreLabel(d.score)})`);
     });
-    console.log(`🏆 WINNER: ${winnerIndices.map(i => homes[i].name.split(',')[0]).join(' & ')} with score ${maxScore}`);
+    console.log(`🏆 WINNER: ${winnerIndices.map(i => homes[i].name.split(',')[0]).join(' & ')} with score ${maxScore} (lowest ratio = most yard space)`);
   }, [homes]);
 
   return (
@@ -382,8 +383,8 @@ function SpaceEfficiencyBubble({ homes }: { homes: Home[] }) {
         </div>
       </div>
 
-      <h3 className="text-lg font-semibold text-white mb-2">Chart 3-9: Space Efficiency Correlation</h3>
-      <p className="text-xs text-gray-400 mb-4">Bubble size = price | Scored by living sqft per lot acre (higher = better utilization)</p>
+      <h3 className="text-lg font-semibold text-white mb-2">Chart 3-9: Home/Lot Ratio Correlation</h3>
+      <p className="text-xs text-gray-400 mb-4">Bubble size = price | Scored by home coverage % (lower = better, more yard space)</p>
 
       <ResponsiveContainer width="100%" height={320}>
         <ScatterChart margin={{ top: 20, right: 20, bottom: 60, left: 60 }}>
@@ -453,7 +454,7 @@ function SpaceEfficiencyBubble({ homes }: { homes: Home[] }) {
             <div className="text-xs text-gray-300">
               CLUES-Smart Score: <span style={{ color: getScoreColor(maxScore), fontWeight: 700 }}>
                 {maxScore}/100
-              </span> ({getScoreLabel(maxScore)}) - Best space efficiency: {Math.round(efficiencies[winnerIndices[0]])} sqft/acre
+              </span> ({getScoreLabel(maxScore)}) - Lowest home/lot ratio: {ratios[winnerIndices[0]].toFixed(1)}%
             </div>
           </div>
         </div>
@@ -462,8 +463,8 @@ function SpaceEfficiencyBubble({ homes }: { homes: Home[] }) {
       {/* Smart Scale Legend */}
       <div className="mt-4 p-3 bg-white/5 rounded-lg border-l-4 border-purple-400">
         <p className="text-xs text-gray-300">
-          <strong className="text-purple-300">Efficiency Scoring:</strong> Higher living sqft per lot acre = better land utilization.
-          Bubble color shows efficiency score. Larger bubbles = higher listing price. Best efficiency wins.
+          <strong className="text-purple-300">Home/Lot Ratio Scoring:</strong> Lower home coverage % = more yard space = higher score.
+          Bubble color shows property. Larger bubbles = higher listing price. Lowest ratio wins.
         </p>
       </div>
     </div>
