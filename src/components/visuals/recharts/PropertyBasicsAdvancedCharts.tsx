@@ -430,7 +430,7 @@ function SpaceEfficiencyBubble({ homes }: { homes: Home[] }) {
               fill={entry.color}
             />
           ))}
-          <Legend wrapperStyle={{ color: COLORS.text }} />
+          <Legend wrapperStyle={{ color: COLORS.text, paddingTop: '18px' }} />
         </ScatterChart>
       </ResponsiveContainer>
 
