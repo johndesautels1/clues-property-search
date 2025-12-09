@@ -325,7 +325,7 @@ const Chart42_TaxRateComparison: React.FC<{ homes: Home[] }> = ({ homes }) => {
           <XAxis
             dataKey="name"
             stroke="#666"
-            tick={{ fill: '#ffffff', fontWeight: 'bold', fontSize: 9 }}
+            tick={{ fill: '#ffffff', fontWeight: 'bold', fontSize: 12 }}
             angle={0}
             textAnchor="middle"
             height={70}
@@ -469,7 +469,7 @@ const Chart44_OwnershipTypeScore: React.FC<{ homes: Home[] }> = ({ homes }) => {
           <XAxis
             dataKey="name"
             stroke="#666"
-            tick={{ fill: '#ffffff', fontWeight: 'bold', fontSize: 8 }}
+            tick={{ fill: '#ffffff', fontWeight: 'bold', fontSize: 12 }}
             angle={0}
             textAnchor="middle"
             height={80}
@@ -597,7 +597,7 @@ const Chart46_TrueCostOwnershipIndex: React.FC<{ homes: Home[] }> = ({ homes }) 
           <XAxis
             dataKey="name"
             stroke="#666"
-            tick={{ fill: '#ffffff', fontWeight: 'bold', fontSize: 8 }}
+            tick={{ fill: '#ffffff', fontWeight: 'bold', fontSize: 12 }}
             angle={0}
             textAnchor="middle"
             height={80}
@@ -660,7 +660,7 @@ const Chart47_MonthlyVsAnnualCost: React.FC<{ homes: Home[] }> = ({ homes }) => 
           <XAxis
             dataKey="name"
             stroke="#666"
-            tick={{ fill: '#ffffff', fontWeight: 'bold', fontSize: 8 }}
+            tick={{ fill: '#ffffff', fontWeight: 'bold', fontSize: 12 }}
             angle={0}
             textAnchor="middle"
             height={70}
