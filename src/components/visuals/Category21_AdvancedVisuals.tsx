@@ -30,6 +30,7 @@ import MarketRadarChart from './deepseek/MarketRadarChart';
 import ValueMomentumChart from './deepseek/ValueMomentumChart';
 import RealEstateDashboard from './recharts/RealEstateDashboard';
 import PropertyBasicsCharts from './recharts/PropertyBasicsCharts';
+import PropertyBasicsAdvancedCharts from './recharts/PropertyBasicsAdvancedCharts';
 
 interface Category21Props {
   properties: ChartProperty[];
@@ -368,6 +369,22 @@ export default function Category21_AdvancedVisuals({ properties }: Category21Pro
       >
         {selectedChartProperties.length > 0 ? (
           <PropertyBasicsCharts homes={mapToRealEstateHomes(selectedChartProperties)} />
+        ) : (
+          <div className="text-center py-12 text-gray-400">
+            Please select at least one property from the dropdowns above
+          </div>
+        )}
+      </motion.div>
+
+      {/* Advanced Property Basics Visualizations */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.2 }}
+        className="mt-12"
+      >
+        {selectedChartProperties.length > 0 ? (
+          <PropertyBasicsAdvancedCharts homes={mapToRealEstateHomes(selectedChartProperties)} />
         ) : (
           <div className="text-center py-12 text-gray-400">
             Please select at least one property from the dropdowns above
