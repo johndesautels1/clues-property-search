@@ -428,7 +428,7 @@ function SpaceEfficiencyBubble({ homes }: { homes: Home[] }) {
               key={index}
               name={`${entry.name} (Score: ${entry.score})`}
               data={[entry]}
-              fill={getScoreColor(entry.score)}
+              fill={entry.color}
             />
           ))}
         </ScatterChart>
@@ -489,7 +489,7 @@ function TotalCapacityDonut({ homes }: { homes: Home[] }) {
     bathrooms: h.totalBathrooms,
     garage: h.garageSpaces,
     score: capacityScores[idx],
-    color: getScoreColor(capacityScores[idx]),
+    color: h.color || '#22c55e',
   }));
 
   const totalCapacity = donutData.reduce((sum, d) => sum + d.totalCapacity, 0);
@@ -704,15 +704,14 @@ function AgeModernizationBalance({ homes }: { homes: Home[] }) {
       <p className="text-xs text-gray-400 mb-4">Balance of newness (age score) and modern amenities (garage score)</p>
 
       <ResponsiveContainer width="100%" height={320}>
-        <BarChart data={stackedData} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
+        <BarChart data={stackedData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} />
           <XAxis
             dataKey="name"
             stroke={COLORS.text}
-            tick={{ fill: COLORS.text, fontSize: 10 }}
-            angle={-15}
-            textAnchor="end"
-            height={80}
+            tick={{ fill: COLORS.text }}
+            fontSize={12}
+            fontWeight={600}
           />
           <YAxis stroke={COLORS.text} tick={{ fill: COLORS.text, fontSize: 11 }} label={{ value: 'Score', angle: -90, position: 'insideLeft', fill: COLORS.text }} />
           <Tooltip
@@ -857,15 +856,14 @@ function IndoorOutdoorBalance({ homes }: { homes: Home[] }) {
       <p className="text-xs text-gray-400 mb-4">Living space vs outdoor space with optimal balance scoring (30-40% coverage ideal)</p>
 
       <ResponsiveContainer width="100%" height={320}>
-        <BarChart data={pairedData} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
+        <BarChart data={pairedData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} />
           <XAxis
             dataKey="name"
             stroke={COLORS.text}
-            tick={{ fill: COLORS.text, fontSize: 10 }}
-            angle={-15}
-            textAnchor="end"
-            height={80}
+            tick={{ fill: COLORS.text }}
+            fontSize={12}
+            fontWeight={600}
           />
           <YAxis
             stroke={COLORS.text}
