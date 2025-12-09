@@ -413,8 +413,10 @@ function SpaceEfficiencyBubble({ homes }: { homes: Home[] }) {
               backgroundColor: COLORS.tooltip,
               border: `1px solid ${COLORS.border}`,
               borderRadius: '8px',
-              color: COLORS.text,
+              color: '#ffffff',
             }}
+            labelStyle={{ color: '#ffffff' }}
+            itemStyle={{ color: '#ffffff' }}
             formatter={(value: any, name: string) => {
               if (name === 'Lot Size') return [`${value.toLocaleString()} sqft`, name];
               if (name === 'Living Space') return [`${value.toLocaleString()} sqft`, name];
