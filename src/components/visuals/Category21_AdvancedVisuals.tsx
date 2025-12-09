@@ -29,15 +29,18 @@ import PropertyComparisonSelector from './PropertyComparisonSelector';
 import MarketRadarChart from './deepseek/MarketRadarChart';
 import ValueMomentumChart from './deepseek/ValueMomentumChart';
 import RealEstateDashboard from './recharts/RealEstateDashboard';
+import PropertyBasicsCharts from './recharts/PropertyBasicsCharts';
 
 interface Category21Props {
   properties: ChartProperty[];
 }
 
 // Map ChartProperty to RealEstateDashboard Home interface
-// VERIFIED AGAINST SCHEMA: Fields 10, 11, 12, 13, 14, 15, 25
+// VERIFIED AGAINST SCHEMA: Fields 10, 11, 12, 13, 14, 15, 17-29
 function mapToRealEstateHomes(properties: ChartProperty[]) {
-  return properties.map((p) => ({
+  const currentYear = new Date().getFullYear();
+
+  return properties.map((p, idx) => ({
     id: p.id,
     name: p.address || 'Unknown Address',
     listingPrice: p.listingPrice || 0,                                              // Field 10: listing_price
@@ -47,7 +50,22 @@ function mapToRealEstateHomes(properties: ChartProperty[]) {
     lastSalePrice: p.lastSalePrice || 0,                                           // Field 14: last_sale_price
     assessedValue: p.assessedValue || 0,                                           // Field 15: assessed_value
     redfinEstimate: p.redfinEstimate || p.marketValueEstimate || 0,                // Field 12 fallback
-    yearBuilt: p.yearBuilt || new Date().getFullYear(),                            // Field 25: year_built
+    yearBuilt: p.yearBuilt || currentYear,                                         // Field 25: year_built
+    // Fields 17-29 for Property Basics charts
+    bedrooms: p.bedrooms || 0,                                                     // Field 17: bedrooms
+    fullBathrooms: p.fullBathrooms || 0,                                           // Field 18: full_bathrooms
+    halfBathrooms: p.halfBathrooms || 0,                                           // Field 19: half_bathrooms
+    totalBathrooms: p.bathrooms || 0,                                              // Field 20: total_bathrooms
+    livingSqft: p.livingSqft || 0,                                                 // Field 21: living_sqft
+    totalSqftUnderRoof: p.totalSqftUnderRoof || p.livingSqft || 0,                // Field 22: total_sqft_under_roof
+    lotSizeSqft: p.lotSizeSqft || 0,                                               // Field 23: lot_size_sqft
+    lotSizeAcres: p.lotSizeAcres || (p.lotSizeSqft ? Math.round((p.lotSizeSqft / 43560) * 100) / 100 : 0), // Field 24: lot_size_acres
+    propertyType: p.propertyType || 'Unknown',                                     // Field 26: property_type
+    stories: p.stories || 1,                                                       // Field 27: stories
+    garageSpaces: p.garageSpaces || 0,                                             // Field 28: garage_spaces
+    parkingTotal: p.parkingTotal || 'N/A',                                         // Field 29: parking_total
+    // Property color assignment
+    color: ['#22c55e', '#8b5cf6', '#ec4899'][idx] || '#22c55e',                    // Green, Lavender, Pink
   }));
 }
 
@@ -302,6 +320,33 @@ export default function Category21_AdvancedVisuals({ properties }: Category21Pro
       >
         {selectedChartProperties.length > 0 ? (
           <RealEstateDashboard homes={mapToRealEstateHomes(selectedChartProperties)} />
+        ) : (
+          <div className="text-center py-12 text-gray-400">
+            Please select at least one property from the dropdowns above
+          </div>
+        )}
+      </motion.div>
+
+      {/* Property Basics Charts Section (Fields 17-29) */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.0 }}
+        className="mt-8 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/20 to-green-500/20 border border-blue-500/30"
+      >
+        <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+        <span className="text-sm font-medium text-blue-300">Property Basics Analysis (Fields 17-29)</span>
+      </motion.div>
+
+      {/* Property Basics Charts */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.1 }}
+        className="mt-6"
+      >
+        {selectedChartProperties.length > 0 ? (
+          <PropertyBasicsCharts homes={mapToRealEstateHomes(selectedChartProperties)} />
         ) : (
           <div className="text-center py-12 text-gray-400">
             Please select at least one property from the dropdowns above

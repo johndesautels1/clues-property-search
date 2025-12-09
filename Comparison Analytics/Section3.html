@@ -1,0 +1,1883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Section 3: Financial & Ownership Analysis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%);
+            color: #e0e0e0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #4CAF50, #2196F3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            color: #888;
+        }
+
+        /* Home Selection */
+        .home-selector {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 40px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .home-btn {
+            padding: 12px 24px;
+            border: 2px solid #333;
+            background: rgba(255, 255, 255, 0.05);
+            color: #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .home-btn:hover {
+            border-color: #2196F3;
+            background: rgba(33, 150, 243, 0.1);
+        }
+
+        .home-btn.active {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+        }
+
+        /* Stats Summary Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #888;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .stat-unit {
+            font-size: 0.7em;
+            color: #666;
+            margin-left: 4px;
+        }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 1200px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .chart-container:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .chart-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #fff;
+        }
+
+        .chart-subtitle {
+            font-size: 0.85em;
+            color: #888;
+            margin-bottom: 16px;
+        }
+
+        svg {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* Color scale legend */
+        .color-legend {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+            padding: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.75em;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+        }
+
+        .color-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px;
+        }
+
+        .color-legend-box {
+            width: 16px;
+            height: 16px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        .color-legend-label {
+            color: #e0e0e0;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+
+        .score-explanation {
+            display: block;
+            font-size: 0.7em;
+            color: #aaa;
+            margin-top: 8px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            border-left: 3px solid #2196F3;
+            line-height: 1.4;
+        }
+
+        /* Comparison Table */
+        .table-container {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 24px;
+            overflow-x: auto;
+            margin-bottom: 40px;
+        }
+
+        .table-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #fff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            color: #888;
+            font-size: 0.9em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 600;
+            background: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+            border: 1px solid #4CAF50;
+            margin-right: 4px;
+        }
+
+        .badge.orange {
+            background: rgba(255, 152, 0, 0.2);
+            color: #FF9800;
+            border-color: #FF9800;
+        }
+
+        .badge.red {
+            background: rgba(255, 68, 68, 0.2);
+            color: #FF4444;
+            border-color: #FF4444;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9em;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .home-selector {
+                flex-direction: column;
+            }
+
+            .home-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💰 Section 3: Financial & Ownership Analysis</h1>
+            <p class="subtitle">Compare taxes, HOA costs, and true ownership structure</p>
+        </header>
+
+        <!-- Home Selection -->
+        <div class="home-selector" id="homeSelector"></div>
+
+        <!-- Stats Summary -->
+        <div class="stats-grid" id="statsGrid"></div>
+
+        <!-- Charts -->
+        <div class="charts-grid">
+            <div class="chart-container">
+                <div class="chart-title">Annual Cost Breakdown</div>
+                <div class="chart-subtitle">Taxes + HOA per home (stacked)</div>
+                <svg id="chart1" width="100%" height="320" viewBox="0 0 600 320" preserveAspectRatio="xMidYMid meet"></svg>
+                <div class="color-legend" id="legend1"></div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">Tax Rate Comparison</div>
+                <div class="chart-subtitle">Lower = Better value</div>
+                <svg id="chart2" width="100%" height="320" viewBox="0 0 600 320" preserveAspectRatio="xMidYMid meet"></svg>
+                <div class="color-legend" id="legend2"></div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">HOA vs Tax Burden</div>
+                <div class="chart-subtitle">Bubble size = total annual cost</div>
+                <svg id="chart3" width="100%" height="320" viewBox="0 0 600 320" preserveAspectRatio="xMidYMid meet"></svg>
+                <div class="color-legend" id="legend3"></div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">Ownership Type Score</div>
+                <div class="chart-subtitle">Fee Simple scores highest</div>
+                <svg id="chart4" width="100%" height="320" viewBox="0 0 600 320" preserveAspectRatio="xMidYMid meet"></svg>
+                <div class="color-legend" id="legend4"></div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">Cost Distribution: Taxes vs HOA</div>
+                <div class="chart-subtitle">What % of total is each?</div>
+                <svg id="chart5" width="100%" height="320" viewBox="0 0 600 320" preserveAspectRatio="xMidYMid meet"></svg>
+                <div class="color-legend" id="legend5"></div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">True Cost of Ownership Index</div>
+                <div class="chart-subtitle">Lower total cost = higher score</div>
+                <svg id="chart6" width="100%" height="320" viewBox="0 0 600 320" preserveAspectRatio="xMidYMid meet"></svg>
+                <div class="color-legend" id="legend6"></div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">Monthly vs Annual Cost</div>
+                <div class="chart-subtitle">Simplified monthly breakdown</div>
+                <svg id="chart7" width="100%" height="320" viewBox="0 0 600 320" preserveAspectRatio="xMidYMid meet"></svg>
+                <div class="color-legend" id="legend7"></div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">Financial Efficiency Radar</div>
+                <div class="chart-subtitle">Multi-factor ownership profile</div>
+                <svg id="chart8" width="100%" height="320" viewBox="0 0 600 320" preserveAspectRatio="xMidYMid meet"></svg>
+                <div class="color-legend" id="legend8"></div>
+            </div>
+        </div>
+
+        <!-- Comparison Table -->
+        <div class="table-container">
+            <div class="table-title">Full Financial Comparison</div>
+            <div id="comparisonTable"></div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // DATA MODEL - 3 HOMES WITH FINANCIAL DATA
+        // ============================================
+        const homesData = [
+            {
+                id: 1,
+                name: "Oceanview Estate",
+                price: 1250000,
+                hoa_yes_no: true,
+                hoa_fee_annual: 4200,
+                hoa_name: "Coastal Palms HOA",
+                hoa_includes: "landscaping, pool, security",
+                ownership_type: "Fee Simple",
+                annual_taxes: 6200,
+                tax_year: 2024,
+                property_tax_rate: 0.88,
+                tax_exemptions: "Homestead Exemption"
+            },
+            {
+                id: 2,
+                name: "Garden Manor",
+                price: 850000,
+                hoa_yes_no: true,
+                hoa_fee_annual: 2400,
+                hoa_name: "Garden Vista HOA",
+                hoa_includes: "landscaping, common area",
+                ownership_type: "Condo",
+                annual_taxes: 4800,
+                tax_year: 2024,
+                property_tax_rate: 0.85,
+                tax_exemptions: ""
+            },
+            {
+                id: 3,
+                name: "Urban Loft",
+                price: 650000,
+                hoa_yes_no: true,
+                hoa_fee_annual: 580,
+                hoa_name: "Downtown Towers",
+                hoa_includes: "maintenance, security",
+                ownership_type: "Condo",
+                annual_taxes: 3200,
+                tax_year: 2024,
+                property_tax_rate: 0.82,
+                tax_exemptions: "Homestead Exemption"
+            }
+        ];
+
+        let selectedHomeId = 1;
+
+        // ============================================
+        // SCORING & UTILITY FUNCTIONS
+        // ============================================
+
+        // HOA Scoring (different for Condo vs Single Family)
+        function scoreHOA(hoaFee, ownershipType) {
+            if (ownershipType === "Fee Simple") {
+                // Single family: 0-250 excellent, 251-500 good, etc.
+                if (hoaFee <= 250) return 100;
+                if (hoaFee <= 500) return 80;
+                if (hoaFee <= 750) return 60;
+                if (hoaFee <= 1000) return 40;
+                return 20;
+            } else {
+                // Condo: 0-250 excellent, 251-500 good, 501-750 average, 751-1000 fair, >1000 poor
+                if (hoaFee <= 250) return 100;
+                if (hoaFee <= 500) return 85;
+                if (hoaFee <= 750) return 70;
+                if (hoaFee <= 1000) return 50;
+                return 20;
+            }
+        }
+
+        // Tax Rate Scoring (lower = better)
+        function scoreTaxRate(rate) {
+            if (rate <= 0.65) return 100;
+            if (rate <= 0.77) return 85;
+            if (rate <= 0.88) return 70;
+            if (rate <= 1.0) return 50;
+            return 20;
+        }
+
+        // Ownership Type Scoring
+        function scoreOwnershipType(type) {
+            const scores = {
+                "Fee Simple": 100,
+                "Condo": 75,
+                "Leasehold": 50,
+                "Co-op": 50
+            };
+            return scores[type] || 0;
+        }
+
+        // True Cost of Ownership Index
+        function scoreTrueCostIndex(home) {
+            const totalCost = home.annual_taxes + home.hoa_fee_annual;
+            const allCosts = homesData.map(h => h.annual_taxes + h.hoa_fee_annual);
+            const maxCost = Math.max(...allCosts);
+            const minCost = Math.min(...allCosts);
+            
+            // Reverse score: lower cost = higher score
+            if (maxCost === minCost) return 50;
+            return ((maxCost - totalCost) / (maxCost - minCost)) * 100;
+        }
+
+        // Color from score (0-100) - 5-tier scale
+        function getColorFromScore(score) {
+            if (score >= 81) return "#4CAF50"; // Green - Excellent
+            if (score >= 61) return "#2196F3"; // Blue - Good
+            if (score >= 41) return "#FFEB3B"; // Yellow - Average
+            if (score >= 21) return "#FF9800"; // Orange - Fair
+            return "#FF4444"; // Red - Poor
+        }
+
+        // Format currency
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
+        }
+
+        // ============================================
+        // RENDER SMART SCALE LEGEND (Chart-Specific)
+        // ============================================
+        const chartExplanations = {
+            legend1: { title: 'Annual Cost Breakdown Score', desc: 'Lower total cost (Taxes + HOA) = Higher score. Best value home scores highest.' },
+            legend2: { title: 'Tax Rate Score', desc: 'Lower tax rate = Higher score. Efficient tax jurisdictions score 81-100 (green).' },
+            legend3: { title: 'True Cost Index', desc: 'Lowest total annual cost scores 100 (green). Higher cost scores lower (red).' },
+            legend4: { title: 'Ownership Type Score', desc: 'Fee Simple=100. Condo=75. Leasehold/Co-op=50. Affects mortgage & control.' },
+            legend5: { title: 'Portfolio Composition', desc: 'Pie shows Taxes vs HOA % of total portfolio spending across all 3 homes.' },
+            legend6: { title: 'True Cost of Ownership Index', desc: 'Combined metric: lower (Taxes + HOA) annual burden = higher score (81-100).' },
+            legend7: { title: 'Monthly vs Annual View', desc: 'Monthly = annual cost ÷ 12. Visualizes monthly cash flow impact of ownership.' },
+            legend8: { title: 'Financial Efficiency Profile', desc: '4-factor radar: HOA Score + Tax Rate + Ownership Type + Cost Index. Fuller shape = better overall.' }
+        };
+
+        function renderSmartScaleLegend(elementId) {
+            const legend = document.getElementById(elementId);
+            if (!legend) return;
+            
+            const scales = [
+                { color: '#4CAF50', label: '81-100: Excellent', meaning: 'Best value / lowest cost / best conditions' },
+                { color: '#2196F3', label: '61-80: Strong', meaning: 'Above average value / favorable metrics' },
+                { color: '#FFEB3B', label: '41-60: Good', meaning: 'Average performance / moderate value' },
+                { color: '#FF9800', label: '21-40: Fair', meaning: 'Below average / higher cost burden' },
+                { color: '#FF4444', label: '0-20: Poor', meaning: 'Lowest value / highest costs' }
+            ];
+
+            const explanation = chartExplanations[elementId] || { title: 'Score Scale', desc: '0-100 score range with color coding.' };
+            
+            let html = `<div style="margin-bottom: 8px; color: #e0e0e0; font-weight: bold;">${explanation.title}</div>`;
+            
+            scales.forEach(scale => {
+                html += `
+                    <div class="color-legend-item">
+                        <div class="color-legend-box" style="background-color: ${scale.color};"></div>
+                        <div>
+                            <div class="color-legend-label">${scale.label}</div>
+                            <div style="font-size: 0.65em; color: #999;">${scale.meaning}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `<div class="score-explanation">${explanation.desc}</div>`;
+            
+            legend.innerHTML = html;
+        }
+
+        // ============================================
+        // RENDER HOME SELECTOR
+        // ============================================
+        function renderHomeSelector() {
+            const selector = document.getElementById('homeSelector');
+            selector.innerHTML = homesData.map(home => `
+                <button class="home-btn ${home.id === selectedHomeId ? 'active' : ''}" onclick="selectHome(${home.id})">
+                    ${home.name}
+                </button>
+            `).join('');
+        }
+
+        function selectHome(id) {
+            selectedHomeId = id;
+            renderHomeSelector();
+            renderStats();
+            renderChart1();
+            renderChart2();
+            renderChart3();
+            renderChart4();
+            renderChart5();
+            renderChart6();
+            renderChart7();
+            renderChart8();
+            renderAllLegends();
+        }
+
+        function renderAllLegends() {
+            for (let i = 1; i <= 8; i++) {
+                renderSmartScaleLegend(`legend${i}`);
+            }
+        }
+
+        // ============================================
+        // STATS SUMMARY CARDS
+        // ============================================
+        function renderStats() {
+            const allTaxes = homesData.map(h => h.annual_taxes);
+            const allHOA = homesData.map(h => h.hoa_fee_annual);
+            const avgTax = allTaxes.reduce((a, b) => a + b, 0) / allTaxes.length;
+            const avgHOA = allHOA.reduce((a, b) => a + b, 0) / allHOA.length;
+            const maxHOA = Math.max(...allHOA);
+            const totalCosts = homesData.map(h => h.annual_taxes + h.hoa_fee_annual);
+            const lowestCostHome = homesData[totalCosts.indexOf(Math.min(...totalCosts))];
+
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-label">Average Annual Tax</div>
+                    <div class="stat-value">${formatCurrency(avgTax)}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Average HOA Fee</div>
+                    <div class="stat-value">${formatCurrency(avgHOA)}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Highest HOA Fee</div>
+                    <div class="stat-value">${formatCurrency(maxHOA)}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Best Value Home</div>
+                    <div class="stat-value" style="color: #4CAF50;">${lowestCostHome.name}</div>
+                </div>
+            `;
+        }
+
+        // ============================================
+        // CHART 1: STACKED BAR - ANNUAL COST BREAKDOWN
+        // ============================================
+        function renderChart1() {
+            const svg = document.getElementById('chart1');
+            svg.innerHTML = '';
+            const width = 600;
+            const height = 320;
+            const barHeight = 32;
+            const padding = { top: 50, right: 60, bottom: 40, left: 160 };
+
+            const maxCost = Math.max(...homesData.map(h => h.annual_taxes + h.hoa_fee_annual));
+            const scale = (width - padding.left - padding.right) / maxCost;
+
+            // Find best value home for brain widget
+            let bestHome = homesData[0];
+            let bestScore = scoreTrueCostIndex(homesData[0]);
+            homesData.forEach(home => {
+                const score = scoreTrueCostIndex(home);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestHome = home;
+                }
+            });
+
+            homesData.forEach((home, idx) => {
+                const y = padding.top + idx * 65;
+                const taxWidth = home.annual_taxes * scale;
+                const hoaWidth = home.hoa_fee_annual * scale;
+                const totalCost = home.annual_taxes + home.hoa_fee_annual;
+                const score = scoreTrueCostIndex(home);
+                const scoreColor = getColorFromScore(score);
+
+                // Home address label (bold, white) - FULL ADDRESS
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', padding.left - 10);
+                text.setAttribute('y', y + barHeight / 2 - 5);
+                text.setAttribute('text-anchor', 'end');
+                text.setAttribute('fill', '#ffffff');
+                text.setAttribute('font-weight', 'bold');
+                text.setAttribute('font-size', '9');
+                text.textContent = home.name;
+                svg.appendChild(text);
+
+                // Score label below address (bold, color-coded)
+                const scoreLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                scoreLabel.setAttribute('x', padding.left - 10);
+                scoreLabel.setAttribute('y', y + barHeight / 2 + 8);
+                scoreLabel.setAttribute('text-anchor', 'end');
+                scoreLabel.setAttribute('fill', scoreColor);
+                scoreLabel.setAttribute('font-weight', 'bold');
+                scoreLabel.setAttribute('font-size', '8');
+                scoreLabel.textContent = `Score: ${Math.round(score)}`;
+                svg.appendChild(scoreLabel);
+
+                // Tax bar (blue)
+                const taxRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                taxRect.setAttribute('x', padding.left);
+                taxRect.setAttribute('y', y);
+                taxRect.setAttribute('width', taxWidth);
+                taxRect.setAttribute('height', barHeight);
+                taxRect.setAttribute('fill', '#2196F3');
+                taxRect.setAttribute('rx', '4');
+                svg.appendChild(taxRect);
+
+                // HOA bar (green)
+                const hoaRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                hoaRect.setAttribute('x', padding.left + taxWidth);
+                hoaRect.setAttribute('y', y);
+                hoaRect.setAttribute('width', hoaWidth);
+                hoaRect.setAttribute('height', barHeight);
+                hoaRect.setAttribute('fill', '#4CAF50');
+                hoaRect.setAttribute('rx', '4');
+                svg.appendChild(hoaRect);
+
+                // Total label (bold white)
+                const totalText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                totalText.setAttribute('x', padding.left + taxWidth + hoaWidth + 10);
+                totalText.setAttribute('y', y + barHeight / 2 - 3);
+                totalText.setAttribute('fill', '#ffffff');
+                totalText.setAttribute('font-weight', 'bold');
+                totalText.setAttribute('font-size', '9');
+                totalText.setAttribute('dominant-baseline', 'middle');
+                totalText.textContent = formatCurrency(totalCost);
+                svg.appendChild(totalText);
+
+                // Score calculation explanation (small, dim)
+                const calcText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                calcText.setAttribute('x', padding.left + taxWidth + hoaWidth + 10);
+                calcText.setAttribute('y', y + barHeight / 2 + 8);
+                calcText.setAttribute('fill', '#999');
+                calcText.setAttribute('font-weight', 'normal');
+                calcText.setAttribute('font-size', '7');
+                calcText.setAttribute('dominant-baseline', 'middle');
+                calcText.textContent = `(Lower = Higher Score)`;
+                svg.appendChild(calcText);
+            });
+
+            // In-chart legend (top)
+            const legendY = padding.top - 30;
+            [
+                { color: '#2196F3', label: 'Taxes' },
+                { color: '#4CAF50', label: 'HOA' }
+            ].forEach((item, idx) => {
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', padding.left + idx * 90);
+                rect.setAttribute('y', legendY);
+                rect.setAttribute('width', 10);
+                rect.setAttribute('height', 10);
+                rect.setAttribute('fill', item.color);
+                rect.setAttribute('rx', '2');
+                svg.appendChild(rect);
+
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', padding.left + idx * 90 + 16);
+                text.setAttribute('y', legendY + 8);
+                text.setAttribute('fill', '#ffffff');
+                text.setAttribute('font-weight', 'bold');
+                text.setAttribute('font-size', '10');
+                text.textContent = item.label;
+                svg.appendChild(text);
+            });
+
+            // Brain widget - smart score winner (left, slightly down)
+            const brainX = width - 35;
+            const brainY = 18;
+            
+            // Brain icon circle
+            const brainCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            brainCircle.setAttribute('cx', brainX);
+            brainCircle.setAttribute('cy', brainY);
+            brainCircle.setAttribute('r', 12);
+            brainCircle.setAttribute('fill', getColorFromScore(bestScore));
+            brainCircle.setAttribute('opacity', '0.8');
+            svg.appendChild(brainCircle);
+
+            // Brain symbol (simplified)
+            const brainSymbol = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            brainSymbol.setAttribute('x', brainX);
+            brainSymbol.setAttribute('y', brainY + 1);
+            brainSymbol.setAttribute('text-anchor', 'middle');
+            brainSymbol.setAttribute('dominant-baseline', 'middle');
+            brainSymbol.setAttribute('fill', '#ffffff');
+            brainSymbol.setAttribute('font-weight', 'bold');
+            brainSymbol.setAttribute('font-size', '14');
+            brainSymbol.textContent = '🧠';
+            svg.appendChild(brainSymbol);
+
+            // SMART Score label
+            const smartScoreText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            smartScoreText.setAttribute('x', brainX);
+            smartScoreText.setAttribute('y', brainY + 18);
+            smartScoreText.setAttribute('text-anchor', 'middle');
+            smartScoreText.setAttribute('fill', '#ffffff');
+            smartScoreText.setAttribute('font-weight', 'bold');
+            smartScoreText.setAttribute('font-size', '8');
+            smartScoreText.textContent = `SMART Score: ${Math.round(bestScore)}`;
+            svg.appendChild(smartScoreText);
+        }
+
+        // ============================================
+        // CHART 2: TAX RATE COMPARISON
+        // ============================================
+        function renderChart2() {
+            const svg = document.getElementById('chart2');
+            svg.innerHTML = '';
+            const width = 600;
+            const height = 320;
+            const padding = { top: 30, right: 30, bottom: 90, left: 50 };
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
+            const barWidth = chartWidth / homesData.length * 0.55;
+            const barSpacing = chartWidth / homesData.length;
+
+            const maxRate = 2.0;
+            const scale = chartHeight / maxRate;
+
+            // Find best tax rate score
+            let bestTaxScore = scoreTaxRate(homesData[0].property_tax_rate);
+            homesData.forEach(home => {
+                const score = scoreTaxRate(home.property_tax_rate);
+                if (score > bestTaxScore) {
+                    bestTaxScore = score;
+                }
+            });
+
+            homesData.forEach((home, idx) => {
+                const x = padding.left + idx * barSpacing + (barSpacing - barWidth) / 2;
+                const barH = home.property_tax_rate * scale;
+                const y = padding.top + chartHeight - barH;
+                const score = scoreTaxRate(home.property_tax_rate);
+                const color = getColorFromScore(score);
+
+                // Bar
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', x);
+                rect.setAttribute('y', y);
+                rect.setAttribute('width', barWidth);
+                rect.setAttribute('height', barH);
+                rect.setAttribute('fill', color);
+                rect.setAttribute('rx', '4');
+                svg.appendChild(rect);
+
+                // Rate label on bar (bold white)
+                const rateText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                rateText.setAttribute('x', x + barWidth / 2);
+                rateText.setAttribute('y', y - 5);
+                rateText.setAttribute('text-anchor', 'middle');
+                rateText.setAttribute('fill', '#ffffff');
+                rateText.setAttribute('font-size', '11');
+                rateText.setAttribute('font-weight', 'bold');
+                rateText.textContent = home.property_tax_rate.toFixed(2) + '%';
+                svg.appendChild(rateText);
+
+                // Score label (bold, color-coded)
+                const scoreText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                scoreText.setAttribute('x', x + barWidth / 2);
+                scoreText.setAttribute('y', y - 18);
+                scoreText.setAttribute('text-anchor', 'middle');
+                scoreText.setAttribute('fill', color);
+                scoreText.setAttribute('font-weight', 'bold');
+                scoreText.setAttribute('font-size', '9');
+                scoreText.textContent = Math.round(score);
+                svg.appendChild(scoreText);
+
+                // Home address (bold white)
+                const nameText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                nameText.setAttribute('x', x + barWidth / 2);
+                nameText.setAttribute('y', padding.top + chartHeight + 18);
+                nameText.setAttribute('text-anchor', 'middle');
+                nameText.setAttribute('fill', '#ffffff');
+                nameText.setAttribute('font-weight', 'bold');
+                nameText.setAttribute('font-size', '8');
+                nameText.textContent = home.name;
+                svg.appendChild(nameText);
+
+                // Calculation note
+                const calcText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                calcText.setAttribute('x', x + barWidth / 2);
+                calcText.setAttribute('y', padding.top + chartHeight + 32);
+                calcText.setAttribute('text-anchor', 'middle');
+                calcText.setAttribute('fill', '#666');
+                calcText.setAttribute('font-size', '6');
+                calcText.textContent = `0.5%=100 → 2.0%=20`;
+                svg.appendChild(calcText);
+            });
+
+            // Y-axis labels
+            [0, 0.5, 1.0, 1.5, 2.0].forEach(val => {
+                const y = padding.top + chartHeight - (val * scale);
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', padding.left - 10);
+                text.setAttribute('y', y);
+                text.setAttribute('text-anchor', 'end');
+                text.setAttribute('dominant-baseline', 'middle');
+                text.setAttribute('fill', '#666');
+                text.setAttribute('font-size', '9');
+                text.textContent = val.toFixed(1) + '%';
+                svg.appendChild(text);
+            });
+
+            // Brain widget - smart score winner (left, slightly down)
+            const brainX = width - 35;
+            const brainY = 18;
+            
+            // Brain icon circle
+            const brainCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            brainCircle.setAttribute('cx', brainX);
+            brainCircle.setAttribute('cy', brainY);
+            brainCircle.setAttribute('r', 12);
+            brainCircle.setAttribute('fill', getColorFromScore(bestTaxScore));
+            brainCircle.setAttribute('opacity', '0.8');
+            svg.appendChild(brainCircle);
+
+            // Brain symbol (simplified)
+            const brainSymbol = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            brainSymbol.setAttribute('x', brainX);
+            brainSymbol.setAttribute('y', brainY + 1);
+            brainSymbol.setAttribute('text-anchor', 'middle');
+            brainSymbol.setAttribute('dominant-baseline', 'middle');
+            brainSymbol.setAttribute('fill', '#ffffff');
+            brainSymbol.setAttribute('font-weight', 'bold');
+            brainSymbol.setAttribute('font-size', '14');
+            brainSymbol.textContent = '🧠';
+            svg.appendChild(brainSymbol);
+
+            // SMART Score label
+            const smartScoreText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            smartScoreText.setAttribute('x', brainX);
+            smartScoreText.setAttribute('y', brainY + 18);
+            smartScoreText.setAttribute('text-anchor', 'middle');
+            smartScoreText.setAttribute('fill', '#ffffff');
+            smartScoreText.setAttribute('font-weight', 'bold');
+            smartScoreText.setAttribute('font-size', '8');
+            smartScoreText.textContent = `SMART Score: ${Math.round(bestTaxScore)}`;
+            svg.appendChild(smartScoreText);
+        }
+
+        // ============================================
+        // CHART 3: BUBBLE CHART - HOA vs TAX
+        // ============================================
+        function renderChart3() {
+            const svg = document.getElementById('chart3');
+            svg.innerHTML = '';
+            const width = 600;
+            const height = 320;
+            const padding = { top: 50, right: 50, bottom: 70, left: 65 };
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
+
+            const maxTax = Math.max(...homesData.map(h => h.annual_taxes));
+            const maxHOA = Math.max(...homesData.map(h => h.hoa_fee_annual));
+            const maxCost = Math.max(...homesData.map(h => h.annual_taxes + h.hoa_fee_annual));
+
+            // Find best value home for brain widget
+            let bestHome = homesData[0];
+            let bestScore = scoreTrueCostIndex(homesData[0]);
+            homesData.forEach(home => {
+                const score = scoreTrueCostIndex(home);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestHome = home;
+                }
+            });
+
+            homesData.forEach((home, idx) => {
+                const x = padding.left + (home.annual_taxes / maxTax) * chartWidth;
+                const y = padding.top + chartHeight - (home.hoa_fee_annual / maxHOA) * chartHeight;
+                const r = 12 + ((home.annual_taxes + home.hoa_fee_annual) / maxCost) * 18;
+                const score = scoreTrueCostIndex(home);
+                const color = getColorFromScore(score);
+
+                // Bubble
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', x);
+                circle.setAttribute('cy', y);
+                circle.setAttribute('r', r);
+                circle.setAttribute('fill', color);
+                circle.setAttribute('opacity', '0.7');
+                circle.setAttribute('stroke', color);
+                circle.setAttribute('stroke-width', '2');
+                svg.appendChild(circle);
+
+                // Label (bold white)
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', x);
+                text.setAttribute('y', y);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('dominant-baseline', 'middle');
+                text.setAttribute('fill', '#ffffff');
+                text.setAttribute('font-size', '9');
+                text.setAttribute('font-weight', 'bold');
+                text.textContent = home.name.split(' ')[0];
+                svg.appendChild(text);
+            });
+
+            // Axes
+            const xAxisLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            xAxisLine.setAttribute('x1', padding.left);
+            xAxisLine.setAttribute('y1', padding.top + chartHeight);
+            xAxisLine.setAttribute('x2', width - padding.right);
+            xAxisLine.setAttribute('y2', padding.top + chartHeight);
+            xAxisLine.setAttribute('stroke', '#333');
+            xAxisLine.setAttribute('stroke-width', '1');
+            svg.appendChild(xAxisLine);
+
+            const yAxisLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            yAxisLine.setAttribute('x1', padding.left);
+            yAxisLine.setAttribute('y1', padding.top);
+            yAxisLine.setAttribute('x2', padding.left);
+            yAxisLine.setAttribute('y2', padding.top + chartHeight);
+            yAxisLine.setAttribute('stroke', '#333');
+            yAxisLine.setAttribute('stroke-width', '1');
+            svg.appendChild(yAxisLine);
+
+            // Axis labels (bold white)
+            const xLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            xLabel.setAttribute('x', padding.left + chartWidth / 2);
+            xLabel.setAttribute('y', height - 8);
+            xLabel.setAttribute('text-anchor', 'middle');
+            xLabel.setAttribute('fill', '#ffffff');
+            xLabel.setAttribute('font-weight', 'bold');
+            xLabel.setAttribute('font-size', '8');
+            xLabel.textContent = 'Annual Taxes →';
+            svg.appendChild(xLabel);
+
+            const yLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            yLabel.setAttribute('x', 12);
+            yLabel.setAttribute('y', padding.top + chartHeight / 2);
+            yLabel.setAttribute('text-anchor', 'middle');
+            yLabel.setAttribute('fill', '#ffffff');
+            yLabel.setAttribute('font-weight', 'bold');
+            yLabel.setAttribute('font-size', '8');
+            yLabel.setAttribute('transform', `rotate(-90, 12, ${padding.top + chartHeight / 2})`);
+            yLabel.textContent = '↑ HOA';
+            svg.appendChild(yLabel);
+            
+            // Home address labels at bottom (bold white)
+            homesData.forEach((home, idx) => {
+                const x = padding.left + (home.annual_taxes / maxTax) * chartWidth;
+                const score = scoreTrueCostIndex(home);
+                const scoreColor = getColorFromScore(score);
+                
+                const addressText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                addressText.setAttribute('x', x);
+                addressText.setAttribute('y', padding.top + chartHeight + 15);
+                addressText.setAttribute('text-anchor', 'middle');
+                addressText.setAttribute('fill', '#ffffff');
+                addressText.setAttribute('font-weight', 'bold');
+                addressText.setAttribute('font-size', '8');
+                addressText.textContent = home.name;
+                svg.appendChild(addressText);
+                
+                const scoreBottomText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                scoreBottomText.setAttribute('x', x);
+                scoreBottomText.setAttribute('y', padding.top + chartHeight + 28);
+                scoreBottomText.setAttribute('text-anchor', 'middle');
+                scoreBottomText.setAttribute('fill', scoreColor);
+                scoreBottomText.setAttribute('font-weight', 'bold');
+                scoreBottomText.setAttribute('font-size', '8');
+                scoreBottomText.textContent = `Score: ${Math.round(score)}`;
+                svg.appendChild(scoreBottomText);
+            });
+
+            // Brain widget - smart score winner (left, slightly down)
+            const brainX = width - 35;
+            const brainY = 18;
+            
+            // Brain icon circle
+            const brainCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            brainCircle.setAttribute('cx', brainX);
+            brainCircle.setAttribute('cy', brainY);
+            brainCircle.setAttribute('r', 12);
+            brainCircle.setAttribute('fill', getColorFromScore(bestScore));
+            brainCircle.setAttribute('opacity', '0.8');
+            svg.appendChild(brainCircle);
+
+            // Brain symbol (simplified)
+            const brainSymbol = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            brainSymbol.setAttribute('x', brainX);
+            brainSymbol.setAttribute('y', brainY + 1);
+            brainSymbol.setAttribute('text-anchor', 'middle');
+            brainSymbol.setAttribute('dominant-baseline', 'middle');
+            brainSymbol.setAttribute('fill', '#ffffff');
+            brainSymbol.setAttribute('font-weight', 'bold');
+            brainSymbol.setAttribute('font-size', '14');
+            brainSymbol.textContent = '🧠';
+            svg.appendChild(brainSymbol);
+
+            // SMART Score label
+            const smartScoreText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            smartScoreText.setAttribute('x', brainX);
+            smartScoreText.setAttribute('y', brainY + 18);
+            smartScoreText.setAttribute('text-anchor', 'middle');
+            smartScoreText.setAttribute('fill', '#ffffff');
+            smartScoreText.setAttribute('font-weight', 'bold');
+            smartScoreText.setAttribute('font-size', '8');
+            smartScoreText.textContent = `SMART Score: ${Math.round(bestScore)}`;
+            svg.appendChild(smartScoreText);
+        }
+
+        // ============================================
+        // CHART 4: OWNERSHIP TYPE SCORE
+        // ============================================
+        function renderChart4() {
+            const svg = document.getElementById('chart4');
+            svg.innerHTML = '';
+            const width = 600;
+            const height = 320;
+            const padding = { top: 50, right: 30, bottom: 90, left: 50 };
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
+            const barWidth = chartWidth / homesData.length * 0.55;
+            const barSpacing = chartWidth / homesData.length;
+
+            // Find best ownership score
+            let bestOwnershipScore = scoreOwnershipType(homesData[0].ownership_type);
+            homesData.forEach(home => {
+                const score = scoreOwnershipType(home.ownership_type);
+                if (score > bestOwnershipScore) {
+                    bestOwnershipScore = score;
+                }
+            });
+
+            homesData.forEach((home, idx) => {
+                const score = scoreOwnershipType(home.ownership_type);
+                const x = padding.left + idx * barSpacing + (barSpacing - barWidth) / 2;
+                const barH = (score / 100) * chartHeight;
+                const y = padding.top + chartHeight - barH;
+                const color = getColorFromScore(score);
+
+                // Bar
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', x);
+                rect.setAttribute('y', y);
+                rect.setAttribute('width', barWidth);
+                rect.setAttribute('height', barH);
+                rect.setAttribute('fill', color);
+                rect.setAttribute('rx', '4');
+                svg.appendChild(rect);
+
+                // Score label (bold white)
+                const scoreText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                scoreText.setAttribute('x', x + barWidth / 2);
+                scoreText.setAttribute('y', y - 5);
+                scoreText.setAttribute('text-anchor', 'middle');
+                scoreText.setAttribute('fill', '#ffffff');
+                scoreText.setAttribute('font-weight', 'bold');
+                scoreText.setAttribute('font-size', '11');
+                scoreText.textContent = score;
+                svg.appendChild(scoreText);
+
+                // Ownership type label (bold white)
+                const typeText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                typeText.setAttribute('x', x + barWidth / 2);
+                typeText.setAttribute('y', padding.top + chartHeight + 15);
+                typeText.setAttribute('text-anchor', 'middle');
+                typeText.setAttribute('fill', '#ffffff');
+                typeText.setAttribute('font-weight', 'bold');
+                typeText.setAttribute('font-size', '9');
+                typeText.textContent = home.ownership_type;
+                svg.appendChild(typeText);
+
+                // Scoring rule
+                const ruleText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                ruleText.setAttribute('x', x + barWidth / 2);
+                ruleText.setAttribute('y', padding.top + chartHeight + 28);
+                ruleText.setAttribute('text-anchor', 'middle');
+                ruleText.setAttribute('fill', '#666');
+                ruleText.setAttribute('font-weight', 'normal');
+                ruleText.setAttribute('font-size', '6');
+                ruleText.textContent = `Fee=100 Condo=75 Lease=50`;
+                svg.appendChild(ruleText);
+
+                // Home address (bold white)
+                const nameText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                nameText.setAttribute('x', x + barWidth / 2);
+                nameText.setAttribute('y', padding.top + chartHeight + 39);
+                nameText.setAttribute('text-anchor', 'middle');
+                nameText.setAttribute('fill', '#ffffff');
+                nameText.setAttribute('font-weight', 'bold');
+                nameText.setAttribute('font-size', '8');
+                nameText.textContent = home.name;
+                svg.appendChild(nameText);
+            });
+
+            // Brain widget - smart score winner (left, slightly down)
+            const brainX = width - 35;
+            const brainY = 18;
+            
+            // Brain icon circle
+            const brainCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            brainCircle.setAttribute('cx', brainX);
+            brainCircle.setAttribute('cy', brainY);
+            brainCircle.setAttribute('r', 12);
+            brainCircle.setAttribute('fill', getColorFromScore(bestOwnershipScore));
+            brainCircle.setAttribute('opacity', '0.8');
+            svg.appendChild(brainCircle);
+
+            // Brain symbol (simplified)
+            const brainSymbol = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            brainSymbol.setAttribute('x', brainX);
+            brainSymbol.setAttribute('y', brainY + 1);
+            brainSymbol.setAttribute('text-anchor', 'middle');
+            brainSymbol.setAttribute('dominant-baseline', 'middle');
+            brainSymbol.setAttribute('fill', '#ffffff');
+            brainSymbol.setAttribute('font-weight', 'bold');
+            brainSymbol.setAttribute('font-size', '14');
+            brainSymbol.textContent = '🧠';
+            svg.appendChild(brainSymbol);
+
+            // SMART Score label
+            const smartScoreText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            smartScoreText.setAttribute('x', brainX);
+            smartScoreText.setAttribute('y', brainY + 18);
+            smartScoreText.setAttribute('text-anchor', 'middle');
+            smartScoreText.setAttribute('fill', '#ffffff');
+            smartScoreText.setAttribute('font-weight', 'bold');
+            smartScoreText.setAttribute('font-size', '8');
+            smartScoreText.textContent = `SMART Score: ${Math.round(bestOwnershipScore)}`;
+            svg.appendChild(smartScoreText);
+        }
+
+        // ============================================
+        // CHART 5: DONUT - COST DISTRIBUTION (Taxes vs HOA)
+        // ============================================
+        function renderChart5() {
+            const svg = document.getElementById('chart5');
+            svg.innerHTML = '';
+            const width = 600;
+            const height = 320;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const r = 55;
+            const innerR = 32;
+
+            const totalCost = homesData.reduce((sum, h) => sum + h.annual_taxes + h.hoa_fee_annual, 0);
+            const totalTax = homesData.reduce((sum, h) => sum + h.annual_taxes, 0);
+            const totalHOA = homesData.reduce((sum, h) => sum + h.hoa_fee_annual, 0);
+
+            const taxPercent = (totalTax / totalCost) * 100;
+            const hoaPercent = (totalHOA / totalCost) * 100;
+
+            // Tax arc
+            const taxAngle = (taxPercent / 100) * 2 * Math.PI;
+            const taxX = centerX + r * Math.cos(taxAngle - Math.PI / 2);
+            const taxY = centerY + r * Math.sin(taxAngle - Math.PI / 2);
+            const taxPath = `M ${centerX} ${centerY - r} A ${r} ${r} 0 ${taxPercent > 50 ? 1 : 0} 1 ${taxX} ${taxY} L ${centerX + innerR * Math.cos(taxAngle - Math.PI / 2)} ${centerY + innerR * Math.sin(taxAngle - Math.PI / 2)} A ${innerR} ${innerR} 0 ${taxPercent > 50 ? 1 : 0} 0 ${centerX} ${centerY - innerR} Z`;
+
+            const taxPath_el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            taxPath_el.setAttribute('d', taxPath);
+            taxPath_el.setAttribute('fill', '#2196F3');
+            svg.appendChild(taxPath_el);
+
+            // HOA arc
+            const hoaStartAngle = taxAngle;
+            const hoaEndAngle = hoaStartAngle + (hoaPercent / 100) * 2 * Math.PI;
+            const hoaX = centerX + r * Math.cos(hoaEndAngle - Math.PI / 2);
+            const hoaY = centerY + r * Math.sin(hoaEndAngle - Math.PI / 2);
+            const hoaPath = `M ${taxX} ${taxY} A ${r} ${r} 0 ${hoaPercent > 50 ? 1 : 0} 1 ${hoaX} ${hoaY} L ${centerX + innerR * Math.cos(hoaEndAngle - Math.PI / 2)} ${centerY + innerR * Math.sin(hoaEndAngle - Math.PI / 2)} A ${innerR} ${innerR} 0 ${hoaPercent > 50 ? 1 : 0} 0 ${centerX + innerR * Math.cos(hoaStartAngle - Math.PI / 2)} ${centerY + innerR * Math.sin(hoaStartAngle - Math.PI / 2)} Z`;
+
+            const hoaPath_el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            hoaPath_el.setAttribute('d', hoaPath);
+            hoaPath_el.setAttribute('fill', '#4CAF50');
+            svg.appendChild(hoaPath_el);
+
+            // Center text (bold white)
+            const centerText1 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            centerText1.setAttribute('x', centerX);
+            centerText1.setAttribute('y', centerY - 5);
+            centerText1.setAttribute('text-anchor', 'middle');
+            centerText1.setAttribute('fill', '#ffffff');
+            centerText1.setAttribute('font-size', '14');
+            centerText1.setAttribute('font-weight', 'bold');
+            centerText1.textContent = formatCurrency(totalCost);
+            svg.appendChild(centerText1);
+
+            const centerText2 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            centerText2.setAttribute('x', centerX);
+            centerText2.setAttribute('y', centerY + 12);
+            centerText2.setAttribute('text-anchor', 'middle');
+            centerText2.setAttribute('fill', '#888');
+            centerText2.setAttribute('font-size', '9');
+            centerText2.textContent = 'Portfolio Total';
+            svg.appendChild(centerText2);
+
+            // In-chart legend (bold white)
+            [
+                { color: '#2196F3', label: `Taxes ${taxPercent.toFixed(1)}%` },
+                { color: '#4CAF50', label: `HOA ${hoaPercent.toFixed(1)}%` }
+            ].forEach((item, idx) => {
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', 20);
+                rect.setAttribute('y', 10 + idx * 22);
+                rect.setAttribute('width', 9);
+                rect.setAttribute('height', 9);
+                rect.setAttribute('fill', item.color);
+                rect.setAttribute('rx', '2');
+                svg.appendChild(rect);
+
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', 32);
+                text.setAttribute('y', 18 + idx * 22);
+                text.setAttribute('fill', '#ffffff');
+                text.setAttribute('font-weight', 'bold');
+                text.setAttribute('font-size', '8');
+                text.textContent = item.label;
+                svg.appendChild(text);
+            });
+
+            // Brain widget - smart score winner (top-right)
+            const brainX = width - 25;
+            const brainY = 10;
+            
+            // Brain icon circle
+            const brainCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            brainCircle.setAttribute('cx', brainX);
+            brainCircle.setAttribute('cy', brainY);
+            brainCircle.setAttribute('r', 12);
+            brainCircle.setAttribute('fill', '#4CAF50');
+            brainCircle.setAttribute('opacity', '0.8');
+            svg.appendChild(brainCircle);
+
+            // Brain symbol (simplified)
+            const brainSymbol = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            brainSymbol.setAttribute('x', brainX);
+            brainSymbol.setAttribute('y', brainY + 1);
+            brainSymbol.setAttribute('text-anchor', 'middle');
+            brainSymbol.setAttribute('dominant-baseline', 'middle');
+            brainSymbol.setAttribute('fill', '#ffffff');
+            brainSymbol.setAttribute('font-weight', 'bold');
+            brainSymbol.setAttribute('font-size', '14');
+            brainSymbol.textContent = '🧠';
+            svg.appendChild(brainSymbol);
+
+            // SMART Score label
+            const smartScoreText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            smartScoreText.setAttribute('x', brainX);
+            smartScoreText.setAttribute('y', brainY + 18);
+            smartScoreText.setAttribute('text-anchor', 'middle');
+            smartScoreText.setAttribute('fill', '#ffffff');
+            smartScoreText.setAttribute('font-weight', 'bold');
+            smartScoreText.setAttribute('font-size', '8');
+            smartScoreText.textContent = `SMART Score: Portfolio`;
+            svg.appendChild(smartScoreText);
+        }
+
+        // ============================================
+        // CHART 6: TRUE COST OF OWNERSHIP INDEX
+        // ============================================
+        function renderChart6() {
+            const svg = document.getElementById('chart6');
+            svg.innerHTML = '';
+            const width = 600;
+            const height = 320;
+            const padding = { top: 50, right: 30, bottom: 90, left: 50 };
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
+            const barWidth = chartWidth / homesData.length * 0.55;
+            const barSpacing = chartWidth / homesData.length;
+
+            // Find best cost index score
+            let bestCostScore = scoreTrueCostIndex(homesData[0]);
+            homesData.forEach(home => {
+                const score = scoreTrueCostIndex(home);
+                if (score > bestCostScore) {
+                    bestCostScore = score;
+                }
+            });
+
+            homesData.forEach((home, idx) => {
+                const score = scoreTrueCostIndex(home);
+                const totalCost = home.annual_taxes + home.hoa_fee_annual;
+                const x = padding.left + idx * barSpacing + (barSpacing - barWidth) / 2;
+                const barH = (score / 100) * chartHeight;
+                const y = padding.top + chartHeight - barH;
+                const color = getColorFromScore(score);
+
+                // Bar
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', x);
+                rect.setAttribute('y', y);
+                rect.setAttribute('width', barWidth);
+                rect.setAttribute('height', barH);
+                rect.setAttribute('fill', color);
+                rect.setAttribute('rx', '4');
+                svg.appendChild(rect);
+
+                // Score label (bold white)
+                const scoreText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                scoreText.setAttribute('x', x + barWidth / 2);
+                scoreText.setAttribute('y', y - 5);
+                scoreText.setAttribute('text-anchor', 'middle');
+                scoreText.setAttribute('fill', '#ffffff');
+                scoreText.setAttribute('font-size', '12');
+                scoreText.setAttribute('font-weight', 'bold');
+                scoreText.textContent = Math.round(score);
+                svg.appendChild(scoreText);
+
+                // Total cost label (bold white)
+                const costText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                costText.setAttribute('x', x + barWidth / 2);
+                costText.setAttribute('y', padding.top + chartHeight + 15);
+                costText.setAttribute('text-anchor', 'middle');
+                costText.setAttribute('fill', '#ffffff');
+                costText.setAttribute('font-weight', 'bold');
+                costText.setAttribute('font-size', '9');
+                costText.textContent = formatCurrency(totalCost);
+                svg.appendChild(costText);
+
+                // Calculation note
+                const calcText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                calcText.setAttribute('x', x + barWidth / 2);
+                calcText.setAttribute('y', padding.top + chartHeight + 28);
+                calcText.setAttribute('text-anchor', 'middle');
+                calcText.setAttribute('fill', '#666');
+                calcText.setAttribute('font-weight', 'normal');
+                calcText.setAttribute('font-size', '6');
+                calcText.textContent = `Lower Cost = Higher Score`;
+                svg.appendChild(calcText);
+
+                // Home address (bold white)
+                const nameText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                nameText.setAttribute('x', x + barWidth / 2);
+                nameText.setAttribute('y', padding.top + chartHeight + 39);
+                nameText.setAttribute('text-anchor', 'middle');
+                nameText.setAttribute('fill', '#ffffff');
+                nameText.setAttribute('font-weight', 'bold');
+                nameText.setAttribute('font-size', '8');
+                nameText.textContent = home.name;
+                svg.appendChild(nameText);
+            });
+
+            // Brain widget - smart score winner (left, slightly down)
+            const brainX = width - 35;
+            const brainY = 18;
+            
+            // Brain icon circle
+            const brainCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            brainCircle.setAttribute('cx', brainX);
+            brainCircle.setAttribute('cy', brainY);
+            brainCircle.setAttribute('r', 12);
+            brainCircle.setAttribute('fill', getColorFromScore(bestCostScore));
+            brainCircle.setAttribute('opacity', '0.8');
+            svg.appendChild(brainCircle);
+
+            // Brain symbol (simplified)
+            const brainSymbol = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            brainSymbol.setAttribute('x', brainX);
+            brainSymbol.setAttribute('y', brainY + 1);
+            brainSymbol.setAttribute('text-anchor', 'middle');
+            brainSymbol.setAttribute('dominant-baseline', 'middle');
+            brainSymbol.setAttribute('fill', '#ffffff');
+            brainSymbol.setAttribute('font-weight', 'bold');
+            brainSymbol.setAttribute('font-size', '14');
+            brainSymbol.textContent = '🧠';
+            svg.appendChild(brainSymbol);
+
+            // SMART Score label
+            const smartScoreText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            smartScoreText.setAttribute('x', brainX);
+            smartScoreText.setAttribute('y', brainY + 18);
+            smartScoreText.setAttribute('text-anchor', 'middle');
+            smartScoreText.setAttribute('fill', '#ffffff');
+            smartScoreText.setAttribute('font-weight', 'bold');
+            smartScoreText.setAttribute('font-size', '8');
+            smartScoreText.textContent = `SMART Score: ${Math.round(bestCostScore)}`;
+            svg.appendChild(smartScoreText);
+        }
+
+        // ============================================
+        // CHART 7: MONTHLY vs ANNUAL COST
+        // ============================================
+        function renderChart7() {
+            const svg = document.getElementById('chart7');
+            svg.innerHTML = '';
+            const width = 600;
+            const height = 320;
+            const padding = { top: 50, right: 30, bottom: 80, left: 60 };
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
+            const pairSpacing = chartWidth / homesData.length;
+            const barWidth = pairSpacing * 0.32;
+
+            const maxCost = Math.max(...homesData.map(h => h.annual_taxes + h.hoa_fee_annual));
+            const scale = chartHeight / maxCost;
+
+            // Find lowest cost home
+            let lowestCost = Math.min(...homesData.map(h => h.annual_taxes + h.hoa_fee_annual));
+            let bestCostHome = homesData.find(h => h.annual_taxes + h.hoa_fee_annual === lowestCost);
+            let bestMonthlyScore = scoreTrueCostIndex(bestCostHome);
+
+            homesData.forEach((home, idx) => {
+                const annualCost = home.annual_taxes + home.hoa_fee_annual;
+                const monthlyCost = annualCost / 12;
+
+                const baseX = padding.left + idx * pairSpacing;
+                const monthlyX = baseX + (pairSpacing - barWidth * 2) / 2;
+                const annualX = monthlyX + barWidth + 8;
+
+                // Monthly bar
+                const monthlyH = monthlyCost * scale;
+                const monthlyY = padding.top + chartHeight - monthlyH;
+                const monthlyRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                monthlyRect.setAttribute('x', monthlyX);
+                monthlyRect.setAttribute('y', monthlyY);
+                monthlyRect.setAttribute('width', barWidth);
+                monthlyRect.setAttribute('height', monthlyH);
+                monthlyRect.setAttribute('fill', '#FF9800');
+                monthlyRect.setAttribute('rx', '4');
+                svg.appendChild(monthlyRect);
+
+                // Annual bar
+                const annualH = annualCost * scale;
+                const annualY = padding.top + chartHeight - annualH;
+                const annualRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                annualRect.setAttribute('x', annualX);
+                annualRect.setAttribute('y', annualY);
+                annualRect.setAttribute('width', barWidth);
+                annualRect.setAttribute('height', annualH);
+                annualRect.setAttribute('fill', '#2196F3');
+                annualRect.setAttribute('rx', '4');
+                svg.appendChild(annualRect);
+
+                // Home address (bold white)
+                const nameText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                nameText.setAttribute('x', baseX + pairSpacing / 2);
+                nameText.setAttribute('y', padding.top + chartHeight + 18);
+                nameText.setAttribute('text-anchor', 'middle');
+                nameText.setAttribute('fill', '#ffffff');
+                nameText.setAttribute('font-weight', 'bold');
+                nameText.setAttribute('font-size', '8');
+                nameText.textContent = home.name;
+                svg.appendChild(nameText);
+            });
+
+            // Y-axis labels (cost scale)
+            const yAxisSteps = [0, Math.round(maxCost / 4), Math.round(maxCost / 2), Math.round(3 * maxCost / 4), Math.round(maxCost)];
+            yAxisSteps.forEach(val => {
+                const y = padding.top + chartHeight - (val / maxCost) * chartHeight;
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', padding.left - 10);
+                text.setAttribute('y', y);
+                text.setAttribute('text-anchor', 'end');
+                text.setAttribute('dominant-baseline', 'middle');
+                text.setAttribute('fill', '#666');
+                text.setAttribute('font-size', '8');
+                text.textContent = formatCurrency(val);
+                svg.appendChild(text);
+            });
+
+            // X-axis labels (home names)
+            homesData.forEach((home, idx) => {
+                const x = padding.left + idx * pairSpacing + pairSpacing / 2;
+                const xText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                xText.setAttribute('x', x);
+                xText.setAttribute('y', padding.top + chartHeight + 35);
+                xText.setAttribute('text-anchor', 'middle');
+                xText.setAttribute('fill', '#888');
+                xText.setAttribute('font-size', '7');
+                xText.textContent = `Home ${idx + 1}`;
+                svg.appendChild(xText);
+            });
+
+            // In-chart legend (bold white, top-left)
+            [
+                { color: '#FF9800', label: 'Monthly' },
+                { color: '#2196F3', label: 'Annual' }
+            ].forEach((item, idx) => {
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', padding.left + idx * 80);
+                rect.setAttribute('y', 10);
+                rect.setAttribute('width', 9);
+                rect.setAttribute('height', 9);
+                rect.setAttribute('fill', item.color);
+                rect.setAttribute('rx', '2');
+                svg.appendChild(rect);
+
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', padding.left + idx * 80 + 15);
+                text.setAttribute('y', 17);
+                text.setAttribute('fill', '#ffffff');
+                text.setAttribute('font-weight', 'bold');
+                text.setAttribute('font-size', '8');
+                text.textContent = item.label;
+                svg.appendChild(text);
+            });
+
+            // Brain widget - smart score winner (left, slightly down)
+            const brainX = width - 35;
+            const brainY = 18;
+            
+            // Brain icon circle
+            const brainCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            brainCircle.setAttribute('cx', brainX);
+            brainCircle.setAttribute('cy', brainY);
+            brainCircle.setAttribute('r', 12);
+            brainCircle.setAttribute('fill', getColorFromScore(bestMonthlyScore));
+            brainCircle.setAttribute('opacity', '0.8');
+            svg.appendChild(brainCircle);
+
+            // Brain symbol (simplified)
+            const brainSymbol = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            brainSymbol.setAttribute('x', brainX);
+            brainSymbol.setAttribute('y', brainY + 1);
+            brainSymbol.setAttribute('text-anchor', 'middle');
+            brainSymbol.setAttribute('dominant-baseline', 'middle');
+            brainSymbol.setAttribute('fill', '#ffffff');
+            brainSymbol.setAttribute('font-weight', 'bold');
+            brainSymbol.setAttribute('font-size', '14');
+            brainSymbol.textContent = '🧠';
+            svg.appendChild(brainSymbol);
+
+            // SMART Score label
+            const smartScoreText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            smartScoreText.setAttribute('x', brainX);
+            smartScoreText.setAttribute('y', brainY + 18);
+            smartScoreText.setAttribute('text-anchor', 'middle');
+            smartScoreText.setAttribute('fill', '#ffffff');
+            smartScoreText.setAttribute('font-weight', 'bold');
+            smartScoreText.setAttribute('font-size', '8');
+            smartScoreText.textContent = `SMART Score: ${Math.round(bestMonthlyScore)}`;
+            svg.appendChild(smartScoreText);
+        }
+
+        // ============================================
+        // CHART 8: FINANCIAL EFFICIENCY RADAR
+        // ============================================
+        function renderChart8() {
+            const svg = document.getElementById('chart8');
+            svg.innerHTML = '';
+            const width = 600;
+            const height = 320;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = 70;
+            const numAxes = 4;
+
+            const metrics = ['HOA Score', 'Tax Rate', 'Ownership', 'Cost Index'];
+            const angles = [];
+            for (let i = 0; i < numAxes; i++) {
+                angles.push((i * 2 * Math.PI) / numAxes - Math.PI / 2);
+            }
+
+            // Draw axes and labels
+            angles.forEach((angle, idx) => {
+                const x = centerX + radius * Math.cos(angle);
+                const y = centerY + radius * Math.sin(angle);
+
+                // Axis line
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', centerX);
+                line.setAttribute('y1', centerY);
+                line.setAttribute('x2', x);
+                line.setAttribute('y2', y);
+                line.setAttribute('stroke', '#333');
+                line.setAttribute('stroke-width', '1');
+                svg.appendChild(line);
+
+                // Label (bold white)
+                const labelX = centerX + (radius + 22) * Math.cos(angle);
+                const labelY = centerY + (radius + 22) * Math.sin(angle);
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', labelX);
+                text.setAttribute('y', labelY);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('dominant-baseline', 'middle');
+                text.setAttribute('fill', '#ffffff');
+                text.setAttribute('font-weight', 'bold');
+                text.setAttribute('font-size', '9');
+                text.textContent = metrics[idx];
+                svg.appendChild(text);
+            });
+
+            // Draw concentric circles (scale markers)
+            for (let i = 1; i <= 5; i++) {
+                const r = (radius / 5) * i;
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', centerX);
+                circle.setAttribute('cy', centerY);
+                circle.setAttribute('r', r);
+                circle.setAttribute('fill', 'none');
+                circle.setAttribute('stroke', '#222');
+                circle.setAttribute('stroke-width', '0.5');
+                svg.appendChild(circle);
+            }
+
+            // Plot data for each home
+            const colors = ['#FF4444', '#FF9800', '#4CAF50'];
+            homesData.forEach((home, homeIdx) => {
+                const scores = [
+                    scoreHOA(home.hoa_fee_annual, home.ownership_type),
+                    scoreTaxRate(home.property_tax_rate),
+                    scoreOwnershipType(home.ownership_type),
+                    scoreTrueCostIndex(home)
+                ];
+
+                const points = [];
+                scores.forEach((score, metricIdx) => {
+                    const angle = angles[metricIdx];
+                    const r = (score / 100) * radius;
+                    const x = centerX + r * Math.cos(angle);
+                    const y = centerY + r * Math.sin(angle);
+                    points.push(`${x},${y}`);
+                });
+
+                // Close polygon
+                points.push(points[0]);
+
+                // Draw polygon
+                const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                polygon.setAttribute('points', points.join(' '));
+                polygon.setAttribute('fill', colors[homeIdx]);
+                polygon.setAttribute('opacity', '0.3');
+                polygon.setAttribute('stroke', colors[homeIdx]);
+                polygon.setAttribute('stroke-width', '2');
+                svg.appendChild(polygon);
+
+                // Draw points
+                for (let i = 0; i < scores.length; i++) {
+                    const angle = angles[i];
+                    const r = (scores[i] / 100) * radius;
+                    const x = centerX + r * Math.cos(angle);
+                    const y = centerY + r * Math.sin(angle);
+
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', x);
+                    circle.setAttribute('cy', y);
+                    circle.setAttribute('r', '3');
+                    circle.setAttribute('fill', colors[homeIdx]);
+                    circle.setAttribute('stroke', '#fff');
+                    circle.setAttribute('stroke-width', '1');
+                    svg.appendChild(circle);
+                }
+            });
+
+            // Legend (bold white)
+            homesData.forEach((home, idx) => {
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', 10);
+                rect.setAttribute('y', 10 + idx * 22);
+                rect.setAttribute('width', 10);
+                rect.setAttribute('height', 10);
+                rect.setAttribute('fill', colors[idx]);
+                rect.setAttribute('rx', '2');
+                svg.appendChild(rect);
+
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', 24);
+                text.setAttribute('y', 18 + idx * 22);
+                text.setAttribute('fill', '#ffffff');
+                text.setAttribute('font-weight', 'bold');
+                text.setAttribute('font-size', '9');
+                text.textContent = home.name;
+                svg.appendChild(text);
+            });
+
+            // Brain widget - smart score winner (top-right)
+            const brainX = width - 25;
+            const brainY = 10;
+            
+            // Find best average radar score
+            let bestRadarScore = 0;
+            homesData.forEach((home) => {
+                const scores = [
+                    scoreHOA(home.hoa_fee_annual, home.ownership_type),
+                    scoreTaxRate(home.property_tax_rate),
+                    scoreOwnershipType(home.ownership_type),
+                    scoreTrueCostIndex(home)
+                ];
+                const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+                if (avgScore > bestRadarScore) {
+                    bestRadarScore = avgScore;
+                }
+            });
+            
+            // Brain icon circle
+            const brainCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            brainCircle.setAttribute('cx', brainX);
+            brainCircle.setAttribute('cy', brainY);
+            brainCircle.setAttribute('r', 12);
+            brainCircle.setAttribute('fill', getColorFromScore(bestRadarScore));
+            brainCircle.setAttribute('opacity', '0.8');
+            svg.appendChild(brainCircle);
+
+            // Brain symbol (simplified)
+            const brainSymbol = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            brainSymbol.setAttribute('x', brainX);
+            brainSymbol.setAttribute('y', brainY + 1);
+            brainSymbol.setAttribute('text-anchor', 'middle');
+            brainSymbol.setAttribute('dominant-baseline', 'middle');
+            brainSymbol.setAttribute('fill', '#ffffff');
+            brainSymbol.setAttribute('font-weight', 'bold');
+            brainSymbol.setAttribute('font-size', '14');
+            brainSymbol.textContent = '🧠';
+            svg.appendChild(brainSymbol);
+
+            // SMART Score label
+            const smartScoreText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            smartScoreText.setAttribute('x', brainX);
+            smartScoreText.setAttribute('y', brainY + 18);
+            smartScoreText.setAttribute('text-anchor', 'middle');
+            smartScoreText.setAttribute('fill', '#ffffff');
+            smartScoreText.setAttribute('font-weight', 'bold');
+            smartScoreText.setAttribute('font-size', '8');
+            smartScoreText.textContent = `SMART Score: ${Math.round(bestRadarScore)}`;
+            svg.appendChild(smartScoreText);
+        }
+
+        // ============================================
+        // COMPARISON TABLE
+        // ============================================
+        function renderComparisonTable() {
+            const table = document.getElementById('comparisonTable');
+
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Home</th>
+                            <th>Ownership Type</th>
+                            <th>HOA Fee/Year</th>
+                            <th>HOA Score</th>
+                            <th>Annual Tax</th>
+                            <th>Tax Rate</th>
+                            <th>Tax Score</th>
+                            <th>Total Cost</th>
+                            <th>Cost Index</th>
+                            <th>Tax Exemptions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            homesData.forEach(home => {
+                const hoaScore = scoreHOA(home.hoa_fee_annual, home.ownership_type);
+                const taxScore = scoreTaxRate(home.property_tax_rate);
+                const costIndex = scoreTrueCostIndex(home);
+                const totalCost = home.annual_taxes + home.hoa_fee_annual;
+
+                html += `
+                    <tr>
+                        <td><strong>${home.name}</strong></td>
+                        <td>${home.ownership_type}</td>
+                        <td>${formatCurrency(home.hoa_fee_annual)}</td>
+                        <td><span class="badge" style="background: ${getColorFromScore(hoaScore)}33; color: ${getColorFromScore(hoaScore)}; border-color: ${getColorFromScore(hoaScore)};">${Math.round(hoaScore)}</span></td>
+                        <td>${formatCurrency(home.annual_taxes)}</td>
+                        <td>${home.property_tax_rate.toFixed(2)}%</td>
+                        <td><span class="badge" style="background: ${getColorFromScore(taxScore)}33; color: ${getColorFromScore(taxScore)}; border-color: ${getColorFromScore(taxScore)};">${Math.round(taxScore)}</span></td>
+                        <td><strong>${formatCurrency(totalCost)}</strong></td>
+                        <td><span class="badge" style="background: ${getColorFromScore(costIndex)}33; color: ${getColorFromScore(costIndex)}; border-color: ${getColorFromScore(costIndex)};">${Math.round(costIndex)}</span></td>
+                        <td>${home.tax_exemptions ? `<span class="badge">${home.tax_exemptions}</span>` : '—'}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+
+            table.innerHTML = html;
+        }
+
+        // ============================================
+        // INIT
+        // ============================================
+        function init() {
+            renderHomeSelector();
+            renderStats();
+            renderChart1();
+            renderChart2();
+            renderChart3();
+            renderChart4();
+            renderChart5();
+            renderChart6();
+            renderChart7();
+            renderChart8();
+            renderComparisonTable();
+            renderAllLegends();
+        }
+
+        init();
+    </script>
+</body>
+</html>

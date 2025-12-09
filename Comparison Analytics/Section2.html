@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>LLM Dashboard Comparison</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+      color: white; 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      overflow-x: auto;
+      padding: 20px;
+    }
+    .header-main {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 20px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .header-main h1 {
+      font-size: 24px;
+      font-weight: 300;
+      margin-bottom: 8px;
+    }
+    .header-main .gradient-text {
+      background: linear-gradient(90deg, #8b5cf6, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: bold;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+      max-width: 1800px;
+      margin: 0 auto;
+    }
+    .col {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 12px;
+      min-height: 600px;
+    }
+    .col-header {
+      background: rgba(0,0,0,0.5);
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    .llm-name { 
+      font-size: 14px; 
+      font-weight: bold; 
+      margin-bottom: 4px;
+      letter-spacing: 0.5px;
+    }
+    .llm-desc { 
+      font-size: 10px; 
+      color: rgba(255,255,255,0.5);
+    }
+    .card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .card-title {
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: rgba(255,255,255,0.8);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding-bottom: 6px;
+    }
+    .bar-chart {
+      display: flex;
+      align-items: flex-end;
+      height: 120px;
+      gap: 8px;
+      padding: 8px;
+    }
+    .bar-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .bar-stack {
+      width: 100%;
+      display: flex;
+      flex-direction: column-reverse;
+      border-radius: 4px 4px 0 0;
+      overflow: hidden;
+    }
+    .bar-segment {
+      width: 100%;
+      transition: opacity 0.3s;
+    }
+    .bar-segment:hover { opacity: 1 !important; }
+    .bar-label {
+      font-size: 9px;
+      color: rgba(255,255,255,0.6);
+      margin-top: 6px;
+      text-align: center;
+    }
+    .radar-chart {
+      position: relative;
+      width: 140px;
+      height: 140px;
+      margin: 0 auto;
+    }
+    .radar-bg {
+      position: absolute;
+      inset: 0;
+    }
+    .radar-polygon {
+      fill-opacity: 0.3;
+      stroke-width: 2;
+    }
+    .radar-label {
+      font-size: 8px;
+      fill: rgba(255,255,255,0.6);
+      text-anchor: middle;
+    }
+    table {
+      width: 100%;
+      font-size: 9px;
+      border-collapse: collapse;
+      color: rgba(255,255,255,0.7);
+    }
+    th, td {
+      padding: 6px 4px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    th { 
+      color: rgba(255,255,255,0.5);
+      font-weight: 600;
+      font-size: 8px;
+    }
+    .vertical-bars {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 12px;
+      height: 120px;
+      padding: 12px;
+    }
+    .v-bar-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .v-bar {
+      width: 24px;
+      border-radius: 4px 4px 0 0;
+      opacity: 0.85;
+      transition: opacity 0.3s;
+    }
+    .v-bar:hover { opacity: 1; }
+    .v-bar-value {
+      font-size: 14px;
+      font-weight: bold;
+      margin-top: 6px;
+    }
+    .v-bar-label {
+      font-size: 9px;
+      color: rgba(255,255,255,0.5);
+      margin-top: 4px;
+    }
+    .placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 400px;
+      color: rgba(255,255,255,0.3);
+      font-size: 12px;
+      text-align: center;
+    }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .stat-box {
+      background: rgba(255,255,255,0.03);
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    .stat-label {
+      font-size: 8px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 4px;
+    }
+    .stat-value {
+      font-size: 12px;
+      font-weight: bold;
+      color: rgba(255,255,255,0.9);
+    }
+    
+    /* Colors */
+    .gemini { color: #8b5cf6; }
+    .copilot { color: #06b6d4; }
+    .grok { color: #a78bfa; }
+    .chatgpt { color: #f97316; }
+  </style>
+</head>
+<body>
+  <div class="header-main">
+    <h1>LLM Dashboard <span class="gradient-text">Comparison</span></h1>
+    <p style="font-size: 12px; color: rgba(255,255,255,0.5);">6 AI Implementations Side-by-Side</p>
+  </div>
+
+  <div class="container">
+    <!-- COLUMN 1: GEMINI -->
+    <div class="col">
+      <div class="col-header">
+        <div class="llm-name gemini">GEMINI</div>
+        <div class="llm-desc">Stacked Bar Focus</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Room Composition</div>
+        <div class="bar-chart">
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar-segment" style="height: 20px; background: #818cf8; opacity: 0.8;"></div>
+              <div class="bar-segment" style="height: 20px; background: #34d399; opacity: 0.8;"></div>
+              <div class="bar-segment" style="height: 0px; background: #f472b6; opacity: 0.8;"></div>
+            </div>
+            <div class="bar-label">Obsidian</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar-segment" style="height: 50px; background: #818cf8; opacity: 0.8;"></div>
+              <div class="bar-segment" style="height: 40px; background: #34d399; opacity: 0.8;"></div>
+              <div class="bar-segment" style="height: 20px; background: #f472b6; opacity: 0.8;"></div>
+            </div>
+            <div class="bar-label">Sapphire</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar-segment" style="height: 30px; background: #818cf8; opacity: 0.8;"></div>
+              <div class="bar-segment" style="height: 20px; background: #34d399; opacity: 0.8;"></div>
+              <div class="bar-segment" style="height: 10px; background: #f472b6; opacity: 0.8;"></div>
+            </div>
+            <div class="bar-label">Quartz</div>
+          </div>
+        </div>
+        <div style="margin-top: 12px; padding: 8px; background: rgba(139,92,246,0.1); border-radius: 6px; font-size: 9px; color: rgba(255,255,255,0.6); line-height: 1.4;">
+          <div style="color: #818cf8; font-weight: bold; margin-bottom: 4px;">Legend:</div>
+          <div style="display: flex; gap: 12px;">
+            <div><span style="display: inline-block; width: 8px; height: 8px; background: #818cf8; border-radius: 2px; margin-right: 4px;"></span>Bedrooms</div>
+            <div><span style="display: inline-block; width: 8px; height: 8px; background: #34d399; border-radius: 2px; margin-right: 4px;"></span>Full Baths</div>
+            <div><span style="display: inline-block; width: 8px; height: 8px; background: #f472b6; border-radius: 2px; margin-right: 4px;"></span>Half Baths</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="background: rgba(139,92,246,0.05); border-color: rgba(139,92,246,0.2);">
+        <div class="card-title" style="color: #8b5cf6;">✓ Duplicates Removed</div>
+        <div style="padding: 12px; font-size: 10px; color: rgba(255,255,255,0.6); line-height: 1.6;">
+          <div style="margin-bottom: 8px;">
+            <span style="color: rgba(255,255,255,0.4);">Radar Chart →</span> <span style="color: #a78bfa;">See Grok</span>
+          </div>
+          <div style="margin-bottom: 8px;">
+            <span style="color: rgba(255,255,255,0.4);">Vertical Bars →</span> <span style="color: #14b8a6;">See Claude</span>
+          </div>
+          <div>
+            <span style="color: rgba(255,255,255,0.4);">Details Table →</span> <span style="color: #a78bfa;">See Grok</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUMN 2: COPILOT -->
+    <div class="col">
+      <div class="col-header">
+        <div class="llm-name copilot">COPILOT</div>
+        <div class="llm-desc">Business Metrics</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Size vs Value Scatter</div>
+        <svg viewBox="0 0 180 130" style="width: 100%; height: 130px;">
+          <!-- Axes -->
+          <line x1="20" y1="110" x2="170" y2="110" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+          <line x1="20" y1="10" x2="20" y2="110" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+          <!-- Grid lines -->
+          <line x1="20" y1="80" x2="170" y2="80" stroke="rgba(255,255,255,0.03)" stroke-width="1" stroke-dasharray="2,2"/>
+          <line x1="20" y1="50" x2="170" y2="50" stroke="rgba(255,255,255,0.03)" stroke-width="1" stroke-dasharray="2,2"/>
+          <line x1="70" y1="10" x2="70" y2="110" stroke="rgba(255,255,255,0.03)" stroke-width="1" stroke-dasharray="2,2"/>
+          <line x1="120" y1="10" x2="120" y2="110" stroke="rgba(255,255,255,0.03)" stroke-width="1" stroke-dasharray="2,2"/>
+          <!-- Regression line -->
+          <line x1="30" y1="95" x2="160" y2="25" stroke="#06b6d4" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.5"/>
+          <!-- Data points -->
+          <circle cx="45" cy="85" r="6" fill="#10b981" opacity="0.8"/>
+          <circle cx="110" cy="40" r="9" fill="#06b6d4" opacity="0.8"/>
+          <circle cx="80" cy="65" r="7" fill="#34d399" opacity="0.8"/>
+          <!-- Labels -->
+          <text x="45" y="100" font-size="7" fill="rgba(255,255,255,0.4)" text-anchor="middle">1.8k</text>
+          <text x="110" y="35" font-size="7" fill="rgba(255,255,255,0.4)" text-anchor="middle">4.2k</text>
+          <text x="80" y="60" font-size="7" fill="rgba(255,255,255,0.4)" text-anchor="middle">2.4k</text>
+          <text x="90" y="125" font-size="8" fill="rgba(255,255,255,0.4)" text-anchor="middle">Living Sq Ft</text>
+        </svg>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Affordability Index</div>
+        <div style="padding: 8px;">
+          <div style="margin-bottom: 8px;">
+            <div style="font-size: 9px; color: rgba(255,255,255,0.5); margin-bottom: 3px;">Obsidian Loft</div>
+            <div style="background: rgba(255,255,255,0.05); height: 16px; border-radius: 8px; overflow: hidden;">
+              <div style="background: linear-gradient(90deg, #10b981, #06b6d4); width: 85%; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px;">
+                <span style="font-size: 8px; font-weight: bold;">85%</span>
+              </div>
+            </div>
+          </div>
+          <div style="margin-bottom: 8px;">
+            <div style="font-size: 9px; color: rgba(255,255,255,0.5); margin-bottom: 3px;">Sapphire Estate</div>
+            <div style="background: rgba(255,255,255,0.05); height: 16px; border-radius: 8px; overflow: hidden;">
+              <div style="background: linear-gradient(90deg, #f59e0b, #ef4444); width: 45%; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px;">
+                <span style="font-size: 8px; font-weight: bold;">45%</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size: 9px; color: rgba(255,255,255,0.5); margin-bottom: 3px;">Quartz Villa</div>
+            <div style="background: rgba(255,255,255,0.05); height: 16px; border-radius: 8px; overflow: hidden;">
+              <div style="background: linear-gradient(90deg, #34d399, #06b6d4); width: 72%; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px;">
+                <span style="font-size: 8px; font-weight: bold;">72%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Monthly Energy Cost Projection</div>
+        <svg viewBox="0 0 180 90" style="width: 100%; height: 90px;">
+          <!-- Area chart -->
+          <defs>
+            <linearGradient id="energyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" style="stop-color:#06b6d4;stop-opacity:0.4"/>
+              <stop offset="100%" style="stop-color:#06b6d4;stop-opacity:0.05"/>
+            </linearGradient>
+          </defs>
+          <!-- Grid -->
+          <line x1="20" y1="75" x2="170" y2="75" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+          <line x1="20" y1="50" x2="170" y2="50" stroke="rgba(255,255,255,0.03)" stroke-width="1" stroke-dasharray="2,2"/>
+          <line x1="20" y1="25" x2="170" y2="25" stroke="rgba(255,255,255,0.03)" stroke-width="1" stroke-dasharray="2,2"/>
+          <!-- Area fill -->
+          <path d="M 20,70 L 45,55 L 70,60 L 95,45 L 120,50 L 145,40 L 170,35 L 170,75 L 20,75 Z" 
+                fill="url(#energyGrad)"/>
+          <!-- Line -->
+          <polyline points="20,70 45,55 70,60 95,45 120,50 145,40 170,35" 
+                    fill="none" stroke="#06b6d4" stroke-width="2"/>
+          <!-- Data points -->
+          <circle cx="45" cy="55" r="3" fill="#06b6d4"/>
+          <circle cx="95" cy="45" r="3" fill="#06b6d4"/>
+          <circle cx="145" cy="40" r="3" fill="#06b6d4"/>
+          <!-- Labels -->
+          <text x="20" y="88" font-size="7" fill="rgba(255,255,255,0.4)">Jan</text>
+          <text x="95" y="88" font-size="7" fill="rgba(255,255,255,0.4)" text-anchor="middle">Jun</text>
+          <text x="170" y="88" font-size="7" fill="rgba(255,255,255,0.4)" text-anchor="end">Dec</text>
+        </svg>
+      </div>
+
+      <div class="card" style="background: rgba(6,182,212,0.05); border-color: rgba(6,182,212,0.2);">
+        <div class="card-title" style="color: #06b6d4;">✓ Duplicates Removed</div>
+        <div style="padding: 12px; font-size: 10px; color: rgba(255,255,255,0.6); line-height: 1.6;">
+          <div style="margin-bottom: 8px;">
+            <span style="color: rgba(255,255,255,0.4);">Neighborhood Radar →</span> <span style="color: #a78bfa;">See Grok</span>
+          </div>
+          <div style="margin-bottom: 8px;">
+            <span style="color: rgba(255,255,255,0.4);">Comparison Matrix →</span> <span style="color: #a78bfa;">See Grok</span>
+          </div>
+          <div>
+            <span style="color: rgba(255,255,255,0.4);">Key Metrics Stats →</span> <span style="color: #a78bfa;">See Grok</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUMN 3: GROK -->
+    <div class="col">
+      <div class="col-header">
+        <div class="llm-name grok">GROK</div>
+        <div class="llm-desc">7D + Parallel</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">5D Radar</div>
+        <svg class="radar-chart" viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="80" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+          <circle cx="100" cy="100" r="60" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+          <circle cx="100" cy="100" r="40" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+          <line x1="100" y1="100" x2="100" y2="20" stroke="rgba(255,255,255,0.05)"/>
+          <line x1="100" y1="100" x2="169" y2="69" stroke="rgba(255,255,255,0.05)"/>
+          <line x1="100" y1="100" x2="169" y2="131" stroke="rgba(255,255,255,0.05)"/>
+          <line x1="100" y1="100" x2="100" y2="180" stroke="rgba(255,255,255,0.05)"/>
+          <line x1="100" y1="100" x2="31" y2="131" stroke="rgba(255,255,255,0.05)"/>
+          <polygon points="100,40 145,70 160,115 100,150 50,125 65,65" 
+                   fill="#8884d8" fill-opacity="0.3" stroke="#8884d8" stroke-width="2"/>
+          <text x="100" y="15" class="radar-label">Beds</text>
+          <text x="180" y="70" class="radar-label">Baths</text>
+          <text x="180" y="135" class="radar-label">SqFt</text>
+          <text x="100" y="195" class="radar-label">Stories</text>
+          <text x="20" y="135" class="radar-label">Garage</text>
+        </svg>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Dimensions</div>
+        <div class="bar-chart">
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar-segment" style="height: 40px; background: #8884d8; opacity: 0.8;"></div>
+            </div>
+            <div class="bar-label">Beds</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar-segment" style="height: 60px; background: #82ca9d; opacity: 0.8;"></div>
+            </div>
+            <div class="bar-label">Baths</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar-segment" style="height: 50px; background: #ffc658; opacity: 0.8;"></div>
+            </div>
+            <div class="bar-label">Stories</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Comparison Table</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Obsidian</th>
+              <th>Sapphire</th>
+              <th>Quartz</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Beds</td><td>2</td><td>5</td><td>3</td></tr>
+            <tr><td>Full Ba</td><td>2</td><td>4</td><td>2</td></tr>
+            <tr><td>Half Ba</td><td>0</td><td>2</td><td>1</td></tr>
+            <tr><td>SqFt</td><td>1,850</td><td>4,200</td><td>2,400</td></tr>
+            <tr><td>Year</td><td>2019</td><td>2012</td><td>1998</td></tr>
+            <tr><td>Stories</td><td>1</td><td>2</td><td>3</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Quick Stats</div>
+        <div class="stat-grid">
+          <div class="stat-box">
+            <div class="stat-label">Avg Beds</div>
+            <div class="stat-value">3.3</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Avg SqFt</div>
+            <div class="stat-value">2,817</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Avg Stories</div>
+            <div class="stat-value">2.0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Total Garage</div>
+            <div class="stat-value">6</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUMN 4: CHATGPT -->
+    <div class="col">
+      <div class="col-header">
+        <div class="llm-name chatgpt">CHATGPT</div>
+        <div class="llm-desc">5D Comparison</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">5D Radar</div>
+        <svg class="radar-chart" viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="80" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+          <circle cx="100" cy="100" r="60" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+          <circle cx="100" cy="100" r="40" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+          <line x1="100" y1="100" x2="100" y2="20" stroke="rgba(255,255,255,0.05)"/>
+          <line x1="100" y1="100" x2="169" y2="69" stroke="rgba(255,255,255,0.05)"/>
+          <line x1="100" y1="100" x2="169" y2="131" stroke="rgba(255,255,255,0.05)"/>
+          <line x1="100" y1="100" x2="100" y2="180" stroke="rgba(255,255,255,0.05)"/>
+          <line x1="100" y1="100" x2="31" y2="131" stroke="rgba(255,255,255,0.05)"/>
+          <polygon points="100,45 150,75 155,120 100,145 55,120 70,70" 
+                   fill="#4F46E5" fill-opacity="0.25" stroke="#4F46E5" stroke-width="2"/>
+          <text x="100" y="15" class="radar-label">Beds</text>
+          <text x="180" y="70" class="radar-label">Baths</text>
+          <text x="180" y="135" class="radar-label">SqFt</text>
+          <text x="100" y="195" class="radar-label">Stories</text>
+          <text x="20" y="135" class="radar-label">Garage</text>
+        </svg>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Bathroom Mix</div>
+        <div class="bar-chart">
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar-segment" style="height: 40px; background: #4F46E5; opacity: 0.8;"></div>
+              <div class="bar-segment" style="height: 0px; background: #F97316; opacity: 0.8;"></div>
+            </div>
+            <div class="bar-label">Obsidian</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar-segment" style="height: 80px; background: #4F46E5; opacity: 0.8;"></div>
+              <div class="bar-segment" style="height: 40px; background: #F97316; opacity: 0.8;"></div>
+            </div>
+            <div class="bar-label">Sapphire</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar-segment" style="height: 40px; background: #4F46E5; opacity: 0.8;"></div>
+              <div class="bar-segment" style="height: 20px; background: #F97316; opacity: 0.8;"></div>
+            </div>
+            <div class="bar-label">Quartz</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Property Cards</div>
+        <div style="font-size: 9px; line-height: 1.6;">
+          <div style="margin-bottom: 10px; padding: 8px; background: rgba(255,255,255,0.02); border-radius: 6px;">
+            <div style="font-weight: bold; color: #8b5cf6;">Obsidian</div>
+            <div style="color: rgba(255,255,255,0.6);">2bd · 2ba · 1,850sf</div>
+            <div style="color: rgba(255,255,255,0.6);">Condo · 2019</div>
+          </div>
+          <div style="margin-bottom: 10px; padding: 8px; background: rgba(255,255,255,0.02); border-radius: 6px;">
+            <div style="font-weight: bold; color: #0ea5e9;">Sapphire</div>
+            <div style="color: rgba(255,255,255,0.6);">5bd · 4ba · 4,200sf</div>
+            <div style="color: rgba(255,255,255,0.6);">Single Family · 2012</div>
+          </div>
+          <div style="padding: 8px; background: rgba(255,255,255,0.02); border-radius: 6px;">
+            <div style="font-weight: bold; color: #10b981;">Quartz</div>
+            <div style="color: rgba(255,255,255,0.6);">3bd · 2ba · 2,400sf</div>
+            <div style="color: rgba(255,255,255,0.6);">Townhouse · 1998</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUMN 5: CLAUDE -->
+    <div class="col">
+      <div class="col-header">
+        <div class="llm-name" style="color: #14b8a6;">CLAUDE</div>
+        <div class="llm-desc">Efficiency & Ratios</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Space Efficiency (Sq Ft per Bedroom)</div>
+        <div class="bar-chart">
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar-segment" style="height: 92px; background: #14b8a6; opacity: 0.85;"></div>
+            </div>
+            <div class="bar-value" style="font-size: 11px; font-weight: bold; margin-top: 4px; color: #14b8a6;">925</div>
+            <div class="bar-label">Obsidian<br/>2bd</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar-segment" style="height: 84px; background: #06b6d4; opacity: 0.85;"></div>
+            </div>
+            <div class="bar-value" style="font-size: 11px; font-weight: bold; margin-top: 4px; color: #06b6d4;">840</div>
+            <div class="bar-label">Sapphire<br/>5bd</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar-segment" style="height: 80px; background: #10b981; opacity: 0.85;"></div>
+            </div>
+            <div class="bar-value" style="font-size: 11px; font-weight: bold; margin-top: 4px; color: #10b981;">800</div>
+            <div class="bar-label">Quartz<br/>3bd</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Property Comparison Matrix</div>
+        <svg viewBox="0 0 180 110" style="width: 100%; height: 110px;">
+          <!-- Grid background -->
+          <rect x="10" y="5" width="160" height="100" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.05)"/>
+          
+          <!-- Horizontal lines -->
+          <line x1="10" y1="30" x2="170" y2="30" stroke="rgba(255,255,255,0.03)" stroke-dasharray="2,2"/>
+          <line x1="10" y1="55" x2="170" y2="55" stroke="rgba(255,255,255,0.03)" stroke-dasharray="2,2"/>
+          <line x1="10" y1="80" x2="170" y2="80" stroke="rgba(255,255,255,0.03)" stroke-dasharray="2,2"/>
+          
+          <!-- Vertical dividers -->
+          <line x1="50" y1="5" x2="50" y2="105" stroke="rgba(255,255,255,0.03)"/>
+          <line x1="110" y1="5" x2="110" y2="105" stroke="rgba(255,255,255,0.03)"/>
+          
+          <!-- Property 1: Obsidian -->
+          <circle cx="30" cy="20" r="4" fill="#14b8a6"/>
+          <circle cx="30" cy="45" r="5" fill="#14b8a6"/>
+          <circle cx="30" cy="70" r="3" fill="#14b8a6"/>
+          <circle cx="30" cy="95" r="6" fill="#14b8a6"/>
+          
+          <!-- Property 2: Sapphire -->
+          <circle cx="80" cy="15" r="7" fill="#06b6d4"/>
+          <circle cx="80" cy="40" r="8" fill="#06b6d4"/>
+          <circle cx="80" cy="68" r="4" fill="#06b6d4"/>
+          <circle cx="80" cy="92" r="9" fill="#06b6d4"/>
+          
+          <!-- Property 3: Quartz -->
+          <circle cx="140" cy="18" r="5" fill="#10b981"/>
+          <circle cx="140" cy="43" r="6" fill="#10b981"/>
+          <circle cx="140" cy="65" r="5" fill="#10b981"/>
+          <circle cx="140" cy="90" r="7" fill="#10b981"/>
+          
+          <!-- Row labels -->
+          <text x="5" y="23" font-size="7" fill="rgba(255,255,255,0.4)" text-anchor="end">Beds</text>
+          <text x="5" y="48" font-size="7" fill="rgba(255,255,255,0.4)" text-anchor="end">Baths</text>
+          <text x="5" y="73" font-size="7" fill="rgba(255,255,255,0.4)" text-anchor="end">Stories</text>
+          <text x="5" y="98" font-size="7" fill="rgba(255,255,255,0.4)" text-anchor="end">SqFt</text>
+          
+          <!-- Column headers -->
+          <text x="30" y="12" font-size="6" fill="#14b8a6" text-anchor="middle" font-weight="bold">OBS</text>
+          <text x="80" y="12" font-size="6" fill="#06b6d4" text-anchor="middle" font-weight="bold">SAP</text>
+          <text x="140" y="12" font-size="6" fill="#10b981" text-anchor="middle" font-weight="bold">QUA</text>
+        </svg>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Bathroom Configuration</div>
+        <div style="padding: 8px;">
+          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 6px; font-size: 8px; margin-bottom: 6px;">
+            <div style="color: rgba(255,255,255,0.5);"></div>
+            <div style="color: rgba(255,255,255,0.5); text-align: center;">Full</div>
+            <div style="color: rgba(255,255,255,0.5); text-align: center;">Half</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 6px; font-size: 9px; margin-bottom: 6px; align-items: center;">
+            <div style="color: #14b8a6; font-weight: bold;">Obsidian</div>
+            <div style="text-align: center; background: rgba(20,184,166,0.2); padding: 4px; border-radius: 4px; font-weight: bold;">2</div>
+            <div style="text-align: center; background: rgba(255,255,255,0.02); padding: 4px; border-radius: 4px;">0</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 6px; font-size: 9px; margin-bottom: 6px; align-items: center;">
+            <div style="color: #06b6d4; font-weight: bold;">Sapphire</div>
+            <div style="text-align: center; background: rgba(6,182,212,0.2); padding: 4px; border-radius: 4px; font-weight: bold;">4</div>
+            <div style="text-align: center; background: rgba(6,182,212,0.1); padding: 4px; border-radius: 4px; font-weight: bold;">2</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 6px; font-size: 9px; align-items: center;">
+            <div style="color: #10b981; font-weight: bold;">Quartz</div>
+            <div style="text-align: center; background: rgba(16,185,129,0.2); padding: 4px; border-radius: 4px; font-weight: bold;">2</div>
+            <div style="text-align: center; background: rgba(16,185,129,0.1); padding: 4px; border-radius: 4px; font-weight: bold;">1</div>
+          </div>
+          <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); font-size: 7px; color: rgba(255,255,255,0.4);">
+            Effective Baths: 2.0 | 5.0 | 2.5
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Vertical Density (Stories × SqFt)</div>
+        <div class="vertical-bars">
+          <div class="v-bar-item">
+            <div class="v-bar" style="height: 25%; background: linear-gradient(180deg, #14b8a6, rgba(20,184,166,0.5));"></div>
+            <div class="v-bar-value" style="color: #14b8a6;">1,850</div>
+            <div class="v-bar-label">1 Story</div>
+          </div>
+          <div class="v-bar-item">
+            <div class="v-bar" style="height: 55%; background: linear-gradient(180deg, #06b6d4, rgba(6,182,212,0.5));"></div>
+            <div class="v-bar-value" style="color: #06b6d4;">2,100</div>
+            <div class="v-bar-label">2 Stories</div>
+          </div>
+          <div class="v-bar-item">
+            <div class="v-bar" style="height: 100%; background: linear-gradient(180deg, #10b981, rgba(16,185,129,0.5));"></div>
+            <div class="v-bar-value" style="color: #10b981;">800</div>
+            <div class="v-bar-label">3 Stories</div>
+          </div>
+        </div>
+        <div style="text-align: center; font-size: 7px; color: rgba(255,255,255,0.4); margin-top: 4px;">
+          Avg SqFt per Floor
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Age-Size Relationship</div>
+        <svg viewBox="0 0 180 90" style="width: 100%; height: 90px;">
+          <!-- Axes -->
+          <line x1="25" y1="75" x2="170" y2="75" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+          <line x1="25" y1="15" x2="25" y2="75" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+          
+          <!-- Grid -->
+          <line x1="25" y1="50" x2="170" y2="50" stroke="rgba(255,255,255,0.03)" stroke-dasharray="2,2"/>
+          <line x1="25" y1="25" x2="170" y2="25" stroke="rgba(255,255,255,0.03)" stroke-dasharray="2,2"/>
+          
+          <!-- Trend line (newer = bigger) -->
+          <line x1="40" y1="65" x2="160" y2="25" stroke="rgba(255,255,255,0.1)" stroke-width="1" stroke-dasharray="3,3"/>
+          
+          <!-- Data points -->
+          <!-- Quartz: 1998, 2400sf -->
+          <circle cx="50" cy="55" r="7" fill="#10b981" opacity="0.8" stroke="#10b981" stroke-width="2"/>
+          <text x="50" y="52" font-size="6" fill="white" text-anchor="middle" font-weight="bold">98</text>
+          
+          <!-- Sapphire: 2012, 4200sf -->
+          <circle cx="100" cy="25" r="10" fill="#06b6d4" opacity="0.8" stroke="#06b6d4" stroke-width="2"/>
+          <text x="100" y="28" font-size="6" fill="white" text-anchor="middle" font-weight="bold">12</text>
+          
+          <!-- Obsidian: 2019, 1850sf -->
+          <circle cx="150" cy="62" r="6" fill="#14b8a6" opacity="0.8" stroke="#14b8a6" stroke-width="2"/>
+          <text x="150" y="60" font-size="6" fill="white" text-anchor="middle" font-weight="bold">19</text>
+          
+          <!-- Labels -->
+          <text x="90" y="88" font-size="8" fill="rgba(255,255,255,0.4)" text-anchor="middle">Year Built</text>
+          <text x="10" y="45" font-size="8" fill="rgba(255,255,255,0.4)" text-anchor="middle" transform="rotate(-90 10 45)">Living Sq Ft</text>
+        </svg>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Property Type Distribution</div>
+        <div style="padding: 12px;">
+          <div style="display: flex; justify-content: space-around; margin-bottom: 12px;">
+            <div style="text-align: center;">
+              <div style="width: 40px; height: 40px; border-radius: 8px; background: rgba(20,184,166,0.2); border: 2px solid #14b8a6; display: flex; align-items: center; justify-content: center; margin: 0 auto 4px; font-size: 18px;">🏢</div>
+              <div style="font-size: 8px; color: rgba(255,255,255,0.6);">Condo</div>
+              <div style="font-size: 10px; font-weight: bold; color: #14b8a6;">1</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="width: 40px; height: 40px; border-radius: 8px; background: rgba(6,182,212,0.2); border: 2px solid #06b6d4; display: flex; align-items: center; justify-content: center; margin: 0 auto 4px; font-size: 18px;">🏡</div>
+              <div style="font-size: 8px; color: rgba(255,255,255,0.6);">Single Fam</div>
+              <div style="font-size: 10px; font-weight: bold; color: #06b6d4;">1</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="width: 40px; height: 40px; border-radius: 8px; background: rgba(16,185,129,0.2); border: 2px solid #10b981; display: flex; align-items: center; justify-content: center; margin: 0 auto 4px; font-size: 18px;">🏘️</div>
+              <div style="font-size: 8px; color: rgba(255,255,255,0.6);">Townhouse</div>
+              <div style="font-size: 10px; font-weight: bold; color: #10b981;">1</div>
+            </div>
+          </div>
+          <div style="font-size: 7px; text-align: center; color: rgba(255,255,255,0.4); line-height: 1.4;">
+            Balanced mix across<br/>3 property categories
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Parking Comparison</div>
+        <div style="display: flex; justify-content: space-around; padding: 12px;">
+          <div style="text-align: center;">
+            <div style="font-size: 24px; font-weight: bold; color: #14b8a6;">2</div>
+            <div style="font-size: 7px; color: rgba(255,255,255,0.5);">Obsidian</div>
+            <div style="margin-top: 4px;">🚗🚗</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 24px; font-weight: bold; color: #06b6d4;">2</div>
+            <div style="font-size: 7px; color: rgba(255,255,255,0.5);">Sapphire</div>
+            <div style="margin-top: 4px;">🚗🚗</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 24px; font-weight: bold; color: #10b981;">2</div>
+            <div style="font-size: 7px; color: rgba(255,255,255,0.5);">Quartz</div>
+            <div style="margin-top: 4px;">🚗🚗</div>
+          </div>
+        </div>
+        <div style="text-align: center; font-size: 7px; color: rgba(255,255,255,0.4); margin-top: 4px;">
+          All properties: 2-car garage
+        </div>
+      </div>
+
+    </div>
+
+    <!-- COLUMN 6: PERPLEXITY -->
+    <div class="col">
+      <div class="col-header">
+        <div class="llm-name" style="color: #2180cd;">PERPLEXITY</div>
+        <div class="llm-desc">Multi-Strategy Viz</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🧠 SMART Score System</div>
+        <div style="display: flex; justify-content: space-around; padding: 12px;">
+          <div style="text-align: center;">
+            <div style="font-size: 32px; margin-bottom: 8px;">🧠</div>
+            <div style="font-size: 18px; font-weight: bold; color: #2180cd;">92</div>
+            <div style="font-size: 7px; color: rgba(255,255,255,0.5); text-transform: uppercase;">Obsidian</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 32px; margin-bottom: 8px;">🧠</div>
+            <div style="font-size: 18px; font-weight: bold; color: #ffd700;">98</div>
+            <div style="font-size: 7px; color: rgba(255,255,255,0.5); text-transform: uppercase;">Sapphire ★</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 32px; margin-bottom: 8px;">🧠</div>
+            <div style="font-size: 18px; font-weight: bold; color: #50b8c6;">88</div>
+            <div style="font-size: 7px; color: rgba(255,255,255,0.5); text-transform: uppercase;">Quartz</div>
+          </div>
+        </div>
+        <div style="text-align: center; font-size: 7px; color: rgba(255,255,255,0.4); margin-top: 8px;">
+          Composite intelligence scoring
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Quality Scale Distribution</div>
+        <div style="padding: 8px;">
+          <div style="margin-bottom: 8px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+              <span style="font-size: 8px; color: rgba(255,255,255,0.5);">Obsidian</span>
+              <span style="font-size: 8px; color: #2196F3; font-weight: bold;">STRONG</span>
+            </div>
+            <div style="background: rgba(255,255,255,0.05); height: 6px; border-radius: 3px; overflow: hidden;">
+              <div style="background: linear-gradient(90deg, #FFEB3B, #2196F3); width: 75%; height: 100%;"></div>
+            </div>
+          </div>
+          <div style="margin-bottom: 8px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+              <span style="font-size: 8px; color: rgba(255,255,255,0.5);">Sapphire</span>
+              <span style="font-size: 8px; color: #4CAF50; font-weight: bold;">EXCELLENT</span>
+            </div>
+            <div style="background: rgba(255,255,255,0.05); height: 6px; border-radius: 3px; overflow: hidden;">
+              <div style="background: linear-gradient(90deg, #2196F3, #4CAF50); width: 95%; height: 100%;"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+              <span style="font-size: 8px; color: rgba(255,255,255,0.5);">Quartz</span>
+              <span style="font-size: 8px; color: #FFEB3B; font-weight: bold;">GOOD</span>
+            </div>
+            <div style="background: rgba(255,255,255,0.05); height: 6px; border-radius: 3px; overflow: hidden;">
+              <div style="background: linear-gradient(90deg, #FF9800, #FFEB3B); width: 68%; height: 100%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Polar Strategy: Bathrooms</div>
+        <svg class="radar-chart" viewBox="0 0 200 200">
+          <!-- Grid circles -->
+          <circle cx="100" cy="100" r="70" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+          <circle cx="100" cy="100" r="50" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+          <circle cx="100" cy="100" r="30" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+          <!-- Center -->
+          <circle cx="100" cy="100" r="8" fill="rgba(33,128,205,0.3)"/>
+          <!-- Lines from center -->
+          <line x1="100" y1="100" x2="100" y2="40" stroke="#2180cd" stroke-width="2" opacity="0.5"/>
+          <line x1="100" y1="100" x2="155" y2="75" stroke="#ffd700" stroke-width="3" opacity="0.9"/>
+          <line x1="100" y1="100" x2="130" y2="140" stroke="#50b8c6" stroke-width="2" opacity="0.5"/>
+          <!-- Data points -->
+          <circle cx="100" cy="40" r="6" fill="#2180cd" opacity="0.8"/>
+          <circle cx="155" cy="75" r="8" fill="#ffd700" opacity="0.95"/>
+          <circle cx="130" cy="140" r="6" fill="#50b8c6" opacity="0.8"/>
+          <!-- Labels -->
+          <text x="100" y="30" font-size="8" fill="#2180cd" text-anchor="middle" font-weight="600">Obs: 2</text>
+          <text x="165" y="78" font-size="9" fill="#ffd700" text-anchor="start" font-weight="700">Sap: 5 ★</text>
+          <text x="135" y="155" font-size="8" fill="#50b8c6" text-anchor="middle" font-weight="600">Qua: 2.5</text>
+        </svg>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Bubble Strategy: Lot Size</div>
+        <svg viewBox="0 0 180 100" style="width: 100%; height: 100px;">
+          <!-- Bubbles sized by value -->
+          <defs>
+            <radialGradient id="bubble-p1" cx="35%" cy="35%">
+              <stop offset="0%" style="stop-color:#2180cd;stop-opacity:0.9"/>
+              <stop offset="100%" style="stop-color:#2180cd;stop-opacity:0.3"/>
+            </radialGradient>
+            <radialGradient id="bubble-p2" cx="35%" cy="35%">
+              <stop offset="0%" style="stop-color:#ffd700;stop-opacity:1"/>
+              <stop offset="100%" style="stop-color:#ffd700;stop-opacity:0.5"/>
+            </radialGradient>
+            <radialGradient id="bubble-p3" cx="35%" cy="35%">
+              <stop offset="0%" style="stop-color:#50b8c6;stop-opacity:0.9"/>
+              <stop offset="100%" style="stop-color:#50b8c6;stop-opacity:0.3"/>
+            </radialGradient>
+          </defs>
+          <!-- Obsidian: small -->
+          <circle cx="40" cy="50" r="16" fill="url(#bubble-p1)" stroke="#2180cd" stroke-width="1"/>
+          <text x="40" y="48" font-size="9" fill="white" text-anchor="middle" font-weight="700">0.07</text>
+          <text x="40" y="57" font-size="7" fill="rgba(255,255,255,0.7)" text-anchor="middle">Obs</text>
+          
+          <!-- Sapphire: largest (WINNER) -->
+          <circle cx="100" cy="50" r="28" fill="url(#bubble-p2)" stroke="#ffd700" stroke-width="2"/>
+          <text x="100" y="48" font-size="11" fill="white" text-anchor="middle" font-weight="700">0.34</text>
+          <text x="100" y="58" font-size="8" fill="rgba(255,255,255,0.9)" text-anchor="middle" font-weight="600">Sap ★</text>
+          
+          <!-- Quartz: medium -->
+          <circle cx="150" cy="50" r="20" fill="url(#bubble-p3)" stroke="#50b8c6" stroke-width="1"/>
+          <text x="150" y="48" font-size="9" fill="white" text-anchor="middle" font-weight="700">0.13</text>
+          <text x="150" y="57" font-size="7" fill="rgba(255,255,255,0.7)" text-anchor="middle">Qua</text>
+        </svg>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Gauge Strategy: Living SqFt</div>
+        <div style="display: flex; justify-content: space-around; padding: 8px;">
+          <div style="text-align: center;">
+            <svg viewBox="0 0 60 40" style="width: 50px; height: 35px;">
+              <path d="M 10 35 A 20 20 0 0 1 50 35" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4"/>
+              <path d="M 10 35 A 20 20 0 0 1 25 19" fill="none" stroke="#2180cd" stroke-width="4" stroke-linecap="round"/>
+              <circle cx="30" cy="35" r="3" fill="#2180cd"/>
+            </svg>
+            <div style="font-size: 10px; font-weight: bold; color: #2180cd; margin-top: 4px;">1.8k</div>
+            <div style="font-size: 7px; color: rgba(255,255,255,0.5);">Obsidian</div>
+          </div>
+          <div style="text-align: center;">
+            <svg viewBox="0 0 60 40" style="width: 50px; height: 35px;">
+              <path d="M 10 35 A 20 20 0 0 1 50 35" fill="none" stroke="rgba(255,215,0,0.2)" stroke-width="4"/>
+              <path d="M 10 35 A 20 20 0 1 1 50 35" fill="none" stroke="#ffd700" stroke-width="4" stroke-linecap="round"/>
+              <circle cx="30" cy="35" r="4" fill="#ffd700"/>
+            </svg>
+            <div style="font-size: 10px; font-weight: bold; color: #ffd700; margin-top: 4px;">4.2k ★</div>
+            <div style="font-size: 7px; color: rgba(255,255,255,0.5);">Sapphire</div>
+          </div>
+          <div style="text-align: center;">
+            <svg viewBox="0 0 60 40" style="width: 50px; height: 35px;">
+              <path d="M 10 35 A 20 20 0 0 1 50 35" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4"/>
+              <path d="M 10 35 A 20 20 0 0 1 35 20" fill="none" stroke="#50b8c6" stroke-width="4" stroke-linecap="round"/>
+              <circle cx="30" cy="35" r="3" fill="#50b8c6"/>
+            </svg>
+            <div style="font-size: 10px; font-weight: bold; color: #50b8c6; margin-top: 4px;">2.4k</div>
+            <div style="font-size: 7px; color: rgba(255,255,255,0.5);">Quartz</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Donut Strategy: Parking</div>
+        <svg viewBox="0 0 120 120" style="width: 120px; height: 120px; margin: 0 auto; display: block;">
+          <!-- Donut segments (all equal - 2 spaces each) -->
+          <defs>
+            <filter id="donut-glow">
+              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+              <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          
+          <!-- Segment 1: Obsidian (33.3% - 120 degrees) -->
+          <path d="M 60 20 A 40 40 0 0 1 94.64 40 L 78.58 52 A 20 20 0 0 0 60 40 Z" 
+                fill="#2180cd" opacity="0.8"/>
+          
+          <!-- Segment 2: Sapphire (33.3% - 120 degrees) - WINNER HIGHLIGHT -->
+          <path d="M 94.64 40 A 40 40 0 0 1 94.64 80 L 78.58 68 A 20 20 0 0 0 78.58 52 Z" 
+                fill="#ffd700" opacity="0.95" stroke="#ffd700" stroke-width="2" filter="url(#donut-glow)"/>
+          
+          <!-- Segment 3: Quartz (33.3% - 120 degrees) -->
+          <path d="M 94.64 80 A 40 40 0 0 1 25.36 80 L 41.42 68 A 20 20 0 0 0 78.58 68 Z" 
+                fill="#50b8c6" opacity="0.8"/>
+          
+          <!-- Center circle -->
+          <circle cx="60" cy="60" r="20" fill="rgba(10,15,31,0.8)"/>
+          <text x="60" y="58" font-size="14" fill="white" text-anchor="middle" font-weight="700">6</text>
+          <text x="60" y="68" font-size="7" fill="rgba(255,255,255,0.5)" text-anchor="middle">Total</text>
+          
+          <!-- Value labels -->
+          <text x="60" y="18" font-size="8" fill="#2180cd" text-anchor="middle" font-weight="600">2</text>
+          <text x="102" y="60" font-size="9" fill="#ffd700" text-anchor="start" font-weight="700">2★</text>
+          <text x="60" y="105" font-size="8" fill="#50b8c6" text-anchor="middle" font-weight="600">2</text>
+        </svg>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Composite Value Score</div>
+        <div style="padding: 8px;">
+          <div style="margin-bottom: 8px; padding: 8px; background: rgba(33,128,205,0.1); border-radius: 6px; border-left: 3px solid #2180cd;">
+            <div style="font-weight: bold; font-size: 9px; color: #2180cd;">Obsidian Loft</div>
+            <div style="font-size: 12px; font-weight: 700; color: #2180cd; margin-top: 4px;">72.5</div>
+            <div style="font-size: 7px; color: rgba(255,255,255,0.4);">Bath + SqFt + Lot + Garage</div>
+          </div>
+          <div style="margin-bottom: 8px; padding: 8px; background: rgba(255,215,0,0.15); border-radius: 6px; border-left: 3px solid #ffd700;">
+            <div style="font-weight: bold; font-size: 9px; color: #ffd700; display: flex; align-items: center; gap: 4px;">
+              Sapphire Estate <span style="font-size: 12px;">★</span>
+            </div>
+            <div style="font-size: 12px; font-weight: 700; color: #ffd700; margin-top: 4px;">89.3</div>
+            <div style="font-size: 7px; color: rgba(255,255,255,0.4);">WINNER - EXCELLENT</div>
+          </div>
+          <div style="padding: 8px; background: rgba(80,184,198,0.1); border-radius: 6px; border-left: 3px solid #50b8c6;">
+            <div style="font-weight: bold; font-size: 9px; color: #50b8c6;">Quartz Villa</div>
+            <div style="font-size: 12px; font-weight: 700; color: #50b8c6; margin-top: 4px;">68.0</div>
+            <div style="font-size: 7px; color: rgba(255,255,255,0.4);">Multi-factor analysis</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="text-align: center; margin-top: 30px; padding: 20px; color: rgba(255,255,255,0.3); font-size: 11px;">
+    <p>✓ Pure HTML/CSS/SVG • No External Dependencies • Works Everywhere</p>
+  </div>
+</body>
+</html>

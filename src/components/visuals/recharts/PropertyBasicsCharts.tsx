@@ -258,6 +258,29 @@ function BedroomComparison({ homes }: { homes: Home[] }) {
           </div>
         ))}
       </div>
+
+      {/* Winner Badge */}
+      <div className="mt-4 flex justify-center">
+        <div
+          className="flex items-center gap-3 px-5 py-3 rounded-xl"
+          style={{
+            background: `${getScoreColor(maxScore)}20`,
+            border: `2px solid ${getScoreColor(maxScore)}`
+          }}
+        >
+          <span className="text-2xl">🏆</span>
+          <div>
+            <div className="text-sm font-bold text-white">
+              Winner: {homes.filter((_, idx) => scores[idx] === maxScore).map(h => h.name.split(',')[0]).join(' & ')}
+            </div>
+            <div className="text-xs text-gray-300">
+              CLUES-Smart Score: <span style={{ color: getScoreColor(maxScore), fontWeight: 700 }}>
+                {maxScore}/100
+              </span> ({getScoreLabel(maxScore)}) - Most bedrooms: {Math.max(...values)}
+            </div>
+          </div>
+        </div>
+      </div>
     </motion.div>
   );
 }
@@ -354,6 +377,29 @@ function BathroomComparison({ homes }: { homes: Home[] }) {
             <span className="text-sm font-semibold text-white">{h.name.split(',')[0]}</span>
           </div>
         ))}
+      </div>
+
+      {/* Winner Badge */}
+      <div className="mt-4 flex justify-center">
+        <div
+          className="flex items-center gap-3 px-5 py-3 rounded-xl"
+          style={{
+            background: `${getScoreColor(maxScore)}20`,
+            border: `2px solid ${getScoreColor(maxScore)}`
+          }}
+        >
+          <span className="text-2xl">🏆</span>
+          <div>
+            <div className="text-sm font-bold text-white">
+              Winner: {homes.filter((_, idx) => scores[idx] === maxScore).map(h => h.name.split(',')[0]).join(' & ')}
+            </div>
+            <div className="text-xs text-gray-300">
+              CLUES-Smart Score: <span style={{ color: getScoreColor(maxScore), fontWeight: 700 }}>
+                {maxScore}/100
+              </span> ({getScoreLabel(maxScore)}) - Most bathrooms: {Math.max(...values)}
+            </div>
+          </div>
+        </div>
       </div>
     </motion.div>
   );
@@ -471,6 +517,29 @@ function LivingSpaceShowdown({ homes }: { homes: Home[] }) {
           </div>
         ))}
       </div>
+
+      {/* Winner Badge */}
+      <div className="mt-4 flex justify-center">
+        <div
+          className="flex items-center gap-3 px-5 py-3 rounded-xl"
+          style={{
+            background: `${getScoreColor(maxScore)}20`,
+            border: `2px solid ${getScoreColor(maxScore)}`
+          }}
+        >
+          <span className="text-2xl">🏆</span>
+          <div>
+            <div className="text-sm font-bold text-white">
+              Winner: {homes.filter((_, idx) => scores[idx] === maxScore).map(h => h.name.split(',')[0]).join(' & ')}
+            </div>
+            <div className="text-xs text-gray-300">
+              CLUES-Smart Score: <span style={{ color: getScoreColor(maxScore), fontWeight: 700 }}>
+                {maxScore}/100
+              </span> ({getScoreLabel(maxScore)}) - Largest living space: {formatSqFt(Math.max(...values))}
+            </div>
+          </div>
+        </div>
+      </div>
     </motion.div>
   );
 }
@@ -586,6 +655,29 @@ function LotSizeComparison({ homes }: { homes: Home[] }) {
           </div>
         ))}
       </div>
+
+      {/* Winner Badge */}
+      <div className="mt-4 flex justify-center">
+        <div
+          className="flex items-center gap-3 px-5 py-3 rounded-xl"
+          style={{
+            background: `${getScoreColor(maxScore)}20`,
+            border: `2px solid ${getScoreColor(maxScore)}`
+          }}
+        >
+          <span className="text-2xl">🏆</span>
+          <div>
+            <div className="text-sm font-bold text-white">
+              Winner: {homes.filter((_, idx) => scores[idx] === maxScore).map(h => h.name.split(',')[0]).join(' & ')}
+            </div>
+            <div className="text-xs text-gray-300">
+              CLUES-Smart Score: <span style={{ color: getScoreColor(maxScore), fontWeight: 700 }}>
+                {maxScore}/100
+              </span> ({getScoreLabel(maxScore)}) - Largest lot: {formatSqFt(Math.max(...values))}
+            </div>
+          </div>
+        </div>
+      </div>
     </motion.div>
   );
 }
@@ -597,7 +689,19 @@ function SpaceEfficiencyRatio({ homes }: { homes: Home[] }) {
   const efficiencyRatios = homes.map((h) =>
     h.livingSqft && h.lotSizeSqft ? h.livingSqft / h.lotSizeSqft : 0
   );
-  const scores = scoreHigherIsBetter(efficiencyRatios);
+
+  // CUSTOM SCORING: Lower coverage = better (more yard space)
+  // >= 50% = 0 (Red/Poor), 40-49% = 25 (Orange/Fair), 30-39% = 50 (Yellow/Average),
+  // 20-29% = 75 (Blue/Good), < 20% = 100 (Green/Excellent)
+  const scores = efficiencyRatios.map((ratio) => {
+    const percent = ratio * 100;
+    if (percent >= 50) return 0;        // Red - Poor (too much lot covered)
+    if (percent >= 40) return 25;       // Orange - Fair
+    if (percent >= 30) return 50;       // Yellow - Average
+    if (percent >= 20) return 75;       // Blue - Good
+    return 100;                          // Green - Excellent (lots of yard space)
+  });
+
   const maxScore = Math.max(...scores);
 
   const data = homes.map((h, index) => ({
@@ -617,17 +721,21 @@ function SpaceEfficiencyRatio({ homes }: { homes: Home[] }) {
       console.log(`📊 Property ${idx + 1}: ${h.name}`);
       console.log(`  Living Sq Ft: ${formatNumber(h.livingSqft)}`);
       console.log(`  Lot Sq Ft: ${formatNumber(h.lotSizeSqft)}`);
-      console.log(`  Efficiency Ratio: ${formatPercent(ratio)} (${h.livingSqft} / ${h.lotSizeSqft})`);
+      console.log(`  Building Coverage: ${formatPercent(ratio)} (${h.livingSqft} / ${h.lotSizeSqft})`);
     });
     console.log('');
-    console.log('🧠 Chart 3-5: Smart Score Calculation (5-Tier System):');
-    console.log(`Input values: [${efficiencyRatios.map((r) => formatPercent(r)).join(', ')}]`);
-    console.log('Scoring function: scoreHigherIsBetter()');
-    console.log('Interpretation: Higher % = more building coverage on lot');
+    console.log('🧠 Chart 3-5: Smart Score Calculation (CUSTOM 5-Tier System):');
+    console.log('SCORING LOGIC: Lower coverage = BETTER (more yard space)');
+    console.log('  >= 50% = 0 (Red/Poor) - Too much lot covered');
+    console.log('  40-49% = 25 (Orange/Fair)');
+    console.log('  30-39% = 50 (Yellow/Average)');
+    console.log('  20-29% = 75 (Blue/Good)');
+    console.log('  < 20% = 100 (Green/Excellent) - Lots of yard space');
     console.log('');
     homes.forEach((h, idx) => {
+      const percent = efficiencyRatios[idx] * 100;
       console.log(`Property ${idx + 1}: ${h.name.split(',')[0]}`);
-      console.log(`  Efficiency Ratio: ${formatPercent(efficiencyRatios[idx])}`);
+      console.log(`  Building Coverage: ${percent.toFixed(1)}%`);
       console.log(`  🎯 Smart Score: ${scores[idx]}/100 (${getScoreLabel(scores[idx])})`);
       console.log('');
     });
@@ -655,7 +763,8 @@ function SpaceEfficiencyRatio({ homes }: { homes: Home[] }) {
         </span>
       </div>
 
-      <h3 className="text-lg font-semibold text-white mb-4">Space Efficiency (Building Coverage)</h3>
+      <h3 className="text-lg font-semibold text-white mb-2">Space Efficiency (Building Coverage)</h3>
+      <p className="text-xs text-gray-400 mb-4">% of lot covered by building structure (living sqft ÷ lot sqft)</p>
 
       <ResponsiveContainer width="100%" height={250}>
         <BarChart data={data} layout="vertical" margin={{ top: 20, right: 30, left: 80, bottom: 5 }}>
@@ -698,6 +807,29 @@ function SpaceEfficiencyRatio({ homes }: { homes: Home[] }) {
           </div>
         ))}
       </div>
+
+      {/* Winner Badge */}
+      <div className="mt-4 flex justify-center">
+        <div
+          className="flex items-center gap-3 px-5 py-3 rounded-xl"
+          style={{
+            background: `${getScoreColor(maxScore)}20`,
+            border: `2px solid ${getScoreColor(maxScore)}`
+          }}
+        >
+          <span className="text-2xl">🏆</span>
+          <div>
+            <div className="text-sm font-bold text-white">
+              Winner: {homes.filter((_, idx) => scores[idx] === maxScore).map(h => h.name.split(',')[0]).join(' & ')}
+            </div>
+            <div className="text-xs text-gray-300">
+              CLUES-Smart Score: <span style={{ color: getScoreColor(maxScore), fontWeight: 700 }}>
+                {maxScore}/100
+              </span> ({getScoreLabel(maxScore)}) - Most yard space: {formatPercent(Math.min(...efficiencyRatios))} lot coverage
+            </div>
+          </div>
+        </div>
+      </div>
     </motion.div>
   );
 }
@@ -708,7 +840,25 @@ function SpaceEfficiencyRatio({ homes }: { homes: Home[] }) {
 function PropertyAgeComparison({ homes }: { homes: Home[] }) {
   const currentYear = new Date().getFullYear();
   const ages = homes.map((h) => currentYear - h.yearBuilt);
-  const scores = scoreLowerIsBetter(ages); // Lower age = better
+
+  // CUSTOM SCORING: 50-year depreciation scale
+  // Each year of age subtracts 2 points from 100
+  // 0 years = 100 pts (Green/Excellent)
+  // 10 years = 80 pts (Blue/Good)
+  // 25 years = 50 pts (Yellow/Average)
+  // 40 years = 20 pts (Orange/Fair)
+  // 50+ years = 0 pts (Red/Poor)
+  const scores = ages.map((age) => {
+    const rawScore = Math.max(0, 100 - (age * 2)); // Each year subtracts 2 points
+
+    // Map to 5-tier discrete values
+    if (rawScore >= 80) return 100;  // 0-10 years = Green/Excellent
+    if (rawScore >= 60) return 75;   // 11-20 years = Blue/Good
+    if (rawScore >= 40) return 50;   // 21-30 years = Yellow/Average
+    if (rawScore >= 20) return 25;   // 31-40 years = Orange/Fair
+    return 0;                         // 41-50+ years = Red/Poor
+  });
+
   const maxScore = Math.max(...scores);
 
   const data = homes.map((h, index) => ({
@@ -729,13 +879,19 @@ function PropertyAgeComparison({ homes }: { homes: Home[] }) {
       console.log(`  Calculated Age: ${ages[idx]} years`);
     });
     console.log('');
-    console.log('🧠 Chart 3-6: Smart Score Calculation (5-Tier System):');
-    console.log(`Input values: [${ages.join(', ')}]`);
-    console.log('Scoring function: scoreLowerIsBetter() - Newer is better');
+    console.log('🧠 Chart 3-6: Smart Score Calculation (CUSTOM 50-Year Depreciation Scale):');
+    console.log('SCORING LOGIC: Each year of age subtracts 2 points from 100');
+    console.log('  0-10 years = 100 pts (Green/Excellent) - Raw score 80-100');
+    console.log('  11-20 years = 75 pts (Blue/Good) - Raw score 60-79');
+    console.log('  21-30 years = 50 pts (Yellow/Average) - Raw score 40-59');
+    console.log('  31-40 years = 25 pts (Orange/Fair) - Raw score 20-39');
+    console.log('  41-50+ years = 0 pts (Red/Poor) - Raw score 0-19');
     console.log('');
     homes.forEach((h, idx) => {
+      const rawScore = Math.max(0, 100 - (ages[idx] * 2));
       console.log(`Property ${idx + 1}: ${h.name.split(',')[0]}`);
       console.log(`  Built: ${h.yearBuilt} (${ages[idx]} years old)`);
+      console.log(`  Raw Score: ${rawScore}/100 (100 - ${ages[idx]} × 2)`);
       console.log(`  🎯 Smart Score: ${scores[idx]}/100 (${getScoreLabel(scores[idx])})`);
       console.log('');
     });
@@ -763,7 +919,8 @@ function PropertyAgeComparison({ homes }: { homes: Home[] }) {
         </span>
       </div>
 
-      <h3 className="text-lg font-semibold text-white mb-4">Property Age</h3>
+      <h3 className="text-lg font-semibold text-white mb-2">Property Age</h3>
+      <p className="text-xs text-gray-400 mb-4">50-year depreciation scale: each year subtracts 2 points (100 = new, 0 = 50+ years)</p>
 
       <ResponsiveContainer width="100%" height={250}>
         <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
@@ -812,6 +969,29 @@ function PropertyAgeComparison({ homes }: { homes: Home[] }) {
             <span className="text-sm font-semibold text-white">{h.name.split(',')[0]}</span>
           </div>
         ))}
+      </div>
+
+      {/* Winner Badge */}
+      <div className="mt-4 flex justify-center">
+        <div
+          className="flex items-center gap-3 px-5 py-3 rounded-xl"
+          style={{
+            background: `${getScoreColor(maxScore)}20`,
+            border: `2px solid ${getScoreColor(maxScore)}`
+          }}
+        >
+          <span className="text-2xl">🏆</span>
+          <div>
+            <div className="text-sm font-bold text-white">
+              Winner: {homes.filter((_, idx) => scores[idx] === maxScore).map(h => h.name.split(',')[0]).join(' & ')}
+            </div>
+            <div className="text-xs text-gray-300">
+              CLUES-Smart Score: <span style={{ color: getScoreColor(maxScore), fontWeight: 700 }}>
+                {maxScore}/100
+              </span> ({getScoreLabel(maxScore)}) - Newest property: Built {Math.max(...homes.map(h => h.yearBuilt))}
+            </div>
+          </div>
+        </div>
       </div>
     </motion.div>
   );
@@ -926,6 +1106,29 @@ function ParkingCapacity({ homes }: { homes: Home[] }) {
             <span className="text-sm font-semibold text-white">{h.name.split(',')[0]}</span>
           </div>
         ))}
+      </div>
+
+      {/* Winner Badge */}
+      <div className="mt-4 flex justify-center">
+        <div
+          className="flex items-center gap-3 px-5 py-3 rounded-xl"
+          style={{
+            background: `${getScoreColor(maxScore)}20`,
+            border: `2px solid ${getScoreColor(maxScore)}`
+          }}
+        >
+          <span className="text-2xl">🏆</span>
+          <div>
+            <div className="text-sm font-bold text-white">
+              Winner: {homes.filter((_, idx) => scores[idx] === maxScore).map(h => h.name.split(',')[0]).join(' & ')}
+            </div>
+            <div className="text-xs text-gray-300">
+              CLUES-Smart Score: <span style={{ color: getScoreColor(maxScore), fontWeight: 700 }}>
+                {maxScore}/100
+              </span> ({getScoreLabel(maxScore)}) - Most garage spaces: {Math.max(...values)}
+            </div>
+          </div>
+        </div>
       </div>
     </motion.div>
   );
