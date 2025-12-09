@@ -851,12 +851,12 @@ function PropertyAgeComparison({ homes }: { homes: Home[] }) {
   const scores = ages.map((age) => {
     const rawScore = Math.max(0, 100 - (age * 2)); // Each year subtracts 2 points
 
-    // Map to 5-tier discrete values
-    if (rawScore >= 80) return 100;  // 0-10 years = Green/Excellent
-    if (rawScore >= 60) return 75;   // 11-20 years = Blue/Good
-    if (rawScore >= 40) return 50;   // 21-30 years = Yellow/Average
-    if (rawScore >= 20) return 25;   // 31-40 years = Orange/Fair
-    return 0;                         // 41-50+ years = Red/Poor
+    // Map to 5-tier discrete values based on raw score
+    if (rawScore > 80) return 100;   // 0-9 years (82-100) = Green/Excellent
+    if (rawScore > 60) return 75;    // 10-19 years (62-80) = Blue/Good
+    if (rawScore > 40) return 50;    // 20-29 years (42-60) = Yellow/Average
+    if (rawScore > 20) return 25;    // 30-39 years (22-40) = Orange/Fair
+    return 0;                         // 40-50+ years (0-20) = Red/Poor
   });
 
   const maxScore = Math.max(...scores);
@@ -881,11 +881,11 @@ function PropertyAgeComparison({ homes }: { homes: Home[] }) {
     console.log('');
     console.log('🧠 Chart 3-6: Smart Score Calculation (CUSTOM 50-Year Depreciation Scale):');
     console.log('SCORING LOGIC: Each year of age subtracts 2 points from 100');
-    console.log('  0-10 years = 100 pts (Green/Excellent) - Raw score 80-100');
-    console.log('  11-20 years = 75 pts (Blue/Good) - Raw score 60-79');
-    console.log('  21-30 years = 50 pts (Yellow/Average) - Raw score 40-59');
-    console.log('  31-40 years = 25 pts (Orange/Fair) - Raw score 20-39');
-    console.log('  41-50+ years = 0 pts (Red/Poor) - Raw score 0-19');
+    console.log('  0-9 years = 100 pts (Green/Excellent) - Raw score 82-100');
+    console.log('  10-19 years = 75 pts (Blue/Good) - Raw score 62-80');
+    console.log('  20-29 years = 50 pts (Yellow/Average) - Raw score 42-60');
+    console.log('  30-39 years = 25 pts (Orange/Fair) - Raw score 22-40');
+    console.log('  40-50+ years = 0 pts (Red/Poor) - Raw score 0-20');
     console.log('');
     homes.forEach((h, idx) => {
       const rawScore = Math.max(0, 100 - (ages[idx] * 2));
