@@ -31,6 +31,7 @@ import ValueMomentumChart from './deepseek/ValueMomentumChart';
 import RealEstateDashboard from './recharts/RealEstateDashboard';
 import PropertyBasicsCharts from './recharts/PropertyBasicsCharts';
 import PropertyBasicsAdvancedCharts from './recharts/PropertyBasicsAdvancedCharts';
+import HOATaxesCharts from './recharts/HOATaxesCharts';
 
 interface Category21Props {
   properties: ChartProperty[];
@@ -70,6 +71,26 @@ function mapToRealEstateHomes(properties: ChartProperty[]) {
   }));
 }
 
+// Map ChartProperty to HOATaxesCharts Home interface
+// VERIFIED AGAINST SCHEMA: Fields 30-38 (HOA & Taxes)
+function mapToHOATaxesHomes(properties: ChartProperty[]) {
+  return properties.map((p, idx) => ({
+    id: p.id,
+    name: p.address || 'Unknown Address',
+    color: ['#22c55e', '#8b5cf6', '#ec4899'][idx] || '#22c55e',  // Green, Lavender, Pink
+    // Fields 30-38: HOA & Taxes
+    hoaYN: p.hoaYn || false,                     // Field 30: hoa_yn
+    hoaFeeAnnual: p.hoaFeeAnnual || 0,          // Field 31: hoa_fee_annual
+    hoaName: p.hoaName || '',                    // Field 32: hoa_name
+    hoaIncludes: p.hoaIncludes || '',            // Field 33: hoa_includes (missing from interface)
+    ownershipType: p.ownershipType || 'Fee Simple', // Field 34: ownership_type (missing from interface)
+    annualTaxes: p.annualTaxes || 0,            // Field 35: annual_taxes
+    taxYear: p.taxYear || new Date().getFullYear(), // Field 36: tax_year (missing from interface)
+    propertyTaxRate: p.propertyTaxRate || 0,    // Field 37: property_tax_rate
+    taxExemptions: p.taxExemptions || '',        // Field 38: tax_exemptions
+  }));
+}
+
 // Sample properties for testing (using correct schema field names)
 const SAMPLE_PROPERTIES: ChartProperty[] = [
   {
@@ -99,6 +120,14 @@ const SAMPLE_PROPERTIES: ChartProperty[] = [
     parkingTotal: '2 Car Garage', // Field 29: parking_total
     hoaFeeAnnual: 0,
     annualTaxes: 35000,
+    // Section 4: HOA & Taxes (Fields 30-38)
+    hoaYn: false,
+    hoaName: '',
+    hoaIncludes: '',
+    ownershipType: 'Fee Simple',
+    taxYear: 2024,
+    propertyTaxRate: 0.88,
+    taxExemptions: 'Homestead Exemption',
   } as ChartProperty,
   {
     id: 'sample-2',
@@ -127,6 +156,14 @@ const SAMPLE_PROPERTIES: ChartProperty[] = [
     parkingTotal: '2 Car Garage', // Field 29: parking_total
     hoaFeeAnnual: 0,
     annualTaxes: 33000,
+    // Section 4: HOA & Taxes (Fields 30-38)
+    hoaYn: false,
+    hoaName: '',
+    hoaIncludes: '',
+    ownershipType: 'Fee Simple',
+    taxYear: 2024,
+    propertyTaxRate: 0.85,
+    taxExemptions: '',
   } as ChartProperty,
   {
     id: 'sample-3',
@@ -155,6 +192,14 @@ const SAMPLE_PROPERTIES: ChartProperty[] = [
     parkingTotal: '3 Car Garage', // Field 29: parking_total
     hoaFeeAnnual: 0,
     annualTaxes: 31000,
+    // Section 4: HOA & Taxes (Fields 30-38)
+    hoaYn: false,
+    hoaName: '',
+    hoaIncludes: '',
+    ownershipType: 'Fee Simple',
+    taxYear: 2024,
+    propertyTaxRate: 0.82,
+    taxExemptions: 'Homestead Exemption',
   } as ChartProperty,
 ];
 
@@ -385,6 +430,33 @@ export default function Category21_AdvancedVisuals({ properties }: Category21Pro
       >
         {selectedChartProperties.length > 0 ? (
           <PropertyBasicsAdvancedCharts homes={mapToRealEstateHomes(selectedChartProperties)} />
+        ) : (
+          <div className="text-center py-12 text-gray-400">
+            Please select at least one property from the dropdowns above
+          </div>
+        )}
+      </motion.div>
+
+      {/* Section 4: HOA & Taxes Charts (Fields 30-38) */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.3 }}
+        className="mt-12 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30"
+      >
+        <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" />
+        <span className="text-sm font-medium text-orange-300">Section 4: HOA & Taxes Analysis (Fields 30-38)</span>
+      </motion.div>
+
+      {/* HOA & Taxes Charts */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.4 }}
+        className="mt-6"
+      >
+        {selectedChartProperties.length > 0 ? (
+          <HOATaxesCharts homes={mapToHOATaxesHomes(selectedChartProperties)} />
         ) : (
           <div className="text-center py-12 text-gray-400">
             Please select at least one property from the dropdowns above

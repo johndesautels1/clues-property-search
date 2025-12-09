@@ -54,7 +54,10 @@ export interface ChartProperty {
   hoaYn: boolean;
   hoaFeeAnnual: number;
   hoaName: string;
+  hoaIncludes: string;
+  ownershipType: string;
   annualTaxes: number;
+  taxYear: number;
   propertyTaxRate: number;
   taxExemptions: string;
 
