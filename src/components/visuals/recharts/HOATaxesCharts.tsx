@@ -1,4 +1,4 @@
-import React from 'react';
+import { useEffect } from 'react';
 import {
   BarChart,
   Bar,
@@ -120,56 +120,34 @@ const SmartScaleLegend: React.FC<{ title: string; description: string }> = ({
   title,
   description,
 }) => {
-  const scales = [
-    {
-      color: '#4CAF50',
-      label: '81-100: Excellent',
-      meaning: 'Best value / lowest cost / best conditions',
-    },
-    {
-      color: '#2196F3',
-      label: '61-80: Strong',
-      meaning: 'Above average value / favorable metrics',
-    },
-    {
-      color: '#FFEB3B',
-      label: '41-60: Good',
-      meaning: 'Average performance / moderate value',
-    },
-    {
-      color: '#FF9800',
-      label: '21-40: Fair',
-      meaning: 'Below average / higher cost burden',
-    },
-    {
-      color: '#FF4444',
-      label: '0-20: Poor',
-      meaning: 'Lowest value / highest costs',
-    },
-  ];
-
   return (
-    <div className="mt-3 grid grid-cols-2 gap-2 border-t border-white/10 pt-3 text-xs bg-black/20 p-3 rounded-lg">
-      <div className="col-span-2 font-bold text-white mb-2">{title}</div>
-      {scales.map((scale) => (
-        <div key={scale.label} className="flex items-start gap-2 p-1">
-          <div
-            className="w-4 h-4 rounded-sm flex-shrink-0 mt-0.5"
-            style={{ backgroundColor: scale.color }}
-          />
-          <div>
-            <div className="font-semibold text-white leading-tight">
-              {scale.label}
-            </div>
-            <div className="text-[0.65rem] text-gray-400 leading-tight mt-0.5">
-              {scale.meaning}
-            </div>
-          </div>
+    <div className="mt-4 p-3 bg-white/5 rounded-lg border-l-4 border-purple-400">
+      <p className="text-xs font-bold text-purple-300 mb-2">CLUES-Smart Score Scale:</p>
+      <div className="grid grid-cols-5 gap-2 text-xs">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded" style={{ background: '#4CAF50' }}></div>
+          <span className="text-gray-300">81-100: Excellent</span>
         </div>
-      ))}
-      <div className="col-span-2 text-[0.7rem] text-gray-300 bg-white/5 p-2 rounded border-l-2 border-blue-500 leading-relaxed mt-2">
-        {description}
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded" style={{ background: '#2196F3' }}></div>
+          <span className="text-gray-300">61-80: Good</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded" style={{ background: '#FFEB3B' }}></div>
+          <span className="text-gray-300">41-60: Average</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded" style={{ background: '#FF9800' }}></div>
+          <span className="text-gray-300">21-40: Fair</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded" style={{ background: '#FF4444' }}></div>
+          <span className="text-gray-300">0-20: Poor</span>
+        </div>
       </div>
+      <p className="text-xs text-gray-400 mt-2">
+        {description}
+      </p>
     </div>
   );
 };
@@ -257,13 +235,15 @@ const Chart41_AnnualCostBreakdown: React.FC<{ homes: Home[] }> = ({ homes }) => 
   const maxScore = Math.max(...chartData.map((d) => d.score));
   const winner = chartData.find((d) => d.score === maxScore);
 
-  console.log('🔍 Chart 4-1 - Annual Cost Breakdown');
-  chartData.forEach((d) => {
-    console.log(
-      `  🧠 ${d.name}: Total=${formatCurrency(d.total)}, Score=${Math.round(d.score)}`
-    );
-  });
-  console.log(`  🏆 Winner: ${winner?.name} (Score: ${Math.round(maxScore)})`);
+  useEffect(() => {
+    console.log('🔍 Chart 4-1 - Annual Cost Breakdown');
+    chartData.forEach((d) => {
+      console.log(
+        `  🧠 ${d.name}: Total=${formatCurrency(d.total)}, Score=${Math.round(d.score)}`
+      );
+    });
+    console.log(`  🏆 Winner: ${winner?.name} (Score: ${Math.round(maxScore)})`);
+  }, [homes]);
 
   return (
     <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
@@ -271,7 +251,7 @@ const Chart41_AnnualCostBreakdown: React.FC<{ homes: Home[] }> = ({ homes }) => 
       <div className="text-lg font-semibold text-white mb-1">
         Chart 4-1: Annual Cost Breakdown
       </div>
-      <div className="text-sm text-gray-400 mb-4">
+      <div className="text-sm text-gray-400 mt-3 mb-4">
         Taxes + HOA per home (stacked)
       </div>
       <ResponsiveContainer width="100%" height={300}>
@@ -286,7 +266,7 @@ const Chart41_AnnualCostBreakdown: React.FC<{ homes: Home[] }> = ({ homes }) => 
             type="category"
             dataKey="name"
             stroke="#666"
-            tick={{ fill: '#ffffff', fontWeight: 'bold', fontSize: 10 }}
+            tick={{ fill: '#ffffff', fontWeight: 'bold', fontSize: 12 }}
             width={130}
           />
           <Tooltip content={<CustomTooltip />} />
@@ -322,13 +302,15 @@ const Chart42_TaxRateComparison: React.FC<{ homes: Home[] }> = ({ homes }) => {
   const maxScore = Math.max(...chartData.map((d) => d.score));
   const winner = chartData.find((d) => d.score === maxScore);
 
-  console.log('🔍 Chart 4-2 - Tax Rate Comparison');
-  chartData.forEach((d) => {
-    console.log(
-      `  🧠 ${d.name}: Rate=${d['Tax Rate'].toFixed(2)}%, Score=${Math.round(d.score)}`
-    );
-  });
-  console.log(`  🏆 Winner: ${winner?.name} (Score: ${Math.round(maxScore)})`);
+  useEffect(() => {
+    console.log('🔍 Chart 4-2 - Tax Rate Comparison');
+    chartData.forEach((d) => {
+      console.log(
+        `  🧠 ${d.name}: Rate=${d['Tax Rate'].toFixed(2)}%, Score=${Math.round(d.score)}`
+      );
+    });
+    console.log(`  🏆 Winner: ${winner?.name} (Score: ${Math.round(maxScore)})`);
+  }, [homes]);
 
   return (
     <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
@@ -336,7 +318,7 @@ const Chart42_TaxRateComparison: React.FC<{ homes: Home[] }> = ({ homes }) => {
       <div className="text-lg font-semibold text-white mb-1">
         Chart 4-2: Tax Rate Comparison
       </div>
-      <div className="text-sm text-gray-400 mb-4">Lower = Better value</div>
+      <div className="text-sm text-gray-400 mt-3 mb-4">Lower = Better value</div>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={chartData} margin={{ top: 20, right: 30, bottom: 80, left: 50 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#333" />
@@ -348,7 +330,7 @@ const Chart42_TaxRateComparison: React.FC<{ homes: Home[] }> = ({ homes }) => {
             textAnchor="middle"
             height={70}
           />
-          <YAxis stroke="#666" tick={{ fill: '#666', fontSize: 9 }} />
+          <YAxis stroke="#666" tick={{ fill: '#ffffff', fontSize: 12 }} />
           <Tooltip content={<CustomTooltip />} />
           <Bar dataKey="Tax Rate" radius={[4, 4, 0, 0]}>
             {chartData.map((entry, index) => (
@@ -383,13 +365,15 @@ const Chart43_HOAVsTaxBurden: React.FC<{ homes: Home[] }> = ({ homes }) => {
   const maxScore = Math.max(...chartData.map((d) => d.score));
   const winner = chartData.find((d) => d.score === maxScore);
 
-  console.log('🔍 Chart 4-3 - HOA vs Tax Burden');
-  chartData.forEach((d) => {
-    console.log(
-      `  🧠 ${d.name}: Taxes=${formatCurrency(d.x)}, HOA=${formatCurrency(d.y)}, Total=${formatCurrency(d.z)}, Score=${Math.round(d.score)}`
-    );
-  });
-  console.log(`  🏆 Winner: ${winner?.name} (Score: ${Math.round(maxScore)})`);
+  useEffect(() => {
+    console.log('🔍 Chart 4-3 - HOA vs Tax Burden');
+    chartData.forEach((d) => {
+      console.log(
+        `  🧠 ${d.name}: Taxes=${formatCurrency(d.x)}, HOA=${formatCurrency(d.y)}, Total=${formatCurrency(d.z)}, Score=${Math.round(d.score)}`
+      );
+    });
+    console.log(`  🏆 Winner: ${winner?.name} (Score: ${Math.round(maxScore)})`);
+  }, [homes]);
 
   return (
     <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
@@ -397,7 +381,7 @@ const Chart43_HOAVsTaxBurden: React.FC<{ homes: Home[] }> = ({ homes }) => {
       <div className="text-lg font-semibold text-white mb-1">
         Chart 4-3: HOA vs Tax Burden
       </div>
-      <div className="text-sm text-gray-400 mb-4">
+      <div className="text-sm text-gray-400 mt-3 mb-4">
         Bubble size = total annual cost
       </div>
       <ResponsiveContainer width="100%" height={300}>
@@ -462,13 +446,15 @@ const Chart44_OwnershipTypeScore: React.FC<{ homes: Home[] }> = ({ homes }) => {
   const maxScore = Math.max(...chartData.map((d) => d.Score));
   const winner = chartData.find((d) => d.Score === maxScore);
 
-  console.log('🔍 Chart 4-4 - Ownership Type Score');
-  chartData.forEach((d) => {
-    console.log(
-      `  🧠 ${d.name}: Type=${d.ownershipType}, Score=${Math.round(d.Score)}`
-    );
-  });
-  console.log(`  🏆 Winner: ${winner?.name} (Score: ${Math.round(maxScore)})`);
+  useEffect(() => {
+    console.log('🔍 Chart 4-4 - Ownership Type Score');
+    chartData.forEach((d) => {
+      console.log(
+        `  🧠 ${d.name}: Type=${d.ownershipType}, Score=${Math.round(d.Score)}`
+      );
+    });
+    console.log(`  🏆 Winner: ${winner?.name} (Score: ${Math.round(maxScore)})`);
+  }, [homes]);
 
   return (
     <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
@@ -476,7 +462,7 @@ const Chart44_OwnershipTypeScore: React.FC<{ homes: Home[] }> = ({ homes }) => {
       <div className="text-lg font-semibold text-white mb-1">
         Chart 4-4: Ownership Type Score
       </div>
-      <div className="text-sm text-gray-400 mb-4">Fee Simple scores highest</div>
+      <div className="text-sm text-gray-400 mt-3 mb-4">Fee Simple scores highest</div>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={chartData} margin={{ top: 20, right: 30, bottom: 90, left: 50 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#333" />
@@ -488,7 +474,7 @@ const Chart44_OwnershipTypeScore: React.FC<{ homes: Home[] }> = ({ homes }) => {
             textAnchor="middle"
             height={80}
           />
-          <YAxis stroke="#666" tick={{ fill: '#666', fontSize: 9 }} />
+          <YAxis stroke="#666" tick={{ fill: '#ffffff', fontSize: 12 }} />
           <Tooltip content={<CustomTooltip />} />
           <Bar dataKey="Score" radius={[4, 4, 0, 0]}>
             {chartData.map((entry, index) => (
@@ -497,7 +483,7 @@ const Chart44_OwnershipTypeScore: React.FC<{ homes: Home[] }> = ({ homes }) => {
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-      {winner && <WinnerBadge winnerName={winner.name} score={winner.score} />}
+      {winner && <WinnerBadge winnerName={winner.name} score={winner.Score} />}
       <SmartScaleLegend
         title="Ownership Type Score"
         description="Fee Simple=100. Condo=75. Leasehold/Co-op=50. Affects mortgage & control."
@@ -519,14 +505,16 @@ const Chart45_CostDistributionDonut: React.FC<{ homes: Home[] }> = ({ homes }) =
     { name: 'HOA', value: totalHOA, fill: '#4CAF50' },
   ];
 
-  console.log('🔍 Chart 4-5 - Cost Distribution Donut');
-  console.log(
-    `  🧠 Taxes: ${formatCurrency(totalTax)} (${((totalTax / totalCost) * 100).toFixed(1)}%)`
-  );
-  console.log(
-    `  🧠 HOA: ${formatCurrency(totalHOA)} (${((totalHOA / totalCost) * 100).toFixed(1)}%)`
-  );
-  console.log(`  🧠 Total Portfolio: ${formatCurrency(totalCost)}`);
+  useEffect(() => {
+    console.log('🔍 Chart 4-5 - Cost Distribution Donut');
+    console.log(
+      `  🧠 Taxes: ${formatCurrency(totalTax)} (${((totalTax / totalCost) * 100).toFixed(1)}%)`
+    );
+    console.log(
+      `  🧠 HOA: ${formatCurrency(totalHOA)} (${((totalHOA / totalCost) * 100).toFixed(1)}%)`
+    );
+    console.log(`  🧠 Total Portfolio: ${formatCurrency(totalCost)}`);
+  }, [homes]);
 
   return (
     <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
@@ -534,7 +522,7 @@ const Chart45_CostDistributionDonut: React.FC<{ homes: Home[] }> = ({ homes }) =
       <div className="text-lg font-semibold text-white mb-1">
         Chart 4-5: Cost Distribution: Taxes vs HOA
       </div>
-      <div className="text-sm text-gray-400 mb-4">What % of total is each?</div>
+      <div className="text-sm text-gray-400 mt-3 mb-4">What % of total is each?</div>
       <ResponsiveContainer width="100%" height={300}>
         <PieChart>
           <Pie
@@ -549,6 +537,7 @@ const Chart45_CostDistributionDonut: React.FC<{ homes: Home[] }> = ({ homes }) =
               `${entry.name} ${((entry.value / totalCost) * 100).toFixed(1)}%`
             }
             labelLine={false}
+            labelStyle={{ fill: '#ffffff' }}
           >
             {chartData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -583,13 +572,15 @@ const Chart46_TrueCostOwnershipIndex: React.FC<{ homes: Home[] }> = ({ homes }) 
   const maxScore = Math.max(...chartData.map((d) => d.Score));
   const winner = chartData.find((d) => d.Score === maxScore);
 
-  console.log('🔍 Chart 4-6 - True Cost of Ownership Index');
-  chartData.forEach((d) => {
-    console.log(
-      `  🧠 ${d.name}: Total Cost=${formatCurrency(d.totalCost)}, Score=${Math.round(d.Score)}`
-    );
-  });
-  console.log(`  🏆 Winner: ${winner?.name} (Score: ${Math.round(maxScore)})`);
+  useEffect(() => {
+    console.log('🔍 Chart 4-6 - True Cost of Ownership Index');
+    chartData.forEach((d) => {
+      console.log(
+        `  🧠 ${d.name}: Total Cost=${formatCurrency(d.totalCost)}, Score=${Math.round(d.Score)}`
+      );
+    });
+    console.log(`  🏆 Winner: ${winner?.name} (Score: ${Math.round(maxScore)})`);
+  }, [homes]);
 
   return (
     <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
@@ -597,7 +588,7 @@ const Chart46_TrueCostOwnershipIndex: React.FC<{ homes: Home[] }> = ({ homes }) 
       <div className="text-lg font-semibold text-white mb-1">
         Chart 4-6: True Cost of Ownership Index
       </div>
-      <div className="text-sm text-gray-400 mb-4">
+      <div className="text-sm text-gray-400 mt-3 mb-4">
         Lower total cost = higher score
       </div>
       <ResponsiveContainer width="100%" height={300}>
@@ -611,7 +602,7 @@ const Chart46_TrueCostOwnershipIndex: React.FC<{ homes: Home[] }> = ({ homes }) 
             textAnchor="middle"
             height={80}
           />
-          <YAxis stroke="#666" tick={{ fill: '#666', fontSize: 9 }} />
+          <YAxis stroke="#666" tick={{ fill: '#ffffff', fontSize: 12 }} />
           <Tooltip content={<CustomTooltip />} />
           <Bar dataKey="Score" radius={[4, 4, 0, 0]}>
             {chartData.map((entry, index) => (
@@ -620,7 +611,7 @@ const Chart46_TrueCostOwnershipIndex: React.FC<{ homes: Home[] }> = ({ homes }) 
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-      {winner && <WinnerBadge winnerName={winner.name} score={winner.score} />}
+      {winner && <WinnerBadge winnerName={winner.name} score={winner.Score} />}
       <SmartScaleLegend
         title="True Cost of Ownership Index"
         description="Combined metric: lower (Taxes + HOA) annual burden = higher score (81-100)."
@@ -644,13 +635,15 @@ const Chart47_MonthlyVsAnnualCost: React.FC<{ homes: Home[] }> = ({ homes }) => 
   const maxScore = Math.max(...chartData.map((d) => d.score));
   const winner = chartData.find((d) => d.score === maxScore);
 
-  console.log('🔍 Chart 4-7 - Monthly vs Annual Cost');
-  chartData.forEach((d) => {
-    console.log(
-      `  🧠 ${d.name}: Monthly=${formatCurrency(d.Monthly)}, Annual=${formatCurrency(d.Annual)}, Score=${Math.round(d.score)}`
-    );
-  });
-  console.log(`  🏆 Winner: ${winner?.name} (Score: ${Math.round(maxScore)})`);
+  useEffect(() => {
+    console.log('🔍 Chart 4-7 - Monthly vs Annual Cost');
+    chartData.forEach((d) => {
+      console.log(
+        `  🧠 ${d.name}: Monthly=${formatCurrency(d.Monthly)}, Annual=${formatCurrency(d.Annual)}, Score=${Math.round(d.score)}`
+      );
+    });
+    console.log(`  🏆 Winner: ${winner?.name} (Score: ${Math.round(maxScore)})`);
+  }, [homes]);
 
   return (
     <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
@@ -658,7 +651,7 @@ const Chart47_MonthlyVsAnnualCost: React.FC<{ homes: Home[] }> = ({ homes }) => 
       <div className="text-lg font-semibold text-white mb-1">
         Chart 4-7: Monthly vs Annual Cost
       </div>
-      <div className="text-sm text-gray-400 mb-4">
+      <div className="text-sm text-gray-400 mt-3 mb-4">
         Simplified monthly breakdown
       </div>
       <ResponsiveContainer width="100%" height={300}>
@@ -672,7 +665,7 @@ const Chart47_MonthlyVsAnnualCost: React.FC<{ homes: Home[] }> = ({ homes }) => 
             textAnchor="middle"
             height={70}
           />
-          <YAxis stroke="#666" tick={{ fill: '#666', fontSize: 8 }} />
+          <YAxis stroke="#666" tick={{ fill: '#ffffff', fontSize: 12 }} />
           <Tooltip content={<CustomTooltip />} />
           <Legend wrapperStyle={{ color: '#ffffff' }} iconType="rect" />
           <Bar dataKey="Monthly" fill="#FF9800" radius={[4, 4, 0, 0]} />
@@ -741,11 +734,13 @@ const Chart48_FinancialEfficiencyRadar: React.FC<{ homes: Home[] }> = ({ homes }
   const maxScore = Math.max(...avgScores.map((d) => d.avgScore));
   const winner = avgScores.find((d) => d.avgScore === maxScore);
 
-  console.log('🔍 Chart 4-8 - Financial Efficiency Radar');
-  avgScores.forEach((d) => {
-    console.log(`  🧠 ${d.name}: Avg Score=${Math.round(d.avgScore)}`);
-  });
-  console.log(`  🏆 Winner: ${winner?.name} (Score: ${Math.round(maxScore)})`);
+  useEffect(() => {
+    console.log('🔍 Chart 4-8 - Financial Efficiency Radar');
+    avgScores.forEach((d) => {
+      console.log(`  🧠 ${d.name}: Avg Score=${Math.round(d.avgScore)}`);
+    });
+    console.log(`  🏆 Winner: ${winner?.name} (Score: ${Math.round(maxScore)})`);
+  }, [homes]);
 
   return (
     <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
@@ -753,7 +748,7 @@ const Chart48_FinancialEfficiencyRadar: React.FC<{ homes: Home[] }> = ({ homes }
       <div className="text-lg font-semibold text-white mb-1">
         Chart 4-8: Financial Efficiency Radar
       </div>
-      <div className="text-sm text-gray-400 mb-4">
+      <div className="text-sm text-gray-400 mt-3 mb-4">
         Multi-factor ownership profile
       </div>
       <ResponsiveContainer width="100%" height={300}>
