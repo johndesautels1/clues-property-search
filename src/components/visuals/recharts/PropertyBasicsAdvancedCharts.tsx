@@ -422,7 +422,6 @@ function SpaceEfficiencyBubble({ homes }: { homes: Home[] }) {
               return [value, name];
             }}
           />
-          <Legend wrapperStyle={{ color: COLORS.text }} />
           {bubbleData.map((entry, index) => (
             <Scatter
               key={index}
@@ -431,6 +430,7 @@ function SpaceEfficiencyBubble({ homes }: { homes: Home[] }) {
               fill={entry.color}
             />
           ))}
+          <Legend wrapperStyle={{ color: COLORS.text }} />
         </ScatterChart>
       </ResponsiveContainer>
 
