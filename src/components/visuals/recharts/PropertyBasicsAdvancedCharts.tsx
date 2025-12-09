@@ -227,8 +227,8 @@ function PropertyProfileRadar({ homes }: { homes: Home[] }) {
         </div>
       </div>
 
-      <h3 className="text-lg font-semibold text-white mb-2">Property Profile Radar</h3>
-      <p className="text-xs text-gray-400 mb-4">6-dimensional comparison with aggregate scoring (larger filled area = better overall)</p>
+      <h3 className="text-lg font-semibold text-white mb-1">Property Profile Radar</h3>
+      <p className="text-xs text-gray-400 mb-4 mt-3">6-dimensional comparison with aggregate scoring (larger filled area = better overall)</p>
 
       <ResponsiveContainer width="100%" height={320}>
         <RadarChart data={radarData}>
