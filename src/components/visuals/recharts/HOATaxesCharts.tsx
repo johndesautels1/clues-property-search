@@ -911,6 +911,7 @@ const HOATaxesCharts: React.FC<{ homes: Home[] }> = ({ homes }) => {
         <Chart43_HOAVsTaxBurden homes={homes} />
         <Chart45_CostDistributionDonut homes={homes} />
         <Chart47_MonthlyVsAnnualCost homes={homes} />
+        <Chart46_TrueCostOwnershipIndex homes={homes} />
       </div>
     </div>
   );

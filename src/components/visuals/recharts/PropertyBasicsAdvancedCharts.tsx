@@ -682,7 +682,13 @@ export default function PropertyBasicsAdvancedCharts({ homes }: PropertyBasicsAd
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PropertyProfileRadar homes={homes} />
         <SpaceEfficiencyBubble homes={homes} />
-        <TotalCapacityDonut homes={homes} />
+      </div>
+
+      {/* Centered chart 3-10 */}
+      <div className="flex justify-center mt-6">
+        <div className="w-full lg:w-1/2">
+          <TotalCapacityDonut homes={homes} />
+        </div>
       </div>
 
       {/* Footer Note with PROPER guidance */}

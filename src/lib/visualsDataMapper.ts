@@ -39,6 +39,7 @@ export interface ChartProperty {
 
   // Property Basics
   bedrooms: number;
+  fullBathrooms: number;
   bathrooms: number;
   halfBaths: number;
   livingSqft: number;
@@ -49,6 +50,7 @@ export interface ChartProperty {
   propertyType: string;
   stories: number;
   garageSpaces: number;
+  parkingTotal: string;
 
   // HOA & Taxes
   hoaYn: boolean;
@@ -241,6 +243,7 @@ export function mapPropertyToChart(property: Property): ChartProperty {
 
     // Property Basics
     bedrooms: getVal(details?.bedrooms, 0),
+    fullBathrooms: getVal(details?.fullBathrooms, 0),
     bathrooms: getVal(details?.totalBathrooms, 0),
     halfBaths: getVal(details?.halfBathrooms, 0),
     livingSqft: getVal(details?.livingSqft, 0),
@@ -251,6 +254,7 @@ export function mapPropertyToChart(property: Property): ChartProperty {
     propertyType: getVal(details?.propertyType, 'Unknown'),
     stories: getVal(details?.stories, 1),
     garageSpaces: getVal(details?.garageSpaces, 0),
+    parkingTotal: getVal(details?.parkingTotal, ''),
 
     // HOA & Taxes
     hoaYn: getVal(details?.hoaYn, false),

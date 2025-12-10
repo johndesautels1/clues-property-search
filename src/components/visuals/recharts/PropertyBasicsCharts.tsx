@@ -841,22 +841,16 @@ function PropertyAgeComparison({ homes }: { homes: Home[] }) {
   const currentYear = new Date().getFullYear();
   const ages = homes.map((h) => currentYear - h.yearBuilt);
 
-  // CUSTOM SCORING: 50-year depreciation scale
-  // Each year of age subtracts 2 points from 100
+  // CUSTOM SCORING: 100-year lifespan depreciation scale
+  // Each year of age subtracts 1 point from 100
   // 0 years = 100 pts (Green/Excellent)
-  // 10 years = 80 pts (Blue/Good)
-  // 25 years = 50 pts (Yellow/Average)
-  // 40 years = 20 pts (Orange/Fair)
-  // 50+ years = 0 pts (Red/Poor)
+  // 20 years = 80 pts (Blue/Good)
+  // 50 years = 50 pts (Yellow/Average)
+  // 80 years = 20 pts (Orange/Fair)
+  // 100+ years = 0 pts (Red/Poor)
   const scores = ages.map((age) => {
-    const rawScore = Math.max(0, 100 - (age * 2)); // Each year subtracts 2 points
-
-    // Map to 5-tier discrete values based on raw score
-    if (rawScore > 80) return 100;   // 0-9 years (82-100) = Green/Excellent
-    if (rawScore > 60) return 75;    // 10-19 years (62-80) = Blue/Good
-    if (rawScore > 40) return 50;    // 20-29 years (42-60) = Yellow/Average
-    if (rawScore > 20) return 25;    // 30-39 years (22-40) = Orange/Fair
-    return 0;                         // 40-50+ years (0-20) = Red/Poor
+    // Each year subtracts 1 point from 100 (100-year lifespan model)
+    return Math.max(0, 100 - age);
   });
 
   const maxScore = Math.max(...scores);
@@ -879,20 +873,14 @@ function PropertyAgeComparison({ homes }: { homes: Home[] }) {
       console.log(`  Calculated Age: ${ages[idx]} years`);
     });
     console.log('');
-    console.log('🧠 Chart 3-6: Smart Score Calculation (CUSTOM 50-Year Depreciation Scale):');
-    console.log('SCORING LOGIC: Each year of age subtracts 2 points from 100');
-    console.log('  0-9 years = 100 pts (Green/Excellent) - Raw score 82-100');
-    console.log('  10-19 years = 75 pts (Blue/Good) - Raw score 62-80');
-    console.log('  20-29 years = 50 pts (Yellow/Average) - Raw score 42-60');
-    console.log('  30-39 years = 25 pts (Orange/Fair) - Raw score 22-40');
-    console.log('  40-50+ years = 0 pts (Red/Poor) - Raw score 0-20');
+    console.log('🧠 Chart 3-6: Smart Score Calculation (100-Year Lifespan Model):');
+    console.log('SCORING LOGIC: Each year of age subtracts 1 point from 100');
+    console.log('  0 years = 100 pts, 20 years = 80 pts, 50 years = 50 pts, 100+ years = 0 pts');
     console.log('');
     homes.forEach((h, idx) => {
-      const rawScore = Math.max(0, 100 - (ages[idx] * 2));
       console.log(`Property ${idx + 1}: ${h.name.split(',')[0]}`);
       console.log(`  Built: ${h.yearBuilt} (${ages[idx]} years old)`);
-      console.log(`  Raw Score: ${rawScore}/100 (100 - ${ages[idx]} × 2)`);
-      console.log(`  🎯 Smart Score: ${scores[idx]}/100 (${getScoreLabel(scores[idx])})`);
+      console.log(`  🎯 Smart Score: ${scores[idx]}/100 (100 - ${ages[idx]}) - ${getScoreLabel(scores[idx])}`);
       console.log('');
     });
     const winners = homes.filter((_, idx) => scores[idx] === maxScore);
@@ -920,7 +908,7 @@ function PropertyAgeComparison({ homes }: { homes: Home[] }) {
       </div>
 
       <h3 className="text-lg font-semibold text-white mb-2">Property Age</h3>
-      <p className="text-xs text-gray-400 mb-4">50-year depreciation scale: each year subtracts 2 points (100 = new, 0 = 50+ years)</p>
+      <p className="text-xs text-gray-400 mb-4">100-year lifespan model: each year subtracts 1 point (100 = new, 0 = 100+ years)</p>
 
       <ResponsiveContainer width="100%" height={250}>
         <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
@@ -988,7 +976,15 @@ function PropertyAgeComparison({ homes }: { homes: Home[] }) {
             <div className="text-xs text-gray-300">
               CLUES-Smart Score: <span style={{ color: getScoreColor(maxScore), fontWeight: 700 }}>
                 {maxScore}/100
-              </span> ({getScoreLabel(maxScore)}) - Newest property: Built {Math.max(...homes.map(h => h.yearBuilt))}
+              </span> ({getScoreLabel(maxScore)}) - {(() => {
+                const winners = homes.filter((_, idx) => scores[idx] === maxScore);
+                if (winners.length === 1) {
+                  return `Built ${winners[0].yearBuilt} (${currentYear - winners[0].yearBuilt} years old)`;
+                } else {
+                  const winnerYears = winners.map(h => `${h.yearBuilt} (${currentYear - h.yearBuilt}y)`).join(', ');
+                  return `Built ${winnerYears}`;
+                }
+              })()}
             </div>
           </div>
         </div>
@@ -1139,14 +1135,21 @@ function ParkingCapacity({ homes }: { homes: Home[] }) {
 // ============================================
 export default function PropertyBasicsCharts({ homes }: PropertyBasicsChartsProps) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <BedroomComparison homes={homes} />
-      <BathroomComparison homes={homes} />
-      <LivingSpaceShowdown homes={homes} />
-      <LotSizeComparison homes={homes} />
-      <SpaceEfficiencyRatio homes={homes} />
-      <PropertyAgeComparison homes={homes} />
-      <ParkingCapacity homes={homes} />
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <BedroomComparison homes={homes} />
+        <BathroomComparison homes={homes} />
+        <LivingSpaceShowdown homes={homes} />
+        <LotSizeComparison homes={homes} />
+        <SpaceEfficiencyRatio homes={homes} />
+        <PropertyAgeComparison homes={homes} />
+      </div>
+      {/* Centered chart 3-7 */}
+      <div className="flex justify-center">
+        <div className="w-full lg:w-1/2">
+          <ParkingCapacity homes={homes} />
+        </div>
+      </div>
     </div>
   );
 }
