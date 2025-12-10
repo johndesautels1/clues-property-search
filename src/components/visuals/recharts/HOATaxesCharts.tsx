@@ -908,7 +908,16 @@ const HOATaxesCharts: React.FC<{ homes: Home[] }> = ({ homes }) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Chart41_AnnualCostBreakdown homes={homes} />
         <Chart42_TaxRateComparison homes={homes} />
-        <Chart43_HOAVsTaxBurden homes={homes} />
+      </div>
+
+      {/* Centered Chart 4-3 */}
+      <div className="flex justify-center">
+        <div className="w-full lg:w-1/2">
+          <Chart43_HOAVsTaxBurden homes={homes} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Chart45_CostDistributionDonut homes={homes} />
         <Chart47_MonthlyVsAnnualCost homes={homes} />
         <Chart46_TrueCostOwnershipIndex homes={homes} />
