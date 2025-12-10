@@ -25,30 +25,9 @@ import { motion } from 'framer-motion';
 import { ChartProperty } from '@/lib/visualsDataMapper';
 import { usePropertyStore } from '@/store/propertyStore';
 import { mapPropertiesToChart } from '@/lib/visualsDataMapper';
-import HOATaxesCharts from './recharts/HOATaxesCharts';
 
 interface Category21Props {
   properties: ChartProperty[];
-}
-
-// Map ChartProperty to HOATaxesCharts Home interface
-// VERIFIED AGAINST SCHEMA: Fields 30-38 (HOA & Taxes)
-function mapToHOATaxesHomes(properties: ChartProperty[]) {
-  return properties.map((p, idx) => ({
-    id: p.id,
-    name: p.address || 'Unknown Address',
-    color: ['#22c55e', '#8b5cf6', '#ec4899'][idx] || '#22c55e',  // Green, Lavender, Pink
-    // Fields 30-38: HOA & Taxes
-    hoaYN: p.hoaYn || false,                     // Field 30: hoa_yn
-    hoaFeeAnnual: p.hoaFeeAnnual || 0,          // Field 31: hoa_fee_annual
-    hoaName: p.hoaName || '',                    // Field 32: hoa_name
-    hoaIncludes: p.hoaIncludes || '',            // Field 33: hoa_includes (missing from interface)
-    ownershipType: p.ownershipType || 'Fee Simple', // Field 34: ownership_type (missing from interface)
-    annualTaxes: p.annualTaxes || 0,            // Field 35: annual_taxes
-    taxYear: p.taxYear || new Date().getFullYear(), // Field 36: tax_year (missing from interface)
-    propertyTaxRate: p.propertyTaxRate || 0,    // Field 37: property_tax_rate
-    taxExemptions: p.taxExemptions || '',        // Field 38: tax_exemptions
-  }));
 }
 
 // Sample properties for testing (using correct schema field names)
@@ -221,32 +200,10 @@ export default function Category21_AdvancedVisuals({ properties }: Category21Pro
         <span className="text-sm font-medium text-cyan-300">DeepSeek Advanced Visualizations</span>
       </motion.div>
 
-      {/* Section 4: HOA & Taxes Charts (Fields 30-38) */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.3 }}
-        className="mt-12 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30"
-      >
-        <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" />
-        <span className="text-sm font-medium text-orange-300">Section 4: HOA & Taxes Analysis (Fields 30-38)</span>
-      </motion.div>
-
-      {/* HOA & Taxes Charts */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.4 }}
-        className="mt-6"
-      >
-        {selectedChartProperties.length > 0 ? (
-          <HOATaxesCharts homes={mapToHOATaxesHomes(selectedChartProperties)} />
-        ) : (
-          <div className="text-center py-12 text-gray-400">
-            Please select at least one property from the dropdowns above
-          </div>
-        )}
-      </motion.div>
+      {/* Placeholder for future DeepSeek visualizations */}
+      <div className="text-center py-12 text-gray-400">
+        Additional DeepSeek visualizations coming soon...
+      </div>
     </div>
   );
 }
