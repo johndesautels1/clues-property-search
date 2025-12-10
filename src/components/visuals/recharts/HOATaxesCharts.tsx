@@ -543,26 +543,62 @@ const Chart44_OwnershipTypeScore: React.FC<{ homes: Home[] }> = ({ homes }) => {
 // CHART 4-4: COST DISTRIBUTION - 3 SEPARATE DONUTS
 // ============================================
 const Chart45_CostDistributionDonut: React.FC<{ homes: Home[] }> = ({ homes }) => {
+  // Calculate scores for each property based on total cost
+  const scoresData = homes.map((home) => ({
+    ...home,
+    totalCost: home.annualTaxes + home.hoaFeeAnnual,
+    score: scoreTrueCostIndex(home, homes),
+  }));
+
+  // Find winner (highest score = lowest cost)
+  const maxScore = Math.max(...scoresData.map((d) => d.score));
+  const winner = scoresData.find((d) => d.score === maxScore);
+
   useEffect(() => {
     console.log('🔍 Chart 4-4 - Cost Distribution: Taxes vs HOA (3 properties)');
-    homes.forEach((home) => {
-      const totalCost = home.annualTaxes + home.hoaFeeAnnual;
+    scoresData.forEach((home) => {
       console.log(
-        `  🧠 ${home.name}: Taxes=${formatCurrency(home.annualTaxes)} (${((home.annualTaxes / totalCost) * 100).toFixed(1)}%), HOA=${formatCurrency(home.hoaFeeAnnual)} (${((home.hoaFeeAnnual / totalCost) * 100).toFixed(1)}%)`
+        `  🧠 ${home.name}: Taxes=${formatCurrency(home.annualTaxes)} (${((home.annualTaxes / home.totalCost) * 100).toFixed(1)}%), HOA=${formatCurrency(home.hoaFeeAnnual)} (${((home.hoaFeeAnnual / home.totalCost) * 100).toFixed(1)}%), Score=${Math.round(home.score)}`
       );
     });
+    console.log(`  🏆 Winner: ${winner?.name} (Score: ${Math.round(maxScore)})`);
   }, [homes]);
 
   return (
     <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 lg:col-span-2">
+      <BrainWidget score={maxScore} />
       <div className="text-lg font-semibold text-white mb-1">
         Chart 4-4: Cost Distribution: Taxes vs HOA
       </div>
       <div className="text-sm text-gray-400 mt-3 mb-4">What % of total cost is each?</div>
 
+      {/* Property Legend */}
+      <div className="flex justify-center gap-4 mb-4">
+        {homes.map((home) => (
+          <div key={home.id} className="flex items-center gap-2">
+            <div
+              className="w-4 h-4 rounded"
+              style={{ backgroundColor: home.color }}
+            ></div>
+            <span className="text-xs text-gray-300">{home.name}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Cost Color Legend */}
+      <div className="flex justify-center gap-6 mb-6">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded" style={{ backgroundColor: '#2196F3' }}></div>
+          <span className="text-xs text-gray-300">Taxes (Blue)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded" style={{ backgroundColor: '#4CAF50' }}></div>
+          <span className="text-xs text-gray-300">HOA (Green)</span>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {homes.map((home) => {
-          const totalCost = home.annualTaxes + home.hoaFeeAnnual;
+        {scoresData.map((home) => {
           const chartData = [
             { name: 'Taxes', value: home.annualTaxes, fill: '#2196F3' },
             { name: 'HOA', value: home.hoaFeeAnnual, fill: '#4CAF50' },
@@ -581,7 +617,7 @@ const Chart45_CostDistributionDonut: React.FC<{ homes: Home[] }> = ({ homes }) =
                 {home.name}
               </div>
               <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
+                <PieChart margin={{ left: 15 }}>
                   <Pie
                     data={chartData}
                     dataKey="value"
@@ -591,7 +627,7 @@ const Chart45_CostDistributionDonut: React.FC<{ homes: Home[] }> = ({ homes }) =
                     innerRadius={50}
                     outerRadius={80}
                     label={(entry) =>
-                      `${entry.name}\n${((entry.value / totalCost) * 100).toFixed(1)}%`
+                      `${entry.name}\n${((entry.value / home.totalCost) * 100).toFixed(1)}%`
                     }
                     labelLine={false}
                     labelStyle={{ fill: '#ffffff', fontSize: 11 }}
@@ -604,7 +640,7 @@ const Chart45_CostDistributionDonut: React.FC<{ homes: Home[] }> = ({ homes }) =
                 </PieChart>
               </ResponsiveContainer>
               <div className="text-center text-white font-bold text-sm mt-2">
-                Total: {formatCurrency(totalCost)}
+                Total: {formatCurrency(home.totalCost)}
               </div>
               <div className="text-center text-gray-400 text-xs mt-1">
                 Taxes: {formatCurrency(home.annualTaxes)} | HOA: {formatCurrency(home.hoaFeeAnnual)}
@@ -614,9 +650,10 @@ const Chart45_CostDistributionDonut: React.FC<{ homes: Home[] }> = ({ homes }) =
         })}
       </div>
 
+      {winner && <WinnerBadge winnerName={winner.name} score={winner.score} reason="Lowest total annual cost" />}
       <SmartScaleLegend
         title="Cost Distribution per Property"
-        description="Each donut shows the percentage breakdown of Taxes vs HOA fees for that individual property."
+        description="Each donut shows the percentage breakdown of Taxes (Blue) vs HOA (Green) for that property. Property borders match property colors. Lower total cost = higher score."
       />
     </div>
   );

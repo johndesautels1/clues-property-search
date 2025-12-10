@@ -251,13 +251,6 @@ export default function Category21_AdvancedVisuals({ properties }: Category21Pro
 
   return (
     <div className="space-y-8">
-      {/* Property Comparison Selector - 3 dropdown fields - ALWAYS VISIBLE */}
-      <PropertyComparisonSelector
-        properties={availableProperties}
-        selectedProperties={selectedProperties}
-        onPropertySelect={handlePropertySelect}
-      />
-
       {/* Header Badge */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}

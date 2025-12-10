@@ -60,15 +60,15 @@ export default function PropertyComparisonSelector({
                 <select
                   value={selectedProperties[index] || ''}
                   onChange={(e) => onPropertySelect(index as 0 | 1 | 2, e.target.value || null)}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border-2 transition-all duration-200 appearance-none cursor-pointer text-sm"
+                  className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border-2 transition-all duration-200 appearance-none cursor-pointer text-sm font-semibold"
                   style={{
                     borderColor: selectedProp ? color : 'rgba(255,255,255,0.1)',
-                    color: selectedProp ? color : '#9CA3AF',
+                    color: selectedProp ? color : '#FFFFFF',
                   }}
                 >
-                  <option value="">-- Select Property --</option>
+                  <option value="" style={{ backgroundColor: '#1e293b', color: '#FFFFFF' }}>-- Select Property --</option>
                   {properties.map((prop) => (
-                    <option key={prop.id} value={prop.id}>
+                    <option key={prop.id} value={prop.id} style={{ backgroundColor: '#1e293b', color: '#FFFFFF' }}>
                       {prop.address} ({prop.city})
                     </option>
                   ))}

@@ -18,8 +18,7 @@ import {
   ParkingCircle, Building, FileText, Waves, ChevronDown, Rocket
 } from 'lucide-react';
 
-// Import SMART Score section and Property Selector (displayed at top)
-import SMARTScoreSection from '@/components/visuals/SMARTScoreSection';
+// Import Property Selector (displayed at top)
 import PropertyComparisonSelector from '@/components/visuals/PropertyComparisonSelector';
 
 // Lazy load category components
@@ -108,20 +107,444 @@ export default function Visuals() {
   const properties = Array.from(fullProperties.values());
   const chartProperties = mapPropertiesToChart(properties);
 
+  // Sample properties for testing (used when no real properties exist)
+  const SAMPLE_PROPERTIES: ChartProperty[] = [
+    {
+      id: 'sample-1',
+      address: '1821 Hillcrest Drive',
+      city: 'Tampa',
+      state: 'FL',
+      zip: '33610',
+      county: 'Hillsborough',
+      neighborhood: 'Seminole Heights',
+      mlsNumber: 'T3520001',
+      listingStatus: 'Active',
+      listingDate: '2024-01-15',
+      listingPrice: 875000,
+      pricePerSqft: 292,
+      marketValueEstimate: 850000,
+      redfinEstimate: 860000,
+      assessedValue: 825000,
+      lastSalePrice: 650000,
+      lastSaleDate: '2020-06-15',
+      bedrooms: 4,
+      bathrooms: 3,
+      halfBaths: 1,
+      livingSqft: 3000,
+      totalSqft: 3200,
+      lotSizeSqft: 8000,
+      lotSizeAcres: 0.18,
+      yearBuilt: 1985,
+      propertyType: 'Single Family',
+      stories: 2,
+      garageSpaces: 2,
+      hoaYn: false,
+      hoaFeeAnnual: 0,
+      hoaName: '',
+      hoaIncludes: '',
+      ownershipType: 'Fee Simple',
+      annualTaxes: 35000,
+      taxYear: 2024,
+      propertyTaxRate: 0.88,
+      taxExemptions: '',
+      roofType: 'Shingle',
+      roofAge: '10 years',
+      hvacType: 'Central',
+      hvacAge: '5 years',
+      exteriorMaterial: 'Brick',
+      foundation: 'Slab',
+      waterHeaterType: 'Tank',
+      laundryType: 'In-unit',
+      interiorCondition: 'Excellent',
+      flooringType: 'Hardwood',
+      kitchenFeatures: 'Granite, Stainless',
+      appliancesIncluded: ['Refrigerator', 'Dishwasher', 'Microwave'],
+      fireplaceYn: true,
+      fireplaceCount: 1,
+      poolYn: false,
+      poolType: '',
+      deckPatio: 'Covered Patio',
+      fence: 'Privacy',
+      landscaping: 'Professional',
+      recentRenovations: 'Kitchen 2022',
+      permitHistoryRoof: 'None',
+      permitHistoryHvac: '2019',
+      assignedElementary: 'Seminole Elementary',
+      elementaryRating: 'A',
+      elementaryDistance: 0.5,
+      assignedMiddle: 'Madison Middle',
+      middleRating: 'A',
+      middleDistance: 1.2,
+      assignedHigh: 'Hillsborough High',
+      highRating: 'B+',
+      highDistance: 2.1,
+      schoolDistrict: 'Hillsborough County',
+      walkScore: 65,
+      transitScore: 45,
+      bikeScore: 70,
+      noiseLevel: 'Moderate',
+      trafficLevel: 'Low',
+      walkabilityDescription: 'Somewhat Walkable',
+      distanceGrocery: 0.8,
+      distanceHospital: 2.5,
+      distanceAirport: 8.2,
+      distancePark: 0.3,
+      distanceBeach: 15.5,
+      violentCrimeIndex: 'Low',
+      propertyCrimeIndex: 'Low',
+      neighborhoodSafetyRating: 'A',
+      medianHomePriceNeighborhood: 650000,
+      pricePerSqftRecentAvg: 280,
+      priceToRentRatio: 18,
+      rentalEstimateMonthly: 3500,
+      rentalYieldEst: 4.8,
+      capRateEst: 3.2,
+      insuranceEstAnnual: 4500,
+      daysOnMarketAvg: 25,
+      electricProvider: 'Tampa Electric',
+      waterProvider: 'City of Tampa',
+      sewerProvider: 'City of Tampa',
+      internetProvidersTop3: ['Frontier', 'Spectrum', 'AT&T'],
+      maxInternetSpeed: '1 Gbps',
+      fiberAvailable: true,
+      avgElectricBill: '$180',
+      avgWaterBill: '$65',
+      airQualityIndex: 'Good',
+      airQualityGrade: 'B',
+      floodZone: 'X',
+      floodRiskLevel: 'Low',
+      hurricaneRisk: 'Moderate',
+      earthquakeRisk: 'Very Low',
+      wildfireRisk: 'Low',
+      seaLevelRiseRisk: 'Low',
+      solarPotential: 'Excellent',
+      evCharging: 'None',
+      smartHomeFeatures: 'Nest Thermostat',
+      viewType: 'Street',
+      lotFeatures: 'Mature Trees',
+      petPolicy: 'Allowed',
+      carportYn: false,
+      carportSpaces: 0,
+      garageAttachedYn: true,
+      parkingFeatures: ['2-Car Garage'],
+      floorNumber: 0,
+      buildingTotalFloors: 2,
+      buildingElevatorYn: false,
+      subdivisionName: 'Seminole Heights Historic',
+      homesteadYn: true,
+      cddYn: false,
+      annualCddFee: 0,
+      waterFrontageYn: false,
+      waterfrontFeet: 0,
+      waterAccessYn: false,
+      waterViewYn: false,
+      waterBodyName: '',
+      canBeLeasedYn: true,
+      minimumLeasePeriod: '12 months',
+      petSizeLimit: 'No limit',
+      communityFeatures: ['Sidewalks', 'Street Lights'],
+      interiorFeatures: ['Crown Molding', 'Ceiling Fans'],
+      exteriorFeatures: ['Covered Patio', 'Privacy Fence'],
+      smartScore: 85,
+      dataCompleteness: 92,
+    },
+    {
+      id: 'sample-2',
+      address: '1947 Oakwood Avenue',
+      city: 'Tampa',
+      state: 'FL',
+      zip: '33606',
+      county: 'Hillsborough',
+      neighborhood: 'Hyde Park',
+      mlsNumber: 'T3520002',
+      listingStatus: 'Active',
+      listingDate: '2024-01-20',
+      listingPrice: 1250000,
+      pricePerSqft: 312,
+      marketValueEstimate: 1200000,
+      redfinEstimate: 1225000,
+      assessedValue: 1180000,
+      lastSalePrice: 980000,
+      lastSaleDate: '2019-03-10',
+      bedrooms: 5,
+      bathrooms: 4,
+      halfBaths: 1,
+      livingSqft: 4000,
+      totalSqft: 4300,
+      lotSizeSqft: 10000,
+      lotSizeAcres: 0.23,
+      yearBuilt: 2010,
+      propertyType: 'Single Family',
+      stories: 2,
+      garageSpaces: 3,
+      hoaYn: true,
+      hoaFeeAnnual: 1200,
+      hoaName: 'Hyde Park HOA',
+      hoaIncludes: 'Landscaping, Pool',
+      ownershipType: 'Fee Simple',
+      annualTaxes: 33000,
+      taxYear: 2024,
+      propertyTaxRate: 0.85,
+      taxExemptions: 'Homestead',
+      roofType: 'Tile',
+      roofAge: '14 years',
+      hvacType: 'Central',
+      hvacAge: '3 years',
+      exteriorMaterial: 'Stucco',
+      foundation: 'Slab',
+      waterHeaterType: 'Tankless',
+      laundryType: 'In-unit',
+      interiorCondition: 'Excellent',
+      flooringType: 'Hardwood/Tile',
+      kitchenFeatures: 'Granite, Stainless, Island',
+      appliancesIncluded: ['Refrigerator', 'Dishwasher', 'Microwave', 'Range'],
+      fireplaceYn: true,
+      fireplaceCount: 2,
+      poolYn: true,
+      poolType: 'In-ground',
+      deckPatio: 'Pool Deck',
+      fence: 'Privacy',
+      landscaping: 'Professional',
+      recentRenovations: 'Master Bath 2023',
+      permitHistoryRoof: 'None',
+      permitHistoryHvac: '2021',
+      assignedElementary: 'Gorrie Elementary',
+      elementaryRating: 'A+',
+      elementaryDistance: 0.4,
+      assignedMiddle: 'Wilson Middle',
+      middleRating: 'A',
+      middleDistance: 1.0,
+      assignedHigh: 'Plant High',
+      highRating: 'A',
+      highDistance: 1.8,
+      schoolDistrict: 'Hillsborough County',
+      walkScore: 78,
+      transitScore: 52,
+      bikeScore: 80,
+      noiseLevel: 'Low',
+      trafficLevel: 'Moderate',
+      walkabilityDescription: 'Very Walkable',
+      distanceGrocery: 0.4,
+      distanceHospital: 1.8,
+      distanceAirport: 6.5,
+      distancePark: 0.2,
+      distanceBeach: 12.0,
+      violentCrimeIndex: 'Very Low',
+      propertyCrimeIndex: 'Low',
+      neighborhoodSafetyRating: 'A+',
+      medianHomePriceNeighborhood: 950000,
+      pricePerSqftRecentAvg: 305,
+      priceToRentRatio: 20,
+      rentalEstimateMonthly: 5200,
+      rentalYieldEst: 5.0,
+      capRateEst: 3.5,
+      insuranceEstAnnual: 6000,
+      daysOnMarketAvg: 18,
+      electricProvider: 'Tampa Electric',
+      waterProvider: 'City of Tampa',
+      sewerProvider: 'City of Tampa',
+      internetProvidersTop3: ['Frontier', 'Spectrum', 'AT&T'],
+      maxInternetSpeed: '1 Gbps',
+      fiberAvailable: true,
+      avgElectricBill: '$220',
+      avgWaterBill: '$75',
+      airQualityIndex: 'Good',
+      airQualityGrade: 'A',
+      floodZone: 'X',
+      floodRiskLevel: 'Low',
+      hurricaneRisk: 'Moderate',
+      earthquakeRisk: 'Very Low',
+      wildfireRisk: 'Low',
+      seaLevelRiseRisk: 'Low',
+      solarPotential: 'Excellent',
+      evCharging: 'Level 2',
+      smartHomeFeatures: 'Full Smart Home',
+      viewType: 'Garden',
+      lotFeatures: 'Mature Trees, Pool',
+      petPolicy: 'Allowed',
+      carportYn: false,
+      carportSpaces: 0,
+      garageAttachedYn: true,
+      parkingFeatures: ['3-Car Garage'],
+      floorNumber: 0,
+      buildingTotalFloors: 2,
+      buildingElevatorYn: false,
+      subdivisionName: 'Hyde Park',
+      homesteadYn: true,
+      cddYn: false,
+      annualCddFee: 0,
+      waterFrontageYn: false,
+      waterfrontFeet: 0,
+      waterAccessYn: false,
+      waterViewYn: false,
+      waterBodyName: '',
+      canBeLeasedYn: true,
+      minimumLeasePeriod: '12 months',
+      petSizeLimit: 'No limit',
+      communityFeatures: ['Pool', 'Tennis Courts', 'Sidewalks'],
+      interiorFeatures: ['Crown Molding', 'Coffered Ceilings', 'Built-ins'],
+      exteriorFeatures: ['Pool', 'Summer Kitchen', 'Privacy Fence'],
+      smartScore: 92,
+      dataCompleteness: 96,
+    },
+    {
+      id: 'sample-3',
+      address: '725 Live Oak Street',
+      city: 'Tampa',
+      state: 'FL',
+      zip: '33602',
+      county: 'Hillsborough',
+      neighborhood: 'Downtown',
+      mlsNumber: 'T3520003',
+      listingStatus: 'Active',
+      listingDate: '2024-02-01',
+      listingPrice: 625000,
+      pricePerSqft: 357,
+      marketValueEstimate: 610000,
+      redfinEstimate: 620000,
+      assessedValue: 590000,
+      lastSalePrice: 450000,
+      lastSaleDate: '2018-11-20',
+      bedrooms: 2,
+      bathrooms: 2,
+      halfBaths: 1,
+      livingSqft: 1750,
+      totalSqft: 1900,
+      lotSizeSqft: 0,
+      lotSizeAcres: 0,
+      yearBuilt: 2015,
+      propertyType: 'Condo',
+      stories: 1,
+      garageSpaces: 1,
+      hoaYn: true,
+      hoaFeeAnnual: 600,
+      hoaName: 'Downtown Tower HOA',
+      hoaIncludes: 'Water, Trash, Gym, Pool',
+      ownershipType: 'Condo',
+      annualTaxes: 31000,
+      taxYear: 2024,
+      propertyTaxRate: 0.82,
+      taxExemptions: 'None',
+      roofType: 'Flat',
+      roofAge: '9 years',
+      hvacType: 'Central',
+      hvacAge: '9 years',
+      exteriorMaterial: 'Concrete',
+      foundation: 'Concrete',
+      waterHeaterType: 'Tankless',
+      laundryType: 'In-unit',
+      interiorCondition: 'Good',
+      flooringType: 'Tile/Carpet',
+      kitchenFeatures: 'Granite, Stainless',
+      appliancesIncluded: ['Refrigerator', 'Dishwasher', 'Microwave'],
+      fireplaceYn: false,
+      fireplaceCount: 0,
+      poolYn: false,
+      poolType: '',
+      deckPatio: 'Balcony',
+      fence: 'None',
+      landscaping: 'HOA Maintained',
+      recentRenovations: 'None',
+      permitHistoryRoof: 'None',
+      permitHistoryHvac: 'None',
+      assignedElementary: 'Mitchell Elementary',
+      elementaryRating: 'B',
+      elementaryDistance: 1.2,
+      assignedMiddle: 'Madison Middle',
+      middleRating: 'B+',
+      middleDistance: 2.0,
+      assignedHigh: 'Blake High',
+      highRating: 'B',
+      highDistance: 3.5,
+      schoolDistrict: 'Hillsborough County',
+      walkScore: 95,
+      transitScore: 75,
+      bikeScore: 92,
+      noiseLevel: 'High',
+      trafficLevel: 'High',
+      walkabilityDescription: "Walker's Paradise",
+      distanceGrocery: 0.2,
+      distanceHospital: 0.5,
+      distanceAirport: 5.0,
+      distancePark: 0.3,
+      distanceBeach: 18.0,
+      violentCrimeIndex: 'Moderate',
+      propertyCrimeIndex: 'Moderate',
+      neighborhoodSafetyRating: 'B',
+      medianHomePriceNeighborhood: 480000,
+      pricePerSqftRecentAvg: 340,
+      priceToRentRatio: 22,
+      rentalEstimateMonthly: 2800,
+      rentalYieldEst: 5.4,
+      capRateEst: 3.8,
+      insuranceEstAnnual: 2200,
+      daysOnMarketAvg: 35,
+      electricProvider: 'Tampa Electric',
+      waterProvider: 'City of Tampa',
+      sewerProvider: 'City of Tampa',
+      internetProvidersTop3: ['Frontier', 'Spectrum', 'AT&T'],
+      maxInternetSpeed: '1 Gbps',
+      fiberAvailable: true,
+      avgElectricBill: '$95',
+      avgWaterBill: 'Included in HOA',
+      airQualityIndex: 'Moderate',
+      airQualityGrade: 'B',
+      floodZone: 'X',
+      floodRiskLevel: 'Low',
+      hurricaneRisk: 'Moderate',
+      earthquakeRisk: 'Very Low',
+      wildfireRisk: 'Very Low',
+      seaLevelRiseRisk: 'Low',
+      solarPotential: 'Limited',
+      evCharging: 'Available',
+      smartHomeFeatures: 'Basic',
+      viewType: 'City',
+      lotFeatures: 'None',
+      petPolicy: 'Cats Only',
+      carportYn: false,
+      carportSpaces: 0,
+      garageAttachedYn: false,
+      parkingFeatures: ['Assigned Parking'],
+      floorNumber: 12,
+      buildingTotalFloors: 20,
+      buildingElevatorYn: true,
+      subdivisionName: 'Downtown Tower',
+      homesteadYn: false,
+      cddYn: false,
+      annualCddFee: 0,
+      waterFrontageYn: false,
+      waterfrontFeet: 0,
+      waterAccessYn: false,
+      waterViewYn: true,
+      waterBodyName: 'Hillsborough River',
+      canBeLeasedYn: true,
+      minimumLeasePeriod: '6 months',
+      petSizeLimit: 'Cats only',
+      communityFeatures: ['Pool', 'Gym', 'Concierge'],
+      interiorFeatures: ['Open Floor Plan', 'High Ceilings'],
+      exteriorFeatures: ['Balcony'],
+      smartScore: 78,
+      dataCompleteness: 88,
+    },
+  ];
+
+  // Use sample properties if no real properties exist
+  const displayProperties = chartProperties.length > 0 ? chartProperties : SAMPLE_PROPERTIES;
+
   // Auto-select first 3 properties if none selected and properties exist
   useEffect(() => {
-    if (chartProperties.length >= 3 && !selectedProperties[0] && !selectedProperties[1] && !selectedProperties[2]) {
+    if (displayProperties.length >= 3 && !selectedProperties[0] && !selectedProperties[1] && !selectedProperties[2]) {
       setSelectedProperties([
-        chartProperties[0].id,
-        chartProperties[1].id,
-        chartProperties[2].id,
+        displayProperties[0].id,
+        displayProperties[1].id,
+        displayProperties[2].id,
       ]);
-    } else if (chartProperties.length === 2 && !selectedProperties[0] && !selectedProperties[1]) {
-      setSelectedProperties([chartProperties[0].id, chartProperties[1].id, null]);
-    } else if (chartProperties.length === 1 && !selectedProperties[0]) {
-      setSelectedProperties([chartProperties[0].id, null, null]);
+    } else if (displayProperties.length === 2 && !selectedProperties[0] && !selectedProperties[1]) {
+      setSelectedProperties([displayProperties[0].id, displayProperties[1].id, null]);
+    } else if (displayProperties.length === 1 && !selectedProperties[0]) {
+      setSelectedProperties([displayProperties[0].id, null, null]);
     }
-  }, [chartProperties.length]);
+  }, [displayProperties.length]);
 
   // Handle property selection change
   const handlePropertySelect = (index: 0 | 1 | 2, propertyId: string | null) => {
@@ -131,7 +554,7 @@ export default function Visuals() {
   };
 
   // Get only the selected properties for charts
-  const selectedChartProperties = chartProperties.filter(p =>
+  const selectedChartProperties = displayProperties.filter(p =>
     selectedProperties.includes(p.id)
   );
 
@@ -152,31 +575,21 @@ export default function Visuals() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
+          className="mb-6 text-center"
         >
           <h1 className="text-2xl md:text-3xl font-bold text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)] mb-2">
-            Advanced Analytics
+            Advanced Visuals
           </h1>
-          <p className="text-gray-400 text-sm md:text-base">
-            180 Visualizations • 21 Categories • {chartProperties.length} Properties
-          </p>
         </motion.div>
 
-        {/* SMART Score Section - Top of page, outside category tabs */}
-        {chartProperties.length > 0 && (
-          <SMARTScoreSection properties={chartProperties} />
-        )}
+        {/* Property Comparison Selector - 3 dropdown fields - ALWAYS VISIBLE */}
+        <PropertyComparisonSelector
+          properties={displayProperties}
+          selectedProperties={selectedProperties}
+          onPropertySelect={handlePropertySelect}
+        />
 
-        {/* Property Comparison Selector - 3 dropdown fields */}
-        {chartProperties.length > 0 && (
-          <PropertyComparisonSelector
-            properties={chartProperties}
-            selectedProperties={selectedProperties}
-            onPropertySelect={handlePropertySelect}
-          />
-        )}
-
-        {/* Category Tabs - Horizontal scroll on mobile, wrapped on desktop */}
+        {/* Category Tabs - Uniform size, centered content */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -184,7 +597,7 @@ export default function Visuals() {
           className="mb-6"
         >
           <div className="overflow-x-auto scrollbar-hide">
-            <div className="flex md:flex-wrap gap-2 pb-2 min-w-max md:min-w-0">
+            <div className="flex md:flex-wrap gap-3 pb-2 min-w-max md:min-w-0 justify-center">
               {categories.map((category, index) => {
                 const Icon = category.icon;
                 const isActive = activeCategory === category.id;
@@ -198,7 +611,7 @@ export default function Visuals() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setActiveCategory(category.id)}
-                    className={`relative px-4 py-3 rounded-xl transition-all duration-300 flex-shrink-0 ${
+                    className={`relative w-[180px] h-[80px] rounded-xl transition-all duration-300 flex-shrink-0 ${
                       isActive
                         ? 'bg-white/10 border-2 border-cyan-500/50 shadow-lg shadow-cyan-500/20'
                         : 'bg-white/5 border-2 border-white/10 hover:bg-white/10'
@@ -214,20 +627,14 @@ export default function Visuals() {
                       />
                     )}
 
-                    <div className="relative flex items-center gap-2">
+                    <div className="relative h-full flex flex-col items-center justify-center gap-2 px-2">
                       <Icon
-                        className="w-5 h-5 flex-shrink-0"
+                        className="w-6 h-6 flex-shrink-0"
                         style={{ color: isActive ? category.color : '#9CA3AF' }}
                       />
-                      <div className="text-left hidden md:block">
-                        <div className={`text-sm font-medium ${isActive ? 'text-white' : 'text-gray-400'}`}>
+                      <div className="text-center">
+                        <div className={`text-xs font-semibold leading-tight ${isActive ? 'text-white' : 'text-gray-400'}`}>
                           {category.title}
-                        </div>
-                        <div className="text-xs text-gray-500">{category.description}</div>
-                      </div>
-                      <div className="text-left md:hidden">
-                        <div className={`text-xs font-medium ${isActive ? 'text-white' : 'text-gray-400'}`}>
-                          {category.title.split(' ')[0]}
                         </div>
                       </div>
                     </div>
@@ -275,7 +682,7 @@ export default function Visuals() {
         </AnimatePresence>
 
         {/* Empty state */}
-        {chartProperties.length === 0 && (
+        {displayProperties.length === 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
