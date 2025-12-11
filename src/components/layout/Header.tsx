@@ -59,14 +59,6 @@ export default function Header() {
               >
                 <span className="text-quantum-black font-orbitron font-black text-xl">C</span>
               </motion.div>
-              <div>
-                <h1 className="font-orbitron font-bold text-xl text-gradient-quantum">
-                  CLUES
-                </h1>
-                <p className="text-xs text-gray-500 uppercase tracking-widest">
-                  Property Dashboard
-                </p>
-              </div>
             </Link>
 
             {/* Desktop Navigation */}
