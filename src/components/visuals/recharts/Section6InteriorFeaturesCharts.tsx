@@ -231,7 +231,8 @@ function Chart6_2_FlooringTypeDistribution({ homes }: { homes: Home[] }) {
   const winnerIndices = propertyData
     .map((p, i) => (p.score === maxScore ? i : -1))
     .filter((i) => i !== -1);
-  const winner = propertyData[winnerIndices[0]];
+  const winners = winnerIndices.map(i => propertyData[i]);
+  const winnerNames = winners.map(w => w.name.split(',')[0]).join(' & ');
 
   useEffect(() => {
     console.log('🔍 Chart 6-2: Flooring Type Comparison - CARD-BASED DESIGN:');
@@ -241,7 +242,7 @@ function Chart6_2_FlooringTypeDistribution({ homes }: { homes: Home[] }) {
       console.log(`  ⭐ Quality Score: ${p.score}/100 (${p.label})`);
       console.log(`  🎨 Color: ${p.color}`);
     });
-    console.log(`🏆 WINNER: ${winner.name} with score ${maxScore}`);
+    console.log(`🏆 WINNER(S): ${winnerNames} with score ${maxScore}`);
   }, [homes]);
 
   return (
@@ -366,12 +367,12 @@ function Chart6_2_FlooringTypeDistribution({ homes }: { homes: Home[] }) {
       </div>
 
       <WinnerBadge
-        winnerName={winner.name.split(',')[0]}
+        winnerName={winnerNames}
         score={maxScore}
         reason="Superior flooring material quality"
       />
 
-      <SmartScaleLegend description="Flooring scores: Terrazzo/Marble/Exotic/Hardwood (81-100 Green), Vinyl Laminate (61-80 Blue), Ceramic Tile (41-60 Yellow), Carpet (21-40 Orange), Wood Laminate (0-20 Red)" />
+      <SmartScaleLegend description="Flooring Quality Methodology: Scores assigned based on material durability (lifespan), maintenance requirements, and luxury market appeal. Terrazzo/Marble (95 - 50+ year lifespan, premium luxury), Exotic/Hardwood (85-90 - premium natural materials with 30-50 year lifespan), Vinyl Laminate (70 - durable modern flooring with easy maintenance), Ceramic Tile (50 - standard quality, 20-30 year lifespan), Carpet (30 - higher maintenance, 10-15 year lifespan), Wood Laminate (15 - lower durability, 10-15 year lifespan)." />
     </motion.div>
   );
 }
