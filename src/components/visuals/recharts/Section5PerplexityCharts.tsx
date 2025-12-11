@@ -460,14 +460,36 @@ function SystemsRadar({ homes }: { homes: Home[] }) {
     },
   };
 
-  // Calculate average score for brain widget
-  const avgScore = Math.round(
-    propertyData.reduce((sum, prop) => {
-      const scores = [prop.roof, prop.foundation, prop.electrical, prop.plumbing, prop.hvac, prop.windowsExterior];
-      if (prop.hasPool) scores.push(prop.poolSpa);
-      return sum + (scores.reduce((a, b) => a + b, 0) / scores.length);
-    }, 0) / propertyData.length
+  // Calculate individual scores for each property
+  const propertyScores = propertyData.map((prop) => {
+    const scores = [prop.roof, prop.foundation, prop.electrical, prop.plumbing, prop.hvac, prop.windowsExterior];
+    if (prop.hasPool) scores.push(prop.poolSpa);
+    const averageScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+    return {
+      property: prop,
+      averageScore,
+    };
+  });
+
+  // Find the winner (highest individual score)
+  const winner = propertyScores.reduce((best, current) =>
+    current.averageScore > best.averageScore ? current : best
   );
+
+  // Calculate overall average for brain widget (average of all properties)
+  const avgScore = Math.round(
+    propertyScores.reduce((sum, ps) => sum + ps.averageScore, 0) / propertyScores.length
+  );
+
+  console.log('\n🏆 ========================================');
+  console.log('🏆 CHART 5-1 WINNER CALCULATION:');
+  console.log('🏆 ========================================');
+  propertyScores.forEach((ps) => {
+    const isWinner = ps === winner;
+    console.log(`   ${isWinner ? '🏆 WINNER' : '  '} ${ps.property.fullAddress}`);
+    console.log(`      Systems Health Score: ${ps.averageScore}/100`);
+  });
+  console.log('🏆 ========================================\n');
 
   return (
     <motion.div
@@ -516,8 +538,8 @@ function SystemsRadar({ homes }: { homes: Home[] }) {
 
       {/* Winner Badge */}
       <WinnerBadge
-        winnerName={propertyData[0]?.fullAddress || 'Property'}
-        score={avgScore}
+        winnerName={winner.property.fullAddress}
+        score={winner.averageScore}
         reason="Best overall systems age and condition"
       />
 
