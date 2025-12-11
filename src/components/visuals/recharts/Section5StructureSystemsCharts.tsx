@@ -191,18 +191,19 @@ const BrainWidget: React.FC<{ score: number }> = ({ score }) => {
 // CHART 5-4: ROOF TYPE & QUALITY COMPARISON
 // ============================================
 function Chart5_4_RoofQuality({ homes }: { homes: Home[] }) {
-  const roofQualityMap: { [key: string]: number } = {
-    Metal: 100,
-    Tile: 90,
-    Slate: 85,
-    Shingle: 60,
-    Flat: 40,
-    Other: 30,
-  };
-
   const propertyData = homes.map((h, idx) => {
     const roofType = h.roofType || 'Other';
-    const score = roofQualityMap[roofType] || 50;
+
+    // FIXED: Case-insensitive partial matching (not exact key lookup)
+    // Matches database values like "Asphalt Shingle", "Clay Tile", "METAL ROOF", etc.
+    let score = 30; // Default for "Other"
+    const typeLower = roofType.toLowerCase();
+
+    if (typeLower.includes('metal')) score = 100;           // 40-70 year lifespan, best overall
+    else if (typeLower.includes('slate')) score = 95;       // 75-100+ year lifespan, longest lasting (CORRECTED from 85)
+    else if (typeLower.includes('tile')) score = 90;        // 50+ year lifespan, excellent
+    else if (typeLower.includes('shingle') || typeLower.includes('asphalt')) score = 60;  // 15-30 year lifespan
+    else if (typeLower.includes('flat')) score = 40;        // 10-20 year lifespan, higher maintenance
 
     return {
       id: h.id,
@@ -222,10 +223,12 @@ function Chart5_4_RoofQuality({ homes }: { homes: Home[] }) {
   const winner = propertyData[winnerIndices[0]];
 
   useEffect(() => {
-    console.log('🔍 Chart 5-4: Roof Type & Quality - CARD-BASED DESIGN:');
+    console.log('🔍 Chart 5-4: Roof Type & Quality - FIXED CASE-INSENSITIVE MATCHING:');
+    console.log('   ✅ Now matches: "Asphalt Shingle", "Clay Tile", "METAL ROOF", etc.');
+    console.log('   ✅ Slate score corrected: 85 → 95 (reflects 75-100+ year lifespan)');
     propertyData.forEach((p) => {
       console.log(`📊 Property ${p.propertyNum}: ${p.name}`);
-      console.log(`  🏗️  Roof Type: ${p.roofType}`);
+      console.log(`  🏗️  Roof Type: "${p.roofType}"`);
       console.log(`  ⭐ Quality Score: ${p.score}/100 (${p.label})`);
       console.log(`  🎨 Color: ${p.color}`);
     });
@@ -351,7 +354,7 @@ function Chart5_4_RoofQuality({ homes }: { homes: Home[] }) {
         score={maxScore}
         reason="Superior roof material quality"
       />
-      <SmartScaleLegend description="Roof types scored by material durability: Metal (100) > Tile (90) > Slate (85) > Shingle (60) > Flat (40) > Other (30)" />
+      <SmartScaleLegend description="Roof types scored by material durability: Metal (100) > Slate (95) > Tile (90) > Shingle (60) > Flat (40) > Other (30)" />
     </motion.div>
   );
 }
