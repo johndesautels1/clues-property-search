@@ -1,0 +1,2771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLUES™ Exterior Analytics - Production Ready v2.0</title>
+    <!--
+    ========================================================================
+    CLUES™ EXTERIOR ANALYTICS DASHBOARD - Chart 1: Helix Analysis
+    ========================================================================
+    
+    VERSION: 2.0 (Production-Ready - Math Verified)
+    CREATED: December 2024
+    
+    SCORING SYSTEM:
+    - Each property evaluated on 6 exterior factors (0-100 scale)
+    - Factors: Curb Appeal, Landscaping, Design, Deck, Pool, Fence
+    - TOTAL SCORE = Average of all 6 factors (auto-calculated, rounded)
+    - SMART Tier Colors: Green (81-100), Blue (61-80), Amber (41-60), 
+                         Orange (21-40), Red (0-20)
+    
+    TWO-COLOR HELIX VISUALIZATION:
+    - Ring (outer) = Property identity color
+    - Fill (inner) = SMART tier based on individual feature score
+    - Icon = High-contrast feature identifier (auto-adjusted)
+    
+    TO USE WITH REAL DATA:
+    1. Locate the data object (search for "PROPERTY DATA")
+    2. Replace placeholder arrays with actual assessment scores
+    3. Data validation runs automatically on load
+    4. Scores are auto-calculated and verified
+    
+    MATH VERIFICATION:
+    - Console log shows calculation breakdown
+    - On-screen display shows formulas: (score1 + ... + score6) ÷ 6
+    - All calculations use Math.round() for consistency
+    - Fixed bug: Hillcrest was showing 88, now correctly shows 91
+    
+    ========================================================================
+    -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;500;700&family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --bg-deep: #050b14;
+            --glass-panel: rgba(10, 20, 40, 0.7);
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff0055;
+            --neon-green: #00ff9d;
+            --neon-gold: #ffd700;
+            --grid-line: rgba(0, 243, 255, 0.1);
+            --amber: #EAB308;
+        }
+
+        * { box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background-color: var(--bg-deep);
+            color: #fff;
+            font-family: 'Rajdhani', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-image: 
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 40px 40px;
+            overflow-x: hidden;
+        }
+
+        /* IMPROVEMENT #18: Chart Category Grouping */
+        .chart-section {
+            margin-bottom: 80px;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            border-left: 3px solid var(--neon-cyan);
+            border-right: 3px solid var(--neon-cyan);
+        }
+
+        .section-header h2 {
+            font-size: 1.4rem;
+            letter-spacing: 3px;
+            margin: 0;
+            color: var(--neon-cyan);
+            text-transform: uppercase;
+        }
+
+        .section-header p {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.6);
+            margin: 8px 0 0 0;
+            letter-spacing: 2px;
+        }
+
+        /* IMPROVEMENT #11: Summary Comparison Row */
+        .summary-banner {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 60px;
+            max-width: 1800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .property-summary {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid;
+            border-radius: 6px;
+            padding: 20px;
+            text-align: center;
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        .property-summary.p1 { border-color: #22c55e; }
+        .property-summary.p2 { border-color: #8b5cf6; }
+        .property-summary.p3 { border-color: #ec4899; }
+
+        .property-summary .score {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 10px 0;
+            letter-spacing: 2px;
+        }
+
+        .property-summary .tier {
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            margin: 8px 0;
+        }
+
+        .property-summary .name {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.7);
+            margin-top: 10px;
+        }
+
+        .header-hud {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--neon-cyan);
+            padding-bottom: 20px;
+            position: relative;
+        }
+
+        .header-hud::after {
+            content: 'SYSTEM READY // ANALYTICS ONLINE';
+            position: absolute;
+            bottom: -25px;
+            right: 0;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--neon-cyan);
+            letter-spacing: 2px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            text-transform: uppercase;
+            letter-spacing: 8px;
+            margin: 0;
+            text-shadow: 0 0 20px var(--neon-cyan);
+        }
+
+        .subtitle {
+            letter-spacing: 4px;
+            color: var(--neon-green);
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+
+        /* IMPROVEMENT #20: Data Table Toggle */
+        .controls {
+            text-align: center;
+            margin: 20px 0 40px 0;
+        }
+
+        .btn-toggle {
+            background: rgba(0, 243, 255, 0.1);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-toggle:hover {
+            background: rgba(0, 243, 255, 0.2);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+        }
+
+        .btn-toggle.active {
+            background: rgba(0, 243, 255, 0.3);
+        }
+
+        .data-table-container {
+            display: none;
+            max-width: 1200px;
+            margin: 40px auto;
+            overflow-x: auto;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 4px;
+            padding: 20px;
+        }
+
+        .data-table-container.show {
+            display: block;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85rem;
+        }
+
+        .data-table th {
+            border-bottom: 2px solid var(--neon-cyan);
+            padding: 12px;
+            text-align: left;
+            color: var(--neon-cyan);
+            letter-spacing: 1px;
+        }
+
+        .data-table td {
+            border-bottom: 1px solid rgba(0, 243, 255, 0.2);
+            padding: 12px;
+        }
+
+        .data-table tr:hover {
+            background: rgba(0, 243, 255, 0.05);
+        }
+
+        .data-table .total {
+            font-weight: bold;
+            color: var(--neon-green);
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 40px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        .chart-pod {
+            background: var(--glass-panel);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            border-radius: 4px;
+            position: relative;
+            height: 888px;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        /* Chart 3 specific height - 2 inches taller */
+        .chart-pod:has(#c3) {
+            height: 1080px;
+        }
+
+        /* Chart 6 specific height - 2 inches taller */
+        .chart-pod:has(#c6) {
+            height: 1032px;
+        }
+
+        /* Chart 9 specific height - 2 inches taller */
+        .chart-pod:has(#c9) {
+            height: 1032px;
+        }
+
+        .chart-pod:focus-within {
+            border-color: var(--neon-pink);
+            box-shadow: 0 0 30px rgba(255, 0, 85, 0.3);
+        }
+
+        .chart-pod::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 20px; height: 20px;
+            border-top: 2px solid var(--neon-cyan);
+            border-left: 2px solid var(--neon-cyan);
+            z-index: 20;
+        }
+
+        .chart-pod::after {
+            content: '';
+            position: absolute;
+            bottom: 0; right: 0;
+            width: 20px; height: 20px;
+            border-bottom: 2px solid var(--neon-cyan);
+            border-right: 2px solid var(--neon-cyan);
+            z-index: 20;
+        }
+
+        .pod-title {
+            position: absolute;
+            top: 15px;
+            left: 20px;
+            font-family: 'Share Tech Mono', monospace;
+            color: rgba(255, 215, 0, 0.6);
+            font-size: 0.6rem;
+            letter-spacing: 1px;
+            z-index: 10;
+            background: rgba(0,0,0,0.5);
+            padding: 1px 5px;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 2px;
+        }
+
+        .pod-subtitle {
+            position: absolute;
+            top: 32px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--neon-cyan);
+            font-size: 0.95rem;
+            letter-spacing: 2px;
+            z-index: 10;
+            background: rgba(0,0,0,0.6);
+            padding: 4px 10px;
+            border: 1px solid var(--neon-cyan);
+        }
+        
+        /* Move Chart 3 subtitle down 0.6 inches */
+        .chart-pod:has(#c3) .pod-subtitle {
+            top: 90px;
+        }
+
+        /* Move Chart 6 subtitle down 3/8 inch */
+        .chart-pod:has(#c6) .pod-subtitle {
+            top: 59px;
+        }
+
+        /* Move Chart 9 subtitle down 3/8 inch */
+        .chart-pod:has(#c9) .pod-subtitle {
+            top: 59px;
+        }
+
+        .pod-controls {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            z-index: 10;
+        }
+
+        /* IMPROVEMENT #13: Pause Button */
+        .btn-pause {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            width: 30px;
+            height: 30px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .btn-pause:hover {
+            background: rgba(0, 243, 255, 0.2);
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+        }
+
+        .pod-status {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--neon-green);
+            font-size: 0.75rem;
+            z-index: 10;
+        }
+
+        .brain-widget {
+            position: absolute;
+            top: 65px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid;
+            border-radius: 50%;
+            width: 55px;
+            height: 55px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.3rem;
+            font-weight: bold;
+            z-index: 15;
+        }
+        
+        /* Hide HTML brain widget for Chart 1 (drawn in canvas instead) */
+        #brain1 {
+            display: none;
+        }
+
+        /* Hide HTML widgets for Chart 2 (drawn in canvas instead) */
+        #brain2 {
+            display: none;
+        }
+        
+        #winner2 {
+            display: none;
+        }
+        
+        #c2 ~ .methodology-note {
+            display: none;
+        }
+        
+        #c2 ~ .legend-box {
+            display: none;
+        }
+        
+        /* Hide the pod-title for Chart 2 */
+        #c2 ~ .pod-title,
+        .chart-pod:has(#c2) .pod-title {
+            display: none;
+        }
+        
+        /* Hide the pod-subtitle for Chart 2 */
+        #c2 ~ .pod-subtitle,
+        .chart-pod:has(#c2) .pod-subtitle {
+            display: none;
+        }
+
+        /* Hide HTML widgets for Chart 3 (drawn in canvas instead) */
+        #brain3 {
+            display: none;
+        }
+        
+        #winner3 {
+            display: none;
+        }
+        
+        #c3 ~ .methodology-note {
+            display: none;
+        }
+        
+        #c3 ~ .legend-box {
+            display: none;
+        }
+        
+        /* Hide the pod-title for Chart 3 */
+        #c3 ~ .pod-title,
+        .chart-pod:has(#c3) .pod-title {
+            display: none;
+        }
+
+        /* Hide HTML widgets for Chart 6 (drawn in canvas instead) */
+        #brain6 {
+            display: none;
+        }
+        
+        #winner6 {
+            display: none;
+        }
+        
+        #c6 ~ .methodology-note {
+            display: none;
+        }
+        
+        #c6 ~ .legend-box {
+            display: none;
+        }
+        
+        /* Hide the pod-title for Chart 6 */
+        #c6 ~ .pod-title,
+        .chart-pod:has(#c6) .pod-title {
+            display: none;
+        }
+
+        /* Hide HTML widgets for Chart 9 (drawn in canvas instead) */
+        #brain9 {
+            display: none;
+        }
+        
+        #winner9 {
+            display: none;
+        }
+        
+        #c9 ~ .methodology-note {
+            display: none;
+        }
+        
+        #c9 ~ .legend-box {
+            display: none;
+        }
+        
+        /* Hide the pod-title for Chart 9 */
+        #c9 ~ .pod-title,
+        .chart-pod:has(#c9) .pod-title {
+            display: none;
+        }
+
+        .brain-widget .score {
+            line-height: 1;
+        }
+
+        .brain-widget .context {
+            font-size: 0.6rem;
+            margin-top: 2px;
+            letter-spacing: 1px;
+        }
+
+        .winner-badge {
+            position: absolute;
+            bottom: 110px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 2px solid;
+            border-radius: 4px;
+            padding: 10px 12px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            z-index: 12;
+            text-transform: uppercase;
+            max-width: 140px;
+            line-height: 1.3;
+        }
+        
+        /* Hide winner badge for Chart 1 (drawn in canvas instead) */
+        #winner1 {
+            display: none;
+        }
+
+        .legend-box {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.7);
+            z-index: 10;
+            pointer-events: none;
+            line-height: 1.6;
+        }
+        
+        /* Hide legend for Chart 1 (drawn in canvas instead) */
+        #c1 ~ .legend-box {
+            display: none;
+        }
+
+        .methodology-note {
+            position: absolute;
+            bottom: 65px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid rgba(0, 243, 255, 0.5);
+            border-radius: 3px;
+            padding: 6px 10px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6rem;
+            color: rgba(255, 255, 200, 0.8);
+            z-index: 10;
+            max-width: 150px;
+            line-height: 1.3;
+            text-align: right;
+        }
+        
+        /* Hide methodology note for Chart 1 */
+        #c1 ~ .methodology-note {
+            display: none;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        /* Position canvas below header for Chart 1 */
+        #c1 {
+            position: absolute;
+            top: 70px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: calc(100% - 70px);
+        }
+
+        /* IMPROVEMENT #16: Move methodology to footer */
+        .global-footer {
+            text-align: center;
+            margin-top: 80px;
+            padding: 40px 20px;
+            border-top: 1px solid rgba(0, 243, 255, 0.3);
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.6);
+            letter-spacing: 2px;
+        }
+
+        /* IMPROVEMENT #19: Keyboard Navigation Focus States */
+        .chart-pod[tabindex]:focus {
+            outline: 2px solid var(--neon-pink);
+            outline-offset: -5px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+            h1 {
+                font-size: 2rem;
+                letter-spacing: 4px;
+            }
+            .summary-banner {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-hud">
+        <h1>Exterior Analytics <span style="color:var(--neon-pink)">7D</span> Engine</h1>
+        <p class="subtitle">CLUES-SMART 6-FACTOR MULTI-DIMENSIONAL ANALYSIS</p>
+    </div>
+
+    <!-- IMPROVEMENT #11: Summary Comparison -->
+    <div class="summary-banner" id="summaryBanner"></div>
+
+    <!-- IMPROVEMENT #20: Data Table Toggle -->
+    <div class="controls">
+        <button class="btn-toggle" id="tableToggle">📊 TOGGLE DATA VIEW</button>
+    </div>
+
+    <!-- IMPROVEMENT #20: Data Table -->
+    <div class="data-table-container" id="tableContainer">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>PROPERTY</th>
+                    <th>CURB</th>
+                    <th>LANDSCAPE</th>
+                    <th>DESIGN</th>
+                    <th>DECK</th>
+                    <th>POOL</th>
+                    <th>FENCE</th>
+                    <th class="total">CLUES SCORE</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+    <!-- IMPROVEMENT #18: Chart Category Grouping -->
+    <div class="chart-section">
+        <div class="section-header">
+            <h2>Geometric Analysis System</h2>
+            <p>DNA HELIX // ORBITAL GRAVITY // ISOMETRIC LAYERS // ENERGY FLOW</p>
+        </div>
+        <div class="grid-container" id="section1"></div>
+    </div>
+
+    <div class="chart-section">
+        <div class="section-header">
+            <h2>Frequency & Wave Analysis</h2>
+            <p>QUANTUM CLOUD</p>
+        </div>
+        <div class="grid-container" id="section2"></div>
+    </div>
+
+    <div class="chart-section">
+        <div class="section-header">
+            <h2>Terrain & Matrix Analysis</h2>
+            <p>VORONOI TERRAIN</p>
+        </div>
+        <div class="grid-container" id="section3"></div>
+    </div>
+
+    <!-- IMPROVEMENT #16: Global Footer -->
+    <div class="global-footer">
+        🔬 METHODOLOGY: CLUES-Smart Engine | Vision Analysis + NLP Processing + Street View Validation = Composite Score<br>
+        📈 All factors weighted equally in exterior condition assessment | Real-time data flow | Production-Ready Analysis System
+    </div>
+
+<script>
+    // =====================================================
+    // DATA LAYER - CLUES EXTERIOR ANALYTICS (Enhanced)
+    // =====================================================
+    
+    // =====================================================
+    // PROPERTY DATA - REPLACE WITH REAL PROPERTY SCORES
+    // =====================================================
+    // Each property has 6 exterior feature scores (0-100 scale)
+    // Order: Curb Appeal, Landscaping, Design, Deck, Pool, Fence
+    //
+    // TO USE WITH REAL DATA:
+    // 1. Replace the arrays below with actual property assessment scores
+    // 2. Ensure all scores are 0-100 (will be validated)
+    // 3. Total score is automatically calculated as the average
+    // 4. SMART tier colors are assigned based on individual feature scores
+    //
+    // EXAMPLE: data.p1 = [curbAppeal, landscaping, design, deck, pool, fence]
+    
+    const data = {
+        p1: [95, 100, 88, 90, 95, 75],  // Hillcrest - PLACEHOLDER DATA
+        p2: [45, 25, 40, 50, 15, 40],   // Oakwood - PLACEHOLDER DATA
+        p3: [78, 70, 82, 60, 60, 100]   // LiveOak - PLACEHOLDER DATA
+    };
+
+    // DATA VALIDATION - Ensures all scores are within valid range
+    function validateData(data) {
+        for (let prop in data) {
+            if (data[prop].length !== 6) {
+                console.error(`ERROR: ${prop} must have exactly 6 feature scores`);
+                return false;
+            }
+            for (let i = 0; i < data[prop].length; i++) {
+                const score = data[prop][i];
+                if (score < 0 || score > 100) {
+                    console.error(`ERROR: ${prop}[${i}] score ${score} is out of range (0-100)`);
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    if (!validateData(data)) {
+        console.error('CRITICAL ERROR: Invalid property data. Check console for details.');
+    }
+
+    const labels = ['CURB', 'LNDSCP', 'DESIGN', 'DECK', 'POOL', 'FENCE'];
+    const labelsFull = ['Curb Appeal', 'Landscaping', 'Design', 'Deck', 'Pool', 'Fence'];
+
+    const propertyNames = {
+        p1: '1821 Hillcrest Drive',
+        p2: '1947 Oakwood Avenue',
+        p3: '725 Live Oak Street'
+    };
+
+    const propertyShort = {
+        p1: 'HILLCREST',
+        p2: 'OAKWOOD',
+        p3: 'LIVEOAK'
+    };
+
+    const propertyColors = {
+        p1: '#22c55e',
+        p2: '#8b5cf6',
+        p3: '#ec4899'
+    };
+
+    // AUTOMATIC SCORE CALCULATION - calculates average of 6 exterior factors
+    // This replaces hardcoded values and ensures accuracy
+    function calculatePropertyScore(propertyData) {
+        const sum = propertyData.reduce((acc, val) => acc + val, 0);
+        return Math.round(sum / propertyData.length);
+    }
+
+    const cluesScores = {
+        p1: calculatePropertyScore(data.p1), // Auto-calculated: 91 (was incorrectly 88)
+        p2: calculatePropertyScore(data.p2), // Auto-calculated: 36 ✓
+        p3: calculatePropertyScore(data.p3)  // Auto-calculated: 75 ✓
+    };
+
+    // =====================================================
+    // AMENITY DATA - Binary Yes/No Features
+    // =====================================================
+    const amenities = {
+        labels: ['BALCONY', 'SHOWER', 'SIDEWALK', 'SLIDING', 'SHUTTERS', 'SPRINKLER', 'KITCHEN', 'DOCK'],
+        labelsFull: ['Balcony', 'Outdoor Shower', 'Sidewalk', 'Sliding Doors', 'Hurricane Shutters', 'Sprinkler System', 'Outdoor Kitchen', 'Private Dock'],
+        p1: [1, 0, 1, 1, 1, 1, 1, 0],  // Hillcrest: 6/8 amenities
+        p2: [0, 0, 1, 1, 0, 0, 0, 0],  // Oakwood: 2/8 amenities
+        p3: [1, 1, 1, 1, 0, 1, 0, 1]   // LiveOak: 6/8 amenities
+    };
+
+    // Calculate amenity counts and percentages
+    const amenityCounts = {
+        p1: amenities.p1.reduce((a,b) => a+b, 0),
+        p2: amenities.p2.reduce((a,b) => a+b, 0),
+        p3: amenities.p3.reduce((a,b) => a+b, 0)
+    };
+
+    const amenityPercentages = {
+        p1: Math.round((amenityCounts.p1 / 8) * 100),
+        p2: Math.round((amenityCounts.p2 / 8) * 100),
+        p3: Math.round((amenityCounts.p3 / 8) * 100)
+    };
+
+    // VERIFICATION CONSOLE LOG - Shows calculation breakdown
+    console.log('=== CLUES EXTERIOR ANALYTICS - SCORE VERIFICATION ===');
+    console.log(`Hillcrest (p1): [${data.p1.join(', ')}] = ${data.p1.reduce((a,b)=>a+b,0)}/6 = ${cluesScores.p1}`);
+    console.log(`Oakwood (p2): [${data.p2.join(', ')}] = ${data.p2.reduce((a,b)=>a+b,0)}/6 = ${cluesScores.p2}`);
+    console.log(`LiveOak (p3): [${data.p3.join(', ')}] = ${data.p3.reduce((a,b)=>a+b,0)}/6 = ${cluesScores.p3}`);
+    console.log('=====================================================');
+
+    // IMPROVEMENT #8: Calculate real winner
+    function getRealWinner() {
+        return Object.entries(cluesScores).sort((a,b) => b[1] - a[1])[0][0];
+    }
+
+    // =====================================================
+    // SCORING ENGINE (Enhanced)
+    // =====================================================
+
+    function getScoreTier(score) {
+        if (score >= 81) return {
+            tier: 'EXCELLENT',
+            color: '#4CAF50',
+            emoji: '🟢',
+            description: 'PREMIUM CONDITION'
+        };
+        if (score >= 61) return {
+            tier: 'GOOD',
+            color: '#2196F3',
+            emoji: '🔵',
+            description: 'SOLID CONDITION'
+        };
+        if (score >= 41) return {
+            tier: 'AVERAGE',
+            color: '#EAB308',  // IMPROVEMENT #6: Changed from #FFEB3B to #EAB308
+            emoji: '🟡',
+            description: 'NEEDS ATTENTION'
+        };
+        if (score >= 21) return {
+            tier: 'FAIR',
+            color: '#FF9800',
+            emoji: '🟠',
+            description: 'MAJOR WORK NEEDED'
+        };
+        return {
+            tier: 'POOR',
+            color: '#FF4444',
+            emoji: '🔴',
+            description: 'CRITICAL ISSUES'
+        };
+    }
+
+    // =====================================================
+    // IMPROVEMENT #11: Summary Banner
+    // =====================================================
+    function initSummaryBanner() {
+        const banner = document.getElementById('summaryBanner');
+        ['p1', 'p2', 'p3'].forEach(propId => {
+            const score = cluesScores[propId];
+            const tier = getScoreTier(score);
+            const summary = document.createElement('div');
+            summary.className = `property-summary ${propId}`;
+            summary.innerHTML = `
+                <div style="color: ${propertyColors[propId]}; font-weight: bold;">${propertyShort[propId]}</div>
+                <div class="score" style="color: ${tier.color};">${score}</div>
+                <div class="tier">${tier.emoji} ${tier.tier}</div>
+                <div class="name">${propertyNames[propId]}</div>
+            `;
+            banner.appendChild(summary);
+        });
+    }
+
+    // =====================================================
+    // IMPROVEMENT #20: Data Table
+    // =====================================================
+    function initDataTable() {
+        const tbody = document.getElementById('tableBody');
+        ['p1', 'p2', 'p3'].forEach(propId => {
+            const row = document.createElement('tr');
+            const score = cluesScores[propId];
+            const tier = getScoreTier(score);
+            row.innerHTML = `
+                <td style="color: ${propertyColors[propId]}; font-weight: bold;">${propertyShort[propId]}</td>
+                <td>${data[propId][0]}</td>
+                <td>${data[propId][1]}</td>
+                <td>${data[propId][2]}</td>
+                <td>${data[propId][3]}</td>
+                <td>${data[propId][4]}</td>
+                <td>${data[propId][5]}</td>
+                <td class="total" style="color: ${tier.color};">${score}</td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        document.getElementById('tableToggle').addEventListener('click', () => {
+            document.getElementById('tableContainer').classList.toggle('show');
+            document.getElementById('tableToggle').classList.toggle('active');
+        });
+    }
+
+    // =====================================================
+    // CHART MANAGEMENT
+    // =====================================================
+
+    function setupCanvas(id) {
+        const canvas = document.getElementById(id);
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+        return { canvas, ctx, w: rect.width, h: rect.height };
+    }
+
+    const charts = [
+        { id: 1, title: 'CHART 7-1', subtitle: 'EXTERIOR FEATURES HELIX ANALYSIS', section: 1, winnerMetric: 'TOTAL SCORE', factors: 'All features with SMART tier colors' },
+        { id: 2, title: 'CHART 7-2', subtitle: 'ORBITAL GRAVITY - COMPOSITE SCORE ANALYSIS', section: 1, winnerMetric: 'TOTAL SCORE', factors: 'Gravitational clustering shows overall quality' },
+        { id: 3, title: '03 // ISO-LAYER STACK', subtitle: 'LAYERED FACTOR COMPARISON', section: 1, winnerMetric: 'LAYERED', factors: 'Stacked Factor Visualization' },
+        { id: 6, title: '06 // QUANTUM CLOUD', subtitle: 'DENSITY VISUALIZATION', section: 2, winnerMetric: 'DENSITY', factors: 'Concentration Mapping' },
+        { id: 9, title: '09 // VORONOI TERRAIN', subtitle: 'SPATIAL DISTRIBUTION', section: 3, winnerMetric: 'CELLULAR', factors: 'Geometric Territory Mapping' }
+    ];
+
+    function createChartPod(chart) {
+        // IMPROVEMENT #8: Use real winner calculation
+        const winnerId = getRealWinner();
+        const winnerScore = cluesScores[winnerId];
+        const winnerTier = getScoreTier(winnerScore);
+        // IMPROVEMENT #10: Delta calculation
+        const scores = Object.entries(cluesScores).sort((a,b) => b[1] - a[1]);
+        const delta = scores[0][1] - scores[1][1];
+
+        const pod = document.createElement('div');
+        pod.className = 'chart-pod';
+        pod.tabIndex = '0';  // IMPROVEMENT #19: Keyboard navigation
+
+        pod.innerHTML = `
+            <div class="pod-title">${chart.title}</div>
+            <div class="pod-subtitle">${chart.subtitle}</div>
+            <div class="pod-controls">
+                <button class="btn-pause" title="Pause animation">⏸</button>
+                <div class="pod-status">ACTIVE</div>
+            </div>
+            <canvas id="c${chart.id}"></canvas>
+            <div class="brain-widget" id="brain${chart.id}" style="border-color: ${winnerTier.color}; color: ${winnerTier.color}; text-shadow: 0 0 15px ${winnerTier.color};">
+                <div class="score">${winnerScore}</div>
+                <div class="context">/100</div>
+            </div>
+            <div class="winner-badge" id="winner${chart.id}" style="border-color: ${winnerTier.color}; color: ${winnerTier.color};">
+                ${winnerTier.emoji} WINNER<br>
+                ${propertyShort[winnerId]}<br>
+                <span style="opacity: 0.7;">+${delta} vs 2nd</span>
+            </div>
+            <div class="legend-box">
+                <span style="color:#22c55e">█</span> HILLCREST<br>
+                <span style="color:#8b5cf6">█</span> OAKWOOD<br>
+                <span style="color:#ec4899">█</span> LIVEOAK
+            </div>
+            <div class="methodology-note">
+                📊 ${chart.winnerMetric}<br>
+                <span style="font-size: 0.7rem; opacity: 0.8;">${chart.factors}</span>
+            </div>
+        `;
+
+        // IMPROVEMENT #13: Pause button functionality
+        const pauseBtn = pod.querySelector('.btn-pause');
+        let isPaused = false;
+        pauseBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            isPaused = !isPaused;
+            const canvas = pod.querySelector('canvas');
+            canvas.style.opacity = isPaused ? '0.6' : '1';
+            pauseBtn.textContent = isPaused ? '▶' : '⏸';
+        });
+
+        return pod;
+    }
+
+    function initCharts() {
+        const sections = { 1: document.getElementById('section1'), 2: document.getElementById('section2'), 3: document.getElementById('section3') };
+        
+        charts.forEach(chart => {
+            const pod = createChartPod(chart);
+            sections[chart.section].appendChild(pod);
+        });
+
+        initChart1(); initChart2(); initChart3();
+        initChart6(); initChart9();
+    }
+
+    // =====================================================
+    // CHART 1: HEX-DNA HELIX (Redesigned - Quality Features Only)
+    // =====================================================
+    function initChart1() {
+        const { ctx, w, h } = setupCanvas('c1');
+        let time = 0;
+        let animationFrameId;
+        let isPaused = false;
+
+        const pod = document.querySelector('#c1').closest('.chart-pod');
+        const pauseBtn = pod.querySelector('.btn-pause');
+        pauseBtn.addEventListener('click', () => { isPaused = pauseBtn.textContent === '▶'; });
+
+        // Quality threshold - only show helixes for features scoring above this
+        const QUALITY_THRESHOLD = 70;
+
+        // Get high contrast color for icon based on background
+        function getContrastColor(bgColor) {
+            // Extract RGB from tier color
+            const colorMap = {
+                '#4CAF50': [76, 175, 80],    // Green
+                '#2196F3': [33, 150, 243],    // Blue
+                '#EAB308': [234, 179, 8],     // Amber
+                '#FF9800': [255, 152, 0],     // Orange
+                '#FF4444': [255, 68, 68]      // Red
+            };
+            
+            const rgb = colorMap[bgColor] || [128, 128, 128];
+            const luminance = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
+            
+            // If background is light, use dark icon; if dark, use light icon
+            return luminance > 0.5 ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.9)';
+        }
+
+        // Draw realistic feature icons with dynamic contrast
+        function drawFeatureIcon(ctx, x, y, featureName, iconColor) {
+            ctx.save();
+            ctx.strokeStyle = iconColor;
+            ctx.fillStyle = iconColor;
+            
+            switch(featureName.toUpperCase()) {
+                case 'CURB APPEAL':
+                    // House facade with door and windows
+                    ctx.lineWidth = 2;
+                    // Roof
+                    ctx.beginPath();
+                    ctx.moveTo(x - 15, y - 8);
+                    ctx.lineTo(x, y - 16);
+                    ctx.lineTo(x + 15, y - 8);
+                    ctx.closePath();
+                    ctx.stroke();
+                    ctx.globalAlpha = 0.3;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                    // House body
+                    ctx.strokeRect(x - 12, y - 8, 24, 18);
+                    ctx.globalAlpha = 0.2;
+                    ctx.fillRect(x - 12, y - 8, 24, 18);
+                    ctx.globalAlpha = 1;
+                    // Door
+                    ctx.fillRect(x - 3, y + 3, 6, 7);
+                    // Windows
+                    ctx.strokeRect(x - 10, y - 2, 5, 5);
+                    ctx.strokeRect(x + 5, y - 2, 5, 5);
+                    // Window panes
+                    ctx.globalAlpha = 0.5;
+                    ctx.beginPath();
+                    ctx.moveTo(x - 7.5, y - 2);
+                    ctx.lineTo(x - 7.5, y + 3);
+                    ctx.moveTo(x - 10, y + 0.5);
+                    ctx.lineTo(x - 5, y + 0.5);
+                    ctx.moveTo(x + 7.5, y - 2);
+                    ctx.lineTo(x + 7.5, y + 3);
+                    ctx.moveTo(x + 5, y + 0.5);
+                    ctx.lineTo(x + 10, y + 0.5);
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+                    // Sidewalk path
+                    ctx.globalAlpha = 0.3;
+                    ctx.fillRect(x - 2, y + 10, 4, 8);
+                    ctx.globalAlpha = 1;
+                    // Shrubs on sides
+                    ctx.beginPath();
+                    ctx.arc(x - 14, y + 8, 3, 0, Math.PI * 2);
+                    ctx.arc(x + 14, y + 8, 3, 0, Math.PI * 2);
+                    ctx.globalAlpha = 0.4;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                    break;
+
+                case 'LANDSCAPING':
+                    // Garden bed with multiple plants
+                    ctx.lineWidth = 1.5;
+                    
+                    // Lawn/grass base
+                    ctx.globalAlpha = 0.2;
+                    ctx.fillRect(x - 18, y + 8, 36, 10);
+                    ctx.globalAlpha = 1;
+                    
+                    // Tree 1
+                    ctx.fillRect(x - 12, y + 8, 2, 8);
+                    ctx.beginPath();
+                    ctx.arc(x - 11, y + 3, 6, 0, Math.PI * 2);
+                    ctx.globalAlpha = 0.5;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                    ctx.stroke();
+                    
+                    // Bush/shrub
+                    ctx.beginPath();
+                    ctx.arc(x - 3, y + 12, 4, 0, Math.PI * 2);
+                    ctx.arc(x + 1, y + 11, 4, 0, Math.PI * 2);
+                    ctx.globalAlpha = 0.5;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                    ctx.stroke();
+                    
+                    // Flowers
+                    ctx.lineWidth = 1;
+                    for (let i = 0; i < 3; i++) {
+                        ctx.beginPath();
+                        ctx.arc(x + 8 + i * 3, y + 14, 1.5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    
+                    // Tree 2
+                    ctx.lineWidth = 1.5;
+                    ctx.fillRect(x + 10, y + 6, 2, 10);
+                    ctx.beginPath();
+                    ctx.arc(x + 11, y, 7, 0, Math.PI * 2);
+                    ctx.globalAlpha = 0.5;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                    ctx.stroke();
+                    break;
+
+                case 'DESIGN':
+                    // Modern architectural design
+                    ctx.lineWidth = 2;
+                    
+                    // Modern house silhouette
+                    ctx.strokeRect(x - 14, y - 2, 28, 14);
+                    ctx.globalAlpha = 0.2;
+                    ctx.fillRect(x - 14, y - 2, 28, 14);
+                    ctx.globalAlpha = 1;
+                    
+                    // Modern flat roof section
+                    ctx.strokeRect(x - 8, y - 12, 16, 10);
+                    ctx.globalAlpha = 0.15;
+                    ctx.fillRect(x - 8, y - 12, 16, 10);
+                    ctx.globalAlpha = 1;
+                    
+                    // Large modern windows
+                    ctx.globalAlpha = 0.6;
+                    ctx.fillRect(x - 12, y + 2, 8, 8);
+                    ctx.fillRect(x + 4, y + 2, 8, 8);
+                    ctx.globalAlpha = 1;
+                    ctx.strokeRect(x - 12, y + 2, 8, 8);
+                    ctx.strokeRect(x + 4, y + 2, 8, 8);
+                    
+                    // Architectural accent lines
+                    ctx.lineWidth = 1;
+                    ctx.globalAlpha = 0.5;
+                    ctx.beginPath();
+                    ctx.moveTo(x - 14, y + 6);
+                    ctx.lineTo(x + 14, y + 6);
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+                    break;
+
+                case 'DECK':
+                    // Deck with railings
+                    ctx.lineWidth = 2;
+                    
+                    // Deck floor (perspective)
+                    ctx.beginPath();
+                    ctx.moveTo(x - 16, y + 10);
+                    ctx.lineTo(x - 12, y - 8);
+                    ctx.lineTo(x + 12, y - 8);
+                    ctx.lineTo(x + 16, y + 10);
+                    ctx.closePath();
+                    ctx.globalAlpha = 0.3;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                    ctx.stroke();
+                    
+                    // Deck boards
+                    ctx.lineWidth = 1;
+                    ctx.globalAlpha = 0.4;
+                    for (let i = -6; i <= 8; i += 3) {
+                        ctx.beginPath();
+                        ctx.moveTo(x - 14, y + i);
+                        ctx.lineTo(x + 14, y + i);
+                        ctx.stroke();
+                    }
+                    ctx.globalAlpha = 1;
+                    
+                    // Railing posts
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(x - 12, y - 8);
+                    ctx.lineTo(x - 12, y - 15);
+                    ctx.moveTo(x, y - 8);
+                    ctx.lineTo(x, y - 15);
+                    ctx.moveTo(x + 12, y - 8);
+                    ctx.lineTo(x + 12, y - 15);
+                    ctx.stroke();
+                    
+                    // Top railing
+                    ctx.beginPath();
+                    ctx.moveTo(x - 12, y - 15);
+                    ctx.lineTo(x + 12, y - 15);
+                    ctx.stroke();
+                    break;
+
+                case 'POOL':
+                    // Swimming pool from above
+                    ctx.lineWidth = 2;
+                    
+                    // Pool shape
+                    ctx.beginPath();
+                    ctx.roundRect(x - 16, y - 10, 32, 20, 4);
+                    ctx.globalAlpha = 0.4;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                    ctx.stroke();
+                    
+                    // Water ripples
+                    ctx.lineWidth = 1;
+                    ctx.globalAlpha = 0.5;
+                    ctx.beginPath();
+                    ctx.ellipse(x - 6, y - 3, 5 + Math.sin(time * 2) * 0.5, 3, 0, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.ellipse(x + 4, y + 2, 4 + Math.cos(time * 2 + 1) * 0.5, 2.5, 0, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+                    
+                    // Pool ladder
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(x + 12, y - 8);
+                    ctx.lineTo(x + 12, y + 8);
+                    ctx.moveTo(x + 15, y - 8);
+                    ctx.lineTo(x + 15, y + 8);
+                    ctx.moveTo(x + 12, y - 4);
+                    ctx.lineTo(x + 15, y - 4);
+                    ctx.moveTo(x + 12, y);
+                    ctx.lineTo(x + 15, y);
+                    ctx.moveTo(x + 12, y + 4);
+                    ctx.lineTo(x + 15, y + 4);
+                    ctx.stroke();
+                    
+                    // Pool coping
+                    ctx.globalAlpha = 0.3;
+                    ctx.lineWidth = 3;
+                    ctx.stroke(new Path2D('M ' + (x - 16) + ' ' + (y - 10) + ' Q ' + x + ' ' + (y - 12) + ' ' + (x + 16) + ' ' + (y - 10)));
+                    ctx.globalAlpha = 1;
+                    break;
+
+                case 'FENCE':
+                    // Property fence
+                    ctx.lineWidth = 2;
+                    
+                    // Fence posts
+                    const postPositions = [-14, -7, 0, 7, 14];
+                    postPositions.forEach((pos, idx) => {
+                        const height = 18 + (idx === 2 ? 4 : 0);
+                        ctx.fillRect(x + pos - 1.5, y - height + 10, 3, height);
+                        // Post cap
+                        ctx.beginPath();
+                        ctx.moveTo(x + pos - 3, y - height + 10);
+                        ctx.lineTo(x + pos, y - height + 6);
+                        ctx.lineTo(x + pos + 3, y - height + 10);
+                        ctx.closePath();
+                        ctx.fill();
+                    });
+                    
+                    // Horizontal rails
+                    ctx.lineWidth = 2;
+                    ctx.globalAlpha = 0.5;
+                    ctx.beginPath();
+                    ctx.moveTo(x - 16, y - 6);
+                    ctx.lineTo(x + 16, y - 6);
+                    ctx.moveTo(x - 16, y + 2);
+                    ctx.lineTo(x + 16, y + 2);
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+                    
+                    // Vertical slats
+                    ctx.lineWidth = 1;
+                    ctx.globalAlpha = 0.4;
+                    for (let i = -12; i <= 12; i += 3) {
+                        if (!postPositions.includes(i)) {
+                            ctx.beginPath();
+                            ctx.moveTo(x + i, y - 14);
+                            ctx.lineTo(x + i, y + 8);
+                            ctx.stroke();
+                        }
+                    }
+                    ctx.globalAlpha = 1;
+                    break;
+            }
+            
+            ctx.restore();
+        }
+
+        function drawHex(x, y, r, propertyColor, featureScore, label) {
+            // Get SMART tier for this feature score
+            const tier = getScoreTier(featureScore);
+            const fillColor = tier.color;
+            const iconColor = getContrastColor(fillColor);
+            
+            // Draw connecting helix line
+            const xOff = Math.sin(time + y * 0.01) * 20;
+            ctx.beginPath();
+            ctx.moveTo(x + xOff, y - 20);
+            ctx.lineTo(x - xOff, y + 20);
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Draw hexagon with SMART tier fill color
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = (i * 60 - 30) * Math.PI / 180;
+                ctx.lineTo(x + xOff + r * Math.cos(angle), y + r * Math.sin(angle));
+            }
+            ctx.closePath();
+            
+            // Fill with SMART tier color
+            ctx.fillStyle = fillColor;
+            ctx.globalAlpha = 0.5;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            
+            // Ring with property color
+            ctx.strokeStyle = propertyColor;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Draw feature icon with high contrast
+            drawFeatureIcon(ctx, x + xOff, y, label, iconColor);
+        }
+
+        function animate() {
+            if (!isPaused) time += 0.02;
+            ctx.clearRect(0, 0, w, h);
+
+            // WINNER BADGE at top center (NO +13 vs 2nd)
+            const winnerId = getRealWinner();
+            const winnerScore = cluesScores[winnerId];
+            const winnerTier = getScoreTier(winnerScore);
+            
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.fillStyle = winnerTier.color;
+            ctx.strokeStyle = winnerTier.color;
+            ctx.lineWidth = 2;
+            
+            // Winner badge box
+            const badgeY = 25;
+            ctx.strokeRect(w/2 - 60, badgeY - 15, 120, 30);
+            ctx.globalAlpha = 0.2;
+            ctx.fillRect(w/2 - 60, badgeY - 15, 120, 30);
+            ctx.globalAlpha = 1;
+            
+            ctx.font = 'bold 12px Share Tech Mono';
+            ctx.fillText(`${winnerTier.emoji} WINNER`, w/2, badgeY);
+            ctx.font = 'bold 16px Share Tech Mono';
+            ctx.fillText(propertyShort[winnerId], w/2, badgeY + 14);
+            ctx.restore();
+
+            // BRAIN WIDGET in upper right with SMART label
+            ctx.save();
+            const brainX = w - 80;
+            const brainY = 30;
+            
+            // Brain circle
+            ctx.strokeStyle = winnerTier.color;
+            ctx.fillStyle = winnerTier.color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(brainX, brainY, 20, 0, Math.PI * 2);
+            ctx.globalAlpha = 0.2;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.stroke();
+            
+            // Score in brain
+            ctx.fillStyle = winnerTier.color;
+            ctx.font = 'bold 16px Share Tech Mono';
+            ctx.textAlign = 'center';
+            ctx.fillText(winnerScore, brainX, brainY - 2);
+            
+            // /100 context below score
+            ctx.font = '9px Share Tech Mono';
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.fillText('/100', brainX, brainY + 10);
+            
+            // SMART label to the right
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.font = 'bold 11px Share Tech Mono';
+            ctx.textAlign = 'left';
+            ctx.fillText('SMART', brainX + 25, brainY + 4);
+            ctx.restore();
+
+            // Calculate proportional heights for pyramids
+            const allScores = [cluesScores.p1, cluesScores.p2, cluesScores.p3];
+            const maxScore = Math.max(...allScores);
+            const minScore = Math.min(...allScores);
+            const scoreRange = maxScore - minScore;
+            
+            // Starting Y positions based on proportional scores
+            const baseStartY = 100; // Base starting point
+            const maxHeightDiff = 80; // Maximum height difference
+            
+            // Get proportional start Y based on score
+            function getStartY(score) {
+                if (scoreRange === 0) return baseStartY;
+                const proportion = (maxScore - score) / scoreRange;
+                return baseStartY + (proportion * maxHeightDiff);
+            }
+
+            // Draw helixes for each property - SHOW ALL FEATURES
+            [data.p1, data.p2, data.p3].forEach((dataset, pIdx) => {
+                const propertyColor = [propertyColors.p1, propertyColors.p2, propertyColors.p3][pIdx];
+                const offsetX = [w/6, w/2, 5*w/6][pIdx];
+                const propId = ['p1', 'p2', 'p3'][pIdx];
+                const totalScore = cluesScores[propId];
+                const startY = getStartY(totalScore);
+                
+                // Total score above column - increased font size
+                ctx.save();
+                ctx.fillStyle = propertyColor;
+                ctx.font = '11px Share Tech Mono';
+                ctx.textAlign = 'center';
+                ctx.fillText(`TOTAL: ${totalScore}`, offsetX, startY - 30);
+                ctx.restore();
+                
+                // Property header - moved higher
+                ctx.font = 'bold 12px Share Tech Mono';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = propertyColor;
+                ctx.fillText(propertyShort[propId], offsetX, startY - 10);
+                
+                // Draw ALL 6 features (not filtered by quality threshold)
+                for (let i = 0; i < 6; i++) {
+                    const y = startY + 40 + i * 70;
+                    const r = 27;
+                    const featureScore = dataset[i];
+                    const featureLabel = labelsFull[i];
+                    
+                    // Draw feature label further to the left
+                    ctx.save();
+                    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                    ctx.font = '9px Share Tech Mono';
+                    ctx.textAlign = 'right';
+                    ctx.fillText(featureLabel.toUpperCase(), offsetX - 55, y + 3);
+                    ctx.restore();
+                    
+                    // Draw helix with property ring color and SMART tier fill
+                    drawHex(offsetX, y, r, propertyColor, featureScore, featureLabel);
+                }
+            });
+
+            // PROPERTY LEGEND - raised by 3/4 inch
+            ctx.save();
+            ctx.font = 'bold 10px Share Tech Mono';
+            ctx.textAlign = 'center';
+            const propertyLegendY = h - 145; // Raised by 72px (3/4 inch)
+            
+            // Property legend title
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.fillText('PROPERTIES:', w/2 - 180, propertyLegendY);
+            
+            // Side by side property legend
+            ctx.font = '10px Share Tech Mono';
+            ctx.fillStyle = propertyColors.p1;
+            ctx.fillText('█ HILLCREST', w/2 - 90, propertyLegendY);
+            ctx.fillStyle = propertyColors.p2;
+            ctx.fillText('█ OAKWOOD', w/2, propertyLegendY);
+            ctx.fillStyle = propertyColors.p3;
+            ctx.fillText('█ LIVEOAK', w/2 + 90, propertyLegendY);
+            ctx.restore();
+
+            // CLUES-SMART SCORE LEGEND - raised by 3/4 inch with better spacing
+            ctx.save();
+            const smartLegendY = h - 119; // Raised by 72px (3/4 inch)
+            ctx.font = 'bold 10px Share Tech Mono';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.fillText('CLUES-SMART SCORE TIERS:', 40, smartLegendY);
+            
+            // Draw 5 color boxes with labels - increased spacing to prevent overlap
+            const tierSpacing = 110;
+            const startX = 230;
+            
+            // Tier 1: Excellent (Green)
+            ctx.fillStyle = '#4CAF50';
+            ctx.fillRect(startX, smartLegendY - 10, 12, 12);
+            ctx.font = '9px Share Tech Mono';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillText('81-100 EXCELLENT', startX + 16, smartLegendY);
+            
+            // Tier 2: Good (Blue)
+            ctx.fillStyle = '#2196F3';
+            ctx.fillRect(startX + tierSpacing, smartLegendY - 10, 12, 12);
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillText('61-80 GOOD', startX + tierSpacing + 16, smartLegendY);
+            
+            // Tier 3: Average (Amber)
+            ctx.fillStyle = '#EAB308';
+            ctx.fillRect(startX + tierSpacing * 2, smartLegendY - 10, 12, 12);
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillText('41-60 AVERAGE', startX + tierSpacing * 2 + 16, smartLegendY);
+            
+            // Tier 4: Fair (Orange)
+            ctx.fillStyle = '#FF9800';
+            ctx.fillRect(startX + tierSpacing * 3, smartLegendY - 10, 12, 12);
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillText('21-40 FAIR', startX + tierSpacing * 3 + 16, smartLegendY);
+            
+            // Tier 5: Poor (Red)
+            ctx.fillStyle = '#FF4444';
+            ctx.fillRect(startX + tierSpacing * 4, smartLegendY - 10, 12, 12);
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillText('0-20 POOR', startX + tierSpacing * 4 + 16, smartLegendY);
+            ctx.restore();
+
+            // DETAILED EXPLANATION - raised by 3/4 inch
+            ctx.save();
+            const explanationY = h - 89; // Raised by 72px (3/4 inch)
+            ctx.font = 'bold 9px Share Tech Mono';
+            ctx.fillStyle = 'rgba(0, 243, 255, 0.9)';
+            ctx.textAlign = 'left';
+            ctx.fillText('HOW TO READ THIS CHART:', 40, explanationY);
+            
+            ctx.font = '8px Share Tech Mono';
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            const lineSpacing = 11;
+            let currentY = explanationY + 12;
+            
+            // Line 1
+            ctx.fillText('• RING COLOR (outer border) = Property identity (Green=Hillcrest, Purple=Oakwood, Pink=LiveOak)', 40, currentY);
+            currentY += lineSpacing;
+            
+            // Line 2
+            ctx.fillText('• FILL COLOR (interior) = CLUES-SMART tier based on individual feature score (see color legend above)', 40, currentY);
+            currentY += lineSpacing;
+            
+            // Line 3
+            ctx.fillText('• ICON = High-contrast widget showing feature type (automatically adjusted for maximum readability)', 40, currentY);
+            currentY += lineSpacing;
+            
+            // Line 4
+            ctx.fillText('• TOTAL SCORE = Average of all 6 exterior features (Curb Appeal, Landscaping, Design, Deck, Pool, Fence)', 40, currentY);
+            
+            ctx.restore();
+
+            /* CALCULATION BREAKDOWN - Temporarily hidden
+            ctx.save();
+            ctx.font = 'bold 8px Share Tech Mono';
+            ctx.fillStyle = 'rgba(255, 255, 100, 0.9)';
+            ctx.textAlign = 'left';
+            ctx.fillText('SCORE CALCULATION:', 40, h - 38);
+            
+            ctx.font = '7px Share Tech Mono';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            
+            // Show each property's calculation
+            const calcY = h - 27;
+            ctx.fillStyle = propertyColors.p1;
+            ctx.fillText(`Hillcrest: (${data.p1.join(' + ')}) ÷ 6 = ${cluesScores.p1}`, 40, calcY);
+            
+            ctx.fillStyle = propertyColors.p2;
+            ctx.fillText(`Oakwood: (${data.p2.join(' + ')}) ÷ 6 = ${cluesScores.p2}`, 40, calcY + 10);
+            
+            ctx.fillStyle = propertyColors.p3;
+            ctx.fillText(`LiveOak: (${data.p3.join(' + ')}) ÷ 6 = ${cluesScores.p3}`, 40, calcY + 20);
+            
+            ctx.restore();
+            */
+
+            animationFrameId = requestAnimationFrame(animate);
+        }
+        animate();
+    }
+
+    // =====================================================
+    // CHART 2: ORBITAL GRAVITY - Composite Score Analysis
+    // =====================================================
+    function initChart2() {
+        const { ctx, w, h } = setupCanvas('c2');
+        let angle = 0;
+        let animationFrameId;
+        let isPaused = false;
+        
+        const pod = document.querySelector('#c2').closest('.chart-pod');
+        const pauseBtn = pod.querySelector('.btn-pause');
+        pauseBtn.addEventListener('click', () => { isPaused = pauseBtn.textContent === '▶'; });
+
+        function animate() {
+            if (!isPaused) angle += 0.008;
+            ctx.clearRect(0, 0, w, h);
+
+            // TITLE: CHART 7-2 (top left)
+            ctx.save();
+            ctx.fillStyle = '#FFD700';
+            ctx.font = 'bold 10px Share Tech Mono';
+            ctx.textAlign = 'left';
+            ctx.fillText('CHART 7-2', 20, 20);
+            ctx.restore();
+
+            // WINNER BADGE at top center
+            const winnerId = getRealWinner();
+            const winnerScore = cluesScores[winnerId];
+            const winnerTier = getScoreTier(winnerScore);
+            
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.fillStyle = winnerTier.color;
+            ctx.strokeStyle = winnerTier.color;
+            ctx.lineWidth = 2;
+            
+            const badgeY = 25;
+            ctx.strokeRect(w/2 - 60, badgeY - 15, 120, 30);
+            ctx.globalAlpha = 0.2;
+            ctx.fillRect(w/2 - 60, badgeY - 15, 120, 30);
+            ctx.globalAlpha = 1;
+            
+            ctx.font = 'bold 12px Share Tech Mono';
+            ctx.fillText(`${winnerTier.emoji} WINNER`, w/2, badgeY);
+            ctx.font = 'bold 16px Share Tech Mono';
+            ctx.fillText(propertyShort[winnerId], w/2, badgeY + 14);
+            ctx.restore();
+
+            // BRAIN WIDGET in upper right with /100
+            ctx.save();
+            const brainX = w - 80;
+            const brainY = 78;  // Moved down to clear pause button
+            
+            ctx.strokeStyle = winnerTier.color;
+            ctx.fillStyle = winnerTier.color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(brainX, brainY, 20, 0, Math.PI * 2);
+            ctx.globalAlpha = 0.2;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.stroke();
+            
+            ctx.fillStyle = winnerTier.color;
+            ctx.font = 'bold 16px Share Tech Mono';
+            ctx.textAlign = 'center';
+            ctx.fillText(winnerScore, brainX, brainY - 2);
+            
+            ctx.font = '9px Share Tech Mono';
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.fillText('/100', brainX, brainY + 10);
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.font = 'bold 11px Share Tech Mono';
+            ctx.textAlign = 'left';
+            ctx.fillText('SMART', brainX + 25, brainY + 4);
+            ctx.restore();
+
+            // ORBITAL GRAVITY VISUALIZATION
+            // 3 property centers arranged horizontally
+            const centerSpacing = w / 3;
+            const centerY = h / 2;
+
+            [data.p1, data.p2, data.p3].forEach((dataset, pIdx) => {
+                const propertyColor = [propertyColors.p1, propertyColors.p2, propertyColors.p3][pIdx];
+                const propId = ['p1', 'p2', 'p3'][pIdx];
+                const totalScore = cluesScores[propId];
+                const centerX = centerSpacing * (pIdx + 0.5);
+
+                // Draw property center (gravity well) - SIZE PROPORTIONAL TO SCORE
+                ctx.save();
+                
+                // Planet size based on score: higher score = bigger planet
+                const planetSize = 25 + (totalScore * 0.25);  // Ranges from ~34px (score 36) to ~48px (score 91)
+                
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, planetSize, 0, Math.PI * 2);
+                ctx.fillStyle = propertyColor;
+                ctx.globalAlpha = 0.8;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+                ctx.strokeStyle = propertyColor;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                // Property label at center - larger font
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 11px Share Tech Mono';
+                ctx.textAlign = 'center';
+                ctx.fillText(propertyShort[propId], centerX, centerY + 4);
+                ctx.restore();
+
+                // Property name and total above
+                ctx.save();
+                ctx.fillStyle = propertyColor;
+                ctx.font = 'bold 14px Share Tech Mono';
+                ctx.textAlign = 'center';
+                ctx.fillText(propertyShort[propId], centerX, 100);
+                ctx.font = '12px Share Tech Mono';
+                ctx.fillText(`TOTAL: ${totalScore}`, centerX, 120);
+                ctx.restore();
+
+                // Draw orbiting features
+                dataset.forEach((val, featureIdx) => {
+                    const tier = getScoreTier(val);
+                    const fillColor = tier.color;
+                    
+                    // Orbit radius: high scores orbit close, low scores orbit far
+                    const baseRadius = 180 - (val * 1.3);  // Inverse relationship
+                    
+                    // Each feature has different orbital speed
+                    const orbitAngle = angle * (0.5 + featureIdx * 0.15) + (pIdx * Math.PI * 2 / 3);
+                    
+                    const x = centerX + Math.cos(orbitAngle) * baseRadius;
+                    const y = centerY + Math.sin(orbitAngle) * baseRadius;
+                    
+                    // Orb size proportional to score
+                    const orbSize = 5 + (val * 0.15);
+                    
+                    // Draw orb with two-color system
+                    ctx.save();
+                    
+                    // Fill with SMART tier color
+                    ctx.beginPath();
+                    ctx.arc(x, y, orbSize, 0, Math.PI * 2);
+                    ctx.fillStyle = fillColor;
+                    ctx.globalAlpha = 0.7;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                    
+                    // Ring with property color
+                    ctx.strokeStyle = propertyColor;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    // Feature label on rightmost property only
+                    if (pIdx === 2 && featureIdx === 0) {
+                        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                        ctx.font = '8px Share Tech Mono';
+                        ctx.textAlign = 'left';
+                        ctx.fillText(`${labels[featureIdx]}: ${val}`, x + orbSize + 5, y + 3);
+                    }
+                    
+                    ctx.restore();
+                    
+                    // Draw faint orbit path
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, baseRadius, 0, Math.PI * 2);
+                    ctx.strokeStyle = propertyColor;
+                    ctx.globalAlpha = 0.1;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    ctx.restore();
+                });
+            });
+
+            // CALCULATION BREAKDOWN
+            ctx.save();
+            const calcY = h - 230;
+            ctx.font = 'bold 9px Share Tech Mono';
+            ctx.fillStyle = 'rgba(0, 243, 255, 0.9)';
+            ctx.textAlign = 'left';
+            ctx.fillText('TOTAL SCORE CALCULATION:', 40, calcY);
+            
+            ctx.font = '8px Share Tech Mono';
+            const calcLineSpacing = 12;
+            let calcCurrentY = calcY + 14;
+            
+            // Hillcrest calculation
+            ctx.fillStyle = propertyColors.p1;
+            ctx.fillText(`Hillcrest: (${data.p1.join(' + ')}) ÷ 6 = ${cluesScores.p1}`, 40, calcCurrentY);
+            calcCurrentY += calcLineSpacing;
+            
+            // Oakwood calculation
+            ctx.fillStyle = propertyColors.p2;
+            ctx.fillText(`Oakwood: (${data.p2.join(' + ')}) ÷ 6 = ${cluesScores.p2}`, 40, calcCurrentY);
+            calcCurrentY += calcLineSpacing;
+            
+            // LiveOak calculation
+            ctx.fillStyle = propertyColors.p3;
+            ctx.fillText(`LiveOak: (${data.p3.join(' + ')}) ÷ 6 = ${cluesScores.p3}`, 40, calcCurrentY);
+            ctx.restore();
+
+            // PROPERTY LEGEND at bottom
+            ctx.save();
+            ctx.font = 'bold 10px Share Tech Mono';
+            ctx.textAlign = 'center';
+            const propertyLegendY = h - 145;
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.fillText('PROPERTIES:', w/2 - 180, propertyLegendY);
+            
+            ctx.font = '10px Share Tech Mono';
+            ctx.fillStyle = propertyColors.p1;
+            ctx.fillText('█ HILLCREST', w/2 - 90, propertyLegendY);
+            ctx.fillStyle = propertyColors.p2;
+            ctx.fillText('█ OAKWOOD', w/2, propertyLegendY);
+            ctx.fillStyle = propertyColors.p3;
+            ctx.fillText('█ LIVEOAK', w/2 + 90, propertyLegendY);
+            ctx.restore();
+
+            // CLUES-SMART SCORE LEGEND
+            ctx.save();
+            const smartLegendY = h - 119;
+            ctx.font = 'bold 10px Share Tech Mono';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.fillText('CLUES-SMART SCORE TIERS:', 40, smartLegendY);
+            
+            const tierSpacing = 110;
+            const startX = 230;
+            
+            // Tier 1: Excellent (Green)
+            ctx.fillStyle = '#4CAF50';
+            ctx.fillRect(startX, smartLegendY - 10, 12, 12);
+            ctx.font = '9px Share Tech Mono';
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillText('81-100 EXCELLENT', startX + 16, smartLegendY);
+            
+            // Tier 2: Good (Blue)
+            ctx.fillStyle = '#2196F3';
+            ctx.fillRect(startX + tierSpacing, smartLegendY - 10, 12, 12);
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillText('61-80 GOOD', startX + tierSpacing + 16, smartLegendY);
+            
+            // Tier 3: Average (Amber)
+            ctx.fillStyle = '#EAB308';
+            ctx.fillRect(startX + tierSpacing * 2, smartLegendY - 10, 12, 12);
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillText('41-60 AVERAGE', startX + tierSpacing * 2 + 16, smartLegendY);
+            
+            // Tier 4: Fair (Orange)
+            ctx.fillStyle = '#FF9800';
+            ctx.fillRect(startX + tierSpacing * 3, smartLegendY - 10, 12, 12);
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillText('21-40 FAIR', startX + tierSpacing * 3 + 16, smartLegendY);
+            
+            // Tier 5: Poor (Red)
+            ctx.fillStyle = '#FF4444';
+            ctx.fillRect(startX + tierSpacing * 4, smartLegendY - 10, 12, 12);
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillText('0-20 POOR', startX + tierSpacing * 4 + 16, smartLegendY);
+            ctx.restore();
+
+            // DETAILED EXPLANATION
+            ctx.save();
+            const explanationY = h - 89;
+            ctx.font = 'bold 9px Share Tech Mono';
+            ctx.fillStyle = 'rgba(0, 243, 255, 0.9)';
+            ctx.textAlign = 'left';
+            ctx.fillText('HOW TO READ THIS CHART:', 40, explanationY);
+            
+            ctx.font = '8px Share Tech Mono';
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            const lineSpacing = 11;
+            let currentY = explanationY + 12;
+            
+            ctx.fillText('• GRAVITY WELL (center dot) = Property identity. Planet size proportional to total score (bigger = higher score).', 40, currentY);
+            currentY += lineSpacing;
+            
+            ctx.fillText('• ORBIT DISTANCE = Feature score (closer orbit = higher score, farther = lower score). High scores are "attracted" more.', 40, currentY);
+            currentY += lineSpacing;
+            
+            ctx.fillText('• ORB COLORS: Ring = Property color, Fill = CLUES-SMART tier. Orb size = Score magnitude.', 40, currentY);
+            currentY += lineSpacing;
+            
+            ctx.fillText('• CLUSTERING = Overall quality. Tight cluster around big planet = strong property, loose orbits around small planet = weak.', 40, currentY);
+            
+            ctx.restore();
+
+            // EXAMPLE SUB-CALCULATION (centered in footer)
+            ctx.save();
+            const exampleY = h - 24;
+            ctx.font = 'bold 9px Share Tech Mono';
+            ctx.fillStyle = 'rgba(255, 215, 0, 0.9)';
+            ctx.textAlign = 'center';
+            ctx.fillText('EXAMPLE: HOW FEATURE SCORES ARE CALCULATED', w/2, exampleY);
+            
+            ctx.font = '8px Share Tech Mono';
+            ctx.fillStyle = 'rgba(255,255,255,0.85)';
+            const exLineSpacing = 11;
+            let exCurrentY = exampleY + 12;
+            
+            ctx.fillText('Design Score (88) = (Architecture: 90 + Condition: 85 + Floor Plan: 90 + Integration: 87) ÷ 4 = 88', w/2, exCurrentY);
+            exCurrentY += exLineSpacing;
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.font = '7px Share Tech Mono';
+            ctx.fillText('In production: Each of the 6 exterior features shown is calculated from 3-5 underlying sub-factors with actual property data', w/2, exCurrentY);
+            ctx.restore();
+
+            animationFrameId = requestAnimationFrame(animate);
+        }
+        animate();
+    }
+
+    // =====================================================
+    // CHART 3: ISO-LAYER STACK - Layered Factor Comparison
+    // =====================================================
+    function initChart3() {
+        const { ctx, w, h } = setupCanvas('c3');
+        let time = 0;
+        let animationFrameId;
+        let isPaused = false;
+
+        const pod = document.querySelector('#c3').closest('.chart-pod');
+        const pauseBtn = pod.querySelector('.btn-pause');
+        pauseBtn.addEventListener('click', () => { isPaused = pauseBtn.textContent === '▶'; });
+
+        // Isometric projection function
+        function iso(x, y, z) {
+            return { 
+                x: (x - y) * Math.cos(0.5236) + w/2, 
+                y: (x + y) * Math.sin(0.5236) - z + h/2 
+            };
+        }
+
+        function animate() {
+            if (!isPaused) time += 0.02;
+            ctx.clearRect(0, 0, w, h);
+
+            // TITLE: CHART 7-3 (top left)
+            ctx.save();
+            ctx.fillStyle = '#FFD700';
+            ctx.font = 'bold 10px Share Tech Mono';
+            ctx.textAlign = 'left';
+            ctx.fillText('CHART 7-3', 20, 20);
+            ctx.restore();
+
+            // WINNER BADGE at top center
+            const winnerId = getRealWinner();
+            const winnerScore = cluesScores[winnerId];
+            const winnerTier = getScoreTier(winnerScore);
+            
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.fillStyle = winnerTier.color;
+            ctx.strokeStyle = winnerTier.color;
+            ctx.lineWidth = 2;
+            
+            const badgeY = 25;
+            ctx.strokeRect(w/2 - 60, badgeY - 15, 120, 30);
+            ctx.globalAlpha = 0.2;
+            ctx.fillRect(w/2 - 60, badgeY - 15, 120, 30);
+            ctx.globalAlpha = 1;
+            
+            ctx.font = 'bold 12px Share Tech Mono';
+            ctx.fillText(`${winnerTier.emoji} WINNER`, w/2, badgeY);
+            ctx.font = 'bold 16px Share Tech Mono';
+            ctx.fillText(propertyShort[winnerId], w/2, badgeY + 14);
+            ctx.restore();
+
+            // BRAIN WIDGET in upper right with /100
+            ctx.save();
+            const brainX = w - 80;
+            const brainY = 78;  // Moved down 0.5 inches (48px) from 30
+            
+            ctx.strokeStyle = winnerTier.color;
+            ctx.fillStyle = winnerTier.color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(brainX, brainY, 20, 0, Math.PI * 2);
+            ctx.globalAlpha = 0.2;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.stroke();
+            
+            ctx.fillStyle = winnerTier.color;
+            ctx.font = 'bold 16px Share Tech Mono';
+            ctx.textAlign = 'center';
+            ctx.fillText(winnerScore, brainX, brainY - 2);
+            
+            ctx.font = '9px Share Tech Mono';
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.fillText('/100', brainX, brainY + 10);
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.font = 'bold 11px Share Tech Mono';
+            ctx.textAlign = 'left';
+            ctx.fillText('SMART', brainX + 25, brainY + 4);
+            ctx.restore();
+
+            // Floating animation
+            const float = Math.sin(time) * 8;
+
+            // Draw 3 layered stacks (one per property)
+            const columnWidth = w / 3;
+            
+            // Calculate rankings for plate sizing
+            const propertyRanks = [
+                { id: 'p1', score: cluesScores.p1, index: 0 },
+                { id: 'p2', score: cluesScores.p2, index: 1 },
+                { id: 'p3', score: cluesScores.p3, index: 2 }
+            ].sort((a, b) => b.score - a.score);
+            
+            const plateSizes = {};
+            plateSizes[propertyRanks[0].id] = 70;  // Winner - largest
+            plateSizes[propertyRanks[1].id] = 60;  // Runner-up - medium
+            plateSizes[propertyRanks[2].id] = 50;  // Third - smallest
+            
+            [data.p1, data.p2, data.p3].forEach((dataset, pIdx) => {
+                const propertyColor = [propertyColors.p1, propertyColors.p2, propertyColors.p3][pIdx];
+                const propId = ['p1', 'p2', 'p3'][pIdx];
+                const totalScore = cluesScores[propId];
+                const baseX = columnWidth * pIdx - w/2 + columnWidth/2;
+                
+                // Stack height offset based on score (higher score = higher base position)
+                const heightOffset = (totalScore - 30) * 1.5 - 144;  // Moved down 1.5 inches (144px)
+
+                // Property name and total score above stack
+                ctx.save();
+                ctx.fillStyle = propertyColor;
+                ctx.font = 'bold 14px Share Tech Mono';
+                ctx.textAlign = 'center';
+                
+                // Move HILLCREST and LIVEOAK up 0.5 inches (48px), keep OAKWOOD at lower height
+                const nameY = (pIdx === 0 || pIdx === 2) ? 90 : 138;
+                const totalY = (pIdx === 0 || pIdx === 2) ? 110 : 158;
+                
+                ctx.fillText(propertyShort[propId], columnWidth * (pIdx + 0.5), nameY);
+                
+                ctx.font = '12px Share Tech Mono';
+                ctx.fillText(`TOTAL: ${totalScore}`, columnWidth * (pIdx + 0.5), totalY);
+                ctx.restore();
+
+                // Draw layers from bottom (Fence) to top (Curb Appeal)
+                const layers = labels.slice().reverse();  // Reverse so bottom layer is first
+                const vals = dataset.slice().reverse();
+                const plateSize = plateSizes[propId];  // Get size based on ranking
+
+                layers.forEach((label, i) => {
+                    const z = i * 40 + float + heightOffset;  // Add height offset based on score
+                    const size = plateSize;  // Use ranking-based plate size
+                    const val = vals[i];
+                    const tier = getScoreTier(val);
+                    const fillColor = tier.color;
+
+                    // Calculate 4 corners of isometric plate
+                    const p1 = iso(baseX - size, -size, z);
+                    const p2 = iso(baseX + size, -size, z);
+                    const p3 = iso(baseX + size, size, z);
+                    const p4 = iso(baseX - size, size, z);
+
+                    // Draw filled plate with SMART tier color
+                    ctx.beginPath();
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(p2.x, p2.y);
+                    ctx.lineTo(p3.x, p3.y);
+                    ctx.lineTo(p4.x, p4.y);
+                    ctx.closePath();
+                    
+                    ctx.fillStyle = fillColor;
+                    ctx.globalAlpha = 0.6;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+
+                    // Draw rim with property color
+                    ctx.strokeStyle = propertyColor;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Label with feature name and score (only on rightmost stack)
+                    // Labels float parallel to plate edge at p2 corner
+                    if (pIdx === 2) {
+                        ctx.fillStyle = '#fff';
+                        ctx.font = '9px Share Tech Mono';
+                        ctx.textAlign = 'left';
+                        ctx.fillText(`${label}: ${val}`, p2.x + 10, p2.y);
+                    }
+                });
+            });
+
+            // CALCULATION BREAKDOWN - Show how totals were derived
+            ctx.save();
+            const calcY = h - 230;  // Position above property legend
+            ctx.font = 'bold 9px Share Tech Mono';
+            ctx.fillStyle = 'rgba(0, 243, 255, 0.9)';
+            ctx.textAlign = 'left';
+            ctx.fillText('TOTAL SCORE CALCULATION:', 40, calcY);
+            
+            ctx.font = '8px Share Tech Mono';
+            const calcLineSpacing = 12;
+            let calcCurrentY = calcY + 14;
+            
+            // Hillcrest calculation
+            ctx.fillStyle = propertyColors.p1;
+            const p1Vals = data.p1.join(' + ');
+            const p1Sum = data.p1.reduce((a, b) => a + b, 0);
+            ctx.fillText(`Hillcrest: (${p1Vals}) ÷ 6 = ${cluesScores.p1}`, 40, calcCurrentY);
+            calcCurrentY += calcLineSpacing;
+            
+            // Oakwood calculation
+            ctx.fillStyle = propertyColors.p2;
+            const p2Vals = data.p2.join(' + ');
+            const p2Sum = data.p2.reduce((a, b) => a + b, 0);
+            ctx.fillText(`Oakwood: (${p2Vals}) ÷ 6 = ${cluesScores.p2}`, 40, calcCurrentY);
+            calcCurrentY += calcLineSpacing;
+            
+            // LiveOak calculation
+            ctx.fillStyle = propertyColors.p3;
+            const p3Vals = data.p3.join(' + ');
+            const p3Sum = data.p3.reduce((a, b) => a + b, 0);
+            ctx.fillText(`LiveOak: (${p3Vals}) ÷ 6 = ${cluesScores.p3}`, 40, calcCurrentY);
+            ctx.restore();
+
+            // EXAMPLE SUB-CALCULATION (centered in footer)
+            ctx.save();
+            const exampleY = h - 24;  // Moved up 1px from h-23
+            ctx.font = 'bold 9px Share Tech Mono';
+            ctx.fillStyle = 'rgba(255, 215, 0, 0.9)';  // Gold color
+            ctx.textAlign = 'center';
+            ctx.fillText('EXAMPLE: HOW FEATURE SCORES ARE CALCULATED', w/2, exampleY);
+            
+            ctx.font = '8px Share Tech Mono';
+            ctx.fillStyle = 'rgba(255,255,255,0.85)';
+            const exLineSpacing = 11;
+            let exCurrentY = exampleY + 12;  // Moved up 1pt from +13
+            
+            ctx.fillText('Design Score (88) = (Architecture: 90 + Condition: 85 + Floor Plan: 90 + Integration: 87) ÷ 4 = 88', w/2, exCurrentY);
+            exCurrentY += exLineSpacing;
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.font = '7px Share Tech Mono';
+            ctx.fillText('In production: Each of the 6 exterior features shown is calculated from 3-5 underlying sub-factors with actual property data', w/2, exCurrentY);
+            ctx.restore();
+
+            // PROPERTY LEGEND at bottom
+            ctx.save();
+            ctx.font = 'bold 10px Share Tech Mono';
+            ctx.textAlign = 'center';
+            const propertyLegendY = h - 145;
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.fillText('PROPERTIES:', w/2 - 180, propertyLegendY);
+            
+            ctx.font = '10px Share Tech Mono';
+            ctx.fillStyle = propertyColors.p1;
+            ctx.fillText('█ HILLCREST', w/2 - 90, propertyLegendY);
+            ctx.fillStyle = propertyColors.p2;
+            ctx.fillText('█ OAKWOOD', w/2, propertyLegendY);
+            ctx.fillStyle = propertyColors.p3;
+            ctx.fillText('█ LIVEOAK', w/2 + 90, propertyLegendY);
+            ctx.restore();
+
+            // CLUES-SMART SCORE LEGEND
+            ctx.save();
+            const smartLegendY = h - 119;
+            ctx.font = 'bold 10px Share Tech Mono';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.fillText('CLUES-SMART SCORE TIERS:', 40, smartLegendY);
+            
+            const tierSpacing = 110;
+            const startX = 230;
+            
+            // Tier 1: Excellent (Green)
+            ctx.fillStyle = '#4CAF50';
+            ctx.fillRect(startX, smartLegendY - 10, 12, 12);
+            ctx.font = '9px Share Tech Mono';
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillText('81-100 EXCELLENT', startX + 16, smartLegendY);
+            
+            // Tier 2: Good (Blue)
+            ctx.fillStyle = '#2196F3';
+            ctx.fillRect(startX + tierSpacing, smartLegendY - 10, 12, 12);
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillText('61-80 GOOD', startX + tierSpacing + 16, smartLegendY);
+            
+            // Tier 3: Average (Amber)
+            ctx.fillStyle = '#EAB308';
+            ctx.fillRect(startX + tierSpacing * 2, smartLegendY - 10, 12, 12);
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillText('41-60 AVERAGE', startX + tierSpacing * 2 + 16, smartLegendY);
+            
+            // Tier 4: Fair (Orange)
+            ctx.fillStyle = '#FF9800';
+            ctx.fillRect(startX + tierSpacing * 3, smartLegendY - 10, 12, 12);
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillText('21-40 FAIR', startX + tierSpacing * 3 + 16, smartLegendY);
+            
+            // Tier 5: Poor (Red)
+            ctx.fillStyle = '#FF4444';
+            ctx.fillRect(startX + tierSpacing * 4, smartLegendY - 10, 12, 12);
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillText('0-20 POOR', startX + tierSpacing * 4 + 16, smartLegendY);
+            ctx.restore();
+
+            // DETAILED EXPLANATION
+            ctx.save();
+            const explanationY = h - 89;
+            ctx.font = 'bold 9px Share Tech Mono';
+            ctx.fillStyle = 'rgba(0, 243, 255, 0.9)';
+            ctx.textAlign = 'left';
+            ctx.fillText('HOW TO READ THIS CHART:', 40, explanationY);
+            
+            ctx.font = '8px Share Tech Mono';
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            const lineSpacing = 11;
+            let currentY = explanationY + 12;
+            
+            ctx.fillText('• RIM COLOR (outer border) = Property identity (Green=Hillcrest, Purple=Oakwood, Pink=LiveOak)', 40, currentY);
+            currentY += lineSpacing;
+            
+            ctx.fillText('• FILL COLOR (interior) = CLUES-SMART tier based on individual feature score (see color legend above)', 40, currentY);
+            currentY += lineSpacing;
+            
+            ctx.fillText('• STACK HEIGHT = Total property score (higher score = taller stack). PLATE SIZE = Ranking (1st=largest, 2nd=medium, 3rd=smallest)', 40, currentY);
+            currentY += lineSpacing;
+            
+            ctx.fillText('• LAYER POSITION = Feature type (bottom=Fence, top=Curb Appeal). Amenity labels float parallel to plate edges.', 40, currentY);
+            
+            ctx.restore();
+
+            animationFrameId = requestAnimationFrame(animate);
+        }
+        animate();
+    }
+
+
+    // =====================================================
+    // CHART 6: AMENITY RADIAL - Binary Features (Redesigned)
+    // =====================================================
+    function initChart6() {
+        const { ctx, w, h } = setupCanvas('c6');
+        let rot1 = 0, rot2 = 0, rot3 = 0; // Separate rotation for each ring
+        let animationFrameId;
+        let isPaused = false;
+
+        const pod = document.querySelector('#c6').closest('.chart-pod');
+        const pauseBtn = pod.querySelector('.btn-pause');
+        pauseBtn.addEventListener('click', () => { isPaused = pauseBtn.textContent === '▶'; });
+
+        function animate() {
+            if (!isPaused) {
+                // Different rotation speeds: faster for inner (more amenities), slower for outer (fewer)
+                // All speeds reduced by 50% for smoother viewing
+                rot1 -= 0.01;   // Fastest - inner ring (was 0.02)
+                rot2 -= 0.0075; // Medium - middle ring (was 0.015)
+                rot3 -= 0.005;  // Slowest - outer ring (was 0.01)
+            }
+            ctx.clearRect(0,0,w,h);
+            const cx = w/2, cy = h/2;
+
+            // CHART TITLE - Top left, gold
+            ctx.fillStyle = '#d4af37';
+            ctx.font = 'bold 10px Share Tech Mono';
+            ctx.textAlign = 'left';
+            ctx.fillText('CHART 7-6', 20, 47);
+
+            // WINNER BADGE - Top left below CHART 7-6
+            const winnerId = Object.entries(amenityCounts).sort((a,b) => b[1] - a[1])[0][0];
+            const winnerCount = amenityCounts[winnerId];
+            const winnerPct = amenityPercentages[winnerId];
+            
+            ctx.save();
+            ctx.textAlign = 'left';  // Changed to left
+            ctx.fillStyle = propertyColors[winnerId];
+            ctx.strokeStyle = propertyColors[winnerId];
+            ctx.lineWidth = 2;
+            
+            const badgeX = 20;  // Top left
+            const badgeY = 70;  // Below chart title at y=47
+            ctx.strokeRect(badgeX, badgeY - 15, 120, 30);
+            ctx.globalAlpha = 0.2;
+            ctx.fillRect(badgeX, badgeY - 15, 120, 30);
+            ctx.globalAlpha = 1;
+            
+            ctx.font = 'bold 12px Share Tech Mono';
+            ctx.textAlign = 'center';  // Center text within badge box
+            ctx.fillText(`🏆 WINNER`, badgeX + 60, badgeY);
+            ctx.font = 'bold 16px Share Tech Mono';
+            ctx.fillText(propertyShort[winnerId], badgeX + 60, badgeY + 14);
+            ctx.restore();
+
+            // BRAIN WIDGET - Upper right with amenity percentage
+            ctx.save();
+            const brainX = w - 80;
+            const brainY = 78;
+            
+            ctx.strokeStyle = propertyColors[winnerId];
+            ctx.fillStyle = propertyColors[winnerId];
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(brainX, brainY, 20, 0, Math.PI * 2);
+            ctx.globalAlpha = 0.2;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.stroke();
+            
+            ctx.fillStyle = propertyColors[winnerId];
+            ctx.font = 'bold 16px Share Tech Mono';
+            ctx.textAlign = 'center';
+            ctx.fillText(winnerPct, brainX, brainY + 5);
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.font = 'bold 9px Share Tech Mono';
+            ctx.textAlign = 'left';
+            ctx.fillText('/100', brainX + 26, brainY - 5);  // Moved 2 more px right (total 6px)
+            ctx.font = 'bold 8px Share Tech Mono';
+            ctx.fillText('SMART', brainX + 21, brainY + 10);  // Moved 2 more px right (total 6px)
+            ctx.restore();
+
+            // SUBTITLE - below winner badge (moved DOWN 3/8 inch)
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.font = '11px Share Tech Mono';
+            ctx.textAlign = 'center';
+            ctx.fillText('AMENITY OWNERSHIP COMPARISON', w/2, 144);
+
+            // Draw radial segments - Sort properties by amenity count
+            // More amenities = inner ring (closer) + faster rotation
+            // Fewer amenities = outer ring (farther) + slower rotation
+            const propertyData = [
+                { id: 'p1', data: amenities.p1, count: amenityCounts.p1, color: propertyColors.p1 },
+                { id: 'p2', data: amenities.p2, count: amenityCounts.p2, color: propertyColors.p2 },
+                { id: 'p3', data: amenities.p3, count: amenityCounts.p3, color: propertyColors.p3 }
+            ].sort((a, b) => b.count - a.count); // Sort descending by amenity count
+
+            const rotations = [rot1, rot2, rot3]; // Fastest to slowest
+            
+            propertyData.forEach((prop, ringIdx) => {
+                const d = prop.data;
+                const col = prop.color;
+                const baseR = 100 + (ringIdx * 50); // Rings at 100, 150, 200 (inner to outer)
+                const rotation = rotations[ringIdx];
+                
+                for(let i=0; i<8; i++) {
+                    const startA = (i * (Math.PI*2/8)) + rotation;
+                    const endA = startA + (Math.PI*2/8) - 0.08;
+                    const hasAmenity = d[i];
+                    
+                    if (hasAmenity === 1) {
+                        // FILLED segment - property HAS this amenity
+                        ctx.beginPath();
+                        ctx.arc(cx, cy, baseR, startA, endA);
+                        ctx.strokeStyle = col;
+                        ctx.lineWidth = 30;
+                        ctx.lineCap = 'butt';
+                        ctx.stroke();
+                        
+                        // Glow effect
+                        ctx.shadowBlur = 8;
+                        ctx.shadowColor = col;
+                        ctx.stroke();
+                        ctx.shadowBlur = 0;
+                    } else {
+                        // EMPTY segment - property LACKS this amenity
+                        ctx.beginPath();
+                        ctx.arc(cx, cy, baseR, startA, endA);
+                        ctx.strokeStyle = col;
+                        ctx.lineWidth = 2;
+                        ctx.lineCap = 'butt';
+                        ctx.globalAlpha = 0.2;
+                        ctx.stroke();
+                        ctx.globalAlpha = 1;
+                    }
+                }
+            });
+
+            // Draw amenity labels around outer ring (rotating with fastest inner ring)
+            ctx.save();
+            ctx.font = 'bold 9px Share Tech Mono';
+            ctx.fillStyle = '#fff';
+            for(let i=0; i<8; i++) {
+                const angle = (i * (Math.PI*2/8)) + rot1 + (Math.PI*2/16); // Center of segment, using fastest rotation
+                const labelR = 260;
+                const x = cx + Math.cos(angle) * labelR;
+                const y = cy + Math.sin(angle) * labelR;
+                
+                ctx.textAlign = 'center';
+                ctx.fillText(amenities.labels[i], x, y);
+            }
+            ctx.restore();
+
+            // AMENITY OWNERSHIP COUNT - at h-212 (moved DOWN 3/4 inch total)
+            ctx.save();
+            ctx.fillStyle = '#d4af37';
+            ctx.font = 'bold 11px Share Tech Mono';
+            ctx.textAlign = 'left';
+            ctx.fillText('AMENITY OWNERSHIP COUNT (Out of 8 Total Amenities)', 40, h - 212);
+            
+            ctx.font = '10px Share Tech Mono';
+            ctx.fillStyle = propertyColors.p1;
+            ctx.fillText(`Hillcrest: ${amenityCounts.p1} amenities owned ÷ 8 total = ${amenityPercentages.p1}% ownership`, 40, h - 197);
+            ctx.fillStyle = propertyColors.p2;
+            ctx.fillText(`Oakwood: ${amenityCounts.p2} amenities owned ÷ 8 total = ${amenityPercentages.p2}% ownership`, 40, h - 182);
+            ctx.fillStyle = propertyColors.p3;
+            ctx.fillText(`LiveOak: ${amenityCounts.p3} amenities owned ÷ 8 total = ${amenityPercentages.p3}% ownership`, 40, h - 167);
+            ctx.restore();
+
+            // PROPERTY LEGEND - at h-145
+            ctx.save();
+            ctx.font = '10px Share Tech Mono';
+            ctx.textAlign = 'left';
+            const legendX = 40;
+            ctx.fillStyle = propertyColors.p1;
+            ctx.fillText('█ HILLCREST', legendX, h - 145);
+            ctx.fillStyle = propertyColors.p2;
+            ctx.fillText('█ OAKWOOD', legendX + 110, h - 145);
+            ctx.fillStyle = propertyColors.p3;
+            ctx.fillText('█ LIVEOAK', legendX + 220, h - 145);
+            ctx.restore();
+
+            // AMENITY STATUS LEGEND - at h-119
+            ctx.save();
+            ctx.font = '10px Share Tech Mono';
+            ctx.textAlign = 'left';
+            const statusX = 40;
+            
+            // Solid segment example
+            ctx.strokeStyle = '#4CAF50';
+            ctx.lineWidth = 12;
+            ctx.beginPath();
+            ctx.moveTo(statusX, h - 119);
+            ctx.lineTo(statusX + 20, h - 119);
+            ctx.stroke();
+            ctx.shadowBlur = 4;
+            ctx.shadowColor = '#4CAF50';
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.fillText('HAS AMENITY', statusX + 25, h - 115);
+            
+            // Empty segment example
+            ctx.strokeStyle = '#FF9800';
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 0.2;
+            ctx.beginPath();
+            ctx.moveTo(statusX + 140, h - 119);
+            ctx.lineTo(statusX + 160, h - 119);
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.fillText('LACKS AMENITY', statusX + 165, h - 115);
+            ctx.restore();
+
+            // EXPLANATION - at h-89 (4 bullets, 11px spacing) - BOTTOM RIGHT
+            ctx.save();
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.font = '9px Share Tech Mono';
+            ctx.textAlign = 'left';
+            const explainX = w - 520; // Right side positioning
+            ctx.fillText('• Inner ring = most amenities + fastest rotation, outer ring = fewest amenities + slowest', explainX, h - 89);
+            ctx.fillText('• Solid thick segments show amenities the property HAS', explainX, h - 78);
+            ctx.fillText('• Thin transparent segments show amenities the property LACKS', explainX, h - 67);
+            ctx.fillText('• Ring speed reflects completeness: more complete package = tighter orbit + faster spin', explainX, h - 56);
+            ctx.restore();
+
+            // EXAMPLE SUB-CALCULATION - at h-24
+            ctx.save();
+            ctx.fillStyle = '#d4af37';
+            ctx.font = 'bold 9px Share Tech Mono';
+            ctx.textAlign = 'center';
+            ctx.fillText('EXAMPLE AMENITY CALCULATION', w/2, h - 24);
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.font = '9px Share Tech Mono';
+            ctx.fillText('Hillcrest % = (6 amenities owned ÷ 8 total amenities) × 100 = 75%', w/2, h - 12);
+            ctx.restore();
+
+            animationFrameId = requestAnimationFrame(animate);
+        }
+        animate();
+    }
+
+    function initChart9() {
+        const { ctx, w, h } = setupCanvas('c9');
+        let pulse = 0;
+        let animationFrameId;
+        let isPaused = false;
+
+        const pod = document.querySelector('#c9').closest('.chart-pod');
+        const pauseBtn = pod.querySelector('.btn-pause');
+        pauseBtn.addEventListener('click', () => { isPaused = pauseBtn.textContent === '▶'; });
+
+        function animate() {
+            if (!isPaused) pulse += 0.03;
+            ctx.clearRect(0,0,w,h);
+
+            // CHART TITLE - Top left, gold (moved down to clear badge)
+            ctx.fillStyle = '#d4af37';
+            ctx.font = 'bold 10px Share Tech Mono';
+            ctx.textAlign = 'left';
+            ctx.fillText('CHART 7-9', 20, 47);
+
+            // WINNER BADGE - Top left below CHART 7-9
+            const winnerId = Object.entries(amenityCounts).sort((a,b) => b[1] - a[1])[0][0];
+            const winnerCount = amenityCounts[winnerId];
+            const winnerPct = amenityPercentages[winnerId];
+            
+            ctx.save();
+            ctx.textAlign = 'left';
+            ctx.fillStyle = propertyColors[winnerId];
+            ctx.strokeStyle = propertyColors[winnerId];
+            ctx.lineWidth = 2;
+            
+            const badgeX = 20;
+            const badgeY = 70;
+            ctx.strokeRect(badgeX, badgeY - 15, 120, 30);
+            ctx.globalAlpha = 0.2;
+            ctx.fillRect(badgeX, badgeY - 15, 120, 30);
+            ctx.globalAlpha = 1;
+            
+            ctx.font = 'bold 12px Share Tech Mono';
+            ctx.textAlign = 'center';
+            ctx.fillText(`🏆 WINNER`, badgeX + 60, badgeY);
+            ctx.font = 'bold 16px Share Tech Mono';
+            ctx.fillText(propertyShort[winnerId], badgeX + 60, badgeY + 14);
+            ctx.restore();
+
+            // BRAIN WIDGET - Upper right with connection count
+            ctx.save();
+            const brainX = w - 80;
+            const brainY = 78;
+            
+            ctx.strokeStyle = propertyColors[winnerId];
+            ctx.fillStyle = propertyColors[winnerId];
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(brainX, brainY, 20, 0, Math.PI * 2);
+            ctx.globalAlpha = 0.2;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.stroke();
+            
+            ctx.fillStyle = propertyColors[winnerId];
+            ctx.font = 'bold 16px Share Tech Mono';
+            ctx.textAlign = 'center';
+            ctx.fillText(winnerPct, brainX, brainY + 5);
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.font = 'bold 9px Share Tech Mono';
+            ctx.textAlign = 'left';
+            ctx.fillText('/100', brainX + 26, brainY - 5);  // Moved right 6px total
+            ctx.font = 'bold 8px Share Tech Mono';
+            ctx.fillText('SMART', brainX + 21, brainY + 10);  // Moved right 6px total
+            ctx.restore();
+
+            // SUBTITLE - below winner badge (moved DOWN 3/8 inch)
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.font = '11px Share Tech Mono';
+            ctx.textAlign = 'center';
+            ctx.fillText('AMENITY CONNECTION WEB', w/2, 117);
+
+            // Draw 3 property clusters horizontally (spread further apart)
+            const baseCY = h/2 + 7;  // Base center Y
+            const clusterSpacing = 300;  // Increased from 240 to 300
+            const circleRadius = 80;
+            
+            // Calculate winner and loser for vertical positioning
+            const propIds = ['p1', 'p2', 'p3'];
+            const counts = propIds.map(id => amenityCounts[id]);
+            const maxCount = Math.max(...counts);
+            const minCount = Math.min(...counts);
+            
+            [amenities.p1, amenities.p2, amenities.p3].forEach((d, pIdx) => {
+                const col = [propertyColors.p1, propertyColors.p2, propertyColors.p3][pIdx];
+                const cx = (w/4) + (pIdx * clusterSpacing) - 77;  // Moved LEFT by 77px total
+                
+                // Dynamic Y position: winner UP, loser DOWN
+                const propCount = amenityCounts[propIds[pIdx]];
+                let cyOffset = 0;
+                if (propCount === maxCount && maxCount !== minCount) {
+                    cyOffset = -25;  // Winner floats UP
+                } else if (propCount === minCount && maxCount !== minCount) {
+                    cyOffset = 20;   // Loser sinks DOWN
+                }
+                const cy = baseCY + cyOffset;
+                
+                // Calculate which amenities this property has
+                const hasAmenities = [];
+                for(let i=0; i<8; i++) {
+                    if (d[i] === 1) {
+                        hasAmenities.push(i);
+                    }
+                }
+                
+                // Draw property name above (moved UP 1/2 inch)
+                ctx.save();
+                ctx.fillStyle = col;
+                ctx.font = 'bold 12px Share Tech Mono';
+                ctx.textAlign = 'center';
+                ctx.fillText(propertyShort[['p1','p2','p3'][pIdx]], cx, cy - circleRadius - 51);
+                ctx.font = '10px Share Tech Mono';
+                ctx.fillText(`${amenityCounts[['p1','p2','p3'][pIdx]]}/8`, cx, cy - circleRadius - 39);
+                ctx.restore();
+
+                // Draw connection lines ONLY between amenities the property HAS
+                ctx.save();
+                ctx.strokeStyle = col;
+                ctx.lineWidth = 1.5;
+                ctx.globalAlpha = 0.4 + (Math.sin(pulse) * 0.2);
+                
+                for(let i=0; i<hasAmenities.length; i++) {
+                    for(let j=i+1; j<hasAmenities.length; j++) {
+                        const idx1 = hasAmenities[i];
+                        const idx2 = hasAmenities[j];
+                        
+                        const angle1 = (idx1 / 8) * Math.PI * 2 - Math.PI/2;
+                        const angle2 = (idx2 / 8) * Math.PI * 2 - Math.PI/2;
+                        
+                        const x1 = cx + Math.cos(angle1) * circleRadius;
+                        const y1 = cy + Math.sin(angle1) * circleRadius;
+                        const x2 = cx + Math.cos(angle2) * circleRadius;
+                        const y2 = cy + Math.sin(angle2) * circleRadius;
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(x1, y1);
+                        ctx.lineTo(x2, y2);
+                        ctx.stroke();
+                    }
+                }
+                ctx.restore();
+
+                // Draw amenity points around circle
+                for(let i=0; i<8; i++) {
+                    const angle = (i / 8) * Math.PI * 2 - Math.PI/2;
+                    const x = cx + Math.cos(angle) * circleRadius;
+                    const y = cy + Math.sin(angle) * circleRadius;
+                    
+                    ctx.beginPath();
+                    if (d[i] === 1) {
+                        // Property HAS this amenity - filled glowing dot with INTENSE glow
+                        ctx.arc(x, y, 5, 0, Math.PI * 2);
+                        ctx.fillStyle = col;
+                        ctx.fill();
+                        ctx.shadowBlur = 20;  // Increased from 8 to 20
+                        ctx.shadowColor = col;
+                        ctx.fill();
+                        // Second glow layer for extra intensity
+                        ctx.shadowBlur = 12;
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                    } else {
+                        // Property LACKS this amenity - empty dot
+                        ctx.arc(x, y, 3, 0, Math.PI * 2);
+                        ctx.strokeStyle = col;
+                        ctx.lineWidth = 1;
+                        ctx.globalAlpha = 0.2;
+                        ctx.stroke();
+                        ctx.globalAlpha = 1;
+                    }
+                }
+
+                // Draw amenity labels around circle (on ALL clusters now, BOLD)
+                ctx.save();
+                ctx.font = 'bold 9px Share Tech Mono';  // Made bold and slightly larger
+                ctx.fillStyle = 'rgba(255,255,255,0.9)';  // Brighter
+                for(let i=0; i<8; i++) {
+                    const angle = (i / 8) * Math.PI * 2 - Math.PI/2;
+                    const labelR = circleRadius + 25;  // Pushed out a bit more
+                    const x = cx + Math.cos(angle) * labelR;
+                    const y = cy + Math.sin(angle) * labelR;
+                    
+                    ctx.textAlign = 'center';
+                    ctx.fillText(amenities.labels[i], x, y + 3);
+                }
+                ctx.restore();
+            });
+
+            // CONNECTION COUNT CALCULATION - at h-230
+            ctx.save();
+            ctx.fillStyle = '#d4af37';
+            ctx.font = 'bold 11px Share Tech Mono';
+            ctx.textAlign = 'left';
+            ctx.fillText('CONNECTION COUNT CALCULATION', 40, h - 230);
+            
+            // Calculate connection counts (n choose 2 = n*(n-1)/2)
+            const connections = {
+                p1: (amenityCounts.p1 * (amenityCounts.p1 - 1)) / 2,
+                p2: (amenityCounts.p2 * (amenityCounts.p2 - 1)) / 2,
+                p3: (amenityCounts.p3 * (amenityCounts.p3 - 1)) / 2
+            };
+            
+            ctx.font = '10px Share Tech Mono';
+            ctx.fillStyle = propertyColors.p1;
+            ctx.fillText(`Hillcrest: ${amenityCounts.p1} amenities = ${connections.p1} connections`, 40, h - 215);
+            ctx.fillStyle = propertyColors.p2;
+            ctx.fillText(`Oakwood: ${amenityCounts.p2} amenities = ${connections.p2} connections`, 40, h - 200);
+            ctx.fillStyle = propertyColors.p3;
+            ctx.fillText(`LiveOak: ${amenityCounts.p3} amenities = ${connections.p3} connections`, 40, h - 185);
+            ctx.restore();
+
+            // SMART SCORE CALCULATION - at h-160
+            ctx.save();
+            ctx.fillStyle = '#d4af37';
+            ctx.font = 'bold 11px Share Tech Mono';
+            ctx.textAlign = 'left';
+            ctx.fillText('SMART SCORE CALCULATION (Out of 8 Total Amenities)', 40, h - 160);
+            
+            ctx.font = '10px Share Tech Mono';
+            ctx.fillStyle = propertyColors.p1;
+            ctx.fillText(`Hillcrest: ${amenityCounts.p1} amenities ÷ 8 total = ${amenityPercentages.p1}% SMART Score`, 40, h - 145);
+            ctx.fillStyle = propertyColors.p2;
+            ctx.fillText(`Oakwood: ${amenityCounts.p2} amenities ÷ 8 total = ${amenityPercentages.p2}% SMART Score`, 40, h - 130);
+            ctx.fillStyle = propertyColors.p3;
+            ctx.fillText(`LiveOak: ${amenityCounts.p3} amenities ÷ 8 total = ${amenityPercentages.p3}% SMART Score`, 40, h - 115);
+            ctx.restore();
+
+            // PROPERTY LEGEND - at h-95 (moved down to make room)
+            ctx.save();
+            ctx.font = '10px Share Tech Mono';
+            ctx.textAlign = 'left';
+            const legendX = 40;
+            ctx.fillStyle = propertyColors.p1;
+            ctx.fillText('█ HILLCREST', legendX, h - 95);
+            ctx.fillStyle = propertyColors.p2;
+            ctx.fillText('█ OAKWOOD', legendX + 110, h - 95);
+            ctx.fillStyle = propertyColors.p3;
+            ctx.fillText('█ LIVEOAK', legendX + 220, h - 95);
+            ctx.restore();
+
+            // DOT STATUS LEGEND - at h-69 (moved down)
+            ctx.save();
+            ctx.font = '10px Share Tech Mono';
+            ctx.textAlign = 'left';
+            const statusX = 40;
+            
+            // Filled dot example
+            ctx.beginPath();
+            ctx.arc(statusX + 5, h - 69, 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#4CAF50';
+            ctx.fill();
+            ctx.shadowBlur = 6;
+            ctx.shadowColor = '#4CAF50';
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.fillText('HAS AMENITY', statusX + 15, h - 65);
+            
+            // Empty dot example
+            ctx.beginPath();
+            ctx.arc(statusX + 145, h - 69, 3, 0, Math.PI * 2);
+            ctx.strokeStyle = '#FF9800';
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.2;
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.fillText('LACKS AMENITY', statusX + 155, h - 65);
+            ctx.restore();
+
+            // EXPLANATION - at h-39 (moved down, 4 bullets, 11px spacing)
+            ctx.save();
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.font = '9px Share Tech Mono';
+            ctx.textAlign = 'left';
+            ctx.fillText('• Each cluster = one property with 8 amenity positions arranged in circle', 40, h - 39);
+            ctx.fillText('• Lines connect ONLY amenities the property owns (more lines = more complete package)', 40, h - 28);
+            ctx.fillText('• Dense web pattern = comprehensive amenity coverage, sparse pattern = limited amenities', 40, h - 17);
+            ctx.fillText('• Pulsing effect highlights connection strength and network completeness', 40, h - 6);
+            ctx.restore();
+
+            animationFrameId = requestAnimationFrame(animate);
+        }
+        animate();
+    }
+
+    // Initialize all systems
+    document.addEventListener('DOMContentLoaded', () => {
+        initSummaryBanner();
+        initDataTable();
+        initCharts();
+    });
+</script>
+
+</body>
+</html>
