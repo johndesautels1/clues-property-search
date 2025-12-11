@@ -683,10 +683,9 @@ function ExteriorCondition({ homes }: { homes: Home[] }) {
       exterior: exteriorScore,
     };
 
-    // COMPOSITE SCORE = average of all 5 components
-    const compositeScore = Math.round(
-      Object.values(scores).reduce((sum, val) => sum + val, 0) / 5
-    );
+    // COMPOSITE SCORE = average of Overall Exterior + Landscape (NO DOUBLE-COUNTING)
+    // Overall already includes roof + foundation + siding, so we only average 2 components
+    const compositeScore = Math.round((exteriorScore + landscapeScore) / 2);
 
     console.log(`\n🏠 Property ${idx + 1}: ${address}`);
     console.log(`   Property Color: ${h.color}`);
@@ -722,9 +721,10 @@ function ExteriorCondition({ homes }: { homes: Home[] }) {
     console.log(`         - Calculation: (${roofScore} + ${foundationScore} + ${sidingScore}) ÷ 3 = ${exteriorScore}`);
     console.log('   ═════════════════════════════════════');
     console.log(`   ⭐ COMPOSITE SCORE: ${compositeScore}/100`);
-    console.log(`      Formula: (Roof + Foundation + Siding + Landscape + Overall) ÷ 5`);
-    console.log(`      Calculation: (${roofScore} + ${foundationScore} + ${sidingScore} + ${landscapeScore} + ${exteriorScore}) ÷ 5`);
-    console.log(`      = ${roofScore + foundationScore + sidingScore + landscapeScore + exteriorScore} ÷ 5 = ${compositeScore}`);
+    console.log(`      Formula: (Overall Exterior + Landscape) ÷ 2`);
+    console.log(`      Note: NO double-counting - Overall already includes Roof/Foundation/Siding`);
+    console.log(`      Calculation: (${exteriorScore} + ${landscapeScore}) ÷ 2`);
+    console.log(`      = ${exteriorScore + landscapeScore} ÷ 2 = ${compositeScore}`);
     console.log('   ═════════════════════════════════════\n');
 
     return {
