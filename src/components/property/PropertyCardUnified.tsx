@@ -38,6 +38,7 @@ interface PropertyCardUnifiedProps {
   variant?: 'default' | 'compact' | 'detailed';
   showDelete?: boolean;
   defaultExpanded?: boolean;
+  neonGreenScore?: boolean;
 }
 
 export default function PropertyCardUnified({
@@ -45,6 +46,7 @@ export default function PropertyCardUnified({
   variant = 'default',
   showDelete = true,
   defaultExpanded = false,
+  neonGreenScore = false,
 }: PropertyCardUnifiedProps) {
   const { removeProperty, fullProperties } = usePropertyStore();
 
@@ -285,8 +287,8 @@ export default function PropertyCardUnified({
             )}
 
             {/* SMART Score Badge */}
-            <div className={`absolute top-3 right-3 px-3 py-1.5 rounded-full bg-gradient-to-r ${getScoreBg(data.smartScore)} backdrop-blur-lg border border-white/20`}>
-              <span className={`font-bold text-lg ${getScoreColor(data.smartScore)}`}>
+            <div className={`absolute top-3 right-3 px-3 py-1.5 rounded-full bg-gradient-to-r ${neonGreenScore ? 'from-green-500/30 to-green-400/30' : getScoreBg(data.smartScore)} backdrop-blur-lg border ${neonGreenScore ? 'border-green-400/60' : 'border-white/20'}`}>
+              <span className={`font-extrabold text-lg ${neonGreenScore ? 'text-[#00ff88] drop-shadow-[0_0_10px_rgba(0,255,136,0.8)]' : getScoreColor(data.smartScore)}`}>
                 {data.smartScore}
               </span>
             </div>
