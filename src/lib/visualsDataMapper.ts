@@ -7,10 +7,48 @@
  */
 
 import type { Property } from '@/types/property';
+import { calculateAllTaxRates, type PropertyTaxData } from './taxRateCalculator';
 
 // Helper to safely extract value from DataField
 function getVal<T>(field: { value: T | null } | undefined, fallback: T): T {
   return field?.value ?? fallback;
+}
+
+/**
+ * Determine data source tier for tax data reliability
+ * Tier 1 (Best) = STELLAR MLS
+ * Tier 2 = Attom, CoreLogic
+ * Tier 3 = Zillow, Redfin
+ * Tier 4 = County Records
+ * Tier 5 = Other APIs
+ * Tier 6 (Lowest) = LLM-generated (Grok, Perplexity, etc.)
+ */
+function getDataSourceTier(sources: string[] | undefined, llmSources: string[] | undefined): number {
+  if (!sources || sources.length === 0) {
+    // If only LLM sources, it's Tier 6
+    if (llmSources && llmSources.length > 0) return 6;
+    return 5; // Unknown source
+  }
+
+  const sourceStr = sources.join(',').toLowerCase();
+
+  // Tier 1: STELLAR MLS
+  if (sourceStr.includes('stellar') || sourceStr.includes('mls')) return 1;
+
+  // Tier 2: Premium data providers
+  if (sourceStr.includes('attom') || sourceStr.includes('corelogic')) return 2;
+
+  // Tier 3: Consumer real estate sites
+  if (sourceStr.includes('zillow') || sourceStr.includes('redfin')) return 3;
+
+  // Tier 4: County records
+  if (sourceStr.includes('county') || sourceStr.includes('public record')) return 4;
+
+  // Tier 5: Other APIs
+  if (!llmSources || llmSources.length === 0) return 5;
+
+  // Tier 6: LLM-generated
+  return 6;
 }
 
 // Chart-ready property format (flat structure for charts)
@@ -200,6 +238,10 @@ export interface ChartProperty {
   // Computed scores
   smartScore: number;
   dataCompleteness: number;
+
+  // Data source metadata
+  dataSourceTier?: number; // 1-6 scale for tax data reliability
+  dataSource?: string;
 
   // Display
   thumbnail?: string;
@@ -405,6 +447,13 @@ export function mapPropertyToChart(property: Property): ChartProperty {
     smartScore: property.smartScore ?? 0,
     dataCompleteness: property.dataCompleteness ?? 0,
 
+    // Data source metadata (for tax rate reliability)
+    dataSourceTier: getDataSourceTier(
+      financial?.propertyTaxRate?.sources,
+      financial?.propertyTaxRate?.llmSources
+    ),
+    dataSource: financial?.propertyTaxRate?.sources?.[0] || 'Unknown',
+
     // Display
     thumbnail: property.images?.[0] ?? getVal(addr?.primaryPhotoUrl, undefined),
   };
@@ -412,7 +461,33 @@ export function mapPropertyToChart(property: Property): ChartProperty {
 
 /**
  * Batch mapper: Convert array of Properties → array of ChartProperties
+ * Includes smart tax rate calculation using city-based inference
  */
 export function mapPropertiesToChart(properties: Property[]): ChartProperty[] {
-  return properties.map(mapPropertyToChart);
+  // First, do basic mapping
+  const chartProperties = properties.map(mapPropertyToChart);
+
+  // Prepare data for smart tax rate calculation
+  const taxData: PropertyTaxData[] = chartProperties.map(prop => ({
+    id: prop.id,
+    city: prop.city,
+    annualTaxes: prop.annualTaxes,
+    assessedValue: prop.assessedValue,
+    propertyTaxRate: prop.propertyTaxRate,
+    dataSourceTier: prop.dataSourceTier,
+    dataSource: prop.dataSource
+  }));
+
+  // Calculate smart tax rates for all properties
+  const taxRateResults = calculateAllTaxRates(taxData);
+
+  // Update chart properties with calculated tax rates
+  chartProperties.forEach(prop => {
+    const result = taxRateResults.get(prop.id);
+    if (result) {
+      prop.propertyTaxRate = result.rate;
+    }
+  });
+
+  return chartProperties;
 }
