@@ -428,7 +428,8 @@ function Chart6_3_ApplianceCounts({ homes }: { homes: Home[] }) {
   const winnerIndices = propertyData
     .map((p, i) => (p.score === maxScore ? i : -1))
     .filter((i) => i !== -1);
-  const winner = propertyData[winnerIndices[0]];
+  const winners = winnerIndices.map(i => propertyData[i]);
+  const winnerNames = winners.map(w => w.name.split(',')[0]).join(' & ');
 
   useEffect(() => {
     console.log('🔍 Chart 6-3: Appliance Count Scoring - CLUES-SMART SCORING:');
@@ -438,7 +439,7 @@ function Chart6_3_ApplianceCounts({ homes }: { homes: Home[] }) {
       console.log(`  🧠 SMART SCORE: ${p.score}/100 (${getScoreLabel(p.score)})`);
       console.log('  Has:', standardAppliances.filter(a => p.detectedAppliances[a.key]).map(a => a.label).join(', '));
     });
-    console.log(`🏆 WINNER: ${winner.name.split(',')[0]} with score ${maxScore}`);
+    console.log(`🏆 WINNER(S): ${winnerNames} with score ${maxScore}`);
   }, [homes]);
   return (
     <motion.div
@@ -619,12 +620,12 @@ function Chart6_3_ApplianceCounts({ homes }: { homes: Home[] }) {
       </div>
 
       <WinnerBadge
-        winnerName={winner.name.split(',')[0]}
+        winnerName={winnerNames}
         score={maxScore}
         reason="Most comprehensive appliance package"
       />
 
-      <SmartScaleLegend description="CLUES-Smart scoring: 0-20 (Red/Poor), 21-40 (Orange/Fair), 41-60 (Yellow/Average), 61-80 (Blue/Good), 81-100 (Green/Excellent). Score based on count of 8 standard appliances detected." />
+      <SmartScaleLegend description="Appliance Scoring Methodology: Linear calculation based on count of 8 standard modern appliances (Refrigerator, Range/Stove, Microwave, Dishwasher, Washer, Dryer, Garbage Disposal, Extra/Wine Cooler). Formula: Score = (count ÷ 8) × 100. Complete appliance packages significantly increase property value, rental appeal, and move-in convenience. Examples: 8/8 appliances = 100 (Excellent), 6/8 = 75 (Good), 4/8 = 50 (Average), 2/8 = 25 (Fair)." />
     </motion.div>
   );
 }
