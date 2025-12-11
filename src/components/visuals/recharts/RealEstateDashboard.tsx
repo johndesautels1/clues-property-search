@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   BarChart,
   Bar,
@@ -691,6 +691,8 @@ function ListVsMarketChart({ homes }: { homes: Home[] }) {
 // VERIFIED AGAINST SCHEMA: Field 25 (year_built)
 // ECONOMIC USEFUL LIFE: 50 years for residential structures
 function PropertyAgeGaugeChart({ homes }: { homes: Home[] }) {
+  const [hoveredGauge, setHoveredGauge] = useState<string | null>(null);
+
   // VERIFICATION: Log incoming data from 168-field schema
   console.log('🔍 Chart 2-6: Property Age Gauges - Data Verification:');
 
@@ -773,12 +775,26 @@ function PropertyAgeGaugeChart({ homes }: { homes: Home[] }) {
           const color = scoreToBandColor(score);
 
           return (
-            <div key={d.home.id} className="flex flex-col items-center">
+            <div
+              key={d.home.id}
+              className="flex flex-col items-center transition-all duration-300 cursor-pointer"
+              onMouseEnter={() => setHoveredGauge(d.home.id)}
+              onMouseLeave={() => setHoveredGauge(null)}
+              style={{
+                transform: hoveredGauge === d.home.id ? 'scale(1.1)' : 'scale(1)',
+              }}
+            >
               <div className="relative w-20 h-20">
                 <svg
                   viewBox="0 0 100 100"
                   className="w-full h-full"
-                  style={{ transform: 'rotate(-90deg)' }}
+                  style={{
+                    transform: 'rotate(-90deg)',
+                    filter: hoveredGauge === d.home.id
+                      ? `drop-shadow(0 0 12px ${color}) drop-shadow(0 0 24px ${color}80)`
+                      : 'none',
+                    transition: 'filter 0.3s ease'
+                  }}
                 >
                   {/* Background circle */}
                   <circle

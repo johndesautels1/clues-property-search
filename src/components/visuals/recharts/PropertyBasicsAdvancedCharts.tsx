@@ -407,7 +407,7 @@ function SpaceEfficiencyBubble({ homes }: { homes: Home[] }) {
             unit=" sqft"
             stroke={COLORS.text}
             tick={{ fill: COLORS.text, fontSize: 11 }}
-            label={{ value: 'Living Space (sqft)', angle: -90, position: 'insideLeft', fill: COLORS.text }}
+            label={{ value: 'Living Space (sqft)', angle: -90, position: 'insideLeft', fill: COLORS.text, dx: -24 }}
           />
           <ZAxis type="number" dataKey="price" range={bubbleRange} name="Price" />
           <Tooltip
