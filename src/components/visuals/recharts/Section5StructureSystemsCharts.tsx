@@ -363,38 +363,49 @@ function Chart5_4_RoofQuality({ homes }: { homes: Home[] }) {
 // CHART 5-5: EXTERIOR MATERIAL QUALITY
 // ============================================
 function Chart5_5_ExteriorMaterial({ homes }: { homes: Home[] }) {
-  const materialQualityMap: { [key: string]: number } = {
-    'Concrete Block': 100,     // 100 for concrete block
-    'Stucco/Frame': 0,         // 0 for stucco/frame
-    'Concrete Siding': 50,     // 50 for concrete siding
-    'Frame': 0,                // 0 for frame - UNLESS pre-1945
-  };
-
   const propertyData = homes.map((h, idx) => {
-    let material = h.exteriorMaterial || 'Other';
+    const material = h.exteriorMaterial || 'Other';
+    const materialLower = material.toLowerCase();
 
-    // REMAP DATABASE VALUES TO USER SPEC
-    if (material === 'Brick') {
-      material = 'Concrete Siding'; // Remap Brick → Concrete Siding
-    }
-    if (material === 'Concrete') {
-      material = 'Concrete Block'; // Remap Concrete → Concrete Block
-    }
-    if (material === 'Stucco') {
-      material = 'Stucco/Frame'; // Remap Stucco → Stucco/Frame
+    // Florida-specific exterior material scoring using case-insensitive partial matching
+    let score = 30; // Default for "Other"
+    let displayMaterial = material;
+
+    // Check for material types using partial matching
+    if (materialLower.includes('metal')) {
+      score = 95; // Superior but rare in Florida
+      displayMaterial = 'Metal';
+    } else if (materialLower.includes('concrete block') || materialLower.includes('cmu') || materialLower.includes('block')) {
+      score = 100; // Best for Florida (hurricanes, termites)
+      displayMaterial = 'Concrete Block';
+    } else if (materialLower.includes('fiber cement') || materialLower.includes('hardie') || materialLower.includes('cement board')) {
+      score = 85; // Good modern material
+      displayMaterial = 'Fiber Cement';
+    } else if (materialLower.includes('stucco')) {
+      score = 65; // Good for Florida climate
+      displayMaterial = 'Stucco';
+    } else if (materialLower.includes('frame') || materialLower.includes('wood')) {
+      score = 35; // Inferior for hurricanes
+      displayMaterial = materialLower.includes('wood') ? 'Wood' : 'Frame';
+
+      // SPECIAL RULE: Pre-1945 Frame/Wood = 50 (Historic construction quality)
+      if (h.yearBuilt && h.yearBuilt < 1945) {
+        score = 50;
+      }
+    } else if (materialLower.includes('vinyl') || materialLower.includes('siding')) {
+      score = 10; // Worst of the worst - covers damage, fashion no-no
+      displayMaterial = 'Vinyl';
+    } else if (materialLower.includes('stone') || materialLower.includes('brick')) {
+      score = 50; // Rare/unheard of in Florida
+      displayMaterial = materialLower.includes('stone') ? 'Stone' : 'Brick';
     }
 
-    let score = materialQualityMap[material] || 50;
-
-    // SPECIAL RULE: Pre-1945 Frame = 50 (Vintage Construction Quality)
-    if ((material === 'Frame' || material === 'Wood Frame') && h.yearBuilt && h.yearBuilt < 1945) {
-      score = 50;
-    }
+    console.log(`  🏠 ${h.name}: "${material}" → "${displayMaterial}" = ${score} ${h.yearBuilt && h.yearBuilt < 1945 ? '(Pre-1945 Historic)' : ''}`)
 
     return {
       id: h.id,
       name: h.name, // FULL address
-      material,
+      material: displayMaterial,
       score,
       color: h.color,
       label: getScoreLabel(score),
@@ -417,8 +428,8 @@ function Chart5_5_ExteriorMaterial({ homes }: { homes: Home[] }) {
       console.log(`  🏠 Material: ${p.material}`);
       console.log(`  📅 Year Built: ${p.yearBuilt || 'Unknown'}`);
       console.log(`  ⭐ Quality Score: ${p.score}/100 (${p.label})`);
-      if ((p.material === 'Frame' || p.material === 'Wood Frame') && p.yearBuilt && p.yearBuilt < 1945) {
-        console.log(`  🏛️  VINTAGE BONUS: Pre-1945 ${p.material} upgraded to 50 (from 0)`);
+      if ((p.material === 'Frame' || p.material === 'Wood') && p.yearBuilt && p.yearBuilt < 1945) {
+        console.log(`  🏛️  VINTAGE BONUS: Pre-1945 ${p.material} upgraded to 50 (from 35)`);
       }
       console.log(`  🎨 Color: ${p.color}`);
     });
@@ -448,7 +459,7 @@ function Chart5_5_ExteriorMaterial({ homes }: { homes: Home[] }) {
 
       <h3 className="text-lg font-semibold text-white mb-2">Chart 5-5: Exterior Material Quality</h3>
       <p className="text-xs text-gray-400 mb-4">
-        Comparing exterior materials by durability and maintenance requirements
+        Florida-specific scoring: Concrete Block (100) • Metal (95) • Fiber Cement (85) • Stucco (65) • Frame (35) • Vinyl (10)
       </p>
 
       {/* CARD-BASED DESIGN (matching Chart 5-4) */}
