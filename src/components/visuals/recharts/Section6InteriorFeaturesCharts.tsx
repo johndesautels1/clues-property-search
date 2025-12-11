@@ -892,7 +892,7 @@ function Chart6_4_KitchenFeatures({ homes }: { homes: Home[] }) {
         reason="Best overall luxury kitchen features"
       />
 
-      <SmartScaleLegend description="CLUES scoring: (Feature Count × 10) × Layout Multiplier. Open Island kitchens with luxury appliances and finishes achieve highest scores." />
+      <SmartScaleLegend description="Luxury Kitchen Scoring Methodology: Score = (Feature Count × 10) × Layout Multiplier. Features tracked: 5 Luxury Appliances (Wolf/Viking Stove, Sub-Zero Fridge, Restaurant Hood, Induction/Gas Cooktop, Miele Dishwasher) + 5 Luxury Finishes (Solid Surface Counters, Pantry, Quiet-Close Drawers, Solid Wood Cabinets, Built-in Features). Layout Multipliers: Open with Island (×1.0), Open Layout (×0.90), Rectangular (×0.75), Galley (×0.60), Small/Closed (×0.40). Example: 8 features in Open Island kitchen = (8 × 10) × 1.0 = 80 (Good). Maximum possible score: 100 (all 10 features in Open Island layout)." />
     </motion.div>
   );
 }
