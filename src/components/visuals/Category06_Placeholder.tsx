@@ -62,7 +62,7 @@ export default function Category06_InteriorFeatures({ properties }: CategoryProp
       <div className="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-pink-500/20 to-purple-500/20 backdrop-blur-xl border border-white/10 rounded-xl">
         <div className="w-3 h-3 bg-pink-400 rounded-full animate-pulse" />
         <span className="text-base font-bold text-white">
-          Section 6: Interior Features - 11 Charts
+          Section 6: Interior Features - 7 Charts
         </span>
         <div className="ml-auto text-xs text-gray-300">
           {mappedHomes.length} {mappedHomes.length === 1 ? 'Property' : 'Properties'} Selected

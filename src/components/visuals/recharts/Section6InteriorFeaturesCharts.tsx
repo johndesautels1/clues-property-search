@@ -601,32 +601,116 @@ function Chart6_2_ApplianceCounts({ homes }: { homes: Home[] }) {
 }
 
 // ============================================
-// CHART 6-3: Fireplace Presence & Count (Stacked Bar)
+// CHART 6-3: Kitchen Features Scoring (Radar)
 // ============================================
-function Chart6_3_FireplaceComparison({ homes }: { homes: Home[] }) {
-  // 1. CALCULATE RAW VALUES
-  const rawValues = homes.map(h => h.fireplaceCount);
-  // 2. CALCULATE CLUES-SMART SCORES
-  const scores = scoreHigherIsBetter(rawValues);
-  // 3. FIND WINNER
-  const maxScore = Math.max(...scores);
-  const winnerIndices = scores.map((s, i) => s === maxScore ? i : -1).filter(i => i !== -1);
-  // 4. PREPARE CHART DATA (hasFireplace = 1 if yes, extraFireplaces = count-1 if more than one)
-  const chartData = homes.map(h => ({
-    name: h.name.split(',')[0],
-    hasFireplace: h.fireplaceYn ? 1 : 0,
-    extraFireplaces: h.fireplaceYn && h.fireplaceCount > 1 ? h.fireplaceCount - 1 : 0
-  }));
-  // 5. CONSOLE LOGGING
+function Chart6_3_KitchenFeatures({ homes }: { homes: Home[] }) {
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+
+  // LUXURY FEATURE DETECTION
+  const detectLuxuryAppliances = (text: string) => {
+    const lower = text.toLowerCase();
+    return {
+      wolfViking: lower.includes('wolf') || lower.includes('viking'),
+      subZero: lower.includes('sub-zero') || lower.includes('sub zero') || lower.includes('subzero'),
+      restaurantHood: (lower.includes('restaurant') || lower.includes('commercial')) && lower.includes('hood'),
+      inductionGas: lower.includes('induction') || (lower.includes('gas') && lower.includes('cooktop')),
+      miele: lower.includes('miele')
+    };
+  };
+
+  const detectLuxuryFinishes = (text: string) => {
+    const lower = text.toLowerCase();
+    return {
+      solidSurface: lower.includes('quartz') || lower.includes('granite') || lower.includes('marble') || lower.includes('solid surface'),
+      pantry: lower.includes('pantry') || lower.includes('butler'),
+      quietClose: lower.includes('soft close') || lower.includes('soft-close') || lower.includes('quiet close') || lower.includes('quiet-close'),
+      solidCabinets: (lower.includes('solid wood') || lower.includes('custom')) && lower.includes('cabinet'),
+      builtIns: lower.includes('built-in') || lower.includes('builtin') || lower.includes('built in')
+    };
+  };
+
+  const detectLayout = (text: string): { type: string; multiplier: number; color: string } => {
+    const lower = text.toLowerCase();
+    if (lower.includes('island') && lower.includes('open')) return { type: 'Open with Island', multiplier: 1.0, color: '#4CAF50' };
+    if (lower.includes('open')) return { type: 'Open Layout', multiplier: 0.90, color: '#2196F3' };
+    if (lower.includes('rectangular')) return { type: 'Rectangular', multiplier: 0.75, color: '#FFEB3B' };
+    if (lower.includes('galley')) return { type: 'Galley', multiplier: 0.60, color: '#FF9800' };
+    return { type: 'Small/Closed', multiplier: 0.40, color: '#FF4444' };
+  };
+
+  // CALCULATE PROPERTY DATA WITH CLUES SCORING
+  const propertyData = homes.map(h => {
+    const appliances = detectLuxuryAppliances(h.kitchenFeatures);
+    const finishes = detectLuxuryFinishes(h.kitchenFeatures);
+    const layout = detectLayout(h.kitchenFeatures);
+
+    const applianceCount = Object.values(appliances).filter(Boolean).length;
+    const finishCount = Object.values(finishes).filter(Boolean).length;
+    const totalFeatures = applianceCount + finishCount;
+
+    const baseScore = totalFeatures * 10; // 0-100
+    const finalScore = Math.round(baseScore * layout.multiplier);
+
+    return {
+      id: h.id,
+      name: h.name,
+      color: h.color,
+      rawText: h.kitchenFeatures,
+      appliances,
+      finishes,
+      layout,
+      applianceCount,
+      finishCount,
+      totalFeatures,
+      baseScore,
+      finalScore
+    };
+  });
+
+  // FIND WINNER
+  const maxScore = Math.max(...propertyData.map(p => p.finalScore));
+  const winnerIndices = propertyData.map((p, i) => p.finalScore === maxScore ? i : -1).filter(i => i !== -1);
+
+  // DATA WIRING PROOF - CONSOLE LOGGING
   useEffect(() => {
-    console.log('🔍 Chart 6-3: Fireplace Presence & Count - SMART SCORING:');
-    chartData.forEach((d, idx) => {
-      console.log(`📊 ${d.name}:`);
-      console.log('  Fireplaces count:', rawValues[idx]);
-      console.log(`  🧠 SMART SCORE: ${scores[idx]}/100 (${getScoreLabel(scores[idx])})`);
+    console.log('🔍 Chart 6-3: Kitchen Features - LUXURY SCORING (DATA WIRING PROOF):');
+    console.log('═══════════════════════════════════════════════════════════════');
+
+    // CRITICAL: Show raw data first
+    console.log('\n📋 RAW KITCHEN FEATURES DATA FROM SCHEMA:');
+    homes.forEach((h, idx) => {
+      console.log(`${idx + 1}. ${h.name.split(',')[0]}:`);
+      console.log(`   kitchenFeatures: "${h.kitchenFeatures}"`);
+      console.log(`   Length: ${h.kitchenFeatures.length} chars`);
+      console.log(`   Is Empty: ${!h.kitchenFeatures || h.kitchenFeatures.trim().length === 0}`);
     });
-    console.log(`🏆 WINNER: ${winnerIndices.map(i => homes[i].name.split(',')[0]).join(' & ')} with score ${maxScore}`);
+
+    console.log('\n🔬 DETECTION RESULTS:');
+    propertyData.forEach((p) => {
+      console.log(`\n📊 ${p.name.split(',')[0]}:`);
+      console.log('  ✅ Detected Luxury Appliances:', p.appliances);
+      console.log('     Count:', p.applianceCount, '/ 5');
+      console.log('  ✅ Detected Luxury Finishes:', p.finishes);
+      console.log('     Count:', p.finishCount, '/ 5');
+      console.log('  ✅ Layout:', p.layout.type, `(×${p.layout.multiplier})`);
+      console.log(`  📐 Base Score: ${p.baseScore}/100 (${p.totalFeatures} features × 10)`);
+      console.log(`  🧠 FINAL SMART SCORE: ${p.finalScore}/100 (${getScoreLabel(p.finalScore)})`);
+    });
+    console.log(`\n🏆 WINNER: ${winnerIndices.map(i => propertyData[i].name.split(',')[0]).join(' & ')} with score ${maxScore}`);
+
+    // ALERT if all properties have sparse data
+    const allSparse = propertyData.every(p => p.totalFeatures <= 1);
+    if (allSparse) {
+      console.warn('⚠️ WARNING: All properties have minimal kitchen feature data!');
+      console.warn('   The kitchenFeatures field appears to be empty or contains very basic descriptions.');
+      console.warn('   For accurate luxury scoring, please populate detailed kitchen descriptions including:');
+      console.warn('   - Specific appliance brands (Wolf, Viking, Sub-Zero, Miele, etc.)');
+      console.warn('   - Layout details (Open with Island, Galley, etc.)');
+      console.warn('   - Finish details (Quartz counters, Soft-close drawers, Butler pantry, etc.)');
+    }
+    console.log('═══════════════════════════════════════════════════════════════\n');
   }, [homes]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -635,154 +719,150 @@ function Chart6_3_FireplaceComparison({ homes }: { homes: Home[] }) {
       className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6"
     >
       {/* Chart ID Label */}
-      <div className="absolute -top-3 left-3 text-[10px] font-mono text-gray-500">
+      <div className="absolute -top-3 left-3 text-xs font-mono text-gray-400">
         Chart 6-3
       </div>
 
       {/* Brain Widget */}
       <div className="absolute -top-3 right-3 flex items-center gap-2 px-3 py-1.5 bg-slate-800/80 border border-slate-700 rounded-full backdrop-blur-sm">
         <span className="text-sm">🧠</span>
-        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Smart</span>
-        <span className="text-sm font-bold" style={{ color: getScoreColor(maxScore) }}>
+        <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">Smart</span>
+        <span className="text-base font-bold" style={{ color: getScoreColor(maxScore) }}>
           {maxScore}
         </span>
       </div>
 
-      <h3 className="text-lg font-semibold text-white mb-2">Chart 6-3: Fireplace Presence & Count</h3>
-      <p className="text-xs text-gray-400 mb-4">Which homes have fireplaces and how many</p>
+      <h3 className="text-xl font-semibold text-white mb-2">Chart 6-3: Luxury Kitchen Features</h3>
+      <p className="text-xs text-gray-400 mb-6">Premium appliances, finishes, and layout scoring</p>
 
-      <ResponsiveContainer width="100%" height={320}>
-        <BarChart data={chartData}>
-          <CartesianGrid stroke={COLORS.grid} />
-          <XAxis dataKey="name" tick={{ fill: COLORS.text, fontSize: 12, fontWeight: 600 }} />
-          <YAxis allowDecimals={false} tick={{ fill: COLORS.text, fontSize: 12, fontWeight: 600 }} />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: COLORS.tooltip,
-              border: `1px solid ${COLORS.border}`,
-              borderRadius: '8px',
-              color: '#ffffff'
+      {/* Property Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {propertyData.map((prop, idx) => (
+          <motion.div
+            key={prop.id}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{
+              opacity: 1,
+              scale: hoveredCard === prop.id ? 1.05 : 1
             }}
-            labelStyle={{ color: '#ffffff' }}
-            itemStyle={{ color: '#ffffff' }}
-            formatter={(value, name) => [`${value}`, name === 'hasFireplace' ? 'Has Fireplace' : 'Additional']}
-          />
-          <Legend wrapperStyle={{ color: '#ffffff', fontSize: '10px' }} />
-          <Bar dataKey="hasFireplace" stackId="a" name="Has Fireplace" fill="#F59E0B" />
-          <Bar dataKey="extraFireplaces" stackId="a" name="Additional Fireplaces" fill="#EF4444" />
-        </BarChart>
-      </ResponsiveContainer>
+            transition={{ delay: idx * 0.1, duration: 0.3 }}
+            onMouseEnter={() => setHoveredCard(prop.id || null)}
+            onMouseLeave={() => setHoveredCard(null)}
+            className="relative p-4 rounded-xl backdrop-blur-xl cursor-pointer"
+            style={{
+              background: `${prop.color}10`,
+              border: `2px solid ${prop.color}`,
+              boxShadow: hoveredCard === prop.id
+                ? `0 0 40px ${prop.color}80`
+                : `0 0 20px ${prop.color}40`,
+            }}
+          >
+            {/* Property Name */}
+            <motion.div
+              className="text-sm font-semibold text-white mb-3"
+              animate={{ height: hoveredCard === prop.id ? 'auto' : '1.25rem' }}
+              transition={{ duration: 0.3 }}
+            >
+              {hoveredCard === prop.id ? (
+                <div className="leading-tight">{prop.name}</div>
+              ) : (
+                <div className="truncate">{prop.name.split(',')[0]}</div>
+              )}
+            </motion.div>
 
-      <WinnerBadge
-        winnerName={winnerIndices.map(i => homes[i].name.split(',')[0]).join(' & ')}
-        score={maxScore}
-        reason="Most fireplaces present"
-      />
+            {/* Final Score Badge */}
+            <div className="flex items-center justify-center mb-4">
+              <div className="px-4 py-2 rounded-lg" style={{
+                background: `${getScoreColor(prop.finalScore)}20`,
+                border: `2px solid ${getScoreColor(prop.finalScore)}`
+              }}>
+                <div className="text-2xl font-bold" style={{ color: getScoreColor(prop.finalScore) }}>
+                  {prop.finalScore}
+                </div>
+                <div className="text-[10px] text-gray-400 text-center">/ 100</div>
+              </div>
+            </div>
 
-      <SmartScaleLegend description="Homes with a fireplace (especially multiple fireplaces) score higher, while homes with none score lowest." />
-    </motion.div>
-  );
-}
+            {/* Feature Breakdown */}
+            <div className="space-y-3">
+              {/* Luxury Appliances */}
+              <div>
+                <div className="text-xs font-semibold text-gray-300 mb-1.5 flex items-center justify-between">
+                  <span>Luxury Appliances</span>
+                  <span className="text-[10px] text-gray-400">{prop.applianceCount}/5</span>
+                </div>
+                {prop.applianceCount > 0 ? (
+                  <div className="space-y-1">
+                    {Object.entries({
+                      wolfViking: 'Wolf/Viking Stove',
+                      subZero: 'Sub-Zero Fridge',
+                      restaurantHood: 'Restaurant Hood',
+                      inductionGas: 'Induction/Gas Cooktop',
+                      miele: 'Miele Dishwasher'
+                    })
+                      .filter(([key]) => prop.appliances[key as keyof typeof prop.appliances])
+                      .map(([key, label]) => (
+                        <div key={key} className="flex items-center gap-2 text-xs">
+                          <span className="text-green-400">✓</span>
+                          <span className="text-orange-400 font-medium">{label}</span>
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-gray-500 italic">No luxury appliances detected</div>
+                )}
+              </div>
 
-// ============================================
-// CHART 6-4: Kitchen Features Scoring (Radar)
-// ============================================
-function Chart6_4_KitchenFeatures({ homes }: { homes: Home[] }) {
-  // 1. CALCULATE RAW VALUES (aggregate kitchen feature score)
-  const rawValues = homes.map(h => {
-    // Sum category scores for each kitchen (appliances + finishes + layout)
-    const features = h.kitchenFeatures.toLowerCase();
-    let appScore = 0, finScore = 0, layScore = 0;
-    if (features.includes('stainless') || features.includes('high-end') || features.includes('gourmet')) appScore = 10;
-    else if (features.includes('basic')) appScore = 4;
-    else appScore = 5;
-    if (features.includes('granite') || features.includes('quartz') || features.includes('marble')) finScore = 10;
-    else finScore = 5;
-    if (features.includes('island') || features.includes('open') || features.includes('pantry')) layScore = 10;
-    else layScore = 5;
-    return appScore + finScore + layScore;
-  });
-  // 2. CALCULATE CLUES-SMART SCORES
-  const scores = scoreHigherIsBetter(rawValues);
-  // 3. FIND WINNER
-  const maxScore = Math.max(...scores);
-  const winnerIndices = scores.map((s, i) => s === maxScore ? i : -1).filter(i => i !== -1);
-  // 4. PREPARE CHART DATA (radar categories for Appliances, Finishes, Layout)
-  const radarData = [
-    { feature: 'Appliances' },
-    { feature: 'Finishes' },
-    { feature: 'Layout' }
-  ];
-  homes.forEach(h => {
-    const features = h.kitchenFeatures.toLowerCase();
-    radarData[0][h.name] = features.includes('stainless') || features.includes('high-end') || features.includes('gourmet') ? 10
-                            : (features.includes('basic') ? 4 : 5);
-    radarData[1][h.name] = features.includes('granite') || features.includes('quartz') || features.includes('marble') ? 10 : 5;
-    radarData[2][h.name] = features.includes('island') || features.includes('open') || features.includes('pantry') ? 10 : 5;
-  });
-  // 5. CONSOLE LOGGING
-  useEffect(() => {
-    console.log('🔍 Chart 6-4: Kitchen Features Scoring - SMART SCORING:');
-    homes.forEach((h, idx) => {
-      console.log(`📊 ${h.name.split(',')[0]}:`);
-      console.log('  Raw kitchen score:', rawValues[idx]);
-      console.log(`  🧠 SMART SCORE: ${scores[idx]}/100 (${getScoreLabel(scores[idx])})`);
-    });
-    console.log(`🏆 WINNER: ${winnerIndices.map(i => homes[i].name.split(',')[0]).join(' & ')} with score ${maxScore}`);
-  }, [homes]);
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.4 }}
-      className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6"
-    >
-      {/* Chart ID Label */}
-      <div className="absolute -top-3 left-3 text-[10px] font-mono text-gray-500">
-        Chart 6-4
+              {/* Luxury Finishes */}
+              <div>
+                <div className="text-xs font-semibold text-gray-300 mb-1.5 flex items-center justify-between">
+                  <span>Luxury Finishes</span>
+                  <span className="text-[10px] text-gray-400">{prop.finishCount}/5</span>
+                </div>
+                {prop.finishCount > 0 ? (
+                  <div className="space-y-1">
+                    {Object.entries({
+                      solidSurface: 'Solid Surface Counters',
+                      pantry: 'Pantry',
+                      quietClose: 'Quiet-Close Drawers',
+                      solidCabinets: 'Solid Wood Cabinets',
+                      builtIns: 'Built-in Features'
+                    })
+                      .filter(([key]) => prop.finishes[key as keyof typeof prop.finishes])
+                      .map(([key, label]) => (
+                        <div key={key} className="flex items-center gap-2 text-xs">
+                          <span className="text-green-400">✓</span>
+                          <span className="text-orange-400 font-medium">{label}</span>
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-gray-500 italic">No luxury finishes detected</div>
+                )}
+              </div>
+
+              {/* Layout */}
+              <div className="pt-2 border-t border-white/10">
+                <div className="text-xs font-semibold text-gray-300 mb-1">Layout</div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-200">{prop.layout.type}</span>
+                  <span className="text-xs font-medium" style={{ color: prop.layout.color }}>
+                    ×{prop.layout.multiplier}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ))}
       </div>
 
-      {/* Brain Widget */}
-      <div className="absolute -top-3 right-3 flex items-center gap-2 px-3 py-1.5 bg-slate-800/80 border border-slate-700 rounded-full backdrop-blur-sm">
-        <span className="text-sm">🧠</span>
-        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Smart</span>
-        <span className="text-sm font-bold" style={{ color: getScoreColor(maxScore) }}>
-          {maxScore}
-        </span>
-      </div>
-
-      <h3 className="text-lg font-semibold text-white mb-2">Chart 6-4: Kitchen Features Scoring</h3>
-      <p className="text-xs text-gray-400 mb-4">Quality of kitchen appliances, finishes, and layout</p>
-
-      <ResponsiveContainer width="100%" height={320}>
-        <RadarChart data={radarData}>
-          <PolarGrid stroke={COLORS.grid} />
-          <PolarAngleAxis dataKey="feature" tick={{ fill: COLORS.text, fontSize: 12, fontWeight: 600 }} />
-          <PolarRadiusAxis angle={30} domain={[0, 10]} tick={{ fill: COLORS.text, fontSize: 10 }} axisLine={false} tickCount={6} />
-          {homes.map(h => (
-            <Radar key={h.name} name={h.name.split(',')[0]} dataKey={h.name} stroke={h.color} fill={h.color} fillOpacity={0.2} />
-          ))}
-          <Tooltip
-            contentStyle={{
-              backgroundColor: COLORS.tooltip,
-              border: `1px solid ${COLORS.border}`,
-              borderRadius: '8px',
-              color: '#ffffff'
-            }}
-            labelStyle={{ color: '#ffffff' }}
-            itemStyle={{ color: '#ffffff' }}
-          />
-          <Legend wrapperStyle={{ color: '#ffffff', fontSize: '12px' }} />
-        </RadarChart>
-      </ResponsiveContainer>
-
       <WinnerBadge
-        winnerName={winnerIndices.map(i => homes[i].name.split(',')[0]).join(' & ')}
+        winnerName={winnerIndices.map(i => propertyData[i].name.split(',')[0]).join(' & ')}
         score={maxScore}
-        reason="Best overall kitchen features"
+        reason="Best overall luxury kitchen features"
       />
 
-      <SmartScaleLegend description="Kitchens with luxury finishes, modern appliances, and open layouts achieve higher scores." />
+      <SmartScaleLegend description="CLUES scoring: (Feature Count × 10) × Layout Multiplier. Open Island kitchens with luxury appliances and finishes achieve highest scores." />
     </motion.div>
   );
 }
@@ -790,7 +870,7 @@ function Chart6_4_KitchenFeatures({ homes }: { homes: Home[] }) {
 // ============================================
 // CHART 6-5: Composite Interior Score (Bar)
 // ============================================
-function Chart6_5_InteriorScore({ homes }: { homes: Home[] }) {
+function Chart6_4_InteriorScore({ homes }: { homes: Home[] }) {
   // 1. CALCULATE RAW VALUES (composite interior scores)
   const rawValues = homes.map(h => getInteriorScore(h));
   // 2. CALCULATE CLUES-SMART SCORES
@@ -805,7 +885,7 @@ function Chart6_5_InteriorScore({ homes }: { homes: Home[] }) {
   }));
   // 5. CONSOLE LOGGING
   useEffect(() => {
-    console.log('🔍 Chart 6-5: Composite Interior Score - SMART SCORING:');
+    console.log('🔍 Chart 6-4: Composite Interior Score - SMART SCORING:');
     homes.forEach((h, idx) => {
       console.log(`📊 ${h.name.split(',')[0]}:`);
       console.log('  Raw interior score:', rawValues[idx].toFixed(1));
@@ -827,7 +907,7 @@ function Chart6_5_InteriorScore({ homes }: { homes: Home[] }) {
         </div>
       </div>
       {/* TITLE */}
-      <h3 className="text-lg font-semibold text-white mb-2">Chart 6-5: Composite Interior Score</h3>
+      <h3 className="text-lg font-semibold text-white mb-2">Chart 6-4: Composite Interior Score</h3>
       <p className="text-xs text-gray-400 mb-4">Overall interior features score (0-100)</p>
       {/* CHART */}
       <ResponsiveContainer width="100%" height={320}>
@@ -904,128 +984,9 @@ function Chart6_5_InteriorScore({ homes }: { homes: Home[] }) {
 }
 
 // ============================================
-// CHART 6-6: Appliance Richness vs Score (Scatter)
+// CHART 6-5: Interior Score Contribution (Waterfall)
 // ============================================
-function Chart6_6_AppliancesVsScore({ homes }: { homes: Home[] }) {
-  // 1. CALCULATE RAW VALUES
-  const appliancesCounts = homes.map(h => h.appliancesIncluded.length);
-  const interiorScores = homes.map(h => getInteriorScore(h));
-  // 2. CALCULATE CLUES-SMART SCORES (reuse interior scores for y-axis)
-  const scores = scoreHigherIsBetter(interiorScores);
-  // 3. FIND WINNER
-  const maxScore = Math.max(...scores);
-  const winnerIndices = scores.map((s, i) => s === maxScore ? i : -1).filter(i => i !== -1);
-  // 4. PREPARE CHART DATA (x = appliances count, y = interior score)
-  // We will plot each property as a separate Scatter series for color differentiation
-  // 5. CONSOLE LOGGING
-  useEffect(() => {
-    console.log('🔍 Chart 6-6: Appliance Richness vs Interior Score - SMART SCORING:');
-    homes.forEach((h, idx) => {
-      console.log(`📊 ${h.name.split(',')[0]}:`);
-      console.log('  Appliances count:', appliancesCounts[idx]);
-      console.log('  Interior score:', scores[idx]);
-    });
-    console.log(`🏆 WINNER: ${winnerIndices.map(i => homes[i].name.split(',')[0]).join(' & ')} with interior score ${maxScore}`);
-  }, [homes]);
-  return (
-    <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-      {/* BRAIN WIDGET */}
-      <div className="absolute top-4 right-4 flex items-center gap-2 px-3 py-2 rounded-lg"
-           style={{ background: `${getScoreColor(maxScore)}20`, border: `2px solid ${getScoreColor(maxScore)}` }}>
-        <span className="text-xl">🧠</span>
-        <div className="text-xs">
-          <div className="font-bold text-white">SMART Score</div>
-          <div style={{ color: getScoreColor(maxScore), fontWeight: 700 }}>
-            {maxScore}/100
-          </div>
-        </div>
-      </div>
-      {/* TITLE */}
-      <h3 className="text-lg font-semibold text-white mb-2">Chart 6-6: Appliance Richness vs Interior Score</h3>
-      <p className="text-xs text-gray-400 mb-4">Appliances included vs. overall interior score</p>
-      {/* CHART */}
-      <ResponsiveContainer width="100%" height={320}>
-        <ScatterChart>
-          <CartesianGrid stroke={COLORS.grid} />
-          <XAxis type="number" dataKey="x" name="Appliances" domain={[0, 'dataMax + 1']}
-                 tick={{ fill: COLORS.text, fontSize: 12, fontWeight: 600 }}>
-            <Label value="Number of Appliances" position="insideBottom" offset={-5} fill={COLORS.text} />
-          </XAxis>
-          <YAxis type="number" dataKey="y" name="Interior Score" domain={[0, 100]}
-                 tick={{ fill: COLORS.text, fontSize: 12, fontWeight: 600 }}>
-            <Label value="Interior Score" angle={-90} position="insideLeft" fill={COLORS.text} style={{ textAnchor: 'middle' }} />
-          </YAxis>
-          <Tooltip
-            contentStyle={{
-              backgroundColor: COLORS.tooltip,
-              border: `1px solid ${COLORS.border}`,
-              borderRadius: '8px',
-              color: '#ffffff'
-            }}
-            labelStyle={{ color: '#ffffff' }}
-            itemStyle={{ color: '#ffffff' }}
-            formatter={(value, name) => [`${value}${name === 'Appliances' ? '' : '/100'}`, name]}
-          />
-          <Legend wrapperStyle={{ color: '#ffffff', fontSize: '12px' }} />
-          {homes.map((h, idx) => (
-            <Scatter key={`scatter-${idx}`} name={h.name.split(',')[0]} data={[{ x: appliancesCounts[idx], y: scores[idx] }]} fill={h.color} />
-          ))}
-        </ScatterChart>
-      </ResponsiveContainer>
-      {/* WINNER BADGE */}
-      <div className="mt-4 flex justify-center">
-        <div className="flex items-center gap-3 px-5 py-3 rounded-xl"
-             style={{ background: `${getScoreColor(maxScore)}20`, border: `2px solid ${getScoreColor(maxScore)}` }}>
-          <span className="text-2xl">🏆</span>
-          <div>
-            <div className="text-sm font-bold text-white">
-              Winner: {winnerIndices.map(i => homes[i].name.split(',')[0]).join(' & ')}
-            </div>
-            <div className="text-xs text-gray-300">
-              CLUES-Smart Score: <span style={{ color: getScoreColor(maxScore), fontWeight: 700 }}>
-                {maxScore}/100
-              </span> ({getScoreLabel(maxScore)}) – Highest interior score overall
-            </div>
-          </div>
-        </div>
-      </div>
-      {/* SMART SCALE LEGEND */}
-      <div className="mt-4 p-3 bg-white/5 rounded-lg border-l-4 border-purple-400">
-        <p className="text-xs font-bold text-purple-300 mb-2">CLUES-Smart Score Scale:</p>
-        <div className="grid grid-cols-5 gap-2 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded" style={{ background: '#4CAF50' }}></div>
-            <span className="text-gray-300">81-100: Excellent</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded" style={{ background: '#2196F3' }}></div>
-            <span className="text-gray-300">61-80: Good</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded" style={{ background: '#FFEB3B' }}></div>
-            <span className="text-gray-300">41-60: Average</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded" style={{ background: '#FF9800' }}></div>
-            <span className="text-gray-300">21-40: Fair</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded" style={{ background: '#FF4444' }}></div>
-            <span className="text-gray-300">0-20: Poor</span>
-          </div>
-        </div>
-        <p className="text-xs text-gray-400 mt-2">
-          More included appliances often coincide with a higher interior score, as shown by the upward trend.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ============================================
-// CHART 6-7: Interior Score Contribution (Waterfall)
-// ============================================
-function Chart6_7_InteriorContribution({ homes }: { homes: Home[] }) {
+function Chart6_5_InteriorContribution({ homes }: { homes: Home[] }) {
   // 1. CALCULATE RAW VALUES
   const rawValues = homes.map(h => getInteriorScore(h));
   // 2. CALCULATE CLUES-SMART SCORES
@@ -1063,7 +1024,7 @@ function Chart6_7_InteriorContribution({ homes }: { homes: Home[] }) {
   ];
   // 5. CONSOLE LOGGING
   useEffect(() => {
-    console.log('🔍 Chart 6-7: Interior Score Contribution (Waterfall) - SMART SCORING:');
+    console.log('🔍 Chart 6-4: Interior Score Contribution (Waterfall) - SMART SCORING:');
     console.log(`🏆 Top Property: ${winnerHome.name.split(',')[0]} (score ${scores[winnerIndex]})`);
     console.log('  Flooring contribution:', floorVal.toFixed(1));
     console.log('  Kitchen contribution:', kitchenVal.toFixed(1));
@@ -1083,7 +1044,7 @@ function Chart6_7_InteriorContribution({ homes }: { homes: Home[] }) {
         </div>
       </div>
       {/* TITLE */}
-      <h3 className="text-lg font-semibold text-white mb-2">Chart 6-7: Interior Score Contribution</h3>
+      <h3 className="text-lg font-semibold text-white mb-2">Chart 6-4: Interior Score Contribution</h3>
       <p className="text-xs text-gray-400 mb-4">How key features contribute to the top interior score</p>
       {/* CHART */}
       <ResponsiveContainer width="100%" height={320}>
@@ -1100,7 +1061,7 @@ function Chart6_7_InteriorContribution({ homes }: { homes: Home[] }) {
             }}
             labelStyle={{ color: '#ffffff' }}
             itemStyle={{ color: '#ffffff' }}
-            formatter={(value) => [value.toFixed(1), 'Points']}
+            formatter={(value) => [typeof value === 'number' ? value.toFixed(1) : value, 'Points']}
           />
           {/* Invisible bar for offset */}
           <Bar dataKey="cumulative" stackId="a" fill="transparent" />
@@ -1164,131 +1125,9 @@ function Chart6_7_InteriorContribution({ homes }: { homes: Home[] }) {
 }
 
 // ============================================
-// CHART 6-8: Fireplace Presence Heatmap (Color Scale Bar)
+// CHART 6-6: Appliance Combination Popularity (Pie)
 // ============================================
-function Chart6_8_FireplaceHeatmap({ homes }: { homes: Home[] }) {
-  // 1. CALCULATE RAW VALUES
-  const rawValues = homes.map(h => h.fireplaceCount);
-  // 2. CALCULATE CLUES-SMART SCORES
-  const scores = scoreHigherIsBetter(rawValues);
-  // 3. FIND WINNER
-  const maxScore = Math.max(...scores);
-  const winnerIndices = scores.map((s, i) => s === maxScore ? i : -1).filter(i => i !== -1);
-  // 4. PREPARE CHART DATA
-  const chartData = homes.map(h => ({
-    name: h.name.split(',')[0],
-    count: h.fireplaceCount
-  }));
-  // Color scale: 0 -> gray, 1 -> orange, 2+ -> red
-  const getBarColor = (count: number) => {
-    if (count >= 2) return '#EF4444';
-    if (count === 1) return '#F97316';
-    return '#4B5563';
-  };
-  // 5. CONSOLE LOGGING
-  useEffect(() => {
-    console.log('🔍 Chart 6-8: Fireplace Presence Heatmap - SMART SCORING:');
-    chartData.forEach((d, idx) => {
-      console.log(`📊 ${d.name}:`);
-      console.log('  Fireplace count:', d.count);
-      console.log(`  🧠 SMART SCORE: ${scores[idx]}/100 (${getScoreLabel(scores[idx])})`);
-    });
-    console.log(`🏆 WINNER: ${winnerIndices.map(i => homes[i].name.split(',')[0]).join(' & ')} with score ${maxScore}`);
-  }, [homes]);
-  return (
-    <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-      {/* BRAIN WIDGET */}
-      <div className="absolute top-4 right-4 flex items-center gap-2 px-3 py-2 rounded-lg"
-           style={{ background: `${getScoreColor(maxScore)}20`, border: `2px solid ${getScoreColor(maxScore)}` }}>
-        <span className="text-xl">🧠</span>
-        <div className="text-xs">
-          <div className="font-bold text-white">SMART Score</div>
-          <div style={{ color: getScoreColor(maxScore), fontWeight: 700 }}>
-            {maxScore}/100
-          </div>
-        </div>
-      </div>
-      {/* TITLE */}
-      <h3 className="text-lg font-semibold text-white mb-2">Chart 6-8: Fireplace Presence Heatmap</h3>
-      <p className="text-xs text-gray-400 mb-4">Fireplace count indicated by bar color intensity</p>
-      {/* CHART */}
-      <ResponsiveContainer width="100%" height={320}>
-        <BarChart data={chartData}>
-          <CartesianGrid stroke={COLORS.grid} />
-          <XAxis dataKey="name" tick={{ fill: COLORS.text, fontSize: 12, fontWeight: 600 }} />
-          <YAxis allowDecimals={false} tick={{ fill: COLORS.text, fontSize: 12, fontWeight: 600 }} />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: COLORS.tooltip,
-              border: `1px solid ${COLORS.border}`,
-              borderRadius: '8px',
-              color: '#ffffff'
-            }}
-            labelStyle={{ color: '#ffffff' }}
-            itemStyle={{ color: '#ffffff' }}
-            formatter={(value) => [`${value}`, 'Fireplaces']}
-          />
-          <Bar dataKey="count" barSize={30}>
-            {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={getBarColor(entry.count)} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-      {/* WINNER BADGE */}
-      <div className="mt-4 flex justify-center">
-        <div className="flex items-center gap-3 px-5 py-3 rounded-xl"
-             style={{ background: `${getScoreColor(maxScore)}20`, border: `2px solid ${getScoreColor(maxScore)}` }}>
-          <span className="text-2xl">🏆</span>
-          <div>
-            <div className="text-sm font-bold text-white">
-              Winner: {winnerIndices.map(i => homes[i].name.split(',')[0]).join(' & ')}
-            </div>
-            <div className="text-xs text-gray-300">
-              CLUES-Smart Score: <span style={{ color: getScoreColor(maxScore), fontWeight: 700 }}>
-                {maxScore}/100
-              </span> ({getScoreLabel(maxScore)}) – Warmest interior (more fireplaces)
-            </div>
-          </div>
-        </div>
-      </div>
-      {/* SMART SCALE LEGEND */}
-      <div className="mt-4 p-3 bg-white/5 rounded-lg border-l-4 border-purple-400">
-        <p className="text-xs font-bold text-purple-300 mb-2">CLUES-Smart Score Scale:</p>
-        <div className="grid grid-cols-5 gap-2 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded" style={{ background: '#4CAF50' }}></div>
-            <span className="text-gray-300">81-100: Excellent</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded" style={{ background: '#2196F3' }}></div>
-            <span className="text-gray-300">61-80: Good</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded" style={{ background: '#FFEB3B' }}></div>
-            <span className="text-gray-300">41-60: Average</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded" style={{ background: '#FF9800' }}></div>
-            <span className="text-gray-300">21-40: Fair</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded" style={{ background: '#FF4444' }}></div>
-            <span className="text-gray-300">0-20: Poor</span>
-          </div>
-        </div>
-        <p className="text-xs text-gray-400 mt-2">
-          Bar color indicates fireplace count (gray for 0, orange for 1, red for 2+).
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ============================================
-// CHART 6-9: Appliance Combination Popularity (Pie)
-// ============================================
-function Chart6_9_ApplianceCombos({ homes }: { homes: Home[] }) {
+function Chart6_6_ApplianceCombos({ homes }: { homes: Home[] }) {
   // 1. CALCULATE RAW VALUES (combination frequency per property)
   const comboMap: Record<string, number> = {};
   const comboByHome: string[] = [];
@@ -1313,7 +1152,7 @@ function Chart6_9_ApplianceCombos({ homes }: { homes: Home[] }) {
   });
   // 5. CONSOLE LOGGING
   useEffect(() => {
-    console.log('🔍 Chart 6-9: Appliance Combination Popularity - SMART SCORING:');
+    console.log('🔍 Chart 6-4: Appliance Combination Popularity - SMART SCORING:');
     chartData.forEach(entry => {
       console.log(`📊 Combo "${entry.combo}" - ${entry.count} home(s)`);
     });
@@ -1336,7 +1175,7 @@ function Chart6_9_ApplianceCombos({ homes }: { homes: Home[] }) {
         </div>
       </div>
       {/* TITLE */}
-      <h3 className="text-lg font-semibold text-white mb-2">Chart 6-9: Appliance Combination Popularity</h3>
+      <h3 className="text-lg font-semibold text-white mb-2">Chart 6-4: Appliance Combination Popularity</h3>
       <p className="text-xs text-gray-400 mb-4">Most common appliance packages among the homes</p>
       {/* CHART */}
       <ResponsiveContainer width="100%" height={320}>
@@ -1410,9 +1249,9 @@ function Chart6_9_ApplianceCombos({ homes }: { homes: Home[] }) {
 }
 
 // ============================================
-// CHART 6-10: Interior Features Smart Rank (List)
+// CHART 6-7: Interior Features Smart Rank (List)
 // ============================================
-function Chart6_10_InteriorRank({ homes }: { homes: Home[] }) {
+function Chart6_7_InteriorRank({ homes }: { homes: Home[] }) {
   // 1. CALCULATE RAW VALUES
   const rawValues = homes.map(h => getInteriorScore(h));
   // 2. CALCULATE CLUES-SMART SCORES
@@ -1427,7 +1266,7 @@ function Chart6_10_InteriorRank({ homes }: { homes: Home[] }) {
   })).sort((a, b) => b.score - a.score);
   // 5. CONSOLE LOGGING
   useEffect(() => {
-    console.log('🔍 Chart 6-10: Interior Features Smart Rank - SMART SCORING:');
+    console.log('🔍 Chart 6-4: Interior Features Smart Rank - SMART SCORING:');
     ranking.forEach((item, idx) => {
       console.log(`${idx + 1}. ${item.name}: ${item.score}/100 (${getScoreLabel(item.score)})`);
     });
@@ -1447,7 +1286,7 @@ function Chart6_10_InteriorRank({ homes }: { homes: Home[] }) {
         </div>
       </div>
       {/* TITLE */}
-      <h3 className="text-lg font-semibold text-white mb-2">Chart 6-10: Interior Features Smart Rank</h3>
+      <h3 className="text-lg font-semibold text-white mb-2">Chart 6-4: Interior Features Smart Rank</h3>
       <p className="text-xs text-gray-400 mb-4">Overall interior feature ranking of the homes</p>
       {/* RANK LIST */}
       <div>
@@ -1547,14 +1386,11 @@ export default function Section6_InteriorFeaturesCharts({ homes }: Section6Chart
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Chart6_1_FlooringTypeDistribution homes={homes} />
         <Chart6_2_ApplianceCounts homes={homes} />
-        <Chart6_3_FireplaceComparison homes={homes} />
-        <Chart6_4_KitchenFeatures homes={homes} />
-        <Chart6_5_InteriorScore homes={homes} />
-        <Chart6_6_AppliancesVsScore homes={homes} />
-        <Chart6_7_InteriorContribution homes={homes} />
-        <Chart6_8_FireplaceHeatmap homes={homes} />
-        <Chart6_9_ApplianceCombos homes={homes} />
-        <Chart6_10_InteriorRank homes={homes} />
+        <Chart6_3_KitchenFeatures homes={homes} />
+        <Chart6_4_InteriorScore homes={homes} />
+        <Chart6_5_InteriorContribution homes={homes} />
+        <Chart6_6_ApplianceCombos homes={homes} />
+        <Chart6_7_InteriorRank homes={homes} />
       </div>
       {/* Footer Note */}
       <div className="mt-6 p-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl">
