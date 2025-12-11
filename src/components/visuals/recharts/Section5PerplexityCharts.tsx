@@ -965,6 +965,25 @@ function ExteriorCondition({ homes }: { homes: Home[] }) {
 // ============================================
 // CHART 5-2: REPLACEMENT HORIZON (CORRECTED - TRUE WINNER CALCULATION)
 // ============================================
+
+/**
+ * Calculate CLUES-Smart score based on years remaining
+ * Returns score 0-100 based on condition
+ */
+function calculateReplacementScore(yearsLeft: number, maxLifespan: number): number {
+  // Dynamic scale: 0 years = 0, maxLifespan = 100
+  const percentage = (yearsLeft / maxLifespan) * 100;
+  return Math.min(100, Math.max(0, Math.round(percentage)));
+}
+
+/**
+ * Get color based on years remaining score
+ */
+function getReplacementColor(yearsLeft: number, maxLifespan: number): string {
+  const score = calculateReplacementScore(yearsLeft, maxLifespan);
+  return getScoreColor(score);
+}
+
 function ReplacementBars({ homes }: { homes: Home[] }) {
   const currentYear = new Date().getFullYear();
   const comparisonProperties = homes.slice(0, 3);
@@ -1002,9 +1021,14 @@ function ReplacementBars({ homes }: { homes: Home[] }) {
     // NEXT MAJOR EXPENSE = minimum of the two
     const nextExpenseYears = Math.min(roofYearsLeft, hvacYearsLeft);
 
-    // CALCULATE CLUES-SMART SCORE (0-100 based on next expense horizon)
-    // 0 years = 0 (Poor), 15+ years = 100 (Excellent)
-    const cluesScore = Math.min(100, Math.round((nextExpenseYears / 15) * 100));
+    // CALCULATE INDIVIDUAL SYSTEM SCORES (dynamic based on lifespan)
+    const roofScore = calculateReplacementScore(roofYearsLeft, roofLifespan);
+    const hvacScore = calculateReplacementScore(hvacYearsLeft, hvacLifespan);
+    const roofColor = getReplacementColor(roofYearsLeft, roofLifespan);
+    const hvacColor = getReplacementColor(hvacYearsLeft, hvacLifespan);
+
+    // CALCULATE OVERALL CLUES-SMART SCORE (average of both systems)
+    const cluesScore = Math.round((roofScore + hvacScore) / 2);
 
     console.log(`\n🏠 Property ${idx + 1}: ${address}`);
     console.log(`   Property Color: ${h.color}`);
@@ -1018,15 +1042,19 @@ function ReplacementBars({ homes }: { homes: Home[] }) {
     console.log(`      Type-Specific Lifespan: ${roofLifespan} years`);
     console.log(`      Current Age: ${roofAge !== null ? roofAge : 'Unknown'} years`);
     console.log(`      ⏰ Years Until Replacement: ${roofYearsLeft} years`);
+    console.log(`      ⭐ Roof Score: ${roofScore}/100 (${getScoreLabel(roofScore)})`);
+    console.log(`      🎨 Bar Color: ${roofColor}`);
     console.log('   ─────────────────────────────────────');
     console.log(`   ❄️  HVAC ANALYSIS:`);
     console.log(`      Standard Lifespan: ${hvacLifespan} years`);
     console.log(`      Current Age: ${hvacAge !== null ? hvacAge : 'Unknown'} years`);
     console.log(`      ⏰ Years Until Replacement: ${hvacYearsLeft} years`);
+    console.log(`      ⭐ HVAC Score: ${hvacScore}/100 (${getScoreLabel(hvacScore)})`);
+    console.log(`      🎨 Bar Color: ${hvacColor}`);
     console.log('   ─────────────────────────────────────');
     console.log(`   💰 NEXT MAJOR EXPENSE:`);
     console.log(`      Coming in: ${nextExpenseYears} years (${nextExpenseYears === roofYearsLeft ? 'ROOF' : 'HVAC'})`);
-    console.log(`      ⭐ CLUES-Smart Score: ${cluesScore}/100`);
+    console.log(`      ⭐ Overall CLUES-Smart Score: ${cluesScore}/100 (Average of Roof + HVAC)`);
     console.log('   ─────────────────────────────────────\n');
 
     return {
@@ -1040,7 +1068,11 @@ function ReplacementBars({ homes }: { homes: Home[] }) {
       hvacYearsLeft,
       nextExpenseYears,
       cluesScore,
-      color: h.color,
+      roofScore,
+      hvacScore,
+      roofColor,
+      hvacColor,
+      color: h.color, // Property color for address display
       propertyNum: idx + 1,
     };
   });
@@ -1127,14 +1159,17 @@ function ReplacementBars({ homes }: { homes: Home[] }) {
               Roof: {est.roofType || 'Unknown'} ({est.roofLifespan}yr lifespan)
             </div>
 
-            {/* Bars */}
+            {/* Bars - Color reflects system condition (CLUES-Smart) */}
             <div className="flex gap-2">
               <div className="flex-1">
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-gray-300">Roof</span>
-                  <span className="font-bold" style={{ color: est.color }}>
-                    {est.roofYearsLeft}yr
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="font-bold" style={{ color: est.roofColor }}>
+                      {est.roofYearsLeft}yr
+                    </span>
+                    <span className="text-[9px] text-gray-400">({est.roofScore})</span>
+                  </div>
                 </div>
                 <div className="h-3 bg-white/5 rounded-full overflow-hidden">
                   <motion.div
@@ -1143,8 +1178,8 @@ function ReplacementBars({ homes }: { homes: Home[] }) {
                     transition={{ duration: 0.6, delay: i * 0.15 }}
                     className="h-full rounded-full"
                     style={{
-                      backgroundColor: est.color,
-                      boxShadow: `0 0 6px ${est.color}`,
+                      backgroundColor: est.roofColor,
+                      boxShadow: `0 0 8px ${est.roofColor}`,
                     }}
                   />
                 </div>
@@ -1152,9 +1187,12 @@ function ReplacementBars({ homes }: { homes: Home[] }) {
               <div className="flex-1">
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-gray-300">HVAC</span>
-                  <span className="font-bold" style={{ color: est.color }}>
-                    {est.hvacYearsLeft}yr
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="font-bold" style={{ color: est.hvacColor }}>
+                      {est.hvacYearsLeft}yr
+                    </span>
+                    <span className="text-[9px] text-gray-400">({est.hvacScore})</span>
+                  </div>
                 </div>
                 <div className="h-3 bg-white/5 rounded-full overflow-hidden">
                   <motion.div
@@ -1163,8 +1201,8 @@ function ReplacementBars({ homes }: { homes: Home[] }) {
                     transition={{ duration: 0.6, delay: i * 0.15 }}
                     className="h-full rounded-full"
                     style={{
-                      backgroundColor: est.color,
-                      boxShadow: `0 0 6px ${est.color}`,
+                      backgroundColor: est.hvacColor,
+                      boxShadow: `0 0 8px ${est.hvacColor}`,
                     }}
                   />
                 </div>
