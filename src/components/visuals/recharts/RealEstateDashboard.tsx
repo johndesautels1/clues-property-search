@@ -429,6 +429,7 @@ function PriceSpectrumChart({ homes }: { homes: Home[] }) {
               angle={-15}
               textAnchor="end"
               interval={0}
+              dx={30}
             />
             <YAxis
               domain={[domainMin, domainMax]}
