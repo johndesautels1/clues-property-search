@@ -630,7 +630,6 @@ const Chart45_CostDistributionDonut: React.FC<{ homes: Home[] }> = ({ homes }) =
                       `${entry.name}\n${((entry.value / home.totalCost) * 100).toFixed(1)}%`
                     }
                     labelLine={false}
-                    labelStyle={{ fill: '#ffffff', fontSize: 11 }}
                   >
                     {chartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.fill} />

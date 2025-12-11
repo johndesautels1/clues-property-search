@@ -25,10 +25,10 @@ function mapToPropertyBasicsHomes(properties: ChartProperty[]) {
     name: p.address || 'Unknown Address',
     bedrooms: p.bedrooms || 0,                                    // Field 17: bedrooms
     fullBathrooms: p.fullBathrooms || 0,                          // Field 18: full_bathrooms
-    halfBathrooms: p.halfBathrooms || 0,                          // Field 19: half_bathrooms
+    halfBathrooms: p.halfBaths || 0,                              // Field 19: half_bathrooms
     totalBathrooms: p.bathrooms || 0,                             // Field 20: total_bathrooms
     livingSqft: p.livingSqft || 0,                                // Field 21: living_sqft
-    totalSqftUnderRoof: p.totalSqftUnderRoof || p.livingSqft || 0, // Field 22: total_sqft_under_roof
+    totalSqftUnderRoof: p.totalSqft || p.livingSqft || 0,         // Field 22: total_sqft_under_roof
     lotSizeSqft: p.lotSizeSqft || 0,                              // Field 23: lot_size_sqft
     lotSizeAcres: p.lotSizeAcres || (p.lotSizeSqft ? Math.round((p.lotSizeSqft / 43560) * 100) / 100 : 0), // Field 24: lot_size_acres (calculated if not present)
     yearBuilt: p.yearBuilt || currentYear,                        // Field 25: year_built
@@ -52,10 +52,10 @@ const SAMPLE_PROPERTIES: ChartProperty[] = [
     listingPrice: 2849000,
     bedrooms: 4,
     fullBathrooms: 3,
-    halfBathrooms: 1,
+    halfBaths: 1,
     bathrooms: 3.5,
     livingSqft: 2698,
-    totalSqftUnderRoof: 2698,
+    totalSqft: 2698,
     lotSizeSqft: 7200,
     lotSizeAcres: 0.17,
     yearBuilt: 2015,
@@ -77,10 +77,10 @@ const SAMPLE_PROPERTIES: ChartProperty[] = [
     listingPrice: 2695000,
     bedrooms: 4,
     fullBathrooms: 3,
-    halfBathrooms: 0,
+    halfBaths: 0,
     bathrooms: 3,
     livingSqft: 2728,
-    totalSqftUnderRoof: 2728,
+    totalSqft: 2728,
     lotSizeSqft: 8100,
     lotSizeAcres: 0.19,
     yearBuilt: 2016,
@@ -102,10 +102,10 @@ const SAMPLE_PROPERTIES: ChartProperty[] = [
     listingPrice: 2549000,
     bedrooms: 3,
     fullBathrooms: 3,
-    halfBathrooms: 0,
+    halfBaths: 0,
     bathrooms: 3,
     livingSqft: 2795,
-    totalSqftUnderRoof: 2795,
+    totalSqft: 2795,
     lotSizeSqft: 9500,
     lotSizeAcres: 0.22,
     yearBuilt: 2014,

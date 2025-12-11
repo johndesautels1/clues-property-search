@@ -260,7 +260,10 @@ export function mapPropertyToChart(property: Property): ChartProperty {
     hoaYn: getVal(details?.hoaYn, false),
     hoaFeeAnnual: getVal(details?.hoaFeeAnnual, 0),
     hoaName: getVal(details?.hoaName, ''),
+    hoaIncludes: getVal(details?.hoaIncludes, ''),
+    ownershipType: getVal(details?.ownershipType, ''),
     annualTaxes: getVal(details?.annualTaxes, 0),
+    taxYear: getVal(details?.taxYear, new Date().getFullYear()),
     propertyTaxRate: getVal(financial?.propertyTaxRate, 0),
     taxExemptions: getVal(financial?.taxExemptions, ''),
 
