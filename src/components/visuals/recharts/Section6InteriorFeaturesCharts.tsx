@@ -987,10 +987,15 @@ function Chart6_5_ArchitecturalFeatures({ homes }: { homes: Home[] }) {
 
       {/* Property Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        {propertyData.map((prop) => (
+        {propertyData.map((prop, idx) => (
           <motion.div
             key={prop.id}
-            animate={{ scale: hoveredCard === prop.id ? 1.05 : 1 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{
+              opacity: 1,
+              scale: hoveredCard === prop.id ? 1.05 : 1
+            }}
+            transition={{ delay: idx * 0.1, duration: 0.3 }}
             onMouseEnter={() => setHoveredCard(prop.id)}
             onMouseLeave={() => setHoveredCard(null)}
             className="relative p-5 rounded-xl border-2 transition-all duration-300 cursor-pointer"
@@ -1106,7 +1111,7 @@ function Chart6_5_ArchitecturalFeatures({ homes }: { homes: Home[] }) {
         reason="Most premium architectural features"
       />
 
-      <SmartScaleLegend description="8 Interior Architectural Features: (1) Cathedral Ceiling(s), (2) Walk-In Closet(s), (3) Primary Bedroom Main Floor, (4) Open Floor Plan, (5) Crown Molding, (6) Skylight(s), (7) Wet Bar, (8) Built-in Features. CLUES-Smart scoring: Each feature adds 12.5 points. 0-20 (Red/Poor), 21-40 (Orange/Fair), 41-60 (Yellow/Average), 61-80 (Blue/Good), 81-100 (Green/Excellent)." />
+      <SmartScaleLegend description="Architectural Features Scoring Methodology: Formula: Score = (Feature Count ÷ 8) × 100. Features tracked: (1) Cathedral Ceiling(s), (2) Walk-In Closet(s), (3) Primary Bedroom Main Floor, (4) Open Floor Plan, (5) Crown Molding, (6) Skylight(s), (7) Wet Bar, (8) Built-in Features. Each feature adds 12.5 points to the score. These premium design elements significantly increase property value, luxury appeal, and buyer desirability in the Florida real estate market. Examples: 4/8 features = 50 (Average), 6/8 features = 75 (Good), 8/8 features = 100 (Excellent)." />
     </motion.div>
   );
 }
