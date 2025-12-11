@@ -86,9 +86,30 @@ export default function InteriorConditionChart({ homes }: { homes: Home[] }) {
     };
   });
 
+  const maxScore = Math.max(...propertyData.flatMap(p => Object.values(p.scores)));
+
   return (
-    <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-      <h3 className="text-lg font-semibold text-white mb-2">Interior Condition</h3>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.1 }}
+      className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6"
+    >
+      {/* Chart ID Label */}
+      <div className="absolute -top-3 left-3 text-xs font-mono text-gray-400">
+        Chart 6-1
+      </div>
+
+      {/* Brain Widget */}
+      <div className="absolute -top-3 right-3 flex items-center gap-2 px-3 py-1.5 bg-slate-800/80 border border-slate-700 rounded-full backdrop-blur-sm">
+        <span className="text-sm">🧠</span>
+        <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">Smart</span>
+        <span className="text-base font-bold" style={{ color: getConditionColor(maxScore) }}>
+          {Math.round(maxScore)}
+        </span>
+      </div>
+
+      <h3 className="text-xl font-semibold text-white mb-2">Chart 6-1: Interior Condition</h3>
       <p className="text-xs text-gray-400 mb-4">Kitchen, Baths, Living Areas, Flooring</p>
 
       <div className="space-y-4">
@@ -155,6 +176,6 @@ export default function InteriorConditionChart({ homes }: { homes: Home[] }) {
         <span><span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1" />61-80</span>
         <span><span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1" />81-100</span>
       </div>
-    </div>
+    </motion.div>
   );
 }
