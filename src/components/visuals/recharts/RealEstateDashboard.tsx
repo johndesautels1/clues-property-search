@@ -914,16 +914,18 @@ function AppreciationChart({ homes }: { homes: Home[] }) {
       <div className="relative">
         <ResponsiveContainer width="100%" height={250}>
           <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 30 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} />
+            <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} strokeOpacity={0.3} />
             <XAxis
               dataKey="name"
               tick={<CustomXAxisTick />}
               height={50}
+              stroke={COLORS.muted}
             />
             <YAxis
               domain={[domainMin, domainMax]}
-              tick={{ fill: COLORS.muted, fontSize: 10 }}
+              tick={{ fill: COLORS.text, fontSize: 11 }}
               tickFormatter={(v) => formatPercent(v)}
+              stroke={COLORS.muted}
             />
             <Tooltip
               formatter={(value, name, props) => {
@@ -942,11 +944,12 @@ function AppreciationChart({ homes }: { homes: Home[] }) {
               labelStyle={tooltipLabelStyle}
               itemStyle={tooltipItemStyle}
             />
-            <Bar dataKey="appreciation" radius={[4, 4, 0, 0]}>
+            <Bar dataKey="appreciation" radius={[4, 4, 0, 0]} stroke={COLORS.border} strokeWidth={1}>
               {data.map((entry) => (
                 <Cell
                   key={entry.name}
                   fill={PROPERTY_COLORS[entry.index] || COLORS.muted}
+                  fillOpacity={0.9}
                 />
               ))}
             </Bar>
