@@ -422,6 +422,20 @@ const Chart43_HOAVsTaxBurden: React.FC<{ homes: Home[] }> = ({ homes }) => {
       <div className="text-sm text-gray-400 mt-3 mb-4">
         X-axis = Annual Property Taxes • Y-axis = Annual HOA Fees • Bubble Size = Total Cost
       </div>
+
+      {/* Property Legend */}
+      <div className="flex justify-center gap-4 mb-4">
+        {homes.map((home) => (
+          <div key={home.id} className="flex items-center gap-2">
+            <div
+              className="w-4 h-4 rounded"
+              style={{ backgroundColor: home.color }}
+            ></div>
+            <span className="text-xs text-gray-300">{home.name}</span>
+          </div>
+        ))}
+      </div>
+
       <ResponsiveContainer width="100%" height={400}>
         <ScatterChart margin={{ top: 20, right: 50, bottom: 80, left: 80 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#333" />
