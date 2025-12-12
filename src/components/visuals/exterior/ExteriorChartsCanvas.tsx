@@ -1901,11 +1901,6 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
           <p className="text-xs text-gray-400 font-mono mt-1">6 Exterior Quality Factors • Rotating DNA Structure</p>
         </div>
         <canvas ref={canvas1Ref} className="w-full" style={{ display: 'block' }} />
-        <div className="p-4 bg-black/20 border-t border-white/5">
-          <p className="text-[10px] text-gray-400 font-mono leading-relaxed">
-            <span className="text-cyan-400 font-bold">HOW TO READ:</span> Ring color = property identity • Fill color = CLUES-SMART tier • Icon = feature type • Total score = average of 6 factors
-          </p>
-        </div>
       </motion.div>
 
       {/* Chart 2: Orbital Gravity */}
