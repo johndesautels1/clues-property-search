@@ -485,7 +485,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
     };
   }, [data, paused1, winnerId, labelsFull]);
 
-  // CHART 2: ORBITAL GRAVITY - COMPLETE
+  // CHART 2: ORBITAL GRAVITY - Composite Score Analysis - IDENTICAL TO HTML
   useEffect(() => {
     const canvas = canvas2Ref.current;
     if (!canvas) return;
@@ -498,134 +498,317 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       const container = canvas.parentElement;
       if (container) {
         canvas.width = container.clientWidth;
-        canvas.height = 600;
+        canvas.height = 700;
       }
     };
     resize();
     window.addEventListener('resize', resize);
 
-    let time = 0;
+    let angle = 0;
     let animationId: number;
 
     function animate() {
-      if (!paused2) time += 0.015;
+      if (!paused2) angle += 0.008;
       const w = canvas!.width;
       const h = canvas!.height;
       ctx.clearRect(0, 0, w, h);
 
-      const centerX = w / 2;
-      const centerY = h / 2;
-
-      // Sun (center)
+      // TITLE: CHART 7-2 (top left)
       ctx.save();
-      ctx.fillStyle = '#FDB813';
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, 30, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(253, 184, 19, 0.6)';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // Sun glow
-      const gradient = ctx.createRadialGradient(centerX, centerY, 30, centerX, centerY, 60);
-      gradient.addColorStop(0, 'rgba(253, 184, 19, 0.3)');
-      gradient.addColorStop(1, 'rgba(253, 184, 19, 0)');
-      ctx.fillStyle = gradient;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, 60, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Sun label
-      ctx.fillStyle = '#000';
+      ctx.fillStyle = '#FFD700';
       ctx.font = 'bold 10px Share Tech Mono';
-      ctx.textAlign = 'center';
-      ctx.fillText('100', centerX, centerY + 3);
+      ctx.textAlign = 'left';
+      ctx.fillText('CHART 7-2', 20, 20);
       ctx.restore();
 
-      // Planets (3 properties)
-      const propData = [
-        { id: 'p1' as const, score: data.totalScores.p1, color: data.properties.p1.color, name: data.properties.p1.shortName },
-        { id: 'p2' as const, score: data.totalScores.p2, color: data.properties.p2.color, name: data.properties.p2.shortName },
-        { id: 'p3' as const, score: data.totalScores.p3, color: data.properties.p3.color, name: data.properties.p3.shortName }
-      ];
-
-      propData.forEach((prop, idx) => {
-        const tier = getScoreTier(prop.score);
-        const orbitRadius = 100 + (100 - prop.score) * 1.5; // Higher score = closer to sun
-        const angleOffset = (idx * 120) * Math.PI / 180;
-        const angle = time + angleOffset;
-
-        const planetX = centerX + Math.cos(angle) * orbitRadius;
-        const planetY = centerY + Math.sin(angle) * orbitRadius;
-        const planetSize = 12 + (prop.score / 100) * 8; // Bigger = higher score
-
-        // Orbit path
-        ctx.save();
-        ctx.strokeStyle = `${prop.color}40`;
-        ctx.lineWidth = 1;
-        ctx.setLineDash([5, 5]);
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, orbitRadius, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.restore();
-
-        // Planet
-        ctx.save();
-        ctx.fillStyle = tier.color;
-        ctx.beginPath();
-        ctx.arc(planetX, planetY, planetSize, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = prop.color;
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
-        // Planet label
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-        ctx.font = 'bold 9px Share Tech Mono';
-        ctx.textAlign = 'center';
-        ctx.fillText(String(prop.score), planetX, planetY + 3);
-
-        // Property name
-        ctx.fillStyle = prop.color;
-        ctx.font = 'bold 11px Share Tech Mono';
-        ctx.fillText(prop.name, planetX, planetY + planetSize + 15);
-        ctx.restore();
-      });
-
-      // Legend
-      ctx.save();
-      ctx.font = 'bold 10px Share Tech Mono';
-      ctx.fillStyle = 'rgba(255,255,255,0.8)';
-      ctx.textAlign = 'center';
-      const legendY = h - 60;
-      ctx.fillText('GRAVITATIONAL PULL: Higher scores orbit closer to 100', w/2, legendY);
-      ctx.font = '9px Share Tech Mono';
-      ctx.fillStyle = 'rgba(255,255,255,0.6)';
-      ctx.fillText('Planet size & color = composite exterior quality score', w/2, legendY + 15);
-      ctx.restore();
-
-      // Winner badge
+      // WINNER BADGE at top center
       const winnerScore = data.totalScores[winnerId];
       const winnerTier = getScoreTier(winnerScore);
       const winnerName = data.properties[winnerId].shortName;
 
       ctx.save();
-      ctx.textAlign = 'left';
+      ctx.textAlign = 'center';
       ctx.fillStyle = winnerTier.color;
       ctx.strokeStyle = winnerTier.color;
       ctx.lineWidth = 2;
-      const badgeX = 20;
+
       const badgeY = 25;
-      ctx.strokeRect(badgeX, badgeY - 15, 120, 30);
+      ctx.strokeRect(w/2 - 60, badgeY - 15, 120, 30);
       ctx.globalAlpha = 0.2;
-      ctx.fillRect(badgeX, badgeY - 15, 120, 30);
+      ctx.fillRect(w/2 - 60, badgeY - 15, 120, 30);
       ctx.globalAlpha = 1;
-      ctx.font = 'bold 11px Share Tech Mono';
+
+      ctx.font = 'bold 12px Share Tech Mono';
+      ctx.fillText(`${winnerTier.emoji} WINNER`, w/2, badgeY);
+      ctx.font = 'bold 16px Share Tech Mono';
+      ctx.fillText(winnerName, w/2, badgeY + 14);
+      ctx.restore();
+
+      // BRAIN WIDGET in upper right with /100
+      ctx.save();
+      const brainX = w - 80;
+      const brainY = 78;
+
+      ctx.strokeStyle = winnerTier.color;
+      ctx.fillStyle = winnerTier.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(brainX, brainY, 20, 0, Math.PI * 2);
+      ctx.globalAlpha = 0.2;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = winnerTier.color;
+      ctx.font = 'bold 16px Share Tech Mono';
       ctx.textAlign = 'center';
-      ctx.fillText(`${winnerTier.emoji} WINNER`, badgeX + 60, badgeY);
-      ctx.font = 'bold 14px Share Tech Mono';
-      ctx.fillText(winnerName, badgeX + 60, badgeY + 14);
+      ctx.fillText(String(winnerScore), brainX, brainY - 2);
+
+      ctx.font = '9px Share Tech Mono';
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.fillText('/100', brainX, brainY + 10);
+
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.font = 'bold 11px Share Tech Mono';
+      ctx.textAlign = 'left';
+      ctx.fillText('SMART', brainX + 25, brainY + 4);
+      ctx.restore();
+
+      // ORBITAL GRAVITY VISUALIZATION
+      // 3 property centers arranged horizontally
+      const centerSpacing = w / 3;
+      const centerY = h / 2;
+
+      const propData = [
+        { id: 'p1' as const, dataset: data.qualityScores.p1, color: data.properties.p1.color, name: data.properties.p1.shortName, total: data.totalScores.p1 },
+        { id: 'p2' as const, dataset: data.qualityScores.p2, color: data.properties.p2.color, name: data.properties.p2.shortName, total: data.totalScores.p2 },
+        { id: 'p3' as const, dataset: data.qualityScores.p3, color: data.properties.p3.color, name: data.properties.p3.shortName, total: data.totalScores.p3 }
+      ];
+
+      propData.forEach((prop, pIdx) => {
+        const centerX = centerSpacing * (pIdx + 0.5);
+
+        // Draw property center (gravity well) - SIZE PROPORTIONAL TO SCORE
+        ctx.save();
+
+        // Planet size based on score: higher score = bigger planet
+        const planetSize = 25 + (prop.total * 0.25);
+
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, planetSize, 0, Math.PI * 2);
+        ctx.fillStyle = prop.color;
+        ctx.globalAlpha = 0.8;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = prop.color;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Property label at center - larger font
+        ctx.fillStyle = '#000';
+        ctx.font = 'bold 11px Share Tech Mono';
+        ctx.textAlign = 'center';
+        ctx.fillText(prop.name, centerX, centerY + 4);
+        ctx.restore();
+
+        // Property name and total above
+        ctx.save();
+        ctx.fillStyle = prop.color;
+        ctx.font = 'bold 14px Share Tech Mono';
+        ctx.textAlign = 'center';
+        ctx.fillText(prop.name, centerX, 100);
+        ctx.font = '12px Share Tech Mono';
+        ctx.fillText(`TOTAL: ${prop.total}`, centerX, 120);
+        ctx.restore();
+
+        // Draw orbiting features
+        prop.dataset.forEach((val, featureIdx) => {
+          const tier = getScoreTier(val);
+          const fillColor = tier.color;
+
+          // Orbit radius: high scores orbit close, low scores orbit far
+          const baseRadius = 180 - (val * 1.3);
+
+          // Each feature has different orbital speed
+          const orbitAngle = angle * (0.5 + featureIdx * 0.15) + (pIdx * Math.PI * 2 / 3);
+
+          const x = centerX + Math.cos(orbitAngle) * baseRadius;
+          const y = centerY + Math.sin(orbitAngle) * baseRadius;
+
+          // Orb size proportional to score
+          const orbSize = 5 + (val * 0.15);
+
+          // Draw orb with two-color system
+          ctx.save();
+
+          // Fill with SMART tier color
+          ctx.beginPath();
+          ctx.arc(x, y, orbSize, 0, Math.PI * 2);
+          ctx.fillStyle = fillColor;
+          ctx.globalAlpha = 0.7;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+
+          // Ring with property color
+          ctx.strokeStyle = prop.color;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Feature label on rightmost property only
+          if (pIdx === 2 && featureIdx === 0) {
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.font = '8px Share Tech Mono';
+            ctx.textAlign = 'left';
+            ctx.fillText(`${labels[featureIdx]}: ${val}`, x + orbSize + 5, y + 3);
+          }
+
+          ctx.restore();
+
+          // Draw faint orbit path
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, baseRadius, 0, Math.PI * 2);
+          ctx.strokeStyle = prop.color;
+          ctx.globalAlpha = 0.1;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.restore();
+        });
+      });
+
+      // CALCULATION BREAKDOWN
+      ctx.save();
+      const calcY = h - 230;
+      ctx.font = 'bold 9px Share Tech Mono';
+      ctx.fillStyle = 'rgba(0, 243, 255, 0.9)';
+      ctx.textAlign = 'left';
+      ctx.fillText('TOTAL SCORE CALCULATION:', 40, calcY);
+
+      ctx.font = '8px Share Tech Mono';
+      const calcLineSpacing = 12;
+      let calcCurrentY = calcY + 14;
+
+      // Property 1 calculation
+      ctx.fillStyle = data.properties.p1.color;
+      ctx.fillText(`${data.properties.p1.shortName}: (${data.qualityScores.p1.join(' + ')}) ÷ 6 = ${data.totalScores.p1}`, 40, calcCurrentY);
+      calcCurrentY += calcLineSpacing;
+
+      // Property 2 calculation
+      ctx.fillStyle = data.properties.p2.color;
+      ctx.fillText(`${data.properties.p2.shortName}: (${data.qualityScores.p2.join(' + ')}) ÷ 6 = ${data.totalScores.p2}`, 40, calcCurrentY);
+      calcCurrentY += calcLineSpacing;
+
+      // Property 3 calculation
+      ctx.fillStyle = data.properties.p3.color;
+      ctx.fillText(`${data.properties.p3.shortName}: (${data.qualityScores.p3.join(' + ')}) ÷ 6 = ${data.totalScores.p3}`, 40, calcCurrentY);
+      ctx.restore();
+
+      // PROPERTY LEGEND at bottom
+      ctx.save();
+      ctx.font = 'bold 10px Share Tech Mono';
+      ctx.textAlign = 'center';
+      const propertyLegendY = h - 145;
+
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.fillText('PROPERTIES:', w/2 - 180, propertyLegendY);
+
+      ctx.font = '10px Share Tech Mono';
+      ctx.fillStyle = data.properties.p1.color;
+      ctx.fillText(`█ ${data.properties.p1.shortName.toUpperCase()}`, w/2 - 90, propertyLegendY);
+      ctx.fillStyle = data.properties.p2.color;
+      ctx.fillText(`█ ${data.properties.p2.shortName.toUpperCase()}`, w/2, propertyLegendY);
+      ctx.fillStyle = data.properties.p3.color;
+      ctx.fillText(`█ ${data.properties.p3.shortName.toUpperCase()}`, w/2 + 90, propertyLegendY);
+      ctx.restore();
+
+      // CLUES-SMART SCORE LEGEND
+      ctx.save();
+      const smartLegendY = h - 119;
+      ctx.font = 'bold 10px Share Tech Mono';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.fillText('CLUES-SMART SCORE TIERS:', 40, smartLegendY);
+
+      const tierSpacing = 110;
+      const startX = 230;
+
+      // Tier 1: Excellent (Green)
+      ctx.fillStyle = '#4CAF50';
+      ctx.fillRect(startX, smartLegendY - 10, 12, 12);
+      ctx.font = '9px Share Tech Mono';
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillText('81-100 EXCELLENT', startX + 16, smartLegendY);
+
+      // Tier 2: Good (Blue)
+      ctx.fillStyle = '#2196F3';
+      ctx.fillRect(startX + tierSpacing, smartLegendY - 10, 12, 12);
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillText('61-80 GOOD', startX + tierSpacing + 16, smartLegendY);
+
+      // Tier 3: Average (Amber)
+      ctx.fillStyle = '#EAB308';
+      ctx.fillRect(startX + tierSpacing * 2, smartLegendY - 10, 12, 12);
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillText('41-60 AVERAGE', startX + tierSpacing * 2 + 16, smartLegendY);
+
+      // Tier 4: Fair (Orange)
+      ctx.fillStyle = '#FF9800';
+      ctx.fillRect(startX + tierSpacing * 3, smartLegendY - 10, 12, 12);
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillText('21-40 FAIR', startX + tierSpacing * 3 + 16, smartLegendY);
+
+      // Tier 5: Poor (Red)
+      ctx.fillStyle = '#FF4444';
+      ctx.fillRect(startX + tierSpacing * 4, smartLegendY - 10, 12, 12);
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillText('0-20 POOR', startX + tierSpacing * 4 + 16, smartLegendY);
+      ctx.restore();
+
+      // DETAILED EXPLANATION
+      ctx.save();
+      const explanationY = h - 89;
+      ctx.font = 'bold 9px Share Tech Mono';
+      ctx.fillStyle = 'rgba(0, 243, 255, 0.9)';
+      ctx.textAlign = 'left';
+      ctx.fillText('HOW TO READ THIS CHART:', 40, explanationY);
+
+      ctx.font = '8px Share Tech Mono';
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      const lineSpacing = 11;
+      let currentY = explanationY + 12;
+
+      ctx.fillText('• GRAVITY WELL (center dot) = Property identity. Planet size proportional to total score (bigger = higher score).', 40, currentY);
+      currentY += lineSpacing;
+
+      ctx.fillText('• ORBIT DISTANCE = Feature score (closer orbit = higher score, farther = lower score). High scores are "attracted" more.', 40, currentY);
+      currentY += lineSpacing;
+
+      ctx.fillText('• ORB COLORS: Ring = Property color, Fill = CLUES-SMART tier. Orb size = Score magnitude.', 40, currentY);
+      currentY += lineSpacing;
+
+      ctx.fillText('• CLUSTERING = Overall quality. Tight cluster around big planet = strong property, loose orbits around small planet = weak.', 40, currentY);
+
+      ctx.restore();
+
+      // EXAMPLE SUB-CALCULATION (centered in footer)
+      ctx.save();
+      const exampleY = h - 24;
+      ctx.font = 'bold 9px Share Tech Mono';
+      ctx.fillStyle = 'rgba(255, 215, 0, 0.9)';
+      ctx.textAlign = 'center';
+      ctx.fillText('EXAMPLE: HOW FEATURE SCORES ARE CALCULATED', w/2, exampleY);
+
+      ctx.font = '8px Share Tech Mono';
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      const exLineSpacing = 11;
+      let exCurrentY = exampleY + 12;
+
+      ctx.fillText('Design Score (88) = (Architecture: 90 + Condition: 85 + Floor Plan: 90 + Integration: 87) ÷ 4 = 88', w/2, exCurrentY);
+      exCurrentY += exLineSpacing;
+
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.font = '7px Share Tech Mono';
+      ctx.fillText('In production: Each of the 6 exterior features shown is calculated from 3-5 underlying sub-factors with actual property data', w/2, exCurrentY);
       ctx.restore();
 
       animationId = requestAnimationFrame(animate);
@@ -636,9 +819,9 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       cancelAnimationFrame(animationId);
       window.removeEventListener('resize', resize);
     };
-  }, [data, paused2, winnerId]);
+  }, [data, paused2, winnerId, labels]);
 
-  // CHART 3: ISO-LAYER STACK - COMPLETE
+  // CHART 3: ISO-LAYER STACK - Layered Factor Comparison - IDENTICAL TO HTML
   useEffect(() => {
     const canvas = canvas3Ref.current;
     if (!canvas) return;
@@ -651,7 +834,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       const container = canvas.parentElement;
       if (container) {
         canvas.width = container.clientWidth;
-        canvas.height = 650;
+        canvas.height = 700;
       }
     };
     resize();
@@ -660,116 +843,312 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
     let time = 0;
     let animationId: number;
 
-    // Isometric projection helper
-    function isoProject(x: number, y: number, z: number): [number, number] {
-      const isoX = (x - y) * Math.cos(Math.PI / 6);
-      const isoY = (x + y) * Math.sin(Math.PI / 6) - z;
-      return [isoX, isoY];
+    // Isometric projection function
+    function iso(x: number, y: number, z: number) {
+      const w = canvas!.width;
+      const h = canvas!.height;
+      return {
+        x: (x - y) * Math.cos(0.5236) + w/2,
+        y: (x + y) * Math.sin(0.5236) - z + h/2
+      };
     }
 
     function animate() {
-      if (!paused3) time += 0.01;
+      if (!paused3) time += 0.02;
       const w = canvas!.width;
       const h = canvas!.height;
       ctx.clearRect(0, 0, w, h);
 
-      const centerX = w / 2;
-      const baseY = h - 100;
-      const layerHeight = 50;
+      // TITLE: CHART 7-3 (top left)
+      ctx.save();
+      ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold 10px Share Tech Mono';
+      ctx.textAlign = 'left';
+      ctx.fillText('CHART 7-3', 20, 20);
+      ctx.restore();
 
-      // Draw all 6 factors as isometric layers
+      // WINNER BADGE at top center
+      const winnerScore = data.totalScores[winnerId];
+      const winnerTier = getScoreTier(winnerScore);
+      const winnerName = data.properties[winnerId].shortName;
+
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = winnerTier.color;
+      ctx.strokeStyle = winnerTier.color;
+      ctx.lineWidth = 2;
+
+      const badgeY = 25;
+      ctx.strokeRect(w/2 - 60, badgeY - 15, 120, 30);
+      ctx.globalAlpha = 0.2;
+      ctx.fillRect(w/2 - 60, badgeY - 15, 120, 30);
+      ctx.globalAlpha = 1;
+
+      ctx.font = 'bold 12px Share Tech Mono';
+      ctx.fillText(`${winnerTier.emoji} WINNER`, w/2, badgeY);
+      ctx.font = 'bold 16px Share Tech Mono';
+      ctx.fillText(winnerName, w/2, badgeY + 14);
+      ctx.restore();
+
+      // BRAIN WIDGET in upper right with /100
+      ctx.save();
+      const brainX = w - 80;
+      const brainY = 78;
+
+      ctx.strokeStyle = winnerTier.color;
+      ctx.fillStyle = winnerTier.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(brainX, brainY, 20, 0, Math.PI * 2);
+      ctx.globalAlpha = 0.2;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = winnerTier.color;
+      ctx.font = 'bold 16px Share Tech Mono';
+      ctx.textAlign = 'center';
+      ctx.fillText(String(winnerScore), brainX, brainY - 2);
+
+      ctx.font = '9px Share Tech Mono';
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.fillText('/100', brainX, brainY + 10);
+
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.font = 'bold 11px Share Tech Mono';
+      ctx.textAlign = 'left';
+      ctx.fillText('SMART', brainX + 25, brainY + 4);
+      ctx.restore();
+
+      // Floating animation
+      const float = Math.sin(time) * 8;
+
+      // Draw 3 layered stacks (one per property)
+      const columnWidth = w / 3;
+
+      // Calculate rankings for plate sizing
+      const propertyRanks = [
+        { id: 'p1' as const, score: data.totalScores.p1, index: 0 },
+        { id: 'p2' as const, score: data.totalScores.p2, index: 1 },
+        { id: 'p3' as const, score: data.totalScores.p3, index: 2 }
+      ].sort((a, b) => b.score - a.score);
+
+      const plateSizes: Record<string, number> = {};
+      plateSizes[propertyRanks[0].id] = 70;  // Winner - largest
+      plateSizes[propertyRanks[1].id] = 60;  // Runner-up - medium
+      plateSizes[propertyRanks[2].id] = 50;  // Third - smallest
+
       const propData = [
-        { id: 'p1' as const, scores: data.qualityScores.p1, color: data.properties.p1.color, name: data.properties.p1.shortName },
-        { id: 'p2' as const, scores: data.qualityScores.p2, color: data.properties.p2.color, name: data.properties.p2.shortName },
-        { id: 'p3' as const, scores: data.qualityScores.p3, color: data.properties.p3.color, name: data.properties.p3.shortName }
+        { id: 'p1' as const, dataset: data.qualityScores.p1, color: data.properties.p1.color, name: data.properties.p1.shortName, total: data.totalScores.p1 },
+        { id: 'p2' as const, dataset: data.qualityScores.p2, color: data.properties.p2.color, name: data.properties.p2.shortName, total: data.totalScores.p2 },
+        { id: 'p3' as const, dataset: data.qualityScores.p3, color: data.properties.p3.color, name: data.properties.p3.shortName, total: data.totalScores.p3 }
       ];
 
-      const layerSpacing = 180;
-
       propData.forEach((prop, pIdx) => {
-        const offsetX = centerX + (pIdx - 1) * layerSpacing;
+        const baseX = columnWidth * pIdx - w/2 + columnWidth/2;
 
-        // Property label
+        // Stack height offset based on score (higher score = higher base position)
+        const heightOffset = (prop.total - 30) * 1.5 - 144;
+
+        // Property name and total score above stack
         ctx.save();
         ctx.fillStyle = prop.color;
-        ctx.font = 'bold 13px Share Tech Mono';
+        ctx.font = 'bold 14px Share Tech Mono';
         ctx.textAlign = 'center';
-        ctx.fillText(prop.name, offsetX, 30);
-        ctx.font = '10px Share Tech Mono';
-        ctx.fillStyle = 'rgba(255,255,255,0.6)';
-        ctx.fillText(`Total: ${data.totalScores[prop.id]}`, offsetX, 45);
+
+        // Move HILLCREST and LIVEOAK up 0.5 inches (48px), keep OAKWOOD at lower height
+        const nameY = (pIdx === 0 || pIdx === 2) ? 90 : 138;
+        const totalY = (pIdx === 0 || pIdx === 2) ? 110 : 158;
+
+        ctx.fillText(prop.name, columnWidth * (pIdx + 0.5), nameY);
+
+        ctx.font = '12px Share Tech Mono';
+        ctx.fillText(`TOTAL: ${prop.total}`, columnWidth * (pIdx + 0.5), totalY);
         ctx.restore();
 
-        // Draw layers from bottom to top
-        for (let i = 5; i >= 0; i--) {
-          const score = prop.scores[i];
-          const tier = getScoreTier(score);
-          const z = (5 - i) * layerHeight + Math.sin(time + i) * 5;
-          const layerWidth = 100 + (score / 100) * 60; // Wider = higher score
-          const layerDepth = 40;
+        // Draw layers from bottom (Fence) to top (Curb Appeal)
+        const layersReversed = labels.slice().reverse();  // Reverse so bottom layer is first
+        const valsReversed = prop.dataset.slice().reverse();
+        const plateSize = plateSizes[prop.id];  // Get size based on ranking
 
-          // Calculate corners
-          const [x1, y1] = isoProject(-layerWidth/2, -layerDepth/2, z);
-          const [x2, y2] = isoProject(layerWidth/2, -layerDepth/2, z);
-          const [x3, y3] = isoProject(layerWidth/2, layerDepth/2, z);
-          const [x4, y4] = isoProject(-layerWidth/2, layerDepth/2, z);
+        layersReversed.forEach((label, i) => {
+          const z = i * 40 + float + heightOffset;  // Add height offset based on score
+          const size = plateSize;  // Use ranking-based plate size
+          const val = valsReversed[i];
+          const tier = getScoreTier(val);
+          const fillColor = tier.color;
 
-          // Top face
-          ctx.save();
+          // Calculate 4 corners of isometric plate
+          const p1 = iso(baseX - size, -size, z);
+          const p2 = iso(baseX + size, -size, z);
+          const p3 = iso(baseX + size, size, z);
+          const p4 = iso(baseX - size, size, z);
+
+          // Draw filled plate with SMART tier color
           ctx.beginPath();
-          ctx.moveTo(offsetX + x1, baseY + y1);
-          ctx.lineTo(offsetX + x2, baseY + y2);
-          ctx.lineTo(offsetX + x3, baseY + y3);
-          ctx.lineTo(offsetX + x4, baseY + y4);
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.lineTo(p3.x, p3.y);
+          ctx.lineTo(p4.x, p4.y);
           ctx.closePath();
-          ctx.fillStyle = tier.color;
-          ctx.globalAlpha = 0.7;
+
+          ctx.fillStyle = fillColor;
+          ctx.globalAlpha = 0.6;
           ctx.fill();
           ctx.globalAlpha = 1;
+
+          // Draw rim with property color
           ctx.strokeStyle = prop.color;
           ctx.lineWidth = 2;
           ctx.stroke();
-          ctx.restore();
 
-          // Right face
-          ctx.save();
-          const [x2b, y2b] = isoProject(layerWidth/2, -layerDepth/2, z - layerHeight);
-          const [x3b, y3b] = isoProject(layerWidth/2, layerDepth/2, z - layerHeight);
-          ctx.beginPath();
-          ctx.moveTo(offsetX + x2, baseY + y2);
-          ctx.lineTo(offsetX + x3, baseY + y3);
-          ctx.lineTo(offsetX + x3b, baseY + y3b);
-          ctx.lineTo(offsetX + x2b, baseY + y2b);
-          ctx.closePath();
-          ctx.fillStyle = tier.color;
-          ctx.globalAlpha = 0.4;
-          ctx.fill();
-          ctx.globalAlpha = 1;
-          ctx.strokeStyle = prop.color;
-          ctx.lineWidth = 1;
-          ctx.stroke();
-          ctx.restore();
-
-          // Label
-          ctx.save();
-          ctx.fillStyle = '#fff';
-          ctx.font = 'bold 9px Share Tech Mono';
-          ctx.textAlign = 'center';
-          ctx.fillText(String(score), offsetX + x1 - 20, baseY + y1 + 4);
-          ctx.font = '8px Share Tech Mono';
-          ctx.fillStyle = 'rgba(255,255,255,0.6)';
-          ctx.fillText(labels[i], offsetX + x1 - 20, baseY + y1 + 13);
-          ctx.restore();
-        }
+          // Label with feature name and score (only on rightmost stack)
+          // Labels float parallel to plate edge at p2 corner
+          if (pIdx === 2) {
+            ctx.fillStyle = '#fff';
+            ctx.font = '9px Share Tech Mono';
+            ctx.textAlign = 'left';
+            ctx.fillText(`${label}: ${val}`, p2.x + 10, p2.y);
+          }
+        });
       });
 
-      // Legend
+      // CALCULATION BREAKDOWN - Show how totals were derived
+      ctx.save();
+      const calcY = h - 230;  // Position above property legend
+      ctx.font = 'bold 9px Share Tech Mono';
+      ctx.fillStyle = 'rgba(0, 243, 255, 0.9)';
+      ctx.textAlign = 'left';
+      ctx.fillText('TOTAL SCORE CALCULATION:', 40, calcY);
+
+      ctx.font = '8px Share Tech Mono';
+      const calcLineSpacing = 12;
+      let calcCurrentY = calcY + 14;
+
+      // Property 1 calculation
+      ctx.fillStyle = data.properties.p1.color;
+      const p1Vals = data.qualityScores.p1.join(' + ');
+      ctx.fillText(`${data.properties.p1.shortName}: (${p1Vals}) ÷ 6 = ${data.totalScores.p1}`, 40, calcCurrentY);
+      calcCurrentY += calcLineSpacing;
+
+      // Property 2 calculation
+      ctx.fillStyle = data.properties.p2.color;
+      const p2Vals = data.qualityScores.p2.join(' + ');
+      ctx.fillText(`${data.properties.p2.shortName}: (${p2Vals}) ÷ 6 = ${data.totalScores.p2}`, 40, calcCurrentY);
+      calcCurrentY += calcLineSpacing;
+
+      // Property 3 calculation
+      ctx.fillStyle = data.properties.p3.color;
+      const p3Vals = data.qualityScores.p3.join(' + ');
+      ctx.fillText(`${data.properties.p3.shortName}: (${p3Vals}) ÷ 6 = ${data.totalScores.p3}`, 40, calcCurrentY);
+      ctx.restore();
+
+      // EXAMPLE SUB-CALCULATION (centered in footer)
+      ctx.save();
+      const exampleY = h - 24;
+      ctx.font = 'bold 9px Share Tech Mono';
+      ctx.fillStyle = 'rgba(255, 215, 0, 0.9)';
+      ctx.textAlign = 'center';
+      ctx.fillText('EXAMPLE: HOW FEATURE SCORES ARE CALCULATED', w/2, exampleY);
+
+      ctx.font = '8px Share Tech Mono';
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      const exLineSpacing = 11;
+      let exCurrentY = exampleY + 12;
+
+      ctx.fillText('Design Score (88) = (Architecture: 90 + Condition: 85 + Floor Plan: 90 + Integration: 87) ÷ 4 = 88', w/2, exCurrentY);
+      exCurrentY += exLineSpacing;
+
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.font = '7px Share Tech Mono';
+      ctx.fillText('In production: Each of the 6 exterior features shown is calculated from 3-5 underlying sub-factors with actual property data', w/2, exCurrentY);
+      ctx.restore();
+
+      // PROPERTY LEGEND at bottom
       ctx.save();
       ctx.font = 'bold 10px Share Tech Mono';
-      ctx.fillStyle = 'rgba(255,255,255,0.8)';
       ctx.textAlign = 'center';
-      const legendY = h - 40;
-      ctx.fillText('ISO-LAYERS: Each layer = quality factor • Width = score magnitude • Height = stack position', w/2, legendY);
+      const propertyLegendY = h - 145;
+
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.fillText('PROPERTIES:', w/2 - 180, propertyLegendY);
+
+      ctx.font = '10px Share Tech Mono';
+      ctx.fillStyle = data.properties.p1.color;
+      ctx.fillText(`█ ${data.properties.p1.shortName.toUpperCase()}`, w/2 - 90, propertyLegendY);
+      ctx.fillStyle = data.properties.p2.color;
+      ctx.fillText(`█ ${data.properties.p2.shortName.toUpperCase()}`, w/2, propertyLegendY);
+      ctx.fillStyle = data.properties.p3.color;
+      ctx.fillText(`█ ${data.properties.p3.shortName.toUpperCase()}`, w/2 + 90, propertyLegendY);
+      ctx.restore();
+
+      // CLUES-SMART SCORE LEGEND
+      ctx.save();
+      const smartLegendY = h - 119;
+      ctx.font = 'bold 10px Share Tech Mono';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.fillText('CLUES-SMART SCORE TIERS:', 40, smartLegendY);
+
+      const tierSpacing = 110;
+      const startX = 230;
+
+      // Tier 1: Excellent (Green)
+      ctx.fillStyle = '#4CAF50';
+      ctx.fillRect(startX, smartLegendY - 10, 12, 12);
+      ctx.font = '9px Share Tech Mono';
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillText('81-100 EXCELLENT', startX + 16, smartLegendY);
+
+      // Tier 2: Good (Blue)
+      ctx.fillStyle = '#2196F3';
+      ctx.fillRect(startX + tierSpacing, smartLegendY - 10, 12, 12);
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillText('61-80 GOOD', startX + tierSpacing + 16, smartLegendY);
+
+      // Tier 3: Average (Amber)
+      ctx.fillStyle = '#EAB308';
+      ctx.fillRect(startX + tierSpacing * 2, smartLegendY - 10, 12, 12);
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillText('41-60 AVERAGE', startX + tierSpacing * 2 + 16, smartLegendY);
+
+      // Tier 4: Fair (Orange)
+      ctx.fillStyle = '#FF9800';
+      ctx.fillRect(startX + tierSpacing * 3, smartLegendY - 10, 12, 12);
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillText('21-40 FAIR', startX + tierSpacing * 3 + 16, smartLegendY);
+
+      // Tier 5: Poor (Red)
+      ctx.fillStyle = '#FF4444';
+      ctx.fillRect(startX + tierSpacing * 4, smartLegendY - 10, 12, 12);
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillText('0-20 POOR', startX + tierSpacing * 4 + 16, smartLegendY);
+      ctx.restore();
+
+      // DETAILED EXPLANATION
+      ctx.save();
+      const explanationY = h - 89;
+      ctx.font = 'bold 9px Share Tech Mono';
+      ctx.fillStyle = 'rgba(0, 243, 255, 0.9)';
+      ctx.textAlign = 'left';
+      ctx.fillText('HOW TO READ THIS CHART:', 40, explanationY);
+
+      ctx.font = '8px Share Tech Mono';
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      const lineSpacing = 11;
+      let currentY = explanationY + 12;
+
+      ctx.fillText(`• RIM COLOR (outer border) = Property identity (Green=${data.properties.p1.shortName}, Purple=${data.properties.p2.shortName}, Pink=${data.properties.p3.shortName})`, 40, currentY);
+      currentY += lineSpacing;
+
+      ctx.fillText('• FILL COLOR (interior) = CLUES-SMART tier based on individual feature score (see color legend above)', 40, currentY);
+      currentY += lineSpacing;
+
+      ctx.fillText('• STACK HEIGHT = Total property score (higher score = taller stack). PLATE SIZE = Ranking (1st=largest, 2nd=medium, 3rd=smallest)', 40, currentY);
+      currentY += lineSpacing;
+
+      ctx.fillText('• LAYER POSITION = Feature type (bottom=Fence, top=Curb Appeal). Amenity labels float parallel to plate edges.', 40, currentY);
+
       ctx.restore();
 
       animationId = requestAnimationFrame(animate);
@@ -780,9 +1159,9 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       cancelAnimationFrame(animationId);
       window.removeEventListener('resize', resize);
     };
-  }, [data, paused3, labels]);
+  }, [data, paused3, labels, winnerId]);
 
-  // CHART 6: AMENITY RADIAL - COMPLETE
+  // CHART 6: AMENITY RADIAL - Binary Features (Redesigned) - IDENTICAL TO HTML
   useEffect(() => {
     const canvas = canvas6Ref.current;
     if (!canvas) return;
@@ -795,122 +1174,254 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       const container = canvas.parentElement;
       if (container) {
         canvas.width = container.clientWidth;
-        canvas.height = 600;
+        canvas.height = 700;
       }
     };
     resize();
     window.addEventListener('resize', resize);
 
-    let time = 0;
+    let rot1 = 0, rot2 = 0, rot3 = 0; // Separate rotation for each ring
     let animationId: number;
 
+    // Find winner by amenity count
+    const amenityCounts = {
+      p1: data.amenityCounts.p1,
+      p2: data.amenityCounts.p2,
+      p3: data.amenityCounts.p3
+    };
+    const amenityPercentages = {
+      p1: Math.round((data.amenityCounts.p1 / 8) * 100),
+      p2: Math.round((data.amenityCounts.p2 / 8) * 100),
+      p3: Math.round((data.amenityCounts.p3 / 8) * 100)
+    };
+    const amenityWinnerId = (Object.entries(amenityCounts).sort((a, b) => b[1] - a[1])[0][0]) as 'p1' | 'p2' | 'p3';
+    const winnerCount = amenityCounts[amenityWinnerId];
+    const winnerPct = amenityPercentages[amenityWinnerId];
+
     function animate() {
-      if (!paused6) time += 0.02;
+      if (!paused6) {
+        // Different rotation speeds: faster for inner (more amenities), slower for outer (fewer)
+        // All speeds reduced by 50% for smoother viewing
+        rot1 -= 0.01;   // Fastest - inner ring
+        rot2 -= 0.0075; // Medium - middle ring
+        rot3 -= 0.005;  // Slowest - outer ring
+      }
       const w = canvas!.width;
       const h = canvas!.height;
       ctx.clearRect(0, 0, w, h);
+      const cx = w/2, cy = h/2;
 
-      const centerX = w / 2;
-      const centerY = h / 2;
-      const maxRadius = Math.min(w, h) * 0.35;
+      // CHART TITLE - Top left, gold
+      ctx.fillStyle = '#d4af37';
+      ctx.font = 'bold 10px Share Tech Mono';
+      ctx.textAlign = 'left';
+      ctx.fillText('CHART 7-6', 20, 47);
 
-      // Draw 8 amenities in radial pattern
-      const amenityLabels = data.amenities.labelsFull;
-      const propData = [
-        { id: 'p1' as const, values: data.amenities.p1, color: data.properties.p1.color, name: data.properties.p1.shortName },
-        { id: 'p2' as const, values: data.amenities.p2, color: data.properties.p2.color, name: data.properties.p2.shortName },
-        { id: 'p3' as const, values: data.amenities.p3, color: data.properties.p3.color, name: data.properties.p3.shortName }
-      ];
-
-      // Rings for each property
-      propData.forEach((prop, pIdx) => {
-        const ringRadius = maxRadius * (0.4 + pIdx * 0.25);
-        const rotation = time + (pIdx * Math.PI / 3);
-
-        // Ring circle
-        ctx.save();
-        ctx.strokeStyle = `${prop.color}60`;
-        ctx.lineWidth = 2;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.restore();
-
-        // Amenity dots
-        for (let i = 0; i < 8; i++) {
-          const angle = (i / 8) * Math.PI * 2 + rotation;
-          const dotX = centerX + Math.cos(angle) * ringRadius;
-          const dotY = centerY + Math.sin(angle) * ringRadius;
-          const hasAmenity = prop.values[i] === 1;
-
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(dotX, dotY, hasAmenity ? 10 : 5, 0, Math.PI * 2);
-          ctx.fillStyle = hasAmenity ? prop.color : 'rgba(100,100,100,0.3)';
-          ctx.fill();
-          ctx.strokeStyle = prop.color;
-          ctx.lineWidth = hasAmenity ? 2 : 1;
-          ctx.stroke();
-
-          // Checkmark for owned amenities
-          if (hasAmenity) {
-            ctx.strokeStyle = '#000';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(dotX - 4, dotY);
-            ctx.lineTo(dotX - 1, dotY + 3);
-            ctx.lineTo(dotX + 4, dotY - 3);
-            ctx.stroke();
-          }
-          ctx.restore();
-
-          // Labels (only on outermost ring)
-          if (pIdx === 2 && i < amenityLabels.length) {
-            const labelRadius = maxRadius * 1.25;
-            const labelX = centerX + Math.cos(angle) * labelRadius;
-            const labelY = centerY + Math.sin(angle) * labelRadius;
-
-            ctx.save();
-            ctx.fillStyle = 'rgba(255,255,255,0.8)';
-            ctx.font = '9px Share Tech Mono';
-            ctx.textAlign = 'center';
-            ctx.fillText(amenityLabels[i].toUpperCase(), labelX, labelY);
-            ctx.restore();
-          }
-        }
-
-        // Ring label
-        const labelAngle = rotation;
-        const labelX = centerX + Math.cos(labelAngle) * (ringRadius + 30);
-        const labelY = centerY + Math.sin(labelAngle) * (ringRadius + 30);
-        ctx.save();
-        ctx.fillStyle = prop.color;
-        ctx.font = 'bold 11px Share Tech Mono';
-        ctx.textAlign = 'center';
-        ctx.fillText(prop.name, labelX, labelY);
-        ctx.font = '9px Share Tech Mono';
-        ctx.fillText(`${data.amenityCounts[prop.id]}/8`, labelX, labelY + 12);
-        ctx.restore();
-      });
-
-      // Center label
+      // WINNER BADGE - Top left below CHART 7-6
       ctx.save();
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = data.properties[amenityWinnerId].color;
+      ctx.strokeStyle = data.properties[amenityWinnerId].color;
+      ctx.lineWidth = 2;
+
+      const badgeX = 20;
+      const badgeY = 70;
+      ctx.strokeRect(badgeX, badgeY - 15, 120, 30);
+      ctx.globalAlpha = 0.2;
+      ctx.fillRect(badgeX, badgeY - 15, 120, 30);
+      ctx.globalAlpha = 1;
+
       ctx.font = 'bold 12px Share Tech Mono';
       ctx.textAlign = 'center';
-      ctx.fillText('EXTERIOR', centerX, centerY - 5);
-      ctx.fillText('AMENITIES', centerX, centerY + 10);
+      ctx.fillText('🏆 WINNER', badgeX + 60, badgeY);
+      ctx.font = 'bold 16px Share Tech Mono';
+      ctx.fillText(data.properties[amenityWinnerId].shortName, badgeX + 60, badgeY + 14);
       ctx.restore();
 
-      // Legend
+      // BRAIN WIDGET - Upper right with amenity percentage
       ctx.save();
-      ctx.font = 'bold 10px Share Tech Mono';
-      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      const brainX = w - 80;
+      const brainY = 78;
+
+      ctx.strokeStyle = data.properties[amenityWinnerId].color;
+      ctx.fillStyle = data.properties[amenityWinnerId].color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(brainX, brainY, 20, 0, Math.PI * 2);
+      ctx.globalAlpha = 0.2;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = data.properties[amenityWinnerId].color;
+      ctx.font = 'bold 16px Share Tech Mono';
       ctx.textAlign = 'center';
-      const legendY = h - 40;
-      ctx.fillText('RADIAL VIEW: Filled dots = amenity present • Empty dots = not included • 8 binary features', w/2, legendY);
+      ctx.fillText(String(winnerPct), brainX, brainY + 5);
+
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.font = 'bold 9px Share Tech Mono';
+      ctx.textAlign = 'left';
+      ctx.fillText('/100', brainX + 26, brainY - 5);
+      ctx.font = 'bold 8px Share Tech Mono';
+      ctx.fillText('SMART', brainX + 21, brainY + 10);
+      ctx.restore();
+
+      // SUBTITLE - below winner badge
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.font = '11px Share Tech Mono';
+      ctx.textAlign = 'center';
+      ctx.fillText('AMENITY OWNERSHIP COMPARISON', w/2, 144);
+
+      // Draw radial segments - Sort properties by amenity count
+      // More amenities = inner ring (closer) + faster rotation
+      // Fewer amenities = outer ring (farther) + slower rotation
+      const propertyData = [
+        { id: 'p1' as const, data: data.amenities.p1, count: data.amenityCounts.p1, color: data.properties.p1.color },
+        { id: 'p2' as const, data: data.amenities.p2, count: data.amenityCounts.p2, color: data.properties.p2.color },
+        { id: 'p3' as const, data: data.amenities.p3, count: data.amenityCounts.p3, color: data.properties.p3.color }
+      ].sort((a, b) => b.count - a.count); // Sort descending by amenity count
+
+      const rotations = [rot1, rot2, rot3]; // Fastest to slowest
+
+      propertyData.forEach((prop, ringIdx) => {
+        const d = prop.data;
+        const col = prop.color;
+        const baseR = 100 + (ringIdx * 50); // Rings at 100, 150, 200 (inner to outer)
+        const rotation = rotations[ringIdx];
+
+        for (let i = 0; i < 8; i++) {
+          const startA = (i * (Math.PI*2/8)) + rotation;
+          const endA = startA + (Math.PI*2/8) - 0.08;
+          const hasAmenity = d[i];
+
+          if (hasAmenity === 1) {
+            // FILLED segment - property HAS this amenity
+            ctx.beginPath();
+            ctx.arc(cx, cy, baseR, startA, endA);
+            ctx.strokeStyle = col;
+            ctx.lineWidth = 30;
+            ctx.lineCap = 'butt';
+            ctx.stroke();
+
+            // Glow effect
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = col;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+          } else {
+            // EMPTY segment - property LACKS this amenity
+            ctx.beginPath();
+            ctx.arc(cx, cy, baseR, startA, endA);
+            ctx.strokeStyle = col;
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'butt';
+            ctx.globalAlpha = 0.2;
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+          }
+        }
+      });
+
+      // Draw amenity labels around outer ring (rotating with fastest inner ring)
+      ctx.save();
+      ctx.font = 'bold 9px Share Tech Mono';
+      ctx.fillStyle = '#fff';
+      for (let i = 0; i < 8; i++) {
+        const angle = (i * (Math.PI*2/8)) + rot1 + (Math.PI*2/16); // Center of segment, using fastest rotation
+        const labelR = 260;
+        const x = cx + Math.cos(angle) * labelR;
+        const y = cy + Math.sin(angle) * labelR;
+
+        ctx.textAlign = 'center';
+        ctx.fillText(data.amenities.labels[i], x, y);
+      }
+      ctx.restore();
+
+      // AMENITY OWNERSHIP COUNT
+      ctx.save();
+      ctx.fillStyle = '#d4af37';
+      ctx.font = 'bold 11px Share Tech Mono';
+      ctx.textAlign = 'left';
+      ctx.fillText('AMENITY OWNERSHIP COUNT (Out of 8 Total Amenities)', 40, h - 212);
+
+      ctx.font = '10px Share Tech Mono';
+      ctx.fillStyle = data.properties.p1.color;
+      ctx.fillText(`${data.properties.p1.shortName}: ${amenityCounts.p1} amenities owned ÷ 8 total = ${amenityPercentages.p1}% ownership`, 40, h - 197);
+      ctx.fillStyle = data.properties.p2.color;
+      ctx.fillText(`${data.properties.p2.shortName}: ${amenityCounts.p2} amenities owned ÷ 8 total = ${amenityPercentages.p2}% ownership`, 40, h - 182);
+      ctx.fillStyle = data.properties.p3.color;
+      ctx.fillText(`${data.properties.p3.shortName}: ${amenityCounts.p3} amenities owned ÷ 8 total = ${amenityPercentages.p3}% ownership`, 40, h - 167);
+      ctx.restore();
+
+      // PROPERTY LEGEND
+      ctx.save();
+      ctx.font = '10px Share Tech Mono';
+      ctx.textAlign = 'left';
+      const legendX = 40;
+      ctx.fillStyle = data.properties.p1.color;
+      ctx.fillText(`█ ${data.properties.p1.shortName.toUpperCase()}`, legendX, h - 145);
+      ctx.fillStyle = data.properties.p2.color;
+      ctx.fillText(`█ ${data.properties.p2.shortName.toUpperCase()}`, legendX + 110, h - 145);
+      ctx.fillStyle = data.properties.p3.color;
+      ctx.fillText(`█ ${data.properties.p3.shortName.toUpperCase()}`, legendX + 220, h - 145);
+      ctx.restore();
+
+      // AMENITY STATUS LEGEND
+      ctx.save();
+      ctx.font = '10px Share Tech Mono';
+      ctx.textAlign = 'left';
+      const statusX = 40;
+
+      // Solid segment example
+      ctx.strokeStyle = '#4CAF50';
+      ctx.lineWidth = 12;
+      ctx.beginPath();
+      ctx.moveTo(statusX, h - 119);
+      ctx.lineTo(statusX + 20, h - 119);
+      ctx.stroke();
+      ctx.shadowBlur = 4;
+      ctx.shadowColor = '#4CAF50';
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.fillText('HAS AMENITY', statusX + 25, h - 115);
+
+      // Empty segment example
+      ctx.strokeStyle = '#FF9800';
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = 0.2;
+      ctx.beginPath();
+      ctx.moveTo(statusX + 140, h - 119);
+      ctx.lineTo(statusX + 160, h - 119);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.fillText('LACKS AMENITY', statusX + 165, h - 115);
+      ctx.restore();
+
+      // EXPLANATION
+      ctx.save();
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.font = '9px Share Tech Mono';
+      ctx.textAlign = 'left';
+      const explainX = w - 520;
+      ctx.fillText('• Inner ring = most amenities + fastest rotation, outer ring = fewest amenities + slowest', explainX, h - 89);
+      ctx.fillText('• Solid thick segments show amenities the property HAS', explainX, h - 78);
+      ctx.fillText('• Thin transparent segments show amenities the property LACKS', explainX, h - 67);
+      ctx.fillText('• Ring speed reflects completeness: more complete package = tighter orbit + faster spin', explainX, h - 56);
+      ctx.restore();
+
+      // EXAMPLE SUB-CALCULATION
+      ctx.save();
+      ctx.fillStyle = '#d4af37';
+      ctx.font = 'bold 9px Share Tech Mono';
+      ctx.textAlign = 'center';
+      ctx.fillText('EXAMPLE AMENITY CALCULATION', w/2, h - 24);
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.font = '9px Share Tech Mono';
+      ctx.fillText(`${data.properties.p1.shortName} % = (${amenityCounts.p1} amenities owned ÷ 8 total amenities) × 100 = ${amenityPercentages.p1}%`, w/2, h - 12);
       ctx.restore();
 
       animationId = requestAnimationFrame(animate);
@@ -923,7 +1434,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
     };
   }, [data, paused6]);
 
-  // CHART 9: CONNECTION WEB - COMPLETE
+  // CHART 9: CONNECTION WEB - IDENTICAL TO HTML
   useEffect(() => {
     const canvas = canvas9Ref.current;
     if (!canvas) return;
@@ -936,172 +1447,312 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       const container = canvas.parentElement;
       if (container) {
         canvas.width = container.clientWidth;
-        canvas.height = 600;
+        canvas.height = 700;
       }
     };
     resize();
     window.addEventListener('resize', resize);
 
-    let time = 0;
+    let pulse = 0;
     let animationId: number;
 
+    // Find winner by amenity count
+    const amenityCounts = {
+      p1: data.amenityCounts.p1,
+      p2: data.amenityCounts.p2,
+      p3: data.amenityCounts.p3
+    };
+    const amenityPercentages = {
+      p1: Math.round((data.amenityCounts.p1 / 8) * 100),
+      p2: Math.round((data.amenityCounts.p2 / 8) * 100),
+      p3: Math.round((data.amenityCounts.p3 / 8) * 100)
+    };
+    const amenityWinnerId = (Object.entries(amenityCounts).sort((a, b) => b[1] - a[1])[0][0]) as 'p1' | 'p2' | 'p3';
+    const winnerCount = amenityCounts[amenityWinnerId];
+    const winnerPct = amenityPercentages[amenityWinnerId];
+
     function animate() {
-      if (!paused9) time += 0.02;
+      if (!paused9) pulse += 0.03;
       const w = canvas!.width;
       const h = canvas!.height;
       ctx.clearRect(0, 0, w, h);
 
-      const centerX = w / 2;
-      const centerY = h / 2;
+      // CHART TITLE - Top left, gold
+      ctx.fillStyle = '#d4af37';
+      ctx.font = 'bold 10px Share Tech Mono';
+      ctx.textAlign = 'left';
+      ctx.fillText('CHART 7-9', 20, 47);
 
-      // Property nodes positions (triangle formation)
-      const nodeRadius = Math.min(w, h) * 0.3;
-      const propNodes = [
-        {
-          id: 'p1' as const,
-          x: centerX + Math.cos(-Math.PI / 2) * nodeRadius,
-          y: centerY + Math.sin(-Math.PI / 2) * nodeRadius,
-          color: data.properties.p1.color,
-          name: data.properties.p1.shortName,
-          score: data.totalScores.p1,
-          amenities: data.amenities.p1,
-          count: data.amenityCounts.p1
-        },
-        {
-          id: 'p2' as const,
-          x: centerX + Math.cos(-Math.PI / 2 + (2 * Math.PI / 3)) * nodeRadius,
-          y: centerY + Math.sin(-Math.PI / 2 + (2 * Math.PI / 3)) * nodeRadius,
-          color: data.properties.p2.color,
-          name: data.properties.p2.shortName,
-          score: data.totalScores.p2,
-          amenities: data.amenities.p2,
-          count: data.amenityCounts.p2
-        },
-        {
-          id: 'p3' as const,
-          x: centerX + Math.cos(-Math.PI / 2 + (4 * Math.PI / 3)) * nodeRadius,
-          y: centerY + Math.sin(-Math.PI / 2 + (4 * Math.PI / 3)) * nodeRadius,
-          color: data.properties.p3.color,
-          name: data.properties.p3.shortName,
-          score: data.totalScores.p3,
-          amenities: data.amenities.p3,
-          count: data.amenityCounts.p3
-        }
+      // WINNER BADGE - Top left below CHART 7-9
+      ctx.save();
+      ctx.textAlign = 'left';
+      ctx.fillStyle = data.properties[amenityWinnerId].color;
+      ctx.strokeStyle = data.properties[amenityWinnerId].color;
+      ctx.lineWidth = 2;
+
+      const badgeX = 20;
+      const badgeY = 70;
+      ctx.strokeRect(badgeX, badgeY - 15, 120, 30);
+      ctx.globalAlpha = 0.2;
+      ctx.fillRect(badgeX, badgeY - 15, 120, 30);
+      ctx.globalAlpha = 1;
+
+      ctx.font = 'bold 12px Share Tech Mono';
+      ctx.textAlign = 'center';
+      ctx.fillText('🏆 WINNER', badgeX + 60, badgeY);
+      ctx.font = 'bold 16px Share Tech Mono';
+      ctx.fillText(data.properties[amenityWinnerId].shortName, badgeX + 60, badgeY + 14);
+      ctx.restore();
+
+      // BRAIN WIDGET - Upper right with connection count
+      ctx.save();
+      const brainX = w - 80;
+      const brainY = 78;
+
+      ctx.strokeStyle = data.properties[amenityWinnerId].color;
+      ctx.fillStyle = data.properties[amenityWinnerId].color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(brainX, brainY, 20, 0, Math.PI * 2);
+      ctx.globalAlpha = 0.2;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = data.properties[amenityWinnerId].color;
+      ctx.font = 'bold 16px Share Tech Mono';
+      ctx.textAlign = 'center';
+      ctx.fillText(String(winnerPct), brainX, brainY + 5);
+
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.font = 'bold 9px Share Tech Mono';
+      ctx.textAlign = 'left';
+      ctx.fillText('/100', brainX + 26, brainY - 5);
+      ctx.font = 'bold 8px Share Tech Mono';
+      ctx.fillText('SMART', brainX + 21, brainY + 10);
+      ctx.restore();
+
+      // SUBTITLE - below winner badge
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.font = '11px Share Tech Mono';
+      ctx.textAlign = 'center';
+      ctx.fillText('AMENITY CONNECTION WEB', w/2, 117);
+
+      // Draw 3 property clusters horizontally
+      const baseCY = h/2 + 7;
+      const clusterSpacing = 300;
+      const circleRadius = 80;
+
+      // Calculate winner and loser for vertical positioning
+      const propIds = ['p1', 'p2', 'p3'] as const;
+      const counts = propIds.map(id => amenityCounts[id]);
+      const maxCount = Math.max(...counts);
+      const minCount = Math.min(...counts);
+
+      const propDataForClusters = [
+        { id: 'p1' as const, amenities: data.amenities.p1, color: data.properties.p1.color, name: data.properties.p1.shortName },
+        { id: 'p2' as const, amenities: data.amenities.p2, color: data.properties.p2.color, name: data.properties.p2.shortName },
+        { id: 'p3' as const, amenities: data.amenities.p3, color: data.properties.p3.color, name: data.properties.p3.shortName }
       ];
 
-      // Amenity nodes in center (8 amenities)
-      const amenityLabels = data.amenities.labels;
-      const amenityRadius = 50;
-      const amenityNodes = amenityLabels.map((label, i) => ({
-        label,
-        x: centerX + Math.cos((i / 8) * Math.PI * 2 + time * 0.5) * amenityRadius,
-        y: centerY + Math.sin((i / 8) * Math.PI * 2 + time * 0.5) * amenityRadius
-      }));
+      propDataForClusters.forEach((d, pIdx) => {
+        const col = d.color;
+        const cx = (w/4) + (pIdx * clusterSpacing) - 77;
 
-      // Draw connections (property to owned amenities)
-      ctx.save();
-      propNodes.forEach((prop) => {
-        prop.amenities.forEach((hasAmenity, amenityIdx) => {
-          if (hasAmenity === 1) {
-            const amenity = amenityNodes[amenityIdx];
+        // Dynamic Y position: winner UP, loser DOWN
+        const propCount = amenityCounts[d.id];
+        let cyOffset = 0;
+        if (propCount === maxCount && maxCount !== minCount) {
+          cyOffset = -25;  // Winner floats UP
+        } else if (propCount === minCount && maxCount !== minCount) {
+          cyOffset = 20;   // Loser sinks DOWN
+        }
+        const cy = baseCY + cyOffset;
 
-            // Pulsing connection
-            const pulsePhase = (time + amenityIdx * 0.5) % 2;
-            const alpha = 0.2 + Math.sin(pulsePhase * Math.PI) * 0.3;
+        // Calculate which amenities this property has
+        const hasAmenities = [];
+        for (let i = 0; i < 8; i++) {
+          if (d.amenities[i] === 1) {
+            hasAmenities.push(i);
+          }
+        }
 
-            ctx.strokeStyle = prop.color.replace(')', `, ${alpha})`).replace('rgb', 'rgba');
-            ctx.lineWidth = 2;
+        // Draw property name above
+        ctx.save();
+        ctx.fillStyle = col;
+        ctx.font = 'bold 12px Share Tech Mono';
+        ctx.textAlign = 'center';
+        ctx.fillText(d.name, cx, cy - circleRadius - 51);
+        ctx.font = '10px Share Tech Mono';
+        ctx.fillText(`${amenityCounts[d.id]}/8`, cx, cy - circleRadius - 39);
+        ctx.restore();
+
+        // Draw connection lines ONLY between amenities the property HAS
+        ctx.save();
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 1.5;
+        ctx.globalAlpha = 0.4 + (Math.sin(pulse) * 0.2);
+
+        for (let i = 0; i < hasAmenities.length; i++) {
+          for (let j = i+1; j < hasAmenities.length; j++) {
+            const idx1 = hasAmenities[i];
+            const idx2 = hasAmenities[j];
+
+            const angle1 = (idx1 / 8) * Math.PI * 2 - Math.PI/2;
+            const angle2 = (idx2 / 8) * Math.PI * 2 - Math.PI/2;
+
+            const x1 = cx + Math.cos(angle1) * circleRadius;
+            const y1 = cy + Math.sin(angle1) * circleRadius;
+            const x2 = cx + Math.cos(angle2) * circleRadius;
+            const y2 = cy + Math.sin(angle2) * circleRadius;
+
             ctx.beginPath();
-            ctx.moveTo(prop.x, prop.y);
-            ctx.lineTo(amenity.x, amenity.y);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
             ctx.stroke();
           }
-        });
-      });
-      ctx.restore();
+        }
+        ctx.restore();
 
-      // Draw amenity nodes
-      amenityNodes.forEach((amenity, idx) => {
-        const ownedBy = propNodes.filter(p => p.amenities[idx] === 1).length;
+        // Draw amenity points around circle
+        for (let i = 0; i < 8; i++) {
+          const angle = (i / 8) * Math.PI * 2 - Math.PI/2;
+          const x = cx + Math.cos(angle) * circleRadius;
+          const y = cy + Math.sin(angle) * circleRadius;
 
+          ctx.beginPath();
+          if (d.amenities[i] === 1) {
+            // Property HAS this amenity - filled glowing dot with INTENSE glow
+            ctx.arc(x, y, 5, 0, Math.PI * 2);
+            ctx.fillStyle = col;
+            ctx.fill();
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = col;
+            ctx.fill();
+            // Second glow layer for extra intensity
+            ctx.shadowBlur = 12;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+          } else {
+            // Property LACKS this amenity - empty dot
+            ctx.arc(x, y, 3, 0, Math.PI * 2);
+            ctx.strokeStyle = col;
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.2;
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+          }
+        }
+
+        // Draw amenity labels around circle (on ALL clusters now, BOLD)
         ctx.save();
-        ctx.beginPath();
-        ctx.arc(amenity.x, amenity.y, 8, 0, Math.PI * 2);
-        ctx.fillStyle = ownedBy > 0 ? 'rgba(255,255,255,0.6)' : 'rgba(100,100,100,0.3)';
-        ctx.fill();
-        ctx.strokeStyle = ownedBy > 0 ? 'rgba(255,255,255,0.9)' : 'rgba(150,150,150,0.5)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-
-        // Label
+        ctx.font = 'bold 9px Share Tech Mono';
         ctx.fillStyle = 'rgba(255,255,255,0.9)';
-        ctx.font = '8px Share Tech Mono';
-        ctx.textAlign = 'center';
-        ctx.fillText(amenity.label, amenity.x, amenity.y + 18);
+        for (let i = 0; i < 8; i++) {
+          const angle = (i / 8) * Math.PI * 2 - Math.PI/2;
+          const labelR = circleRadius + 25;
+          const x = cx + Math.cos(angle) * labelR;
+          const y = cy + Math.sin(angle) * labelR;
+
+          ctx.textAlign = 'center';
+          ctx.fillText(data.amenities.labels[i], x, y + 3);
+        }
         ctx.restore();
       });
 
-      // Draw property nodes
-      propNodes.forEach((prop) => {
-        const tier = getScoreTier(prop.score);
-        const nodeSize = 30 + (prop.score / 100) * 15;
-        const pulse = Math.sin(time * 2) * 2;
-
-        ctx.save();
-
-        // Glow
-        const gradient = ctx.createRadialGradient(prop.x, prop.y, nodeSize, prop.x, prop.y, nodeSize + 20);
-        gradient.addColorStop(0, `${prop.color}40`);
-        gradient.addColorStop(1, `${prop.color}00`);
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(prop.x, prop.y, nodeSize + 20 + pulse, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Node
-        ctx.beginPath();
-        ctx.arc(prop.x, prop.y, nodeSize, 0, Math.PI * 2);
-        ctx.fillStyle = tier.color;
-        ctx.globalAlpha = 0.8;
-        ctx.fill();
-        ctx.globalAlpha = 1;
-        ctx.strokeStyle = prop.color;
-        ctx.lineWidth = 4;
-        ctx.stroke();
-
-        // Score
-        ctx.fillStyle = '#000';
-        ctx.font = 'bold 14px Share Tech Mono';
-        ctx.textAlign = 'center';
-        ctx.fillText(String(prop.score), prop.x, prop.y - 3);
-
-        // Count
-        ctx.font = '9px Share Tech Mono';
-        ctx.fillText(`${prop.count}/8`, prop.x, prop.y + 10);
-
-        // Name
-        ctx.fillStyle = prop.color;
-        ctx.font = 'bold 12px Share Tech Mono';
-        ctx.fillText(prop.name, prop.x, prop.y + nodeSize + 20);
-        ctx.restore();
-      });
-
-      // Center label
+      // CONNECTION COUNT CALCULATION
       ctx.save();
-      ctx.fillStyle = 'rgba(255,255,255,0.4)';
-      ctx.font = 'bold 10px Share Tech Mono';
-      ctx.textAlign = 'center';
-      ctx.fillText('AMENITY', centerX, centerY - 5);
-      ctx.fillText('NETWORK', centerX, centerY + 8);
+      ctx.fillStyle = '#d4af37';
+      ctx.font = 'bold 11px Share Tech Mono';
+      ctx.textAlign = 'left';
+      ctx.fillText('CONNECTION COUNT CALCULATION', 40, h - 230);
+
+      // Calculate connection counts (n choose 2 = n*(n-1)/2)
+      const connections = {
+        p1: (amenityCounts.p1 * (amenityCounts.p1 - 1)) / 2,
+        p2: (amenityCounts.p2 * (amenityCounts.p2 - 1)) / 2,
+        p3: (amenityCounts.p3 * (amenityCounts.p3 - 1)) / 2
+      };
+
+      ctx.font = '10px Share Tech Mono';
+      ctx.fillStyle = data.properties.p1.color;
+      ctx.fillText(`${data.properties.p1.shortName}: ${amenityCounts.p1} amenities = ${connections.p1} connections`, 40, h - 215);
+      ctx.fillStyle = data.properties.p2.color;
+      ctx.fillText(`${data.properties.p2.shortName}: ${amenityCounts.p2} amenities = ${connections.p2} connections`, 40, h - 200);
+      ctx.fillStyle = data.properties.p3.color;
+      ctx.fillText(`${data.properties.p3.shortName}: ${amenityCounts.p3} amenities = ${connections.p3} connections`, 40, h - 185);
       ctx.restore();
 
-      // Legend
+      // SMART SCORE CALCULATION
       ctx.save();
-      ctx.font = 'bold 10px Share Tech Mono';
+      ctx.fillStyle = '#d4af37';
+      ctx.font = 'bold 11px Share Tech Mono';
+      ctx.textAlign = 'left';
+      ctx.fillText('SMART SCORE CALCULATION (Out of 8 Total Amenities)', 40, h - 160);
+
+      ctx.font = '10px Share Tech Mono';
+      ctx.fillStyle = data.properties.p1.color;
+      ctx.fillText(`${data.properties.p1.shortName}: ${amenityCounts.p1} amenities ÷ 8 total = ${amenityPercentages.p1}% SMART Score`, 40, h - 145);
+      ctx.fillStyle = data.properties.p2.color;
+      ctx.fillText(`${data.properties.p2.shortName}: ${amenityCounts.p2} amenities ÷ 8 total = ${amenityPercentages.p2}% SMART Score`, 40, h - 130);
+      ctx.fillStyle = data.properties.p3.color;
+      ctx.fillText(`${data.properties.p3.shortName}: ${amenityCounts.p3} amenities ÷ 8 total = ${amenityPercentages.p3}% SMART Score`, 40, h - 115);
+      ctx.restore();
+
+      // PROPERTY LEGEND
+      ctx.save();
+      ctx.font = '10px Share Tech Mono';
+      ctx.textAlign = 'left';
+      const legendX = 40;
+      ctx.fillStyle = data.properties.p1.color;
+      ctx.fillText(`█ ${data.properties.p1.shortName.toUpperCase()}`, legendX, h - 95);
+      ctx.fillStyle = data.properties.p2.color;
+      ctx.fillText(`█ ${data.properties.p2.shortName.toUpperCase()}`, legendX + 110, h - 95);
+      ctx.fillStyle = data.properties.p3.color;
+      ctx.fillText(`█ ${data.properties.p3.shortName.toUpperCase()}`, legendX + 220, h - 95);
+      ctx.restore();
+
+      // DOT STATUS LEGEND
+      ctx.save();
+      ctx.font = '10px Share Tech Mono';
+      ctx.textAlign = 'left';
+      const statusX = 40;
+
+      // Filled dot example
+      ctx.beginPath();
+      ctx.arc(statusX + 5, h - 69, 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#4CAF50';
+      ctx.fill();
+      ctx.shadowBlur = 6;
+      ctx.shadowColor = '#4CAF50';
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
       ctx.fillStyle = 'rgba(255,255,255,0.8)';
-      ctx.textAlign = 'center';
-      const legendY = h - 40;
-      ctx.fillText('CONNECTION WEB: Lines = ownership • Pulsing = active feature • Node size = quality score', w/2, legendY);
+      ctx.fillText('HAS AMENITY', statusX + 15, h - 65);
+
+      // Empty dot example
+      ctx.beginPath();
+      ctx.arc(statusX + 145, h - 69, 3, 0, Math.PI * 2);
+      ctx.strokeStyle = '#FF9800';
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.2;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.fillText('LACKS AMENITY', statusX + 155, h - 65);
+      ctx.restore();
+
+      // EXPLANATION
+      ctx.save();
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.font = '9px Share Tech Mono';
+      ctx.textAlign = 'left';
+      ctx.fillText('• Each cluster = one property with 8 amenity positions arranged in circle', 40, h - 39);
+      ctx.fillText('• Lines connect ONLY amenities the property owns (more lines = more complete package)', 40, h - 28);
+      ctx.fillText('• Dense web pattern = comprehensive amenity coverage, sparse pattern = limited amenities', 40, h - 17);
+      ctx.fillText('• Pulsing effect highlights connection strength and network completeness', 40, h - 6);
       ctx.restore();
 
       animationId = requestAnimationFrame(animate);
@@ -1150,8 +1801,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
         transition={{ delay: 0.1 }}
         className="relative rounded-2xl bg-gradient-to-br from-slate-900/90 to-slate-950/90 backdrop-blur-xl border border-white/10 overflow-hidden"
       >
-        <div className="absolute top-4 left-4 z-10 flex items-center gap-3">
-          <span className="text-xs font-mono text-gray-500">Chart 7-2</span>
+        <div className="absolute top-4 right-4 z-10 flex items-center gap-3">
           <button
             onClick={() => setPaused2(!paused2)}
             className="px-3 py-1 rounded bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/30 transition-all text-xs font-mono"
@@ -1159,16 +1809,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
             {paused2 ? '▶ Play' : '⏸ Pause'}
           </button>
         </div>
-        <div className="pt-16 pb-2 text-center">
-          <h3 className="text-base font-bold text-white font-mono tracking-wider">ORBITAL GRAVITY</h3>
-          <p className="text-xs text-gray-400 font-mono mt-1">Composite Quality Score • Gravitational Pull Visualization</p>
-        </div>
         <canvas ref={canvas2Ref} className="w-full" style={{ display: 'block' }} />
-        <div className="p-4 bg-black/20 border-t border-white/5">
-          <p className="text-[10px] text-gray-400 font-mono leading-relaxed">
-            <span className="text-cyan-400 font-bold">HOW TO READ:</span> Higher scores orbit closer to 100 (sun) • Planet size = score magnitude • Planet fill = SMART tier • Ring color = property
-          </p>
-        </div>
       </motion.div>
 
       {/* Chart 3: ISO-Layer Stack */}
@@ -1178,8 +1819,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
         transition={{ delay: 0.2 }}
         className="relative rounded-2xl bg-gradient-to-br from-slate-900/90 to-slate-950/90 backdrop-blur-xl border border-white/10 overflow-hidden"
       >
-        <div className="absolute top-4 left-4 z-10 flex items-center gap-3">
-          <span className="text-xs font-mono text-gray-500">Chart 7-3</span>
+        <div className="absolute top-4 right-4 z-10 flex items-center gap-3">
           <button
             onClick={() => setPaused3(!paused3)}
             className="px-3 py-1 rounded bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/30 transition-all text-xs font-mono"
@@ -1187,16 +1827,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
             {paused3 ? '▶ Play' : '⏸ Pause'}
           </button>
         </div>
-        <div className="pt-16 pb-2 text-center">
-          <h3 className="text-base font-bold text-white font-mono tracking-wider">ISO-LAYER STACK</h3>
-          <p className="text-xs text-gray-400 font-mono mt-1">6 Quality Factors • Isometric Topographic View</p>
-        </div>
         <canvas ref={canvas3Ref} className="w-full" style={{ display: 'block' }} />
-        <div className="p-4 bg-black/20 border-t border-white/5">
-          <p className="text-[10px] text-gray-400 font-mono leading-relaxed">
-            <span className="text-cyan-400 font-bold">HOW TO READ:</span> Each layer = 1 quality factor • Layer width = score (wider = higher) • Layer fill = SMART tier • Border = property color
-          </p>
-        </div>
       </motion.div>
 
       {/* Chart 6: Amenity Radial */}
@@ -1206,8 +1837,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
         transition={{ delay: 0.3 }}
         className="relative rounded-2xl bg-gradient-to-br from-slate-900/90 to-slate-950/90 backdrop-blur-xl border border-white/10 overflow-hidden"
       >
-        <div className="absolute top-4 left-4 z-10 flex items-center gap-3">
-          <span className="text-xs font-mono text-gray-500">Chart 7-6</span>
+        <div className="absolute top-4 right-4 z-10 flex items-center gap-3">
           <button
             onClick={() => setPaused6(!paused6)}
             className="px-3 py-1 rounded bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/30 transition-all text-xs font-mono"
@@ -1215,16 +1845,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
             {paused6 ? '▶ Play' : '⏸ Pause'}
           </button>
         </div>
-        <div className="pt-16 pb-2 text-center">
-          <h3 className="text-base font-bold text-white font-mono tracking-wider">AMENITY RADIAL</h3>
-          <p className="text-xs text-gray-400 font-mono mt-1">8 Binary Features • Rotating Ring Visualization</p>
-        </div>
         <canvas ref={canvas6Ref} className="w-full" style={{ display: 'block' }} />
-        <div className="p-4 bg-black/20 border-t border-white/5">
-          <p className="text-[10px] text-gray-400 font-mono leading-relaxed">
-            <span className="text-cyan-400 font-bold">HOW TO READ:</span> Filled dots with ✓ = amenity present • Small empty dots = not included • 3 rotating rings = 3 properties • Counts shown per property
-          </p>
-        </div>
       </motion.div>
 
       {/* Chart 9: Connection Web */}
@@ -1234,8 +1855,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
         transition={{ delay: 0.4 }}
         className="relative rounded-2xl bg-gradient-to-br from-slate-900/90 to-slate-950/90 backdrop-blur-xl border border-white/10 overflow-hidden"
       >
-        <div className="absolute top-4 left-4 z-10 flex items-center gap-3">
-          <span className="text-xs font-mono text-gray-500">Chart 7-9</span>
+        <div className="absolute top-4 right-4 z-10 flex items-center gap-3">
           <button
             onClick={() => setPaused9(!paused9)}
             className="px-3 py-1 rounded bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/30 transition-all text-xs font-mono"
@@ -1243,16 +1863,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
             {paused9 ? '▶ Play' : '⏸ Pause'}
           </button>
         </div>
-        <div className="pt-16 pb-2 text-center">
-          <h3 className="text-base font-bold text-white font-mono tracking-wider">CONNECTION WEB</h3>
-          <p className="text-xs text-gray-400 font-mono mt-1">Amenity Network • Property Ownership Graph</p>
-        </div>
         <canvas ref={canvas9Ref} className="w-full" style={{ display: 'block' }} />
-        <div className="p-4 bg-black/20 border-t border-white/5">
-          <p className="text-[10px] text-gray-400 font-mono leading-relaxed">
-            <span className="text-cyan-400 font-bold">HOW TO READ:</span> Property nodes (large) = composite score • Amenity nodes (center, small) = 8 features • Pulsing lines = ownership connections • Node size = quality score
-          </p>
-        </div>
       </motion.div>
     </div>
   );
