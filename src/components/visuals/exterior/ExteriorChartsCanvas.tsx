@@ -610,7 +610,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       const container = canvas.parentElement;
       if (container) {
         canvas.width = container.clientWidth;
-        canvas.height = 700;
+        canvas.height = 892; // Increased by 192px (2 inches at 96 DPI)
       }
     };
     resize();
