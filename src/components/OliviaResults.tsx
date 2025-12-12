@@ -207,7 +207,7 @@ export function OliviaResults({ result, properties, onClose }: OliviaResultsProp
         </motion.div>
 
         {/* Methodology Section (Optional - Enhanced Data) */}
-        {hasMethodology && (
+        {hasMethodology && result.methodology && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -291,7 +291,7 @@ export function OliviaResults({ result, properties, onClose }: OliviaResultsProp
         )}
 
         {/* Timeline Analysis (Optional - Enhanced Data) */}
-        {hasTimeline && (
+        {hasTimeline && result.timeline && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -487,7 +487,7 @@ export function OliviaResults({ result, properties, onClose }: OliviaResultsProp
         </div>
 
         {/* Action Items & Next Steps (Optional - Enhanced Data) */}
-        {hasActionItems && (
+        {hasActionItems && result.actionItems && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
