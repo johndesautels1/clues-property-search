@@ -515,22 +515,24 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       ctx.fillText(`█ ${propNames[2]}`, w - 350, propertyLegendY);
       ctx.restore();
 
-      // CLUES-SMART SCORE LEGEND (h-119)
+      // CLUES-SMART SCORE LEGEND (h-119) - CENTERED
       ctx.save();
       const smartLegendY = h - 119;
       ctx.font = 'bold 13px Inter, Arial, sans-serif';
-      ctx.textAlign = 'left';
+      ctx.textAlign = 'center';
       ctx.fillStyle = '#FFFFFF';
-      ctx.fillText('CLUES-SMART SCORE TIERS:', 40, smartLegendY);
+      ctx.fillText('CLUES-SMART SCORE TIERS:', w / 2, smartLegendY);
 
       const tierSpacing = 110;
-      const startX = 230;
+      const totalTierWidth = tierSpacing * 4 + 100; // Approximate width of all 5 tiers
+      const startX = (w - totalTierWidth) / 2;
 
       // Tier 1: Excellent (Green)
       ctx.fillStyle = '#4CAF50';
       ctx.fillRect(startX, smartLegendY - 12, 14, 14);
       ctx.font = 'bold 11px Inter, Arial, sans-serif';
       ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'left';
       ctx.fillText('81-100 EXCELLENT', startX + 18, smartLegendY);
 
       // Tier 2: Good (Blue)
@@ -558,29 +560,30 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       ctx.fillText('0-20 POOR', startX + tierSpacing * 4 + 18, smartLegendY);
       ctx.restore();
 
-      // DETAILED EXPLANATION (h-89)
+      // DETAILED EXPLANATION (h-89) - CENTERED
       ctx.save();
       const explanationY = h - 89;
       ctx.font = 'bold 13px Inter, Arial, sans-serif';
       ctx.fillStyle = '#00E5FF';
-      ctx.textAlign = 'left';
-      ctx.fillText('HOW TO READ THIS CHART:', 40, explanationY);
+      ctx.textAlign = 'center';
+      ctx.fillText('HOW TO READ THIS CHART:', w / 2, explanationY);
 
       ctx.font = 'bold 10px Inter, Arial, sans-serif';
       ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'center';
       const lineSpacing = 14;
       let currentY = explanationY + 16;
 
-      ctx.fillText('• RING COLOR (outer border) = Property identity (Green=Hillcrest, Purple=Oakwood, Pink=LiveOak)', 40, currentY);
+      ctx.fillText('• RING COLOR (outer border) = Property identity (Green=Hillcrest, Purple=Oakwood, Pink=LiveOak)', w / 2, currentY);
       currentY += lineSpacing;
 
-      ctx.fillText('• FILL COLOR (interior) = CLUES-SMART tier based on individual feature score (see color legend above)', 40, currentY);
+      ctx.fillText('• FILL COLOR (interior) = CLUES-SMART tier based on individual feature score (see color legend above)', w / 2, currentY);
       currentY += lineSpacing;
 
-      ctx.fillText('• ICON = High-contrast widget showing feature type (automatically adjusted for maximum readability)', 40, currentY);
+      ctx.fillText('• ICON = High-contrast widget showing feature type (automatically adjusted for maximum readability)', w / 2, currentY);
       currentY += lineSpacing;
 
-      ctx.fillText('• TOTAL SCORE = Average of all 6 exterior features (Curb Appeal, Landscaping, Design, Deck, Pool, Fence)', 40, currentY);
+      ctx.fillText('• TOTAL SCORE = Average of all 6 exterior features (Curb Appeal, Landscaping, Design, Deck, Pool, Fence)', w / 2, currentY);
       ctx.restore();
 
       animationId = requestAnimationFrame(animate);
