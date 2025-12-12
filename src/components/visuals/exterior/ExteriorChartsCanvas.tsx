@@ -737,9 +737,14 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
         ctx.shadowOffsetX = 4;
         ctx.shadowOffsetY = 6;
 
-        // 5D Sphere with enhanced radial gradient (more color stops)
+        // SLOW ROTATION: Rotate the highlight position around the planet
+        const rotationAngle = angle * 0.3; // Very slow rotation
+        const highlightOffsetX = Math.cos(rotationAngle) * planetSize * 0.35;
+        const highlightOffsetY = Math.sin(rotationAngle) * planetSize * 0.35;
+
+        // 5D Sphere with enhanced radial gradient (more color stops) - ROTATING HIGHLIGHT
         const centerGradient = ctx.createRadialGradient(
-          centerX - planetSize * 0.35, centerY - planetSize * 0.35, planetSize * 0.05,
+          centerX + highlightOffsetX, centerY + highlightOffsetY, planetSize * 0.05,
           centerX, centerY, planetSize
         );
         centerGradient.addColorStop(0, 'rgba(255, 255, 255, 0.95)');    // specular highlight
@@ -759,16 +764,16 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
         ctx.shadowOffsetX = 0;
         ctx.shadowOffsetY = 0;
 
-        // Specular shine (intense white spot)
+        // Specular shine (intense white spot) - ROTATING
         ctx.save();
         const shineGradient = ctx.createRadialGradient(
-          centerX - planetSize * 0.35, centerY - planetSize * 0.35, 0,
-          centerX - planetSize * 0.35, centerY - planetSize * 0.35, planetSize * 0.25
+          centerX + highlightOffsetX, centerY + highlightOffsetY, 0,
+          centerX + highlightOffsetX, centerY + highlightOffsetY, planetSize * 0.25
         );
         shineGradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
         shineGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
         ctx.beginPath();
-        ctx.arc(centerX - planetSize * 0.35, centerY - planetSize * 0.35, planetSize * 0.25, 0, Math.PI * 2);
+        ctx.arc(centerX + highlightOffsetX, centerY + highlightOffsetY, planetSize * 0.25, 0, Math.PI * 2);
         ctx.fillStyle = shineGradient;
         ctx.fill();
         ctx.restore();
@@ -897,13 +902,13 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
           const ringRadiusX = orbSize * 1.7;
           const ringRadiusY = orbSize * 0.4;
 
-          // Triple-layer ring system for depth
+          // Triple-layer ring system for depth - INCREASED VISIBILITY
           // Outer ring (back, darkest)
           ctx.save();
           ctx.beginPath();
           ctx.ellipse(x, y, ringRadiusX * 1.15, ringRadiusY * 1.15, ringRotation, Math.PI, Math.PI * 2);
-          ctx.strokeStyle = `rgba(${Math.max(baseRgb.r - 80, 0)}, ${Math.max(baseRgb.g - 80, 0)}, ${Math.max(baseRgb.b - 80, 0)}, 0.4)`;
-          ctx.lineWidth = 4;
+          ctx.strokeStyle = `rgba(${Math.max(baseRgb.r - 50, 0)}, ${Math.max(baseRgb.g - 50, 0)}, ${Math.max(baseRgb.b - 50, 0)}, 0.85)`;
+          ctx.lineWidth = 8;
           ctx.stroke();
           ctx.restore();
 
@@ -911,8 +916,8 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
           ctx.save();
           ctx.beginPath();
           ctx.ellipse(x, y, ringRadiusX, ringRadiusY, ringRotation, Math.PI, Math.PI * 2);
-          ctx.strokeStyle = `rgba(${Math.max(baseRgb.r - 60, 0)}, ${Math.max(baseRgb.g - 60, 0)}, ${Math.max(baseRgb.b - 60, 0)}, 0.6)`;
-          ctx.lineWidth = 5;
+          ctx.strokeStyle = `rgba(${Math.max(baseRgb.r - 30, 0)}, ${Math.max(baseRgb.g - 30, 0)}, ${Math.max(baseRgb.b - 30, 0)}, 0.9)`;
+          ctx.lineWidth = 10;
           ctx.stroke();
           ctx.restore();
 
@@ -920,8 +925,8 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
           ctx.save();
           ctx.beginPath();
           ctx.ellipse(x, y, ringRadiusX * 0.85, ringRadiusY * 0.85, ringRotation, Math.PI, Math.PI * 2);
-          ctx.strokeStyle = `rgba(${Math.max(baseRgb.r - 40, 0)}, ${Math.max(baseRgb.g - 40, 0)}, ${Math.max(baseRgb.b - 40, 0)}, 0.5)`;
-          ctx.lineWidth = 3;
+          ctx.strokeStyle = `rgba(${Math.max(baseRgb.r - 20, 0)}, ${Math.max(baseRgb.g - 20, 0)}, ${Math.max(baseRgb.b - 20, 0)}, 0.8)`;
+          ctx.lineWidth = 7;
           ctx.stroke();
           ctx.restore();
 
@@ -932,8 +937,8 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
           ctx.save();
           ctx.beginPath();
           ctx.ellipse(x, y, ringRadiusX * 1.15, ringRadiusY * 1.15, ringRotation, 0, Math.PI);
-          ctx.strokeStyle = `rgba(${propRgb.r}, ${propRgb.g}, ${propRgb.b}, 0.6)`;
-          ctx.lineWidth = 4;
+          ctx.strokeStyle = `rgba(${propRgb.r}, ${propRgb.g}, ${propRgb.b}, 0.95)`;
+          ctx.lineWidth = 8;
           ctx.stroke();
           ctx.restore();
 
@@ -941,8 +946,8 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
           ctx.save();
           ctx.beginPath();
           ctx.ellipse(x, y, ringRadiusX, ringRadiusY, ringRotation, 0, Math.PI);
-          ctx.strokeStyle = `rgba(${Math.min(propRgb.r + 40, 255)}, ${Math.min(propRgb.g + 40, 255)}, ${Math.min(propRgb.b + 40, 255)}, 0.9)`;
-          ctx.lineWidth = 5;
+          ctx.strokeStyle = `rgba(${Math.min(propRgb.r + 60, 255)}, ${Math.min(propRgb.g + 60, 255)}, ${Math.min(propRgb.b + 60, 255)}, 1.0)`;
+          ctx.lineWidth = 10;
           ctx.stroke();
           ctx.restore();
 
@@ -950,8 +955,8 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
           ctx.save();
           ctx.beginPath();
           ctx.ellipse(x, y, ringRadiusX * 0.85, ringRadiusY * 0.85, ringRotation, 0, Math.PI);
-          ctx.strokeStyle = `rgba(${propRgb.r}, ${propRgb.g}, ${propRgb.b}, 0.7)`;
-          ctx.lineWidth = 3;
+          ctx.strokeStyle = `rgba(${Math.min(propRgb.r + 40, 255)}, ${Math.min(propRgb.g + 40, 255)}, ${Math.min(propRgb.b + 40, 255)}, 0.95)`;
+          ctx.lineWidth = 7;
           ctx.stroke();
           ctx.restore();
 
