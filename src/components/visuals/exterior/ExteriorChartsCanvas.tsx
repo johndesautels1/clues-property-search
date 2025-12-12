@@ -1017,8 +1017,8 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       exCurrentY += exLineSpacing;
 
       ctx.fillStyle = 'rgba(255,255,255,0.7)';
-      ctx.font = '9px Share Tech Mono'; // Increased from 7px
-      ctx.fillText('Each of the 6 exterior features (Curb, Landscaping, Design, Deck, Pool, Fence) uses this Base × Condition × Presence formula', w/2, exCurrentY);
+      ctx.font = '10px Share Tech Mono'; // Increased from 9px
+      ctx.fillText('All 6 exterior features use this multiplication formula: Base × Condition × Presence', w/2, exCurrentY);
       ctx.restore();
 
       animationId = requestAnimationFrame(animate);
