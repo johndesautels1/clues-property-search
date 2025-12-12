@@ -840,7 +840,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       ctx.fillStyle = 'rgba(255,255,255,0.8)';
       ctx.fillText('CLUES-SMART SCORE TIERS:', 40, smartLegendY);
 
-      const tierSpacing = 110;
+      const tierSpacing = 160; // Fixed: proper spacing to prevent text overlap
       const startX = 230;
 
       // Tier 1: Excellent (Green)
@@ -1200,7 +1200,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       ctx.fillStyle = 'rgba(255,255,255,0.8)';
       ctx.fillText('CLUES-SMART SCORE TIERS:', 40, smartLegendY);
 
-      const tierSpacing = 110;
+      const tierSpacing = 160; // Fixed: proper spacing to prevent text overlap
       const startX = 230;
 
       // Tier 1: Excellent (Green)
@@ -1327,25 +1327,24 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       ctx.textAlign = 'left';
       ctx.fillText('CHART 7-6', 20, 47);
 
-      // WINNER BADGE - Top left below CHART 7-6
+      // WINNER BADGE - Top center (FIXED: centered like Chart 1)
       ctx.save();
-      ctx.textAlign = 'left';
+      ctx.textAlign = 'center';
       ctx.fillStyle = data.properties[amenityWinnerId].color;
       ctx.strokeStyle = data.properties[amenityWinnerId].color;
       ctx.lineWidth = 2;
 
-      const badgeX = 20;
       const badgeY = 70;
-      ctx.strokeRect(badgeX, badgeY - 22.5, 240, 45);
+      ctx.strokeRect(w/2 - 120, badgeY - 22.5, 240, 45);
       ctx.globalAlpha = 0.2;
-      ctx.fillRect(badgeX, badgeY - 22.5, 240, 45);
+      ctx.fillRect(w/2 - 120, badgeY - 22.5, 240, 45);
       ctx.globalAlpha = 1;
 
       ctx.font = 'bold 12px Share Tech Mono';
       ctx.textAlign = 'center';
-      ctx.fillText('🏆 WINNER', badgeX + 120, badgeY);
+      ctx.fillText('🏆 WINNER', w/2, badgeY);
       ctx.font = 'bold 16px Share Tech Mono';
-      ctx.fillText(data.properties[amenityWinnerId].name, badgeX + 120, badgeY + 14);
+      ctx.fillText(data.properties[amenityWinnerId].name, w/2, badgeY + 14);
       ctx.restore();
 
       // BRAIN WIDGET - Upper right with amenity percentage
@@ -1597,25 +1596,24 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       ctx.textAlign = 'left';
       ctx.fillText('CHART 7-9', 20, 47);
 
-      // WINNER BADGE - Top left below CHART 7-9
+      // WINNER BADGE - Top center (FIXED: centered like Chart 1)
       ctx.save();
-      ctx.textAlign = 'left';
+      ctx.textAlign = 'center';
       ctx.fillStyle = data.properties[amenityWinnerId].color;
       ctx.strokeStyle = data.properties[amenityWinnerId].color;
       ctx.lineWidth = 2;
 
-      const badgeX = 20;
       const badgeY = 70;
-      ctx.strokeRect(badgeX, badgeY - 22.5, 240, 45);
+      ctx.strokeRect(w/2 - 120, badgeY - 22.5, 240, 45);
       ctx.globalAlpha = 0.2;
-      ctx.fillRect(badgeX, badgeY - 22.5, 240, 45);
+      ctx.fillRect(w/2 - 120, badgeY - 22.5, 240, 45);
       ctx.globalAlpha = 1;
 
       ctx.font = 'bold 12px Share Tech Mono';
       ctx.textAlign = 'center';
-      ctx.fillText('🏆 WINNER', badgeX + 120, badgeY);
+      ctx.fillText('🏆 WINNER', w/2, badgeY);
       ctx.font = 'bold 16px Share Tech Mono';
-      ctx.fillText(data.properties[amenityWinnerId].name, badgeX + 120, badgeY + 14);
+      ctx.fillText(data.properties[amenityWinnerId].name, w/2, badgeY + 14);
       ctx.restore();
 
       // BRAIN WIDGET - Upper right with connection count
