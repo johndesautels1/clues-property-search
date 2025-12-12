@@ -716,11 +716,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
         ctx.lineWidth = 3;
         ctx.stroke();
 
-        // Property label at center - larger font
-        ctx.fillStyle = '#000';
-        ctx.font = 'bold 11px Share Tech Mono';
-        ctx.textAlign = 'center';
-        ctx.fillText(prop.name, centerX, centerY + 4);
+        // Property label at center - REMOVED per user request
         ctx.restore();
 
         // Property name and total above
