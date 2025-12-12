@@ -508,8 +508,10 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       ctx.font = '10px Inter, Arial, sans-serif';
       ctx.fillStyle = '#FFFFFF';
       const methodLineY = methodY + 14;
-      ctx.fillText('Each category (Curb, Landscaping, Design, Deck, Pool, Fence) = Base Quality (0-100) × Condition Factor (0-1) × Presence (0/1).', w - 40, methodLineY);
-      ctx.fillText('Example: Pool score 72 = Quality 80 × Condition 0.9 × Has Pool 1. All values normalized to 0-100 CLUES-SMART scale.', w - 40, methodLineY + 11);
+      ctx.fillText('Each category score (Curb, Landscaping, Design, Deck, Pool, Fence)', w - 40, methodLineY);
+      ctx.fillText('= Base Quality (0-100) × Condition Factor (0-1) × Presence (0/1)', w - 40, methodLineY + 11);
+      ctx.fillText('Example: Pool score 72 = Quality 80 × Condition 0.9 × Has Pool 1', w - 40, methodLineY + 22);
+      ctx.fillText('All values normalized to 0-100 CLUES-SMART scale', w - 40, methodLineY + 33);
       ctx.restore();
 
       // CLUES-SMART SCORE LEGEND (h-119) - CENTERED
