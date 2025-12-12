@@ -518,10 +518,12 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       // CLUES-SMART SCORE LEGEND (h-119) - CENTERED
       ctx.save();
       const smartLegendY = h - 119;
+
+      // Title on separate line above the tier boxes
       ctx.font = 'bold 13px Inter, Arial, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillStyle = '#FFFFFF';
-      ctx.fillText('CLUES-SMART SCORE TIERS:', w / 2, smartLegendY);
+      ctx.fillText('CLUES-SMART SCORE TIERS:', w / 2, smartLegendY - 20);
 
       const tierSpacing = 110;
       const totalTierWidth = tierSpacing * 4 + 100; // Approximate width of all 5 tiers
