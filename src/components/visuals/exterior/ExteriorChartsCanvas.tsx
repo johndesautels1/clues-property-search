@@ -493,28 +493,6 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       ctx.fillText(`${propNames[2]}: (${propData[2].join(' + ')}) ÷ 6 = ${data.totalScores.p3}`, 40, calcLineY + 28);
       ctx.restore();
 
-      // PROPERTY LEGEND (h-155) - FULL addresses with wider spacing (moved UP 10px total)
-      ctx.save();
-      ctx.font = 'bold 13px Inter, Arial, sans-serif';
-      ctx.textAlign = 'left';
-      const propertyLegendY = h - 155;
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillText('PROPERTIES:', 40, propertyLegendY);
-
-      // Property 1 - Full address
-      ctx.font = 'bold 12px Inter, Arial, sans-serif';
-      ctx.fillStyle = propColors[0];
-      ctx.fillText(`█ ${propNames[0]}`, 150, propertyLegendY);
-
-      // Property 2 - Full address (wider spacing)
-      ctx.fillStyle = propColors[1];
-      ctx.fillText(`█ ${propNames[1]}`, 150 + (w - 300) / 2, propertyLegendY);
-
-      // Property 3 - Full address (wider spacing)
-      ctx.fillStyle = propColors[2];
-      ctx.fillText(`█ ${propNames[2]}`, w - 350, propertyLegendY);
-      ctx.restore();
-
       // CLUES-SMART SCORE LEGEND (h-119) - CENTERED
       ctx.save();
       const smartLegendY = h - 119;
