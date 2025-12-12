@@ -28,7 +28,7 @@ const Category03_PropertyBasics = lazy(() => import('@/components/visuals/Catego
 const Category04_HOATaxes = lazy(() => import('@/components/visuals/Category04_HOATaxes'));
 const Category05_StructureSystems = lazy(() => import('@/components/visuals/Category05_StructureSystems'));
 const Category06_InteriorFeatures = lazy(() => import('@/components/visuals/Category06_Placeholder'));
-const Category07_ExteriorFeatures = lazy(() => import('@/components/visuals/Category07_Placeholder'));
+const Category07_ExteriorFeatures = lazy(() => import('@/components/visuals/Category07_ExteriorFeatures'));
 const Category08_PermitsRenovations = lazy(() => import('@/components/visuals/Category08_Placeholder'));
 const Category09_Schools = lazy(() => import('@/components/visuals/Category09_Placeholder'));
 const Category10_LocationScores = lazy(() => import('@/components/visuals/Category10_Placeholder'));
