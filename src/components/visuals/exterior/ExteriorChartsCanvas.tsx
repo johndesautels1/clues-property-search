@@ -815,6 +815,23 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       ctx.fillText(`${data.properties.p3.name}: (${data.qualityScores.p3.join(' + ')}) ÷ 6 = ${data.totalScores.p3}`, 40, calcCurrentY);
       ctx.restore();
 
+      // CATEGORY SCORING METHODOLOGY (h-230) - BOTTOM RIGHT (ADDED: matches Chart 1)
+      ctx.save();
+      const methodY2 = h - 230;
+      ctx.font = 'bold 9px Share Tech Mono';
+      ctx.fillStyle = 'rgba(0, 243, 255, 0.9)';
+      ctx.textAlign = 'right';
+      ctx.fillText('HOW EACH CATEGORY SCORE IS CALCULATED:', w - 40, methodY2);
+
+      ctx.font = '8px Share Tech Mono';
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      const methodLineY2 = methodY2 + 11;
+      ctx.fillText('Each category score (Curb, Landscaping, Design, Deck, Pool, Fence)', w - 40, methodLineY2);
+      ctx.fillText('= Base Quality (0-100) × Condition Factor (0-1) × Presence (0/1)', w - 40, methodLineY2 + 9);
+      ctx.fillText('Example: Pool score 72 = Quality 80 × Condition 0.9 × Has Pool 1', w - 40, methodLineY2 + 18);
+      ctx.fillText('All values normalized to 0-100 CLUES-SMART scale', w - 40, methodLineY2 + 27);
+      ctx.restore();
+
       // PROPERTY LEGEND - FULL addresses with wider spacing
       ctx.save();
       ctx.font = 'bold 13px Inter, Arial, sans-serif';
@@ -1154,6 +1171,23 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       ctx.fillText(`${data.properties.p3.name}: (${p3Vals}) ÷ 6 = ${data.totalScores.p3}`, 40, calcCurrentY);
       ctx.restore();
 
+      // CATEGORY SCORING METHODOLOGY (h-230) - BOTTOM RIGHT (ADDED: matches Chart 1)
+      ctx.save();
+      const methodY3 = h - 230;
+      ctx.font = 'bold 9px Share Tech Mono';
+      ctx.fillStyle = 'rgba(0, 243, 255, 0.9)';
+      ctx.textAlign = 'right';
+      ctx.fillText('HOW EACH CATEGORY SCORE IS CALCULATED:', w - 40, methodY3);
+
+      ctx.font = '8px Share Tech Mono';
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      const methodLineY3 = methodY3 + 11;
+      ctx.fillText('Each category score (Curb, Landscaping, Design, Deck, Pool, Fence)', w - 40, methodLineY3);
+      ctx.fillText('= Base Quality (0-100) × Condition Factor (0-1) × Presence (0/1)', w - 40, methodLineY3 + 9);
+      ctx.fillText('Example: Pool score 72 = Quality 80 × Condition 0.9 × Has Pool 1', w - 40, methodLineY3 + 18);
+      ctx.fillText('All values normalized to 0-100 CLUES-SMART scale', w - 40, methodLineY3 + 27);
+      ctx.restore();
+
       // EXAMPLE SUB-CALCULATION (centered in footer)
       ctx.save();
       const exampleY = h - 24;
@@ -1460,6 +1494,23 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       ctx.fillText(`${data.properties.p2.name}: ${amenityCounts.p2} amenities owned ÷ 8 total = ${amenityPercentages.p2}% ownership`, 40, h - 182);
       ctx.fillStyle = data.properties.p3.color;
       ctx.fillText(`${data.properties.p3.name}: ${amenityCounts.p3} amenities owned ÷ 8 total = ${amenityPercentages.p3}% ownership`, 40, h - 167);
+      ctx.restore();
+
+      // AMENITY SCORING METHODOLOGY (h-212) - BOTTOM RIGHT (ADDED: matches Chart 1 pattern)
+      ctx.save();
+      const methodY6 = h - 212;
+      ctx.font = 'bold 9px Share Tech Mono';
+      ctx.fillStyle = 'rgba(0, 243, 255, 0.9)';
+      ctx.textAlign = 'right';
+      ctx.fillText('HOW AMENITY OWNERSHIP IS CALCULATED:', w - 40, methodY6);
+
+      ctx.font = '8px Share Tech Mono';
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      const methodLineY6 = methodY6 + 11;
+      ctx.fillText('8 binary exterior amenities extracted from Field 168 (Exterior Features)', w - 40, methodLineY6);
+      ctx.fillText('Ownership % = (Count of amenities present ÷ 8 total) × 100', w - 40, methodLineY6 + 9);
+      ctx.fillText('Example: 6 amenities present ÷ 8 total × 100 = 75% ownership', w - 40, methodLineY6 + 18);
+      ctx.fillText('Ring speed & position reflect completeness: more = inner + faster', w - 40, methodLineY6 + 27);
       ctx.restore();
 
       // PROPERTY LEGEND - FULL addresses with wider spacing
@@ -1809,6 +1860,23 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       ctx.fillText(`${data.properties.p2.name}: ${amenityCounts.p2} amenities ÷ 8 total = ${amenityPercentages.p2}% SMART Score`, 40, h - 130);
       ctx.fillStyle = data.properties.p3.color;
       ctx.fillText(`${data.properties.p3.name}: ${amenityCounts.p3} amenities ÷ 8 total = ${amenityPercentages.p3}% SMART Score`, 40, h - 115);
+      ctx.restore();
+
+      // CONNECTION WEB METHODOLOGY (h-230) - BOTTOM RIGHT (ADDED: matches Chart 1 pattern)
+      ctx.save();
+      const methodY9 = h - 230;
+      ctx.font = 'bold 9px Share Tech Mono';
+      ctx.fillStyle = 'rgba(0, 243, 255, 0.9)';
+      ctx.textAlign = 'right';
+      ctx.fillText('HOW CONNECTION NETWORKS ARE CALCULATED:', w - 40, methodY9);
+
+      ctx.font = '8px Share Tech Mono';
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      const methodLineY9 = methodY9 + 11;
+      ctx.fillText('Connection count uses combinatorial formula: n × (n-1) ÷ 2', w - 40, methodLineY9);
+      ctx.fillText('n = number of amenities present from Field 168 (max 8)', w - 40, methodLineY9 + 9);
+      ctx.fillText('Example: 6 amenities = 6 × 5 ÷ 2 = 15 possible connections', w - 40, methodLineY9 + 18);
+      ctx.fillText('Dense web = comprehensive coverage, sparse = limited amenities', w - 40, methodLineY9 + 27);
       ctx.restore();
 
       // PROPERTY LEGEND - FULL addresses with wider spacing
