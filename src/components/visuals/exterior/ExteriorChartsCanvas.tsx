@@ -469,9 +469,9 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
         }
       });
 
-      // CALCULATION BREAKDOWN (h-230)
+      // CALCULATION BREAKDOWN (h-86) - Moved DOWN 144px (1.5 inches)
       ctx.save();
-      const calcY = h - 230;
+      const calcY = h - 86;
       ctx.font = 'bold 13px Inter, Arial, sans-serif';
       ctx.fillStyle = '#FFEB3B';
       ctx.textAlign = 'left';
