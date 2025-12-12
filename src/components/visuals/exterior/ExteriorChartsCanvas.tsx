@@ -720,35 +720,63 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
         const centerLighter = `rgba(${Math.min(centerRgb.r + 100, 255)}, ${Math.min(centerRgb.g + 100, 255)}, ${Math.min(centerRgb.b + 100, 255)}, 1)`;
         const centerDarker = `rgba(${Math.max(centerRgb.r - 50, 0)}, ${Math.max(centerRgb.g - 50, 0)}, ${Math.max(centerRgb.b - 50, 0)}, 1)`;
 
-        // Shadow for depth
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-        ctx.shadowOffsetX = 3;
-        ctx.shadowOffsetY = 5;
+        // Atmospheric glow (outermost layer)
+        ctx.save();
+        const glowGradient = ctx.createRadialGradient(centerX, centerY, planetSize * 0.8, centerX, centerY, planetSize * 1.3);
+        glowGradient.addColorStop(0, `rgba(${centerRgb.r}, ${centerRgb.g}, ${centerRgb.b}, 0.3)`);
+        glowGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, planetSize * 1.3, 0, Math.PI * 2);
+        ctx.fillStyle = glowGradient;
+        ctx.fill();
+        ctx.restore();
 
-        // 3D Sphere with radial gradient
+        // Deep shadow for depth
+        ctx.shadowBlur = 25;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+        ctx.shadowOffsetX = 4;
+        ctx.shadowOffsetY = 6;
+
+        // 5D Sphere with enhanced radial gradient (more color stops)
         const centerGradient = ctx.createRadialGradient(
-          centerX - planetSize * 0.3, centerY - planetSize * 0.3, planetSize * 0.1,
+          centerX - planetSize * 0.35, centerY - planetSize * 0.35, planetSize * 0.05,
           centerX, centerY, planetSize
         );
-        centerGradient.addColorStop(0, centerLighter);    // bright highlight
-        centerGradient.addColorStop(0.5, prop.color);     // mid tone
-        centerGradient.addColorStop(1, centerDarker);     // dark edge
+        centerGradient.addColorStop(0, 'rgba(255, 255, 255, 0.95)');    // specular highlight
+        centerGradient.addColorStop(0.15, centerLighter);                // bright zone
+        centerGradient.addColorStop(0.4, prop.color);                    // base color
+        centerGradient.addColorStop(0.7, prop.color);                    // mid tone
+        centerGradient.addColorStop(0.9, centerDarker);                  // shadow zone
+        centerGradient.addColorStop(1, `rgba(${Math.max(centerRgb.r - 80, 0)}, ${Math.max(centerRgb.g - 80, 0)}, ${Math.max(centerRgb.b - 80, 0)}, 1)`); // darkest edge
 
         ctx.beginPath();
         ctx.arc(centerX, centerY, planetSize, 0, Math.PI * 2);
         ctx.fillStyle = centerGradient;
         ctx.fill();
 
-        // Remove shadow for rim
+        // Remove shadow for overlay effects
         ctx.shadowBlur = 0;
         ctx.shadowOffsetX = 0;
         ctx.shadowOffsetY = 0;
 
-        // Bright rim highlight
-        ctx.strokeStyle = centerLighter;
-        ctx.lineWidth = 2;
-        ctx.globalAlpha = 0.4;
+        // Specular shine (intense white spot)
+        ctx.save();
+        const shineGradient = ctx.createRadialGradient(
+          centerX - planetSize * 0.35, centerY - planetSize * 0.35, 0,
+          centerX - planetSize * 0.35, centerY - planetSize * 0.35, planetSize * 0.25
+        );
+        shineGradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+        shineGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.beginPath();
+        ctx.arc(centerX - planetSize * 0.35, centerY - planetSize * 0.35, planetSize * 0.25, 0, Math.PI * 2);
+        ctx.fillStyle = shineGradient;
+        ctx.fill();
+        ctx.restore();
+
+        // Subtle rim light on opposite side
+        ctx.strokeStyle = `rgba(${Math.min(centerRgb.r + 150, 255)}, ${Math.min(centerRgb.g + 150, 255)}, ${Math.min(centerRgb.b + 150, 255)}, 0.3)`;
+        ctx.lineWidth = 3;
+        ctx.globalAlpha = 0.5;
         ctx.stroke();
         ctx.globalAlpha = 1;
 
@@ -799,51 +827,130 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
           const lighterColor = `rgba(${Math.min(baseRgb.r + 80, 255)}, ${Math.min(baseRgb.g + 80, 255)}, ${Math.min(baseRgb.b + 80, 255)}, 0.9)`;
           const darkerColor = `rgba(${Math.max(baseRgb.r - 40, 0)}, ${Math.max(baseRgb.g - 40, 0)}, ${Math.max(baseRgb.b - 40, 0)}, 0.9)`;
 
-          // Shadow for depth (draw first, behind planet)
-          ctx.shadowBlur = 12;
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-          ctx.shadowOffsetX = 2;
-          ctx.shadowOffsetY = 3;
+          // Unique tilt angle per planet (varies by feature index)
+          const tiltAngle = (featureIdx * Math.PI / 6) + (pIdx * Math.PI / 12);
 
-          // 3D Sphere with radial gradient
+          // Atmospheric glow
+          ctx.save();
+          const orbGlowGradient = ctx.createRadialGradient(x, y, orbSize * 0.7, x, y, orbSize * 1.25);
+          orbGlowGradient.addColorStop(0, `rgba(${baseRgb.r}, ${baseRgb.g}, ${baseRgb.b}, 0.25)`);
+          orbGlowGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          ctx.beginPath();
+          ctx.arc(x, y, orbSize * 1.25, 0, Math.PI * 2);
+          ctx.fillStyle = orbGlowGradient;
+          ctx.fill();
+          ctx.restore();
+
+          // Deep shadow for depth (draw first, behind planet)
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+          ctx.shadowOffsetX = 3;
+          ctx.shadowOffsetY = 4;
+
+          // Ring shadow cast onto planet (darker band across sphere)
+          ctx.save();
+          ctx.globalAlpha = 0.3;
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+          ctx.translate(x, y);
+          ctx.rotate(tiltAngle);
+          ctx.fillRect(-orbSize, -orbSize * 0.15, orbSize * 2, orbSize * 0.3);
+          ctx.restore();
+
+          // 5D Sphere with enhanced radial gradient
           const gradient = ctx.createRadialGradient(
-            x - orbSize * 0.35, y - orbSize * 0.35, orbSize * 0.1,
+            x - orbSize * 0.4, y - orbSize * 0.4, orbSize * 0.05,
             x, y, orbSize
           );
-          gradient.addColorStop(0, lighterColor);      // bright highlight
-          gradient.addColorStop(0.4, fillColor);       // mid tone
-          gradient.addColorStop(1, darkerColor);       // dark edge
+          gradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');     // specular highlight
+          gradient.addColorStop(0.12, lighterColor);                 // bright zone
+          gradient.addColorStop(0.35, fillColor);                    // base color
+          gradient.addColorStop(0.65, fillColor);                    // mid tone
+          gradient.addColorStop(0.88, darkerColor);                  // shadow zone
+          gradient.addColorStop(1, `rgba(${Math.max(baseRgb.r - 70, 0)}, ${Math.max(baseRgb.g - 70, 0)}, ${Math.max(baseRgb.b - 70, 0)}, 1)`); // darkest edge
 
           ctx.beginPath();
           ctx.arc(x, y, orbSize, 0, Math.PI * 2);
           ctx.fillStyle = gradient;
           ctx.fill();
 
-          // Remove shadow for ring
+          // Remove shadow for overlay effects
           ctx.shadowBlur = 0;
           ctx.shadowOffsetX = 0;
           ctx.shadowOffsetY = 0;
 
-          // Saturn-style ring with animated rotation
-          const ringRotation = angle * 2 + (featureIdx * Math.PI / 3);
-          const ringRadiusX = orbSize * 1.6;
-          const ringRadiusY = orbSize * 0.35;
+          // Specular shine (intense white spot)
+          ctx.save();
+          const orbShineGradient = ctx.createRadialGradient(
+            x - orbSize * 0.4, y - orbSize * 0.4, 0,
+            x - orbSize * 0.4, y - orbSize * 0.4, orbSize * 0.3
+          );
+          orbShineGradient.addColorStop(0, 'rgba(255, 255, 255, 0.75)');
+          orbShineGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+          ctx.beginPath();
+          ctx.arc(x - orbSize * 0.4, y - orbSize * 0.4, orbSize * 0.3, 0, Math.PI * 2);
+          ctx.fillStyle = orbShineGradient;
+          ctx.fill();
+          ctx.restore();
 
-          // Back half of ring (behind planet) - darker
+          // Saturn-style rings with animated rotation AND tilt
+          const ringRotation = angle * 2 + (featureIdx * Math.PI / 3) + tiltAngle;
+          const ringRadiusX = orbSize * 1.7;
+          const ringRadiusY = orbSize * 0.4;
+
+          // Triple-layer ring system for depth
+          // Outer ring (back, darkest)
           ctx.save();
           ctx.beginPath();
-          ctx.ellipse(x, y, ringRadiusX, ringRadiusY, ringRotation, Math.PI, Math.PI * 2);
-          ctx.strokeStyle = `rgba(${Math.max(baseRgb.r - 60, 0)}, ${Math.max(baseRgb.g - 60, 0)}, ${Math.max(baseRgb.b - 60, 0)}, 0.5)`;
-          ctx.lineWidth = 2.5;
+          ctx.ellipse(x, y, ringRadiusX * 1.15, ringRadiusY * 1.15, ringRotation, Math.PI, Math.PI * 2);
+          ctx.strokeStyle = `rgba(${Math.max(baseRgb.r - 80, 0)}, ${Math.max(baseRgb.g - 80, 0)}, ${Math.max(baseRgb.b - 80, 0)}, 0.4)`;
+          ctx.lineWidth = 4;
           ctx.stroke();
           ctx.restore();
 
-          // Front half of ring (in front of planet) - brighter with property color accent
+          // Middle ring (back half) - medium darkness
+          ctx.save();
+          ctx.beginPath();
+          ctx.ellipse(x, y, ringRadiusX, ringRadiusY, ringRotation, Math.PI, Math.PI * 2);
+          ctx.strokeStyle = `rgba(${Math.max(baseRgb.r - 60, 0)}, ${Math.max(baseRgb.g - 60, 0)}, ${Math.max(baseRgb.b - 60, 0)}, 0.6)`;
+          ctx.lineWidth = 5;
+          ctx.stroke();
+          ctx.restore();
+
+          // Inner ring (back half) - lighter
+          ctx.save();
+          ctx.beginPath();
+          ctx.ellipse(x, y, ringRadiusX * 0.85, ringRadiusY * 0.85, ringRotation, Math.PI, Math.PI * 2);
+          ctx.strokeStyle = `rgba(${Math.max(baseRgb.r - 40, 0)}, ${Math.max(baseRgb.g - 40, 0)}, ${Math.max(baseRgb.b - 40, 0)}, 0.5)`;
+          ctx.lineWidth = 3;
+          ctx.stroke();
+          ctx.restore();
+
+          // Front half rings (brightest, with property color)
+          const propRgb = hexToRgb(prop.color);
+
+          // Outer ring (front)
+          ctx.save();
+          ctx.beginPath();
+          ctx.ellipse(x, y, ringRadiusX * 1.15, ringRadiusY * 1.15, ringRotation, 0, Math.PI);
+          ctx.strokeStyle = `rgba(${propRgb.r}, ${propRgb.g}, ${propRgb.b}, 0.6)`;
+          ctx.lineWidth = 4;
+          ctx.stroke();
+          ctx.restore();
+
+          // Middle ring (front, brightest)
           ctx.save();
           ctx.beginPath();
           ctx.ellipse(x, y, ringRadiusX, ringRadiusY, ringRotation, 0, Math.PI);
-          const propRgb = hexToRgb(prop.color);
-          ctx.strokeStyle = `rgba(${propRgb.r}, ${propRgb.g}, ${propRgb.b}, 0.8)`;
+          ctx.strokeStyle = `rgba(${Math.min(propRgb.r + 40, 255)}, ${Math.min(propRgb.g + 40, 255)}, ${Math.min(propRgb.b + 40, 255)}, 0.9)`;
+          ctx.lineWidth = 5;
+          ctx.stroke();
+          ctx.restore();
+
+          // Inner ring (front)
+          ctx.save();
+          ctx.beginPath();
+          ctx.ellipse(x, y, ringRadiusX * 0.85, ringRadiusY * 0.85, ringRotation, 0, Math.PI);
+          ctx.strokeStyle = `rgba(${propRgb.r}, ${propRgb.g}, ${propRgb.b}, 0.7)`;
           ctx.lineWidth = 3;
           ctx.stroke();
           ctx.restore();
