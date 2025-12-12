@@ -791,12 +791,12 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       // CALCULATION BREAKDOWN
       ctx.save();
       const calcY = h - 230;
-      ctx.font = 'bold 9px Share Tech Mono';
+      ctx.font = 'bold 11px Share Tech Mono'; // Increased from 9px
       ctx.fillStyle = 'rgba(0, 243, 255, 0.9)';
       ctx.textAlign = 'left';
       ctx.fillText('TOTAL SCORE CALCULATION:', 40, calcY);
 
-      ctx.font = '8px Share Tech Mono';
+      ctx.font = '10px Share Tech Mono'; // Increased from 8px
       const calcLineSpacing = 12;
       let calcCurrentY = calcY + 14;
 
@@ -818,12 +818,12 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       // CATEGORY SCORING METHODOLOGY (h-230) - BOTTOM RIGHT (ADDED: matches Chart 1)
       ctx.save();
       const methodY2 = h - 230;
-      ctx.font = 'bold 9px Share Tech Mono';
+      ctx.font = 'bold 11px Share Tech Mono'; // Increased from 9px
       ctx.fillStyle = 'rgba(0, 243, 255, 0.9)';
       ctx.textAlign = 'right';
       ctx.fillText('HOW EACH CATEGORY SCORE IS CALCULATED:', w - 40, methodY2);
 
-      ctx.font = '8px Share Tech Mono';
+      ctx.font = '10px Share Tech Mono'; // Increased from 8px
       ctx.fillStyle = 'rgba(255,255,255,0.8)';
       const methodLineY2 = methodY2 + 11;
       ctx.fillText('Each category score (Curb, Landscaping, Design, Deck, Pool, Fence)', w - 40, methodLineY2);
@@ -834,13 +834,13 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
 
       // PROPERTY LEGEND - FULL addresses with wider spacing
       ctx.save();
-      ctx.font = 'bold 13px Inter, Arial, sans-serif';
+      ctx.font = 'bold 15px Inter, Arial, sans-serif'; // Increased from 13px
       ctx.textAlign = 'left';
       const propertyLegendY = h - 145;
       ctx.fillStyle = '#FFFFFF';
       ctx.fillText('PROPERTIES:', 40, propertyLegendY);
 
-      ctx.font = 'bold 12px Inter, Arial, sans-serif';
+      ctx.font = 'bold 14px Inter, Arial, sans-serif'; // Increased from 12px
       ctx.fillStyle = data.properties.p1.color;
       ctx.fillText(`█ ${data.properties.p1.name}`, 150, propertyLegendY);
       ctx.fillStyle = data.properties.p2.color;
@@ -852,7 +852,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       // CLUES-SMART SCORE LEGEND
       ctx.save();
       const smartLegendY = h - 119;
-      ctx.font = 'bold 10px Share Tech Mono';
+      ctx.font = 'bold 12px Share Tech Mono'; // Increased from 10px
       ctx.textAlign = 'left';
       ctx.fillStyle = 'rgba(255,255,255,0.8)';
       ctx.fillText('CLUES-SMART SCORE TIERS:', 40, smartLegendY);
@@ -863,7 +863,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       // Tier 1: Excellent (Green)
       ctx.fillStyle = '#4CAF50';
       ctx.fillRect(startX, smartLegendY - 10, 12, 12);
-      ctx.font = '9px Share Tech Mono';
+      ctx.font = '11px Share Tech Mono'; // Increased from 9px
       ctx.fillStyle = 'rgba(255,255,255,0.9)';
       ctx.fillText('81-100 EXCELLENT', startX + 16, smartLegendY);
 
@@ -895,12 +895,12 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       // DETAILED EXPLANATION
       ctx.save();
       const explanationY = h - 89;
-      ctx.font = 'bold 9px Share Tech Mono';
+      ctx.font = 'bold 11px Share Tech Mono'; // Increased from 9px
       ctx.fillStyle = 'rgba(0, 243, 255, 0.9)';
       ctx.textAlign = 'left';
       ctx.fillText('HOW TO READ THIS CHART:', 40, explanationY);
 
-      ctx.font = '8px Share Tech Mono';
+      ctx.font = '10px Share Tech Mono'; // Increased from 8px
       ctx.fillStyle = 'rgba(255,255,255,0.8)';
       const lineSpacing = 11;
       let currentY = explanationY + 12;
@@ -920,13 +920,13 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
 
       // EXAMPLE SUB-CALCULATION (centered in footer)
       ctx.save();
-      const exampleY = h - 24;
-      ctx.font = 'bold 9px Share Tech Mono';
+      const exampleY = h - 28; // Moved up 4px from h-24
+      ctx.font = 'bold 11px Share Tech Mono'; // Increased from 9px
       ctx.fillStyle = 'rgba(255, 215, 0, 0.9)';
       ctx.textAlign = 'center';
       ctx.fillText('EXAMPLE: HOW FEATURE SCORES ARE CALCULATED', w/2, exampleY);
 
-      ctx.font = '8px Share Tech Mono';
+      ctx.font = '10px Share Tech Mono'; // Increased from 8px
       ctx.fillStyle = 'rgba(255,255,255,0.85)';
       const exLineSpacing = 11;
       let exCurrentY = exampleY + 12;
@@ -935,7 +935,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       exCurrentY += exLineSpacing;
 
       ctx.fillStyle = 'rgba(255,255,255,0.7)';
-      ctx.font = '7px Share Tech Mono';
+      ctx.font = '9px Share Tech Mono'; // Increased from 7px
       ctx.fillText('In production: Each of the 6 exterior features shown is calculated from 3-5 underlying sub-factors with actual property data', w/2, exCurrentY);
       ctx.restore();
 
