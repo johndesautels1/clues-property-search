@@ -497,6 +497,21 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       ctx.fillText(`${propNames[2]}: (${propData[2].join(' + ')}) ÷ 6 = ${data.totalScores.p3}`, 40, calcLineY + 28);
       ctx.restore();
 
+      // CATEGORY SCORING METHODOLOGY (h-86) - BOTTOM RIGHT
+      ctx.save();
+      const methodY = h - 86;
+      ctx.font = 'bold 13px Inter, Arial, sans-serif';
+      ctx.fillStyle = '#00E5FF';
+      ctx.textAlign = 'right';
+      ctx.fillText('HOW EACH CATEGORY SCORE IS CALCULATED:', w - 40, methodY);
+
+      ctx.font = '10px Inter, Arial, sans-serif';
+      ctx.fillStyle = '#FFFFFF';
+      const methodLineY = methodY + 14;
+      ctx.fillText('Each category (Curb, Landscaping, Design, Deck, Pool, Fence) = Base Quality (0-100) × Condition Factor (0-1) × Presence (0/1).', w - 40, methodLineY);
+      ctx.fillText('Example: Pool score 72 = Quality 80 × Condition 0.9 × Has Pool 1. All values normalized to 0-100 CLUES-SMART scale.', w - 40, methodLineY + 11);
+      ctx.restore();
+
       // CLUES-SMART SCORE LEGEND (h-119) - CENTERED
       ctx.save();
       const smartLegendY = h - 119;
