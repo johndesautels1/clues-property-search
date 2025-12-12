@@ -442,12 +442,16 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
         const offsetX = [w/6, w/2, 5*w/6][pIdx];
         const propId = propIds[pIdx];
         const totalScore = data.totalScores[propId];
+        const scoreTier = getScoreTier(totalScore);
 
         ctx.save();
-        ctx.fillStyle = propertyColor;
+        // Score uses CLUES-SMART tier color
+        ctx.fillStyle = scoreTier.color;
         ctx.font = 'bold 13px Inter, Arial, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(`TOTAL: ${totalScore}`, offsetX, baseStartY - 30);
+        // Property name uses property color
+        ctx.fillStyle = propertyColor;
         ctx.font = 'bold 14px Inter, Arial, sans-serif';
         ctx.fillText(propNames[pIdx], offsetX, baseStartY - 10);
         ctx.restore();
