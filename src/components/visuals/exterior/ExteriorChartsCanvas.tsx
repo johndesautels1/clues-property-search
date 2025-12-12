@@ -71,6 +71,10 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
     resize();
     window.addEventListener('resize', resize);
 
+    // Enable crisp, high-quality text rendering
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
     let time = 0;
     let animationId: number;
 
@@ -379,7 +383,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
 
       // TITLE: CHART 7-1 (top left)
       ctx.fillStyle = '#FFD700';
-      ctx.font = 'bold 10px Share Tech Mono';
+      ctx.font = 'bold 13px Inter, Arial, sans-serif';
       ctx.textAlign = 'left';
       ctx.fillText('CHART 7-1', 20, 20);
 
@@ -394,9 +398,9 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       ctx.globalAlpha = 0.2;
       ctx.fillRect(w/2 - 60, badgeY - 15, 120, 30);
       ctx.globalAlpha = 1;
-      ctx.font = 'bold 12px Share Tech Mono';
+      ctx.font = 'bold 14px Inter, Arial, sans-serif';
       ctx.fillText(`${winnerTier.emoji} WINNER`, w/2, badgeY);
-      ctx.font = 'bold 16px Share Tech Mono';
+      ctx.font = 'bold 18px Inter, Arial, sans-serif';
       ctx.fillText(winnerName, w/2, badgeY + 14);
       ctx.restore();
 
@@ -414,14 +418,14 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       ctx.globalAlpha = 1;
       ctx.stroke();
       ctx.fillStyle = winnerTier.color;
-      ctx.font = 'bold 16px Share Tech Mono';
+      ctx.font = 'bold 18px Inter, Arial, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(String(winnerScore), brainX, brainY - 2);
-      ctx.font = '9px Share Tech Mono';
-      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.font = 'bold 11px Inter, Arial, sans-serif';
+      ctx.fillStyle = '#FFFFFF';
       ctx.fillText('/100', brainX, brainY + 10);
-      ctx.fillStyle = 'rgba(255,255,255,0.8)';
-      ctx.font = 'bold 11px Share Tech Mono';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 13px Inter, Arial, sans-serif';
       ctx.textAlign = 'left';
       ctx.fillText('SMART', brainX + 25, brainY + 4);
       ctx.restore();
@@ -441,10 +445,10 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
 
         ctx.save();
         ctx.fillStyle = propertyColor;
-        ctx.font = '11px Share Tech Mono';
+        ctx.font = 'bold 13px Inter, Arial, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(`TOTAL: ${totalScore}`, offsetX, baseStartY - 30);
-        ctx.font = 'bold 12px Share Tech Mono';
+        ctx.font = 'bold 14px Inter, Arial, sans-serif';
         ctx.fillText(propNames[pIdx], offsetX, baseStartY - 10);
         ctx.restore();
 
@@ -455,8 +459,8 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
           const featureLabel = labelsFull[i];
 
           ctx.save();
-          ctx.fillStyle = 'rgba(255,255,255,0.6)';
-          ctx.font = '9px Share Tech Mono';
+          ctx.fillStyle = '#FFFFFF';
+          ctx.font = 'bold 11px Inter, Arial, sans-serif';
           ctx.textAlign = 'right';
           ctx.fillText(featureLabel.toUpperCase(), offsetX - 55, y + 3);
           ctx.restore();
@@ -468,13 +472,13 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       // CALCULATION BREAKDOWN (h-230)
       ctx.save();
       const calcY = h - 230;
-      ctx.font = 'bold 9px Share Tech Mono';
-      ctx.fillStyle = 'rgba(255, 255, 100, 0.9)';
+      ctx.font = 'bold 13px Inter, Arial, sans-serif';
+      ctx.fillStyle = '#FFEB3B';
       ctx.textAlign = 'left';
       ctx.fillText('TOTAL SCORE CALCULATION:', 40, calcY);
 
-      ctx.font = '8px Share Tech Mono';
-      const calcLineY = calcY + 12;
+      ctx.font = 'bold 11px Inter, Arial, sans-serif';
+      const calcLineY = calcY + 16;
 
       // Property 1
       ctx.fillStyle = propColors[0];
@@ -482,21 +486,21 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
 
       // Property 2
       ctx.fillStyle = propColors[1];
-      ctx.fillText(`${propNames[1]}: (${propData[1].join(' + ')}) ÷ 6 = ${data.totalScores.p2}`, 40, calcLineY + 11);
+      ctx.fillText(`${propNames[1]}: (${propData[1].join(' + ')}) ÷ 6 = ${data.totalScores.p2}`, 40, calcLineY + 14);
 
       // Property 3
       ctx.fillStyle = propColors[2];
-      ctx.fillText(`${propNames[2]}: (${propData[2].join(' + ')}) ÷ 6 = ${data.totalScores.p3}`, 40, calcLineY + 22);
+      ctx.fillText(`${propNames[2]}: (${propData[2].join(' + ')}) ÷ 6 = ${data.totalScores.p3}`, 40, calcLineY + 28);
       ctx.restore();
 
       // PROPERTY LEGEND (h-145)
       ctx.save();
-      ctx.font = 'bold 10px Share Tech Mono';
+      ctx.font = 'bold 13px Inter, Arial, sans-serif';
       ctx.textAlign = 'center';
       const propertyLegendY = h - 145;
-      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.fillStyle = '#FFFFFF';
       ctx.fillText('PROPERTIES:', w/2 - 180, propertyLegendY);
-      ctx.font = '10px Share Tech Mono';
+      ctx.font = 'bold 12px Inter, Arial, sans-serif';
       ctx.fillStyle = propColors[0];
       ctx.fillText(`█ ${propNames[0]}`, w/2 - 90, propertyLegendY);
       ctx.fillStyle = propColors[1];
@@ -508,9 +512,9 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       // CLUES-SMART SCORE LEGEND (h-119)
       ctx.save();
       const smartLegendY = h - 119;
-      ctx.font = 'bold 10px Share Tech Mono';
+      ctx.font = 'bold 13px Inter, Arial, sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.fillStyle = '#FFFFFF';
       ctx.fillText('CLUES-SMART SCORE TIERS:', 40, smartLegendY);
 
       const tierSpacing = 110;
@@ -518,48 +522,48 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
 
       // Tier 1: Excellent (Green)
       ctx.fillStyle = '#4CAF50';
-      ctx.fillRect(startX, smartLegendY - 10, 12, 12);
-      ctx.font = '9px Share Tech Mono';
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
-      ctx.fillText('81-100 EXCELLENT', startX + 16, smartLegendY);
+      ctx.fillRect(startX, smartLegendY - 12, 14, 14);
+      ctx.font = 'bold 11px Inter, Arial, sans-serif';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText('81-100 EXCELLENT', startX + 18, smartLegendY);
 
       // Tier 2: Good (Blue)
       ctx.fillStyle = '#2196F3';
-      ctx.fillRect(startX + tierSpacing, smartLegendY - 10, 12, 12);
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
-      ctx.fillText('61-80 GOOD', startX + tierSpacing + 16, smartLegendY);
+      ctx.fillRect(startX + tierSpacing, smartLegendY - 12, 14, 14);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText('61-80 GOOD', startX + tierSpacing + 18, smartLegendY);
 
       // Tier 3: Average (Amber)
       ctx.fillStyle = '#EAB308';
-      ctx.fillRect(startX + tierSpacing * 2, smartLegendY - 10, 12, 12);
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
-      ctx.fillText('41-60 AVERAGE', startX + tierSpacing * 2 + 16, smartLegendY);
+      ctx.fillRect(startX + tierSpacing * 2, smartLegendY - 12, 14, 14);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText('41-60 AVERAGE', startX + tierSpacing * 2 + 18, smartLegendY);
 
       // Tier 4: Fair (Orange)
       ctx.fillStyle = '#FF9800';
-      ctx.fillRect(startX + tierSpacing * 3, smartLegendY - 10, 12, 12);
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
-      ctx.fillText('21-40 FAIR', startX + tierSpacing * 3 + 16, smartLegendY);
+      ctx.fillRect(startX + tierSpacing * 3, smartLegendY - 12, 14, 14);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText('21-40 FAIR', startX + tierSpacing * 3 + 18, smartLegendY);
 
       // Tier 5: Poor (Red)
       ctx.fillStyle = '#FF4444';
-      ctx.fillRect(startX + tierSpacing * 4, smartLegendY - 10, 12, 12);
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
-      ctx.fillText('0-20 POOR', startX + tierSpacing * 4 + 16, smartLegendY);
+      ctx.fillRect(startX + tierSpacing * 4, smartLegendY - 12, 14, 14);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText('0-20 POOR', startX + tierSpacing * 4 + 18, smartLegendY);
       ctx.restore();
 
       // DETAILED EXPLANATION (h-89)
       ctx.save();
       const explanationY = h - 89;
-      ctx.font = 'bold 9px Share Tech Mono';
-      ctx.fillStyle = 'rgba(0, 243, 255, 0.9)';
+      ctx.font = 'bold 13px Inter, Arial, sans-serif';
+      ctx.fillStyle = '#00E5FF';
       ctx.textAlign = 'left';
       ctx.fillText('HOW TO READ THIS CHART:', 40, explanationY);
 
-      ctx.font = '8px Share Tech Mono';
-      ctx.fillStyle = 'rgba(255,255,255,0.8)';
-      const lineSpacing = 11;
-      let currentY = explanationY + 12;
+      ctx.font = 'bold 10px Inter, Arial, sans-serif';
+      ctx.fillStyle = '#FFFFFF';
+      const lineSpacing = 14;
+      let currentY = explanationY + 16;
 
       ctx.fillText('• RING COLOR (outer border) = Property identity (Green=Hillcrest, Purple=Oakwood, Pink=LiveOak)', 40, currentY);
       currentY += lineSpacing;
@@ -576,15 +580,15 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       // EXAMPLE SUB-CALCULATION (h-24)
       ctx.save();
       const exampleY = h - 24;
-      ctx.font = 'bold 8px Share Tech Mono';
-      ctx.fillStyle = 'rgba(255, 100, 255, 0.9)';
+      ctx.font = 'bold 11px Inter, Arial, sans-serif';
+      ctx.fillStyle = '#FF64FF';
       ctx.textAlign = 'center';
       ctx.fillText('EXAMPLE: HOW FEATURE SCORES ARE CALCULATED', w/2, exampleY);
 
-      ctx.font = '7px Share Tech Mono';
-      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.font = 'bold 10px Inter, Arial, sans-serif';
+      ctx.fillStyle = '#FFFFFF';
       ctx.textAlign = 'left';
-      ctx.fillText(`Pool Score = (Pool Type × 0.4) + (Pool Size × 0.3) + (Pool Condition × 0.3) = ${propData[0][4]} for ${propNames[0]}`, 40, exampleY + 10);
+      ctx.fillText(`Pool Score = (Pool Type × 0.4) + (Pool Size × 0.3) + (Pool Condition × 0.3) = ${propData[0][4]} for ${propNames[0]}`, 40, exampleY + 14);
       ctx.restore();
 
       animationId = requestAnimationFrame(animate);
