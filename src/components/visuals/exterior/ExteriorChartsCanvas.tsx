@@ -379,7 +379,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
 
       const winnerScore = data.totalScores[winnerId];
       const winnerTier = getScoreTier(winnerScore);
-      const winnerName = data.properties[winnerId].shortName;
+      const winnerName = data.properties[winnerId].name; // FULL address, no abbreviations
 
       // TITLE: CHART 7-1 (top left)
       ctx.fillStyle = '#FFD700';
@@ -433,7 +433,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       // Draw helixes
       const propData = [data.qualityScores.p1, data.qualityScores.p2, data.qualityScores.p3];
       const propColors = [data.properties.p1.color, data.properties.p2.color, data.properties.p3.color];
-      const propNames = [data.properties.p1.shortName, data.properties.p2.shortName, data.properties.p3.shortName];
+      const propNames = [data.properties.p1.name, data.properties.p2.name, data.properties.p3.name]; // FULL addresses
       const propIds = ['p1', 'p2', 'p3'] as const;
       const baseStartY = 100;
 
@@ -493,20 +493,26 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       ctx.fillText(`${propNames[2]}: (${propData[2].join(' + ')}) ÷ 6 = ${data.totalScores.p3}`, 40, calcLineY + 28);
       ctx.restore();
 
-      // PROPERTY LEGEND (h-145)
+      // PROPERTY LEGEND (h-145) - FULL addresses with wider spacing
       ctx.save();
       ctx.font = 'bold 13px Inter, Arial, sans-serif';
-      ctx.textAlign = 'center';
+      ctx.textAlign = 'left';
       const propertyLegendY = h - 145;
       ctx.fillStyle = '#FFFFFF';
-      ctx.fillText('PROPERTIES:', w/2 - 180, propertyLegendY);
+      ctx.fillText('PROPERTIES:', 40, propertyLegendY);
+
+      // Property 1 - Full address
       ctx.font = 'bold 12px Inter, Arial, sans-serif';
       ctx.fillStyle = propColors[0];
-      ctx.fillText(`█ ${propNames[0]}`, w/2 - 90, propertyLegendY);
+      ctx.fillText(`█ ${propNames[0]}`, 150, propertyLegendY);
+
+      // Property 2 - Full address (wider spacing)
       ctx.fillStyle = propColors[1];
-      ctx.fillText(`█ ${propNames[1]}`, w/2, propertyLegendY);
+      ctx.fillText(`█ ${propNames[1]}`, 150 + (w - 300) / 2, propertyLegendY);
+
+      // Property 3 - Full address (wider spacing)
       ctx.fillStyle = propColors[2];
-      ctx.fillText(`█ ${propNames[2]}`, w/2 + 90, propertyLegendY);
+      ctx.fillText(`█ ${propNames[2]}`, w - 350, propertyLegendY);
       ctx.restore();
 
       // CLUES-SMART SCORE LEGEND (h-119)
@@ -640,7 +646,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       // WINNER BADGE at top center
       const winnerScore = data.totalScores[winnerId];
       const winnerTier = getScoreTier(winnerScore);
-      const winnerName = data.properties[winnerId].shortName;
+      const winnerName = data.properties[winnerId].name;
 
       ctx.save();
       ctx.textAlign = 'center';
@@ -696,9 +702,9 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       const centerY = h / 2;
 
       const propData = [
-        { id: 'p1' as const, dataset: data.qualityScores.p1, color: data.properties.p1.color, name: data.properties.p1.shortName, total: data.totalScores.p1 },
-        { id: 'p2' as const, dataset: data.qualityScores.p2, color: data.properties.p2.color, name: data.properties.p2.shortName, total: data.totalScores.p2 },
-        { id: 'p3' as const, dataset: data.qualityScores.p3, color: data.properties.p3.color, name: data.properties.p3.shortName, total: data.totalScores.p3 }
+        { id: 'p1' as const, dataset: data.qualityScores.p1, color: data.properties.p1.color, name: data.properties.p1.name, total: data.totalScores.p1 },
+        { id: 'p2' as const, dataset: data.qualityScores.p2, color: data.properties.p2.color, name: data.properties.p2.name, total: data.totalScores.p2 },
+        { id: 'p3' as const, dataset: data.qualityScores.p3, color: data.properties.p3.color, name: data.properties.p3.name, total: data.totalScores.p3 }
       ];
 
       propData.forEach((prop, pIdx) => {
@@ -806,35 +812,34 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
 
       // Property 1 calculation
       ctx.fillStyle = data.properties.p1.color;
-      ctx.fillText(`${data.properties.p1.shortName}: (${data.qualityScores.p1.join(' + ')}) ÷ 6 = ${data.totalScores.p1}`, 40, calcCurrentY);
+      ctx.fillText(`${data.properties.p1.name}: (${data.qualityScores.p1.join(' + ')}) ÷ 6 = ${data.totalScores.p1}`, 40, calcCurrentY);
       calcCurrentY += calcLineSpacing;
 
       // Property 2 calculation
       ctx.fillStyle = data.properties.p2.color;
-      ctx.fillText(`${data.properties.p2.shortName}: (${data.qualityScores.p2.join(' + ')}) ÷ 6 = ${data.totalScores.p2}`, 40, calcCurrentY);
+      ctx.fillText(`${data.properties.p2.name}: (${data.qualityScores.p2.join(' + ')}) ÷ 6 = ${data.totalScores.p2}`, 40, calcCurrentY);
       calcCurrentY += calcLineSpacing;
 
       // Property 3 calculation
       ctx.fillStyle = data.properties.p3.color;
-      ctx.fillText(`${data.properties.p3.shortName}: (${data.qualityScores.p3.join(' + ')}) ÷ 6 = ${data.totalScores.p3}`, 40, calcCurrentY);
+      ctx.fillText(`${data.properties.p3.name}: (${data.qualityScores.p3.join(' + ')}) ÷ 6 = ${data.totalScores.p3}`, 40, calcCurrentY);
       ctx.restore();
 
-      // PROPERTY LEGEND at bottom
+      // PROPERTY LEGEND - FULL addresses with wider spacing
       ctx.save();
-      ctx.font = 'bold 10px Share Tech Mono';
-      ctx.textAlign = 'center';
+      ctx.font = 'bold 13px Inter, Arial, sans-serif';
+      ctx.textAlign = 'left';
       const propertyLegendY = h - 145;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText('PROPERTIES:', 40, propertyLegendY);
 
-      ctx.fillStyle = 'rgba(255,255,255,0.8)';
-      ctx.fillText('PROPERTIES:', w/2 - 180, propertyLegendY);
-
-      ctx.font = '10px Share Tech Mono';
+      ctx.font = 'bold 12px Inter, Arial, sans-serif';
       ctx.fillStyle = data.properties.p1.color;
-      ctx.fillText(`█ ${data.properties.p1.shortName.toUpperCase()}`, w/2 - 90, propertyLegendY);
+      ctx.fillText(`█ ${data.properties.p1.name}`, 150, propertyLegendY);
       ctx.fillStyle = data.properties.p2.color;
-      ctx.fillText(`█ ${data.properties.p2.shortName.toUpperCase()}`, w/2, propertyLegendY);
+      ctx.fillText(`█ ${data.properties.p2.name}`, 150 + (w - 300) / 2, propertyLegendY);
       ctx.fillStyle = data.properties.p3.color;
-      ctx.fillText(`█ ${data.properties.p3.shortName.toUpperCase()}`, w/2 + 90, propertyLegendY);
+      ctx.fillText(`█ ${data.properties.p3.name}`, w - 350, propertyLegendY);
       ctx.restore();
 
       // CLUES-SMART SCORE LEGEND
@@ -986,7 +991,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       // WINNER BADGE at top center
       const winnerScore = data.totalScores[winnerId];
       const winnerTier = getScoreTier(winnerScore);
-      const winnerName = data.properties[winnerId].shortName;
+      const winnerName = data.properties[winnerId].name;
 
       ctx.save();
       ctx.textAlign = 'center';
@@ -1055,9 +1060,9 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       plateSizes[propertyRanks[2].id] = 50;  // Third - smallest
 
       const propData = [
-        { id: 'p1' as const, dataset: data.qualityScores.p1, color: data.properties.p1.color, name: data.properties.p1.shortName, total: data.totalScores.p1 },
-        { id: 'p2' as const, dataset: data.qualityScores.p2, color: data.properties.p2.color, name: data.properties.p2.shortName, total: data.totalScores.p2 },
-        { id: 'p3' as const, dataset: data.qualityScores.p3, color: data.properties.p3.color, name: data.properties.p3.shortName, total: data.totalScores.p3 }
+        { id: 'p1' as const, dataset: data.qualityScores.p1, color: data.properties.p1.color, name: data.properties.p1.name, total: data.totalScores.p1 },
+        { id: 'p2' as const, dataset: data.qualityScores.p2, color: data.properties.p2.color, name: data.properties.p2.name, total: data.totalScores.p2 },
+        { id: 'p3' as const, dataset: data.qualityScores.p3, color: data.properties.p3.color, name: data.properties.p3.name, total: data.totalScores.p3 }
       ];
 
       propData.forEach((prop, pIdx) => {
@@ -1144,19 +1149,19 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       // Property 1 calculation
       ctx.fillStyle = data.properties.p1.color;
       const p1Vals = data.qualityScores.p1.join(' + ');
-      ctx.fillText(`${data.properties.p1.shortName}: (${p1Vals}) ÷ 6 = ${data.totalScores.p1}`, 40, calcCurrentY);
+      ctx.fillText(`${data.properties.p1.name}: (${p1Vals}) ÷ 6 = ${data.totalScores.p1}`, 40, calcCurrentY);
       calcCurrentY += calcLineSpacing;
 
       // Property 2 calculation
       ctx.fillStyle = data.properties.p2.color;
       const p2Vals = data.qualityScores.p2.join(' + ');
-      ctx.fillText(`${data.properties.p2.shortName}: (${p2Vals}) ÷ 6 = ${data.totalScores.p2}`, 40, calcCurrentY);
+      ctx.fillText(`${data.properties.p2.name}: (${p2Vals}) ÷ 6 = ${data.totalScores.p2}`, 40, calcCurrentY);
       calcCurrentY += calcLineSpacing;
 
       // Property 3 calculation
       ctx.fillStyle = data.properties.p3.color;
       const p3Vals = data.qualityScores.p3.join(' + ');
-      ctx.fillText(`${data.properties.p3.shortName}: (${p3Vals}) ÷ 6 = ${data.totalScores.p3}`, 40, calcCurrentY);
+      ctx.fillText(`${data.properties.p3.name}: (${p3Vals}) ÷ 6 = ${data.totalScores.p3}`, 40, calcCurrentY);
       ctx.restore();
 
       // EXAMPLE SUB-CALCULATION (centered in footer)
@@ -1180,22 +1185,21 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       ctx.fillText('In production: Each of the 6 exterior features shown is calculated from 3-5 underlying sub-factors with actual property data', w/2, exCurrentY);
       ctx.restore();
 
-      // PROPERTY LEGEND at bottom
+      // PROPERTY LEGEND - FULL addresses with wider spacing
       ctx.save();
-      ctx.font = 'bold 10px Share Tech Mono';
-      ctx.textAlign = 'center';
+      ctx.font = 'bold 13px Inter, Arial, sans-serif';
+      ctx.textAlign = 'left';
       const propertyLegendY = h - 145;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText('PROPERTIES:', 40, propertyLegendY);
 
-      ctx.fillStyle = 'rgba(255,255,255,0.8)';
-      ctx.fillText('PROPERTIES:', w/2 - 180, propertyLegendY);
-
-      ctx.font = '10px Share Tech Mono';
+      ctx.font = 'bold 12px Inter, Arial, sans-serif';
       ctx.fillStyle = data.properties.p1.color;
-      ctx.fillText(`█ ${data.properties.p1.shortName.toUpperCase()}`, w/2 - 90, propertyLegendY);
+      ctx.fillText(`█ ${data.properties.p1.name}`, 150, propertyLegendY);
       ctx.fillStyle = data.properties.p2.color;
-      ctx.fillText(`█ ${data.properties.p2.shortName.toUpperCase()}`, w/2, propertyLegendY);
+      ctx.fillText(`█ ${data.properties.p2.name}`, 150 + (w - 300) / 2, propertyLegendY);
       ctx.fillStyle = data.properties.p3.color;
-      ctx.fillText(`█ ${data.properties.p3.shortName.toUpperCase()}`, w/2 + 90, propertyLegendY);
+      ctx.fillText(`█ ${data.properties.p3.name}`, w - 350, propertyLegendY);
       ctx.restore();
 
       // CLUES-SMART SCORE LEGEND
@@ -1254,7 +1258,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       const lineSpacing = 11;
       let currentY = explanationY + 12;
 
-      ctx.fillText(`• RIM COLOR (outer border) = Property identity (Green=${data.properties.p1.shortName}, Purple=${data.properties.p2.shortName}, Pink=${data.properties.p3.shortName})`, 40, currentY);
+      ctx.fillText(`• RIM COLOR (outer border) = Property identity (Green=${data.properties.p1.name}, Purple=${data.properties.p2.name}, Pink=${data.properties.p3.name})`, 40, currentY);
       currentY += lineSpacing;
 
       ctx.fillText('• FILL COLOR (interior) = CLUES-SMART tier based on individual feature score (see color legend above)', 40, currentY);
@@ -1351,7 +1355,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       ctx.textAlign = 'center';
       ctx.fillText('🏆 WINNER', badgeX + 60, badgeY);
       ctx.font = 'bold 16px Share Tech Mono';
-      ctx.fillText(data.properties[amenityWinnerId].shortName, badgeX + 60, badgeY + 14);
+      ctx.fillText(data.properties[amenityWinnerId].name, badgeX + 60, badgeY + 14);
       ctx.restore();
 
       // BRAIN WIDGET - Upper right with amenity percentage
@@ -1462,24 +1466,28 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
 
       ctx.font = '10px Share Tech Mono';
       ctx.fillStyle = data.properties.p1.color;
-      ctx.fillText(`${data.properties.p1.shortName}: ${amenityCounts.p1} amenities owned ÷ 8 total = ${amenityPercentages.p1}% ownership`, 40, h - 197);
+      ctx.fillText(`${data.properties.p1.name}: ${amenityCounts.p1} amenities owned ÷ 8 total = ${amenityPercentages.p1}% ownership`, 40, h - 197);
       ctx.fillStyle = data.properties.p2.color;
-      ctx.fillText(`${data.properties.p2.shortName}: ${amenityCounts.p2} amenities owned ÷ 8 total = ${amenityPercentages.p2}% ownership`, 40, h - 182);
+      ctx.fillText(`${data.properties.p2.name}: ${amenityCounts.p2} amenities owned ÷ 8 total = ${amenityPercentages.p2}% ownership`, 40, h - 182);
       ctx.fillStyle = data.properties.p3.color;
-      ctx.fillText(`${data.properties.p3.shortName}: ${amenityCounts.p3} amenities owned ÷ 8 total = ${amenityPercentages.p3}% ownership`, 40, h - 167);
+      ctx.fillText(`${data.properties.p3.name}: ${amenityCounts.p3} amenities owned ÷ 8 total = ${amenityPercentages.p3}% ownership`, 40, h - 167);
       ctx.restore();
 
-      // PROPERTY LEGEND
+      // PROPERTY LEGEND - FULL addresses with wider spacing
       ctx.save();
-      ctx.font = '10px Share Tech Mono';
+      ctx.font = 'bold 13px Inter, Arial, sans-serif';
       ctx.textAlign = 'left';
-      const legendX = 40;
+      const propertyLegendY = h - 145;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText('PROPERTIES:', 40, propertyLegendY);
+
+      ctx.font = 'bold 12px Inter, Arial, sans-serif';
       ctx.fillStyle = data.properties.p1.color;
-      ctx.fillText(`█ ${data.properties.p1.shortName.toUpperCase()}`, legendX, h - 145);
+      ctx.fillText(`█ ${data.properties.p1.name}`, 150, propertyLegendY);
       ctx.fillStyle = data.properties.p2.color;
-      ctx.fillText(`█ ${data.properties.p2.shortName.toUpperCase()}`, legendX + 110, h - 145);
+      ctx.fillText(`█ ${data.properties.p2.name}`, 150 + (w - 300) / 2, propertyLegendY);
       ctx.fillStyle = data.properties.p3.color;
-      ctx.fillText(`█ ${data.properties.p3.shortName.toUpperCase()}`, legendX + 220, h - 145);
+      ctx.fillText(`█ ${data.properties.p3.name}`, w - 350, propertyLegendY);
       ctx.restore();
 
       // AMENITY STATUS LEGEND
@@ -1537,7 +1545,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       ctx.fillText('EXAMPLE AMENITY CALCULATION', w/2, h - 24);
       ctx.fillStyle = 'rgba(255,255,255,0.7)';
       ctx.font = '9px Share Tech Mono';
-      ctx.fillText(`${data.properties.p1.shortName} % = (${amenityCounts.p1} amenities owned ÷ 8 total amenities) × 100 = ${amenityPercentages.p1}%`, w/2, h - 12);
+      ctx.fillText(`${data.properties.p1.name} % = (${amenityCounts.p1} amenities owned ÷ 8 total amenities) × 100 = ${amenityPercentages.p1}%`, w/2, h - 12);
       ctx.restore();
 
       animationId = requestAnimationFrame(animate);
@@ -1617,7 +1625,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       ctx.textAlign = 'center';
       ctx.fillText('🏆 WINNER', badgeX + 60, badgeY);
       ctx.font = 'bold 16px Share Tech Mono';
-      ctx.fillText(data.properties[amenityWinnerId].shortName, badgeX + 60, badgeY + 14);
+      ctx.fillText(data.properties[amenityWinnerId].name, badgeX + 60, badgeY + 14);
       ctx.restore();
 
       // BRAIN WIDGET - Upper right with connection count
@@ -1666,9 +1674,9 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       const minCount = Math.min(...counts);
 
       const propDataForClusters = [
-        { id: 'p1' as const, amenities: data.amenities.p1, color: data.properties.p1.color, name: data.properties.p1.shortName },
-        { id: 'p2' as const, amenities: data.amenities.p2, color: data.properties.p2.color, name: data.properties.p2.shortName },
-        { id: 'p3' as const, amenities: data.amenities.p3, color: data.properties.p3.color, name: data.properties.p3.shortName }
+        { id: 'p1' as const, amenities: data.amenities.p1, color: data.properties.p1.color, name: data.properties.p1.name },
+        { id: 'p2' as const, amenities: data.amenities.p2, color: data.properties.p2.color, name: data.properties.p2.name },
+        { id: 'p3' as const, amenities: data.amenities.p3, color: data.properties.p3.color, name: data.properties.p3.name }
       ];
 
       propDataForClusters.forEach((d, pIdx) => {
@@ -1792,11 +1800,11 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
 
       ctx.font = '10px Share Tech Mono';
       ctx.fillStyle = data.properties.p1.color;
-      ctx.fillText(`${data.properties.p1.shortName}: ${amenityCounts.p1} amenities = ${connections.p1} connections`, 40, h - 215);
+      ctx.fillText(`${data.properties.p1.name}: ${amenityCounts.p1} amenities = ${connections.p1} connections`, 40, h - 215);
       ctx.fillStyle = data.properties.p2.color;
-      ctx.fillText(`${data.properties.p2.shortName}: ${amenityCounts.p2} amenities = ${connections.p2} connections`, 40, h - 200);
+      ctx.fillText(`${data.properties.p2.name}: ${amenityCounts.p2} amenities = ${connections.p2} connections`, 40, h - 200);
       ctx.fillStyle = data.properties.p3.color;
-      ctx.fillText(`${data.properties.p3.shortName}: ${amenityCounts.p3} amenities = ${connections.p3} connections`, 40, h - 185);
+      ctx.fillText(`${data.properties.p3.name}: ${amenityCounts.p3} amenities = ${connections.p3} connections`, 40, h - 185);
       ctx.restore();
 
       // SMART SCORE CALCULATION
@@ -1808,24 +1816,28 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
 
       ctx.font = '10px Share Tech Mono';
       ctx.fillStyle = data.properties.p1.color;
-      ctx.fillText(`${data.properties.p1.shortName}: ${amenityCounts.p1} amenities ÷ 8 total = ${amenityPercentages.p1}% SMART Score`, 40, h - 145);
+      ctx.fillText(`${data.properties.p1.name}: ${amenityCounts.p1} amenities ÷ 8 total = ${amenityPercentages.p1}% SMART Score`, 40, h - 145);
       ctx.fillStyle = data.properties.p2.color;
-      ctx.fillText(`${data.properties.p2.shortName}: ${amenityCounts.p2} amenities ÷ 8 total = ${amenityPercentages.p2}% SMART Score`, 40, h - 130);
+      ctx.fillText(`${data.properties.p2.name}: ${amenityCounts.p2} amenities ÷ 8 total = ${amenityPercentages.p2}% SMART Score`, 40, h - 130);
       ctx.fillStyle = data.properties.p3.color;
-      ctx.fillText(`${data.properties.p3.shortName}: ${amenityCounts.p3} amenities ÷ 8 total = ${amenityPercentages.p3}% SMART Score`, 40, h - 115);
+      ctx.fillText(`${data.properties.p3.name}: ${amenityCounts.p3} amenities ÷ 8 total = ${amenityPercentages.p3}% SMART Score`, 40, h - 115);
       ctx.restore();
 
-      // PROPERTY LEGEND
+      // PROPERTY LEGEND - FULL addresses with wider spacing
       ctx.save();
-      ctx.font = '10px Share Tech Mono';
+      ctx.font = 'bold 13px Inter, Arial, sans-serif';
       ctx.textAlign = 'left';
-      const legendX = 40;
+      const propertyLegendY = h - 95;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText('PROPERTIES:', 40, propertyLegendY);
+
+      ctx.font = 'bold 12px Inter, Arial, sans-serif';
       ctx.fillStyle = data.properties.p1.color;
-      ctx.fillText(`█ ${data.properties.p1.shortName.toUpperCase()}`, legendX, h - 95);
+      ctx.fillText(`█ ${data.properties.p1.name}`, 150, propertyLegendY);
       ctx.fillStyle = data.properties.p2.color;
-      ctx.fillText(`█ ${data.properties.p2.shortName.toUpperCase()}`, legendX + 110, h - 95);
+      ctx.fillText(`█ ${data.properties.p2.name}`, 150 + (w - 300) / 2, propertyLegendY);
       ctx.fillStyle = data.properties.p3.color;
-      ctx.fillText(`█ ${data.properties.p3.shortName.toUpperCase()}`, legendX + 220, h - 95);
+      ctx.fillText(`█ ${data.properties.p3.name}`, w - 350, propertyLegendY);
       ctx.restore();
 
       // DOT STATUS LEGEND
