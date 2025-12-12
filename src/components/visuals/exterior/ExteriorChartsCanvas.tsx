@@ -700,21 +700,57 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       propData.forEach((prop, pIdx) => {
         const centerX = centerSpacing * (pIdx + 0.5);
 
-        // Draw property center (gravity well) - SIZE PROPORTIONAL TO SCORE
+        // Draw property center (gravity well) - SIZE PROPORTIONAL TO SCORE with 3D effect
         ctx.save();
 
         // Planet size based on score: higher score = bigger planet
         const planetSize = 25 + (prop.total * 0.25);
 
+        // Helper: Parse hex color to RGB
+        const hexToRgb = (hex: string) => {
+          const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+          return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+          } : { r: 128, g: 128, b: 128 };
+        };
+
+        const centerRgb = hexToRgb(prop.color);
+        const centerLighter = `rgba(${Math.min(centerRgb.r + 100, 255)}, ${Math.min(centerRgb.g + 100, 255)}, ${Math.min(centerRgb.b + 100, 255)}, 1)`;
+        const centerDarker = `rgba(${Math.max(centerRgb.r - 50, 0)}, ${Math.max(centerRgb.g - 50, 0)}, ${Math.max(centerRgb.b - 50, 0)}, 1)`;
+
+        // Shadow for depth
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowOffsetX = 3;
+        ctx.shadowOffsetY = 5;
+
+        // 3D Sphere with radial gradient
+        const centerGradient = ctx.createRadialGradient(
+          centerX - planetSize * 0.3, centerY - planetSize * 0.3, planetSize * 0.1,
+          centerX, centerY, planetSize
+        );
+        centerGradient.addColorStop(0, centerLighter);    // bright highlight
+        centerGradient.addColorStop(0.5, prop.color);     // mid tone
+        centerGradient.addColorStop(1, centerDarker);     // dark edge
+
         ctx.beginPath();
         ctx.arc(centerX, centerY, planetSize, 0, Math.PI * 2);
-        ctx.fillStyle = prop.color;
-        ctx.globalAlpha = 0.8;
+        ctx.fillStyle = centerGradient;
         ctx.fill();
-        ctx.globalAlpha = 1;
-        ctx.strokeStyle = prop.color;
-        ctx.lineWidth = 3;
+
+        // Remove shadow for rim
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+
+        // Bright rim highlight
+        ctx.strokeStyle = centerLighter;
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.4;
         ctx.stroke();
+        ctx.globalAlpha = 1;
 
         // Property label at center - REMOVED per user request
         ctx.restore();
@@ -746,21 +782,71 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
           // Orb size proportional to score
           const orbSize = 5 + (val * 0.15);
 
-          // Draw orb with two-color system
+          // 3D DEPTH EFFECT - Saturn-style planet with rings
           ctx.save();
 
-          // Fill with SMART tier color
+          // Helper: Parse hex color to RGB
+          const hexToRgb = (hex: string) => {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+              r: parseInt(result[1], 16),
+              g: parseInt(result[2], 16),
+              b: parseInt(result[3], 16)
+            } : { r: 128, g: 128, b: 128 };
+          };
+
+          const baseRgb = hexToRgb(fillColor);
+          const lighterColor = `rgba(${Math.min(baseRgb.r + 80, 255)}, ${Math.min(baseRgb.g + 80, 255)}, ${Math.min(baseRgb.b + 80, 255)}, 0.9)`;
+          const darkerColor = `rgba(${Math.max(baseRgb.r - 40, 0)}, ${Math.max(baseRgb.g - 40, 0)}, ${Math.max(baseRgb.b - 40, 0)}, 0.9)`;
+
+          // Shadow for depth (draw first, behind planet)
+          ctx.shadowBlur = 12;
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+          ctx.shadowOffsetX = 2;
+          ctx.shadowOffsetY = 3;
+
+          // 3D Sphere with radial gradient
+          const gradient = ctx.createRadialGradient(
+            x - orbSize * 0.35, y - orbSize * 0.35, orbSize * 0.1,
+            x, y, orbSize
+          );
+          gradient.addColorStop(0, lighterColor);      // bright highlight
+          gradient.addColorStop(0.4, fillColor);       // mid tone
+          gradient.addColorStop(1, darkerColor);       // dark edge
+
           ctx.beginPath();
           ctx.arc(x, y, orbSize, 0, Math.PI * 2);
-          ctx.fillStyle = fillColor;
-          ctx.globalAlpha = 0.7;
+          ctx.fillStyle = gradient;
           ctx.fill();
-          ctx.globalAlpha = 1;
 
-          // Ring with property color
-          ctx.strokeStyle = prop.color;
-          ctx.lineWidth = 2;
+          // Remove shadow for ring
+          ctx.shadowBlur = 0;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 0;
+
+          // Saturn-style ring with animated rotation
+          const ringRotation = angle * 2 + (featureIdx * Math.PI / 3);
+          const ringRadiusX = orbSize * 1.6;
+          const ringRadiusY = orbSize * 0.35;
+
+          // Back half of ring (behind planet) - darker
+          ctx.save();
+          ctx.beginPath();
+          ctx.ellipse(x, y, ringRadiusX, ringRadiusY, ringRotation, Math.PI, Math.PI * 2);
+          ctx.strokeStyle = `rgba(${Math.max(baseRgb.r - 60, 0)}, ${Math.max(baseRgb.g - 60, 0)}, ${Math.max(baseRgb.b - 60, 0)}, 0.5)`;
+          ctx.lineWidth = 2.5;
           ctx.stroke();
+          ctx.restore();
+
+          // Front half of ring (in front of planet) - brighter with property color accent
+          ctx.save();
+          ctx.beginPath();
+          ctx.ellipse(x, y, ringRadiusX, ringRadiusY, ringRotation, 0, Math.PI);
+          const propRgb = hexToRgb(prop.color);
+          ctx.strokeStyle = `rgba(${propRgb.r}, ${propRgb.g}, ${propRgb.b}, 0.8)`;
+          ctx.lineWidth = 3;
+          ctx.stroke();
+          ctx.restore();
 
           // Feature label on rightmost property only
           if (pIdx === 2 && featureIdx === 0) {
