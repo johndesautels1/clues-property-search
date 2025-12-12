@@ -2,6 +2,7 @@
  * CLUES Property Dashboard - Advanced Comparison Analytics Page
  * Full 168-field comparison with property dropdown selectors
  * Plus 32 hi-tech visual chart comparisons
+ * Plus Olivia AI Analysis
  */
 
 import { useState, useMemo } from 'react';
@@ -15,6 +16,8 @@ import {
   Users, CloudRain, FileText
 } from 'lucide-react';
 import { usePropertyStore } from '@/store/propertyStore';
+import { analyzeWithOlivia, type OliviaAnalysisResult } from '@/api/olivia';
+import { OliviaResults } from '@/components/OliviaResults';
 import type { PropertyCard, Property } from '@/types/property';
 import { PropertyComparisonAnalytics, type Property as AnalyticsProperty } from '@/components/analytics';
 
@@ -836,6 +839,11 @@ export default function Compare() {
   const [showAllFields, setShowAllFields] = useState(false);
   const [viewMode, setViewMode] = useState<CompareViewMode>('table');
   const [showVisualAnalytics, setShowVisualAnalytics] = useState(false);
+  
+  // Olivia AI state
+  const [oliviaResult, setOliviaResult] = useState<OliviaAnalysisResult | null>(null);
+  const [oliviaLoading, setOliviaLoading] = useState(false);
+  const [oliviaError, setOliviaError] = useState<string | null>(null);
 
   const selectedProperties = useMemo(() => {
     return selectedIds
@@ -877,6 +885,33 @@ export default function Compare() {
 
   const currentFields = comparisonFields[activeCategory] || [];
 
+  // Handle Ask Olivia
+  const handleAskOlivia = async () => {
+    setOliviaLoading(true);
+    setOliviaError(null);
+    try {
+      const result = await analyzeWithOlivia({
+        properties: selectedProperties.map(p => ({
+          id: p.id,
+          address: p.address,
+          city: p.city,
+          price: p.price,
+          sqft: p.sqft,
+          bedrooms: p.bedrooms,
+          bathrooms: p.bathrooms,
+          yearBuilt: p.yearBuilt,
+          pricePerSqft: p.pricePerSqft,
+          smartScore: p.smartScore,
+        }))
+      });
+      setOliviaResult(result);
+    } catch (err) {
+      setOliviaError(err instanceof Error ? err.message : 'Analysis failed');
+    } finally {
+      setOliviaLoading(false);
+    }
+  };
+
   return (
     <motion.div
       className="px-4 py-6 md:px-8 md:py-10 max-w-7xl mx-auto"
@@ -894,9 +929,9 @@ export default function Compare() {
             </p>
           </div>
 
-          {/* View Mode Toggle */}
+          {/* View Mode Toggle + Ask Olivia */}
           {selectedProperties.length >= 2 && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <button
                 onClick={() => setViewMode('table')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
@@ -919,6 +954,27 @@ export default function Compare() {
                 <PieChart className="w-4 h-4" />
                 32 Visual Charts
               </button>
+              
+              {/* ASK OLIVIA BUTTON */}
+              {selectedProperties.length >= 3 && (
+                <button
+                  onClick={handleAskOlivia}
+                  disabled={oliviaLoading}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all bg-gradient-to-r from-quantum-purple to-quantum-cyan text-white hover:opacity-90 disabled:opacity-50"
+                >
+                  {oliviaLoading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-4 h-4" />
+                      Ask Olivia AI
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -938,6 +994,28 @@ export default function Compare() {
           />
         ))}
       </div>
+
+      {/* Olivia AI Results */}
+      {oliviaResult && (
+        <div className="mb-6">
+          <OliviaResults
+            result={oliviaResult}
+            properties={selectedProperties.map(p => ({ 
+              id: p.id, 
+              address: p.address, 
+              city: p.city 
+            }))}
+            onClose={() => setOliviaResult(null)}
+          />
+        </div>
+      )}
+
+      {/* Olivia Error */}
+      {oliviaError && (
+        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
+          <p className="text-red-400 text-sm">Olivia Error: {oliviaError}</p>
+        </div>
+      )}
 
       {/* Analytics Summary */}
       {selectedProperties.length >= 2 && (

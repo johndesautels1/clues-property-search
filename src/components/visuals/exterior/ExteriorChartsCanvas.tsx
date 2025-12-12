@@ -683,7 +683,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       ctx.fillStyle = 'rgba(255,255,255,0.8)';
       ctx.font = 'bold 11px Share Tech Mono';
       ctx.textAlign = 'left';
-      ctx.fillText('SMART', brainX + 25, brainY + 4);
+      ctx.fillText('CLUES-SMART', brainX + 25, brainY + 4);
       ctx.restore();
 
       // ORBITAL GRAVITY VISUALIZATION
@@ -703,8 +703,8 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
         // Draw property center (gravity well) - SIZE PROPORTIONAL TO SCORE with 3D effect
         ctx.save();
 
-        // Planet size based on score: higher score = bigger planet
-        const planetSize = 25 + (prop.total * 0.25);
+        // Planet size based on score: higher score = bigger planet (increased multiplier for visibility)
+        const planetSize = 10 + (prop.total * 0.6);
 
         // Helper: Parse hex color to RGB
         const hexToRgb = (hex: string) => {
@@ -987,16 +987,16 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       const lineSpacing = 11;
       let currentY = explanationY + 12;
 
-      ctx.fillText('• GRAVITY WELL (center dot) = Property identity. Planet size proportional to total score (bigger = higher score).', 40, currentY);
+      ctx.fillText('• CENTER PLANET = Property identity sized by TOTAL score. Winner (highest total) has biggest center planet.', 40, currentY);
       currentY += lineSpacing;
 
-      ctx.fillText('• ORBIT DISTANCE = Feature score (closer orbit = higher score, farther = lower score). High scores are "attracted" more.', 40, currentY);
+      ctx.fillText('• ORBIT DISTANCE = Individual feature score (closer = higher, farther = lower). Each orbiting planet sized by its own feature score.', 40, currentY);
       currentY += lineSpacing;
 
-      ctx.fillText('• ORB COLORS: Ring = Property color, Fill = CLUES-SMART tier. Orb size = Score magnitude.', 40, currentY);
+      ctx.fillText('• SATURN RINGS = Animated 3D rings rotate around each orb. Front half = property color, back half = darker. Sphere = 3D CLUES-SMART tier color.', 40, currentY);
       currentY += lineSpacing;
 
-      ctx.fillText('• CLUSTERING = Overall quality. Tight cluster around big planet = strong property, loose orbits around small planet = weak.', 40, currentY);
+      ctx.fillText('• CLUSTERING = Overall quality. Tight cluster around big planet = strong property, loose orbits = weak property.', 40, currentY);
 
       ctx.restore();
 
@@ -1013,12 +1013,12 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       const exLineSpacing = 11;
       let exCurrentY = exampleY + 12;
 
-      ctx.fillText('Design Score (88) = (Architecture: 90 + Condition: 85 + Floor Plan: 90 + Integration: 87) ÷ 4 = 88', w/2, exCurrentY);
+      ctx.fillText('Pool Score (72) = Base Quality (80) × Condition Factor (0.9) × Has Pool (1) = 72', w/2, exCurrentY);
       exCurrentY += exLineSpacing;
 
       ctx.fillStyle = 'rgba(255,255,255,0.7)';
       ctx.font = '9px Share Tech Mono'; // Increased from 7px
-      ctx.fillText('In production: Each of the 6 exterior features shown is calculated from 3-5 underlying sub-factors with actual property data', w/2, exCurrentY);
+      ctx.fillText('Each of the 6 exterior features (Curb, Landscaping, Design, Deck, Pool, Fence) uses this Base × Condition × Presence formula', w/2, exCurrentY);
       ctx.restore();
 
       animationId = requestAnimationFrame(animate);
