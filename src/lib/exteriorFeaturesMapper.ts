@@ -420,6 +420,11 @@ function createEmptyProperty(index: number): ChartProperty {
  * Main mapper: Convert up to 3 ChartProperty objects to ExteriorChartsData
  */
 export function mapToExteriorChartsData(properties: ChartProperty[]): ExteriorChartsData {
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('🔍 EXTERIOR FEATURES MAPPER - DATA FLOW VERIFICATION');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log(`📊 Received ${properties.length} properties for Chart 1`);
+
   // Ensure we have exactly 3 properties (pad with empties if needed)
   const props = [...properties];
   while (props.length < 3) {
@@ -429,6 +434,15 @@ export function mapToExteriorChartsData(properties: ChartProperty[]): ExteriorCh
   // Take only first 3
   const [p1, p2, p3] = props.slice(0, 3);
 
+  console.log('\n📋 SCHEMA FIELD EXTRACTION (Fields 54-58 + 168):');
+  console.log(`Property 1: ${p1.address}`);
+  console.log(`  • Field 54 (pool_yn): ${p1.poolYn}`);
+  console.log(`  • Field 55 (pool_type): "${p1.poolType}"`);
+  console.log(`  • Field 56 (deck_patio): "${p1.deckPatio}"`);
+  console.log(`  • Field 57 (fence): "${p1.fence}"`);
+  console.log(`  • Field 58 (landscaping): "${p1.landscaping}"`);
+  console.log(`  • Field 168 (exterior_features): [${p1.exteriorFeatures.join(', ')}]`);
+
   // Property colors (matching existing pattern)
   const colors = ['#22c55e', '#8b5cf6', '#ec4899'];
 
@@ -437,10 +451,31 @@ export function mapToExteriorChartsData(properties: ChartProperty[]): ExteriorCh
   const scores2 = calculateExteriorQualityScores(p2);
   const scores3 = calculateExteriorQualityScores(p3);
 
+  console.log('\n🧮 CALCULATED QUALITY SCORES (0-100):');
+  console.log(`Property 1: ${p1.address}`);
+  console.log(`  • Curb Appeal: ${scores1.curbAppeal} (from year_built, exterior_material, property_type, stories, Field 168)`);
+  console.log(`  • Landscaping: ${scores1.landscaping} (from Field 58 + algorithm)`);
+  console.log(`  • Design: ${scores1.design} (from property_type, stories, year_built, sqft, acres, fireplace)`);
+  console.log(`  • Deck: ${scores1.deck} (from Field 56 + algorithm)`);
+  console.log(`  • Pool: ${scores1.pool} (from Fields 54-55 + algorithm)`);
+  console.log(`  • Fence: ${scores1.fence} (from Field 57 + algorithm)`);
+  console.log(`  → TOTAL SCORE: ${Math.round((scores1.curbAppeal + scores1.landscaping + scores1.design + scores1.deck + scores1.pool + scores1.fence) / 6)}/100`);
+
   // Extract amenities
   const amenities1 = extractExteriorAmenities(p1.exteriorFeatures);
   const amenities2 = extractExteriorAmenities(p2.exteriorFeatures);
   const amenities3 = extractExteriorAmenities(p3.exteriorFeatures);
+
+  console.log('\n🏠 EXTRACTED AMENITIES (from Field 168):');
+  console.log(`Property 1: ${p1.address}`);
+  console.log(`  • Balcony: ${amenities1.balcony}`);
+  console.log(`  • Outdoor Shower: ${amenities1.outdoorShower}`);
+  console.log(`  • Sidewalk: ${amenities1.sidewalk}`);
+  console.log(`  • Sliding Doors: ${amenities1.slidingDoors}`);
+  console.log(`  • Hurricane Shutters: ${amenities1.hurricaneShutters}`);
+  console.log(`  • Sprinkler System: ${amenities1.sprinklerSystem}`);
+  console.log(`  • Outdoor Kitchen: ${amenities1.outdoorKitchen}`);
+  console.log(`  • Private Dock: ${amenities1.privateDock}`);
 
   // Convert to arrays for charts
   const qualityP1 = [scores1.curbAppeal, scores1.landscaping, scores1.design, scores1.deck, scores1.pool, scores1.fence];
@@ -479,6 +514,21 @@ export function mapToExteriorChartsData(properties: ChartProperty[]): ExteriorCh
     amenities3.outdoorKitchen ? 1 : 0,
     amenities3.privateDock ? 1 : 0
   ];
+
+  const totalP1 = Math.round(qualityP1.reduce((a, b) => a + b, 0) / 6);
+  const totalP2 = Math.round(qualityP2.reduce((a, b) => a + b, 0) / 6);
+  const totalP3 = Math.round(qualityP3.reduce((a, b) => a + b, 0) / 6);
+
+  console.log('\n✅ FINAL OUTPUT FOR CHART 1:');
+  console.log('Quality Scores Array:');
+  console.log(`  P1: [${qualityP1.join(', ')}] → Average: ${totalP1}/100`);
+  console.log(`  P2: [${qualityP2.join(', ')}] → Average: ${totalP2}/100`);
+  console.log(`  P3: [${qualityP3.join(', ')}] → Average: ${totalP3}/100`);
+  console.log('Amenity Binary Arrays:');
+  console.log(`  P1: [${amenitiesP1.join(', ')}] → Count: ${amenitiesP1.reduce((a, b) => a + b, 0)}/8`);
+  console.log(`  P2: [${amenitiesP2.join(', ')}] → Count: ${amenitiesP2.reduce((a, b) => a + b, 0)}/8`);
+  console.log(`  P3: [${amenitiesP3.join(', ')}] → Count: ${amenitiesP3.reduce((a, b) => a + b, 0)}/8`);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
   return {
     properties: {
