@@ -503,7 +503,7 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       ctx.fillStyle = '#FFFFFF';
       ctx.fillText('CLUES-SMART SCORE TIERS:', w / 2, smartLegendY - 20);
 
-      const tierSpacing = 110;
+      const tierSpacing = 114; // Increased by 4px for more space between tiers
       const totalTierWidth = tierSpacing * 4 + 100; // Approximate width of all 5 tiers
       const startX = (w - totalTierWidth) / 2;
 
