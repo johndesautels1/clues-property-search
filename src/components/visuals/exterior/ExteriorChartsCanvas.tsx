@@ -583,20 +583,6 @@ export default function ExteriorChartsCanvas({ data }: ExteriorChartsCanvasProps
       ctx.fillText('• TOTAL SCORE = Average of all 6 exterior features (Curb Appeal, Landscaping, Design, Deck, Pool, Fence)', 40, currentY);
       ctx.restore();
 
-      // EXAMPLE SUB-CALCULATION (h-24)
-      ctx.save();
-      const exampleY = h - 24;
-      ctx.font = 'bold 11px Inter, Arial, sans-serif';
-      ctx.fillStyle = '#FF64FF';
-      ctx.textAlign = 'center';
-      ctx.fillText('EXAMPLE: HOW FEATURE SCORES ARE CALCULATED', w/2, exampleY);
-
-      ctx.font = 'bold 10px Inter, Arial, sans-serif';
-      ctx.fillStyle = '#FFFFFF';
-      ctx.textAlign = 'left';
-      ctx.fillText(`Pool Score = (Pool Type × 0.4) + (Pool Size × 0.3) + (Pool Condition × 0.3) = ${propData[0][4]} for ${propNames[0]}`, 40, exampleY + 14);
-      ctx.restore();
-
       animationId = requestAnimationFrame(animate);
     }
     animate();
