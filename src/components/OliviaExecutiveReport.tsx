@@ -72,7 +72,7 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
 
   // Q&A state
   const [qaQuestion, setQaQuestion] = useState('');
-  const [qaHistory, setQaHistory] = useState(result.qaState.conversationHistory);
+  const [qaHistory, setQaHistory] = useState(result.qaState?.conversationHistory || []);
 
   // Get property address helper
   const getPropertyAddress = (propertyId: string) => {
