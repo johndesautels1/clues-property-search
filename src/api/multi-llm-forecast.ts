@@ -225,9 +225,9 @@ async function callGPT4Forecast(
   neighborhood: string,
   propertyType: string
 ): Promise<LLMForecast> {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  const apiKey = import.meta.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error('VITE_OPENAI_API_KEY not found in environment variables');
+    throw new Error('OPENAI_API_KEY not found in environment variables');
   }
 
   const client = new OpenAI({
@@ -271,9 +271,9 @@ async function callGeminiForecast(
   neighborhood: string,
   propertyType: string
 ): Promise<LLMForecast> {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  const apiKey = import.meta.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error('VITE_GEMINI_API_KEY not found in environment variables');
+    throw new Error('GEMINI_API_KEY not found in environment variables');
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
@@ -311,9 +311,9 @@ async function callPerplexityForecast(
   neighborhood: string,
   propertyType: string
 ): Promise<LLMForecast> {
-  const apiKey = import.meta.env.VITE_PERPLEXITY_API_KEY;
+  const apiKey = import.meta.env.PERPLEXITY_API_KEY;
   if (!apiKey) {
-    throw new Error('VITE_PERPLEXITY_API_KEY not found in environment variables');
+    throw new Error('PERPLEXITY_API_KEY not found in environment variables');
   }
 
   const prompt = buildForecastPrompt(address, price, neighborhood, propertyType);
@@ -370,9 +370,9 @@ async function callGrokForecast(
   neighborhood: string,
   propertyType: string
 ): Promise<LLMForecast> {
-  const apiKey = import.meta.env.VITE_XAI_API_KEY;
+  const apiKey = import.meta.env.XAI_API_KEY;
   if (!apiKey) {
-    throw new Error('VITE_XAI_API_KEY not found in environment variables');
+    throw new Error('XAI_API_KEY not found in environment variables');
   }
 
   const prompt = buildForecastPrompt(address, price, neighborhood, propertyType);
