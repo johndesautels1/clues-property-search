@@ -20,6 +20,7 @@ import {
   validateOliviaResponse,
   type ValidationResult,
 } from './olivia-math-engine';
+import { getMultiLLMMarketForecast } from './multi-llm-forecast';
 
 // ============================================================================
 // COMPLETE FIELD EXTRACTION - ALL 168 FIELDS
@@ -721,6 +722,72 @@ export async function analyzeWithOliviaEnhanced(
     result.propertiesAnalyzed = request.properties.length;
     result.buyerProfile = request.buyerProfile;
     result.validation = validation;
+
+    // MULTI-LLM MARKET FORECAST (if requested)
+    if (request.includeMarketForecast) {
+      console.log('🔮 Fetching Multi-LLM Market Forecast...');
+
+      // Get the top-ranked property for market forecast
+      const topProperty = request.properties[0];
+
+      try {
+        const forecast = await getMultiLLMMarketForecast(
+          topProperty.full_address,
+          topProperty.listing_price || 0,
+          topProperty.neighborhood || 'Unknown',
+          topProperty.property_type
+        );
+
+        // Transform to expected MarketForecast interface
+        result.marketForecast = {
+          llmSources: forecast.llmSources.map(source => {
+            if (source.includes('Claude')) return 'claude-opus';
+            if (source.includes('GPT-4')) return 'gpt-4';
+            if (source.includes('Gemini')) return 'gemini-pro';
+            if (source.includes('Perplexity')) return 'perplexity';
+            return 'claude-opus';
+          }) as ('claude-opus' | 'gpt-4' | 'gemini-pro' | 'perplexity')[],
+
+          appreciationForecast: {
+            year1: forecast.appreciation1Yr,
+            year3: forecast.appreciation1Yr * 2.5, // Estimate
+            year5: forecast.appreciation5Yr,
+            year10: forecast.appreciation5Yr * 2, // Estimate
+            confidence: forecast.confidence,
+          },
+
+          marketTrends: {
+            priceDirection: forecast.appreciation1Yr > 3 ? 'rising' : forecast.appreciation1Yr < -2 ? 'declining' : 'stable',
+            demandLevel: forecast.appreciation1Yr > 5 ? 'high' : forecast.appreciation1Yr < 2 ? 'low' : 'moderate',
+            inventoryLevel: 'balanced', // TODO: Extract from LLM trends
+            daysOnMarketTrend: 'stable', // TODO: Extract from LLM trends
+          },
+
+          marketRisks: {
+            economicRisks: forecast.marketTrends.filter(t => t.toLowerCase().includes('economy') || t.toLowerCase().includes('rate')),
+            climateRisks: forecast.marketTrends.filter(t => t.toLowerCase().includes('climate') || t.toLowerCase().includes('flood')),
+            demographicShifts: forecast.marketTrends.filter(t => t.toLowerCase().includes('population') || t.toLowerCase().includes('demographic')),
+            regulatoryChanges: forecast.marketTrends.filter(t => t.toLowerCase().includes('regulation') || t.toLowerCase().includes('zoning')),
+          },
+
+          marketOpportunities: {
+            nearTerm: forecast.keyInsights.filter((_, i) => i < 3),
+            longTerm: forecast.keyInsights.filter((_, i) => i >= 3),
+          },
+
+          forecastDate: forecast.timestamp,
+          dataQuality: forecast.consensus === 'Strong' ? 'high' : forecast.consensus === 'Moderate' ? 'medium' : 'low',
+        };
+
+        console.log(`✅ Multi-LLM Forecast complete: ${forecast.appreciation1Yr.toFixed(1)}% (1yr)`);
+        console.log(`   Consensus: ${forecast.consensus}`);
+        console.log(`   LLMs: ${forecast.llmSources.join(', ')}`);
+      } catch (error) {
+        console.error('❌ Multi-LLM Market Forecast failed:', error);
+        console.warn('⚠️ Continuing without market forecast');
+        // Don't fail the entire analysis if market forecast fails
+      }
+    }
 
     return result as OliviaEnhancedAnalysisResult & { validation: ValidationResult };
   } catch (e) {
