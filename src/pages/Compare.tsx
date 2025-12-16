@@ -18,6 +18,9 @@ import {
 import { usePropertyStore } from '@/store/propertyStore';
 import { analyzeWithOlivia, type OliviaAnalysisResult } from '@/api/olivia';
 import { OliviaResults } from '@/components/OliviaResults';
+import { OliviaExecutiveReport } from '@/components/OliviaExecutiveReport';
+import { analyzeWithOliviaEnhanced, extractPropertyData } from '@/api/olivia-brain-enhanced';
+import type { OliviaEnhancedAnalysisResult } from '@/types/olivia-enhanced';
 import type { PropertyCard, Property } from '@/types/property';
 import { PropertyComparisonAnalytics, type Property as AnalyticsProperty } from '@/components/analytics';
 
@@ -845,6 +848,10 @@ export default function Compare() {
   const [oliviaLoading, setOliviaLoading] = useState(false);
   const [oliviaError, setOliviaError] = useState<string | null>(null);
 
+  // Olivia Enhanced (168-field analysis)
+  const [useEnhancedOlivia, setUseEnhancedOlivia] = useState(true); // Toggle: true = new UI, false = old UI
+  const [oliviaEnhancedResult, setOliviaEnhancedResult] = useState<OliviaEnhancedAnalysisResult | null>(null);
+
   const selectedProperties = useMemo(() => {
     return selectedIds
       .filter((id): id is string => id !== null)
@@ -912,6 +919,76 @@ export default function Compare() {
     }
   };
 
+  /**
+   * Enhanced Olivia Analysis with 168 fields and mathematical proofs
+   */
+  const handleAskOliviaEnhanced = async () => {
+    // Validation
+    if (selectedProperties.length !== 3) {
+      setOliviaError('Olivia Enhanced requires exactly 3 properties for mathematical comparison');
+      return;
+    }
+
+    setOliviaLoading(true);
+    setOliviaError(null);
+    setOliviaEnhancedResult(null);
+
+    try {
+      console.log('🧮 Starting Olivia Enhanced analysis (168 fields)...');
+
+      // Extract all 168 fields from each selected property
+      const enhancedProperties = selectedProperties.map(prop => {
+        // Get full property data from store
+        const fullProp = fullProperties.get(prop.id);
+
+        if (!fullProp) {
+          throw new Error(`Full property data not found for ${prop.id}`);
+        }
+
+        // Extract all 168 fields
+        return extractPropertyData(fullProp);
+      });
+
+      console.log('📊 Extracted fields from', enhancedProperties.length, 'properties');
+
+      // Call enhanced mathematical analysis API
+      const result = await analyzeWithOliviaEnhanced({
+        properties: enhancedProperties,
+        buyerProfile: 'investor', // TODO: Get from user settings or add selector
+        includeMarketForecast: true,
+      });
+
+      console.log('✅ Enhanced analysis complete');
+
+      // CRITICAL: Check for hallucinations
+      if (result.validation && !result.validation.isValid) {
+        console.warn('⚠️ Validation warnings detected:');
+        console.warn('Errors:', result.validation.errors);
+        console.warn('Warnings:', result.validation.warnings);
+        console.warn('Hallucinations:', result.validation.hallucinations);
+
+        // Show warning to user but still display results
+        setOliviaError(
+          `Analysis completed with ${result.validation.hallucinations.length} validation warnings. ` +
+          `Check console for details.`
+        );
+      } else {
+        console.log('✅ Validation passed - no hallucinations detected');
+      }
+
+      setOliviaEnhancedResult(result);
+    } catch (error) {
+      console.error('❌ Enhanced analysis failed:', error);
+      setOliviaError(
+        error instanceof Error
+          ? `Enhanced analysis failed: ${error.message}`
+          : 'Enhanced analysis failed. Please try again.'
+      );
+    } finally {
+      setOliviaLoading(false);
+    }
+  };
+
   return (
     <motion.div
       className="px-4 py-6 md:px-8 md:py-10 max-w-7xl mx-auto"
@@ -958,14 +1035,20 @@ export default function Compare() {
               {/* ASK OLIVIA BUTTON */}
               {selectedProperties.length >= 3 && (
                 <button
-                  onClick={handleAskOlivia}
-                  disabled={oliviaLoading}
+                  onClick={useEnhancedOlivia ? handleAskOliviaEnhanced : handleAskOlivia}
+                  disabled={oliviaLoading || (useEnhancedOlivia ? selectedProperties.length !== 3 : selectedProperties.length < 2)}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all bg-gradient-to-r from-quantum-purple to-quantum-cyan text-white hover:opacity-90 disabled:opacity-50"
                 >
                   {oliviaLoading ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
                       Analyzing...
+                    </>
+                  ) : useEnhancedOlivia ? (
+                    <>
+                      <Zap className="w-4 h-4" />
+                      ✨ Ask Olivia Enhanced
+                      <span className="text-xs opacity-75">(168 fields • 3 properties required)</span>
                     </>
                   ) : (
                     <>
@@ -995,25 +1078,80 @@ export default function Compare() {
         ))}
       </div>
 
-      {/* Olivia AI Results */}
-      {oliviaResult && (
-        <div className="mb-6">
-          <OliviaResults
-            result={oliviaResult}
-            properties={selectedProperties.map(p => ({ 
-              id: p.id, 
-              address: p.address, 
-              city: p.city 
-            }))}
-            onClose={() => setOliviaResult(null)}
-          />
+      {/* Olivia UI Toggle */}
+      {(oliviaResult || oliviaEnhancedResult) && (
+        <div className="mb-6 flex items-center justify-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10">
+          <span className="text-sm text-gray-400">Olivia UI Mode:</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setUseEnhancedOlivia(false)}
+              className={`px-4 py-2 rounded-lg transition-all font-medium ${
+                !useEnhancedOlivia
+                  ? 'bg-quantum-purple text-white shadow-lg shadow-quantum-purple/50'
+                  : 'bg-white/5 text-gray-400 hover:bg-white/10'
+              }`}
+            >
+              Classic (10 fields)
+            </button>
+            <button
+              onClick={() => setUseEnhancedOlivia(true)}
+              className={`px-4 py-2 rounded-lg transition-all font-medium ${
+                useEnhancedOlivia
+                  ? 'bg-gradient-to-r from-quantum-purple to-quantum-cyan text-white shadow-lg shadow-quantum-cyan/50'
+                  : 'bg-white/5 text-gray-400 hover:bg-white/10'
+              }`}
+            >
+              ✨ Enhanced (168 fields)
+            </button>
+          </div>
         </div>
+      )}
+
+      {/* Olivia AI Results - Conditional Rendering */}
+      {useEnhancedOlivia ? (
+        /* Enhanced UI - 168 fields */
+        oliviaEnhancedResult && (
+          <div className="mb-6">
+            <OliviaExecutiveReport
+              result={oliviaEnhancedResult}
+              properties={selectedProperties.map(p => ({
+                id: p.id,
+                address: p.address,
+                city: p.city
+              }))}
+              onClose={() => setOliviaEnhancedResult(null)}
+            />
+          </div>
+        )
+      ) : (
+        /* Classic UI - 10 fields (existing, unchanged) */
+        oliviaResult && (
+          <div className="mb-6">
+            <OliviaResults
+              result={oliviaResult}
+              properties={selectedProperties.map(p => ({
+                id: p.id,
+                address: p.address,
+                city: p.city
+              }))}
+              onClose={() => setOliviaResult(null)}
+            />
+          </div>
+        )
       )}
 
       {/* Olivia Error */}
       {oliviaError && (
         <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
-          <p className="text-red-400 text-sm">Olivia Error: {oliviaError}</p>
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-red-400 text-sm font-semibold mb-1">
+                {useEnhancedOlivia ? 'Olivia Enhanced Error' : 'Olivia Error'}
+              </p>
+              <p className="text-red-300 text-sm">{oliviaError}</p>
+            </div>
+          </div>
         </div>
       )}
 
