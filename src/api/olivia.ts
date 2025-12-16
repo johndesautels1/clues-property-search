@@ -2,6 +2,9 @@
  * Olivia AI - Property Analysis API (ENHANCED)
  * Calls Claude to analyze and compare properties
  * Now includes methodology transparency, timeline analysis, and action items
+ *
+ * ENVIRONMENT VARIABLES REQUIRED:
+ * - VITE_ANTHROPIC_API_KEY: Your Anthropic API key (must have VITE_ prefix for client-side access)
  */
 
 import Anthropic from '@anthropic-ai/sdk';
