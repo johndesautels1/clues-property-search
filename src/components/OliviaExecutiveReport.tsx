@@ -260,7 +260,7 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
 
             {/* Investment Grade Card (Right - 1 column) */}
             <div className="lg:col-span-1">
-              <div className={`glass-card p-6 border-2 border-quantum-green/40 rounded-2xl bg-gradient-to-br ${getGradeBg(result.investmentGrade.overallGrade)}`}>
+              <div className={`glass-card p-6 border-2 border-quantum-green/40 rounded-2xl bg-gradient-to-br ${getGradeBg(result.investmentGrade?.overallGrade || 'N/A')}`}>
                 <div className="flex items-center gap-2 mb-4">
                   <Award className="w-6 h-6 text-quantum-green" />
                   <h3 className="font-semibold text-white">Investment Grade</h3>
@@ -271,26 +271,26 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.3, type: "spring" }}
-                    className={`text-6xl font-bold ${getGradeColor(result.investmentGrade.overallGrade)} mb-2`}
+                    className={`text-6xl font-bold ${getGradeColor(result.investmentGrade?.overallGrade || 'N/A')} mb-2`}
                   >
-                    {result.investmentGrade.overallGrade}
+                    {result.investmentGrade?.overallGrade || 'N/A'}
                   </motion.div>
                   <div className="text-2xl font-semibold text-white mb-1">
-                    {result.investmentGrade.overallScore}/100
+                    {result.investmentGrade?.overallScore || 0}/100
                   </div>
                   <div className="text-sm text-gray-400">
-                    {result.investmentGrade.confidence}% Confidence
+                    {result.investmentGrade?.confidence || 0}% Confidence
                   </div>
                 </div>
 
                 {/* Component Scores */}
                 <div className="space-y-3">
                   {[
-                    { label: 'Value', score: result.investmentGrade.valueScore, color: 'quantum-green' },
-                    { label: 'Location', score: result.investmentGrade.locationScore, color: 'quantum-cyan' },
-                    { label: 'Condition', score: result.investmentGrade.conditionScore, color: 'quantum-purple' },
-                    { label: 'Investment', score: result.investmentGrade.investmentScore, color: 'quantum-blue' },
-                    { label: 'Risk', score: 100 - result.investmentGrade.riskScore, color: 'quantum-orange' },
+                    { label: 'Value', score: result.investmentGrade?.valueScore || 0, color: 'quantum-green' },
+                    { label: 'Location', score: result.investmentGrade?.locationScore || 0, color: 'quantum-cyan' },
+                    { label: 'Condition', score: result.investmentGrade?.conditionScore || 0, color: 'quantum-purple' },
+                    { label: 'Investment', score: result.investmentGrade?.investmentScore || 0, color: 'quantum-blue' },
+                    { label: 'Risk', score: 100 - (result.investmentGrade?.riskScore || 0), color: 'quantum-orange' },
                   ].map((item, idx) => (
                     <div key={idx}>
                       <div className="flex justify-between text-sm mb-1">
@@ -310,7 +310,7 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
                 </div>
 
                 <p className="text-sm text-gray-300 mt-4 p-3 bg-black/20 rounded-lg">
-                  {result.investmentGrade.summary}
+                  {result.investmentGrade?.summary || 'Analyzing investment grade...'}
                 </p>
               </div>
             </div>
@@ -368,7 +368,7 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
               <Star className="w-6 h-6 text-quantum-cyan" />
               <h2 className="text-xl font-bold text-white">Key Findings</h2>
               <span className="text-sm text-gray-400">
-                ({result.keyFindings.length} critical insights from 168-field analysis)
+                ({result.keyFindings?.length || 0} critical insights from 168-field analysis)
               </span>
             </div>
 
@@ -624,7 +624,7 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
               <Brain className="w-6 h-6 text-quantum-cyan" />
               <h2 className="text-xl font-bold text-white">Multi-LLM Market Forecast</h2>
               <span className="text-xs px-2 py-1 bg-quantum-cyan/20 text-quantum-cyan rounded">
-                Powered by {result.marketForecast.llmSources.length} AI Models
+                Powered by {result.marketForecast?.llmSources?.length || 0} AI Models
               </span>
             </div>
 
@@ -635,10 +635,10 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
             {/* Appreciation Forecast */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               {[
-                { label: '1 Year', value: result.marketForecast.appreciationForecast.year1 },
-                { label: '3 Years', value: result.marketForecast.appreciationForecast.year3 },
-                { label: '5 Years', value: result.marketForecast.appreciationForecast.year5 },
-                { label: '10 Years', value: result.marketForecast.appreciationForecast.year10 },
+                { label: '1 Year', value: result.marketForecast?.appreciationForecast?.year1 || 0 },
+                { label: '3 Years', value: result.marketForecast?.appreciationForecast?.year3 || 0 },
+                { label: '5 Years', value: result.marketForecast?.appreciationForecast?.year5 || 0 },
+                { label: '10 Years', value: result.marketForecast?.appreciationForecast?.year10 || 0 },
               ].map((forecast, idx) => (
                 <div key={idx} className="p-4 bg-white/5 rounded-xl text-center">
                   <div className="text-2xl font-bold text-quantum-cyan mb-1">
@@ -656,19 +656,19 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-400">Price Direction:</span>
-                    <span className="text-white font-medium">{result.marketForecast.marketTrends.priceDirection}</span>
+                    <span className="text-white font-medium">{result.marketForecast?.marketTrends?.priceDirection || 'N/A'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Demand Level:</span>
-                    <span className="text-white font-medium">{result.marketForecast.marketTrends.demandLevel}</span>
+                    <span className="text-white font-medium">{result.marketForecast?.marketTrends?.demandLevel || 'N/A'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Inventory:</span>
-                    <span className="text-white font-medium">{result.marketForecast.marketTrends.inventoryLevel}</span>
+                    <span className="text-white font-medium">{result.marketForecast?.marketTrends?.inventoryLevel || 'N/A'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Days on Market:</span>
-                    <span className="text-white font-medium">{result.marketForecast.marketTrends.daysOnMarketTrend}</span>
+                    <span className="text-white font-medium">{result.marketForecast?.marketTrends?.daysOnMarketTrend || 'N/A'}</span>
                   </div>
                 </div>
               </div>
@@ -723,7 +723,7 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
             </div>
 
             <div className="mt-4 text-xs text-gray-500 text-center">
-              Forecast generated: {result.marketForecast.forecastDate} • Data Quality: {result.marketForecast.dataQuality}
+              Forecast generated: {result.marketForecast?.forecastDate || 'N/A'} • Data Quality: {result.marketForecast?.dataQuality || 'N/A'}
             </div>
           </div>
 
@@ -880,7 +880,7 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
             </div>
 
             <p className="text-gray-300 mb-6">
-              {result.callToAction.primaryAction}
+              {result.callToAction?.primaryAction || 'Analyzing your next steps...'}
             </p>
 
             {/* Action Buttons */}
