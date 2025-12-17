@@ -24,11 +24,11 @@ import {
   type ProgressCallback
 } from '@/api/olivia-progressive-levels';
 import { analyzeOverallQuality, analyzeFieldQuality, getConfidenceLabel } from '@/lib/hallucination-scorer';
-import type { OliviaEnhancedPropertyInput } from '@/types/olivia-enhanced';
+import type { OliviaEnhancedPropertyInput, OliviaEnhancedAnalysisResult } from '@/types/olivia-enhanced';
 
 interface ProgressiveAnalysisPanelProps {
   properties: OliviaEnhancedPropertyInput[];
-  onComplete?: (results: any) => void;
+  onComplete?: (results: OliviaEnhancedAnalysisResult) => void;
 }
 
 export function ProgressiveAnalysisPanel({ properties, onComplete }: ProgressiveAnalysisPanelProps) {
@@ -151,13 +151,100 @@ export function ProgressiveAnalysisPanel({ properties, onComplete }: Progressive
         ...(level3Results.fieldComparisons || []),
       ];
 
-      results.fieldComparisons = allFieldComparisons;
+      // Transform FinalAggregationResult into OliviaEnhancedAnalysisResult format
+      const transformedResult: OliviaEnhancedAnalysisResult = {
+        analysisId: `progressive-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        propertiesAnalyzed: properties.length,
+        investmentGrade: results.investmentGrade,
+        keyFindings: results.keyFindings || [],
+        sectionAnalysis: results.sectionScores || [], // Rename sectionScores to sectionAnalysis
+        propertyRankings: results.investmentGrade?.propertyRankings || [],
+        verbalAnalysis: {
+          executiveSummary: results.overallRecommendation?.summary || 'Analysis complete. See detailed findings below.',
+          propertyAnalysis: properties.map((prop, idx) => ({
+            propertyId: prop.id || `property-${idx + 1}`,
+            verbalSummary: `Property ${idx + 1} analysis completed.`,
+            topStrengths: [],
+            topConcerns: []
+          })),
+          comparisonInsights: results.overallRecommendation?.recommendation || 'Compare properties using the detailed analysis below.',
+          topRecommendation: {
+            propertyId: results.investmentGrade?.winner?.propertyId || properties[0]?.id || '',
+            reasoning: results.overallRecommendation?.recommendation || '',
+            confidence: 85
+          }
+        },
+        marketForecast: {
+          llmSources: [],
+          appreciationForecast: {
+            year1: 0,
+            year3: 0,
+            year5: 0,
+            year10: 0,
+            confidence: 0
+          },
+          marketTrends: {
+            priceDirection: 'stable',
+            demandLevel: 'moderate',
+            inventoryLevel: 'balanced',
+            daysOnMarketTrend: 'stable'
+          },
+          marketRisks: {
+            economicRisks: [],
+            climateRisks: [],
+            demographicShifts: [],
+            regulatoryChanges: []
+          },
+          marketOpportunities: {
+            nearTerm: [],
+            longTerm: []
+          },
+          forecastDate: new Date().toISOString(),
+          dataQuality: 'medium'
+        },
+        decisionRecommendations: [],
+        heygenConfig: {
+          avatarId: 'olivia-default',
+          videoUrl: undefined,
+          isLive: false,
+          timedPopups: []
+        },
+        qaState: {
+          conversationHistory: [],
+          suggestedQuestions: [
+            'What are the key differences between these properties?',
+            'Which property offers the best value?',
+            'What are the main risks I should be aware of?'
+          ],
+          activeTopics: []
+        },
+        callToAction: {
+          primaryAction: 'Schedule a property viewing',
+          secondaryActions: ['Request more information', 'Compare with saved properties'],
+          nextSteps: [
+            'Review the detailed section analysis',
+            'Check the investment grade ratings',
+            'Examine key findings and recommendations'
+          ]
+        }
+      };
+
+      console.log('✅ Progressive Analysis Complete!');
+      console.log('📊 Field Comparisons (Levels 1-3):', allFieldComparisons.length);
+      console.log('📈 Section Analysis:', transformedResult.sectionAnalysis.length);
+      console.log('🏆 Investment Grade:', transformedResult.investmentGrade);
+      console.log('💡 Key Findings:', transformedResult.keyFindings.length);
+      console.log('📋 Full Result:', transformedResult);
+
+      // Store field comparisons separately for debugging
+      console.log('📊 Detailed Field Comparisons:', allFieldComparisons);
 
       completeLevel4(results);
 
-      // Notify parent
+      // Notify parent with transformed result
       if (onComplete) {
-        onComplete(results);
+        onComplete(transformedResult);
       }
     } catch (err) {
       console.error('Level 4 error:', err);
