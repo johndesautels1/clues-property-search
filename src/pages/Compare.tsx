@@ -13,7 +13,7 @@ import {
   MapPin, Building, Zap, Shield, BarChart3, Eye, RefreshCw,
   AlertTriangle, CheckCircle, Info, PieChart, Table2, Receipt,
   Maximize2, TreePine, Car, Waves, GraduationCap, Navigation,
-  Users, CloudRain, FileText
+  Users, CloudRain, FileText, Brain
 } from 'lucide-react';
 import { usePropertyStore } from '@/store/propertyStore';
 import { analyzeWithOlivia, type OliviaAnalysisResult } from '@/api/olivia';
@@ -23,6 +23,7 @@ import { analyzeWithOliviaProgressive, extractPropertyData } from '@/api/olivia-
 import type { OliviaEnhancedAnalysisResult } from '@/types/olivia-enhanced';
 import type { PropertyCard, Property } from '@/types/property';
 import { PropertyComparisonAnalytics, type Property as AnalyticsProperty } from '@/components/analytics';
+import { ProgressiveAnalysisPanel } from '@/components/ProgressiveAnalysisPanel';
 
 // View modes for comparison
 type CompareViewMode = 'table' | 'visual';
@@ -852,6 +853,9 @@ export default function Compare() {
   const [useEnhancedOlivia, setUseEnhancedOlivia] = useState(true); // Toggle: true = new UI, false = old UI
   const [oliviaEnhancedResult, setOliviaEnhancedResult] = useState<OliviaEnhancedAnalysisResult | null>(null);
 
+  // Progressive Analysis (NEW! - user-controlled 4-level analysis)
+  const [showProgressiveAnalysis, setShowProgressiveAnalysis] = useState(false);
+
   const selectedProperties = useMemo(() => {
     return selectedIds
       .filter((id): id is string => id !== null)
@@ -1066,6 +1070,21 @@ export default function Compare() {
                   )}
                 </button>
               )}
+
+              {/* PROGRESSIVE ANALYSIS BUTTON (NEW!) */}
+              {selectedProperties.length === 3 && (
+                <button
+                  onClick={() => setShowProgressiveAnalysis(!showProgressiveAnalysis)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:opacity-90 relative"
+                >
+                  <Brain className="w-4 h-4" />
+                  Progressive Analysis
+                  <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-[10px] font-bold bg-green-500 text-white rounded-full animate-pulse">
+                    NEW!
+                  </span>
+                  <span className="text-xs opacity-75">(No timeouts • Real progress)</span>
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -1161,6 +1180,29 @@ export default function Compare() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* PROGRESSIVE ANALYSIS PANEL (NEW!) */}
+      {showProgressiveAnalysis && selectedProperties.length === 3 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6"
+        >
+          <ProgressiveAnalysisPanel
+            properties={selectedProperties
+              .map(prop => {
+                const fullProp = fullProperties.get(prop.id);
+                return fullProp ? extractPropertyData(fullProp) : null;
+              })
+              .filter((prop): prop is NonNullable<typeof prop> => prop !== null)}
+            onComplete={(results) => {
+              console.log('✅ Progressive Analysis Complete:', results);
+              setOliviaEnhancedResult(results);
+              // Keep panel open so user can review all levels
+            }}
+          />
+        </motion.div>
       )}
 
       {/* Analytics Summary */}
