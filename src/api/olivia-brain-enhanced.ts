@@ -672,7 +672,7 @@ export async function analyzeWithOliviaEnhanced(
   console.log(`📊 Analyzing ${request.properties.length} properties across 168 fields`);
   console.log(`👤 Buyer profile: ${request.buyerProfile || 'General'}`);
 
-  const response = await client.messages.create({
+  const stream = await client.messages.stream({
     model: 'claude-opus-4-20250514',
     max_tokens: 32000, // Increased for complete 168-field analysis with proofs
     temperature: 0.3, // Lower temperature for more deterministic math
@@ -680,14 +680,17 @@ export async function analyzeWithOliviaEnhanced(
     messages: [{ role: 'user', content: mathematicalPrompt }],
   });
 
-  const textBlock = response.content.find(block => block.type === 'text');
-  if (!textBlock || textBlock.type !== 'text') {
-    throw new Error('No text response from Olivia');
+  // Collect streamed response
+  let fullText = '';
+  for await (const chunk of stream) {
+    if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+      fullText += chunk.delta.text;
+    }
   }
 
   try {
     // Clean response
-    let cleanText = textBlock.text.trim();
+    let cleanText = fullText.trim();
     if (cleanText.startsWith('```')) {
       cleanText = cleanText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
     }
@@ -814,7 +817,7 @@ export async function analyzeWithOliviaEnhanced(
 
     return result as OliviaEnhancedAnalysisResult & { validation: ValidationResult };
   } catch (e) {
-    console.error('Failed to parse Olivia response:', textBlock.text);
+    console.error('Failed to parse Olivia response:', fullText);
     throw new Error(`Parse failed: ${e instanceof Error ? e.message : 'Unknown'}`);
   }
 }
