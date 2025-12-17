@@ -1002,6 +1002,20 @@ export async function analyzeWithOliviaProgressive(
   }
 
   // ============================================================================
+  // INJECT FIELD COMPARISONS FROM LEVELS 1-3
+  // ============================================================================
+  // Level 4 only returns aggregated data (sections, grades, recommendations)
+  // We now inject the complete 168 field comparisons from Levels 1-3
+  const allFieldComparisons = [
+    ...(level1Results.fieldComparisons || []),
+    ...(level2Results.fieldComparisons || []),
+    ...(level3Results.fieldComparisons || [])
+  ];
+
+  result.fieldComparisons = allFieldComparisons;
+  console.log(`📊 Injected ${allFieldComparisons.length} field comparisons from Levels 1-3`);
+
+  // ============================================================================
   // VALIDATION
   // ============================================================================
   console.log('\n🔍 Validating complete 168-field analysis...');

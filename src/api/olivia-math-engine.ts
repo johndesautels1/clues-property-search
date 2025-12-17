@@ -1317,6 +1317,16 @@ export function buildAggregationPrompt(
     ...(level3Results.fieldComparisons || [])
   ];
 
+  // Create concise summary of field results (property-level averages)
+  const calculatePropertyAverage = (propNum: number) => {
+    const scores = allFieldComparisons
+      .map((fc: any) => fc[`property${propNum}`]?.score)
+      .filter((s: any) => s !== undefined && !isNaN(s));
+    return scores.length > 0
+      ? (scores.reduce((a: number, b: number) => a + b, 0) / scores.length).toFixed(1)
+      : 'N/A';
+  };
+
   return `
 # OLIVIA FINAL AGGREGATION - LEVEL 4 of 4
 
@@ -1340,11 +1350,18 @@ ${properties.map((p, i) => `
 - Listing Price: $${p.listing_price?.toLocaleString() || 'N/A'}
 - ${p.bedrooms} bed, ${p.total_bathrooms} bath, ${p.living_sqft?.toLocaleString() || 'N/A'} sqft
 - SMART Score: ${p.smartScore}/100
+- Average Field Score: ${calculatePropertyAverage(i + 1)}/100
 `).join('\n')}
 
-## ALL FIELD COMPARISONS (168 fields):
+## FIELD ANALYSIS SUMMARY:
 
-${JSON.stringify(allFieldComparisons, null, 2)}
+I have analyzed ALL 168 fields with complete mathematical proofs.
+
+**Property 1 Average:** ${calculatePropertyAverage(1)}/100 across ${allFieldComparisons.length} fields
+**Property 2 Average:** ${calculatePropertyAverage(2)}/100 across ${allFieldComparisons.length} fields
+**Property 3 Average:** ${calculatePropertyAverage(3)}/100 across ${allFieldComparisons.length} fields
+
+**NOTE:** You do NOT need to return fieldComparisons in your response - I already have all 168 complete field analyses from Levels 1-3. Your job is ONLY to aggregate them into sections and provide final recommendations.
 
 ## YOUR TASK:
 
@@ -1438,8 +1455,7 @@ Using the complete field analysis above, calculate:
     "retiree": { "recommendation": 2, "score": 88.7, "reasoning": "...", "proof": "..." },
     "vacation": { "recommendation": 1, "score": 91.3, "reasoning": "...", "proof": "..." },
     "firstTime": { "recommendation": 2, "score": 89.4, "reasoning": "...", "proof": "..." }
-  },
-  "fieldComparisons": ${JSON.stringify(allFieldComparisons).substring(0, 100)}...
+  }
 }
 \`\`\`
 
@@ -1449,7 +1465,8 @@ Using the complete field analysis above, calculate:
 2. Investment grades based on weighted section aggregation
 3. Winner must be mathematically proven
 4. Buyer recommendations must reference specific field data
-5. Return ONLY valid JSON
+5. DO NOT include fieldComparisons in your response (I will add them automatically)
+6. Return ONLY valid JSON matching the structure above
 
 Begin final aggregation now. Return valid JSON only.
 `;
