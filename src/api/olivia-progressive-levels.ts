@@ -39,12 +39,12 @@ export interface LevelResult {
 }
 
 export interface FinalAggregationResult {
-  investmentGrade: any;
-  sectionScores: any[];
-  overallRecommendation: any;
-  keyFindings: any[];
-  buyerSpecificRecommendations: any;
-  fieldComparisons?: any[]; // Will be injected
+  investmentGrade: any; // InvestmentGradeRating structure
+  sectionAnalysis: any[]; // SectionAnalysis[] structure (was sectionScores)
+  propertyRankings: any[]; // PropertyRanking[] structure
+  keyFindings: any[]; // KeyFinding[] structure
+  verbalAnalysis: any; // OliviaVerbalAnalysis structure
+  decisionRecommendations: any[]; // DecisionTreeRecommendation[] structure
 }
 
 /**

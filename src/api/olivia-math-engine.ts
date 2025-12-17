@@ -1411,62 +1411,209 @@ Using the complete field analysis above, calculate:
 \`\`\`json
 {
   "investmentGrade": {
-    "property1": { "grade": "A+", "score": 95.3, "calculation": "Weighted avg across all sections: ..." },
-    "property2": { "grade": "B+", "score": 87.1, "calculation": "..." },
-    "property3": { "grade": "A-", "score": 90.2, "calculation": "..." },
-    "winner": 1,
-    "reasoning": "Property 1 wins with 95.3 vs 90.2 vs 87.1..."
+    "overallGrade": "A+",
+    "overallScore": 92.5,
+    "confidence": 95,
+    "valueScore": 88,
+    "locationScore": 94,
+    "conditionScore": 91,
+    "investmentScore": 93,
+    "riskScore": 15,
+    "summary": "Exceptional investment opportunity with strong fundamentals across all categories."
   },
-  "sectionScores": [
+  "sectionAnalysis": [
     {
+      "sectionId": "pricing-value",
       "sectionName": "Pricing & Value",
-      "sectionWeight": 10,
-      "property1": { "score": 92.5, "calculation": "Fields 10-16 weighted avg: ..." },
-      "property2": { "score": 78.3, "calculation": "..." },
-      "property3": { "score": 65.1, "calculation": "..." },
-      "winner": 1,
-      "keyFindings": ["Property 1 best price/sqft", "Property 3 overpriced 18%"]
+      "sectionNumber": 2,
+      "grade": "A",
+      "score": 88.5,
+      "confidence": 95,
+      "keyFindings": [
+        "Property 1 offers best price per sqft at $245",
+        "Property 3 overpriced by 18% vs market comparables",
+        "All properties show positive appreciation potential"
+      ],
+      "strengths": [
+        "Property 1: Exceptional value proposition",
+        "Property 2: Competitive pricing for prime location"
+      ],
+      "concerns": [
+        "Property 3: High price/sqft ratio may limit buyer pool",
+        "Property 2: Limited price appreciation in past 12 months"
+      ],
+      "visualData": {
+        "type": "bar",
+        "data": {
+          "labels": ["Property 1", "Property 2", "Property 3"],
+          "values": [92.5, 78.3, 65.1],
+          "metric": "Price/Value Score"
+        }
+      },
+      "fieldsAnalyzed": [10, 11, 12, 13, 14, 15, 16],
+      "fieldCount": 7,
+      "fieldsWithData": 7,
+      "completeness": 100
     }
     // REPEAT FOR ALL 22 SECTIONS
   ],
-  "overallRecommendation": {
-    "winner": 1,
-    "winnerScore": 95.3,
-    "runnerUp": 3,
-    "runnerUpScore": 90.2,
-    "scoreGap": 5.1,
-    "confidence": "high",
-    "reasoning": "Property 1 wins by 5.1 points due to: ...",
-    "calculation": "Final weighted aggregate: (section1_score * weight1 + ...) / total_weights"
-  },
+  "propertyRankings": [
+    {
+      "rank": 1,
+      "propertyId": "property-1-id",
+      "overallScore": 92.5,
+      "grade": "A+",
+      "pros": [
+        "Best price per square foot",
+        "Superior school district ratings",
+        "Low property tax burden"
+      ],
+      "cons": [
+        "Older HVAC system needs replacement soon",
+        "Smaller lot size compared to Property 3"
+      ]
+    },
+    {
+      "rank": 2,
+      "propertyId": "property-2-id",
+      "overallScore": 87.3,
+      "grade": "B+",
+      "pros": ["Prime location", "Modern appliances"],
+      "cons": ["Higher HOA fees", "Limited parking"]
+    },
+    {
+      "rank": 3,
+      "propertyId": "property-3-id",
+      "overallScore": 81.2,
+      "grade": "B",
+      "pros": ["Largest lot size", "Recent renovations"],
+      "cons": ["Overpriced for area", "Higher annual taxes"]
+    }
+  ],
   "keyFindings": [
     {
-      "type": "critical_advantage",
-      "property": 1,
-      "finding": "Property 1 has 35% better cap rate",
+      "category": "strength",
+      "title": "Property 1 Offers Superior Investment Returns",
+      "description": "Property 1 demonstrates a 35% better cap rate and stronger cash flow potential compared to alternatives.",
       "impact": "high",
-      "proof": "Field 101: 8.2% vs 6.1% vs 5.8%"
+      "fields": [91, 92, 101, 102]
+    },
+    {
+      "category": "concern",
+      "title": "Property 3 Pricing Risk",
+      "description": "Property 3 is priced 18% above market comparables, creating downward price pressure risk.",
+      "impact": "high",
+      "fields": [10, 11, 93, 94]
+    },
+    {
+      "category": "opportunity",
+      "title": "Strong School District Advantage",
+      "description": "All three properties benefit from top-rated school district, supporting long-term value.",
+      "impact": "medium",
+      "fields": [63, 64, 65, 66, 67]
     }
-    // 8-12 findings
+    // 6-8 total findings
   ],
-  "buyerSpecificRecommendations": {
-    "investor": { "recommendation": 1, "score": 96.5, "reasoning": "...", "proof": "..." },
-    "family": { "recommendation": 3, "score": 93.2, "reasoning": "...", "proof": "..." },
-    "retiree": { "recommendation": 2, "score": 88.7, "reasoning": "...", "proof": "..." },
-    "vacation": { "recommendation": 1, "score": 91.3, "reasoning": "...", "proof": "..." },
-    "firstTime": { "recommendation": 2, "score": 89.4, "reasoning": "...", "proof": "..." }
-  }
+  "verbalAnalysis": {
+    "executiveSummary": "After analyzing all 168 data points across these three properties, I've identified Property 1 as the clear winner with an A+ investment grade. It offers exceptional value at $245 per square foot, superior school ratings, and the lowest total cost of ownership. While Property 3 has attractive features like a larger lot, it's overpriced by 18% relative to market comparables. Property 2 occupies the middle ground with a prime location but higher HOA fees. My recommendation is Property 1 for investors seeking strong returns and families prioritizing value and schools.",
+    "propertyAnalysis": [
+      {
+        "propertyId": "property-1-id",
+        "verbalSummary": "Property 1 stands out as the most compelling investment opportunity. With a price of just $245 per square foot, it's 22% below market average while offering superior fundamentals. The school district ranks in the top 10% statewide, and the neighborhood shows consistent 5% annual appreciation. The main consideration is the HVAC system age, which will require replacement within 3 years at an estimated cost of $8,000.",
+        "topStrengths": [
+          "Exceptional price-to-value ratio",
+          "Top-tier school district",
+          "Strong historical appreciation",
+          "Low property taxes"
+        ],
+        "topConcerns": [
+          "HVAC system nearing end of life",
+          "Smaller lot size than Property 3"
+        ]
+      },
+      {
+        "propertyId": "property-2-id",
+        "verbalSummary": "Property 2 offers a solid middle-ground option with its prime downtown location and modern updates. However, the $425 monthly HOA fee significantly impacts cash flow for investors. For families prioritizing walkability and urban amenities, this could be the right choice despite the premium pricing.",
+        "topStrengths": [
+          "Prime urban location",
+          "Modern appliances and finishes",
+          "Low maintenance exterior"
+        ],
+        "topConcerns": [
+          "High HOA fees reduce investor returns",
+          "Limited parking availability",
+          "Slower appreciation than suburban areas"
+        ]
+      },
+      {
+        "propertyId": "property-3-id",
+        "verbalSummary": "Property 3 boasts the largest lot and recent kitchen renovations, but the pricing presents a significant concern. At $315 per square foot, it's 18% above comparable sales in the area. Unless the seller is willing to negotiate, this property carries meaningful downside risk.",
+        "topStrengths": [
+          "Largest lot size at 0.35 acres",
+          "Recently renovated kitchen ($45K value)",
+          "Excellent curb appeal"
+        ],
+        "topConcerns": [
+          "Overpriced relative to comps",
+          "Highest annual property taxes",
+          "May struggle to sell if market softens"
+        ]
+      }
+    ],
+    "comparisonInsights": "The three properties represent distinct value propositions: Property 1 is the value leader with strong fundamentals, Property 2 trades premium pricing for location convenience, and Property 3 offers space and upgrades at a questionable price point. The gap between Property 1's A+ grade (92.5) and Property 3's B grade (81.2) is significant at 11.3 points, driven primarily by pricing efficiency and total cost of ownership differences.",
+    "topRecommendation": {
+      "propertyId": "property-1-id",
+      "reasoning": "Property 1 delivers the optimal combination of value, quality schools, and investment fundamentals. While it requires an HVAC upgrade in the near term, the $8,000 cost is more than offset by the $65,000 savings versus Property 3's asking price. For both investors and families, this property offers the highest probability of satisfaction and financial success.",
+      "confidence": 92
+    }
+  },
+  "decisionRecommendations": [
+    {
+      "buyerProfile": "investor",
+      "recommendation": {
+        "action": "highly-recommend",
+        "reasoning": "Property 1 offers 8.2% cap rate and $1,850 monthly cash flow, significantly outperforming alternatives.",
+        "confidence": 95
+      },
+      "keyConsiderations": [
+        "Budget for HVAC replacement in year 2-3",
+        "Strong rental demand in school district",
+        "Low property tax burden enhances ROI"
+      ],
+      "financialAnalysis": {
+        "upfrontCosts": 92000,
+        "monthlyCosts": 2150,
+        "expectedROI": 14.5,
+        "breakEvenYears": 4.2
+      },
+      "immediateActions": [
+        "Schedule professional HVAC inspection",
+        "Request seller credit for system replacement",
+        "Verify rental comps in neighborhood"
+      ],
+      "dueDiligenceChecklist": [
+        "Review HOA bylaws on rental restrictions",
+        "Confirm school district boundaries",
+        "Inspect foundation and roof condition"
+      ]
+    }
+    // Add for: family, retiree, vacation, first-time
+  ]
 }
 \`\`\`
 
 ## CRITICAL REQUIREMENTS:
 
-1. All 22 sections MUST have scores with calculations
-2. Investment grades based on weighted section aggregation
-3. Winner must be mathematically proven
-4. Buyer recommendations must reference specific field data
-5. DO NOT include fieldComparisons in your response (I will add them automatically)
-6. Return ONLY valid JSON matching the structure above
+1. **sectionAnalysis** - ALL 22 sections with complete structure (sectionId, sectionNumber, grade, score, confidence, keyFindings, strengths, concerns, visualData, fieldsAnalyzed, fieldCount, fieldsWithData, completeness)
+2. **investmentGrade** - Single aggregate grade (NOT per-property), with component scores
+3. **propertyRankings** - Rank all 3 properties (1st, 2nd, 3rd) with pros/cons
+4. **keyFindings** - 6-8 findings with category, title, description, impact, field numbers
+5. **verbalAnalysis** - Complete executive summary and per-property analysis
+6. **decisionRecommendations** - For all 5 buyer types (investor, family, retiree, vacation, first-time)
+7. **visualData.type** - Use: bar, donut, gauge, radar, heatmap, or line (choose best for each section)
+8. **Calculations** - Show mathematical proof for scores (aggregate from individual field scores)
+9. DO NOT include fieldComparisons in your response (I will add them automatically)
+10. Return ONLY valid JSON matching the structure above
 
 Begin final aggregation now. Return valid JSON only.
 `;
@@ -1520,16 +1667,35 @@ export function validateOliviaResponse(response: any): ValidationResult {
     });
   }
 
-  if (!response.sectionScores || !Array.isArray(response.sectionScores)) {
-    errors.push('Missing or invalid sectionScores array');
+  if (!response.sectionAnalysis || !Array.isArray(response.sectionAnalysis)) {
+    errors.push('Missing or invalid sectionAnalysis array');
   } else {
-    if (response.sectionScores.length < 22) {
-      warnings.push(`Only ${response.sectionScores.length} sections analyzed, expected 22`);
+    if (response.sectionAnalysis.length < 22) {
+      warnings.push(`Only ${response.sectionAnalysis.length} sections analyzed, expected 22`);
     }
 
-    response.sectionScores.forEach((section: any) => {
-      if (!section.calculation || section.calculation === '') {
-        hallucinations.push(`Section "${section.sectionName}" missing calculation proof`);
+    response.sectionAnalysis.forEach((section: any, idx: number) => {
+      // Validate required fields for each section
+      if (!section.sectionId) {
+        errors.push(`Section ${idx + 1} missing sectionId`);
+      }
+      if (!section.sectionName) {
+        errors.push(`Section ${idx + 1} missing sectionName`);
+      }
+      if (!section.grade) {
+        errors.push(`Section "${section.sectionName}" missing grade`);
+      }
+      if (section.score === undefined || section.score === null) {
+        errors.push(`Section "${section.sectionName}" missing score`);
+      }
+      if (!section.visualData || !section.visualData.type) {
+        errors.push(`Section "${section.sectionName}" missing visualData`);
+      }
+      if (!section.strengths || section.strengths.length === 0) {
+        warnings.push(`Section "${section.sectionName}" has no strengths listed`);
+      }
+      if (!section.concerns || section.concerns.length === 0) {
+        warnings.push(`Section "${section.sectionName}" has no concerns listed`);
       }
     });
   }

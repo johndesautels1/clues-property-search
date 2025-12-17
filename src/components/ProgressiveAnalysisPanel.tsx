@@ -151,59 +151,33 @@ export function ProgressiveAnalysisPanel({ properties, onComplete }: Progressive
         ...(level3Results.fieldComparisons || []),
       ];
 
-      // Transform FinalAggregationResult into OliviaEnhancedAnalysisResult format
-      const transformedResult: OliviaEnhancedAnalysisResult = {
+      // NO TRANSFORMATION NEEDED! Level 4 now returns data in correct format
+      // Just build the final result with proper structure
+      const finalResult: OliviaEnhancedAnalysisResult = {
         analysisId: `progressive-${Date.now()}`,
         timestamp: new Date().toISOString(),
         propertiesAnalyzed: properties.length,
+
+        // These come directly from Level 4 in correct format
         investmentGrade: results.investmentGrade,
+        sectionAnalysis: results.sectionAnalysis || [],
+        propertyRankings: results.propertyRankings || [],
         keyFindings: results.keyFindings || [],
-        sectionAnalysis: results.sectionScores || [], // Rename sectionScores to sectionAnalysis
-        propertyRankings: results.investmentGrade?.propertyRankings || [],
-        verbalAnalysis: {
-          executiveSummary: results.overallRecommendation?.summary || 'Analysis complete. See detailed findings below.',
-          propertyAnalysis: properties.map((prop, idx) => ({
-            propertyId: prop.id || `property-${idx + 1}`,
-            verbalSummary: `Property ${idx + 1} analysis completed.`,
-            topStrengths: [],
-            topConcerns: []
-          })),
-          comparisonInsights: results.overallRecommendation?.recommendation || 'Compare properties using the detailed analysis below.',
-          topRecommendation: {
-            propertyId: results.investmentGrade?.winner?.propertyId || properties[0]?.id || '',
-            reasoning: results.overallRecommendation?.recommendation || '',
-            confidence: 85
-          }
-        },
+        verbalAnalysis: results.verbalAnalysis,
+        decisionRecommendations: results.decisionRecommendations || [],
+
+        // Placeholder for multi-LLM forecast (future feature)
         marketForecast: {
           llmSources: [],
-          appreciationForecast: {
-            year1: 0,
-            year3: 0,
-            year5: 0,
-            year10: 0,
-            confidence: 0
-          },
-          marketTrends: {
-            priceDirection: 'stable',
-            demandLevel: 'moderate',
-            inventoryLevel: 'balanced',
-            daysOnMarketTrend: 'stable'
-          },
-          marketRisks: {
-            economicRisks: [],
-            climateRisks: [],
-            demographicShifts: [],
-            regulatoryChanges: []
-          },
-          marketOpportunities: {
-            nearTerm: [],
-            longTerm: []
-          },
+          appreciationForecast: { year1: 0, year3: 0, year5: 0, year10: 0, confidence: 0 },
+          marketTrends: { priceDirection: 'stable', demandLevel: 'moderate', inventoryLevel: 'balanced', daysOnMarketTrend: 'stable' },
+          marketRisks: { economicRisks: [], climateRisks: [], demographicShifts: [], regulatoryChanges: [] },
+          marketOpportunities: { nearTerm: [], longTerm: [] },
           forecastDate: new Date().toISOString(),
           dataQuality: 'medium'
         },
-        decisionRecommendations: [],
+
+        // UI scaffolding
         heygenConfig: {
           avatarId: 'olivia-default',
           videoUrl: undefined,
@@ -220,7 +194,7 @@ export function ProgressiveAnalysisPanel({ properties, onComplete }: Progressive
           activeTopics: []
         },
         callToAction: {
-          primaryAction: 'Schedule a property viewing',
+          primaryAction: results.verbalAnalysis?.topRecommendation?.reasoning || 'Review the analysis and make an informed decision',
           secondaryActions: ['Request more information', 'Compare with saved properties'],
           nextSteps: [
             'Review the detailed section analysis',
@@ -231,20 +205,19 @@ export function ProgressiveAnalysisPanel({ properties, onComplete }: Progressive
       };
 
       console.log('✅ Progressive Analysis Complete!');
-      console.log('📊 Field Comparisons (Levels 1-3):', allFieldComparisons.length);
-      console.log('📈 Section Analysis:', transformedResult.sectionAnalysis.length);
-      console.log('🏆 Investment Grade:', transformedResult.investmentGrade);
-      console.log('💡 Key Findings:', transformedResult.keyFindings.length);
-      console.log('📋 Full Result:', transformedResult);
-
-      // Store field comparisons separately for debugging
-      console.log('📊 Detailed Field Comparisons:', allFieldComparisons);
+      console.log('📊 All Field Comparisons (Levels 1-3):', allFieldComparisons.length, 'fields');
+      console.log('📈 Section Analysis:', finalResult.sectionAnalysis.length, 'sections');
+      console.log('🏆 Investment Grade:', finalResult.investmentGrade);
+      console.log('🏅 Property Rankings:', finalResult.propertyRankings.length, 'properties');
+      console.log('💡 Key Findings:', finalResult.keyFindings.length, 'findings');
+      console.log('🎙️ Verbal Analysis Generated:', !!finalResult.verbalAnalysis);
+      console.log('📋 Full Result Structure:', finalResult);
 
       completeLevel4(results);
 
-      // Notify parent with transformed result
+      // Notify parent with final result
       if (onComplete) {
-        onComplete(transformedResult);
+        onComplete(finalResult);
       }
     } catch (err) {
       console.error('Level 4 error:', err);
@@ -686,16 +659,16 @@ export function ProgressiveAnalysisPanel({ properties, onComplete }: Progressive
               <div>✓ All 168 fields analyzed across 3 properties</div>
               <div>✓ 22 section scores calculated</div>
               <div>✓ Investment grades assigned</div>
-              <div>✓ Winner: Property {finalResults.overallRecommendation?.winner || 'TBD'}</div>
+              <div>✓ Top recommendation: {finalResults.verbalAnalysis?.topRecommendation?.propertyId || 'See full results'}</div>
               <div>✓ Overall Quality: {overallQuality?.toFixed(0)}%</div>
             </div>
 
             <div className="mt-4 p-3 bg-white dark:bg-gray-800 rounded border border-purple-200 dark:border-purple-700">
               <div className="text-xs font-semibold text-purple-900 dark:text-purple-100 mb-2">
-                Winner Details:
+                Recommendation:
               </div>
               <div className="text-sm text-gray-700 dark:text-gray-300">
-                {finalResults.overallRecommendation?.reasoning || 'See full results below'}
+                {finalResults.verbalAnalysis?.topRecommendation?.reasoning || 'See full executive report below'}
               </div>
             </div>
           </motion.div>
