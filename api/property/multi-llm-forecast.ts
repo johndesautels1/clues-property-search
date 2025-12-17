@@ -384,8 +384,11 @@ async function callGrokForecast(
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'grok-4-expert',
-      messages: [{ role: 'user', content: prompt }],
+      model: 'grok-4',
+      messages: [
+        { role: 'system', content: 'You are an expert real estate market analyst with live web search capabilities.' },
+        { role: 'user', content: prompt }
+      ],
       temperature: 0.5,
       max_tokens: 2000,
     }),
