@@ -20,7 +20,7 @@ import {
   validateOliviaResponse,
   type ValidationResult,
 } from './olivia-math-engine';
-import { getMultiLLMMarketForecast } from './multi-llm-forecast';
+// Multi-LLM forecast now via API endpoint
 
 // ============================================================================
 // COMPLETE FIELD EXTRACTION - ALL 168 FIELDS
@@ -731,16 +731,27 @@ export async function analyzeWithOliviaEnhanced(
       const topProperty = request.properties[0];
 
       try {
-        const forecast = await getMultiLLMMarketForecast(
-          topProperty.full_address,
-          topProperty.listing_price || 0,
-          topProperty.neighborhood || 'Unknown',
-          topProperty.property_type
-        );
+        // Call server-side multi-LLM forecast API
+        const response = await fetch('/api/property/multi-llm-forecast', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            address: topProperty.full_address,
+            price: topProperty.listing_price || 0,
+            neighborhood: topProperty.neighborhood || 'Unknown',
+            propertyType: topProperty.property_type
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Multi-LLM forecast failed: ${response.statusText}`);
+        }
+
+        const forecast = await response.json();
 
         // Transform to expected MarketForecast interface
         result.marketForecast = {
-          llmSources: forecast.llmSources.map(source => {
+          llmSources: forecast.llmSources.map((source: string) => {
             if (source.includes('Claude')) return 'claude-opus';
             if (source.includes('GPT-4')) return 'gpt-4';
             if (source.includes('Gemini')) return 'gemini-pro';
@@ -764,15 +775,15 @@ export async function analyzeWithOliviaEnhanced(
           },
 
           marketRisks: {
-            economicRisks: forecast.marketTrends.filter(t => t.toLowerCase().includes('economy') || t.toLowerCase().includes('rate')),
-            climateRisks: forecast.marketTrends.filter(t => t.toLowerCase().includes('climate') || t.toLowerCase().includes('flood')),
-            demographicShifts: forecast.marketTrends.filter(t => t.toLowerCase().includes('population') || t.toLowerCase().includes('demographic')),
-            regulatoryChanges: forecast.marketTrends.filter(t => t.toLowerCase().includes('regulation') || t.toLowerCase().includes('zoning')),
+            economicRisks: forecast.marketTrends.filter((t: string) => t.toLowerCase().includes('economy') || t.toLowerCase().includes('rate')),
+            climateRisks: forecast.marketTrends.filter((t: string) => t.toLowerCase().includes('climate') || t.toLowerCase().includes('flood')),
+            demographicShifts: forecast.marketTrends.filter((t: string) => t.toLowerCase().includes('population') || t.toLowerCase().includes('demographic')),
+            regulatoryChanges: forecast.marketTrends.filter((t: string) => t.toLowerCase().includes('regulation') || t.toLowerCase().includes('zoning')),
           },
 
           marketOpportunities: {
-            nearTerm: forecast.keyInsights.filter((_, i) => i < 3),
-            longTerm: forecast.keyInsights.filter((_, i) => i >= 3),
+            nearTerm: forecast.keyInsights.filter((_: string, i: number) => i < 3),
+            longTerm: forecast.keyInsights.filter((_: string, i: number) => i >= 3),
           },
 
           forecastDate: forecast.timestamp,

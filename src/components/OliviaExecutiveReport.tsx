@@ -327,7 +327,7 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
 
             <div className="bg-gradient-to-r from-quantum-purple/10 via-quantum-cyan/10 to-transparent p-5 rounded-xl border border-quantum-purple/20">
               <p className="text-gray-200 leading-relaxed mb-4">
-                {result.verbalAnalysis.comparisonInsights}
+                {result.verbalAnalysis?.comparisonInsights || 'Analyzing comparison insights...'}
               </p>
 
               {/* Top Recommendation */}

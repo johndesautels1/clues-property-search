@@ -1,12 +1,12 @@
 /**
- * Multi-LLM Market Forecast System
+ * Multi-LLM Market Forecast API (Server-Side Vercel Serverless Function)
  *
  * Calls 6 different LLMs to get consensus on property market forecasts:
  * - Claude Sonnet 4.5: Fast, efficient analysis + pattern recognition
  * - Claude Opus 4.5: Deep reasoning + complex market modeling
- * - GPT-5.2: Market psychology + buyer behavior
+ * - GPT-5.1: Market psychology + buyer behavior
  * - Gemini 2.5 Pro: Google data integration + local trends
- * - Perplexity Pro: LIVE web search for breaking news
+ * - Perplexity Sonar Reasoning Pro: LIVE web search for breaking news
  * - Grok 4 Expert: X (Twitter) data + real-time social sentiment
  *
  * Returns aggregated forecast with consensus score
@@ -15,9 +15,15 @@
  * - Divergent: LLMs disagree by 5%+ (outliers flagged with z-score > 1.5)
  */
 
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+
+// Vercel serverless config
+export const config = {
+  maxDuration: 300, // 5 minutes for 6 LLM calls
+};
 
 // ============================================================================
 // TYPES
@@ -119,22 +125,19 @@ async function callClaudeForecast(
   neighborhood: string,
   propertyType: string
 ): Promise<LLMForecast> {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    throw new Error('VITE_ANTHROPIC_API_KEY not found in environment variables');
+    throw new Error('ANTHROPIC_API_KEY not found in environment variables');
   }
 
-  const client = new Anthropic({
-    apiKey,
-    dangerouslyAllowBrowser: true
-  });
+  const client = new Anthropic({ apiKey });
 
   const prompt = buildForecastPrompt(address, price, neighborhood, propertyType);
 
   const response = await client.messages.create({
-    model: 'claude-sonnet-4-5-20250929', // Claude Sonnet 4.5
+    model: 'claude-sonnet-4-5-20250929',
     max_tokens: 2000,
-    temperature: 0.5, // Balanced for forecasting
+    temperature: 0.5,
     messages: [{ role: 'user', content: prompt }],
   });
 
@@ -172,22 +175,19 @@ async function callClaudeOpusForecast(
   neighborhood: string,
   propertyType: string
 ): Promise<LLMForecast> {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    throw new Error('VITE_ANTHROPIC_API_KEY not found in environment variables');
+    throw new Error('ANTHROPIC_API_KEY not found in environment variables');
   }
 
-  const client = new Anthropic({
-    apiKey,
-    dangerouslyAllowBrowser: true
-  });
+  const client = new Anthropic({ apiKey });
 
   const prompt = buildForecastPrompt(address, price, neighborhood, propertyType);
 
   const response = await client.messages.create({
-    model: 'claude-opus-4-5-20251101', // Claude Opus 4.5
+    model: 'claude-opus-4-5-20251101',
     max_tokens: 2000,
-    temperature: 0.5, // Balanced for forecasting
+    temperature: 0.5,
     messages: [{ role: 'user', content: prompt }],
   });
 
@@ -217,7 +217,7 @@ async function callClaudeOpusForecast(
 }
 
 /**
- * GPT-5.2 - Market psychology + buyer behavior
+ * GPT-5.1 - Market psychology + buyer behavior
  */
 async function callGPT4Forecast(
   address: string,
@@ -225,35 +225,32 @@ async function callGPT4Forecast(
   neighborhood: string,
   propertyType: string
 ): Promise<LLMForecast> {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error('VITE_OPENAI_API_KEY not found in environment variables');
+    throw new Error('OPENAI_API_KEY not found in environment variables');
   }
 
-  const client = new OpenAI({
-    apiKey,
-    dangerouslyAllowBrowser: true
-  });
+  const client = new OpenAI({ apiKey });
 
   const prompt = buildForecastPrompt(address, price, neighborhood, propertyType);
 
   const response = await client.chat.completions.create({
-    model: 'gpt-5.2', // GPT-5.2
+    model: 'gpt-5.1',
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.5,
-    max_tokens: 2000,
+    max_completion_tokens: 2000,
     response_format: { type: 'json_object' },
   });
 
   const text = response.choices[0]?.message?.content;
   if (!text) {
-    throw new Error('No content in GPT-5.2 response');
+    throw new Error('No content in GPT-5.1 response');
   }
 
   const data = JSON.parse(text);
 
   return {
-    source: 'GPT-5.2',
+    source: 'GPT-5.1',
     appreciation1Yr: data.appreciation1Yr,
     appreciation5Yr: data.appreciation5Yr,
     confidence: data.confidence,
@@ -271,13 +268,13 @@ async function callGeminiForecast(
   neighborhood: string,
   propertyType: string
 ): Promise<LLMForecast> {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error('VITE_GEMINI_API_KEY not found in environment variables');
+    throw new Error('GEMINI_API_KEY not found in environment variables');
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' }); // Gemini 2.5 Pro
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
 
   const prompt = buildForecastPrompt(address, price, neighborhood, propertyType);
 
@@ -303,7 +300,7 @@ async function callGeminiForecast(
 }
 
 /**
- * Perplexity Pro - LIVE web search for breaking news
+ * Perplexity Sonar Reasoning Pro - LIVE web search for breaking news
  */
 async function callPerplexityForecast(
   address: string,
@@ -311,12 +308,12 @@ async function callPerplexityForecast(
   neighborhood: string,
   propertyType: string
 ): Promise<LLMForecast> {
-  const apiKey = import.meta.env.VITE_PERPLEXITY_API_KEY;
+  const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) {
-    throw new Error('VITE_PERPLEXITY_API_KEY not found in environment variables');
+    throw new Error('PERPLEXITY_API_KEY not found in environment variables');
   }
 
-  const prompt = buildForecastPrompt(address, price, neighborhood, propertyType);
+  const userPrompt = buildForecastPrompt(address, price, neighborhood, propertyType);
 
   const response = await fetch('https://api.perplexity.ai/chat/completions', {
     method: 'POST',
@@ -325,8 +322,11 @@ async function callPerplexityForecast(
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'perplexity-pro', // Perplexity Pro
-      messages: [{ role: 'user', content: prompt }],
+      model: 'sonar-reasoning-pro',
+      messages: [
+        { role: 'system', content: 'You are an expert real estate market analyst providing data-driven forecasts.' },
+        { role: 'user', content: userPrompt }
+      ],
       temperature: 0.5,
       max_tokens: 2000,
     }),
@@ -352,7 +352,7 @@ async function callPerplexityForecast(
   const data = JSON.parse(jsonMatch[0]);
 
   return {
-    source: 'Perplexity Pro',
+    source: 'Perplexity Sonar Reasoning Pro',
     appreciation1Yr: data.appreciation1Yr,
     appreciation5Yr: data.appreciation5Yr,
     confidence: data.confidence,
@@ -370,9 +370,9 @@ async function callGrokForecast(
   neighborhood: string,
   propertyType: string
 ): Promise<LLMForecast> {
-  const apiKey = import.meta.env.VITE_GROK_API_KEY;
+  const apiKey = process.env.XAI_API_KEY;
   if (!apiKey) {
-    throw new Error('VITE_GROK_API_KEY not found in environment variables');
+    throw new Error('XAI_API_KEY not found in environment variables');
   }
 
   const prompt = buildForecastPrompt(address, price, neighborhood, propertyType);
@@ -384,7 +384,7 @@ async function callGrokForecast(
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'grok-4-expert', // Grok 4 Expert
+      model: 'grok-4-expert',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.5,
       max_tokens: 2000,
@@ -474,18 +474,11 @@ function aggregateTrends(forecasts: LLMForecast[]): string[] {
 }
 
 // ============================================================================
-// MAIN EXPORT
+// MAIN FORECAST FUNCTION
 // ============================================================================
 
 /**
  * Get market forecast from all 6 LLMs and calculate consensus
- *
- * CONFLICT RESOLUTION: When LLMs disagree, we use statistical consensus:
- * - Calculate mean and standard deviation of all forecasts
- * - Flag outliers with z-score > 1.5
- * - Return weighted average with confidence based on agreement level
- * - Strong consensus (stdDev < 1%): High confidence
- * - Divergent (stdDev >= 5%): Low confidence, review individual LLM reasoning
  */
 export async function getMultiLLMMarketForecast(
   address: string,
@@ -510,7 +503,7 @@ export async function getMultiLLMMarketForecast(
   // Extract successful forecasts
   const successfulForecasts: LLMForecast[] = [];
   forecasts.forEach((result, index) => {
-    const sources = ['Claude Sonnet 4.5', 'Claude Opus 4.5', 'GPT-5.2', 'Gemini 2.5', 'Perplexity Pro', 'Grok 4'];
+    const sources = ['Claude Sonnet 4.5', 'Claude Opus 4.5', 'GPT-5.1', 'Gemini 2.5', 'Perplexity Sonar Reasoning Pro', 'Grok 4'];
     if (result.status === 'fulfilled') {
       successfulForecasts.push(result.value);
       console.log(`✅ ${sources[index]}: ${result.value.appreciation1Yr.toFixed(1)}% (1yr)`);
@@ -568,4 +561,32 @@ export async function getMultiLLMMarketForecast(
     timestamp: new Date().toISOString(),
     location: `${address}, ${neighborhood}`,
   };
+}
+
+// ============================================================================
+// VERCEL SERVERLESS HANDLER
+// ============================================================================
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    const { address, price, neighborhood, propertyType } = req.body;
+
+    if (!address || !price || !neighborhood) {
+      return res.status(400).json({ error: 'Missing required fields: address, price, neighborhood' });
+    }
+
+    const forecast = await getMultiLLMMarketForecast(address, price, neighborhood, propertyType);
+
+    return res.status(200).json(forecast);
+  } catch (error) {
+    console.error('Multi-LLM forecast error:', error);
+    return res.status(500).json({
+      error: 'Forecast failed',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
 }
