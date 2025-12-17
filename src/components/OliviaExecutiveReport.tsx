@@ -406,7 +406,7 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
                       </div>
                       <p className="text-sm text-gray-300 mb-2">{finding.description}</p>
                       <div className="text-xs text-gray-500">
-                        Based on {finding.fields.length} data points
+                        Based on {finding.fields?.length || 0} data points
                       </div>
                     </div>
                   </div>
@@ -455,7 +455,7 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
                             </span>
                           </div>
                           <div className="text-xs text-gray-500">
-                            {section.fieldsWithData}/{section.fieldCount} fields • {section.completeness}% complete
+                            {section.fieldsWithData || 0}/{section.fieldCount || 0} fields • {section.completeness || 0}% complete
                           </div>
                         </div>
 
