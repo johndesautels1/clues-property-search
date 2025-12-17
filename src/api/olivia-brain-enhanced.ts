@@ -793,6 +793,7 @@ export async function analyzeWithOliviaEnhanced(
         console.log(`✅ Multi-LLM Forecast complete: ${forecast.appreciation1Yr.toFixed(1)}% (1yr)`);
         console.log(`   Consensus: ${forecast.consensus}`);
         console.log(`   LLMs: ${forecast.llmSources.join(', ')}`);
+        console.log('📊 result.marketForecast:', JSON.stringify(result.marketForecast).substring(0, 300));
       } catch (error) {
         console.error('❌ Multi-LLM Market Forecast failed:', error);
         console.warn('⚠️ Continuing without market forecast');
