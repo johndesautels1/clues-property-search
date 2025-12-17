@@ -673,8 +673,8 @@ export async function analyzeWithOliviaEnhanced(
   console.log(`👤 Buyer profile: ${request.buyerProfile || 'General'}`);
 
   const response = await client.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 16000, // Need full context for all calculations
+    model: 'claude-opus-4-20250514',
+    max_tokens: 32000, // Increased for complete 168-field analysis with proofs
     temperature: 0.3, // Lower temperature for more deterministic math
     system: OLIVIA_SYSTEM_PROMPT,
     messages: [{ role: 'user', content: mathematicalPrompt }],
