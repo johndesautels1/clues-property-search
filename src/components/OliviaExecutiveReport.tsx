@@ -81,7 +81,8 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
   };
 
   // Grade color helper
-  const getGradeColor = (grade: string) => {
+  const getGradeColor = (grade: string | undefined) => {
+    if (!grade) return 'text-gray-400';
     if (grade.startsWith('A')) return 'text-quantum-green';
     if (grade.startsWith('B')) return 'text-quantum-cyan';
     if (grade.startsWith('C')) return 'text-quantum-orange';
@@ -89,7 +90,8 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
   };
 
   // Grade background helper
-  const getGradeBg = (grade: string) => {
+  const getGradeBg = (grade: string | undefined) => {
+    if (!grade) return 'from-gray-500/20 to-gray-500/5';
     if (grade.startsWith('A')) return 'from-quantum-green/20 to-quantum-green/5';
     if (grade.startsWith('B')) return 'from-quantum-cyan/20 to-quantum-cyan/5';
     if (grade.startsWith('C')) return 'from-quantum-orange/20 to-quantum-orange/5';
