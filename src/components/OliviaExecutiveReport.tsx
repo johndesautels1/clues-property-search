@@ -348,11 +348,11 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
                     <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden max-w-[200px]">
                       <div
                         className="h-full bg-quantum-green rounded-full"
-                        style={{ width: `${result.verbalAnalysis.topRecommendation.confidence}%` }}
+                        style={{ width: `${result.verbalAnalysis?.topRecommendation?.confidence || 0}%` }}
                       />
                     </div>
                     <div className="text-xs font-semibold text-quantum-green">
-                      {result.verbalAnalysis.topRecommendation.confidence}%
+                      {result.verbalAnalysis?.topRecommendation?.confidence || 0}%
                     </div>
                   </div>
                 </div>
