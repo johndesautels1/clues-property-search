@@ -11,6 +11,74 @@
 import type { OliviaEnhancedPropertyInput } from '@/types/olivia-enhanced';
 
 // ============================================================================
+// PROGRESSIVE ANALYSIS - FIELD LEVEL GROUPINGS
+// ============================================================================
+
+/**
+ * 4-LEVEL PROGRESSIVE ANALYSIS SYSTEM
+ * Splits 168 fields into 3 sequential analysis passes + 1 final aggregation
+ * Each level processes ~56 fields to stay within Claude Opus 32K token limit
+ */
+
+export const FIELD_LEVELS = {
+  // LEVEL 1: Critical Decision Fields (1-56) - 56 fields
+  // Most important for investment decision
+  LEVEL_1: {
+    name: 'Critical Decision Fields',
+    fieldRange: [1, 56] as const,
+    groups: [
+      'Address & Identity',
+      'Pricing & Value',
+      'Property Basics',
+      'HOA & Taxes',
+      'Structure & Systems',
+      'Interior Features',
+      'Exterior Features' // partial - fields 54-56
+    ],
+    description: 'Core property attributes, pricing, structure, and critical costs'
+  },
+
+  // LEVEL 2: Important Context Fields (57-112) - 56 fields
+  // Important for complete analysis
+  LEVEL_2: {
+    name: 'Important Context Fields',
+    fieldRange: [57, 112] as const,
+    groups: [
+      'Exterior Features', // rest - fields 57-58
+      'Permits & Renovations',
+      'Assigned Schools',
+      'Location Scores',
+      'Distances & Amenities',
+      'Safety & Crime',
+      'Market & Investment Data',
+      'Utilities & Connectivity' // partial - fields 104-112
+    ],
+    description: 'Schools, location quality, market data, and utilities'
+  },
+
+  // LEVEL 3: Remaining Fields (113-168) - 56 fields
+  // Complete the picture
+  LEVEL_3: {
+    name: 'Remaining Fields',
+    fieldRange: [113, 168] as const,
+    groups: [
+      'Utilities & Connectivity', // rest - fields 113-116
+      'Environment & Risk',
+      'Additional Features',
+      'Parking Details',
+      'Building Details',
+      'Legal & Compliance',
+      'Waterfront',
+      'Leasing & Rentals',
+      'Community & Features'
+    ],
+    description: 'Environmental risks, legal, waterfront, leasing, and additional features'
+  }
+} as const;
+
+export type AnalysisLevel = 1 | 2 | 3;
+
+// ============================================================================
 // FIELD SCORING ALGORITHMS
 // ============================================================================
 
@@ -918,6 +986,472 @@ ${properties.map((p, i) => `
 - PROVE WINNER - Winner must have highest weighted aggregate score across all 168 fields
 
 Begin your mathematical analysis now. Return valid JSON only.
+`;
+}
+
+// ============================================================================
+// PROGRESSIVE ANALYSIS - LEVEL-BASED PROMPTS
+// ============================================================================
+
+/**
+ * Helper: Filter property fields by field number range
+ */
+function filterPropertyFields(property: OliviaEnhancedPropertyInput, startField: number, endField: number): string {
+  const fieldMap: Record<number, { key: keyof OliviaEnhancedPropertyInput; label: string }> = {
+    1: { key: 'full_address', label: 'Full Address' },
+    2: { key: 'mls_primary', label: 'MLS Primary' },
+    3: { key: 'mls_secondary', label: 'MLS Secondary' },
+    4: { key: 'listing_status', label: 'Listing Status' },
+    5: { key: 'listing_date', label: 'Listing Date' },
+    6: { key: 'neighborhood', label: 'Neighborhood' },
+    7: { key: 'county', label: 'County' },
+    8: { key: 'zip_code', label: 'ZIP Code' },
+    9: { key: 'parcel_id', label: 'Parcel ID' },
+    10: { key: 'listing_price', label: 'Listing Price' },
+    11: { key: 'price_per_sqft', label: 'Price Per Sq Ft' },
+    12: { key: 'market_value_estimate', label: 'Market Value Estimate' },
+    13: { key: 'last_sale_date', label: 'Last Sale Date' },
+    14: { key: 'last_sale_price', label: 'Last Sale Price' },
+    15: { key: 'assessed_value', label: 'Assessed Value' },
+    16: { key: 'redfin_estimate', label: 'Redfin Estimate' },
+    17: { key: 'bedrooms', label: 'Bedrooms' },
+    18: { key: 'full_bathrooms', label: 'Full Bathrooms' },
+    19: { key: 'half_bathrooms', label: 'Half Bathrooms' },
+    20: { key: 'total_bathrooms', label: 'Total Bathrooms' },
+    21: { key: 'living_sqft', label: 'Living Sq Ft' },
+    22: { key: 'total_sqft_under_roof', label: 'Total Sq Ft Under Roof' },
+    23: { key: 'lot_size_sqft', label: 'Lot Size (Sq Ft)' },
+    24: { key: 'lot_size_acres', label: 'Lot Size (Acres)' },
+    25: { key: 'year_built', label: 'Year Built' },
+    26: { key: 'property_type', label: 'Property Type' },
+    27: { key: 'stories', label: 'Stories' },
+    28: { key: 'garage_spaces', label: 'Garage Spaces' },
+    29: { key: 'parking_total', label: 'Parking Total' },
+    30: { key: 'hoa_yn', label: 'HOA' },
+    31: { key: 'hoa_fee_annual', label: 'HOA Fee (Annual)' },
+    32: { key: 'hoa_name', label: 'HOA Name' },
+    33: { key: 'hoa_includes', label: 'HOA Includes' },
+    34: { key: 'ownership_type', label: 'Ownership Type' },
+    35: { key: 'annual_taxes', label: 'Annual Taxes' },
+    36: { key: 'tax_year', label: 'Tax Year' },
+    37: { key: 'property_tax_rate', label: 'Property Tax Rate' },
+    38: { key: 'tax_exemptions', label: 'Tax Exemptions' },
+    39: { key: 'roof_type', label: 'Roof Type' },
+    40: { key: 'roof_age_est', label: 'Roof Age (Est)' },
+    41: { key: 'exterior_material', label: 'Exterior Material' },
+    42: { key: 'foundation', label: 'Foundation' },
+    43: { key: 'water_heater_type', label: 'Water Heater Type' },
+    44: { key: 'garage_type', label: 'Garage Type' },
+    45: { key: 'hvac_type', label: 'HVAC Type' },
+    46: { key: 'hvac_age', label: 'HVAC Age' },
+    47: { key: 'laundry_type', label: 'Laundry Type' },
+    48: { key: 'interior_condition', label: 'Interior Condition' },
+    49: { key: 'flooring_type', label: 'Flooring Type' },
+    50: { key: 'kitchen_features', label: 'Kitchen Features' },
+    51: { key: 'appliances_included', label: 'Appliances Included' },
+    52: { key: 'fireplace_yn', label: 'Fireplace' },
+    53: { key: 'fireplace_count', label: 'Fireplace Count' },
+    54: { key: 'pool_yn', label: 'Pool' },
+    55: { key: 'pool_type', label: 'Pool Type' },
+    56: { key: 'deck_patio', label: 'Deck/Patio' },
+    57: { key: 'fence', label: 'Fence' },
+    58: { key: 'landscaping', label: 'Landscaping' },
+    59: { key: 'recent_renovations', label: 'Recent Renovations' },
+    60: { key: 'permit_history_roof', label: 'Permit History - Roof' },
+    61: { key: 'permit_history_hvac', label: 'Permit History - HVAC' },
+    62: { key: 'permit_history_other', label: 'Permit History - Other' },
+    63: { key: 'school_district', label: 'School District' },
+    64: { key: 'elevation_feet', label: 'Elevation (feet)' },
+    65: { key: 'elementary_school', label: 'Elementary School' },
+    66: { key: 'elementary_rating', label: 'Elementary Rating' },
+    67: { key: 'elementary_distance_mi', label: 'Elementary Distance (mi)' },
+    68: { key: 'middle_school', label: 'Middle School' },
+    69: { key: 'middle_rating', label: 'Middle Rating' },
+    70: { key: 'middle_distance_mi', label: 'Middle Distance (mi)' },
+    71: { key: 'high_school', label: 'High School' },
+    72: { key: 'high_rating', label: 'High Rating' },
+    73: { key: 'high_distance_mi', label: 'High Distance (mi)' },
+    74: { key: 'walk_score', label: 'Walk Score' },
+    75: { key: 'transit_score', label: 'Transit Score' },
+    76: { key: 'bike_score', label: 'Bike Score' },
+    77: { key: 'safety_score', label: 'Safety' },
+    78: { key: 'noise_level', label: 'Noise Level' },
+    79: { key: 'traffic_level', label: 'Traffic Level' },
+    80: { key: 'walkability_description', label: 'Walkability Description' },
+    81: { key: 'public_transit_access', label: 'Public Transit Access' },
+    82: { key: 'commute_to_city_center', label: 'Commute to City Center' },
+    83: { key: 'distance_grocery_mi', label: 'Distance to Grocery (mi)' },
+    84: { key: 'distance_hospital_mi', label: 'Distance to Hospital (mi)' },
+    85: { key: 'distance_airport_mi', label: 'Distance to Airport (mi)' },
+    86: { key: 'distance_park_mi', label: 'Distance to Park (mi)' },
+    87: { key: 'distance_beach_mi', label: 'Distance to Beach (mi)' },
+    88: { key: 'violent_crime_index', label: 'Violent Crime Index' },
+    89: { key: 'property_crime_index', label: 'Property Crime Index' },
+    90: { key: 'neighborhood_safety_rating', label: 'Neighborhood Safety Rating' },
+    91: { key: 'median_home_price_neighborhood', label: 'Median Home Price (Neighborhood)' },
+    92: { key: 'price_per_sqft_recent_avg', label: 'Price Per Sq Ft (Recent Avg)' },
+    93: { key: 'price_to_rent_ratio', label: 'Price to Rent Ratio' },
+    94: { key: 'price_vs_median_percent', label: 'Price vs Median %' },
+    95: { key: 'days_on_market_avg', label: 'Days on Market (Avg)' },
+    96: { key: 'inventory_surplus', label: 'Inventory Surplus' },
+    97: { key: 'insurance_est_annual', label: 'Insurance Estimate (Annual)' },
+    98: { key: 'rental_estimate_monthly', label: 'Rental Estimate (Monthly)' },
+    99: { key: 'rental_yield_est', label: 'Rental Yield (Est)' },
+    100: { key: 'vacancy_rate_neighborhood', label: 'Vacancy Rate (Neighborhood)' },
+    101: { key: 'cap_rate_est', label: 'Cap Rate (Est)' },
+    102: { key: 'financing_terms', label: 'Financing Terms' },
+    103: { key: 'comparable_sales', label: 'Comparable Sales' },
+    104: { key: 'electric_provider', label: 'Electric Provider' },
+    105: { key: 'avg_electric_bill', label: 'Avg Electric Bill' },
+    106: { key: 'water_provider', label: 'Water Provider' },
+    107: { key: 'avg_water_bill', label: 'Avg Water Bill' },
+    108: { key: 'sewer_provider', label: 'Sewer Provider' },
+    109: { key: 'natural_gas', label: 'Natural Gas' },
+    110: { key: 'trash_provider', label: 'Trash Provider' },
+    111: { key: 'internet_providers_top3', label: 'Internet Providers (Top 3)' },
+    112: { key: 'max_internet_speed', label: 'Max Internet Speed' },
+    113: { key: 'fiber_available', label: 'Fiber Available' },
+    114: { key: 'cable_tv_provider', label: 'Cable TV Provider' },
+    115: { key: 'cell_coverage_quality', label: 'Cell Coverage Quality' },
+    116: { key: 'emergency_services_distance', label: 'Emergency Services Distance' },
+    117: { key: 'air_quality_index', label: 'Air Quality Index' },
+    118: { key: 'air_quality_grade', label: 'Air Quality Grade' },
+    119: { key: 'flood_zone', label: 'Flood Zone' },
+    120: { key: 'flood_risk_level', label: 'Flood Risk Level' },
+    121: { key: 'climate_risk', label: 'Climate Risk' },
+    122: { key: 'wildfire_risk', label: 'Wildfire Risk' },
+    123: { key: 'earthquake_risk', label: 'Earthquake Risk' },
+    124: { key: 'hurricane_risk', label: 'Hurricane Risk' },
+    125: { key: 'tornado_risk', label: 'Tornado Risk' },
+    126: { key: 'radon_risk', label: 'Radon Risk' },
+    127: { key: 'superfund_site_nearby', label: 'Superfund Site Nearby' },
+    128: { key: 'sea_level_rise_risk', label: 'Sea Level Rise Risk' },
+    129: { key: 'noise_level_db_est', label: 'Noise Level (dB Est)' },
+    130: { key: 'solar_potential', label: 'Solar Potential' },
+    131: { key: 'view_type', label: 'View Type' },
+    132: { key: 'lot_features', label: 'Lot Features' },
+    133: { key: 'ev_charging', label: 'EV Charging' },
+    134: { key: 'smart_home_features', label: 'Smart Home Features' },
+    135: { key: 'accessibility_modifications', label: 'Accessibility Modifications' },
+    136: { key: 'pet_policy', label: 'Pet Policy' },
+    137: { key: 'age_restrictions', label: 'Age Restrictions' },
+    138: { key: 'special_assessments', label: 'Special Assessments' },
+    139: { key: 'carport_yn', label: 'Carport Y/N' },
+    140: { key: 'carport_spaces', label: 'Carport Spaces' },
+    141: { key: 'garage_attached_yn', label: 'Garage Attached Y/N' },
+    142: { key: 'parking_features', label: 'Parking Features' },
+    143: { key: 'assigned_parking_spaces', label: 'Assigned Parking Spaces' },
+    144: { key: 'floor_number', label: 'Floor Number' },
+    145: { key: 'building_total_floors', label: 'Building Total Floors' },
+    146: { key: 'building_name_number', label: 'Building Name/Number' },
+    147: { key: 'building_elevator_yn', label: 'Building Elevator Y/N' },
+    148: { key: 'floors_in_unit', label: 'Floors in Unit' },
+    149: { key: 'subdivision_name', label: 'Subdivision Name' },
+    150: { key: 'legal_description', label: 'Legal Description' },
+    151: { key: 'homestead_yn', label: 'Homestead Exemption' },
+    152: { key: 'cdd_yn', label: 'CDD Y/N' },
+    153: { key: 'annual_cdd_fee', label: 'Annual CDD Fee' },
+    154: { key: 'front_exposure', label: 'Front Exposure' },
+    155: { key: 'water_frontage_yn', label: 'Water Frontage Y/N' },
+    156: { key: 'waterfront_feet', label: 'Waterfront Feet' },
+    157: { key: 'water_access_yn', label: 'Water Access Y/N' },
+    158: { key: 'water_view_yn', label: 'Water View Y/N' },
+    159: { key: 'water_body_name', label: 'Water Body Name' },
+    160: { key: 'can_be_leased_yn', label: 'Can Be Leased Y/N' },
+    161: { key: 'minimum_lease_period', label: 'Minimum Lease Period' },
+    162: { key: 'lease_restrictions_yn', label: 'Lease Restrictions Y/N' },
+    163: { key: 'pet_size_limit', label: 'Pet Size Limit' },
+    164: { key: 'max_pet_weight', label: 'Max Pet Weight (lbs)' },
+    165: { key: 'association_approval_yn', label: 'Association Approval Req' },
+    166: { key: 'community_features', label: 'Community Features' },
+    167: { key: 'interior_features', label: 'Interior Features' },
+    168: { key: 'exterior_features', label: 'Exterior Features' }
+  };
+
+  let output = '';
+  for (let fieldNum = startField; fieldNum <= endField; fieldNum++) {
+    const fieldDef = fieldMap[fieldNum];
+    if (!fieldDef) continue;
+
+    const value = property[fieldDef.key];
+    const displayValue = value !== undefined && value !== null
+      ? (typeof value === 'number' ? value.toLocaleString() :
+         Array.isArray(value) ? value.join(', ') :
+         typeof value === 'boolean' ? (value ? 'Yes' : 'No') :
+         String(value))
+      : 'N/A';
+
+    output += `[${fieldNum}] ${fieldDef.label}: ${displayValue}\n`;
+  }
+
+  return output;
+}
+
+/**
+ * Build prompt for Level 1, 2, or 3 analysis
+ * Each level analyzes ~56 fields with FULL mathematical proofs
+ */
+export function buildLevelPrompt(
+  properties: OliviaEnhancedPropertyInput[],
+  level: AnalysisLevel
+): string {
+  if (properties.length !== 3) {
+    throw new Error('Progressive analysis requires exactly 3 properties');
+  }
+
+  const levelConfig = level === 1 ? FIELD_LEVELS.LEVEL_1 :
+                      level === 2 ? FIELD_LEVELS.LEVEL_2 :
+                      FIELD_LEVELS.LEVEL_3;
+
+  const [startField, endField] = levelConfig.fieldRange;
+  const fieldCount = endField - startField + 1;
+
+  return `
+# OLIVIA PROGRESSIVE ANALYSIS - LEVEL ${level} of 3
+
+You are Olivia, CLUES™ Chief Property Intelligence Officer. You are analyzing 3 properties.
+
+**THIS IS LEVEL ${level}: ${levelConfig.name}**
+**Fields ${startField}-${endField} (${fieldCount} fields)**
+**Focus:** ${levelConfig.description}
+
+## CRITICAL RULES:
+
+1. **MATHEMATICAL PROOF REQUIRED**: Every conclusion MUST have numerical proof
+2. **NO HALLUCINATIONS**: If you don't have data, say "Data unavailable" - DO NOT guess
+3. **SHOW YOUR WORK**: Every score must show the calculation formula
+4. **COMPARATIVE ANALYSIS**: All 3 properties compared field-by-field
+5. **WEIGHTED SCORING**: Use appropriate methodology for each field type
+
+## SCORING METHODOLOGIES:
+
+### A. Lower is Better (taxes, HOA, crime)
+Formula: score = 100 - ((value - min) / (max - min)) * 100
+Example: Taxes $5k, $8k, $12k → Scores: 100, 57, 0
+
+### B. Higher is Better (sqft, bedrooms, scores)
+Formula: score = ((value - min) / (max - min)) * 100
+Example: Sqft 1500, 2000, 2500 → Scores: 0, 50, 100
+
+### C. Closer to Ideal (year built)
+Formula: Gaussian around ideal (2010 ±10 years)
+
+### D. Binary (has pool, permits)
+Formula: Yes = 100, No = 0
+
+### E. Risk Assessment (flood, hurricane)
+Formula: None=100, Low=85, Moderate=60, High=35, Severe=10
+
+### F. Quality Tier (school ratings)
+Formula: A+=100, A=95, B+=87, B=83, C=73, D=63, F=50
+
+### G. Financial ROI (cap rate, yield)
+Formula: (actual / benchmark) * 100, capped at 100
+
+## RESPONSE FORMAT (STRICT JSON):
+
+Return ONLY this JSON structure:
+
+\`\`\`json
+{
+  "level": ${level},
+  "fieldRange": [${startField}, ${endField}],
+  "fieldComparisons": [
+    {
+      "fieldNumber": ${startField},
+      "fieldName": "field_name",
+      "property1": { "value": "...", "score": 95, "calculation": "100 - ((value-min)/(max-min))*100 = 95" },
+      "property2": { "value": "...", "score": 78, "calculation": "..." },
+      "property3": { "value": "...", "score": 65, "calculation": "..." },
+      "winner": 1,
+      "reasoning": "Property 1 wins because..."
+    }
+    // REPEAT FOR ALL ${fieldCount} FIELDS (${startField}-${endField})
+  ]
+}
+\`\`\`
+
+## PROPERTIES TO ANALYZE:
+
+${properties.map((p, i) => `
+### PROPERTY ${i + 1}: ${p.full_address}
+
+${filterPropertyFields(p, startField, endField)}
+
+**SMART Score: ${p.smartScore}/100**
+**Data Completeness: ${p.dataCompleteness}%**
+`).join('\n---\n')}
+
+## YOUR TASK:
+
+1. Analyze fields ${startField}-${endField} across all 3 properties
+2. Calculate mathematical scores using appropriate methodology
+3. Show calculation work for EVERY score
+4. Declare winner for each field with proof
+5. Return valid JSON matching structure above
+
+**REMEMBER:** NO HALLUCINATIONS. Only use provided data. Show all calculations.
+
+Begin Level ${level} analysis now. Return valid JSON only.
+`;
+}
+
+/**
+ * Build Level 4 aggregation prompt
+ * Combines results from Levels 1-3 into final analysis
+ */
+export function buildAggregationPrompt(
+  properties: OliviaEnhancedPropertyInput[],
+  level1Results: any,
+  level2Results: any,
+  level3Results: any
+): string {
+  if (properties.length !== 3) {
+    throw new Error('Aggregation requires exactly 3 properties');
+  }
+
+  // Combine all field comparisons
+  const allFieldComparisons = [
+    ...(level1Results.fieldComparisons || []),
+    ...(level2Results.fieldComparisons || []),
+    ...(level3Results.fieldComparisons || [])
+  ];
+
+  return `
+# OLIVIA FINAL AGGREGATION - LEVEL 4 of 4
+
+You are Olivia, CLUES™ Chief Property Intelligence Officer.
+
+**THIS IS THE FINAL AGGREGATION LEVEL**
+
+You have received detailed mathematical analysis for ALL 168 fields across 3 properties.
+
+## YOUR INPUT DATA:
+
+**Level 1 Results:** ${level1Results.fieldComparisons?.length || 0} fields analyzed (Critical Decision Fields)
+**Level 2 Results:** ${level2Results.fieldComparisons?.length || 0} fields analyzed (Important Context Fields)
+**Level 3 Results:** ${level3Results.fieldComparisons?.length || 0} fields analyzed (Remaining Fields)
+**Total Fields:** ${allFieldComparisons.length} complete field comparisons
+
+## PROPERTIES:
+
+${properties.map((p, i) => `
+**Property ${i + 1}:** ${p.full_address}
+- Listing Price: $${p.listing_price?.toLocaleString() || 'N/A'}
+- ${p.bedrooms} bed, ${p.total_bathrooms} bath, ${p.living_sqft?.toLocaleString() || 'N/A'} sqft
+- SMART Score: ${p.smartScore}/100
+`).join('\n')}
+
+## ALL FIELD COMPARISONS (168 fields):
+
+${JSON.stringify(allFieldComparisons, null, 2)}
+
+## YOUR TASK:
+
+Using the complete field analysis above, calculate:
+
+1. **22 Section Scores** - Aggregate field scores by section with weighted averages
+2. **Overall Investment Grades** - A+ to F for each property
+3. **Winner Declaration** - Determine mathematical winner across all 168 fields
+4. **Buyer-Specific Recommendations** - Investor, Family, Retiree, Vacation, First-Time
+5. **Key Findings** - 8-12 findings with mathematical proof
+6. **Executive Summary** - Final recommendation with confidence level
+
+## SECTION GROUPS (22 sections):
+
+1. Address & Identity (Fields 1-9)
+2. Pricing & Value (Fields 10-16)
+3. Property Basics (Fields 17-29)
+4. HOA & Taxes (Fields 30-38)
+5. Structure & Systems (Fields 39-48)
+6. Interior Features (Fields 49-53)
+7. Exterior Features (Fields 54-58)
+8. Permits & Renovations (Fields 59-62)
+9. Assigned Schools (Fields 63-73)
+10. Location Scores (Fields 74-82)
+11. Distances & Amenities (Fields 83-87)
+12. Safety & Crime (Fields 88-90)
+13. Market & Investment (Fields 91-103)
+14. Utilities & Connectivity (Fields 104-116)
+15. Environment & Risk (Fields 117-130)
+16. Additional Features (Fields 131-138)
+17. Parking Details (Fields 139-143)
+18. Building Details (Fields 144-148)
+19. Legal & Compliance (Fields 149-154)
+20. Waterfront (Fields 155-159)
+21. Leasing & Rentals (Fields 160-165)
+22. Community & Features (Fields 166-168)
+
+## SECTION WEIGHTS (1-10):
+
+- **Weight 10 (Critical):** Pricing & Value, Property Basics, Schools, Safety, Market & Investment, Environment & Risk
+- **Weight 9 (High):** HOA & Taxes, Location Scores, Structure & Systems
+- **Weight 6-8 (Moderate):** Permits, Utilities, Legal, Waterfront
+- **Weight 1-5 (Low):** Features, Parking, Building, Leasing
+
+## RESPONSE FORMAT (STRICT JSON):
+
+\`\`\`json
+{
+  "investmentGrade": {
+    "property1": { "grade": "A+", "score": 95.3, "calculation": "Weighted avg across all sections: ..." },
+    "property2": { "grade": "B+", "score": 87.1, "calculation": "..." },
+    "property3": { "grade": "A-", "score": 90.2, "calculation": "..." },
+    "winner": 1,
+    "reasoning": "Property 1 wins with 95.3 vs 90.2 vs 87.1..."
+  },
+  "sectionScores": [
+    {
+      "sectionName": "Pricing & Value",
+      "sectionWeight": 10,
+      "property1": { "score": 92.5, "calculation": "Fields 10-16 weighted avg: ..." },
+      "property2": { "score": 78.3, "calculation": "..." },
+      "property3": { "score": 65.1, "calculation": "..." },
+      "winner": 1,
+      "keyFindings": ["Property 1 best price/sqft", "Property 3 overpriced 18%"]
+    }
+    // REPEAT FOR ALL 22 SECTIONS
+  ],
+  "overallRecommendation": {
+    "winner": 1,
+    "winnerScore": 95.3,
+    "runnerUp": 3,
+    "runnerUpScore": 90.2,
+    "scoreGap": 5.1,
+    "confidence": "high",
+    "reasoning": "Property 1 wins by 5.1 points due to: ...",
+    "calculation": "Final weighted aggregate: (section1_score * weight1 + ...) / total_weights"
+  },
+  "keyFindings": [
+    {
+      "type": "critical_advantage",
+      "property": 1,
+      "finding": "Property 1 has 35% better cap rate",
+      "impact": "high",
+      "proof": "Field 101: 8.2% vs 6.1% vs 5.8%"
+    }
+    // 8-12 findings
+  ],
+  "buyerSpecificRecommendations": {
+    "investor": { "recommendation": 1, "score": 96.5, "reasoning": "...", "proof": "..." },
+    "family": { "recommendation": 3, "score": 93.2, "reasoning": "...", "proof": "..." },
+    "retiree": { "recommendation": 2, "score": 88.7, "reasoning": "...", "proof": "..." },
+    "vacation": { "recommendation": 1, "score": 91.3, "reasoning": "...", "proof": "..." },
+    "firstTime": { "recommendation": 2, "score": 89.4, "reasoning": "...", "proof": "..." }
+  },
+  "fieldComparisons": ${JSON.stringify(allFieldComparisons).substring(0, 100)}...
+}
+\`\`\`
+
+## CRITICAL REQUIREMENTS:
+
+1. All 22 sections MUST have scores with calculations
+2. Investment grades based on weighted section aggregation
+3. Winner must be mathematically proven
+4. Buyer recommendations must reference specific field data
+5. Return ONLY valid JSON
+
+Begin final aggregation now. Return valid JSON only.
 `;
 }
 

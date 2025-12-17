@@ -822,4 +822,295 @@ export async function analyzeWithOliviaEnhanced(
   }
 }
 
+// ============================================================================
+// PROGRESSIVE ANALYSIS - 4-LEVEL ORCHESTRATION
+// ============================================================================
+
+/**
+ * Analyze properties with 4-level progressive analysis
+ * Splits 168 fields into 3 sequential Claude Opus calls + 1 final aggregation
+ *
+ * This solves the 32K token limit issue by processing ~56 fields at a time
+ * with FULL mathematical proofs for ALL 168 fields.
+ */
+export async function analyzeWithOliviaProgressive(
+  request: OliviaEnhancedAnalysisRequest
+): Promise<OliviaEnhancedAnalysisResult & { validation?: ValidationResult }> {
+  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+
+  if (!apiKey) {
+    throw new Error('VITE_ANTHROPIC_API_KEY not configured');
+  }
+
+  // CRITICAL: Must have exactly 3 properties for mathematical comparison
+  if (request.properties.length !== 3) {
+    throw new Error(
+      `Progressive analysis requires exactly 3 properties. Received: ${request.properties.length}`
+    );
+  }
+
+  const client = new Anthropic({
+    apiKey,
+    dangerouslyAllowBrowser: true,
+  });
+
+  console.log('🔬 STARTING PROGRESSIVE ANALYSIS (4 Levels)');
+  console.log(`📊 Analyzing ${request.properties.length} properties across 168 fields`);
+  console.log(`🎯 Buyer profile: ${request.buyerProfile || 'General'}`);
+
+  const { buildLevelPrompt, buildAggregationPrompt } = await import('./olivia-math-engine');
+
+  // ============================================================================
+  // LEVEL 1: Critical Decision Fields (Fields 1-56)
+  // ============================================================================
+  console.log('\n📍 LEVEL 1/4: Analyzing Critical Decision Fields (1-56)...');
+  const level1Prompt = buildLevelPrompt(request.properties, 1);
+
+  const level1Stream = await client.messages.stream({
+    model: 'claude-opus-4-20250514',
+    max_tokens: 32000,
+    temperature: 0.3,
+    system: OLIVIA_SYSTEM_PROMPT,
+    messages: [{ role: 'user', content: level1Prompt }],
+  });
+
+  let level1Text = '';
+  for await (const chunk of level1Stream) {
+    if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+      level1Text += chunk.delta.text;
+    }
+  }
+
+  let level1Results;
+  try {
+    let cleanText = level1Text.trim();
+    if (cleanText.startsWith('```')) {
+      cleanText = cleanText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+    }
+    level1Results = JSON.parse(cleanText);
+    console.log(`✅ Level 1 Complete: ${level1Results.fieldComparisons?.length || 0} fields analyzed`);
+  } catch (e) {
+    console.error('❌ Level 1 parse failed:', level1Text);
+    throw new Error(`Level 1 parse failed: ${e instanceof Error ? e.message : 'Unknown'}`);
+  }
+
+  // ============================================================================
+  // LEVEL 2: Important Context Fields (Fields 57-112)
+  // ============================================================================
+  console.log('\n📍 LEVEL 2/4: Analyzing Important Context Fields (57-112)...');
+  const level2Prompt = buildLevelPrompt(request.properties, 2);
+
+  const level2Stream = await client.messages.stream({
+    model: 'claude-opus-4-20250514',
+    max_tokens: 32000,
+    temperature: 0.3,
+    system: OLIVIA_SYSTEM_PROMPT,
+    messages: [{ role: 'user', content: level2Prompt }],
+  });
+
+  let level2Text = '';
+  for await (const chunk of level2Stream) {
+    if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+      level2Text += chunk.delta.text;
+    }
+  }
+
+  let level2Results;
+  try {
+    let cleanText = level2Text.trim();
+    if (cleanText.startsWith('```')) {
+      cleanText = cleanText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+    }
+    level2Results = JSON.parse(cleanText);
+    console.log(`✅ Level 2 Complete: ${level2Results.fieldComparisons?.length || 0} fields analyzed`);
+  } catch (e) {
+    console.error('❌ Level 2 parse failed:', level2Text);
+    throw new Error(`Level 2 parse failed: ${e instanceof Error ? e.message : 'Unknown'}`);
+  }
+
+  // ============================================================================
+  // LEVEL 3: Remaining Fields (Fields 113-168)
+  // ============================================================================
+  console.log('\n📍 LEVEL 3/4: Analyzing Remaining Fields (113-168)...');
+  const level3Prompt = buildLevelPrompt(request.properties, 3);
+
+  const level3Stream = await client.messages.stream({
+    model: 'claude-opus-4-20250514',
+    max_tokens: 32000,
+    temperature: 0.3,
+    system: OLIVIA_SYSTEM_PROMPT,
+    messages: [{ role: 'user', content: level3Prompt }],
+  });
+
+  let level3Text = '';
+  for await (const chunk of level3Stream) {
+    if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+      level3Text += chunk.delta.text;
+    }
+  }
+
+  let level3Results;
+  try {
+    let cleanText = level3Text.trim();
+    if (cleanText.startsWith('```')) {
+      cleanText = cleanText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+    }
+    level3Results = JSON.parse(cleanText);
+    console.log(`✅ Level 3 Complete: ${level3Results.fieldComparisons?.length || 0} fields analyzed`);
+  } catch (e) {
+    console.error('❌ Level 3 parse failed:', level3Text);
+    throw new Error(`Level 3 parse failed: ${e instanceof Error ? e.message : 'Unknown'}`);
+  }
+
+  // ============================================================================
+  // LEVEL 4: Final Aggregation & Winner Declaration
+  // ============================================================================
+  console.log('\n📍 LEVEL 4/4: Final Aggregation & Winner Declaration...');
+  const aggregationPrompt = buildAggregationPrompt(
+    request.properties,
+    level1Results,
+    level2Results,
+    level3Results
+  );
+
+  const level4Stream = await client.messages.stream({
+    model: 'claude-opus-4-20250514',
+    max_tokens: 32000,
+    temperature: 0.3,
+    system: OLIVIA_SYSTEM_PROMPT,
+    messages: [{ role: 'user', content: aggregationPrompt }],
+  });
+
+  let level4Text = '';
+  for await (const chunk of level4Stream) {
+    if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+      level4Text += chunk.delta.text;
+    }
+  }
+
+  let result;
+  try {
+    let cleanText = level4Text.trim();
+    if (cleanText.startsWith('```')) {
+      cleanText = cleanText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+    }
+    result = JSON.parse(cleanText);
+    console.log(`✅ Level 4 Complete: Final analysis ready`);
+  } catch (e) {
+    console.error('❌ Level 4 parse failed:', level4Text);
+    throw new Error(`Level 4 parse failed: ${e instanceof Error ? e.message : 'Unknown'}`);
+  }
+
+  // ============================================================================
+  // VALIDATION
+  // ============================================================================
+  console.log('\n🔍 Validating complete 168-field analysis...');
+  const { validateOliviaResponse } = await import('./olivia-math-engine');
+  const validation = validateOliviaResponse(result);
+
+  if (!validation.isValid) {
+    console.error('❌ HALLUCINATION DETECTED!');
+    console.error('Errors:', validation.errors);
+    console.error('Hallucinations:', validation.hallucinations);
+    result.validation = validation;
+  } else {
+    console.log('✅ Response validated - no hallucinations detected');
+    if (validation.warnings.length > 0) {
+      console.warn('⚠️ Warnings:', validation.warnings);
+    }
+  }
+
+  // Add metadata
+  result.analysisId = `OLIVIA-PROGRESSIVE-${Date.now()}`;
+  result.timestamp = new Date().toISOString();
+  result.propertiesAnalyzed = request.properties.length;
+  result.buyerProfile = request.buyerProfile;
+  result.validation = validation;
+  result.analysisMethod = 'progressive_4_level'; // Mark as progressive
+
+  // ============================================================================
+  // MULTI-LLM MARKET FORECAST (if requested)
+  // ============================================================================
+  if (request.includeMarketForecast) {
+    console.log('\n🔮 Fetching Multi-LLM Market Forecast...');
+
+    const topProperty = request.properties[0];
+
+    try {
+      const response = await fetch('/api/property/multi-llm-forecast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          address: topProperty.full_address,
+          price: topProperty.listing_price || 0,
+          neighborhood: topProperty.neighborhood || 'Unknown',
+          propertyType: topProperty.property_type
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ API Response error:', errorText);
+        throw new Error(`Multi-LLM forecast failed: ${response.statusText}`);
+      }
+
+      const forecast = await response.json();
+
+      result.marketForecast = {
+        llmSources: forecast.llmSources.map((source: string) => {
+          if (source.includes('Claude')) return 'claude-opus';
+          if (source.includes('GPT')) return 'gpt-4';
+          if (source.includes('Gemini')) return 'gemini-pro';
+          if (source.includes('Perplexity')) return 'perplexity';
+          return 'claude-opus';
+        }) as ('claude-opus' | 'gpt-4' | 'gemini-pro' | 'perplexity')[],
+
+        appreciationForecast: {
+          year1: forecast.appreciation1Yr,
+          year3: forecast.appreciation1Yr * 2.5,
+          year5: forecast.appreciation5Yr,
+          year10: forecast.appreciation5Yr * 2,
+          confidence: forecast.confidence,
+        },
+
+        marketTrends: {
+          priceDirection: forecast.appreciation1Yr > 3 ? 'rising' : forecast.appreciation1Yr < -2 ? 'declining' : 'stable',
+          demandLevel: forecast.appreciation1Yr > 5 ? 'high' : forecast.appreciation1Yr < 2 ? 'low' : 'moderate',
+          inventoryLevel: 'balanced',
+          daysOnMarketTrend: 'stable',
+        },
+
+        marketRisks: {
+          economicRisks: forecast.marketTrends.filter((t: string) => t.toLowerCase().includes('economy') || t.toLowerCase().includes('rate')),
+          climateRisks: forecast.marketTrends.filter((t: string) => t.toLowerCase().includes('climate') || t.toLowerCase().includes('flood')),
+          demographicShifts: forecast.marketTrends.filter((t: string) => t.toLowerCase().includes('population') || t.toLowerCase().includes('demographic')),
+          regulatoryChanges: forecast.marketTrends.filter((t: string) => t.toLowerCase().includes('regulation') || t.toLowerCase().includes('zoning')),
+        },
+
+        marketOpportunities: {
+          nearTerm: forecast.keyInsights.filter((_: string, i: number) => i < 3),
+          longTerm: forecast.keyInsights.filter((_: string, i: number) => i >= 3),
+        },
+
+        forecastDate: forecast.timestamp,
+        dataQuality: forecast.consensus === 'Strong' ? 'high' : forecast.consensus === 'Moderate' ? 'medium' : 'low',
+      };
+
+      console.log(`✅ Multi-LLM Forecast complete: ${forecast.appreciation1Yr.toFixed(1)}% (1yr)`);
+    } catch (error) {
+      console.error('❌ Multi-LLM Market Forecast failed:', error);
+      console.warn('⚠️ Continuing without market forecast');
+    }
+  }
+
+  console.log('\n🎉 PROGRESSIVE ANALYSIS COMPLETE');
+  console.log(`   Total Fields Analyzed: ${result.fieldComparisons?.length || 0}/168`);
+  console.log(`   Sections Analyzed: ${result.sectionScores?.length || 0}/22`);
+  console.log(`   Winner: Property ${result.overallRecommendation?.winner || 'TBD'}`);
+
+  return result as OliviaEnhancedAnalysisResult & { validation: ValidationResult };
+}
+
+// Export both analysis methods
+export { analyzeWithOliviaProgressive };
 export default analyzeWithOliviaEnhanced;

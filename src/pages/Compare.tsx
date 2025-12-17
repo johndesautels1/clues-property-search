@@ -19,7 +19,7 @@ import { usePropertyStore } from '@/store/propertyStore';
 import { analyzeWithOlivia, type OliviaAnalysisResult } from '@/api/olivia';
 import { OliviaResults } from '@/components/OliviaResults';
 import { OliviaExecutiveReport } from '@/components/OliviaExecutiveReport';
-import { analyzeWithOliviaEnhanced, extractPropertyData } from '@/api/olivia-brain-enhanced';
+import { analyzeWithOliviaProgressive, extractPropertyData } from '@/api/olivia-brain-enhanced';
 import type { OliviaEnhancedAnalysisResult } from '@/types/olivia-enhanced';
 import type { PropertyCard, Property } from '@/types/property';
 import { PropertyComparisonAnalytics, type Property as AnalyticsProperty } from '@/components/analytics';
@@ -958,8 +958,9 @@ export default function Compare() {
         throw new Error('No properties with full data available for enhanced analysis. Please search properties using the Search tab to get complete data.');
       }
 
-      // Call enhanced mathematical analysis API
-      const result = await analyzeWithOliviaEnhanced({
+      // Call PROGRESSIVE enhanced mathematical analysis API (4-level)
+      // This processes all 168 fields in 4 sequential calls to avoid token limits
+      const result = await analyzeWithOliviaProgressive({
         properties: enhancedProperties,
         buyerProfile: 'investor', // TODO: Get from user settings or add selector
         includeMarketForecast: true,
