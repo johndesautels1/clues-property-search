@@ -732,6 +732,12 @@ export async function analyzeWithOliviaEnhanced(
 
       try {
         // Call server-side multi-LLM forecast API
+        console.log('📡 Calling /api/property/multi-llm-forecast with:', {
+          address: topProperty.full_address,
+          price: topProperty.listing_price || 0,
+          neighborhood: topProperty.neighborhood || 'Unknown',
+        });
+
         const response = await fetch('/api/property/multi-llm-forecast', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -743,11 +749,16 @@ export async function analyzeWithOliviaEnhanced(
           })
         });
 
+        console.log('📡 Response status:', response.status, response.statusText);
+
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ API Response error:', errorText);
           throw new Error(`Multi-LLM forecast failed: ${response.statusText}`);
         }
 
         const forecast = await response.json();
+        console.log('📊 Forecast received:', JSON.stringify(forecast).substring(0, 500));
 
         // Transform to expected MarketForecast interface
         result.marketForecast = {
