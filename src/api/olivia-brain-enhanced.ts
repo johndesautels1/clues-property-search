@@ -1111,6 +1111,5 @@ export async function analyzeWithOliviaProgressive(
   return result as OliviaEnhancedAnalysisResult & { validation: ValidationResult };
 }
 
-// Export both analysis methods
-export { analyzeWithOliviaProgressive };
+// Export default (analyzeWithOliviaProgressive is already exported in its function declaration above)
 export default analyzeWithOliviaEnhanced;
