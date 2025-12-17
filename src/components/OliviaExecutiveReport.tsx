@@ -248,7 +248,7 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
                       className="mt-4 p-4 bg-black/30 rounded-xl max-h-40 overflow-y-auto"
                     >
                       <p className="text-sm text-gray-300 leading-relaxed italic">
-                        "{result.verbalAnalysis.executiveSummary}"
+                        "{result.verbalAnalysis?.executiveSummary || 'Generating executive summary...'}"
                       </p>
                     </motion.div>
                   )}
