@@ -336,10 +336,12 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
                 <div className="flex-1">
                   <p className="text-sm text-quantum-green font-semibold mb-1">Olivia's Top Recommendation</p>
                   <p className="text-lg font-bold text-white mb-2">
-                    {getPropertyAddress(result.verbalAnalysis.topRecommendation.propertyId)}
+                    {result.verbalAnalysis?.topRecommendation?.propertyId
+                      ? getPropertyAddress(result.verbalAnalysis.topRecommendation.propertyId)
+                      : 'Analyzing properties...'}
                   </p>
                   <p className="text-sm text-gray-300 mb-2">
-                    {result.verbalAnalysis.topRecommendation.reasoning}
+                    {result.verbalAnalysis?.topRecommendation?.reasoning || 'Generating recommendation...'}
                   </p>
                   <div className="flex items-center gap-2">
                     <div className="text-xs text-gray-400">Confidence:</div>

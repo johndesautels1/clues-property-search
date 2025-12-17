@@ -937,19 +937,26 @@ export default function Compare() {
       console.log('🧮 Starting Olivia Enhanced analysis (168 fields)...');
 
       // Extract all 168 fields from each selected property
-      const enhancedProperties = selectedProperties.map(prop => {
-        // Get full property data from store
-        const fullProp = fullProperties.get(prop.id);
+      const enhancedProperties = selectedProperties
+        .map(prop => {
+          // Get full property data from store
+          const fullProp = fullProperties.get(prop.id);
 
-        if (!fullProp) {
-          throw new Error(`Full property data not found for ${prop.id}`);
-        }
+          if (!fullProp) {
+            console.warn(`⚠️ Full property data not found for ${prop.id} - skipping from enhanced analysis`);
+            return null;
+          }
 
-        // Extract all 168 fields
-        return extractPropertyData(fullProp);
-      });
+          // Extract all 168 fields
+          return extractPropertyData(fullProp);
+        })
+        .filter((prop): prop is NonNullable<typeof prop> => prop !== null);
 
       console.log('📊 Extracted fields from', enhancedProperties.length, 'properties');
+
+      if (enhancedProperties.length === 0) {
+        throw new Error('No properties with full data available for enhanced analysis. Please search properties using the Search tab to get complete data.');
+      }
 
       // Call enhanced mathematical analysis API
       const result = await analyzeWithOliviaEnhanced({
