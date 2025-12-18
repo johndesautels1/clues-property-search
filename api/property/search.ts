@@ -585,6 +585,159 @@ function filterNullValues(parsed: any, llmName: string): Record<string, any> {
 }
 
 // ============================================
+// HOA FEE VALIDATION
+// Prevents LLMs from confusing monthly fees with annual fees
+// Common bug: LLM returns $300/month, but field expects $3,600/year
+// ============================================
+interface HOAValidationResult {
+  valid: boolean;
+  correctedValue?: number;
+  warning?: string;
+}
+
+function validateHOAFee(feeAnnual: number, fieldData: any): HOAValidationResult {
+  // Typical Florida HOA ranges:
+  // - Single-family: $600-$3,600/year ($50-$300/month)
+  // - Condos: $2,400-$15,000/year ($200-$1,250/month)
+  // - Luxury condos: $6,000-$50,000/year ($500-$4,000/month)
+
+  // RULE 1: If fee is suspiciously low (< $600), likely monthly fee
+  if (feeAnnual < 600 && feeAnnual > 0) {
+    const correctedAnnual = feeAnnual * 12;
+    console.warn(`⚠️ Field 31 (hoa_fee_annual): $${feeAnnual}/year seems LOW (likely monthly). Auto-correcting to $${correctedAnnual}/year`);
+    return {
+      valid: true,
+      correctedValue: correctedAnnual,
+      warning: `Auto-corrected from monthly ($${feeAnnual}) to annual ($${correctedAnnual})`
+    };
+  }
+
+  // RULE 2: If fee is suspiciously high (> $50,000), flag for review
+  if (feeAnnual > 50000) {
+    console.warn(`⚠️ Field 31 (hoa_fee_annual): $${feeAnnual}/year seems VERY HIGH. Verify this is correct.`);
+    return {
+      valid: true, // Still accept it, but flag
+      warning: `Unusually high HOA fee ($${feeAnnual}/year) - verify accuracy`
+    };
+  }
+
+  // RULE 3: Check if source explicitly says "monthly" but value is in annual field
+  if (fieldData.source && fieldData.source.toLowerCase().includes('monthly') && !fieldData.source.toLowerCase().includes('annual')) {
+    const correctedAnnual = feeAnnual * 12;
+    console.warn(`⚠️ Field 31 (hoa_fee_annual): Source says "monthly" but value is in annual field. Correcting $${feeAnnual} → $${correctedAnnual}`);
+    return {
+      valid: true,
+      correctedValue: correctedAnnual,
+      warning: `Auto-corrected monthly fee to annual`
+    };
+  }
+
+  // RULE 4: Normal range - accept as-is
+  return { valid: true };
+}
+
+// ============================================
+// TIME-BASED FIELD VALIDATION
+// Prevents LLMs from returning stale/outdated data for time-sensitive fields
+// ============================================
+interface FieldDateValidation {
+  maxAgeMonths: number; // How old can the data be?
+  requiresDate: boolean; // Must source include "as of [date]"?
+  typicalRange?: [number, number]; // Optional: [min, max] for sanity check
+}
+
+const TIME_SENSITIVE_FIELDS: Record<string, FieldDateValidation> = {
+  // Market estimates (should be recent)
+  '12_market_value_estimate': { maxAgeMonths: 6, requiresDate: false },
+  '16_redfin_estimate': { maxAgeMonths: 6, requiresDate: false },
+
+  // Market data (should be current)
+  '91_median_home_price_neighborhood': { maxAgeMonths: 6, requiresDate: true },
+  '92_price_per_sqft_recent_avg': { maxAgeMonths: 6, requiresDate: true },
+  '95_days_on_market_avg': { maxAgeMonths: 3, requiresDate: true, typicalRange: [15, 180] },
+
+  // Financial estimates (insurance/rental)
+  '97_insurance_est_annual': { maxAgeMonths: 12, requiresDate: false, typicalRange: [1000, 15000] },
+  '98_rental_estimate_monthly': { maxAgeMonths: 6, requiresDate: false },
+};
+
+interface TimeValidationResult {
+  valid: boolean;
+  warning?: string;
+}
+
+function validateTimeBasedField(
+  fieldKey: string,
+  value: any,
+  fieldData: any
+): TimeValidationResult {
+
+  const validation = TIME_SENSITIVE_FIELDS[fieldKey];
+  if (!validation) return { valid: true }; // Not a time-sensitive field
+
+  const currentDate = new Date();
+
+  // STEP 1: Try to extract date from source
+  let dataDate: Date | null = null;
+
+  // Check if source includes "as of [date]"
+  const datePatterns = [
+    /as of (\w+ \d{4})/i,           // "as of November 2024"
+    /\((\d{4})\)/,                   // "(2024)"
+    /updated (\w+ \d+,? \d{4})/i,    // "updated December 18, 2024"
+    /Q(\d) (\d{4})/i,                // "Q4 2024"
+  ];
+
+  if (fieldData.source) {
+    for (const pattern of datePatterns) {
+      const match = fieldData.source.match(pattern);
+      if (match) {
+        try {
+          dataDate = new Date(match[1]);
+          if (isNaN(dataDate.getTime())) {
+            dataDate = null;
+          }
+          break;
+        } catch (e) {
+          // Could not parse date
+        }
+      }
+    }
+  }
+
+  // STEP 2: If date required but not found, reject
+  if (validation.requiresDate && !dataDate) {
+    console.warn(`❌ Field ${fieldKey}: Source must include date (e.g., "as of November 2024"). Source: "${fieldData.source}"`);
+    return { valid: false };
+  }
+
+  // STEP 3: If date found, check if too old
+  if (dataDate) {
+    const monthsSinceData = (currentDate.getTime() - dataDate.getTime()) / (1000 * 60 * 60 * 24 * 30);
+    if (monthsSinceData > validation.maxAgeMonths) {
+      console.warn(`❌ Field ${fieldKey}: Data is ${Math.round(monthsSinceData)} months old (max ${validation.maxAgeMonths} months)`);
+      return { valid: false };
+    }
+  }
+
+  // STEP 4: Sanity check value if range provided
+  if (validation.typicalRange) {
+    const numValue = typeof value === 'number' ? value : parseFloat(String(value).replace(/[^0-9.]/g, ''));
+    if (!isNaN(numValue)) {
+      const [min, max] = validation.typicalRange;
+      if (numValue < min || numValue > max) {
+        return {
+          valid: true, // Still accept, but warn
+          warning: `Value $${numValue} is outside typical range [$${min}-$${max}]`
+        };
+      }
+    }
+  }
+
+  return { valid: true };
+}
+
+// ============================================
 // CONVERT FLAT 168-FIELD TO NESTED STRUCTURE
 // Maps API field keys to nested PropertyDetail format
 // Updated: 2025-11-30 - Added Stellar MLS fields (139-168)
@@ -2110,9 +2263,61 @@ GROUP 21 - Stellar MLS Leasing (Fields 160-165):
 GROUP 22 - Stellar MLS Features (Fields 166-168):
 166_community_features, 167_interior_features, 168_exterior_features`;
 
+// ============================================
+// CRITICAL FIELD DEFINITIONS FOR LLMs
+// Prevents common confusions and ensures data freshness
+// ============================================
+const FIELD_CLARITY_RULES = `
+## 🚨 CRITICAL FIELD DEFINITIONS (DO NOT CONFUSE!)
+
+### CURRENT vs HISTORICAL DATA:
+- **Field 10 (listing_price):** CURRENT asking price for active listings (property listed NOW, not from years ago!)
+- **Field 14 (last_sale_price):** PRIOR sold price (historical, could be from years ago)
+- **Field 4 (listing_status):** CURRENT status (Active/Pending/Sold NOW, not historical)
+- **Field 5 (listing_date):** Date property was listed CURRENTLY (not prior listing dates)
+
+### ANNUAL vs MONTHLY:
+- **Field 31 (hoa_fee_annual):** ANNUAL HOA fee (if you find monthly, multiply by 12)
+  - Example: "$250/month" = $3,000 for Field 31
+- **Field 35 (annual_taxes):** ANNUAL property taxes (use most recent TAX YEAR)
+  - Must include Field 36 (tax_year) to indicate which year
+
+### TAX DATA REQUIREMENTS:
+- **Field 35 & 36 MUST BE PAIRED:**
+  - Field 35 (annual_taxes): $6,543
+  - Field 36 (tax_year): 2023 (most recent completed tax year)
+- Search county tax collector websites for authoritative data
+- NEVER use tax data older than 2 years
+
+### TIME-SENSITIVE FIELDS (MUST INCLUDE "AS OF" DATE):
+- **Field 91 (median_home_price_neighborhood):** Include "as of [Month Year]"
+  - Example: "Median home price: $425,000 as of November 2024"
+- **Field 92 (price_per_sqft_recent_avg):** "Recent" = last 6 months
+- **Field 95 (days_on_market_avg):** Average for properties sold in last 90 days
+- **Field 98 (rental_estimate_monthly):** Current rental estimate "as of [Month Year]"
+- **Field 103 (comparable_sales):** Sales within last 6 months only
+
+### SQUARE FOOTAGE DISTINCTIONS:
+- **Field 21 (living_sqft):** Interior heated/cooled living space ONLY (not garage!)
+- **Field 22 (total_sqft_under_roof):** Living + garage + covered areas
+- DO NOT use "total sqft" for "living sqft"
+
+### BATHROOM DEFINITIONS:
+- **Field 18 (full_bathrooms):** Toilet + sink + shower/tub
+- **Field 19 (half_bathrooms):** Toilet + sink ONLY (no shower/tub)
+- Count carefully! A "2.5 bath" home = 2 full + 1 half
+
+### DATA FRESHNESS REQUIREMENTS:
+✅ ACCEPT: Data from current year or last 6 months
+⚠️ CAUTION: Data from last year (12-18 months old)
+❌ REJECT: Data older than 18 months (except historical fields like Field 14)
+`;
+
 // BASE JSON RESPONSE FORMAT (shared)
 const JSON_RESPONSE_FORMAT = `
 ${EXACT_FIELD_KEYS}
+
+${FIELD_CLARITY_RULES}
 
 RESPONSE FORMAT - Return ONLY valid JSON with EXACT field keys above:
 {
@@ -2590,6 +2795,45 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
 // Prevents Grok from hallucinating on fields that Stellar MLS and Perplexity handle authoritatively
 // Grok was hallucinating on 75% of fields - now restricted to gap-filling only
 // ============================================
+
+// ============================================
+// STELLAR MLS AUTHORITATIVE FIELDS
+// These fields from Stellar MLS can NEVER be overwritten by ANY other source,
+// regardless of confidence level. This ensures listing prices, sale dates, and
+// exact property measurements from MLS are not corrupted by LLM hallucinations.
+// ============================================
+const STELLAR_MLS_AUTHORITATIVE_FIELDS = new Set([
+  // CRITICAL: Current listing data (NOT historical)
+  '2_mls_primary', '3_mls_secondary', '4_listing_status', '5_listing_date',
+  '10_listing_price', // ← CRITICAL: CURRENT list price, not historical!
+  '13_last_sale_date', '14_last_sale_price', // Historical sale data
+
+  // Exact property measurements from MLS
+  '17_bedrooms', '18_full_bathrooms', '19_half_bathrooms',
+  '21_living_sqft', '22_total_sqft_under_roof', '23_lot_size_sqft',
+  '25_year_built', '26_property_type', '27_stories',
+  '28_garage_spaces', '29_parking_total',
+
+  // HOA data from MLS
+  '30_hoa_yn', '31_hoa_fee_annual', '32_hoa_name', '33_hoa_includes', '34_ownership_type',
+
+  // Tax data (CRITICAL: LLMs often return old tax amounts)
+  '35_annual_taxes', '36_tax_year', // County Tax Collector is authoritative
+
+  // Stellar MLS exclusive fields (139-168)
+  '139_carport_yn', '140_carport_spaces', '141_garage_attached_yn',
+  '142_parking_features', '143_assigned_parking_spaces',
+  '144_floor_number', '145_building_total_floors', '146_building_name_number',
+  '147_building_elevator_yn', '148_floors_in_unit',
+  '149_subdivision_name', '150_legal_description', '151_homestead_yn',
+  '152_cdd_yn', '153_annual_cdd_fee', '154_front_exposure',
+  '155_water_frontage_yn', '156_waterfront_feet', '157_water_access_yn',
+  '158_water_view_yn', '159_water_body_name',
+  '160_can_be_leased_yn', '161_minimum_lease_period', '162_lease_restrictions_yn',
+  '163_pet_size_limit', '164_max_pet_weight', '165_association_approval_yn',
+  '166_community_features', '167_interior_features', '168_exterior_features',
+]);
+
 const GROK_RESTRICTED_FIELDS = new Set([
   // Stellar MLS core listing data (Stellar is authoritative)
   '2_mls_primary', '3_mls_secondary', '4_listing_status', '5_listing_date',
@@ -2636,6 +2880,8 @@ async function callGrok(address: string): Promise<any> {
   const grokSystemPrompt = `${PROMPT_GROK}
 
 ${EXACT_FIELD_KEYS}
+
+${FIELD_CLARITY_RULES}
 
 CRITICAL: Use EXACT field keys like "10_listing_price", "7_county", "35_annual_taxes", "17_bedrooms"
 SEARCH THE WEB AGGRESSIVELY for: listing prices, tax values, assessed values, MLS numbers, school ratings
@@ -2825,7 +3071,7 @@ function mergeResults(results: any[]): any {
       merged.sources.push(...result.sources_searched);
     }
 
-    // Merge fields - highest confidence wins
+    // Merge fields - with Stellar MLS protection
     for (const [fieldKey, fieldData] of Object.entries(result.fields || {})) {
       const field = fieldData as any;
 
@@ -2848,6 +3094,52 @@ function mergeResults(results: any[]): any {
       }
 
       const existing = merged.fields[fieldKey];
+
+      // 🛡️ STELLAR MLS PROTECTION: If existing field is from Stellar MLS and is authoritative, NEVER overwrite it
+      if (existing && STELLAR_MLS_AUTHORITATIVE_FIELDS.has(fieldKey)) {
+        const isFromAuthoritativeSource =
+          existing.source?.includes('Stellar MLS') ||
+          existing.source?.includes('Bridge') ||
+          existing.source?.includes('MLS PDF') ||
+          existing.source?.toLowerCase().includes('stellar') ||
+          existing.source?.includes('County Tax Collector') ||
+          existing.source?.includes('County Property Appraiser') ||
+          existing.source?.includes('County') ||
+          existing.source?.includes('Perplexity'); // Perplexity with citations is trusted
+
+        if (isFromAuthoritativeSource) {
+          console.log(`🛡️ [AUTHORITATIVE SOURCE PROTECTION] Blocking ${result.llm} from overwriting Field ${fieldKey} = ${JSON.stringify(existing.value)} (Source: ${existing.source} is authoritative)`);
+          continue; // Skip - preserve authoritative data
+        }
+      }
+
+      // ✅ VALIDATE HOA FEE: Check for monthly/annual confusion
+      if (fieldKey === '31_hoa_fee_annual' && field.value) {
+        const validation = validateHOAFee(field.value, field);
+        if (!validation.valid) {
+          console.warn(`❌ Field 31 rejected: Invalid HOA fee`);
+          continue;
+        }
+        if (validation.correctedValue) {
+          field.value = validation.correctedValue;
+          field.validationMessage = validation.warning;
+          console.log(`✅ Field 31 auto-corrected: ${validation.warning}`);
+        }
+        if (validation.warning && !validation.correctedValue) {
+          field.validationMessage = validation.warning;
+        }
+      }
+
+      // ✅ VALIDATE TIME-BASED FIELDS: Check for stale data
+      const timeValidation = validateTimeBasedField(fieldKey, field.value, field);
+      if (!timeValidation.valid) {
+        console.warn(`❌ Field ${fieldKey} rejected: Stale data from ${result.llm}`);
+        continue;
+      }
+      if (timeValidation.warning) {
+        field.validationMessage = timeValidation.warning;
+      }
+
       const newConfidence = confidenceOrder[field.confidence as keyof typeof confidenceOrder] || 0;
       const existingConfidence = existing ? confidenceOrder[existing.confidence as keyof typeof confidenceOrder] || 0 : -1;
 
