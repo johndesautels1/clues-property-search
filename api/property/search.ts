@@ -46,7 +46,7 @@ import { scrapeFloridaCounty } from './florida-counties.js';
 import { LLM_CASCADE_ORDER } from './llm-constants.js';
 import { createArbitrationPipeline, type FieldValue, type ArbitrationResult } from './arbitration.js';
 import { sanitizeAddress, isValidAddress } from '../../src/lib/safe-json-parse.js';
-import { callCrimeGrade, callSchoolDigger, callFEMARiskIndex, callNOAAClimate, callNOAAStormEvents, callNOAASeaLevel, callUSGSElevation, callUSGSEarthquake, callEPAFRS, getRadonRisk, callGoogleStreetView, callGoogleSolarAPI/*, callRedfinProperty*/ } from './free-apis.js';
+import { callCrimeGrade, callSchoolDigger, callFEMARiskIndex, callNOAAClimate, callNOAAStormEvents, callNOAASeaLevel, callUSGSElevation, callUSGSEarthquake, callEPAFRS, getRadonRisk, callGoogleStreetView, callGoogleSolarAPI, callHowLoud/*, callRedfinProperty*/ } from './free-apis.js';
 import { STELLAR_MLS_SOURCE, FBI_CRIME_SOURCE } from './source-constants.js';
 
 
@@ -1253,94 +1253,6 @@ async function getCensusData(zipCode: string): Promise<Record<string, any>> {
   }
 }
 
-// HowLoud API - Noise levels
-async function getNoiseData(lat: number, lon: number): Promise<Record<string, any>> {
-  const apiKey = process.env.HOWLOUD_API_KEY;
-  if (!apiKey) {
-    console.log('❌ [HowLoud] HOWLOUD_API_KEY not set in environment variables');
-    return {};
-  }
-
-  console.log(`🔵 [HowLoud] Calling API for coordinates: ${lat}, ${lon}`);
-
-  try {
-    // Use x-api-key header as per HowLoud API docs
-    const url = `https://api.howloud.com/score?lat=${lat}&lng=${lon}`;
-    const response = await fetch(url, {
-      headers: {
-        'x-api-key': apiKey
-      }
-    });
-
-    console.log(`🔵 [HowLoud] Response status: ${response.status} ${response.statusText}`);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.log(`❌ [HowLoud] API error: ${response.status} - ${errorText.substring(0, 200)}`);
-      return {};
-    }
-
-    const data = await response.json();
-    console.log(`🔵 [HowLoud] Response data:`, JSON.stringify(data).substring(0, 500));
-
-    const fields: Record<string, any> = {};
-
-    // Response structure: { status: "OK", result: [{ score, traffic, local, airports, ... }] }
-    // Note: result is an array, take first element
-    const resultArray = data.result || [];
-    const result = Array.isArray(resultArray) ? resultArray[0] : resultArray;
-
-    if (result && result.score !== undefined) {
-      // HowLoud score: 0-100 (higher = quieter)
-      let noiseLevel = 'High Noise';
-      if (result.score >= 80) noiseLevel = 'Very Quiet';
-      else if (result.score >= 60) noiseLevel = 'Quiet';
-      else if (result.score >= 40) noiseLevel = 'Moderate';
-      else if (result.score >= 20) noiseLevel = 'Noisy';
-
-      // UPDATED: 2025-11-30 - Corrected field numbers to match fields-schema.ts
-      fields['78_noise_level'] = {
-        value: `${noiseLevel} (Score: ${result.score}/100)`,
-        source: 'HowLoud',
-        confidence: 'High'
-      };
-
-      // Traffic noise component if available
-      if (result.traffic !== undefined) {
-        let trafficLevel = 'Heavy';
-        if (result.traffic >= 80) trafficLevel = 'Very Light';
-        else if (result.traffic >= 60) trafficLevel = 'Light';
-        else if (result.traffic >= 40) trafficLevel = 'Moderate';
-        else if (result.traffic >= 20) trafficLevel = 'Heavy';
-
-        fields['79_traffic_level'] = {
-          value: `${trafficLevel} (Score: ${result.traffic}/100)`,
-          source: 'HowLoud',
-          confidence: 'High'
-        };
-      }
-
-      // Convert HowLoud score (0-100, higher=quieter) to estimated dB
-      // Formula: dB ≈ 80 - (score * 0.4)
-      // Score 100 (very quiet) → ~40 dB
-      // Score 50 (moderate) → ~60 dB
-      // Score 0 (very noisy) → ~80 dB
-      const estimatedDb = Math.round(80 - (result.score * 0.4));
-      fields['129_noise_level_db_est'] = {
-        value: `${estimatedDb} dB`,
-        source: 'HowLoud',
-        confidence: 'Medium'
-      };
-    }
-
-    console.log(`✅ [HowLoud] Returning ${Object.keys(fields).length} fields`);
-    return fields;
-  } catch (e) {
-    console.error('❌ [HowLoud] Exception:', e);
-    return {};
-  }
-}
-
 // BroadbandNow REMOVED (2025-11-27) - Scraper was blocked and not wired
 // Internet provider data now comes from LLM cascade (fields 96-98)
 
@@ -1719,12 +1631,12 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   const zipCode = geo.zipCode || geo.zip || '';
 
   // Call all APIs in parallel
-  const [walkScore, floodZone, airQuality, censusData, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeDataResult, schoolDiggerResult, femaRiskResult, noaaClimateResult, noaaStormResult, noaaSeaLevelResult, usgsElevationResult, usgsEarthquakeResult, epaFRSResult, epaRadonResult, streetViewResult, googleSolarResult/*, redfinResult*/] = await Promise.all([
+  const [walkScore, floodZone, airQuality, censusData, noiseDataResult, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeDataResult, schoolDiggerResult, femaRiskResult, noaaClimateResult, noaaStormResult, noaaSeaLevelResult, usgsElevationResult, usgsEarthquakeResult, epaFRSResult, epaRadonResult, streetViewResult, googleSolarResult/*, redfinResult*/] = await Promise.all([
     getWalkScore(geo.lat, geo.lon, address),
     getFloodZone(geo.lat, geo.lon),
     getAirQuality(geo.lat, geo.lon),
     getCensusData(zipCode),
-    getNoiseData(geo.lat, geo.lon),
+    callHowLoud(geo.lat, geo.lon),
     getClimateData(geo.lat, geo.lon),
     getDistances(geo.lat, geo.lon),
     getCommuteTime(geo.lat, geo.lon, geo.county),
@@ -1758,6 +1670,7 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   const epaRadonData = epaRadonResult.fields || {};
   const streetViewData = streetViewResult.fields || {}; // Google Street View fallback photos
   const googleSolarData = googleSolarResult.fields || {}; // Google Solar API: Rooftop solar potential
+  const noiseData = noiseDataResult.fields || {}; // HowLoud API: Noise and traffic levels
   // const redfinData = redfinResult.fields || {}; // DISABLED: Redfin API not working
 
   const apiEndTime = Date.now();
