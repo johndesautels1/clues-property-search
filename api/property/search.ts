@@ -3010,18 +3010,34 @@ function mergeResults(results: any[]): any {
 
       // 🛡️ STELLAR MLS PROTECTION: If existing field is from Stellar MLS and is authoritative, NEVER overwrite it
       if (existing && STELLAR_MLS_AUTHORITATIVE_FIELDS.has(fieldKey)) {
-        const isFromAuthoritativeSource =
+        // Stellar MLS sources (Bridge API or MLS PDF) are ALWAYS authoritative
+        const isMLSSource =
           existing.source?.includes('Stellar MLS') ||
           existing.source?.includes('Bridge') ||
           existing.source?.includes('MLS PDF') ||
-          existing.source?.toLowerCase().includes('stellar') ||
-          existing.source?.includes('County Tax Collector') ||
-          existing.source?.includes('County Property Appraiser') ||
-          existing.source?.includes('County') ||
-          existing.source?.includes('Perplexity'); // Perplexity with citations is trusted
+          existing.source?.toLowerCase().includes('stellar');
 
-        if (isFromAuthoritativeSource) {
-          console.log(`🛡️ [AUTHORITATIVE SOURCE PROTECTION] Blocking ${result.llm} from overwriting Field ${fieldKey} = ${JSON.stringify(existing.value)} (Source: ${existing.source} is authoritative)`);
+        // CRITICAL FIX: County sources are ONLY authoritative for HISTORICAL sale data (fields 13-14)
+        // County provides ClosePrice/ClosedDate from property records, NOT current listing prices
+        // Field 10 (listing_price) should ONLY come from Stellar MLS Bridge API or MLS PDF
+        const isCountyAuthoritative =
+          (fieldKey === '13_last_sale_date' || fieldKey === '14_last_sale_price') &&
+          (existing.source?.includes('County Tax Collector') ||
+           existing.source?.includes('County Property Appraiser') ||
+           existing.source?.includes('County'));
+
+        // Perplexity with citations is trusted for verification
+        const isPerplexitySource = existing.source?.includes('Perplexity');
+
+        if (isMLSSource || isCountyAuthoritative || isPerplexitySource) {
+          console.log(`🛡️ [AUTHORITATIVE SOURCE PROTECTION] Blocking ${result.llm} from overwriting Field ${fieldKey} = ${JSON.stringify(existing.value)} (Source: ${existing.source} is authoritative for this field)`);
+
+          // DETAILED LOGGING FOR FIELD 10 (listing_price) debugging
+          if (fieldKey === '10_listing_price') {
+            console.log(`🏠 [FIELD 10 PROTECTION] Current value: $${existing.value} from ${existing.source}`);
+            console.log(`🏠 [FIELD 10 PROTECTION] Blocked ${result.llm} from setting: $${field.value}`);
+          }
+
           continue; // Skip - preserve authoritative data
         }
       }
@@ -3092,6 +3108,13 @@ function mergeResults(results: any[]): any {
   merged.completion_percentage = Math.round((merged.total_fields_found / 168) * 100);
 
   console.log(`🛡️ MERGE COMPLETE: ${merged.total_fields_found} fields accepted, ${totalNullsBlocked} nulls BLOCKED`);
+
+  // CRITICAL LOGGING: Final Field 10 (listing_price) value verification
+  if (merged.fields['10_listing_price']) {
+    console.log(`🏠 [FIELD 10 FINAL] Final Field 10 value = $${merged.fields['10_listing_price'].value} (Source: ${merged.fields['10_listing_price'].source})`);
+  } else {
+    console.log(`⚠️ [FIELD 10 FINAL] Field 10 (listing_price) is MISSING in final result`);
+  }
 
   return merged;
 }
@@ -3230,6 +3253,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             actualFieldCounts[STELLAR_MLS_SOURCE] = mlsFieldCount; // Track ACTUAL fields returned
             console.log(`✅ TIER 1 COMPLETE: Added ${mlsAdded} fields from ${STELLAR_MLS_SOURCE} (via Bridge Interactive)`);
             console.log('📊 Sample MLS field values:', JSON.stringify(Object.fromEntries(Object.entries(mlsFields).slice(0, 3)), null, 2));
+
+            // CRITICAL LOGGING: Track Field 10 (listing_price) from Stellar MLS
+            if (mlsFields['10_listing_price']) {
+              console.log(`🏠 [FIELD 10 DEBUG] Stellar MLS set Field 10 = $${mlsFields['10_listing_price'].value} (Source: ${mlsFields['10_listing_price'].source}, Confidence: ${mlsFields['10_listing_price'].confidence})`);
+            } else {
+              console.log(`⚠️ [FIELD 10 DEBUG] Stellar MLS did NOT return Field 10 (listing_price) - property may not be actively listed`);
+            }
           } else {
             console.log('⚠️ Bridge Interactive: No property found or no data returned');
             console.log('   - success:', bridgeData.success);
