@@ -10,12 +10,11 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
   Building2,
-  TrendingUp,
   DollarSign,
   BarChart3,
-  Plus,
   ChevronRight,
   Zap,
+  Plus,
 } from 'lucide-react';
 import PropertyCardUnified from '@/components/property/PropertyCardUnified';
 import { useFilteredProperties, useProperties, useFullProperties } from '@/store/propertyStore';
@@ -129,24 +128,6 @@ export default function Dashboard() {
             </div>
           );
         })}
-      </motion.div>
-
-      {/* Quick Actions */}
-      <motion.div variants={itemVariants} className="mb-8">
-        <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
-          <Link to="/add" className="btn-quantum whitespace-nowrap">
-            <Plus className="w-5 h-5" />
-            Add Property
-          </Link>
-          <Link to="/compare" className="btn-glass whitespace-nowrap">
-            <BarChart3 className="w-5 h-5" />
-            Compare
-          </Link>
-          <button className="btn-glass whitespace-nowrap">
-            <TrendingUp className="w-5 h-5" />
-            Market Analysis
-          </button>
-        </div>
       </motion.div>
 
       {/* Recent Properties */}
