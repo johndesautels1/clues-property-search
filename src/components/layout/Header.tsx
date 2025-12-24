@@ -50,17 +50,6 @@ export default function Header() {
       <div className="glass-card border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            {/* Logo */}
-            <Link to="/" className="flex items-center gap-3">
-              <motion.div
-                className="w-12 h-12 rounded-xl flex items-center justify-center"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <img src="/clues-icon.svg" alt="CLUES Logo" className="w-full h-full" />
-              </motion.div>
-            </Link>
-
             {/* Desktop Navigation */}
             <nav className="flex items-center gap-1">
               {navItems.map((item) => {
