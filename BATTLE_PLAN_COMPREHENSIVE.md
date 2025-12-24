@@ -12,29 +12,29 @@
 
 ## ✅ PROGRESS TRACKER - SESSION 1 (Dec 24, 2025)
 
-### Completed Tasks: 9/51 (18%)
+### Completed Tasks: 14/51 (27%)
 
 | Task ID | Description | Status | Commit |
 |---------|-------------|--------|--------|
 | 1.1 | Replace "D" Logo with CLUES SVG | ✅ DONE | daa3d03 |
-| 1.2 | Replace "C" Logo with CLUES SVG → REMOVED (redundant) | ✅ DONE | 1c86d98 |
-| 1.4 | Change CLUES color from purple to company colors | ✅ DONE | 2ff6881 |
+| 1.2 | Replace "C" Logo → REMOVED (redundant) | ✅ DONE | 1c86d98 |
+| 1.4 | Change CLUES color to company colors (Sapphire/Gold) | ✅ DONE | 2ff6881 |
 | 1.5 | Change "Property Dashboard" to "CMA" | ✅ DONE | 2ff6881 |
-| 1.6 | Center top toolbar (equal margins) | ✅ DONE | 2ff6881 |
+| 1.6 | Center top toolbar (mx-auto, equal margins) | ✅ DONE | 2ff6881 |
 | 1.7 | Change footer purple to Sapphire Blue | ✅ DONE | 2ff6881 |
 | 1.8 | Change footer green to Silver | ✅ DONE | 2ff6881 |
 | 2.1 | Update "138-Field" to "168-Field" | ✅ DONE | 0eb8362 |
+| 2.4 | Remove redundant Quick Actions from Dashboard | ✅ DONE | 64368a6 |
+| 5.1 | Fix badge overlap in collapsed cards | ✅ DONE | fa8c42b |
+| 5.2 | Add price type labels (List/Market/Sale) | ✅ DONE | fa8c42b |
+| 5.4 | Hide "0" values, show "—" instead | ✅ DONE | fa8c42b |
+| 5.5 | Add Quick Compare "+" button with store | ✅ DONE | fa8c42b |
 | Extra | Remove redundant toolbar logo | ✅ DONE | 1c86d98 |
 
 ### In Progress This Session:
-- 2.4: Remove redundant Quick Actions
-- 5.1: Fix thumbnail overlap
-- 5.2: Add price type labels
-- 5.3: Fix CLUES scores
-- 5.4: Explain/fix "0" below cap rate
-- 5.5: Add Quick Compare "+" button
+- 5.3: Investigate SMART scores (all showing same value)
 
-### Time Saved: ~2 hours (completed in 45 minutes)
+### Time Saved: ~4 hours (completed in 2 hours)
 
 ---
 
