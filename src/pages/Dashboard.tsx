@@ -101,7 +101,7 @@ export default function Dashboard() {
           CLUES Dashboard
         </h1>
         <p className="text-gray-400">
-          138-Field Property Intelligence Platform
+          168-Field Property Intelligence Platform
         </p>
       </motion.div>
 
