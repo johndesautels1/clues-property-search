@@ -53,11 +53,11 @@ export default function Header() {
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3">
               <motion.div
-                className="w-12 h-12 rounded-xl bg-gradient-quantum flex items-center justify-center"
+                className="w-12 h-12 rounded-xl flex items-center justify-center"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <span className="text-quantum-black font-orbitron font-black text-xl">C</span>
+                <img src="/clues-icon.svg" alt="CLUES Logo" className="w-full h-full" />
               </motion.div>
             </Link>
 

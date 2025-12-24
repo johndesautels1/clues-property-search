@@ -6,8 +6,8 @@ const CluesHeader: React.FC = () => {
       <div className="max-w-[1400px] mx-auto grid grid-cols-1 md:grid-cols-[auto_auto_1fr_auto] gap-8 items-center justify-items-center">
         {/* Logo Section */}
         <div className="flex items-center justify-center">
-          <div className="w-[60px] h-[60px] bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 rounded-2xl flex items-center justify-center font-montserrat text-[2rem] font-extrabold text-[#0a0a0f] shadow-[0_0_30px_rgba(0,255,255,0.6),0_0_60px_rgba(0,255,255,0.4),0_0_90px_rgba(139,92,246,0.3),inset_0_-2px_10px_rgba(0,0,0,0.4),inset_0_2px_10px_rgba(255,255,255,0.3)] transition-all duration-400 hover:scale-105 hover:shadow-[0_0_50px_rgba(0,255,255,0.9),0_0_100px_rgba(0,255,255,0.6),0_0_150px_rgba(139,92,246,0.5)] animate-pulse">
-            D
+          <div className="w-[60px] h-[60px] rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(0,255,255,0.6),0_0_60px_rgba(0,255,255,0.4),0_0_90px_rgba(139,92,246,0.3)] transition-all duration-400 hover:scale-105 hover:shadow-[0_0_50px_rgba(0,255,255,0.9),0_0_100px_rgba(0,255,255,0.6),0_0_150px_rgba(139,92,246,0.5)] animate-pulse">
+            <img src="/clues-icon.svg" alt="CLUES Logo" className="w-full h-full" />
           </div>
         </div>
 
