@@ -29,6 +29,8 @@ import {
   Shield,
   Flame,
   Sun,
+  Plus,
+  Check,
 } from 'lucide-react';
 import type { PropertyCard as PropertyCardType, Property, DataField } from '@/types/property';
 import { usePropertyStore } from '@/store/propertyStore';
@@ -48,7 +50,7 @@ export default function PropertyCardUnified({
   defaultExpanded = false,
   neonGreenScore = false,
 }: PropertyCardUnifiedProps) {
-  const { removeProperty, fullProperties } = usePropertyStore();
+  const { removeProperty, fullProperties, compareList, addToCompare, removeFromCompare } = usePropertyStore();
 
   // Get user's preference from localStorage
   const getStoredPreference = () => {
@@ -211,6 +213,23 @@ export default function PropertyCardUnified({
     setIsExpanded(!isExpanded);
   };
 
+  const handleCompareClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (isInCompare) {
+      removeFromCompare(property.id);
+    } else {
+      if (compareList.length >= 3) {
+        alert('You can compare up to 3 properties at a time. Remove one first.');
+        return;
+      }
+      addToCompare(property.id);
+    }
+  };
+
+  const isInCompare = compareList.includes(property.id);
+
   const formatPrice = (price: number) => {
     if (price >= 1000000) {
       return `$${(price / 1000000).toFixed(2)}M`;
@@ -286,27 +305,27 @@ export default function PropertyCardUnified({
               </div>
             )}
 
-            {/* SMART Score Badge */}
-            <div className={`absolute top-3 right-3 px-3 py-1.5 rounded-full bg-gradient-to-r ${neonGreenScore ? 'from-green-500/30 to-green-400/30' : getScoreBg(data.smartScore)} backdrop-blur-lg border ${neonGreenScore ? 'border-green-400/60' : 'border-white/20'}`}>
-              <span className={`font-extrabold text-lg ${neonGreenScore ? 'text-[#00ff88] drop-shadow-[0_0_10px_rgba(0,255,136,0.8)]' : getScoreColor(data.smartScore)}`}>
+            {/* SMART Score Badge - Smaller in collapsed mode */}
+            <div className={`absolute ${isExpanded ? 'top-3 right-3 px-3 py-1.5' : 'top-1 right-1 px-2 py-1'} rounded-full bg-gradient-to-r ${neonGreenScore ? 'from-green-500/30 to-green-400/30' : getScoreBg(data.smartScore)} backdrop-blur-lg border ${neonGreenScore ? 'border-green-400/60' : 'border-white/20'}`}>
+              <span className={`font-extrabold ${isExpanded ? 'text-lg' : 'text-sm'} ${neonGreenScore ? 'text-[#00ff88] drop-shadow-[0_0_10px_rgba(0,255,136,0.8)]' : getScoreColor(data.smartScore)}`}>
                 {data.smartScore}
               </span>
             </div>
 
-            {/* Delete Button */}
+            {/* Delete Button - Smaller in collapsed mode */}
             {showDelete && (
               <button
                 onClick={handleDelete}
-                className="absolute top-3 left-3 p-2 rounded-full bg-red-500/20 backdrop-blur-lg border border-red-500/30 hover:bg-red-500/40 transition-colors"
+                className={`absolute ${isExpanded ? 'top-3 left-3 p-2' : 'top-1 left-1 p-1.5'} rounded-full bg-red-500/20 backdrop-blur-lg border border-red-500/30 hover:bg-red-500/40 transition-colors`}
                 title="Delete property"
               >
-                <Trash2 className="w-4 h-4 text-red-400" />
+                <Trash2 className={`${isExpanded ? 'w-4 h-4' : 'w-3 h-3'} text-red-400`} />
               </button>
             )}
 
-            {/* Status Badge */}
-            <div className="absolute bottom-3 left-3 px-2 py-1 rounded-full bg-quantum-green/20 backdrop-blur-lg border border-quantum-green/30">
-              <span className="text-xs font-semibold text-quantum-green">
+            {/* Status Badge - Smaller in collapsed mode */}
+            <div className={`absolute ${isExpanded ? 'bottom-3 left-3 px-2 py-1' : 'bottom-1 left-1 px-1.5 py-0.5'} rounded-full bg-quantum-green/20 backdrop-blur-lg border border-quantum-green/30`}>
+              <span className={`${isExpanded ? 'text-xs' : 'text-[9px]'} font-semibold text-quantum-green`}>
                 {data.listingStatus}
               </span>
             </div>
@@ -337,6 +356,20 @@ export default function PropertyCardUnified({
             {/* Price & Property Type */}
             <div className="flex items-start justify-between mb-2">
               <div className="flex-1">
+                {/* Price Type Label - Show what kind of price this is */}
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-0.5">
+                  {(() => {
+                    const listPrice = fullProperty ? getFieldValue(fullProperty.address?.listingPrice) as number | null : property.price;
+                    if (listPrice && (property.listingStatus === 'Active' || property.listingStatus === 'Pending')) {
+                      return 'List Price';
+                    }
+                    const marketEst = fullProperty ? getFieldValue(fullProperty.details?.marketValueEstimate) as number | null : null;
+                    if (marketEst) {
+                      return 'Market Value';
+                    }
+                    return 'Sale Price';
+                  })()}
+                </p>
                 <div className="flex items-baseline gap-2">
                   <span className="text-xl font-bold text-white">
                     {formatPrice(data.price)}
@@ -347,26 +380,45 @@ export default function PropertyCardUnified({
                 </div>
                 <p className="text-cyan-300 text-sm font-medium mt-1">{data.propertyType}</p>
               </div>
-              <div className="text-right">
-                {/* Show both DOM and CDOM if available */}
-                {data.daysOnMarket !== undefined ? (
-                  data.cumulativeDaysOnMarket && data.cumulativeDaysOnMarket !== data.daysOnMarket ? (
-                    <>
-                      <p className="text-gray-500 text-[10px] uppercase tracking-wide">DOM / CDOM</p>
-                      <span className="text-amber-400 text-xs font-bold">{data.daysOnMarket} / {data.cumulativeDaysOnMarket}</span>
-                    </>
+              <div className="flex items-start gap-2">
+                {/* Quick Compare Button - Top Right */}
+                <button
+                  onClick={handleCompareClick}
+                  className={`p-2 rounded-full transition-all ${
+                    isInCompare
+                      ? 'bg-quantum-cyan/30 border-2 border-quantum-cyan'
+                      : 'bg-white/5 border border-white/20 hover:bg-quantum-cyan/10 hover:border-quantum-cyan/40'
+                  }`}
+                  title={isInCompare ? 'Remove from compare' : 'Add to compare'}
+                >
+                  {isInCompare ? (
+                    <Check className="w-4 h-4 text-quantum-cyan" />
+                  ) : (
+                    <Plus className="w-4 h-4 text-gray-400" />
+                  )}
+                </button>
+
+                {/* Days on Market */}
+                <div className="text-right">
+                  {data.daysOnMarket !== undefined ? (
+                    data.cumulativeDaysOnMarket && data.cumulativeDaysOnMarket !== data.daysOnMarket ? (
+                      <>
+                        <p className="text-gray-500 text-[10px] uppercase tracking-wide">DOM / CDOM</p>
+                        <span className="text-amber-400 text-xs font-bold">{data.daysOnMarket} / {data.cumulativeDaysOnMarket}</span>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-gray-500 text-[10px] uppercase tracking-wide">Days on Market</p>
+                        <span className="text-amber-400 text-xs font-bold">{data.daysOnMarket}</span>
+                      </>
+                    )
                   ) : (
                     <>
                       <p className="text-gray-500 text-[10px] uppercase tracking-wide">Days on Market</p>
-                      <span className="text-amber-400 text-xs font-bold">{data.daysOnMarket}</span>
+                      <span className="text-gray-400 text-xs">N/A</span>
                     </>
-                  )
-                ) : (
-                  <>
-                    <p className="text-gray-500 text-[10px] uppercase tracking-wide">Days on Market</p>
-                    <span className="text-gray-400 text-xs">N/A</span>
-                  </>
-                )}
+                  )}
+                </div>
               </div>
             </div>
 
@@ -389,26 +441,26 @@ export default function PropertyCardUnified({
               )}
             </div>
 
-            {/* FIX #4: Property Features with labels and null handling */}
+            {/* FIX #4: Property Features with labels and null handling - Hide 0 values */}
             <div className="grid grid-cols-4 gap-2">
               <div className="flex flex-col items-center gap-0.5">
                 <Bed className="w-4 h-4 text-quantum-cyan" />
-                <span className="text-sm font-semibold text-white">{data.bedrooms ?? '—'}</span>
+                <span className="text-sm font-semibold text-white">{data.bedrooms || '—'}</span>
                 <span className="text-[9px] text-gray-500 uppercase">Beds</span>
               </div>
               <div className="flex flex-col items-center gap-0.5">
                 <Bath className="w-4 h-4 text-quantum-cyan" />
-                <span className="text-sm font-semibold text-white">{data.bathrooms ?? '—'}</span>
+                <span className="text-sm font-semibold text-white">{data.bathrooms || '—'}</span>
                 <span className="text-[9px] text-gray-500 uppercase">Baths</span>
               </div>
               <div className="flex flex-col items-center gap-0.5">
                 <Car className="w-4 h-4 text-quantum-cyan" />
-                <span className="text-sm font-semibold text-white">{data.garageSpaces ?? '—'}</span>
+                <span className="text-sm font-semibold text-white">{data.garageSpaces || '—'}</span>
                 <span className="text-[9px] text-gray-500 uppercase">Garage</span>
               </div>
               <div className="flex flex-col items-center gap-0.5">
                 <Calendar className="w-4 h-4 text-quantum-cyan" />
-                <span className="text-sm font-semibold text-white">{data.yearBuilt ?? '—'}</span>
+                <span className="text-sm font-semibold text-white">{data.yearBuilt || '—'}</span>
                 <span className="text-[9px] text-gray-500 uppercase">Built</span>
               </div>
             </div>

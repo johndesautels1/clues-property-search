@@ -309,6 +309,9 @@ interface PropertyState {
   // View mode
   viewMode: 'grid' | 'list' | 'map';
 
+  // Compare list
+  compareList: string[]; // Array of property IDs to compare
+
   // Actions
   setProperties: (properties: PropertyCard[]) => void;
   addProperty: (property: PropertyCard, fullProperty?: Property) => void;
@@ -329,6 +332,9 @@ interface PropertyState {
   setViewMode: (mode: 'grid' | 'list' | 'map') => void;
   getPropertyById: (id: string) => PropertyCard | undefined;
   getFullPropertyById: (id: string) => Property | undefined;
+  addToCompare: (id: string) => void;
+  removeFromCompare: (id: string) => void;
+  clearCompareList: () => void;
 }
 
 const defaultFilters: PropertyFilters = {};
@@ -389,6 +395,7 @@ export const usePropertyStore = create<PropertyState>()(
       sort: defaultSort,
       searchQuery: '',
       viewMode: 'grid',
+      compareList: [],
 
       // Actions
       setProperties: (properties) =>
@@ -584,6 +591,26 @@ export const usePropertyStore = create<PropertyState>()(
       getFullPropertyById: (id) => {
         return get().fullProperties.get(id);
       },
+
+      addToCompare: (id) =>
+        set((state) => {
+          if (state.compareList.includes(id)) {
+            return state; // Already in list
+          }
+          if (state.compareList.length >= 3) {
+            // Max 3 properties for comparison
+            return state;
+          }
+          return { compareList: [...state.compareList, id] };
+        }),
+
+      removeFromCompare: (id) =>
+        set((state) => ({
+          compareList: state.compareList.filter((propId) => propId !== id),
+        })),
+
+      clearCompareList: () =>
+        set({ compareList: [] }),
     }),
     {
       name: 'clues-property-store',
