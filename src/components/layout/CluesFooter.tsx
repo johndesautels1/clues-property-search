@@ -19,11 +19,11 @@ const CluesFooter: React.FC = () => {
             <p className="font-montserrat text-sm font-normal text-slate-400 my-1">
               Empowering Your Global Journey
             </p>
-            <div className="mt-4 p-4 bg-purple-500/15 border border-purple-500/40 rounded-xl backdrop-blur-md shadow-[0_0_20px_rgba(139,92,246,0.2),inset_0_0_20px_rgba(139,92,246,0.1)]">
-              <p className="font-montserrat text-base font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent mb-2 tracking-[2px] drop-shadow-[0_0_10px_rgba(255,0,128,0.4)]">
+            <div className="mt-4 p-4 bg-[#0F52BA]/15 border border-[#0F52BA]/40 rounded-xl backdrop-blur-md shadow-[0_0_20px_rgba(15,82,186,0.2),inset_0_0_20px_rgba(15,82,186,0.1)]">
+              <p className="font-montserrat text-base font-bold bg-gradient-to-r from-[#0F52BA] to-[#FFD700] bg-clip-text text-transparent mb-2 tracking-[2px] drop-shadow-[0_0_10px_rgba(255,215,0,0.4)]">
                 CLUES™ Technology
               </p>
-              <p className="font-montserrat text-xs font-medium text-[#00ff88] leading-relaxed drop-shadow-[0_0_10px_rgba(0,255,136,0.5)]">
+              <p className="font-montserrat text-xs font-medium text-[#C0C0C0] leading-relaxed drop-shadow-[0_0_10px_rgba(192,192,192,0.5)]">
                 Comprehensive Location &<br/>Utility Evaluation System
               </p>
             </div>

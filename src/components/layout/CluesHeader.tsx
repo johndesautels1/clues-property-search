@@ -11,13 +11,13 @@ const CluesHeader: React.FC = () => {
           </div>
         </div>
 
-        {/* CLUES Property Dashboard Section */}
+        {/* CLUES CMA Section */}
         <div className="flex flex-col items-center">
-          <h2 className="font-orbitron font-bold text-xl text-gradient-quantum">
+          <h2 className="font-orbitron font-bold text-xl bg-gradient-to-r from-[#0F52BA] to-[#FFD700] bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(15,82,186,0.5)]">
             CLUES
           </h2>
-          <p className="text-xs text-gray-500 uppercase tracking-widest">
-            Property Dashboard
+          <p className="text-xs text-[#C0C0C0] uppercase tracking-widest">
+            CMA
           </p>
         </div>
 
@@ -27,11 +27,11 @@ const CluesHeader: React.FC = () => {
             JOHN E. DESAUTELS & ASSOCIATES
           </h1>
           <div className="flex items-center justify-center gap-3 flex-wrap">
-            <span className="text-2xl filter drop-shadow-[0_0_15px_rgba(139,92,246,0.8)]">🔍🌍</span>
-            <span className="font-montserrat text-xl font-extrabold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent tracking-[3px] drop-shadow-[0_0_20px_rgba(139,92,246,0.5)] filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
+            <span className="text-2xl filter drop-shadow-[0_0_15px_rgba(255,153,51,0.8)]">🔍🌍</span>
+            <span className="font-montserrat text-xl font-extrabold bg-gradient-to-r from-[#0F52BA] to-[#FF9933] bg-clip-text text-transparent tracking-[3px] drop-shadow-[0_0_20px_rgba(15,82,186,0.5)] filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
               CLUES™
             </span>
-            <span className="font-montserrat text-xs font-medium text-[#00ff88] tracking-wider uppercase opacity-90 drop-shadow-[0_0_10px_rgba(0,255,136,0.6)]">
+            <span className="font-montserrat text-xs font-medium text-[#C0C0C0] tracking-wider uppercase opacity-90 drop-shadow-[0_0_10px_rgba(192,192,192,0.6)]">
               Comprehensive Location & Utility Evaluation System
             </span>
           </div>
