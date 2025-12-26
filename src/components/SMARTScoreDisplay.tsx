@@ -39,6 +39,7 @@ interface SMARTScoreDisplayProps {
   sectionBreakdown: SectionScore[];      // All 22 sections
   dataCompleteness: number;              // Percentage 0-100
   confidenceLevel: ConfidenceLevel;      // Overall confidence
+  compact?: boolean;                     // Enable compact view for narrow cards
 }
 
 // ================================================================
@@ -120,6 +121,26 @@ function getConfidenceColor(confidence: ConfidenceLevel): string {
   }
 }
 
+// Get confidence badge class (for compact view)
+function getConfidenceBadgeClass(confidence: ConfidenceLevel): string {
+  switch (confidence) {
+    case 'High': return 'bg-quantum-green/20 text-quantum-green border-quantum-green/30';
+    case 'Medium-High': return 'bg-quantum-cyan/20 text-quantum-cyan border-quantum-cyan/30';
+    case 'Medium': return 'bg-quantum-orange/20 text-quantum-orange border-quantum-orange/30';
+    case 'Low': return 'bg-quantum-red/20 text-quantum-red border-quantum-red/30';
+  }
+}
+
+// Get score assessment text
+function getScoreAssessment(score: number): string {
+  if (score >= 90) return 'Exceptional Property';
+  if (score >= 80) return 'Excellent Choice';
+  if (score >= 70) return 'Good Value';
+  if (score >= 60) return 'Fair Option';
+  if (score >= 50) return 'Below Average';
+  return 'Needs Improvement';
+}
+
 // Chart colors
 const CHART_COLORS = [
   '#00FFF0', // quantum-cyan
@@ -138,12 +159,81 @@ export function SMARTScoreDisplay({
   smartScore,
   sectionBreakdown,
   dataCompleteness,
-  confidenceLevel
+  confidenceLevel,
+  compact = false
 }: SMARTScoreDisplayProps) {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'radar' | 'bar' | 'list'>('radar');
 
   const letterGrade = getLetterGrade(smartScore);
+
+  // Compact view for narrow cards
+  if (compact) {
+    const topSections = sectionBreakdown
+      .sort((a, b) => b.weightedContribution - a.weightedContribution)
+      .slice(0, 3);
+
+    return (
+      <div className="space-y-4">
+        {/* Final Score - Compact */}
+        <div className={`p-4 rounded-xl bg-gradient-to-br ${getScoreBg(smartScore)} border border-white/10`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm text-gray-400 mb-1">SMART Score</div>
+              <div className="flex items-baseline gap-2">
+                <span className={`text-4xl font-orbitron font-bold ${getScoreColor(smartScore)}`}>
+                  {smartScore.toFixed(1)}
+                </span>
+                <span className="text-lg text-gray-500">/ 100</span>
+              </div>
+              <div className="text-xs text-gray-400 mt-1">{getScoreAssessment(smartScore)}</div>
+            </div>
+            <div className={`text-3xl font-orbitron font-bold ${getScoreColor(smartScore)}`}>
+              {letterGrade}
+            </div>
+          </div>
+        </div>
+
+        {/* Data Quality - Compact */}
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-gray-400">Data: {dataCompleteness.toFixed(0)}%</span>
+          <span className={`px-2 py-1 rounded-full border ${getConfidenceBadgeClass(confidenceLevel)}`}>
+            {confidenceLevel}
+          </span>
+        </div>
+
+        {/* Top 3 Sections - Compact List */}
+        <div className="space-y-2">
+          <div className="text-xs text-gray-400 uppercase tracking-wider">Top Contributors</div>
+          {topSections.map(section => {
+            const Icon = SECTION_ICONS[section.sectionId] || Target;
+            return (
+              <div key={section.sectionId} className="flex items-center gap-2">
+                <Icon className={`w-3 h-3 ${getScoreColor(section.sectionAverage)}`} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs text-white truncate">{section.sectionName}</div>
+                  <div className="h-1.5 bg-white/10 rounded-full overflow-hidden mt-1">
+                    <div
+                      className={`h-full bg-gradient-to-r ${getScoreBg(section.sectionAverage)}`}
+                      style={{ width: `${section.sectionAverage}%` }}
+                    />
+                  </div>
+                </div>
+                <span className={`text-xs font-medium ${getScoreColor(section.sectionAverage)} tabular-nums`}>
+                  {section.sectionAverage.toFixed(0)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Methodology Note - Compact */}
+        <div className="text-xs text-gray-500 text-center pt-2 border-t border-white/5">
+          {sectionBreakdown.length} sections • Industry weights
+        </div>
+      </div>
+    );
+  }
 
   // Prepare data for radar chart (top 6 sections by weight)
   const radarData = sectionBreakdown

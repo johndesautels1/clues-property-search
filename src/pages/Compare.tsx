@@ -570,7 +570,8 @@ function PropertySelector({
   onSelect,
   onClear,
   properties,
-  excludeIds
+  excludeIds,
+  getCalculatedScore
 }: {
   slot: number;
   selectedId: string | null;
@@ -578,6 +579,7 @@ function PropertySelector({
   onClear: () => void;
   properties: PropertyCard[];
   excludeIds: string[];
+  getCalculatedScore: (propertyId: string) => number;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -640,7 +642,9 @@ function PropertySelector({
             </div>
             <div className="bg-white/5 rounded px-2 py-1 col-span-2">
               <span className="text-gray-400">Score:</span>
-              <span className="text-quantum-cyan ml-1">{selectedProperty.smartScore}</span>
+              <span className="text-quantum-cyan ml-1">
+                {getCalculatedScore(selectedProperty.id).toFixed(1)}
+              </span>
             </div>
           </div>
         </motion.div>
@@ -704,7 +708,9 @@ function PropertySelector({
                       </div>
                       <div className="text-right">
                         <p className="text-sm text-quantum-green">${property.price.toLocaleString()}</p>
-                        <p className="text-xs text-gray-400">Score: {property.smartScore}</p>
+                        <p className="text-xs text-gray-400">
+                          Score: {getCalculatedScore(property.id).toFixed(1)}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -811,10 +817,12 @@ function compareValues(
 // Analytics summary component
 function AnalyticsSummary({
   selectedProperties,
-  fullProperties
+  fullProperties,
+  smartScores
 }: {
   selectedProperties: PropertyCard[];
   fullProperties: Map<string, Property>;
+  smartScores: (any | null)[];
 }) {
   const analytics = useMemo(() => {
     if (selectedProperties.length < 2) return null;
@@ -881,7 +889,12 @@ function AnalyticsSummary({
             <span className="text-xs text-gray-400">Highest Score</span>
           </div>
           <p className="text-sm font-medium text-white truncate">{analytics.bestScore?.address}</p>
-          <p className="text-xs text-quantum-cyan">Score: {analytics.bestScore?.smartScore}</p>
+          <p className="text-xs text-quantum-cyan">
+            Score: {analytics.bestScore ? (() => {
+              const idx = selectedProperties.findIndex(p => p.id === analytics.bestScore?.id);
+              return (idx !== -1 && smartScores[idx]) ? smartScores[idx].finalScore.toFixed(1) : analytics.bestScore.smartScore.toFixed(1);
+            })() : 'N/A'}
+          </p>
         </div>
 
         <div className="bg-white/5 rounded-xl p-4">
@@ -964,6 +977,17 @@ export default function Compare() {
       }
     });
   }, [selectedProperties, fullProperties]);
+
+  // Helper to get calculated SMART Score for a property card
+  const getCalculatedScore = (propertyId: string): number => {
+    const index = selectedProperties.findIndex(p => p.id === propertyId);
+    if (index !== -1 && smartScores[index]) {
+      return smartScores[index].finalScore;
+    }
+    // Fallback to card smartScore if not in selected properties or calculation failed
+    const prop = properties.find(p => p.id === propertyId);
+    return prop?.smartScore || 50;
+  };
 
   const handleSelect = (slot: number, id: string) => {
     const newIds = [...selectedIds];
@@ -1159,6 +1183,7 @@ export default function Compare() {
             onClear={() => handleClear(slot)}
             properties={properties}
             excludeIds={excludeIds.filter(id => id !== selectedIds[slot])}
+            getCalculatedScore={getCalculatedScore}
           />
         ))}
       </div>
@@ -1239,6 +1264,7 @@ export default function Compare() {
         <AnalyticsSummary
           selectedProperties={selectedProperties}
           fullProperties={fullProperties}
+          smartScores={smartScores}
         />
       )}
 
@@ -1551,6 +1577,7 @@ export default function Compare() {
                     sectionBreakdown={scoreResult.sectionBreakdown}
                     dataCompleteness={scoreResult.dataCompleteness}
                     confidenceLevel={scoreResult.confidenceLevel}
+                    compact={true}
                   />
                 </div>
               );
