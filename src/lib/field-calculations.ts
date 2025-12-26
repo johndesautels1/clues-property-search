@@ -51,6 +51,20 @@ export function calculateDerivedFinancialFields(property: FullProperty): Partial
     };
   }
 
+  // Field 24: Lot Size (Acres) - if sqft is available
+  const lotSizeSqft = property.details?.lotSizeSqft?.value;
+  if (lotSizeSqft && !property.details?.lotSizeAcres?.value) {
+    const acres = lotSizeSqft / 43560; // 1 acre = 43,560 square feet
+    derived.details.lotSizeAcres = {
+      value: parseFloat(acres.toFixed(2)),
+      confidence: 'High',
+      notes: 'Auto-calculated: Lot Size Sq Ft ÷ 43,560. Standard acre conversion.',
+      sources: ['Auto-Calculated'],
+      llmSources: ['Auto-Calculated'],
+      validationStatus: 'valid'
+    };
+  }
+
   // Field 93: Price to Rent Ratio
   if (listingPrice && rentalMonthly) {
     const priceToRent = listingPrice / (rentalMonthly * 12);
