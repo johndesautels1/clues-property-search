@@ -299,8 +299,9 @@ const comparisonFields: Record<string, Array<{
 }>> = {
   scores: [
     { key: 'smartScore', label: 'Smart Score', path: 'smartScore', format: 'number', higherIsBetter: true },
+    { key: 'price', label: 'Price', path: 'price', format: 'currency', higherIsBetter: false },
+    { key: 'pricePerSqft', label: 'Price/SF', path: 'pricePerSqft', format: 'currency', higherIsBetter: false },
     { key: 'dataCompleteness', label: 'Data Completeness %', path: 'dataCompleteness', format: 'percent', higherIsBetter: true },
-    { key: 'pricePerSqftRank', label: 'Price/Sqft Ranking', path: 'calculated.pricePerSqftRank', format: 'text', missingDataSource: true },
     { key: 'valueScore', label: 'Value Score', path: 'calculated.valueScore', format: 'number', higherIsBetter: true, missingDataSource: true },
     { key: 'locationScore', label: 'Location Score', path: 'calculated.locationScore', format: 'number', higherIsBetter: true, missingDataSource: true },
   ],
