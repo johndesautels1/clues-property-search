@@ -297,6 +297,7 @@ const comparisonFields: Record<string, Array<{
   format?: 'currency' | 'number' | 'percent' | 'text' | 'boolean' | 'rating';
   higherIsBetter?: boolean;
   missingDataSource?: boolean;
+  calculated?: boolean;
 }>> = {
   overview: [
     { key: 'price', label: 'Price', path: 'price', format: 'currency', higherIsBetter: false },

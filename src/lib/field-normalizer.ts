@@ -622,6 +622,7 @@ export function normalizeToProperty(
       walkScore: emptyDataField(),
       transitScore: emptyDataField(),
       bikeScore: emptyDataField(),
+      safetyScore: emptyDataField(),
       distanceGroceryMiles: emptyDataField(),
       distanceHospitalMiles: emptyDataField(),
       distanceAirportMiles: emptyDataField(),

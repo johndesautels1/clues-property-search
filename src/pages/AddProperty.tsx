@@ -1197,6 +1197,7 @@ export default function AddProperty() {
         walkScore: createDataField(row['74_walk_score'] ? parseInt(row['74_walk_score']) : null),
         transitScore: createDataField(row['75_transit_score'] ? parseInt(row['75_transit_score']) : null),
         bikeScore: createDataField(row['76_bike_score'] ? parseInt(row['76_bike_score']) : null),
+        safetyScore: createDataField(row['77_safety_score'] ? parseInt(row['77_safety_score']) : null),
         // Distances & Amenities (fields 83-87)
         distanceGroceryMiles: createDataField(row['83_distance_grocery_mi'] ? parseFloat(row['83_distance_grocery_mi']) : null),
         distanceHospitalMiles: createDataField(row['84_distance_hospital_mi'] ? parseFloat(row['84_distance_hospital_mi']) : null),
@@ -1206,7 +1207,7 @@ export default function AddProperty() {
         // Safety & Crime (fields 88-90)
         crimeIndexViolent: createDataField(row['88_violent_crime_index'] || ''),
         crimeIndexProperty: createDataField(row['89_property_crime_index'] || ''),
-        neighborhoodSafetyRating: createDataField(row['90_neighborhood_safety_rating'] || row['77_safety_score'] || ''),
+        neighborhoodSafetyRating: createDataField(row['90_neighborhood_safety_rating'] || ''),
         noiseLevel: createDataField(row['78_noise_level'] || ''),
         trafficLevel: createDataField(row['79_traffic_level'] || ''),
         walkabilityDescription: createDataField(row['80_walkability_description'] || ''),
