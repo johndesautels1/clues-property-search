@@ -69,6 +69,45 @@
 
 ---
 
+## 🚨 CRITICAL PRODUCTION BLOCKERS
+
+### **BLOCKER #1: Data Loss Prevention (AddProperty Page)**
+
+**Status**: Phase 1 Complete ✅ | Phase 2 REQUIRED ⚠️
+
+**Problem Identified**:
+- Users lose data if navigating away during property scraping
+- Manual input data lost if user leaves page before completion
+- No persistence for partial/incomplete properties
+- App unusable in production without fixing this
+
+**Phase 1 (COMPLETED - Session 2)**:
+- ✅ Visual feedback: "Saving..." and "Auto-saved ✓" indicators
+- ✅ User now sees when property is being saved
+- ✅ Commit: `eacce8d`
+
+**Phase 2 (REQUIRED BEFORE PRODUCTION)**:
+- ⚠️ Implement auto-save for partial properties during scraping
+- ⚠️ Add browser warning: "Scraping in progress. Are you sure you want to leave?"
+- ⚠️ Save incomplete properties with `isPartial: true` flag
+- ⚠️ Handle partial properties throughout app (PropertyCard, Compare, etc.)
+- ⚠️ Add "Resume scraping" functionality for incomplete properties
+- ⚠️ "Save Progress" manual button for user control
+
+**Priority**: 🔴 CRITICAL - Must complete before launch
+
+**Estimated Time**: 2-3 hours
+
+**Files Affected**:
+- `src/pages/AddProperty.tsx` (save logic)
+- `src/store/propertyStore.ts` (handle partial properties)
+- `src/types/property.ts` (add isPartial flag)
+- `src/components/property/PropertyCardUnified.tsx` (display partial badge)
+
+**Dependencies**: None - can be implemented independently
+
+---
+
 ## TABLE OF CONTENTS
 1. [Task Overview & Categorization](#task-overview--categorization)
 2. [Detailed Task Analysis](#detailed-task-analysis)
