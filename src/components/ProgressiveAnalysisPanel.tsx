@@ -1,5 +1,5 @@
 /**
- * Progressive Analysis Panel
+ * Olivia Analysis Panel
  *
  * User-controlled 4-level analysis system with real-time progress.
  * Each level completes independently - NO MORE TIMEOUTS!
@@ -204,7 +204,7 @@ export function ProgressiveAnalysisPanel({ properties, onComplete }: Progressive
         }
       };
 
-      console.log('✅ Progressive Analysis Complete!');
+      console.log('✅ Olivia Analysis Complete!');
       console.log('📊 All Field Comparisons (Levels 1-3):', allFieldComparisons.length, 'fields');
       console.log('📈 Section Analysis:', finalResult.sectionAnalysis.length, 'sections');
       console.log('🏆 Investment Grade:', finalResult.investmentGrade);
@@ -261,7 +261,7 @@ export function ProgressiveAnalysisPanel({ properties, onComplete }: Progressive
           <Brain className="w-8 h-8 text-purple-600" />
           <div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              Olivia Progressive Analysis
+              Olivia Analysis
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               User-controlled 4-level analysis • No timeouts • Real progress

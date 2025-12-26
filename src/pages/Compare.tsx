@@ -853,7 +853,7 @@ export default function Compare() {
   const [useEnhancedOlivia, setUseEnhancedOlivia] = useState(true); // Toggle: true = new UI, false = old UI
   const [oliviaEnhancedResult, setOliviaEnhancedResult] = useState<OliviaEnhancedAnalysisResult | null>(null);
 
-  // Progressive Analysis (NEW! - user-controlled 4-level analysis)
+  // Olivia Analysis (NEW! - user-controlled 4-level analysis)
   const [showProgressiveAnalysis, setShowProgressiveAnalysis] = useState(false);
 
   const selectedProperties = useMemo(() => {
@@ -1078,7 +1078,7 @@ export default function Compare() {
                   className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:opacity-90 relative"
                 >
                   <Brain className="w-4 h-4" />
-                  Progressive Analysis
+                  Olivia Analysis
                   <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-[10px] font-bold bg-green-500 text-white rounded-full animate-pulse">
                     NEW!
                   </span>
@@ -1197,7 +1197,7 @@ export default function Compare() {
               })
               .filter((prop): prop is NonNullable<typeof prop> => prop !== null)}
             onComplete={(results) => {
-              console.log('✅ Progressive Analysis Complete:', results);
+              console.log('✅ Olivia Analysis Complete:', results);
               setOliviaEnhancedResult(results);
               // Keep panel open so user can review all levels
             }}

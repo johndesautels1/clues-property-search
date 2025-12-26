@@ -1,5 +1,5 @@
 /**
- * Olivia Progressive Analysis State Store
+ * Olivia Analysis State Store
  *
  * Manages state for the 4-level progressive analysis system.
  * Tracks completion status, results, and current progress for each level.
