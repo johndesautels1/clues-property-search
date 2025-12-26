@@ -1319,6 +1319,64 @@ export default function Compare() {
                               return currentYear - yearBuilt;
                             }
                           }
+
+                          // Monthly cost calculations (annual / 12)
+                          if (field.path === 'calculated.monthlyPropertyTax') {
+                            const annualTaxes = fullProp ? getFieldValue<number>(fullProp.details?.annualTaxes) : null;
+                            return annualTaxes ? Math.round(annualTaxes / 12) : null;
+                          }
+                          if (field.path === 'calculated.monthlyHOA') {
+                            const hoaFeeAnnual = fullProp ? getFieldValue<number>(fullProp.details?.hoaFeeAnnual) : null;
+                            return hoaFeeAnnual ? Math.round(hoaFeeAnnual / 12) : null;
+                          }
+                          if (field.path === 'calculated.monthlyInsurance') {
+                            const insuranceEstAnnual = fullProp ? getFieldValue<number>(fullProp.financial?.insuranceEstAnnual) : null;
+                            return insuranceEstAnnual ? Math.round(insuranceEstAnnual / 12) : null;
+                          }
+                          if (field.path === 'calculated.monthlyMaintenance') {
+                            // Estimate 1% of property value per year, divided by 12
+                            const price = cardProp?.price || 0;
+                            return price ? Math.round((price * 0.01) / 12) : null;
+                          }
+
+                          // Total monthly carrying cost (sum of all monthly costs)
+                          if (field.path === 'calculated.monthlyCarryingCost') {
+                            const annualTaxes = fullProp ? getFieldValue<number>(fullProp.details?.annualTaxes) : null;
+                            const hoaFeeAnnual = fullProp ? getFieldValue<number>(fullProp.details?.hoaFeeAnnual) : null;
+                            const insuranceEstAnnual = fullProp ? getFieldValue<number>(fullProp.financial?.insuranceEstAnnual) : null;
+                            const price = cardProp?.price || 0;
+
+                            const monthlyTax = annualTaxes ? annualTaxes / 12 : 0;
+                            const monthlyHOA = hoaFeeAnnual ? hoaFeeAnnual / 12 : 0;
+                            const monthlyInsurance = insuranceEstAnnual ? insuranceEstAnnual / 12 : 0;
+                            const monthlyMaintenance = price ? (price * 0.01) / 12 : 0;
+
+                            const total = monthlyTax + monthlyHOA + monthlyInsurance + monthlyMaintenance;
+                            return total > 0 ? Math.round(total) : null;
+                          }
+
+                          // Annual carrying cost
+                          if (field.path === 'calculated.annualCarryingCost') {
+                            const annualTaxes = fullProp ? getFieldValue<number>(fullProp.details?.annualTaxes) : null;
+                            const hoaFeeAnnual = fullProp ? getFieldValue<number>(fullProp.details?.hoaFeeAnnual) : null;
+                            const insuranceEstAnnual = fullProp ? getFieldValue<number>(fullProp.financial?.insuranceEstAnnual) : null;
+                            const price = cardProp?.price || 0;
+
+                            const totalAnnual = (annualTaxes || 0) + (hoaFeeAnnual || 0) + (insuranceEstAnnual || 0) + (price * 0.01);
+                            return totalAnnual > 0 ? Math.round(totalAnnual) : null;
+                          }
+
+                          // 5-year total cost
+                          if (field.path === 'calculated.fiveYearCost') {
+                            const annualTaxes = fullProp ? getFieldValue<number>(fullProp.details?.annualTaxes) : null;
+                            const hoaFeeAnnual = fullProp ? getFieldValue<number>(fullProp.details?.hoaFeeAnnual) : null;
+                            const insuranceEstAnnual = fullProp ? getFieldValue<number>(fullProp.financial?.insuranceEstAnnual) : null;
+                            const price = cardProp?.price || 0;
+
+                            const totalAnnual = (annualTaxes || 0) + (hoaFeeAnnual || 0) + (insuranceEstAnnual || 0) + (price * 0.01);
+                            return totalAnnual > 0 ? Math.round(totalAnnual * 5) : null;
+                          }
+
                           return null;
                         }
                         if (field.path.startsWith('card.')) {
