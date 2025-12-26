@@ -94,12 +94,12 @@ A complete SMART Score weight research and calculation system with:
 1. **Set Environment Variables:**
 ```bash
 # Windows (PowerShell)
-$env:VITE_ANTHROPIC_API_KEY="your-claude-key"
-$env:VITE_PERPLEXITY_API_KEY="your-perplexity-key"
+$env:ANTHROPIC_API_KEY="your-claude-key"
+$env:PERPLEXITY_API_KEY="your-perplexity-key"
 
 # Linux/Mac
-export VITE_ANTHROPIC_API_KEY="your-claude-key"
-export VITE_PERPLEXITY_API_KEY="your-perplexity-key"
+export ANTHROPIC_API_KEY="your-claude-key"
+export PERPLEXITY_API_KEY="your-perplexity-key"
 ```
 
 2. **Install Dependencies:**
@@ -343,11 +343,11 @@ All citations saved to `research-results/FL-Coastal_WEIGHTS_*.json`
 
 ## Troubleshooting
 
-### Error: "VITE_ANTHROPIC_API_KEY not configured"
+### Error: "ANTHROPIC_API_KEY not configured"
 **Solution:** Set environment variable before running script
 
 ### Error: "Perplexity API error: 401"
-**Solution:** Check that VITE_PERPLEXITY_API_KEY is correct
+**Solution:** Check that PERPLEXITY_API_KEY is correct
 
 ### Warning: "No consensus: diff 15%"
 **Solution:** Review rejected questions in output, may need manual research

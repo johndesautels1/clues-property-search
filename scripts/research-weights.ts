@@ -6,8 +6,8 @@
  *   npx ts-node scripts/research-weights.ts --region=FL-Inland
  *
  * Environment variables required:
- *   VITE_ANTHROPIC_API_KEY
- *   VITE_PERPLEXITY_API_KEY
+ *   ANTHROPIC_API_KEY
+ *   PERPLEXITY_API_KEY
  */
 
 import { researchSectionWeights, RESEARCH_QUESTIONS } from '../src/lib/smart-score-weight-research';
@@ -28,13 +28,13 @@ async function main() {
   console.log(`🤖 LLMs: Claude Opus 4.5 + Perplexity Sonar Pro\n`);
 
   // Check API keys
-  if (!process.env.VITE_ANTHROPIC_API_KEY) {
-    console.error('❌ ERROR: VITE_ANTHROPIC_API_KEY environment variable not set');
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error('❌ ERROR: ANTHROPIC_API_KEY environment variable not set');
     process.exit(1);
   }
 
-  if (!process.env.VITE_PERPLEXITY_API_KEY) {
-    console.error('❌ ERROR: VITE_PERPLEXITY_API_KEY environment variable not set');
+  if (!process.env.PERPLEXITY_API_KEY) {
+    console.error('❌ ERROR: PERPLEXITY_API_KEY environment variable not set');
     process.exit(1);
   }
 

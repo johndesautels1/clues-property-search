@@ -257,10 +257,10 @@ export async function queryClaudeOpus(
   question: string,
   region: string
 ): Promise<LLMResponse> {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
 
   if (!apiKey) {
-    throw new Error('VITE_ANTHROPIC_API_KEY not configured');
+    throw new Error('ANTHROPIC_API_KEY not configured');
   }
 
   const client = new Anthropic({
@@ -342,10 +342,10 @@ export async function queryPerplexity(
   question: string,
   region: string
 ): Promise<LLMResponse> {
-  const apiKey = import.meta.env.VITE_PERPLEXITY_API_KEY;
+  const apiKey = process.env.PERPLEXITY_API_KEY;
 
   if (!apiKey) {
-    throw new Error('VITE_PERPLEXITY_API_KEY not configured');
+    throw new Error('PERPLEXITY_API_KEY not configured');
   }
 
   const contextualQuestion = `${question}
