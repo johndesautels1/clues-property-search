@@ -766,6 +766,9 @@ function AnalyticsSummary({
     const lowestPricePerSqft = Math.min(...pricePerSqft);
     const lowestPriceProperty = selectedProperties.find(p => p.pricePerSqft === lowestPricePerSqft);
 
+    // Calculate average price per square foot
+    const avgPricePerSqft = pricePerSqft.reduce((a, b) => a + b, 0) / pricePerSqft.length;
+
     const smartScores = selectedProperties.map(p => p.smartScore);
     const highestScore = Math.max(...smartScores);
     const bestScoreProperty = selectedProperties.find(p => p.smartScore === highestScore);
@@ -777,6 +780,7 @@ function AnalyticsSummary({
       bestValue: lowestPriceProperty,
       bestScore: bestScoreProperty,
       avgPrice,
+      avgPricePerSqft,
       priceSpread: Math.max(...prices) - Math.min(...prices),
       completenessAvg: selectedProperties.reduce((a, b) => a + b.dataCompleteness, 0) / selectedProperties.length,
     };
@@ -795,7 +799,7 @@ function AnalyticsSummary({
         <h3 className="font-semibold text-white">Quick Analytics</h3>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <div className="bg-white/5 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <DollarSign className="w-4 h-4 text-quantum-green" />
@@ -803,6 +807,15 @@ function AnalyticsSummary({
           </div>
           <p className="text-sm font-medium text-white truncate">{analytics.bestValue?.address}</p>
           <p className="text-xs text-quantum-green">${analytics.bestValue?.pricePerSqft}/sqft</p>
+        </div>
+
+        <div className="bg-white/5 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Home className="w-4 h-4 text-quantum-gold" />
+            <span className="text-xs text-gray-400">Avg Price/SF</span>
+          </div>
+          <p className="text-lg font-semibold text-white">${Math.round(analytics.avgPricePerSqft)}</p>
+          <p className="text-xs text-gray-400">Per square foot</p>
         </div>
 
         <div className="bg-white/5 rounded-xl p-4">
