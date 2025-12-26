@@ -446,7 +446,7 @@ const comparisonFields: Record<string, Array<{
     { key: 'emergencyServicesDistance', label: 'Emergency Services Distance', path: 'utilities.emergencyServicesDistance.value', fieldNum: 116, format: 'text', higherIsBetter: false },
   ],
   safety: [
-    { key: 'safetyScore', label: 'Safety Score', path: 'calculated.safetyScore', format: 'number', higherIsBetter: true, missingDataSource: true },
+    { key: 'safetyScore', label: 'Safety Score', path: 'location.safetyScore.value', fieldNum: 77, format: 'number', higherIsBetter: true },
     { key: 'violentCrimeIndex', label: 'Violent Crime Index', path: 'location.crimeIndexViolent.value', fieldNum: 88, format: 'text', higherIsBetter: false },
     { key: 'propertyCrimeIndex', label: 'Property Crime Index', path: 'location.crimeIndexProperty.value', fieldNum: 89, format: 'text', higherIsBetter: false },
     { key: 'neighborhoodSafetyRating', label: 'Neighborhood Safety Rating', path: 'location.neighborhoodSafetyRating.value', fieldNum: 90, format: 'text', higherIsBetter: true },

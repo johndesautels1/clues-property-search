@@ -860,7 +860,7 @@ function convertFlatToNestedStructure(flatFields: Record<string, any>): any {
     '74_walk_score': ['location', 'walkScore'],
     '75_transit_score': ['location', 'transitScore'],
     '76_bike_score': ['location', 'bikeScore'],
-    '77_safety_score': ['location', 'neighborhoodSafetyRating'],
+    '77_safety_score': ['location', 'safetyScore'],
     '78_noise_level': ['location', 'noiseLevel'],
     '79_traffic_level': ['location', 'trafficLevel'],
     '80_walkability_description': ['location', 'walkabilityDescription'],

@@ -138,7 +138,7 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
   { fieldNumber: 74, apiKey: '74_walk_score', group: 'location', propName: 'walkScore', type: 'any' },
   { fieldNumber: 75, apiKey: '75_transit_score', group: 'location', propName: 'transitScore', type: 'any' },
   { fieldNumber: 76, apiKey: '76_bike_score', group: 'location', propName: 'bikeScore', type: 'any' },
-  { fieldNumber: 77, apiKey: '77_safety_score', group: 'location', propName: 'neighborhoodSafetyRating', type: 'string' },
+  { fieldNumber: 77, apiKey: '77_safety_score', group: 'location', propName: 'safetyScore', type: 'any' },
   { fieldNumber: 78, apiKey: '78_noise_level', group: 'location', propName: 'noiseLevel', type: 'string' },
   { fieldNumber: 79, apiKey: '79_traffic_level', group: 'location', propName: 'trafficLevel', type: 'string' },
   { fieldNumber: 80, apiKey: '80_walkability_description', group: 'location', propName: 'walkabilityDescription', type: 'string' },

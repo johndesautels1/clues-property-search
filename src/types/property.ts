@@ -118,6 +118,7 @@ export interface LocationData {
   walkScore: DataField<number>;          // #74 walk_score
   transitScore: DataField<number>;       // #75 transit_score
   bikeScore: DataField<number>;          // #76 bike_score
+  safetyScore: DataField<number>;        // #77 safety_score
   distanceGroceryMiles: DataField<number>; // #83 distance_grocery_mi
   distanceHospitalMiles: DataField<number>; // #84 distance_hospital_mi
   distanceAirportMiles: DataField<number>; // #85 distance_airport_mi
