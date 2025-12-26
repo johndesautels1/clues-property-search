@@ -1043,35 +1043,8 @@ export default function Compare() {
                 <PieChart className="w-4 h-4" />
                 32 Visual Charts
               </button>
-              
-              {/* ASK OLIVIA BUTTON */}
-              {selectedProperties.length >= 3 && (
-                <button
-                  onClick={useEnhancedOlivia ? handleAskOliviaEnhanced : handleAskOlivia}
-                  disabled={oliviaLoading || (useEnhancedOlivia ? selectedProperties.length !== 3 : selectedProperties.length < 2)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all bg-gradient-to-r from-quantum-purple to-quantum-cyan text-white hover:opacity-90 disabled:opacity-50"
-                >
-                  {oliviaLoading ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      Analyzing...
-                    </>
-                  ) : useEnhancedOlivia ? (
-                    <>
-                      <Zap className="w-4 h-4" />
-                      ✨ Ask Olivia Enhanced
-                      <span className="text-xs opacity-75">(168 fields • 3 properties required)</span>
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="w-4 h-4" />
-                      Ask Olivia AI
-                    </>
-                  )}
-                </button>
-              )}
 
-              {/* PROGRESSIVE ANALYSIS BUTTON (NEW!) */}
+              {/* OLIVIA ANALYSIS BUTTON */}
               {selectedProperties.length === 3 && (
                 <button
                   onClick={() => setShowProgressiveAnalysis(!showProgressiveAnalysis)}
@@ -1104,35 +1077,6 @@ export default function Compare() {
           />
         ))}
       </div>
-
-      {/* Olivia UI Toggle */}
-      {(oliviaResult || oliviaEnhancedResult) && (
-        <div className="mb-6 flex items-center justify-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10">
-          <span className="text-sm text-gray-400">Olivia UI Mode:</span>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setUseEnhancedOlivia(false)}
-              className={`px-4 py-2 rounded-lg transition-all font-medium ${
-                !useEnhancedOlivia
-                  ? 'bg-quantum-purple text-white shadow-lg shadow-quantum-purple/50'
-                  : 'bg-white/5 text-gray-400 hover:bg-white/10'
-              }`}
-            >
-              Classic (10 fields)
-            </button>
-            <button
-              onClick={() => setUseEnhancedOlivia(true)}
-              className={`px-4 py-2 rounded-lg transition-all font-medium ${
-                useEnhancedOlivia
-                  ? 'bg-gradient-to-r from-quantum-purple to-quantum-cyan text-white shadow-lg shadow-quantum-cyan/50'
-                  : 'bg-white/5 text-gray-400 hover:bg-white/10'
-              }`}
-            >
-              ✨ Enhanced (168 fields)
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Olivia AI Results - Conditional Rendering */}
       {useEnhancedOlivia ? (
