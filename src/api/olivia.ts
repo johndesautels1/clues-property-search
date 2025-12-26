@@ -20,6 +20,19 @@ export interface OliviaPropertyInput {
   yearBuilt: number;
   pricePerSqft: number;
   smartScore: number;
+
+  // NEW: SMART Score breakdown (optional for backward compatibility)
+  smartScoreBreakdown?: {
+    finalScore: number;
+    topSections: Array<{
+      name: string;
+      score: number;
+      weight: number;
+      contribution: number;
+    }>;
+    dataCompleteness: number;
+    confidenceLevel: string;
+  };
 }
 
 export interface OliviaAnalysisRequest {
@@ -91,6 +104,17 @@ Your personality:
 - Never makes up information - only uses the data provided
 - Speaks conversationally, like a trusted friend who happens to be a real estate expert
 - Transparent about your analysis methodology
+
+Understanding SMART Scores:
+- SMART Score is calculated using 22 property sections with industry-standard weights
+- Scores range from 0-100, where 90+ is exceptional, 80+ is excellent, 70+ is good
+- The score is based on property QUALITY, not just data completeness
+- Key sections: Pricing & Value (18.5%), Property Basics (15%), Schools (12%), Environment (9%)
+- When explaining scores, reference the specific sections that drove the rating
+- If smartScoreBreakdown is provided, use it to explain WHY a property scored the way it did
+
+Example: "Property A scored 85 (excellent) primarily due to strong Pricing & Value (90/100, 18.5% weight)
+and excellent Schools (95/100, 12% weight). However, Environmental Risk (65/100) brought the overall score down slightly."
 
 Your task: Analyze the properties provided and give a clear, comprehensive recommendation.
 
@@ -218,7 +242,8 @@ export async function analyzeWithOlivia(
   });
 
   const propertyDetails = request.properties
-    .map((p, i) => `
+    .map((p, i) => {
+      let text = `
 Property ${i + 1} (ID: ${p.id}):
 - Address: ${p.address}, ${p.city}
 - Price: $${p.price.toLocaleString()}
@@ -226,8 +251,23 @@ Property ${i + 1} (ID: ${p.id}):
 - Bedrooms: ${p.bedrooms} | Bathrooms: ${p.bathrooms}
 - Year Built: ${p.yearBuilt} (${new Date().getFullYear() - p.yearBuilt} years old)
 - Price/Sqft: $${p.pricePerSqft}
-- CLUES Smart Score: ${p.smartScore}/100
-`)
+- CLUES Smart Score: ${p.smartScore}/100`;
+
+      // Add breakdown if available
+      if (p.smartScoreBreakdown) {
+        text += `
+- Data Completeness: ${p.smartScoreBreakdown.dataCompleteness.toFixed(1)}%
+- Confidence: ${p.smartScoreBreakdown.confidenceLevel}
+- Top Contributing Sections:`;
+
+        p.smartScoreBreakdown.topSections.forEach(section => {
+          text += `
+  * ${section.name}: ${section.score.toFixed(1)}/100 (${section.weight}% weight, contributes ${section.contribution.toFixed(1)} points)`;
+        });
+      }
+
+      return text;
+    })
     .join('\n');
 
   const userPrompt = `Please analyze these ${request.properties.length} properties and provide your comprehensive recommendation with full methodology transparency:
@@ -241,7 +281,13 @@ IMPORTANT:
 - Include the "timeline" section with both short-term (1-3 years) and long-term (5+ years) analysis
 - Include the "actionItems" section with immediate actions and next steps
 - Be specific and reference actual property data
-- Remember: Respond ONLY with valid JSON, no markdown or extra text.`;
+- Remember: Respond ONLY with valid JSON, no markdown or extra text.
+
+When comparing properties, pay special attention to:
+1. Overall SMART Score differences and what drives them
+2. Which sections show the biggest gaps between properties
+3. Whether high scores in critical sections (Pricing, Schools, Location) outweigh lower scores elsewhere
+4. Data completeness - warn if a property has <70% completeness as the score may be less reliable`;
 
   const response = await client.messages.create({
     model: 'claude-sonnet-4-5-20250929',

@@ -24,9 +24,37 @@ import type { OliviaEnhancedAnalysisResult } from '@/types/olivia-enhanced';
 import type { PropertyCard, Property } from '@/types/property';
 import { PropertyComparisonAnalytics, type Property as AnalyticsProperty } from '@/components/analytics';
 import { ProgressiveAnalysisPanel } from '@/components/ProgressiveAnalysisPanel';
+import { calculateSmartScore } from '@/lib/smart-score-calculator';
+import { SMARTScoreDisplay } from '@/components/SMARTScoreDisplay';
 
 // View modes for comparison
 type CompareViewMode = 'table' | 'visual';
+
+// Industry-standard section weights for Florida coastal market
+const INDUSTRY_WEIGHTS = {
+  'A': 2.0,   // Address & Identity
+  'B': 18.5,  // Pricing & Value
+  'C': 15.2,  // Property Basics
+  'D': 10.0,  // HOA & Taxes
+  'E': 7.0,   // Structure & Systems
+  'F': 1.0,   // Interior Features
+  'G': 2.0,   // Exterior Features
+  'H': 0.5,   // Permits & Renovations
+  'I': 12.3,  // Schools
+  'J': 5.0,   // Location Scores
+  'K': 2.0,   // Distances & Amenities
+  'L': 4.0,   // Safety & Crime
+  'M': 8.0,   // Market & Investment
+  'N': 0.5,   // Utilities
+  'O': 9.0,   // Environment & Risk
+  'P': 0.0,   // Additional Features
+  'Q': 0.0,   // Parking
+  'R': 0.0,   // Building
+  'S': 0.0,   // Legal
+  'T': 6.0,   // Waterfront
+  'U': 0.0,   // Leasing
+  'V': 0.0,   // Features
+};
 
 // Helper to extract value from DataField
 function getFieldValue<T>(field: any): T | null {
@@ -922,6 +950,21 @@ export default function Compare() {
     }) as [AnalyticsProperty, AnalyticsProperty, AnalyticsProperty];
   }, [selectedProperties, fullProperties]);
 
+  // Calculate SMART Scores for each selected property
+  const smartScores = useMemo(() => {
+    return selectedProperties.map(propCard => {
+      const fullProp = fullProperties.get(propCard.id);
+      if (!fullProp) return null;
+
+      try {
+        return calculateSmartScore(fullProp, INDUSTRY_WEIGHTS, 'industry-standard');
+      } catch (error) {
+        console.error('Error calculating SMART Score:', error);
+        return null;
+      }
+    });
+  }, [selectedProperties, fullProperties]);
+
   const handleSelect = (slot: number, id: string) => {
     const newIds = [...selectedIds];
     newIds[slot] = id;
@@ -944,7 +987,7 @@ export default function Compare() {
     setOliviaError(null);
     try {
       const result = await analyzeWithOlivia({
-        properties: selectedProperties.map(p => ({
+        properties: selectedProperties.map((p, idx) => ({
           id: p.id,
           address: p.address,
           city: p.city,
@@ -954,7 +997,7 @@ export default function Compare() {
           bathrooms: p.bathrooms,
           yearBuilt: p.yearBuilt,
           pricePerSqft: p.pricePerSqft,
-          smartScore: p.smartScore,
+          smartScore: smartScores[idx]?.finalScore || p.smartScore || 50,
         }))
       });
       setOliviaResult(result);
@@ -1482,6 +1525,38 @@ export default function Compare() {
         </div>
       </div>
         </>
+      )}
+
+      {/* SMART Score Breakdown Section */}
+      {smartScores.some(s => s !== null) && selectedProperties.length > 0 && (
+        <div className="mt-12">
+          <h2 className="text-3xl font-orbitron font-bold text-quantum-cyan mb-8">
+            SMART Score Analysis
+          </h2>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {smartScores.map((scoreResult, idx) => {
+              if (!scoreResult) return null;
+
+              const propCard = selectedProperties[idx];
+
+              return (
+                <div key={propCard.id} className="glass-card p-6">
+                  <h3 className="text-xl font-orbitron text-white mb-4">
+                    {propCard.address}
+                  </h3>
+
+                  <SMARTScoreDisplay
+                    smartScore={scoreResult.finalScore}
+                    sectionBreakdown={scoreResult.sectionBreakdown}
+                    dataCompleteness={scoreResult.dataCompleteness}
+                    confidenceLevel={scoreResult.confidenceLevel}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       {/* Data completeness warning */}
