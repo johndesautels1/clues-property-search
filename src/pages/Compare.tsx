@@ -327,16 +327,26 @@ const comparisonFields: Record<string, Array<{
     { key: 'pricePerSqftAvg', label: 'Price Per Sq Ft (Recent Avg)', path: 'financial.pricePerSqftRecentAvg.value', fieldNum: 92, format: 'currency' },
   ],
   cost: [
-    { key: 'annualTaxes', label: 'Annual Taxes', path: 'details.annualTaxes.value', fieldNum: 35, format: 'currency', higherIsBetter: false },
+    // Annual Costs
+    { key: 'annualTaxes', label: 'Annual Property Tax', path: 'details.annualTaxes.value', fieldNum: 35, format: 'currency', higherIsBetter: false },
     { key: 'propertyTaxRate', label: 'Property Tax Rate', path: 'financial.propertyTaxRate.value', fieldNum: 37, format: 'percent', higherIsBetter: false },
     { key: 'hoaFeeAnnual', label: 'HOA Fee (Annual)', path: 'details.hoaFeeAnnual.value', fieldNum: 31, format: 'currency', higherIsBetter: false },
-    { key: 'insuranceEstAnnual', label: 'Insurance Estimate (Annual)', path: 'financial.insuranceEstAnnual.value', fieldNum: 97, format: 'currency', higherIsBetter: false },
-    { key: 'cddFee', label: 'Annual CDD Fee', path: 'stellarMLS.legal.annualCddFee.value', fieldNum: 153, format: 'currency', higherIsBetter: false },
-    { key: 'avgElectricBill', label: 'Avg Electric Bill', path: 'utilities.avgElectricBill.value', fieldNum: 105, format: 'text', higherIsBetter: false },
-    { key: 'avgWaterBill', label: 'Avg Water Bill', path: 'utilities.avgWaterBill.value', fieldNum: 107, format: 'text', higherIsBetter: false },
+    { key: 'insuranceEstAnnual', label: 'Insurance (Annual)', path: 'financial.insuranceEstAnnual.value', fieldNum: 97, format: 'currency', higherIsBetter: false },
+    { key: 'cddFee', label: 'CDD Fee (Annual)', path: 'stellarMLS.legal.annualCddFee.value', fieldNum: 153, format: 'currency', higherIsBetter: false },
     { key: 'specialAssessments', label: 'Special Assessments', path: 'financial.specialAssessments.value', fieldNum: 138, format: 'text' },
-    { key: 'monthlyCarryingCost', label: 'Monthly Carrying Cost', path: 'calculated.monthlyCarryingCost', format: 'currency', higherIsBetter: false, missingDataSource: true },
-    { key: 'annualCarryingCost', label: 'Annual Carrying Cost', path: 'calculated.annualCarryingCost', format: 'currency', higherIsBetter: false, missingDataSource: true },
+
+    // Monthly Breakdown
+    { key: 'monthlyPropertyTax', label: 'Monthly Property Tax', path: 'calculated.monthlyPropertyTax', format: 'currency', higherIsBetter: false, calculated: true },
+    { key: 'monthlyHOA', label: 'Monthly HOA Fee', path: 'calculated.monthlyHOA', format: 'currency', higherIsBetter: false, calculated: true },
+    { key: 'monthlyInsurance', label: 'Monthly Insurance', path: 'calculated.monthlyInsurance', format: 'currency', higherIsBetter: false, calculated: true },
+    { key: 'avgElectricBill', label: 'Monthly Electric', path: 'utilities.avgElectricBill.value', fieldNum: 105, format: 'text', higherIsBetter: false },
+    { key: 'avgWaterBill', label: 'Monthly Water', path: 'utilities.avgWaterBill.value', fieldNum: 107, format: 'text', higherIsBetter: false },
+    { key: 'monthlyMaintenance', label: 'Monthly Maintenance Est.', path: 'calculated.monthlyMaintenance', format: 'currency', higherIsBetter: false, calculated: true },
+
+    // Total Costs
+    { key: 'monthlyCarryingCost', label: 'Total Monthly Cost', path: 'calculated.monthlyCarryingCost', format: 'currency', higherIsBetter: false, calculated: true },
+    { key: 'annualCarryingCost', label: 'Total Annual Cost', path: 'calculated.annualCarryingCost', format: 'currency', higherIsBetter: false, calculated: true },
+    { key: 'fiveYearCost', label: '5-Year Total Cost', path: 'calculated.fiveYearCost', format: 'currency', higherIsBetter: false, calculated: true },
   ],
   size: [
     { key: 'livingSqft', label: 'Living Sq Ft', path: 'details.livingSqft.value', fieldNum: 21, format: 'number', higherIsBetter: true },
