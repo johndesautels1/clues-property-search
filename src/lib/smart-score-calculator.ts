@@ -7,7 +7,7 @@
  */
 
 import { Property, ConfidenceLevel } from '../types/property';
-import { FIELDS_SCHEMA } from '../types/fields-schema';
+import { ALL_FIELDS, type FieldDefinition } from '../types/fields-schema';
 
 // ================================================================
 // TYPE DEFINITIONS
@@ -127,7 +127,7 @@ export const SCOREABLE_FIELDS = [
 // ================================================================
 
 function getFieldValue(property: Property, fieldId: number): any {
-  const field = FIELDS_SCHEMA.find(f => f.num === fieldId);
+  const field = ALL_FIELDS.find((f: FieldDefinition) => f.num === fieldId);
   if (!field) return null;
 
   // Map field number to property path
@@ -435,7 +435,7 @@ export function calculateSmartScore(
   const fieldsBySection: Record<string, number[]> = {};
 
   SCOREABLE_FIELDS.forEach(fieldId => {
-    const field = FIELDS_SCHEMA.find(f => f.num === fieldId);
+    const field = ALL_FIELDS.find((f: FieldDefinition) => f.num === fieldId);
     if (!field) return;
 
     // Extract section from group name (simplified - you'll need proper mapping)
@@ -452,8 +452,8 @@ export function calculateSmartScore(
     const fieldScores: FieldScore[] = [];
 
     for (const fieldId of fieldIds) {
-      const field = FIELDS_SCHEMA.find(f => f.num === fieldId);
-      if (!field) continue;
+      const fieldDef = ALL_FIELDS.find((f: FieldDefinition) => f.num === fieldId);
+      if (!fieldDef) continue;
 
       const rawValue = getFieldValue(property, fieldId);
       const isPopulated = rawValue !== null && rawValue !== undefined && rawValue !== '';
@@ -470,7 +470,7 @@ export function calculateSmartScore(
 
       fieldScores.push({
         fieldId,
-        fieldName: field.label,
+        fieldName: fieldDef.label,
         rawValue,
         normalizedScore,
         confidence
@@ -490,7 +490,9 @@ export function calculateSmartScore(
     const sectionWeight = weights[sectionId] || 0;
     const weightedContribution = (sectionAverage / 100) * sectionWeight;
 
-    const sectionName = field.group; // TODO: Get proper section name
+    // Get section name from first field in this section
+    const firstField = ALL_FIELDS.find((f: FieldDefinition) => f.num === fieldIds[0]);
+    const sectionName = firstField?.group || sectionId;
 
     sectionScores.push({
       sectionId,
