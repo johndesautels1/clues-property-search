@@ -421,6 +421,8 @@ export function SMARTScoreDisplay({
                       borderRadius: '8px',
                       color: '#ffffff'
                     }}
+                    itemStyle={{ color: '#ffffff' }}
+                    labelStyle={{ color: '#ffffff' }}
                   />
                 </RadarChart>
               </ResponsiveContainer>
@@ -445,6 +447,8 @@ export function SMARTScoreDisplay({
                       borderRadius: '8px',
                       color: '#ffffff'
                     }}
+                    itemStyle={{ color: '#ffffff' }}
+                    labelStyle={{ color: '#ffffff' }}
                   />
                   <Legend />
                   <Bar dataKey="score" fill="#00FFF0" name="Section Score" />
@@ -532,6 +536,24 @@ export function SMARTScoreDisplay({
             </ResponsiveContainer>
           </div>
         </div>
+
+        {/* Section Letter Legend */}
+        <div className={compact ? "mt-3 p-2 bg-white/5 rounded-lg" : "mt-6 p-4 bg-white/5 rounded-lg"}>
+          <h4 className={compact ? "text-[10px] font-semibold text-gray-400 mb-2" : "text-sm font-semibold text-gray-400 mb-3"}>
+            Section Legend
+          </h4>
+          <div className={compact ? "grid grid-cols-2 gap-x-4 gap-y-1 text-[9px]" : "grid grid-cols-3 gap-x-6 gap-y-2 text-xs"}>
+            {sectionBreakdown
+              .filter(s => s.sectionWeight > 0 || s.fieldsPopulated > 0)
+              .sort((a, b) => a.sectionId.localeCompare(b.sectionId))
+              .map(section => (
+                <div key={section.sectionId} className="flex items-center gap-1">
+                  <span className="text-quantum-cyan font-bold">{section.sectionId}:</span>
+                  <span className="text-gray-300 truncate">{section.sectionName}</span>
+                </div>
+              ))}
+          </div>
+        </div>
       </div>
 
       {/* ============================================================
@@ -551,7 +573,9 @@ export function SMARTScoreDisplay({
         )}
         {compact && (
           <div className="mb-2">
-            <h3 className="text-sm font-bold text-white">22 Sections</h3>
+            <h3 className="text-sm font-bold text-white">
+              {sectionBreakdown.filter(s => s.fieldsPopulated > 0).length} Sections Reviewed • {sectionBreakdown.reduce((sum, s) => sum + s.fieldsPopulated, 0)} Fields Populated
+            </h3>
           </div>
         )}
 
