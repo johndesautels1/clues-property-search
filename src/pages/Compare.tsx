@@ -265,6 +265,7 @@ function mapToAnalyticsProperty(cardProp: PropertyCard, fullProp?: Property): An
 
 // Comparison field categories
 const fieldCategories = [
+  { id: 'overview', label: 'Overview', icon: Eye },
   { id: 'scores', label: 'Smart Scores & Rankings', icon: TrendingUp },
   { id: 'price', label: 'Price & Value Analysis', icon: DollarSign },
   { id: 'cost', label: 'Total Cost of Ownership', icon: Receipt },
@@ -297,6 +298,14 @@ const comparisonFields: Record<string, Array<{
   higherIsBetter?: boolean;
   missingDataSource?: boolean;
 }>> = {
+  overview: [
+    { key: 'price', label: 'Price', path: 'price', format: 'currency', higherIsBetter: false },
+    { key: 'pricePerSqft', label: 'Price/SF', path: 'pricePerSqft', format: 'currency', higherIsBetter: false },
+    { key: 'bedrooms', label: 'Bedrooms', path: 'bedrooms', fieldNum: 17, format: 'number', higherIsBetter: true },
+    { key: 'bathrooms', label: 'Bathrooms', path: 'bathrooms', fieldNum: 20, format: 'number', higherIsBetter: true },
+    { key: 'sqft', label: 'Living Sqft', path: 'sqft', fieldNum: 21, format: 'number', higherIsBetter: true },
+    { key: 'smartScore', label: 'Smart Score', path: 'smartScore', format: 'number', higherIsBetter: true },
+  ],
   scores: [
     { key: 'smartScore', label: 'Smart Score', path: 'smartScore', format: 'number', higherIsBetter: true },
     { key: 'price', label: 'Price', path: 'price', format: 'currency', higherIsBetter: false },
