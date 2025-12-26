@@ -17,6 +17,7 @@ import {
   Upload,
   MapPin,
   FileText,
+  Save,
 } from 'lucide-react';
 import { usePropertyStore } from '@/store/propertyStore';
 import type { PropertyCard, Property, DataField } from '@/types/property';
@@ -70,6 +71,7 @@ export default function AddProperty() {
   const [totalFieldsFound, setTotalFieldsFound] = useState(0);  // Actual field count from backend
   const [selectedEngine, setSelectedEngine] = useState('Auto');
   const [lastAddedId, setLastAddedId] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [accumulatedFields, setAccumulatedFields] = useState<Record<string, any>>({});  // Accumulated fields across LLM calls
   const [currentAddress, setCurrentAddress] = useState('');  // Track address for accumulation
   const [csvFile, setCsvFile] = useState<File | null>(null);
@@ -230,6 +232,16 @@ export default function AddProperty() {
       }
     };
   }, []);
+
+  // Auto-dismiss "saved" message after 3 seconds
+  useEffect(() => {
+    if (saveStatus === 'saved') {
+      const timer = setTimeout(() => {
+        setSaveStatus('idle');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [saveStatus]);
 
   const handleManualSubmit = async () => {
     if (!manualForm.address || !manualForm.city) {
@@ -538,8 +550,10 @@ export default function AddProperty() {
       // Create full property object with all 168 fields if available
       const fullPropertyData = convertApiResponseToFullProperty(fields, scrapedProperty.id, fieldSources, conflicts);
 
+      setSaveStatus('saving');
       addProperty(scrapedProperty, fullPropertyData);
       setLastAddedId(scrapedProperty.id);
+      setSaveStatus('saved');
       setStatus('complete');
       setProgress(data.completion_percentage || 100);
 
@@ -863,8 +877,10 @@ export default function AddProperty() {
       // Create full property object with all 168 fields if available
       const fullPropertyData = convertApiResponseToFullProperty(fields, scrapedProperty.id, fieldSources, conflicts);
 
+      setSaveStatus('saving');
       addProperty(scrapedProperty, fullPropertyData);
       setLastAddedId(scrapedProperty.id);
+      setSaveStatus('saved');
 
       // Set status based on whether we got partial or complete data
       if (data.partial) {
@@ -909,8 +925,10 @@ export default function AddProperty() {
         };
 
         const fullPropertyData = convertApiResponseToFullProperty(fields, scrapedProperty.id, {}, []);
+        setSaveStatus('saving');
         addProperty(scrapedProperty, fullPropertyData);
         setLastAddedId(scrapedProperty.id);
+        setSaveStatus('saved');
         setStatus('complete');
         setProgress(scrapedProperty.dataCompleteness);
         console.warn('⚠️ Property added with cached data after error');
@@ -2980,6 +2998,36 @@ Beautiful 3BR/2BA beach house at 290 41st Ave, St Pete Beach, FL 33706. Built in
           </div>
         </motion.div>
       )}
+
+      {/* Auto-save status indicator */}
+      <AnimatePresence>
+        {saveStatus !== 'idle' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed bottom-6 right-6 z-50"
+          >
+            <div className={`flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg ${
+              saveStatus === 'saving'
+                ? 'bg-quantum-cyan/20 border border-quantum-cyan/40'
+                : 'bg-quantum-green/20 border border-quantum-green/40'
+            }`}>
+              {saveStatus === 'saving' ? (
+                <>
+                  <Save className="w-4 h-4 text-quantum-cyan animate-pulse" />
+                  <span className="text-sm font-medium text-quantum-cyan">Saving property...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4 text-quantum-green" />
+                  <span className="text-sm font-medium text-quantum-green">Auto-saved ✓</span>
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
