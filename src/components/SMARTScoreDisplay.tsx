@@ -341,54 +341,65 @@ export function SMARTScoreDisplay({
       {/* ============================================================
           VISUALIZATION CONTROLS & CHARTS
       ============================================================ */}
-      {!compact && (
-      <div className="glass-card p-6 border border-white/10 rounded-2xl">
+      <div className={compact ? "glass-card p-3 border border-white/10 rounded-xl" : "glass-card p-6 border border-white/10 rounded-2xl"}>
         {/* View Mode Selector */}
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-white flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-quantum-purple" />
-            Section Performance Overview
+        <div className={compact ? "flex flex-col gap-2 mb-3" : "flex items-center justify-between mb-6"}>
+          <h3 className={compact ? "text-sm font-bold text-white flex items-center gap-1" : "text-xl font-bold text-white flex items-center gap-2"}>
+            <BarChart3 className={compact ? "w-4 h-4 text-quantum-purple" : "w-6 h-6 text-quantum-purple"} />
+            {compact ? "Performance" : "Section Performance Overview"}
           </h3>
           <div className="flex gap-2">
             <button
               onClick={() => setViewMode('radar')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={compact ? `px-2 py-1 rounded text-[10px] font-medium transition-all ${
+                viewMode === 'radar'
+                  ? 'bg-quantum-cyan/20 text-quantum-cyan border border-quantum-cyan/30'
+                  : 'bg-white/5 text-gray-400 hover:bg-white/10'
+              }` : `px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 viewMode === 'radar'
                   ? 'bg-quantum-cyan/20 text-quantum-cyan border border-quantum-cyan/30'
                   : 'bg-white/5 text-gray-400 hover:bg-white/10'
               }`}
             >
-              Radar View
+              Radar
             </button>
             <button
               onClick={() => setViewMode('bar')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={compact ? `px-2 py-1 rounded text-[10px] font-medium transition-all ${
+                viewMode === 'bar'
+                  ? 'bg-quantum-cyan/20 text-quantum-cyan border border-quantum-cyan/30'
+                  : 'bg-white/5 text-gray-400 hover:bg-white/10'
+              }` : `px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 viewMode === 'bar'
                   ? 'bg-quantum-cyan/20 text-quantum-cyan border border-quantum-cyan/30'
                   : 'bg-white/5 text-gray-400 hover:bg-white/10'
               }`}
             >
-              Bar Chart
+              {compact ? "Bar" : "Bar Chart"}
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={compact ? `px-2 py-1 rounded text-[10px] font-medium transition-all ${
+                viewMode === 'list'
+                  ? 'bg-quantum-cyan/20 text-quantum-cyan border border-quantum-cyan/30'
+                  : 'bg-white/5 text-gray-400 hover:bg-white/10'
+              }` : `px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 viewMode === 'list'
                   ? 'bg-quantum-cyan/20 text-quantum-cyan border border-quantum-cyan/30'
                   : 'bg-white/5 text-gray-400 hover:bg-white/10'
               }`}
             >
-              List View
+              List
             </button>
           </div>
         </div>
 
         {/* Chart Display */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className={compact ? "grid grid-cols-1 gap-3" : "grid grid-cols-1 lg:grid-cols-3 gap-6"}>
           {/* Main Chart */}
-          <div className="lg:col-span-2">
+          <div className={compact ? "" : "lg:col-span-2"}>
             {viewMode === 'radar' && (
-              <ResponsiveContainer width="100%" height={400}>
+              <ResponsiveContainer width="100%" height={compact ? 200 : 400}>
                 <RadarChart data={radarData}>
                   <PolarGrid stroke="#ffffff20" />
                   <PolarAngleAxis
@@ -416,7 +427,7 @@ export function SMARTScoreDisplay({
             )}
 
             {viewMode === 'bar' && (
-              <ResponsiveContainer width="100%" height={400}>
+              <ResponsiveContainer width="100%" height={compact ? 200 : 400}>
                 <BarChart data={barData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
                   <XAxis
@@ -443,7 +454,7 @@ export function SMARTScoreDisplay({
             )}
 
             {viewMode === 'list' && (
-              <div className="h-[400px] overflow-y-auto pr-2 space-y-2">
+              <div className={compact ? "h-[200px] overflow-y-auto pr-1 space-y-1" : "h-[400px] overflow-y-auto pr-2 space-y-2"}>
                 {sectionBreakdown
                   .sort((a, b) => b.weightedContribution - a.weightedContribution)
                   .map((section, idx) => {
@@ -451,21 +462,21 @@ export function SMARTScoreDisplay({
                     return (
                       <div
                         key={section.sectionId}
-                        className="flex items-center gap-4 p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-all"
+                        className={compact ? "flex items-center gap-2 p-1.5 bg-white/5 rounded hover:bg-white/10 transition-all" : "flex items-center gap-4 p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-all"}
                       >
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-quantum-cyan/20 to-quantum-purple/20 flex items-center justify-center flex-shrink-0">
-                          <Icon className="w-4 h-4 text-quantum-cyan" />
+                        <div className={compact ? "w-5 h-5 rounded bg-gradient-to-br from-quantum-cyan/20 to-quantum-purple/20 flex items-center justify-center flex-shrink-0" : "w-8 h-8 rounded-lg bg-gradient-to-br from-quantum-cyan/20 to-quantum-purple/20 flex items-center justify-center flex-shrink-0"}>
+                          <Icon className={compact ? "w-3 h-3 text-quantum-cyan" : "w-4 h-4 text-quantum-cyan"} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-medium text-white truncate">
+                          <div className={compact ? "flex items-center gap-1 mb-0.5" : "flex items-center gap-2 mb-1"}>
+                            <span className={compact ? "text-[10px] font-medium text-white truncate" : "text-sm font-medium text-white truncate"}>
                               {section.sectionName}
                             </span>
-                            <span className="text-xs text-gray-500">
-                              ({section.sectionWeight}% weight)
+                            <span className={compact ? "text-[9px] text-gray-500" : "text-xs text-gray-500"}>
+                              ({section.sectionWeight}%)
                             </span>
                           </div>
-                          <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                          <div className={compact ? "h-1 bg-white/10 rounded-full overflow-hidden" : "h-1.5 bg-white/10 rounded-full overflow-hidden"}>
                             <div
                               className="h-full bg-gradient-to-r from-quantum-cyan to-quantum-purple"
                               style={{ width: `${section.sectionAverage}%` }}
@@ -473,10 +484,10 @@ export function SMARTScoreDisplay({
                           </div>
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <div className={`text-lg font-bold ${getScoreColor(section.sectionAverage)}`}>
+                          <div className={compact ? `text-xs font-bold ${getScoreColor(section.sectionAverage)}` : `text-lg font-bold ${getScoreColor(section.sectionAverage)}`}>
                             {section.sectionAverage.toFixed(1)}
                           </div>
-                          <div className="text-xs text-gray-500">
+                          <div className={compact ? "text-[9px] text-gray-500" : "text-xs text-gray-500"}>
                             +{section.weightedContribution.toFixed(1)}
                           </div>
                         </div>
@@ -489,19 +500,19 @@ export function SMARTScoreDisplay({
 
           {/* Weight Distribution Pie Chart */}
           <div>
-            <h4 className="text-sm font-semibold text-gray-400 mb-3 flex items-center gap-2">
-              <PieChart className="w-4 h-4" />
-              Section Weight Distribution
+            <h4 className={compact ? "text-[10px] font-semibold text-gray-400 mb-2 flex items-center gap-1" : "text-sm font-semibold text-gray-400 mb-3 flex items-center gap-2"}>
+              <PieChart className={compact ? "w-3 h-3" : "w-4 h-4"} />
+              {compact ? "Weights" : "Section Weight Distribution"}
             </h4>
-            <ResponsiveContainer width="100%" height={350}>
+            <ResponsiveContainer width="100%" height={compact ? 150 : 350}>
               <RechartsPie>
                 <Pie
                   data={pieData}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name.charAt(0)}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
+                  label={compact ? false : ({ name, percent }) => `${name.charAt(0)}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={compact ? 50 : 80}
                   fill="#8884d8"
                   dataKey="value"
                 >
@@ -522,7 +533,6 @@ export function SMARTScoreDisplay({
           </div>
         </div>
       </div>
-      )}
 
       {/* ============================================================
           DETAILED SECTION BREAKDOWN (22 Sections)
@@ -566,40 +576,34 @@ export function SMARTScoreDisplay({
 
                     {/* Section Info */}
                     <div className="flex-1 text-left min-w-0">
-                      <div className={compact ? "flex items-center gap-1" : "flex items-center gap-3 mb-1"}>
+                      <div className={compact ? "flex items-center gap-1 mb-0.5" : "flex items-center gap-3 mb-1"}>
                         <span className={compact ? "text-xs font-medium text-white truncate" : "text-lg font-semibold text-white"}>
                           {section.sectionId}. {section.sectionName}
                         </span>
-                        {!compact && (
-                          <span className="text-xs px-2 py-1 bg-quantum-cyan/20 text-quantum-cyan rounded">
-                            {section.sectionWeight}% weight
-                          </span>
-                        )}
+                        <span className={compact ? "text-[10px] px-1 py-0.5 bg-quantum-cyan/20 text-quantum-cyan rounded flex-shrink-0" : "text-xs px-2 py-1 bg-quantum-cyan/20 text-quantum-cyan rounded"}>
+                          {section.sectionWeight}% weight
+                        </span>
                       </div>
-                      {!compact && (
-                        <div className="flex items-center gap-4 text-sm text-gray-400">
-                          <span>{section.fieldsPopulated}/{section.fieldsTotal} fields</span>
-                          <span>•</span>
-                          <span>{((section.fieldsPopulated / section.fieldsTotal) * 100).toFixed(0)}% complete</span>
-                          <span>•</span>
-                          <span className="text-quantum-cyan">+{section.weightedContribution.toFixed(1)} contribution</span>
-                        </div>
-                      )}
+                      <div className={compact ? "flex items-center gap-1 text-[10px] text-gray-400" : "flex items-center gap-4 text-sm text-gray-400"}>
+                        <span>{section.fieldsPopulated}/{section.fieldsTotal} fields</span>
+                        <span>•</span>
+                        <span>{((section.fieldsPopulated / section.fieldsTotal) * 100).toFixed(0)}% complete</span>
+                        <span>•</span>
+                        <span className="text-quantum-cyan">+{section.weightedContribution.toFixed(1)} contribution</span>
+                      </div>
                     </div>
 
                     {/* Score Display */}
                     <div className={compact ? "flex items-center gap-1 flex-shrink-0" : "flex items-center gap-4 flex-shrink-0"}>
                       {/* Progress Bar */}
-                      {!compact && (
-                        <div className="w-32">
-                          <div className="h-3 bg-white/10 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-gradient-to-r from-quantum-cyan to-quantum-purple"
-                              style={{ width: `${section.sectionAverage}%` }}
-                            />
-                          </div>
+                      <div className={compact ? "w-16" : "w-32"}>
+                        <div className={compact ? "h-1.5 bg-white/10 rounded-full overflow-hidden" : "h-3 bg-white/10 rounded-full overflow-hidden"}>
+                          <div
+                            className="h-full bg-gradient-to-r from-quantum-cyan to-quantum-purple"
+                            style={{ width: `${section.sectionAverage}%` }}
+                          />
                         </div>
-                      )}
+                      </div>
 
                       {/* Score Number */}
                       <div className={compact ? `text-sm font-bold ${getScoreColor(section.sectionAverage)} w-8 text-right` : `text-2xl font-bold ${getScoreColor(section.sectionAverage)} w-16 text-right`}>
@@ -635,7 +639,7 @@ export function SMARTScoreDisplay({
                             {section.fieldScores.map((field) => (
                               <div
                                 key={field.fieldId}
-                                className={compact ? `p-1.5 rounded border text-xs ${
+                                className={compact ? `p-1.5 rounded border ${
                                   field.rawValue !== null && field.rawValue !== undefined && field.rawValue !== ''
                                     ? 'bg-white/5 border-white/10'
                                     : 'bg-black/20 border-white/5 opacity-50'
@@ -645,21 +649,17 @@ export function SMARTScoreDisplay({
                                     : 'bg-black/20 border-white/5 opacity-50'
                                 }`}
                               >
-                                <div className={compact ? "flex items-center justify-between gap-2" : "flex items-start justify-between mb-2"}>
+                                <div className={compact ? "flex items-start justify-between mb-1 gap-2" : "flex items-start justify-between mb-2"}>
                                   <div className="flex-1 min-w-0">
-                                    <div className={compact ? "text-xs font-medium text-white truncate" : "text-sm font-medium text-white mb-1"}>
-                                      {compact ? `#${field.fieldId}` : `Field #${field.fieldId}: ${field.fieldName}`}
+                                    <div className={compact ? "text-[10px] font-medium text-white mb-0.5" : "text-sm font-medium text-white mb-1"}>
+                                      Field #{field.fieldId}: {field.fieldName}
                                     </div>
-                                    {!compact && (
-                                      <>
-                                        {field.rawValue !== null && field.rawValue !== undefined && field.rawValue !== '' ? (
-                                          <div className="text-xs text-gray-400 truncate">
-                                            Value: {String(field.rawValue)}
-                                          </div>
-                                        ) : (
-                                          <div className="text-xs text-gray-500 italic">No data</div>
-                                        )}
-                                      </>
+                                    {field.rawValue !== null && field.rawValue !== undefined && field.rawValue !== '' ? (
+                                      <div className={compact ? "text-[9px] text-gray-400 truncate" : "text-xs text-gray-400 truncate"}>
+                                        Value: {String(field.rawValue)}
+                                      </div>
+                                    ) : (
+                                      <div className={compact ? "text-[9px] text-gray-500 italic" : "text-xs text-gray-500 italic"}>No data</div>
                                     )}
                                   </div>
 
@@ -667,8 +667,8 @@ export function SMARTScoreDisplay({
                                     <div className={compact ? `text-xs font-bold ${getScoreColor(field.normalizedScore)}` : `text-lg font-bold ${getScoreColor(field.normalizedScore)}`}>
                                       {field.normalizedScore.toFixed(0)}
                                     </div>
-                                    {!compact && field.rawValue !== null && field.rawValue !== undefined && field.rawValue !== '' && (
-                                      <div className={`text-xs px-2 py-0.5 rounded ${getConfidenceColor(field.confidence)}`}>
+                                    {field.rawValue !== null && field.rawValue !== undefined && field.rawValue !== '' && (
+                                      <div className={compact ? `text-[9px] px-1 py-0.5 rounded ${getConfidenceColor(field.confidence)}` : `text-xs px-2 py-0.5 rounded ${getConfidenceColor(field.confidence)}`}>
                                         {field.confidence}
                                       </div>
                                     )}
@@ -676,8 +676,8 @@ export function SMARTScoreDisplay({
                                 </div>
 
                                 {/* Score Bar */}
-                                {!compact && field.rawValue !== null && field.rawValue !== undefined && field.rawValue !== '' && (
-                                  <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                {field.rawValue !== null && field.rawValue !== undefined && field.rawValue !== '' && (
+                                  <div className={compact ? "h-1 bg-white/10 rounded-full overflow-hidden" : "h-1.5 bg-white/10 rounded-full overflow-hidden"}>
                                     <div
                                       className={`h-full ${
                                         field.normalizedScore >= 80
@@ -692,38 +692,36 @@ export function SMARTScoreDisplay({
                                 )}
 
                                 {/* Notes */}
-                                {!compact && field.notes && (
-                                  <p className="text-xs text-gray-500 mt-2 italic">{field.notes}</p>
+                                {field.notes && (
+                                  <p className={compact ? "text-[9px] text-gray-500 mt-1 italic" : "text-xs text-gray-500 mt-2 italic"}>{field.notes}</p>
                                 )}
                               </div>
                             ))}
                           </div>
 
                           {/* Section Summary Stats */}
-                          {!compact && (
-                            <div className="mt-6 p-4 bg-white/5 rounded-lg border border-white/10">
-                              <div className="grid grid-cols-3 gap-4 text-center">
-                                <div>
-                                  <div className="text-2xl font-bold text-quantum-cyan">
-                                    {section.sectionAverage.toFixed(1)}
-                                  </div>
-                                  <div className="text-xs text-gray-400 mt-1">Average Score</div>
+                          <div className={compact ? "mt-2 p-2 bg-white/5 rounded border border-white/10" : "mt-6 p-4 bg-white/5 rounded-lg border border-white/10"}>
+                            <div className="grid grid-cols-3 gap-4 text-center">
+                              <div>
+                                <div className={compact ? "text-sm font-bold text-quantum-cyan" : "text-2xl font-bold text-quantum-cyan"}>
+                                  {section.sectionAverage.toFixed(1)}
                                 </div>
-                                <div>
-                                  <div className="text-2xl font-bold text-quantum-purple">
-                                    {section.weightedContribution.toFixed(1)}
-                                  </div>
-                                  <div className="text-xs text-gray-400 mt-1">Contribution</div>
+                                <div className={compact ? "text-[9px] text-gray-400 mt-0.5" : "text-xs text-gray-400 mt-1"}>Average Score</div>
+                              </div>
+                              <div>
+                                <div className={compact ? "text-sm font-bold text-quantum-purple" : "text-2xl font-bold text-quantum-purple"}>
+                                  {section.weightedContribution.toFixed(1)}
                                 </div>
-                                <div>
-                                  <div className="text-2xl font-bold text-quantum-green">
-                                    {((section.fieldsPopulated / section.fieldsTotal) * 100).toFixed(0)}%
-                                  </div>
-                                  <div className="text-xs text-gray-400 mt-1">Completeness</div>
+                                <div className={compact ? "text-[9px] text-gray-400 mt-0.5" : "text-xs text-gray-400 mt-1"}>Contribution</div>
+                              </div>
+                              <div>
+                                <div className={compact ? "text-sm font-bold text-quantum-green" : "text-2xl font-bold text-quantum-green"}>
+                                  {((section.fieldsPopulated / section.fieldsTotal) * 100).toFixed(0)}%
                                 </div>
+                                <div className={compact ? "text-[9px] text-gray-400 mt-0.5" : "text-xs text-gray-400 mt-1"}>Completeness</div>
                               </div>
                             </div>
-                          )}
+                          </div>
                         </div>
                       </motion.div>
                     )}
@@ -737,65 +735,64 @@ export function SMARTScoreDisplay({
       {/* ============================================================
           METHODOLOGY & EXPLANATION
       ============================================================ */}
-      {!compact && (
-      <div className="glass-card p-6 border border-quantum-purple/30 rounded-2xl bg-gradient-to-br from-quantum-purple/10 to-transparent">
-        <div className="flex items-center gap-3 mb-4">
-          <Info className="w-6 h-6 text-quantum-purple" />
-          <h3 className="text-xl font-bold text-white">How SMART Score Works</h3>
+      <div className={compact ? "glass-card p-3 border border-quantum-purple/30 rounded-xl bg-gradient-to-br from-quantum-purple/10 to-transparent" : "glass-card p-6 border border-quantum-purple/30 rounded-2xl bg-gradient-to-br from-quantum-purple/10 to-transparent"}>
+        <div className={compact ? "flex items-center gap-1 mb-2" : "flex items-center gap-3 mb-4"}>
+          <Info className={compact ? "w-4 h-4 text-quantum-purple" : "w-6 h-6 text-quantum-purple"} />
+          <h3 className={compact ? "text-sm font-bold text-white" : "text-xl font-bold text-white"}>How SMART Score Works</h3>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className={compact ? "grid grid-cols-1 gap-3" : "grid grid-cols-1 md:grid-cols-2 gap-6"}>
           <div>
-            <h4 className="text-sm font-semibold text-quantum-cyan mb-3">Calculation Method</h4>
-            <ul className="space-y-2 text-sm text-gray-300">
-              <li className="flex items-start gap-2">
-                <CheckCircle className="w-4 h-4 text-quantum-cyan mt-0.5 flex-shrink-0" />
+            <h4 className={compact ? "text-[10px] font-semibold text-quantum-cyan mb-1" : "text-sm font-semibold text-quantum-cyan mb-3"}>Calculation Method</h4>
+            <ul className={compact ? "space-y-1 text-[9px] text-gray-300" : "space-y-2 text-sm text-gray-300"}>
+              <li className={compact ? "flex items-start gap-1" : "flex items-start gap-2"}>
+                <CheckCircle className={compact ? "w-2 h-2 text-quantum-cyan mt-0.5 flex-shrink-0" : "w-4 h-4 text-quantum-cyan mt-0.5 flex-shrink-0"} />
                 <span>Each field is normalized to a 0-100 score based on quality metrics</span>
               </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle className="w-4 h-4 text-quantum-cyan mt-0.5 flex-shrink-0" />
+              <li className={compact ? "flex items-start gap-1" : "flex items-start gap-2"}>
+                <CheckCircle className={compact ? "w-2 h-2 text-quantum-cyan mt-0.5 flex-shrink-0" : "w-4 h-4 text-quantum-cyan mt-0.5 flex-shrink-0"} />
                 <span>Section scores are averaged across populated fields only</span>
               </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle className="w-4 h-4 text-quantum-cyan mt-0.5 flex-shrink-0" />
+              <li className={compact ? "flex items-start gap-1" : "flex items-start gap-2"}>
+                <CheckCircle className={compact ? "w-2 h-2 text-quantum-cyan mt-0.5 flex-shrink-0" : "w-4 h-4 text-quantum-cyan mt-0.5 flex-shrink-0"} />
                 <span>Each section is weighted by importance (e.g., Pricing: 20%, Schools: 15%)</span>
               </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle className="w-4 h-4 text-quantum-cyan mt-0.5 flex-shrink-0" />
+              <li className={compact ? "flex items-start gap-1" : "flex items-start gap-2"}>
+                <CheckCircle className={compact ? "w-2 h-2 text-quantum-cyan mt-0.5 flex-shrink-0" : "w-4 h-4 text-quantum-cyan mt-0.5 flex-shrink-0"} />
                 <span>Final score is sum of all weighted contributions</span>
               </li>
             </ul>
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold text-quantum-cyan mb-3">What the Score Means</h4>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between p-2 bg-quantum-green/10 rounded">
-                <span className="text-sm text-gray-300">90-100:</span>
-                <span className="text-sm font-semibold text-quantum-green">Exceptional</span>
+            <h4 className={compact ? "text-[10px] font-semibold text-quantum-cyan mb-1" : "text-sm font-semibold text-quantum-cyan mb-3"}>What the Score Means</h4>
+            <div className={compact ? "space-y-1" : "space-y-2"}>
+              <div className={compact ? "flex items-center justify-between p-1 bg-quantum-green/10 rounded" : "flex items-center justify-between p-2 bg-quantum-green/10 rounded"}>
+                <span className={compact ? "text-[9px] text-gray-300" : "text-sm text-gray-300"}>90-100:</span>
+                <span className={compact ? "text-[9px] font-semibold text-quantum-green" : "text-sm font-semibold text-quantum-green"}>Exceptional</span>
               </div>
-              <div className="flex items-center justify-between p-2 bg-quantum-cyan/10 rounded">
-                <span className="text-sm text-gray-300">80-89:</span>
-                <span className="text-sm font-semibold text-quantum-cyan">Excellent</span>
+              <div className={compact ? "flex items-center justify-between p-1 bg-quantum-cyan/10 rounded" : "flex items-center justify-between p-2 bg-quantum-cyan/10 rounded"}>
+                <span className={compact ? "text-[9px] text-gray-300" : "text-sm text-gray-300"}>80-89:</span>
+                <span className={compact ? "text-[9px] font-semibold text-quantum-cyan" : "text-sm font-semibold text-quantum-cyan"}>Excellent</span>
               </div>
-              <div className="flex items-center justify-between p-2 bg-quantum-blue/10 rounded">
-                <span className="text-sm text-gray-300">70-79:</span>
-                <span className="text-sm font-semibold text-quantum-blue">Good</span>
+              <div className={compact ? "flex items-center justify-between p-1 bg-quantum-blue/10 rounded" : "flex items-center justify-between p-2 bg-quantum-blue/10 rounded"}>
+                <span className={compact ? "text-[9px] text-gray-300" : "text-sm text-gray-300"}>70-79:</span>
+                <span className={compact ? "text-[9px] font-semibold text-quantum-blue" : "text-sm font-semibold text-quantum-blue"}>Good</span>
               </div>
-              <div className="flex items-center justify-between p-2 bg-quantum-purple/10 rounded">
-                <span className="text-sm text-gray-300">60-69:</span>
-                <span className="text-sm font-semibold text-quantum-purple">Fair</span>
+              <div className={compact ? "flex items-center justify-between p-1 bg-quantum-purple/10 rounded" : "flex items-center justify-between p-2 bg-quantum-purple/10 rounded"}>
+                <span className={compact ? "text-[9px] text-gray-300" : "text-sm text-gray-300"}>60-69:</span>
+                <span className={compact ? "text-[9px] font-semibold text-quantum-purple" : "text-sm font-semibold text-quantum-purple"}>Fair</span>
               </div>
-              <div className="flex items-center justify-between p-2 bg-quantum-orange/10 rounded">
-                <span className="text-sm text-gray-300">Below 60:</span>
-                <span className="text-sm font-semibold text-quantum-orange">Needs Review</span>
+              <div className={compact ? "flex items-center justify-between p-1 bg-quantum-orange/10 rounded" : "flex items-center justify-between p-2 bg-quantum-orange/10 rounded"}>
+                <span className={compact ? "text-[9px] text-gray-300" : "text-sm text-gray-300"}>Below 60:</span>
+                <span className={compact ? "text-[9px] font-semibold text-quantum-orange" : "text-sm font-semibold text-quantum-orange"}>Needs Review</span>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="mt-6 p-4 bg-quantum-cyan/10 border border-quantum-cyan/20 rounded-lg">
-          <p className="text-sm text-gray-300">
+        <div className={compact ? "mt-2 p-2 bg-quantum-cyan/10 border border-quantum-cyan/20 rounded" : "mt-6 p-4 bg-quantum-cyan/10 border border-quantum-cyan/20 rounded-lg"}>
+          <p className={compact ? "text-[9px] text-gray-300" : "text-sm text-gray-300"}>
             <strong className="text-quantum-cyan">Note:</strong> SMART Scores are calculated using
             industry-standard weights validated by 2-LLM consensus (Claude Opus + Perplexity).
             Scores reflect property quality relative to Florida coastal markets and may not
@@ -803,7 +800,6 @@ export function SMARTScoreDisplay({
           </p>
         </div>
       </div>
-      )}
     </div>
   );
 }
