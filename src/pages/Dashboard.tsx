@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Zap,
   Plus,
+  HelpCircle,
 } from 'lucide-react';
 import PropertyCardUnified from '@/components/property/PropertyCardUnified';
 import { useFilteredProperties, useProperties, useFullProperties } from '@/store/propertyStore';
@@ -168,6 +169,20 @@ export default function Dashboard() {
           <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
             <Zap className="w-5 h-5 text-quantum-cyan" />
             Data Quality Overview
+            <button
+              className="group relative"
+              title="Data Quality shows the percentage of fields populated across ALL your properties. Higher percentages mean more complete property data for better analysis."
+            >
+              <HelpCircle className="w-4 h-4 text-gray-500 hover:text-quantum-cyan transition-colors cursor-help" />
+              <div className="hidden group-hover:block absolute left-0 top-6 w-64 p-3 bg-gray-900 border border-quantum-cyan/30 rounded-lg shadow-lg z-10 text-xs font-normal text-left">
+                <p className="text-white font-semibold mb-1">What is Data Quality?</p>
+                <p className="text-gray-300 leading-relaxed">
+                  Shows the % of fields populated across ALL your properties.
+                  Fields are grouped by ranges (1-50, 51-100, etc.).
+                  Higher percentages = more complete data for better AI analysis and comparisons.
+                </p>
+              </div>
+            </button>
             {fullPropertiesArray.length === 0 && (
               <span className="text-xs text-gray-500 ml-2">(No properties yet)</span>
             )}
