@@ -574,16 +574,24 @@ function PropertySelector({
               <span className="text-white ml-1">${selectedProperty.price.toLocaleString()}</span>
             </div>
             <div className="bg-white/5 rounded px-2 py-1">
-              <span className="text-gray-400">Score:</span>
-              <span className="text-quantum-cyan ml-1">{selectedProperty.smartScore}</span>
+              <span className="text-gray-400">Price/SF:</span>
+              <span className="text-white ml-1">
+                {selectedProperty.pricePerSqft > 0 ? `$${Math.round(selectedProperty.pricePerSqft)}` : '—'}
+              </span>
             </div>
             <div className="bg-white/5 rounded px-2 py-1">
               <span className="text-gray-400">Beds:</span>
-              <span className="text-white ml-1">{selectedProperty.bedrooms}</span>
+              <span className="text-white ml-1">{selectedProperty.bedrooms || '—'}</span>
             </div>
             <div className="bg-white/5 rounded px-2 py-1">
               <span className="text-gray-400">Sqft:</span>
-              <span className="text-white ml-1">{selectedProperty.sqft.toLocaleString()}</span>
+              <span className="text-white ml-1">
+                {selectedProperty.sqft > 0 ? selectedProperty.sqft.toLocaleString() : '—'}
+              </span>
+            </div>
+            <div className="bg-white/5 rounded px-2 py-1 col-span-2">
+              <span className="text-gray-400">Score:</span>
+              <span className="text-quantum-cyan ml-1">{selectedProperty.smartScore}</span>
             </div>
           </div>
         </motion.div>
