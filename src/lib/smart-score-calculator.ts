@@ -8,6 +8,7 @@
 
 import { Property, ConfidenceLevel } from '../types/property';
 import { ALL_FIELDS, type FieldDefinition } from '../types/fields-schema';
+import { ALL_FIELD_NORMALIZERS } from './normalizations';
 
 // ================================================================
 // TYPE DEFINITIONS
@@ -51,7 +52,7 @@ export interface SmartScoreResult {
 }
 
 // ================================================================
-// SCOREABLE FIELDS (140 out of 168)
+// SCOREABLE FIELDS (138 out of 168)
 // ================================================================
 
 export const SCOREABLE_FIELDS = [
@@ -127,29 +128,286 @@ export const SCOREABLE_FIELDS = [
 // ================================================================
 
 function getFieldValue(property: Property, fieldId: number): any {
-  const field = ALL_FIELDS.find((f: FieldDefinition) => f.num === fieldId);
-  if (!field) return null;
+  // Map each scoreable field to its Property object path
+  switch (fieldId) {
+    // ============================================================
+    // SECTION A: Address & Identity (3 scoreable)
+    // ============================================================
+    case 6: return property.address.neighborhoodName?.value ?? null;
+    case 7: return property.address.county?.value ?? null;
+    case 8: return property.address.zipCode?.value ?? null;
 
-  // Map field number to property path
-  const parts = field.key.split('.');
-  let value: any = property;
+    // ============================================================
+    // SECTION B: Pricing & Value (5 scoreable)
+    // ============================================================
+    case 11: return property.address.pricePerSqft?.value ?? null;
+    case 12: return property.details.marketValueEstimate?.value ?? null;
+    case 14: return property.details.lastSalePrice?.value ?? null;
+    case 15: return property.details.assessedValue?.value ?? null;
+    case 16: return property.financial.redfinEstimate?.value ?? null;
 
-  // Traverse nested structure
-  // This is simplified - you'll need to implement full mapping from fields-schema.ts
-  // For now, return null for unmapped fields
-  return null; // TODO: Implement full field mapping
+    // ============================================================
+    // SECTION C: Property Basics (10 scoreable)
+    // ============================================================
+    case 17: return property.details.bedrooms?.value ?? null;
+    case 18: return property.details.fullBathrooms?.value ?? null;
+    case 19: return property.details.halfBathrooms?.value ?? null;
+    case 21: return property.details.livingSqft?.value ?? null;
+    case 22: return property.details.totalSqftUnderRoof?.value ?? null;
+    case 23: return property.details.lotSizeSqft?.value ?? null;
+    case 25: return property.details.yearBuilt?.value ?? null;
+    case 26: return property.details.propertyType?.value ?? null;
+    case 27: return property.details.stories?.value ?? null;
+    case 28: return property.details.garageSpaces?.value ?? null;
+
+    // ============================================================
+    // SECTION D: HOA & Taxes (7 scoreable)
+    // ============================================================
+    case 30: return property.details.hoaYn?.value ?? null;
+    case 31: return property.details.hoaFeeAnnual?.value ?? null;
+    case 33: return property.details.hoaIncludes?.value ?? null;
+    case 34: return property.details.ownershipType?.value ?? null;
+    case 35: return property.details.annualTaxes?.value ?? null;
+    case 37: return property.financial.propertyTaxRate?.value ?? null;
+    case 38: return property.financial.taxExemptions?.value ?? null;
+
+    // ============================================================
+    // SECTION E: Structure & Systems (10 scoreable)
+    // ============================================================
+    case 39: return property.structural.roofType?.value ?? null;
+    case 40: return property.structural.roofAgeEst?.value ?? null;
+    case 41: return property.structural.exteriorMaterial?.value ?? null;
+    case 42: return property.structural.foundation?.value ?? null;
+    case 43: return property.structural.waterHeaterType?.value ?? null;
+    case 44: return property.structural.garageType?.value ?? null;
+    case 45: return property.structural.hvacType?.value ?? null;
+    case 46: return property.structural.hvacAge?.value ?? null;
+    case 47: return property.structural.laundryType?.value ?? null;
+    case 48: return property.structural.interiorCondition?.value ?? null;
+
+    // ============================================================
+    // SECTION F: Interior Features (4 scoreable)
+    // ============================================================
+    case 49: return property.structural.flooringType?.value ?? null;
+    case 50: return property.structural.kitchenFeatures?.value ?? null;
+    case 51: return property.structural.appliancesIncluded?.value ?? null;
+    case 52: return property.structural.fireplaceYn?.value ?? null;
+
+    // ============================================================
+    // SECTION G: Exterior Features (5 scoreable)
+    // ============================================================
+    case 54: return property.structural.poolYn?.value ?? null;
+    case 55: return property.structural.poolType?.value ?? null;
+    case 56: return property.structural.deckPatio?.value ?? null;
+    case 57: return property.structural.fence?.value ?? null;
+    case 58: return property.structural.landscaping?.value ?? null;
+
+    // ============================================================
+    // SECTION H: Permits & Renovations (4 scoreable)
+    // ============================================================
+    case 59: return property.structural.recentRenovations?.value ?? null;
+    case 60: return property.structural.permitHistoryRoof?.value ?? null;
+    case 61: return property.structural.permitHistoryHvac?.value ?? null;
+    case 62: return property.structural.permitHistoryPoolAdditions?.value ?? null;
+
+    // ============================================================
+    // SECTION I: Assigned Schools (8 scoreable)
+    // ============================================================
+    case 63: return property.location.schoolDistrictName?.value ?? null;
+    case 64: return property.location.elevationFeet?.value ?? null;
+    case 66: return property.location.elementaryRating?.value ?? null;
+    case 67: return property.location.elementaryDistanceMiles?.value ?? null;
+    case 69: return property.location.middleRating?.value ?? null;
+    case 70: return property.location.middleDistanceMiles?.value ?? null;
+    case 72: return property.location.highRating?.value ?? null;
+    case 73: return property.location.highDistanceMiles?.value ?? null;
+
+    // ============================================================
+    // SECTION J: Location Scores (8 scoreable)
+    // ============================================================
+    case 74: return property.location.walkScore?.value ?? null;
+    case 75: return property.location.transitScore?.value ?? null;
+    case 76: return property.location.bikeScore?.value ?? null;
+    case 77: return property.location.safetyScore?.value ?? null;
+    case 78: return property.location.noiseLevel?.value ?? null;
+    case 79: return property.location.trafficLevel?.value ?? null;
+    case 81: return property.location.publicTransitAccess?.value ?? null;
+    case 82: return property.location.commuteTimeCityCenter?.value ?? null;
+
+    // ============================================================
+    // SECTION K: Distances & Amenities (5 scoreable)
+    // ============================================================
+    case 83: return property.location.distanceGroceryMiles?.value ?? null;
+    case 84: return property.location.distanceHospitalMiles?.value ?? null;
+    case 85: return property.location.distanceAirportMiles?.value ?? null;
+    case 86: return property.location.distanceParkMiles?.value ?? null;
+    case 87: return property.location.distanceBeachMiles?.value ?? null;
+
+    // ============================================================
+    // SECTION L: Safety & Crime (3 scoreable)
+    // ============================================================
+    case 88: return property.location.crimeIndexViolent?.value ?? null;
+    case 89: return property.location.crimeIndexProperty?.value ?? null;
+    case 90: return property.location.neighborhoodSafetyRating?.value ?? null;
+
+    // ============================================================
+    // SECTION M: Market & Investment (12 scoreable)
+    // ============================================================
+    case 91: return property.financial.medianHomePriceNeighborhood?.value ?? null;
+    case 92: return property.financial.pricePerSqftRecentAvg?.value ?? null;
+    case 93: return property.financial.priceToRentRatio?.value ?? null;
+    case 94: return property.financial.priceVsMedianPercent?.value ?? null;
+    case 95: return property.financial.daysOnMarketAvg?.value ?? null;
+    case 96: return property.financial.inventorySurplus?.value ?? null;
+    case 97: return property.financial.insuranceEstAnnual?.value ?? null;
+    case 98: return property.financial.rentalEstimateMonthly?.value ?? null;
+    case 99: return property.financial.rentalYieldEst?.value ?? null;
+    case 100: return property.financial.vacancyRateNeighborhood?.value ?? null;
+    case 101: return property.financial.capRateEst?.value ?? null;
+    case 102: return property.financial.financingTerms?.value ?? null;
+
+    // ============================================================
+    // SECTION N: Utilities & Connectivity (8 scoreable)
+    // ============================================================
+    case 105: return property.utilities.avgElectricBill?.value ?? null;
+    case 107: return property.utilities.avgWaterBill?.value ?? null;
+    case 109: return property.utilities.naturalGas?.value ?? null;
+    case 111: return property.utilities.internetProvidersTop3?.value ?? null;
+    case 112: return property.utilities.maxInternetSpeed?.value ?? null;
+    case 113: return property.utilities.fiberAvailable?.value ?? null;
+    case 115: return property.utilities.cellCoverageQuality?.value ?? null;
+    case 116: return property.utilities.emergencyServicesDistance?.value ?? null;
+
+    // ============================================================
+    // SECTION O: Environment & Risk (14 scoreable)
+    // ============================================================
+    case 117: return property.utilities.airQualityIndexCurrent?.value ?? null;
+    case 118: return property.utilities.airQualityGrade?.value ?? null;
+    case 119: return property.utilities.floodZone?.value ?? null;
+    case 120: return property.utilities.floodRiskLevel?.value ?? null;
+    case 121: return property.utilities.climateRiskWildfireFlood?.value ?? null;
+    case 122: return property.utilities.wildfireRisk?.value ?? null;
+    case 123: return property.utilities.earthquakeRisk?.value ?? null;
+    case 124: return property.utilities.hurricaneRisk?.value ?? null;
+    case 125: return property.utilities.tornadoRisk?.value ?? null;
+    case 126: return property.utilities.radonRisk?.value ?? null;
+    case 127: return property.utilities.superfundNearby?.value ?? null;
+    case 128: return property.utilities.seaLevelRiseRisk?.value ?? null;
+    case 129: return property.utilities.noiseLevelDbEst?.value ?? null;
+    case 130: return property.utilities.solarPotential?.value ?? null;
+
+    // ============================================================
+    // SECTION P: Additional Features (8 scoreable)
+    // ============================================================
+    case 131: return property.utilities.viewType?.value ?? null;
+    case 132: return property.utilities.lotFeatures?.value ?? null;
+    case 133: return property.utilities.evChargingYn?.value ?? null;
+    case 134: return property.utilities.smartHomeFeatures?.value ?? null;
+    case 135: return property.utilities.accessibilityMods?.value ?? null;
+    case 136: return property.utilities.petPolicy?.value ?? null;
+    case 137: return property.utilities.ageRestrictions?.value ?? null;
+    case 138: return property.financial.specialAssessments?.value ?? null;
+
+    // ============================================================
+    // SECTION Q: Parking (5 scoreable)
+    // ============================================================
+    case 139: return property.stellarMLS?.parking?.carportYn?.value ?? null;
+    case 140: return property.stellarMLS?.parking?.carportSpaces?.value ?? null;
+    case 141: return property.stellarMLS?.parking?.garageAttachedYn?.value ?? null;
+    case 142: return property.stellarMLS?.parking?.parkingFeatures?.value ?? null;
+    case 143: return property.stellarMLS?.parking?.assignedParkingSpaces?.value ?? null;
+
+    // ============================================================
+    // SECTION R: Building (3 scoreable)
+    // ============================================================
+    case 144: return property.stellarMLS?.building?.floorNumber?.value ?? null;
+    case 147: return property.stellarMLS?.building?.buildingElevatorYn?.value ?? null;
+    case 148: return property.stellarMLS?.building?.floorsInUnit?.value ?? null;
+
+    // ============================================================
+    // SECTION S: Legal (4 scoreable)
+    // ============================================================
+    case 151: return property.stellarMLS?.legal?.homesteadYn?.value ?? null;
+    case 152: return property.stellarMLS?.legal?.cddYn?.value ?? null;
+    case 153: return property.stellarMLS?.legal?.annualCddFee?.value ?? null;
+    case 154: return property.stellarMLS?.legal?.frontExposure?.value ?? null;
+
+    // ============================================================
+    // SECTION T: Waterfront (5 scoreable)
+    // ============================================================
+    case 155: return property.stellarMLS?.waterfront?.waterFrontageYn?.value ?? null;
+    case 156: return property.stellarMLS?.waterfront?.waterfrontFeet?.value ?? null;
+    case 157: return property.stellarMLS?.waterfront?.waterAccessYn?.value ?? null;
+    case 158: return property.stellarMLS?.waterfront?.waterViewYn?.value ?? null;
+    case 159: return property.stellarMLS?.waterfront?.waterBodyName?.value ?? null;
+
+    // ============================================================
+    // SECTION U: Leasing (4 scoreable)
+    // ============================================================
+    case 160: return property.stellarMLS?.leasing?.canBeLeasedYn?.value ?? null;
+    case 161: return property.stellarMLS?.leasing?.minimumLeasePeriod?.value ?? null;
+    case 162: return property.stellarMLS?.leasing?.leaseRestrictionsYn?.value ?? null;
+    case 165: return property.stellarMLS?.leasing?.associationApprovalYn?.value ?? null;
+
+    // ============================================================
+    // SECTION V: Features (3 scoreable)
+    // ============================================================
+    case 166: return property.stellarMLS?.features?.communityFeatures?.value ?? null;
+    case 167: return property.stellarMLS?.features?.interiorFeatures?.value ?? null;
+    case 168: return property.stellarMLS?.features?.exteriorFeatures?.value ?? null;
+
+    // ============================================================
+    // DEFAULT: Field not in scoreable list
+    // ============================================================
+    default:
+      return null;
+  }
 }
 
 /**
  * Normalize a field value to a 0-100 score
- * Each field has custom logic based on what "good" means
+ * Delegates to field-specific normalizers from normalizations module
  */
 export function normalizeFieldToScore(fieldId: number, value: any, property?: Property): number {
   if (value === null || value === undefined || value === '') {
     return 0; // No data = no score
   }
 
-  // Field-specific normalization logic
+  // Use field-specific normalizer from the comprehensive normalizations module
+  const normalizer = ALL_FIELD_NORMALIZERS[fieldId];
+
+  if (!normalizer) {
+    // Fallback for unmapped fields (shouldn't happen with complete normalizers)
+    console.warn(`No normalizer found for field ${fieldId}, using default`);
+    return 50; // Neutral score
+  }
+
+  try {
+    // Call the normalizer - some return just a number, others return NormalizationResult
+    const result = normalizer(value, property);
+
+    // Handle both formats: number or { score, confidence, notes }
+    if (typeof result === 'number') {
+      return Math.max(0, Math.min(100, result));
+    } else if (result && typeof result === 'object' && 'score' in result) {
+      return Math.max(0, Math.min(100, result.score));
+    }
+
+    console.warn(`Invalid normalizer return type for field ${fieldId}`);
+    return 50;
+  } catch (error) {
+    console.error(`Error normalizing field ${fieldId}:`, error);
+    return 0;
+  }
+}
+
+// ================================================================
+// DEPRECATED: Old placeholder normalization logic below
+// Kept for reference only - not used in production
+// ================================================================
+function DEPRECATED_normalizeFieldToScore_OLD(fieldId: number, value: any, property?: Property): number {
+  // This function is no longer used - see normalizeFieldToScore() above
+  // Old placeholder logic preserved for reference:
   switch (fieldId) {
     // ============================================================
     // SECTION B: PRICING & VALUE
