@@ -718,8 +718,8 @@ function mapFieldsToSchema(rawFields: Record<string, any>): { fields: Record<str
 
 // Parse PDF using Claude's vision capability
 // Model options:
-// - claude-opus-4-20250514: Highest accuracy, slower, more expensive (~4x Sonnet cost)
-// - claude-sonnet-4-20250514: Fast, good accuracy, cost-effective
+// - claude-opus-4-5-20251101: Highest accuracy, slower, more expensive (~4x Sonnet cost)
+// - claude-sonnet-4-5-20250929: Fast, good accuracy, cost-effective
 async function parsePdfWithClaude(pdfBase64: string, useOpus: boolean = true): Promise<Record<string, any>> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -733,7 +733,7 @@ async function parsePdfWithClaude(pdfBase64: string, useOpus: boolean = true): P
   const envModel = process.env.PDF_PARSER_MODEL?.toLowerCase();
   const shouldUseOpus = envModel === 'sonnet' ? false : (envModel === 'opus' ? true : useOpus);
 
-  const model = shouldUseOpus ? 'claude-opus-4-20250514' : 'claude-sonnet-4-20250514';
+  const model = shouldUseOpus ? 'claude-opus-4-5-20251101' : 'claude-sonnet-4-5-20250929';
   console.log(`[PDF PARSER] Using model: ${model} (Opus=${shouldUseOpus})`);
 
   const prompt = `You are a Stellar MLS data extraction expert. Extract EVERY SINGLE field and value from this Stellar MLS CustomerFull PDF sheet.
@@ -947,16 +947,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log('[PDF PARSER] Processing:', filename || 'unnamed.pdf');
 
   try {
-    // Parse PDF with Claude (Opus 4 by default, with Sonnet fallback on timeout)
+    // Parse PDF with Claude (Opus 4.5 by default, with Sonnet 4.5 fallback on timeout)
     let rawFields: Record<string, any>;
 
     try {
-      console.log('[PDF PARSER] Attempting with Claude Opus 4 (max accuracy)...');
+      console.log('[PDF PARSER] Attempting with Claude Opus 4.5 (max accuracy)...');
       rawFields = await parsePdfWithClaude(pdfBase64, true); // useOpus=true
     } catch (opusError: any) {
       // If Opus times out or fails, automatically fall back to faster Sonnet
       console.warn('[PDF PARSER] Opus failed, falling back to Sonnet:', opusError.message);
-      console.log('[PDF PARSER] Retrying with Claude Sonnet 4 (faster)...');
+      console.log('[PDF PARSER] Retrying with Claude Sonnet 4.5 (faster)...');
       rawFields = await parsePdfWithClaude(pdfBase64, false); // useOpus=false
     }
 

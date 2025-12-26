@@ -673,7 +673,7 @@ export async function analyzeWithOliviaEnhanced(
   console.log(`👤 Buyer profile: ${request.buyerProfile || 'General'}`);
 
   const stream = await client.messages.stream({
-    model: 'claude-opus-4-20250514',
+    model: 'claude-opus-4-5-20251101',
     max_tokens: 32000, // Increased for complete 168-field analysis with proofs
     temperature: 0.3, // Lower temperature for more deterministic math
     system: OLIVIA_SYSTEM_PROMPT,
@@ -867,7 +867,7 @@ export async function analyzeWithOliviaProgressive(
   const level1Prompt = buildLevelPrompt(request.properties, 1);
 
   const level1Stream = await client.messages.stream({
-    model: 'claude-opus-4-20250514',
+    model: 'claude-opus-4-5-20251101',
     max_tokens: 32000,
     temperature: 0.3,
     system: OLIVIA_SYSTEM_PROMPT,
@@ -901,7 +901,7 @@ export async function analyzeWithOliviaProgressive(
   const level2Prompt = buildLevelPrompt(request.properties, 2);
 
   const level2Stream = await client.messages.stream({
-    model: 'claude-opus-4-20250514',
+    model: 'claude-opus-4-5-20251101',
     max_tokens: 32000,
     temperature: 0.3,
     system: OLIVIA_SYSTEM_PROMPT,
@@ -935,7 +935,7 @@ export async function analyzeWithOliviaProgressive(
   const level3Prompt = buildLevelPrompt(request.properties, 3);
 
   const level3Stream = await client.messages.stream({
-    model: 'claude-opus-4-20250514',
+    model: 'claude-opus-4-5-20251101',
     max_tokens: 32000,
     temperature: 0.3,
     system: OLIVIA_SYSTEM_PROMPT,
@@ -974,7 +974,7 @@ export async function analyzeWithOliviaProgressive(
   );
 
   const level4Stream = await client.messages.stream({
-    model: 'claude-opus-4-20250514',
+    model: 'claude-opus-4-5-20251101',
     max_tokens: 32000,
     temperature: 0.3,
     system: OLIVIA_SYSTEM_PROMPT,

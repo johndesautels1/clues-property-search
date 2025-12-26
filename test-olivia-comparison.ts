@@ -262,7 +262,7 @@ Remember: Respond ONLY with valid JSON, no markdown or extra text.`;
 
   try {
     const oldResponse = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5-20250929',
       max_tokens: 1500,
       system: OLD_PROMPT,
       messages: [{ role: 'user', content: userPrompt }],
@@ -292,7 +292,7 @@ Remember: Respond ONLY with valid JSON, no markdown or extra text.`;
 
   try {
     const newResponse = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5-20250929',
       max_tokens: 3000,
       system: NEW_PROMPT,
       messages: [{ role: 'user', content: userPrompt }],
@@ -331,7 +331,7 @@ Remember: Respond ONLY with valid JSON, no markdown or extra text.`;
 
   try {
     const deterministicResponse = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5-20250929',
       max_tokens: 3000,
       temperature: 0, // Make it deterministic
       system: NEW_PROMPT,

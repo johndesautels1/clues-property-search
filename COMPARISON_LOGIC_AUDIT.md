@@ -191,7 +191,7 @@ function compareValues(values: any[], higherIsBetter?: boolean):
 ### Method 2: Weighted Scoring Algorithm
 
 **Location**: `src/api/olivia.ts` lines 85-250
-**Model**: Claude Sonnet 4 (claude-sonnet-4-20250514)
+**Model**: Claude Sonnet 4.5 (claude-sonnet-4-5-20250929)
 **Purpose**: Comprehensive weighted analysis with human-readable methodology
 
 #### LLM Comparison Prompt Architecture

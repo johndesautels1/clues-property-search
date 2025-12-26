@@ -2551,7 +2551,7 @@ async function callClaudeSonnet(address: string): Promise<any> {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-5-20250929',
         max_tokens: 16000, // Increased from 8000 to handle 168 fields
         system: PROMPT_CLAUDE_SONNET,
         messages: [

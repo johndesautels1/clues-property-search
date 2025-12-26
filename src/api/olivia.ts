@@ -244,7 +244,7 @@ IMPORTANT:
 - Remember: Respond ONLY with valid JSON, no markdown or extra text.`;
 
   const response = await client.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-5-20250929',
     max_tokens: 3000, // Increased for enhanced response
     system: OLIVIA_SYSTEM_PROMPT,
     messages: [

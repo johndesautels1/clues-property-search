@@ -87,7 +87,7 @@ export async function analyzeLevelOne(
   onProgress?.('Calling Claude Opus 4.5...', 5, 56);
 
   const stream = await client.messages.stream({
-    model: 'claude-opus-4-20250514',
+    model: 'claude-opus-4-5-20251101',
     max_tokens: 32000,
     temperature: 0.3,
     system: OLIVIA_SYSTEM_PROMPT,
@@ -173,7 +173,7 @@ export async function analyzeLevelTwo(
   onProgress?.('Calling Claude Opus 4.5...', 5, 56);
 
   const stream = await client.messages.stream({
-    model: 'claude-opus-4-20250514',
+    model: 'claude-opus-4-5-20251101',
     max_tokens: 32000,
     temperature: 0.3,
     system: OLIVIA_SYSTEM_PROMPT,
@@ -257,7 +257,7 @@ export async function analyzeLevelThree(
   onProgress?.('Calling Claude Opus 4.5...', 5, 56);
 
   const stream = await client.messages.stream({
-    model: 'claude-opus-4-20250514',
+    model: 'claude-opus-4-5-20251101',
     max_tokens: 32000,
     temperature: 0.3,
     system: OLIVIA_SYSTEM_PROMPT,
@@ -346,7 +346,7 @@ export async function generateExecutiveSummary(
   onProgress?.('Calling Claude Opus 4.5 for final aggregation...', 0, 1);
 
   const stream = await client.messages.stream({
-    model: 'claude-opus-4-20250514',
+    model: 'claude-opus-4-5-20251101',
     max_tokens: 32000,
     temperature: 0.3,
     system: OLIVIA_SYSTEM_PROMPT,
