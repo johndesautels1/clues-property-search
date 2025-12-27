@@ -5,7 +5,7 @@
  * Plus Olivia AI Analysis
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, X, Scale, TrendingUp, TrendingDown, Minus,
@@ -923,10 +923,15 @@ function AnalyticsSummary({
 export default function Compare() {
   const { properties, fullProperties, compareList, addToCompare, removeFromCompare } = usePropertyStore();
 
-  // Initialize from compareList if available
+  // Initialize from compareList if available - VALIDATE IDs exist in current properties
   const [selectedIds, setSelectedIds] = useState<(string | null)[]>(() => {
     if (compareList.length > 0) {
-      const ids: (string | null)[] = [...compareList.slice(0, 3)];
+      // CRITICAL FIX: Only use IDs that exist in current properties array
+      const validIds = compareList
+        .slice(0, 3)
+        .filter(id => properties.some(p => p.id === id));
+
+      const ids: (string | null)[] = [...validIds];
       while (ids.length < 3) ids.push(null);
       return ids;
     }
@@ -936,7 +941,18 @@ export default function Compare() {
   const [showAllFields, setShowAllFields] = useState(false);
   const [viewMode, setViewMode] = useState<CompareViewMode>('table');
   const [showVisualAnalytics, setShowVisualAnalytics] = useState(false);
-  
+
+  // CRITICAL FIX: Clean up stale IDs from compareList when properties change
+  useEffect(() => {
+    const validPropertyIds = new Set(properties.map(p => p.id));
+    const staleIds = compareList.filter(id => !validPropertyIds.has(id));
+
+    if (staleIds.length > 0) {
+      console.warn('[Compare] Removing stale property IDs from compareList:', staleIds);
+      staleIds.forEach(id => removeFromCompare(id));
+    }
+  }, [properties, compareList, removeFromCompare]);
+
   // Olivia AI state
   const [oliviaResult, setOliviaResult] = useState<OliviaAnalysisResult | null>(null);
   const [oliviaLoading, setOliviaLoading] = useState(false);
