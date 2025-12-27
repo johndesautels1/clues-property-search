@@ -900,6 +900,7 @@ export function normalizeInteriorCondition(value: any): NormalizationResult {
  *
  * Scoring Logic:
  * - Already 0-100, pass through with context
+ * - Handles formats: "77", "77 - Very Walkable", 77
  * - Florida coastal context: Lower walk scores common, car-dependent areas
  */
 export function normalizeWalkScore(value: any): NormalizationResult {
@@ -907,7 +908,18 @@ export function normalizeWalkScore(value: any): NormalizationResult {
     return { score: 0, confidence: 'Low', notes: 'Walk Score unknown' };
   }
 
-  const score = Number(value);
+  // Parse score from string formats like "77 - Very Walkable" or "77"
+  let score: number;
+  if (typeof value === 'string') {
+    const match = value.match(/^(\d+)/);
+    if (!match) {
+      return { score: 0, confidence: 'Low', notes: 'Invalid Walk Score format' };
+    }
+    score = parseInt(match[1], 10);
+  } else {
+    score = Number(value);
+  }
+
   if (isNaN(score)) {
     return { score: 0, confidence: 'Low', notes: 'Invalid Walk Score format' };
   }
@@ -933,6 +945,7 @@ export function normalizeWalkScore(value: any): NormalizationResult {
  *
  * Scoring Logic:
  * - Already 0-100, pass through
+ * - Handles formats: "45", "45 - Some Transit", 45
  * - Florida context: Most areas have limited public transit
  */
 export function normalizeTransitScore(value: any): NormalizationResult {
@@ -940,7 +953,18 @@ export function normalizeTransitScore(value: any): NormalizationResult {
     return { score: 0, confidence: 'Low', notes: 'Transit Score unknown' };
   }
 
-  const score = Number(value);
+  // Parse score from string formats like "45 - Some Transit" or "45"
+  let score: number;
+  if (typeof value === 'string') {
+    const match = value.match(/^(\d+)/);
+    if (!match) {
+      return { score: 0, confidence: 'Low', notes: 'Invalid Transit Score format' };
+    }
+    score = parseInt(match[1], 10);
+  } else {
+    score = Number(value);
+  }
+
   if (isNaN(score)) {
     return { score: 0, confidence: 'Low', notes: 'Invalid Transit Score format' };
   }
@@ -966,13 +990,25 @@ export function normalizeTransitScore(value: any): NormalizationResult {
  *
  * Scoring Logic:
  * - Already 0-100, pass through
+ * - Handles formats: "60", "60 - Bikeable", 60
  */
 export function normalizeBikeScore(value: any): NormalizationResult {
   if (value === null || value === undefined || value === '') {
     return { score: 0, confidence: 'Low', notes: 'Bike Score unknown' };
   }
 
-  const score = Number(value);
+  // Parse score from string formats like "60 - Bikeable" or "60"
+  let score: number;
+  if (typeof value === 'string') {
+    const match = value.match(/^(\d+)/);
+    if (!match) {
+      return { score: 0, confidence: 'Low', notes: 'Invalid Bike Score format' };
+    }
+    score = parseInt(match[1], 10);
+  } else {
+    score = Number(value);
+  }
+
   if (isNaN(score)) {
     return { score: 0, confidence: 'Low', notes: 'Invalid Bike Score format' };
   }
