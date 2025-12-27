@@ -187,7 +187,7 @@ export default function PropertyList() {
           <div>
             <label className="block text-xs text-gray-500 mb-2">Min Beds</label>
             <select
-              className="input-glass text-sm"
+              className="input-glass text-sm text-white [&>option]:text-blue-900 [&>option]:bg-white"
               value={filters.minBeds || ''}
               onChange={(e) => handleFilterChange('minBeds', e.target.value)}
             >
@@ -201,7 +201,7 @@ export default function PropertyList() {
           <div>
             <label className="block text-xs text-gray-500 mb-2">Min Baths</label>
             <select
-              className="input-glass text-sm"
+              className="input-glass text-sm text-white [&>option]:text-blue-900 [&>option]:bg-white"
               value={filters.minBaths || ''}
               onChange={(e) => handleFilterChange('minBaths', e.target.value)}
             >
