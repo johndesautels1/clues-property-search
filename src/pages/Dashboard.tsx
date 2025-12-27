@@ -5,7 +5,7 @@
  * Data Quality metrics are computed from REAL property data using field-normalizer
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
@@ -13,6 +13,7 @@ import {
   DollarSign,
   BarChart3,
   ChevronRight,
+  ChevronDown,
   Zap,
   Plus,
   HelpCircle,
@@ -46,6 +47,9 @@ export default function Dashboard() {
     return Array.from(fullPropertiesMap.values());
   }, [fullPropertiesMap]);
 
+  // State for toggling optional sections in Data Quality Overview
+  const [showOptionalSections, setShowOptionalSections] = useState(false);
+
   // Calculate real stats from store data
   const stats = useMemo(() => {
     const totalValue = properties.reduce((sum, p) => sum + p.price, 0);
@@ -74,6 +78,13 @@ export default function Dashboard() {
   const dataQualityMetrics = useMemo(() => {
     return computeDataQualityByRange(fullPropertiesArray);
   }, [fullPropertiesArray]);
+
+  // Split metrics into Critical (weight ≥ 4.85%) and Optional (weight < 4.85%)
+  const { criticalMetrics, optionalMetrics } = useMemo(() => {
+    const critical = dataQualityMetrics.filter(m => m.isCritical === true);
+    const optional = dataQualityMetrics.filter(m => m.isCritical === false);
+    return { criticalMetrics: critical, optionalMetrics: optional };
+  }, [dataQualityMetrics]);
 
   // Get recently viewed properties (up to 3)
   // Sort by lastViewedAt timestamp (most recent first), fallback to original order
@@ -171,15 +182,22 @@ export default function Dashboard() {
             Data Quality Overview
             <button
               className="group relative"
-              title="Data Quality shows the percentage of fields populated across ALL your properties. Higher percentages mean more complete property data for better analysis."
+              title="Data Quality shows the percentage of fields populated across ALL your properties, organized by SMART Score sections. Higher percentages mean more complete property data for better analysis."
             >
               <HelpCircle className="w-4 h-4 text-gray-500 hover:text-quantum-cyan transition-colors cursor-help" />
-              <div className="hidden group-hover:block absolute left-0 top-6 w-64 p-3 bg-gray-900 border border-quantum-cyan/30 rounded-lg shadow-lg z-10 text-xs font-normal text-left">
+              <div className="hidden group-hover:block absolute left-0 top-6 w-80 p-3 bg-gray-900 border border-quantum-cyan/30 rounded-lg shadow-lg z-10 text-xs font-normal text-left">
                 <p className="text-white font-semibold mb-1">What is Data Quality?</p>
+                <p className="text-gray-300 leading-relaxed mb-2">
+                  Shows the % of fields populated across ALL your properties, organized by the 22 SMART Score sections.
+                  Each section shows its weight in the overall SMART Score calculation.
+                </p>
+                <p className="text-quantum-cyan font-semibold mb-1">Critical Sections (94.44% of score):</p>
+                <p className="text-gray-300 leading-relaxed mb-2">
+                  9 sections with weight ≥ 4.85%. These drive most of your SMART Score.
+                </p>
+                <p className="text-amber-400 font-semibold mb-1">Optional Sections (5.56% of score):</p>
                 <p className="text-gray-300 leading-relaxed">
-                  Shows the % of fields populated across ALL your properties.
-                  Fields are grouped by ranges (1-50, 51-100, etc.).
-                  Higher percentages = more complete data for better AI analysis and comparisons.
+                  13 sections with weight &lt; 4.85%. Expandable for detailed view.
                 </p>
               </div>
             </button>
@@ -188,17 +206,26 @@ export default function Dashboard() {
             )}
           </h3>
 
-          <div className="space-y-4">
-            {dataQualityMetrics.map((metric) => (
+          {/* CRITICAL SECTIONS - Always Visible */}
+          <div className="space-y-4 mb-6">
+            <h4 className="text-xs font-semibold text-quantum-cyan uppercase tracking-wider">
+              Critical Sections (94.44% of SMART Score)
+            </h4>
+            {criticalMetrics.map((metric) => (
               <div key={metric.label}>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-400">{metric.label}</span>
+                  <span className="text-gray-400">
+                    {metric.label}
+                    {metric.weight !== undefined && (
+                      <span className="text-quantum-gold ml-2 text-xs">({metric.weight.toFixed(2)}%)</span>
+                    )}
+                  </span>
                   <span className={metric.colorClass}>{metric.percentage}%</span>
                 </div>
                 <div className="progress-quantum">
-                  <div 
-                    className="progress-quantum-fill" 
-                    style={{ width: `${metric.percentage}%` }} 
+                  <div
+                    className="progress-quantum-fill"
+                    style={{ width: `${metric.percentage}%` }}
                   />
                 </div>
                 {fullPropertiesArray.length > 0 && (
@@ -208,6 +235,57 @@ export default function Dashboard() {
                 )}
               </div>
             ))}
+          </div>
+
+          {/* OPTIONAL SECTIONS - Expandable */}
+          <div className="border-t border-gray-700 pt-4">
+            <button
+              onClick={() => setShowOptionalSections(!showOptionalSections)}
+              className="w-full flex items-center justify-between text-sm text-gray-400 hover:text-quantum-cyan transition-colors mb-4"
+            >
+              <span className="font-semibold uppercase tracking-wider text-xs">
+                Optional Sections (5.56% of SMART Score)
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs">
+                  {showOptionalSections ? 'Hide' : 'Show'} {optionalMetrics.length} sections
+                </span>
+                {showOptionalSections ? (
+                  <ChevronDown className="w-4 h-4" />
+                ) : (
+                  <ChevronRight className="w-4 h-4" />
+                )}
+              </div>
+            </button>
+
+            {showOptionalSections && (
+              <div className="space-y-4">
+                {optionalMetrics.map((metric) => (
+                  <div key={metric.label}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-gray-400">
+                        {metric.label}
+                        {metric.weight !== undefined && (
+                          <span className="text-gray-500 ml-2 text-xs">({metric.weight.toFixed(2)}%)</span>
+                        )}
+                      </span>
+                      <span className={metric.colorClass}>{metric.percentage}%</span>
+                    </div>
+                    <div className="progress-quantum">
+                      <div
+                        className="progress-quantum-fill"
+                        style={{ width: `${metric.percentage}%` }}
+                      />
+                    </div>
+                    {fullPropertiesArray.length > 0 && (
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        {metric.populatedFields}/{metric.totalFields} fields
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </motion.div>

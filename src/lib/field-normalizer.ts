@@ -922,15 +922,41 @@ export function getAllApiKeys(): string[] {
 
 /**
  * Data quality range definitions for Dashboard display
- * Each range corresponds to a field group in the 168-field schema
+ * Aligned with 22 SMART Score sections from SMART_SCORE_ARCHITECTURE.md
+ *
+ * CRITICAL SECTIONS (weight ≥ 4.85%): Always visible, contribute 94.44% of total score
+ * OPTIONAL SECTIONS (weight < 4.85%): Expandable, contribute 5.56% of total score
  */
 export const DATA_QUALITY_RANGES = [
-  { label: 'Core Fields (1-38)', min: 1, max: 38, colorClass: 'text-quantum-green' },
-  { label: 'Structural (39-62)', min: 39, max: 62, colorClass: 'text-quantum-cyan' },
-  { label: 'Location (63-90)', min: 63, max: 90, colorClass: 'text-quantum-blue' },
-  { label: 'Financial (91-116)', min: 91, max: 116, colorClass: 'text-quantum-purple' },
-  { label: 'Environment (117-138)', min: 117, max: 138, colorClass: 'text-quantum-gold' },
-  { label: 'Stellar MLS (139-168)', min: 139, max: 168, colorClass: 'text-quantum-cyan' },
+  // ============================================================================
+  // CRITICAL SECTIONS (9 sections - Always Visible)
+  // ============================================================================
+  { label: 'Section B: Pricing & Value', min: 11, max: 16, weight: 17.96, colorClass: 'text-quantum-gold', isCritical: true },
+  { label: 'Section C: Property Basics', min: 17, max: 28, weight: 14.76, colorClass: 'text-quantum-green', isCritical: true },
+  { label: 'Section I: Schools', min: 63, max: 73, weight: 11.94, colorClass: 'text-quantum-purple', isCritical: true },
+  { label: 'Section D: HOA & Taxes', min: 30, max: 38, weight: 9.71, colorClass: 'text-quantum-cyan', isCritical: true },
+  { label: 'Section O: Environment & Risk', min: 117, max: 130, weight: 8.74, colorClass: 'text-amber-400', isCritical: true },
+  { label: 'Section M: Market & Investment', min: 91, max: 102, weight: 7.77, colorClass: 'text-emerald-400', isCritical: true },
+  { label: 'Section E: Structure & Systems', min: 39, max: 48, weight: 6.80, colorClass: 'text-quantum-blue', isCritical: true },
+  { label: 'Section T: Waterfront', min: 155, max: 159, weight: 5.83, colorClass: 'text-cyan-400', isCritical: true },
+  { label: 'Section J: Location Scores', min: 74, max: 82, weight: 4.85, colorClass: 'text-teal-400', isCritical: true },
+
+  // ============================================================================
+  // OPTIONAL SECTIONS (13 sections - Expandable)
+  // ============================================================================
+  { label: 'Section L: Safety & Crime', min: 88, max: 90, weight: 3.88, colorClass: 'text-red-400', isCritical: false },
+  { label: 'Section A: Property ID & Basics', min: 1, max: 9, weight: 1.94, colorClass: 'text-gray-400', isCritical: false },
+  { label: 'Section K: Crime Details', min: 83, max: 87, weight: 1.94, colorClass: 'text-orange-400', isCritical: false },
+  { label: 'Section G: Amenities & Features', min: 49, max: 62, weight: 1.94, colorClass: 'text-indigo-400', isCritical: false },
+  { label: 'Section F: Lot & Land', min: 29, max: 29, weight: 0.97, colorClass: 'text-lime-400', isCritical: false },
+  { label: 'Section H: Utilities & Services', min: 103, max: 104, weight: 0.49, colorClass: 'text-yellow-400', isCritical: false },
+  { label: 'Section N: Demographics', min: 105, max: 116, weight: 0.49, colorClass: 'text-pink-400', isCritical: false },
+  { label: 'Section P: Appreciation & Investment', min: 131, max: 138, weight: 0.00, colorClass: 'text-slate-400', isCritical: false },
+  { label: 'Section Q: HOA Details', min: 139, max: 141, weight: 0.00, colorClass: 'text-slate-400', isCritical: false },
+  { label: 'Section R: Builder & Community', min: 142, max: 144, weight: 0.00, colorClass: 'text-slate-400', isCritical: false },
+  { label: 'Section S: Listing Details', min: 145, max: 154, weight: 0.00, colorClass: 'text-slate-400', isCritical: false },
+  { label: 'Section U: Views & Premium', min: 160, max: 163, weight: 0.00, colorClass: 'text-slate-400', isCritical: false },
+  { label: 'Section V: Stellar AI Insights', min: 164, max: 168, weight: 0.00, colorClass: 'text-slate-400', isCritical: false },
 ] as const;
 
 /**
@@ -986,6 +1012,8 @@ export interface DataQualityMetrics {
   colorClass: string;
   populatedFields: number;
   totalFields: number;
+  weight?: number;
+  isCritical?: boolean;
 }
 
 /**
@@ -1000,6 +1028,8 @@ export function computeDataQualityByRange(properties: Property[]): DataQualityMe
       colorClass: range.colorClass,
       populatedFields: 0,
       totalFields: getFieldsInRange(range.min, range.max).length,
+      weight: range.weight,
+      isCritical: range.isCritical,
     }));
   }
 
@@ -1021,6 +1051,8 @@ export function computeDataQualityByRange(properties: Property[]): DataQualityMe
       colorClass: range.colorClass,
       populatedFields: avgPopulated,
       totalFields,
+      weight: range.weight,
+      isCritical: range.isCritical,
     };
   });
 }
