@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import type { PropertyCard as PropertyCardType, Property, DataField } from '@/types/property';
 import { usePropertyStore } from '@/store/propertyStore';
+import { calculateDaysOnMarket, getDaysOnMarketColor } from '@/lib/calculate-days-on-market';
 
 interface PropertyCardUnifiedProps {
   property: PropertyCardType;
@@ -112,7 +113,11 @@ export default function PropertyCardUnified({
 
     thumbnail: property.thumbnail,
     listingStatus: property.listingStatus,
-    daysOnMarket: property.daysOnMarket,
+    // AUTO-CALCULATE days on market from listing date (auto-updates each calendar day!)
+    daysOnMarket: (() => {
+      const listingDate = fullProperty ? getFieldValue(fullProperty.address?.listingDate) as string | null : null;
+      return listingDate ? calculateDaysOnMarket(listingDate) : (property.daysOnMarket || 0);
+    })(),
     cumulativeDaysOnMarket: property.cumulativeDaysOnMarket,
 
     // Enhanced data (from full Property if enriched)
@@ -398,18 +403,18 @@ export default function PropertyCardUnified({
                   )}
                 </button>
 
-                {/* Days on Market */}
+                {/* Days on Market - AUTO-UPDATED */}
                 <div className="text-right">
                   {data.daysOnMarket !== undefined ? (
                     data.cumulativeDaysOnMarket && data.cumulativeDaysOnMarket !== data.daysOnMarket ? (
                       <>
                         <p className="text-gray-500 text-[10px] uppercase tracking-wide">DOM / CDOM</p>
-                        <span className="text-amber-400 text-xs font-bold">{data.daysOnMarket} / {data.cumulativeDaysOnMarket}</span>
+                        <span className={`${getDaysOnMarketColor(data.daysOnMarket)} text-xs font-bold`}>{data.daysOnMarket} / {data.cumulativeDaysOnMarket}</span>
                       </>
                     ) : (
                       <>
                         <p className="text-gray-500 text-[10px] uppercase tracking-wide">Days on Market</p>
-                        <span className="text-amber-400 text-xs font-bold">{data.daysOnMarket}</span>
+                        <span className={`${getDaysOnMarketColor(data.daysOnMarket)} text-xs font-bold`}>{data.daysOnMarket}</span>
                       </>
                     )
                   ) : (
