@@ -26,9 +26,10 @@ import { PropertyComparisonAnalytics, type Property as AnalyticsProperty } from 
 import { ProgressiveAnalysisPanel } from '@/components/ProgressiveAnalysisPanel';
 import { calculateSmartScore } from '@/lib/smart-score-calculator';
 import { SMARTScoreDisplay } from '@/components/SMARTScoreDisplay';
+import SMARTScoreDiagnostic from '@/components/SMARTScoreDiagnostic';
 
 // View modes for comparison
-type CompareViewMode = 'table' | 'visual';
+type CompareViewMode = 'table' | 'visual' | 'diagnostic';
 
 // Industry-standard section weights for Florida coastal market
 const INDUSTRY_WEIGHTS = {
@@ -1176,6 +1177,17 @@ export default function Compare() {
                 <PieChart className="w-4 h-4" />
                 32 Visual Charts
               </button>
+              <button
+                onClick={() => setViewMode('diagnostic')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                  viewMode === 'diagnostic'
+                    ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                    : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-transparent'
+                }`}
+              >
+                <AlertTriangle className="w-4 h-4" />
+                Field Diagnostic
+              </button>
 
               {/* OLIVIA ANALYSIS BUTTON */}
               {selectedProperties.length === 3 && (
@@ -1317,6 +1329,44 @@ export default function Compare() {
             Please select one more property above.
           </p>
         </motion.div>
+      )}
+
+      {/* Diagnostic View Content */}
+      {viewMode === 'diagnostic' && (
+        <div className="mb-6">
+          {selectedFullProperties.length > 0 ? (
+            <div className="space-y-6">
+              {selectedFullProperties.map((fullProp, index) => {
+                const cardProp = selectedProperties[index];
+                return (
+                  <div key={fullProp.id} className="glass-card p-6 rounded-2xl">
+                    <div className="mb-4 pb-4 border-b border-white/10">
+                      <h3 className="text-xl font-semibold text-white">
+                        Property {index + 1}: {cardProp.address}
+                      </h3>
+                      <p className="text-sm text-gray-400 mt-1">
+                        {cardProp.city}, {cardProp.state} • SMART Score: {smartScores[index]?.finalScore.toFixed(1) || 'N/A'}
+                      </p>
+                    </div>
+                    <SMARTScoreDiagnostic property={fullProp} compact={false} />
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="glass-card p-8 text-center"
+            >
+              <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-yellow-400 opacity-50" />
+              <h3 className="text-xl font-semibold text-white mb-2">No Properties Selected</h3>
+              <p className="text-gray-400">
+                Please select at least one property above to view field diagnostics.
+              </p>
+            </motion.div>
+          )}
+        </div>
       )}
 
       {/* Table View Content */}
