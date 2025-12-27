@@ -249,14 +249,16 @@ export default function PropertyCardUnified({
     }).format(price);
   };
 
-  const getScoreColor = (score: number) => {
+  const getScoreColor = (score: number | undefined) => {
+    if (score === undefined) return 'text-gray-400';
     if (score >= 90) return 'score-excellent';
     if (score >= 80) return 'score-good';
     if (score >= 70) return 'score-fair';
     return 'score-poor';
   };
 
-  const getScoreBg = (score: number) => {
+  const getScoreBg = (score: number | undefined) => {
+    if (score === undefined) return 'from-gray-500/20 to-gray-400/20';
     if (score >= 90) return 'from-quantum-green/20 to-quantum-cyan/20';
     if (score >= 80) return 'from-quantum-blue/20 to-quantum-cyan/20';
     if (score >= 70) return 'from-quantum-gold/20 to-yellow-500/20';
@@ -313,7 +315,7 @@ export default function PropertyCardUnified({
             {/* SMART Score Badge - Smaller in collapsed mode */}
             <div className={`absolute ${isExpanded ? 'top-3 right-3 px-3 py-1.5' : 'top-1 right-1 px-2 py-1'} rounded-full bg-gradient-to-r ${neonGreenScore ? 'from-green-500/30 to-green-400/30' : getScoreBg(data.smartScore)} backdrop-blur-lg border ${neonGreenScore ? 'border-green-400/60' : 'border-white/20'}`}>
               <span className={`font-extrabold ${isExpanded ? 'text-lg' : 'text-sm'} ${neonGreenScore ? 'text-[#00ff88] drop-shadow-[0_0_10px_rgba(0,255,136,0.8)]' : getScoreColor(data.smartScore)}`}>
-                {data.smartScore}
+                {data.smartScore !== undefined ? data.smartScore : 'N/A'}
               </span>
             </div>
 

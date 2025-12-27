@@ -316,7 +316,7 @@ export interface PropertyCard {
   bathrooms: number;
   sqft: number;
   yearBuilt: number;
-  smartScore: number;
+  smartScore?: number; // Only calculated during 3-property comparison
   dataCompleteness: number;
   thumbnail?: string;
   listingStatus: string;

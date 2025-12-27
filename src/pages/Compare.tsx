@@ -32,29 +32,30 @@ import SMARTScoreDiagnostic from '@/components/SMARTScoreDiagnostic';
 type CompareViewMode = 'table' | 'visual' | 'diagnostic';
 
 // Industry-standard section weights for Florida coastal market
+// Normalized to sum to exactly 100.00%
 const INDUSTRY_WEIGHTS = {
-  'A': 2.0,   // Address & Identity
-  'B': 18.5,  // Pricing & Value
-  'C': 15.2,  // Property Basics
-  'D': 10.0,  // HOA & Taxes
-  'E': 7.0,   // Structure & Systems
-  'F': 1.0,   // Interior Features
-  'G': 2.0,   // Exterior Features
-  'H': 0.5,   // Permits & Renovations
-  'I': 12.3,  // Schools
-  'J': 5.0,   // Location Scores
-  'K': 2.0,   // Distances & Amenities
-  'L': 4.0,   // Safety & Crime
-  'M': 8.0,   // Market & Investment
-  'N': 0.5,   // Utilities
-  'O': 9.0,   // Environment & Risk
-  'P': 0.0,   // Additional Features
-  'Q': 0.0,   // Parking
-  'R': 0.0,   // Building
-  'S': 0.0,   // Legal
-  'T': 6.0,   // Waterfront
-  'U': 0.0,   // Leasing
-  'V': 0.0,   // Features
+  'A': 1.94,   // Address & Identity
+  'B': 17.96,  // Pricing & Value
+  'C': 14.76,  // Property Basics
+  'D': 9.71,   // HOA & Taxes
+  'E': 6.80,   // Structure & Systems
+  'F': 0.97,   // Interior Features
+  'G': 1.94,   // Exterior Features
+  'H': 0.49,   // Permits & Renovations
+  'I': 11.94,  // Schools
+  'J': 4.85,   // Location Scores
+  'K': 1.94,   // Distances & Amenities
+  'L': 3.88,   // Safety & Crime
+  'M': 7.77,   // Market & Investment
+  'N': 0.49,   // Utilities
+  'O': 8.74,   // Environment & Risk
+  'P': 0.0,    // Additional Features
+  'Q': 0.0,    // Parking
+  'R': 0.0,    // Building
+  'S': 0.0,    // Legal
+  'T': 5.83,   // Waterfront
+  'U': 0.0,    // Leasing
+  'V': 0.0,    // Features
 };
 
 // Helper to extract value from DataField

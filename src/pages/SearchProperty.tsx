@@ -78,7 +78,7 @@ export default function SearchProperty() {
                  (getValue('propertyBasics.fullBathrooms', 0) + getValue('propertyBasics.halfBathrooms', 0) * 0.5),
       sqft: getValue('propertyBasics.livingSqft', 0),
       yearBuilt: getValue('propertyBasics.yearBuilt', new Date().getFullYear()),
-      smartScore: calculateSmartScore(formData),
+      // smartScore omitted - will be calculated via 2-tier system during comparison
       dataCompleteness: calculateCompleteness(formData),
       listingStatus: getValue('addressIdentity.listingStatus', 'Active') || 'Active',
       daysOnMarket: daysOnMarket,
@@ -109,36 +109,6 @@ export default function SearchProperty() {
     addProperty(newProperty, fullProperty);
     setSavedPropertyId(propertyId);
     setShowSuccess(true);
-  };
-
-  // Calculate SMART score based on data quality
-  const calculateSmartScore = (formData: Record<string, { value: any; source: string }>) => {
-    let score = 70; // Base score
-
-    // Bonus for verified sources
-    const verifiedSources = ['MLS', 'County Assessor', 'County Tax Collector', 'FEMA MSC'];
-    Object.values(formData).forEach(field => {
-      if (verifiedSources.includes(field.source)) {
-        score += 0.5;
-      }
-    });
-
-    // Bonus for key fields filled
-    const keyFields = [
-      'pricing.listingPrice',
-      'propertyBasics.bedrooms',
-      'propertyBasics.livingSqft',
-      'propertyBasics.yearBuilt',
-      'taxesAssessments.annualTaxes',
-      'environmentRisk.floodZone',
-    ];
-    keyFields.forEach(key => {
-      if (formData[key]?.value) {
-        score += 2;
-      }
-    });
-
-    return Math.min(Math.round(score), 100);
   };
 
   // Calculate data completeness percentage
