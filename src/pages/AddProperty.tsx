@@ -252,21 +252,11 @@ export default function AddProperty() {
     // Construct full address for API search
     const fullAddress = `${manualForm.address}, ${manualForm.city}, ${manualForm.state}${manualForm.zip ? ' ' + manualForm.zip : ''}`;
 
-    // Check if this is a new address or continuing with same address
-    const isNewAddress = fullAddress !== currentAddress;
-    const hasExistingData = Object.keys(accumulatedFields).length > 0;
-    const shouldAccumulate = !isNewAddress && hasExistingData;
-
     // Use startTransition for non-urgent UI updates to improve INP
     startTransition(() => {
       setStatus('searching');
-      if (isNewAddress) {
-        // New address - reset everything
-        setProgress(0);
-        setTotalFieldsFound(0);
-        setAccumulatedFields({});
-        setCurrentAddress(fullAddress);
-      }
+      setProgress(0);
+      setTotalFieldsFound(0);
       setCascadeStatus(initializeCascadeStatus());
     });
 
@@ -274,7 +264,6 @@ export default function AddProperty() {
     await new Promise(resolve => requestAnimationFrame(resolve));
 
     try {
-      // Use SSE streaming for real-time progress
       const apiUrl = import.meta.env.VITE_API_URL || '';
 
       // Determine which engines to use based on selection
@@ -286,226 +275,31 @@ export default function AddProperty() {
         return [selectedEngine];
       };
 
-      // Build existingFields from manual form data for the API
-      const manualFields: Record<string, any> = {};
-      
-      // Pre-populate fields from manual entry form
-      if (manualForm.price) {
-        manualFields['10_listing_price'] = { value: parseFloat(manualForm.price), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.pricePerSqft) {
-        manualFields['11_price_per_sqft'] = { value: parseFloat(manualForm.pricePerSqft), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.lastSalePrice) {
-        manualFields['14_last_sale_price'] = { value: parseFloat(manualForm.lastSalePrice), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.bedrooms) {
-        manualFields['17_bedrooms'] = { value: parseInt(manualForm.bedrooms), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.bathrooms) {
-        manualFields['20_total_bathrooms'] = { value: parseFloat(manualForm.bathrooms), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.sqft) {
-        manualFields['21_living_sqft'] = { value: parseInt(manualForm.sqft), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.lotSizeSqft) {
-        manualFields['23_lot_size_sqft'] = { value: parseInt(manualForm.lotSizeSqft), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.yearBuilt) {
-        manualFields['25_year_built'] = { value: parseInt(manualForm.yearBuilt), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.propertyType) {
-        manualFields['26_property_type'] = { value: manualForm.propertyType, source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.stories) {
-        manualFields['27_stories'] = { value: parseInt(manualForm.stories), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.hoaYn) {
-        manualFields['30_hoa_yn'] = { value: parseBoolean(manualForm.hoaYn), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.hoaFeeAnnual) {
-        manualFields['31_hoa_fee_annual'] = { value: parseFloat(manualForm.hoaFeeAnnual), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.annualTaxes) {
-        manualFields['35_annual_taxes'] = { value: parseFloat(manualForm.annualTaxes), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.taxYear) {
-        manualFields['36_tax_year'] = { value: parseInt(manualForm.taxYear), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.garageSpaces) {
-        manualFields['28_garage_spaces'] = { value: parseInt(manualForm.garageSpaces), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.poolYn) {
-        manualFields['54_pool_yn'] = { value: parseBoolean(manualForm.poolYn), source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.roofType) {
-        manualFields['39_roof_type'] = { value: manualForm.roofType, source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.listingStatus) {
-        manualFields['4_listing_status'] = { value: manualForm.listingStatus, source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.mlsNumber) {
-        manualFields['2_mls_primary'] = { value: manualForm.mlsNumber, source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.listingDate) {
-        manualFields['5_listing_date'] = { value: manualForm.listingDate, source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.county) {
-        manualFields['7_county'] = { value: manualForm.county, source: 'Manual Entry', confidence: 'High' };
-      }
-      if (manualForm.zip) {
-        manualFields['8_zip_code'] = { value: manualForm.zip, source: 'Manual Entry', confidence: 'High' };
-      }
-      
-      // Merge manual fields with any previously accumulated fields
-      const mergedExistingFields = shouldAccumulate 
-        ? { ...accumulatedFields, ...manualFields }
-        : manualFields;
-
-      const response = await fetch(`${apiUrl}/api/property/search-stream`, {
+      const response = await fetch(`${apiUrl}/api/property/search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           address: fullAddress,
           engines: getEngines(),
           skipLLMs: false,
-          existingFields: mergedExistingFields,  // Send manual + accumulated fields
-          skipApis: shouldAccumulate,  // Skip APIs if we already have data from this address
         }),
       });
 
-      // Don't throw on 504 - we may have partial data from SSE stream
-      const is504 = response.status === 504;
-      if (!response.ok && !is504) {
+      if (!response.ok) {
         throw new Error(`API Error: ${response.status}`);
       }
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let finalData: any = null;
-      let currentFieldsFound = 0;
-      let partialFields: Record<string, any> = {};  // Collect fields even if stream fails
+      // Parse JSON response directly (search.ts returns JSON, not SSE)
+      const data = await response.json();
 
-      // Use unified source name mapping from data-sources manifest
-
-      if (!reader) {
-        throw new Error('No response body');
-      }
-
-      let streamError: Error | null = null;
-
-      while (true) {
-        let done = false;
-        let value: Uint8Array | undefined;
-
-        try {
-          const result = await reader.read();
-          done = result.done;
-          value = result.value;
-        } catch (readError) {
-          // Connection failed (504, network error, etc.) - don't throw, use partial data
-          console.warn('⚠️ Stream read error:', readError);
-          streamError = readError instanceof Error ? readError : new Error('Stream read failed');
-          done = true;
+      // Update progress UI
+      startTransition(() => {
+        setProgress(100);
+        setStatus('scraping');
+        if (data.total_fields_found !== undefined) {
+          setTotalFieldsFound(data.total_fields_found);
         }
-
-        if (done) {
-          // If we have finalData (complete event received), use it
-          // If not but we have partialFields, create synthetic finalData from them
-          if (!finalData && Object.keys(partialFields).length > 0) {
-            console.warn('⚠️ Stream ended without complete event, using partial data:', Object.keys(partialFields).length, 'fields');
-            finalData = {
-              fields: partialFields,
-              partial: true,
-              error: streamError?.message || 'Stream ended prematurely',
-              total_fields_found: Object.keys(partialFields).length,
-              completion_percentage: Math.round((Object.keys(partialFields).length / 168) * 100),
-            };
-          } else if (!finalData) {
-            throw new Error('Stream ended without complete event and no data received');
-          }
-          break;
-        }
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        let eventType = '';
-        for (const line of lines) {
-          if (line.startsWith('event: ')) {
-            eventType = line.slice(7).trim();
-          } else if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
-
-              if (eventType === 'progress') {
-                // Update cascade status for summary display - use startTransition for non-blocking updates
-                // fieldsFound = actual raw fields returned by source
-                // newUniqueFields = fields that weren't already found (for dedup tracking)
-                const { source, status: sourceStatus, fieldsFound, newUniqueFields, currentFields } = data;
-                const displayName = getSourceName(source);
-
-                // 🔥 FIX: Capture intermediate field data as it arrives
-                if (currentFields && Object.keys(currentFields).length > 0) {
-                  partialFields = { ...partialFields, ...currentFields };
-                  console.log(`💾 Captured ${Object.keys(currentFields).length} fields from ${displayName}, total now: ${Object.keys(partialFields).length}`);
-                }
-
-                startTransition(() => {
-                  setCascadeStatus(prev => {
-                    const existing = prev.find(s => s.llm === displayName);
-                    if (existing) {
-                      return prev.map(s => s.llm === displayName
-                        ? { ...s, status: sourceStatus as 'pending' | 'running' | 'complete' | 'error', fieldsFound }
-                        : s
-                      );
-                    }
-                    return [...prev, { llm: displayName, status: sourceStatus as 'pending' | 'running' | 'complete' | 'error', fieldsFound }];
-                  });
-
-                  // Update progress based on NEW UNIQUE fields (not raw count to avoid double counting)
-                  if (newUniqueFields !== undefined) {
-                    currentFieldsFound += newUniqueFields;
-                  } else {
-                    // Fallback for non-LLM sources that don't send newUniqueFields
-                    currentFieldsFound += fieldsFound || 0;
-                  }
-                  setProgress(Math.min(Math.round((currentFieldsFound / 168) * 100), 99));
-
-                  // Update status message
-                  if (sourceStatus === 'searching') {
-                    setStatus('scraping');
-                  }
-                });
-              } else if (eventType === 'complete') {
-                finalData = data;
-                // Set actual total fields found from backend
-                if (data.total_fields_found !== undefined) {
-                  setTotalFieldsFound(data.total_fields_found);
-                }
-                // Store accumulated fields for next LLM call
-                if (data.fields) {
-                  setAccumulatedFields(data.fields);
-                  console.log('💾 Accumulated fields saved:', Object.keys(data.fields).length);
-                }
-                // Handle partial data (timeout with some data retrieved)
-                if (data.partial) {
-                  console.warn('⚠️ Partial data received due to timeout:', data.error);
-                }
-              } else if (eventType === 'error') {
-                throw new Error(data.error || 'Search error');
-              }
-            } catch (e) {
-              if (eventType === 'error') throw e;
-              console.error('Failed to parse SSE data:', e);
-            }
-          }
-        }
-      }
-
-      const data = finalData;
+      });
 
       // Extract property data from API response
       const fields = data.fields || {};
@@ -622,35 +416,12 @@ export default function AddProperty() {
       searchQuery = propertyText;
     }
 
-    // Check if this is a new address or continuing with same address
-    const isNewAddress = searchQuery !== currentAddress;
-    const hasExistingData = Object.keys(accumulatedFields).length > 0;
-    const shouldAccumulate = !isNewAddress && hasExistingData;
-
-    // DEBUG: Trace accumulation logic
-    console.log('🔍 [DEBUG] handleScrape called');
-    console.log('🔍 [DEBUG] searchQuery:', searchQuery);
-    console.log('🔍 [DEBUG] currentAddress:', currentAddress);
-    console.log('🔍 [DEBUG] isNewAddress:', isNewAddress);
-    console.log('🔍 [DEBUG] hasExistingData:', hasExistingData);
-    console.log('🔍 [DEBUG] shouldAccumulate:', shouldAccumulate);
-    console.log('🔍 [DEBUG] accumulatedFields count:', Object.keys(accumulatedFields).length);
-
-    if (isNewAddress) {
-      // New address - reset accumulation
-      console.log('🔍 [DEBUG] RESETTING accumulatedFields because isNewAddress=true');
-      setAccumulatedFields({});
-      setCurrentAddress(searchQuery);
-      setTotalFieldsFound(0);
-    }
-
     setStatus('searching');
     setProgress(10);
 
     try {
-
-      // Call the backend API - use streaming endpoint for real-time progress
-      const apiUrl = import.meta.env.VITE_API_URL || '/api/property/search-stream';
+      // Call the backend API - use same endpoint as SearchProperty for consistent data fetching
+      const apiUrl = import.meta.env.VITE_API_URL || '';
 
       setStatus('scraping');
       setProgress(30);
@@ -669,18 +440,10 @@ export default function AddProperty() {
         address: searchQuery,
         url: inputMode === 'url' ? url : undefined,
         engines: getEngines(),
-        useGrok: selectedEngine === 'Auto' || selectedEngine === 'grok',
-        usePerplexity: selectedEngine === 'perplexity',
-        useCascade: selectedEngine === 'Auto', // Only cascade on Auto
-        existingFields: shouldAccumulate ? accumulatedFields : {},  // Send existing fields for accumulation
-        skipApis: shouldAccumulate,  // Skip APIs if we already have data from this address
+        skipLLMs: false,
       };
 
-      console.log('🔍 [DEBUG] Sending to API:', apiUrl);
-      console.log('🔍 [DEBUG] Request body existingFields count:', Object.keys(requestBody.existingFields).length);
-      console.log('🔍 [DEBUG] skipApis:', requestBody.skipApis);
-
-      const response = await fetch(apiUrl, {
+      const response = await fetch(`${apiUrl}/api/property/search`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -688,128 +451,12 @@ export default function AddProperty() {
         body: JSON.stringify(requestBody),
       });
 
-      // Don't throw on 504 - we may have partial data from SSE stream
-      const is504 = response.status === 504;
-      if (!response.ok && !is504) {
+      if (!response.ok) {
         throw new Error(`API Error: ${response.status}`);
       }
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let finalData: any = null;
-      let currentFieldsFound = 0;
-      let partialFields: Record<string, any> = {};  // Collect fields even if stream fails
-
-      if (!reader) {
-        throw new Error('No response body');
-      }
-
-      let streamError: Error | null = null;
-
-      while (true) {
-        let done = false;
-        let value: Uint8Array | undefined;
-
-        try {
-          const result = await reader.read();
-          done = result.done;
-          value = result.value;
-        } catch (readError) {
-          // Connection failed (504, network error, etc.) - don't throw, use partial data
-          console.warn('⚠️ Stream read error:', readError);
-          streamError = readError instanceof Error ? readError : new Error('Stream read failed');
-          done = true;
-        }
-
-        if (done) {
-          // If we have finalData (complete event received), use it
-          // If not but we have partialFields, create synthetic finalData from them
-          if (!finalData && Object.keys(partialFields).length > 0) {
-            console.warn('⚠️ Stream ended without complete event, using partial data:', Object.keys(partialFields).length, 'fields');
-            finalData = {
-              fields: partialFields,
-              partial: true,
-              error: streamError?.message || 'Stream ended prematurely',
-              total_fields_found: Object.keys(partialFields).length,
-              completion_percentage: Math.round((Object.keys(partialFields).length / 168) * 100),
-            };
-          } else if (!finalData) {
-            throw new Error('Stream ended without complete event and no data received');
-          }
-          break;
-        }
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        let eventType = '';
-        for (const line of lines) {
-          if (line.startsWith('event: ')) {
-            eventType = line.slice(7).trim();
-          } else if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
-
-              if (eventType === 'progress') {
-                const { source, status: sourceStatus, fieldsFound, newUniqueFields, currentFields } = data;
-                const displayName = getSourceName(source);
-
-                // 🔥 FIX: Capture intermediate field data as it arrives
-                if (currentFields && Object.keys(currentFields).length > 0) {
-                  partialFields = { ...partialFields, ...currentFields };
-                  console.log(`💾 Captured ${Object.keys(currentFields).length} fields from ${displayName}, total now: ${Object.keys(partialFields).length}`);
-                }
-
-                startTransition(() => {
-                  setCascadeStatus(prev => {
-                    const existing = prev.find(s => s.llm === displayName);
-                    if (existing) {
-                      return prev.map(s => s.llm === displayName
-                        ? { ...s, status: sourceStatus as 'pending' | 'running' | 'complete' | 'error', fieldsFound }
-                        : s
-                      );
-                    }
-                    return [...prev, { llm: displayName, status: sourceStatus as 'pending' | 'running' | 'complete' | 'error', fieldsFound }];
-                  });
-
-                  // Update progress based on NEW UNIQUE fields
-                  if (newUniqueFields !== undefined) {
-                    currentFieldsFound += newUniqueFields;
-                  } else {
-                    currentFieldsFound += fieldsFound || 0;
-                  }
-                  setProgress(Math.min(Math.round((currentFieldsFound / 168) * 100), 99));
-
-                  if (sourceStatus === 'searching') {
-                    setStatus('scraping');
-                  }
-                });
-              } else if (eventType === 'complete') {
-                finalData = data;
-                if (data.total_fields_found !== undefined) {
-                  setTotalFieldsFound(data.total_fields_found);
-                }
-                if (data.fields) {
-                  setAccumulatedFields(data.fields);
-                  console.log('💾 Accumulated fields saved:', Object.keys(data.fields).length);
-                }
-                if (data.partial) {
-                  console.warn('⚠️ Partial data received due to timeout:', data.error);
-                }
-              } else if (eventType === 'error') {
-                throw new Error(data.error || 'Search error');
-              }
-            } catch (e) {
-              if (eventType === 'error') throw e;
-              console.error('Failed to parse SSE data:', e);
-            }
-          }
-        }
-      }
-
-      const data = finalData;
+      // Parse JSON response directly (search.ts returns JSON, not SSE)
+      const data = await response.json();
       setProgress(90);
 
       // Extract property data from API response
@@ -822,11 +469,9 @@ export default function AddProperty() {
         console.warn('⚠️ Partial data received:', data.error || 'Timeout');
       }
 
-      // Store accumulated fields for next LLM call
-      if (fields && Object.keys(fields).length > 0) {
-        setAccumulatedFields(fields);
-        setTotalFieldsFound(data.total_fields_found || Object.keys(fields).length);
-        console.log('💾 Accumulated fields saved:', Object.keys(fields).length);
+      // Update total fields found
+      if (data.total_fields_found !== undefined) {
+        setTotalFieldsFound(data.total_fields_found);
       }
 
       console.log('🔍 API Response:', data);
