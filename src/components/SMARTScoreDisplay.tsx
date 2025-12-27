@@ -531,6 +531,9 @@ export function SMARTScoreDisplay({
                     borderRadius: '8px',
                     color: '#ffffff'
                   }}
+                  itemStyle={{ color: '#ffffff' }}
+                  labelStyle={{ color: '#ffffff' }}
+                  wrapperStyle={{ color: '#ffffff' }}
                 />
               </RechartsPie>
             </ResponsiveContainer>
