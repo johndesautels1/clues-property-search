@@ -920,8 +920,17 @@ function AnalyticsSummary({
 }
 
 export default function Compare() {
-  const { properties, fullProperties } = usePropertyStore();
-  const [selectedIds, setSelectedIds] = useState<(string | null)[]>([null, null, null]);
+  const { properties, fullProperties, compareList, addToCompare, removeFromCompare } = usePropertyStore();
+
+  // Initialize from compareList if available
+  const [selectedIds, setSelectedIds] = useState<(string | null)[]>(() => {
+    if (compareList.length > 0) {
+      const ids: (string | null)[] = [...compareList.slice(0, 3)];
+      while (ids.length < 3) ids.push(null);
+      return ids;
+    }
+    return [null, null, null];
+  });
   const [activeCategory, setActiveCategory] = useState('overview');
   const [showAllFields, setShowAllFields] = useState(false);
   const [viewMode, setViewMode] = useState<CompareViewMode>('table');
@@ -991,14 +1000,29 @@ export default function Compare() {
 
   const handleSelect = (slot: number, id: string) => {
     const newIds = [...selectedIds];
+    const oldId = newIds[slot];
     newIds[slot] = id;
     setSelectedIds(newIds);
+
+    // Sync with store's compareList
+    if (oldId && oldId !== id) {
+      removeFromCompare(oldId);
+    }
+    if (!compareList.includes(id)) {
+      addToCompare(id);
+    }
   };
 
   const handleClear = (slot: number) => {
     const newIds = [...selectedIds];
+    const oldId = newIds[slot];
     newIds[slot] = null;
     setSelectedIds(newIds);
+
+    // Remove from store's compareList
+    if (oldId) {
+      removeFromCompare(oldId);
+    }
   };
 
   const excludeIds = selectedIds.filter((id): id is string => id !== null);
