@@ -1061,9 +1061,6 @@ export default function PropertyDetail() {
               <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
                 {fullProperty?.address.fullAddress.value || property.address}
               </h1>
-              <p className="text-lg text-gray-400">
-                {property.city}, {property.state} {property.zip}
-              </p>
               {/* Waterfront Location Info */}
               {fullProperty?.stellarMLS?.waterfront?.waterBodyName?.value && (
                 <div className="flex items-center gap-2 mt-2">
@@ -1220,14 +1217,7 @@ export default function PropertyDetail() {
             </div>
             <div className="text-left md:text-right">
               <div className="text-3xl md:text-4xl font-bold text-white mb-1">
-                {(() => {
-                  const listingStatus = fullProperty?.address.listingStatus.value || property.listingStatus;
-                  // For Closed listings, show Last Sale Price. Otherwise show Listing Price.
-                  if (listingStatus === 'Closed' && fullProperty?.details.lastSalePrice) {
-                    return formatValue(fullProperty.details.lastSalePrice.value, 'currency');
-                  }
-                  return formatValue(fullProperty?.address.listingPrice.value || property.price, 'currency');
-                })()}
+                {formatValue(fullProperty?.address.listingPrice.value || property.price, 'currency')}
               </div>
               {property.pricePerSqft > 0 && (
                 <p className="text-gray-400">

@@ -394,11 +394,11 @@ export class BridgeAPIClient {
       filters.push(`PropertyType eq '${escapedType}'`);
     }
 
-    // Status
-    if (params.status) {
-      const escapedStatus = params.status.replace(/'/g, "''");
-      filters.push(`StandardStatus eq '${escapedStatus}'`);
-    }
+    // Status - DEFAULT TO ACTIVE to prevent showing closed/prior listings
+    // Only override if explicitly specified
+    const statusToFilter = params.status || 'Active';
+    const escapedStatus = statusToFilter.replace(/'/g, "''");
+    filters.push(`StandardStatus eq '${escapedStatus}'`);
 
     // Geographic search (radius)
     if (params.latitude && params.longitude && params.radiusMiles) {
@@ -412,6 +412,10 @@ export class BridgeAPIClient {
     if (filters.length > 0) {
       queryParts.push(`$filter=${filters.join(' and ')}`);
     }
+
+    // CRITICAL: Sort by most recent listing date FIRST
+    // This ensures if multiple listings exist for same address, we get the CURRENT one
+    queryParts.push('$orderby=ListingContractDate desc');
 
     if (params.top) {
       queryParts.push(`$top=${params.top}`);
