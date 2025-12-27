@@ -571,7 +571,7 @@ export default function PropertyDetail() {
       if (finalData.completion_percentage) {
         updateProperty(id, {
           dataCompleteness: finalData.completion_percentage,
-          smartScore: Math.round((finalData.completion_percentage + property.smartScore) / 2),
+          // smartScore is calculated via 2-tier system during comparison, not here
         });
       }
 
@@ -1036,11 +1036,12 @@ export default function PropertyDetail() {
           <div className="flex items-center gap-3">
             <Zap className="w-6 h-6 text-quantum-cyan" />
             <span className={`text-3xl font-bold ${
+              property.smartScore === undefined ? 'text-gray-400' :
               property.smartScore >= 90 ? 'text-quantum-green' :
               property.smartScore >= 70 ? 'text-quantum-cyan' :
               'text-quantum-gold'
             }`}>
-              {property.smartScore}
+              {property.smartScore !== undefined ? property.smartScore : 'N/A'}
             </span>
             <div className="text-left">
               <span className="text-xs text-gray-400 block">CLUES</span>

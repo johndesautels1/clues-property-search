@@ -859,7 +859,7 @@ export function normalizeToProperty(
   }
 
   property.dataCompleteness = Math.round((fieldsPopulated / 168) * 100);
-  property.smartScore = Math.min(100, fieldsPopulated + 20);
+  // smartScore is calculated via 2-tier system during comparison, not here
 
   // 🔥 AUTOMATIC FIELD CALCULATIONS - Run after all API data is normalized
   // This fills data gaps with calculated values, FL regional defaults, and property-type inferences

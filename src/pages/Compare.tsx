@@ -836,9 +836,11 @@ function AnalyticsSummary({
     // Calculate average price per square foot
     const avgPricePerSqft = pricePerSqft.reduce((a, b) => a + b, 0) / pricePerSqft.length;
 
-    const smartScores = selectedProperties.map(p => p.smartScore);
-    const highestScore = Math.max(...smartScores);
-    const bestScoreProperty = selectedProperties.find(p => p.smartScore === highestScore);
+    // Use calculated smartScores from prop instead of PropertyCard.smartScore
+    const validScores = smartScores.filter(s => s !== null).map(s => s!.finalScore);
+    const highestScore = validScores.length > 0 ? Math.max(...validScores) : undefined;
+    const bestScoreIndex = highestScore !== undefined ? smartScores.findIndex(s => s?.finalScore === highestScore) : -1;
+    const bestScoreProperty = bestScoreIndex !== -1 ? selectedProperties[bestScoreIndex] : undefined;
 
     const prices = selectedProperties.map(p => p.price);
     const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
@@ -851,7 +853,7 @@ function AnalyticsSummary({
       priceSpread: Math.max(...prices) - Math.min(...prices),
       completenessAvg: selectedProperties.reduce((a, b) => a + b.dataCompleteness, 0) / selectedProperties.length,
     };
-  }, [selectedProperties]);
+  }, [selectedProperties, smartScores]);
 
   if (!analytics) return null;
 
@@ -890,11 +892,11 @@ function AnalyticsSummary({
             <TrendingUp className="w-4 h-4 text-quantum-cyan" />
             <span className="text-xs text-gray-400">Highest Score</span>
           </div>
-          <p className="text-sm font-medium text-white truncate">{analytics.bestScore?.address}</p>
+          <p className="text-sm font-medium text-white truncate">{analytics.bestScore?.address || 'N/A'}</p>
           <p className="text-xs text-quantum-cyan">
             Score: {analytics.bestScore ? (() => {
               const idx = selectedProperties.findIndex(p => p.id === analytics.bestScore?.id);
-              return (idx !== -1 && smartScores[idx]) ? smartScores[idx].finalScore.toFixed(1) : analytics.bestScore.smartScore.toFixed(1);
+              return (idx !== -1 && smartScores[idx]) ? smartScores[idx].finalScore.toFixed(1) : 'N/A';
             })() : 'N/A'}
           </p>
         </div>

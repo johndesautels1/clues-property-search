@@ -119,11 +119,12 @@ export default function PropertyDetail() {
           <div className="flex items-center gap-2">
             <Zap className="w-5 h-5 text-quantum-cyan" />
             <span className={`text-2xl font-bold ${
+              property.smartScore === undefined ? 'text-gray-400' :
               property.smartScore >= 90 ? 'text-quantum-green' :
               property.smartScore >= 70 ? 'text-quantum-cyan' :
               'text-quantum-gold'
             }`}>
-              {property.smartScore}
+              {property.smartScore !== undefined ? property.smartScore : 'N/A'}
             </span>
             <span className="text-xs text-gray-400">SMART Score</span>
           </div>
