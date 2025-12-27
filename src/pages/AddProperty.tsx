@@ -863,7 +863,11 @@ export default function AddProperty() {
         state: stateMatch?.[1] || 'FL',
         zip: zipMatch?.[1] || '',
         price: safeParseNumber(getFieldValue(fields['10_listing_price'])),
-        pricePerSqft: safeParseNumber(getFieldValue(fields['11_price_per_sqft'])),
+        pricePerSqft: safeParseNumber(getFieldValue(fields['11_price_per_sqft'])) || (
+          safeParseNumber(getFieldValue(fields['10_listing_price'])) && safeParseNumber(getFieldValue(fields['21_living_sqft']))
+            ? Math.round(safeParseNumber(getFieldValue(fields['10_listing_price'])) / safeParseNumber(getFieldValue(fields['21_living_sqft'])))
+            : 0
+        ),
         bedrooms: safeParseNumber(getFieldValue(fields['17_bedrooms'])),
         bathrooms: safeParseNumber(getFieldValue(fields['20_total_bathrooms'])),
         sqft: safeParseNumber(getFieldValue(fields['21_living_sqft'])),
@@ -913,7 +917,11 @@ export default function AddProperty() {
           state: addressParts[2]?.match(/([A-Z]{2})/)?.[1] || 'FL',
           zip: addressParts[2]?.match(/(\d{5})/)?.[1] || '',
           price: safeParseNumber(getFieldValue(fields['10_listing_price'])),
-          pricePerSqft: safeParseNumber(getFieldValue(fields['11_price_per_sqft'])),
+          pricePerSqft: safeParseNumber(getFieldValue(fields['11_price_per_sqft'])) || (
+            safeParseNumber(getFieldValue(fields['10_listing_price'])) && safeParseNumber(getFieldValue(fields['21_living_sqft']))
+              ? Math.round(safeParseNumber(getFieldValue(fields['10_listing_price'])) / safeParseNumber(getFieldValue(fields['21_living_sqft'])))
+              : 0
+          ),
           bedrooms: safeParseNumber(getFieldValue(fields['17_bedrooms'])),
           bathrooms: safeParseNumber(getFieldValue(fields['20_total_bathrooms'])),
           sqft: safeParseNumber(getFieldValue(fields['21_living_sqft'])),

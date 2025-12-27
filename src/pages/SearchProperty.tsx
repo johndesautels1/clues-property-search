@@ -65,18 +65,25 @@ export default function SearchProperty() {
       console.log('[SearchProperty] Extracted DOM/CDOM:', { daysOnMarket, cumulativeDaysOnMarket });
     }
 
+    const price = getValue('pricing.listingPrice', 0);
+    const sqft = getValue('propertyBasics.livingSqft', 0);
+    const pricePerSqftField = getValue('pricing.pricePerSqft', 0);
+
+    // Calculate pricePerSqft if not provided
+    const pricePerSqft = pricePerSqftField || (price && sqft ? Math.round(price / sqft) : 0);
+
     const newProperty: PropertyCard = {
       id: propertyId,
       address: street || fullAddress,
       city,
       state,
       zip,
-      price: getValue('pricing.listingPrice', 0),
-      pricePerSqft: getValue('pricing.pricePerSqft', 0),
+      price,
+      pricePerSqft,
       bedrooms: getValue('propertyBasics.bedrooms', 0),
       bathrooms: getValue('propertyBasics.totalBathrooms', 0) ||
                  (getValue('propertyBasics.fullBathrooms', 0) + getValue('propertyBasics.halfBathrooms', 0) * 0.5),
-      sqft: getValue('propertyBasics.livingSqft', 0),
+      sqft,
       yearBuilt: getValue('propertyBasics.yearBuilt', new Date().getFullYear()),
       // smartScore omitted - will be calculated via 2-tier system during comparison
       dataCompleteness: calculateCompleteness(formData),

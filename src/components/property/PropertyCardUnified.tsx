@@ -411,7 +411,7 @@ export default function PropertyCardUnified({
                     data.cumulativeDaysOnMarket && data.cumulativeDaysOnMarket !== data.daysOnMarket ? (
                       <>
                         <p className="text-gray-500 text-[10px] uppercase tracking-wide">DOM / CDOM</p>
-                        <span className={`${getDaysOnMarketColor(data.daysOnMarket)} text-xs font-bold`}>{data.daysOnMarket} / {data.cumulativeDaysOnMarket}</span>
+                        <span className={`${getDaysOnMarketColor(data.cumulativeDaysOnMarket)} text-xs font-bold`}>{data.cumulativeDaysOnMarket} / {data.daysOnMarket}</span>
                       </>
                     ) : (
                       <>
