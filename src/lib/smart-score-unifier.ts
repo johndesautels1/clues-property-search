@@ -79,7 +79,7 @@ const ARBITRATION_CONFIG = {
 
   // If LLM consensus used tiebreaker, trust it slightly less
   TIEBREAKER_PENALTY: 0.05, // Reduce LLM weight by 5%
-} as const;
+};
 
 // =============================================================================
 // CORE ARBITRATION LOGIC
@@ -133,7 +133,7 @@ function arbitratePropertyScore(
 
   // CASE 2: Moderate disagreement (6-15 points) - Weighted average
   if (divergence <= ARBITRATION_CONFIG.DIVERGENCE_WARNING) {
-    let weights = { ...ARBITRATION_CONFIG.MODERATE_DISAGREEMENT_WEIGHTS };
+    let weights: { clientSide: number; llmConsensus: number } = { ...ARBITRATION_CONFIG.MODERATE_DISAGREEMENT_WEIGHTS };
 
     // If LLM used tiebreaker, trust it slightly less
     if (llmUsedTiebreaker) {
@@ -153,7 +153,7 @@ function arbitratePropertyScore(
   }
 
   // CASE 3: High disagreement (>15 points) - Favor client-side heavily
-  let weights = { ...ARBITRATION_CONFIG.HIGH_DISAGREEMENT_WEIGHTS };
+  let weights: { clientSide: number; llmConsensus: number } = { ...ARBITRATION_CONFIG.HIGH_DISAGREEMENT_WEIGHTS };
 
   // If LLM used tiebreaker, trust it even less
   if (llmUsedTiebreaker) {
