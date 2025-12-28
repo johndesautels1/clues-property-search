@@ -2162,21 +2162,22 @@ GROUP 22 - Stellar MLS Features (Fields 166-168) [P3]:
 const JSON_RESPONSE_FORMAT_PERPLEXITY = `
 RESPONSE FORMAT - Return ONLY valid JSON. DO NOT include fields you cannot find - simply omit them.
 
-Example (for a DIFFERENT property - only showing fields that were FOUND):
+Example format (use actual values from your web search, NOT these placeholders):
 {
-  "10_listing_price": { "value": 650000, "source": "Zillow - https://www.zillow.com/..." },
-  "7_county": { "value": "Pinellas County", "source": "County Property Appraiser - https://www.pcpao.gov/..." },
-  "35_annual_taxes": { "value": 8234, "source": "County Tax Collector - https://..." },
-  "17_bedrooms": { "value": 4, "source": "Redfin - https://www.redfin.com/..." },
-  "119_flood_zone": { "value": "Zone X", "source": "FEMA - https://msc.fema.gov/..." }
+  "10_listing_price": { "value": <actual_price_number>, "source": "Zillow - <actual_url>" },
+  "7_county": { "value": "<actual_county_name>", "source": "County Property Appraiser - <actual_url>" },
+  "35_annual_taxes": { "value": <actual_tax_number>, "source": "County Tax Collector - <actual_url>" },
+  "17_bedrooms": { "value": <actual_bedroom_count>, "source": "Redfin - <actual_url>" },
+  "119_flood_zone": { "value": "<actual_FEMA_zone>", "source": "FEMA - <actual_url>" }
 }
 
 CRITICAL RULES:
 - Use EXACT field keys: [number]_[field_name] (e.g., "10_listing_price", "7_county", "17_bedrooms")
+- Replace ALL placeholders with ACTUAL values found via web search for the specific property
 - If you CANNOT find verified data for a field, DO NOT include it in your response
 - NEVER return null values - simply omit unfound fields
 - Include source URL for every field you return
-- Only return fields where you found REAL data from web search`;
+- Only return fields where you found REAL data from web search for THIS SPECIFIC ADDRESS`;
 
 const PERPLEXITY_SYSTEM_MESSAGE = `You are a real estate data researcher with REAL-TIME WEB SEARCH capabilities.
 
