@@ -254,7 +254,7 @@ async function callGPT4(prompt: string): Promise<LLMResponse> {
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'gpt-5.2',
+      model: 'gpt-5.2-2025-12-11', // PINNED SNAPSHOT (prevent behavior drift)
       messages: [
         {
           role: 'system',
@@ -266,7 +266,7 @@ async function callGPT4(prompt: string): Promise<LLMResponse> {
         },
       ],
       temperature: 0.1,
-      max_tokens: 16000,
+      max_completion_tokens: 32000, // Increased from 16000 for full score breakdown
     }),
   });
 

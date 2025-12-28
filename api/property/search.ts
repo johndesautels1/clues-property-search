@@ -3093,32 +3093,51 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
 
     console.log(`[GPT] Using ${isOrchestratorMode ? 'ORCHESTRATOR' : 'LEGACY'} mode`);
 
+    const requestBody = {
+      model: 'gpt-5.2-2025-12-11', // PINNED SNAPSHOT (GPT recommendation: prevent behavior drift)
+      max_completion_tokens: 128000, // GPT-5.2 supports up to 128k output tokens
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+    };
+
+    // LOG RAW REQUEST
+    console.log(`[GPT] REQUEST: model=${requestBody.model}, max_completion_tokens=${requestBody.max_completion_tokens}`);
+    console.log(`[GPT] System prompt length: ${systemPrompt.length} chars`);
+    console.log(`[GPT] User prompt length: ${userPrompt.length} chars`);
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        model: 'gpt-5.2',
-        max_tokens: 16000, // Increased from 8000 to handle 168 fields + metadata
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-      }),
+      body: JSON.stringify(requestBody),
     });
+
+    // LOG RAW RESPONSE STATUS
+    console.log(`[GPT] RESPONSE: status=${response.status} ${response.statusText}`);
+    console.log(`[GPT] Headers:`, JSON.stringify(Object.fromEntries(response.headers.entries())));
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[GPT] API error: ${response.status} ${response.statusText}`);
-      console.error(`[GPT] Error details:`, errorText);
+      console.error(`[GPT] API ERROR BODY:`, errorText);
       return { error: `API error: ${response.status} - ${errorText.substring(0, 200)}`, fields: {}, llm: 'GPT' };
     }
 
     const data = await response.json();
+
+    // LOG RAW RESPONSE DATA
+    console.log(`[GPT] Response model:`, data.model);
+    console.log(`[GPT] Response usage:`, JSON.stringify(data.usage));
+    console.log(`[GPT] Finish reason:`, data.choices?.[0]?.finish_reason);
+
     if (data.choices && data.choices[0]?.message?.content) {
       const text = data.choices[0].message.content;
+      console.log(`[GPT] Content length: ${text.length} chars`);
+      console.log(`[GPT] Content first 300 chars:`, text.substring(0, 300));
+      console.log(`[GPT] Content last 300 chars:`, text.substring(text.length - 300));
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         try {
@@ -3196,31 +3215,46 @@ async function callGPT_LLMFieldAuditor(
 
     console.log(`[GPT LLM Auditor] Auditing ${Object.keys(inputs.llmOnlyFields).length} LLM-populated fields`);
 
+    const requestBody = {
+      model: 'gpt-5.2-2025-12-11', // PINNED SNAPSHOT
+      max_completion_tokens: 128000, // GPT-5.2 supports up to 128k output
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature: 0.1, // Low temperature for deterministic auditing
+    };
+
+    // LOG RAW REQUEST
+    console.log(`[GPT LLM Auditor] REQUEST: model=${requestBody.model}, max_completion_tokens=${requestBody.max_completion_tokens}`);
+    console.log(`[GPT LLM Auditor] System prompt length: ${systemPrompt.length} chars`);
+    console.log(`[GPT LLM Auditor] User prompt length: ${userPrompt.length} chars`);
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        model: 'gpt-5.2',
-        max_tokens: 12000, // Smaller than full schema (only auditing 30-80 fields)
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.1, // Low temperature for deterministic auditing
-      }),
+      body: JSON.stringify(requestBody),
     });
+
+    // LOG RAW RESPONSE STATUS
+    console.log(`[GPT LLM Auditor] RESPONSE: status=${response.status} ${response.statusText}`);
+    console.log(`[GPT LLM Auditor] Headers:`, JSON.stringify(Object.fromEntries(response.headers.entries())));
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[GPT LLM Auditor] API error: ${response.status} ${response.statusText}`);
-      console.error(`[GPT LLM Auditor] Error details:`, errorText);
+      console.error(`[GPT LLM Auditor] API ERROR BODY:`, errorText);
       return { fields: inputs.llmOnlyFields, fields_audited: 0, fields_corrected: 0, fields_nulled: 0, error: `API error: ${response.status}` };
     }
 
     const data = await response.json();
+
+    // LOG RAW RESPONSE DATA
+    console.log(`[GPT LLM Auditor] Response model:`, data.model);
+    console.log(`[GPT LLM Auditor] Response usage:`, JSON.stringify(data.usage));
+    console.log(`[GPT LLM Auditor] Finish reason:`, data.choices?.[0]?.finish_reason);
     if (data.choices && data.choices[0]?.message?.content) {
       const text = data.choices[0].message.content;
       const jsonMatch = text.match(/\{[\s\S]*\}/);

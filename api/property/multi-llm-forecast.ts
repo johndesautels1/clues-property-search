@@ -235,10 +235,10 @@ async function callGPT4Forecast(
   const prompt = buildForecastPrompt(address, price, neighborhood, propertyType);
 
   const response = await client.chat.completions.create({
-    model: 'gpt-5.2',
+    model: 'gpt-5.2-2025-12-11', // PINNED SNAPSHOT (prevent behavior drift)
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.5,
-    max_completion_tokens: 2000,
+    max_completion_tokens: 16000, // Increased from 2000 for full forecast output
   });
 
   const text = response.choices[0]?.message?.content;
