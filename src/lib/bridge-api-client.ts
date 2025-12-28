@@ -57,6 +57,7 @@ export interface BridgeProperty {
   StreetNumber?: string;
   StreetName?: string;
   StreetSuffix?: string;
+  UnitNumber?: string;
   City?: string;
   StateOrProvince?: string;
   PostalCode?: string;
@@ -632,12 +633,90 @@ export class BridgeAPIClient {
   }
 
   /**
+   * Extract unit number from address string
+   * Returns { baseAddress, unitNumber } or null if no unit found
+   */
+  private extractUnitNumber(address: string): { baseAddress: string; unitNumber: string } | null {
+    const unitPatterns = [
+      { pattern: /^(.+?)\s+(?:apt|apartment)\s*#?(\d+[a-z]?)$/i, type: 'apt' },
+      { pattern: /^(.+?)\s+(?:unit|ste|suite)\s*#?(\d+[a-z]?)$/i, type: 'unit' },
+      { pattern: /^(.+?)\s+#(\d+[a-z]?)$/i, type: 'hash' },
+      { pattern: /^(.+?),?\s+(?:apt|apartment)\s*#?(\d+[a-z]?)$/i, type: 'apt_comma' },
+      { pattern: /^(.+?),?\s+(?:unit|ste|suite)\s*#?(\d+[a-z]?)$/i, type: 'unit_comma' },
+    ];
+
+    for (const { pattern, type } of unitPatterns) {
+      const match = address.match(pattern);
+      if (match) {
+        const baseAddress = match[1].trim();
+        const unitNumber = match[2].trim();
+        console.log(`[Bridge API] 🏢 Extracted unit ${unitNumber} from address (type: ${type})`);
+        console.log(`[Bridge API]    Base: "${baseAddress}"`);
+        console.log(`[Bridge API]    Unit: "${unitNumber}"`);
+        return { baseAddress, unitNumber };
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Filter listings to match unit number
+   * Compares against UnitNumber field and UnparsedAddress
+   */
+  private filterByUnitNumber(listings: BridgeProperty[], unitNumber: string): BridgeProperty[] {
+    const unitLower = unitNumber.toLowerCase();
+
+    const matches = listings.filter(prop => {
+      // Check UnitNumber field (exact match)
+      if (prop.UnitNumber) {
+        const propUnit = prop.UnitNumber.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const searchUnit = unitLower.replace(/[^a-z0-9]/g, '');
+        if (propUnit === searchUnit) {
+          console.log(`[Bridge API] ✅ Unit match via UnitNumber field: ${prop.UnitNumber}`);
+          return true;
+        }
+      }
+
+      // Check UnparsedAddress (contains unit pattern)
+      if (prop.UnparsedAddress) {
+        const addr = prop.UnparsedAddress.toLowerCase();
+        const patterns = [
+          new RegExp(`\\b(?:apt|apartment|unit|ste|suite|#)\\s*#?${unitLower}\\b`, 'i'),
+          new RegExp(`\\b${unitLower}$`, 'i'), // Unit at end
+        ];
+
+        for (const pattern of patterns) {
+          if (pattern.test(addr)) {
+            console.log(`[Bridge API] ✅ Unit match via UnparsedAddress: ${prop.UnparsedAddress}`);
+            return true;
+          }
+        }
+      }
+
+      return false;
+    });
+
+    console.log(`[Bridge API] 🔍 Filtered ${listings.length} listings to ${matches.length} matching unit ${unitNumber}`);
+    return matches;
+  }
+
+  /**
    * Get property by address with fallback strategies
    * Tries multiple search variations to handle different MLS formats
-   * CRITICAL: Returns most recent Active listing if multiple listings exist
+   * CRITICAL: Filters by unit number if present, returns most recent Active listing
    */
   async getPropertyByAddress(address: string, city?: string, state?: string, zipCode?: string): Promise<BridgeProperty | null> {
     console.log('[Bridge API] Smart search - trying multiple strategies for:', address);
+
+    // Extract unit number if present
+    const unitInfo = this.extractUnitNumber(address);
+    const baseAddress = unitInfo?.baseAddress || address;
+    const unitNumber = unitInfo?.unitNumber;
+
+    if (unitNumber) {
+      console.log(`[Bridge API] 🏢 Searching for unit ${unitNumber} in building at ${baseAddress}`);
+    }
 
     // Strategy 1: Try FULL address as-is (handles "Apt 106", "#106", "Unit 106" etc)
     console.log('[Bridge API] Strategy 1: Full address');
@@ -646,47 +725,60 @@ export class BridgeAPIClient {
       city,
       state,
       zipCode,
-      top: 10, // Get multiple to handle properties with multiple listings (Active + Closed)
+      top: 20, // Get more results for multi-unit buildings
     });
 
     if (response.value.length > 0) {
       console.log(`[Bridge API] ✅ Found ${response.value.length} listing(s) with full address`);
-      return this.selectBestListing(response.value);
+
+      // Filter by unit number if specified
+      let filtered = response.value;
+      if (unitNumber) {
+        filtered = this.filterByUnitNumber(response.value, unitNumber);
+        if (filtered.length > 0) {
+          console.log(`[Bridge API] 🎯 Returning unit-filtered result (${filtered.length} matches)`);
+          return this.selectBestListing(filtered);
+        }
+        console.log(`[Bridge API] ⚠️ No exact unit match found, continuing search...`);
+      } else {
+        return this.selectBestListing(filtered);
+      }
     }
 
-    // Strategy 2: Try without unit/apt number (strip common patterns)
-    const unitPatterns = [
-      / apt \d+$/i,
-      / apartment \d+$/i,
-      / unit \d+$/i,
-      / #\d+$/i,
-      / suite \d+$/i,
-      / ste \d+$/i,
-    ];
+    // Strategy 2: Search with base address (without unit number)
+    if (unitNumber && baseAddress !== address) {
+      console.log(`[Bridge API] Strategy 2: Base address without unit - "${baseAddress}"`);
+      response = await this.searchProperties({
+        address: baseAddress,
+        city,
+        state,
+        zipCode,
+        top: 20,
+      });
 
-    for (const pattern of unitPatterns) {
-      if (pattern.test(address)) {
-        const baseAddress = address.replace(pattern, '').trim();
-        console.log(`[Bridge API] Strategy 2: Without unit - "${baseAddress}"`);
-        response = await this.searchProperties({
-          address: baseAddress,
-          city,
-          state,
-          zipCode,
-          top: 10,
-        });
+      if (response.value.length > 0) {
+        console.log(`[Bridge API] ✅ Found ${response.value.length} listing(s) at base address`);
 
-        if (response.value.length > 0) {
-          console.log(`[Bridge API] ✅ Found ${response.value.length} listing(s) without unit number`);
-          return this.selectBestListing(response.value);
+        // Filter by unit number
+        const filtered = this.filterByUnitNumber(response.value, unitNumber);
+        if (filtered.length > 0) {
+          console.log(`[Bridge API] 🎯 Returning unit-filtered result (${filtered.length} matches)`);
+          return this.selectBestListing(filtered);
         }
-        break; // Only try one unit pattern
+
+        console.log(`[Bridge API] ⚠️ Found building but no unit ${unitNumber} - may be wrong unit!`);
+        console.log(`[Bridge API] Available units:`);
+        response.value.forEach(prop => {
+          const unit = prop.UnitNumber || 'unknown';
+          const addr = prop.UnparsedAddress || 'no address';
+          console.log(`[Bridge API]    - Unit ${unit}: ${addr}`);
+        });
       }
     }
 
     // Strategy 3: Try with just street number and name (no directional suffix variations)
     // e.g., "10399 Paradise Blvd" could be stored as "10399 Paradise Boulevard"
-    const streetMatch = address.match(/^(\d+)\s+(.+?)(?:\s+(?:apt|unit|#|suite|ste).+)?$/i);
+    const streetMatch = baseAddress.match(/^(\d+)\s+(.+?)$/i);
     if (streetMatch) {
       const [, number, street] = streetMatch;
       const baseStreet = `${number} ${street.split(' ').slice(0, 2).join(' ')}`; // Just number + first 2 words
@@ -696,25 +788,35 @@ export class BridgeAPIClient {
         city,
         state,
         zipCode,
-        top: 10,
+        top: 20,
       });
 
       if (response.value.length > 0) {
         console.log(`[Bridge API] ✅ Found ${response.value.length} matches with base street`);
-        return this.selectBestListing(response.value);
+
+        // Filter by unit if specified
+        if (unitNumber) {
+          const filtered = this.filterByUnitNumber(response.value, unitNumber);
+          if (filtered.length > 0) {
+            console.log(`[Bridge API] 🎯 Returning unit-filtered result`);
+            return this.selectBestListing(filtered);
+          }
+        } else {
+          return this.selectBestListing(response.value);
+        }
       }
     }
 
     // Strategy 4: Last resort - search ONLY by zip code + street number (most lenient)
     // This handles cases where StreetName is stored in a completely different format
-    const numberMatch = address.match(/^(\d+)/);
+    const numberMatch = baseAddress.match(/^(\d+)/);
     if (numberMatch && zipCode) {
       const streetNumber = numberMatch[1];
       console.log(`[Bridge API] Strategy 4: Zip + street number only - ${zipCode} / ${streetNumber}`);
 
       // Build a manual query that ONLY requires zip + street number
       const query = `PostalCode eq '${zipCode}' and StreetNumber eq '${streetNumber}'`;
-      const url = `${this.config.baseUrl}/OData/${this.config.dataSystem}/Property?$filter=${query}&$top=10&$count=true&$expand=Media`;
+      const url = `${this.config.baseUrl}/OData/${this.config.dataSystem}/Property?$filter=${query}&$top=20&$count=true&$expand=Media`;
 
       console.log('[Bridge API] Lenient search URL:', url);
 
@@ -730,12 +832,26 @@ export class BridgeAPIClient {
         const data = await lenientResponse.json();
         if (data.value && data.value.length > 0) {
           console.log(`[Bridge API] ✅ Found ${data.value.length} matches with lenient search (zip + number only)`);
-          return this.selectBestListing(data.value);
+
+          // Filter by unit if specified
+          if (unitNumber) {
+            const filtered = this.filterByUnitNumber(data.value, unitNumber);
+            if (filtered.length > 0) {
+              console.log(`[Bridge API] 🎯 Returning unit-filtered result`);
+              return this.selectBestListing(filtered);
+            }
+            console.log(`[Bridge API] ⚠️ Found building at ${streetNumber} but no unit ${unitNumber}`);
+          } else {
+            return this.selectBestListing(data.value);
+          }
         }
       }
     }
 
     console.log('[Bridge API] ❌ No matches found with any strategy');
+    if (unitNumber) {
+      console.log(`[Bridge API] 💡 TIP: Unit ${unitNumber} may not be listed in MLS or may be a different listing`);
+    }
     return null;
   }
 
