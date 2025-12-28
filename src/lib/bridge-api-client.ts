@@ -514,9 +514,13 @@ export class BridgeAPIClient {
   }
 
   /**
-   * Helper: Select best listing from multiple results
-   * Prefer: Active > Pending > Closed
-   * Then: Most recent listing date
+   * Helper: Select best listing from multiple results AND merge historical sale data
+   * Prefer: Active > Pending > Closed (for current listing data)
+   * BUT ALSO: Extract historical sale data from most recent Closed/Sold listing
+   *
+   * CRITICAL: This ensures we get BOTH:
+   * - Current listing price/MLS# from Active listing
+   * - Last sale price/date from previous Closed listing
    */
   private selectBestListing(properties: BridgeProperty[]): BridgeProperty | null {
     if (properties.length === 0) return null;
@@ -564,7 +568,35 @@ export class BridgeAPIClient {
     });
 
     const best = sorted[0];
-    console.log(`[Bridge API] ✅ Selected: MLS# ${best.ListingId}, Status: ${best.StandardStatus || best.MlsStatus}, Date: ${best.ListingContractDate || best.OnMarketDate}`);
+    console.log(`[Bridge API] ✅ Selected primary listing: MLS# ${best.ListingId}, Status: ${best.StandardStatus || best.MlsStatus}, Date: ${best.ListingContractDate || best.OnMarketDate}`);
+
+    // CRITICAL: Merge historical sale data from most recent Closed/Sold listing
+    // This ensures field 13_last_sale_date and 14_last_sale_price are populated
+    const closedListings = sorted.filter(p => {
+      const status = (p.StandardStatus || p.MlsStatus || '').toLowerCase();
+      return status.includes('closed') || status.includes('sold');
+    });
+
+    if (closedListings.length > 0) {
+      // Sort closed listings by CloseDate (most recent first)
+      const sortedClosed = closedListings.sort((a, b) => {
+        const aDate = new Date(a.CloseDate || '1900-01-01');
+        const bDate = new Date(b.CloseDate || '1900-01-01');
+        return bDate.getTime() - aDate.getTime();
+      });
+
+      const mostRecentSale = sortedClosed[0];
+
+      // If the primary (Active) listing doesn't have CloseDate/ClosePrice, merge from Closed listing
+      if (!best.CloseDate && mostRecentSale.CloseDate) {
+        best.CloseDate = mostRecentSale.CloseDate;
+        console.log(`[Bridge API] 📝 Merged CloseDate from MLS# ${mostRecentSale.ListingId}: ${mostRecentSale.CloseDate}`);
+      }
+      if (!best.ClosePrice && mostRecentSale.ClosePrice) {
+        best.ClosePrice = mostRecentSale.ClosePrice;
+        console.log(`[Bridge API] 📝 Merged ClosePrice from MLS# ${mostRecentSale.ListingId}: $${mostRecentSale.ClosePrice?.toLocaleString()}`);
+      }
+    }
 
     if (sorted.length > 1) {
       console.log(`[Bridge API] 📋 Other listings found:`);
