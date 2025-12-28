@@ -495,10 +495,35 @@ export async function callHowLoud(lat: number, lon: number): Promise<ApiResult> 
     const result = Array.isArray(data.result) ? data.result[0] : (data.result || data);
 
     // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH)
-    // Field 78 = noise_level, Field 129 = noise_level_db_est
+    // Field 78 = noise_level (text description)
+    // Field 129 = noise_level_db_est (actual decibels)
+    //
+    // CRITICAL: HowLoud returns "Soundscore" (0-100 quietness scale), NOT decibels!
+    // - Soundscore 100 = Very Quiet (~30 dB - library)
+    // - Soundscore 78 = Quiet (~42 dB - residential)
+    // - Soundscore 50 = Moderate (~58 dB - conversation)
+    // - Soundscore 0 = Very Noisy (~85 dB - heavy traffic)
+    //
+    // We must convert Soundscore to estimated decibels for field 129
     if (result.score !== undefined) {
-      setField(fields, '129_noise_level_db_est', result.score, 'HowLoud');
-      setField(fields, '78_noise_level', result.scoretext || (result.score > 70 ? 'Quiet' : result.score > 50 ? 'Moderate' : 'Noisy'), 'HowLoud');
+      const soundscore = result.score;
+
+      // Convert Soundscore (quietness) to estimated decibels (loudness)
+      // Formula: dB = 30 + ((100 - soundscore) * 0.55)
+      // - Inverts scale (100-soundscore): high quietness → low dB
+      // - Spreads to 55 dB range (* 0.55): 0-100 → 0-55
+      // - Adds 30 dB baseline: minimum 30 dB (library), maximum 85 dB (traffic)
+      const estimated_dB = 30 + ((100 - soundscore) * 0.55);
+
+      // Store estimated decibels in field 129 (rounded to nearest integer)
+      setField(fields, '129_noise_level_db_est', Math.round(estimated_dB), 'HowLoud (estimated from Soundscore)');
+
+      // Store text description in field 78
+      setField(fields, '78_noise_level',
+        result.scoretext || (soundscore > 70 ? 'Quiet' : soundscore > 50 ? 'Moderate' : 'Noisy'),
+        'HowLoud');
+
+      console.log(`[HowLoud] Soundscore: ${soundscore}/100 → Estimated ${estimated_dB.toFixed(1)} dB (${soundscore > 70 ? 'Quiet' : soundscore > 50 ? 'Moderate' : 'Noisy'})`);
     }
 
     // Traffic noise → Field 79 traffic_level

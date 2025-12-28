@@ -1926,6 +1926,20 @@ export default function PropertyDetail() {
                   {renderDataField("Superfund Site Nearby", fullProperty.utilities.superfundNearby, "text", undefined, "127_superfund_site_nearby")}
                   {renderDataField("Sea Level Rise Risk", fullProperty.utilities.seaLevelRiseRisk, "text", undefined, "128_sea_level_rise_risk")}
                   {renderDataField("Noise Level (dB Est)", fullProperty.utilities.noiseLevelDbEst, "text", undefined, "129_noise_level_db_est")}
+
+                  {/* dB Reference Scale - helps users understand decibel values */}
+                  <div className="text-xs text-gray-400 italic mt-1 mb-3 pl-2 border-l-2 border-gray-700">
+                    <div className="font-semibold text-gray-300 mb-1">Decibel Reference:</div>
+                    <div className="space-y-0.5">
+                      <div>30-40 dB: Library, quiet bedroom</div>
+                      <div>40-50 dB: Quiet residential area</div>
+                      <div>50-60 dB: Normal conversation</div>
+                      <div>60-70 dB: Busy office, restaurant</div>
+                      <div>70-80 dB: Busy street, alarm clock</div>
+                      <div>80+ dB: Heavy traffic, construction</div>
+                    </div>
+                  </div>
+
                   {renderDataField("Solar Potential", fullProperty.utilities.solarPotential, "text", undefined, "130_solar_potential")}
                 </div>
               </div>
