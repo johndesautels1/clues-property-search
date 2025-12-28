@@ -2345,20 +2345,20 @@ ${EXACT_FIELD_KEYS}
 
 ${FIELD_CLARITY_RULES}
 
-RESPONSE FORMAT - Return ONLY valid JSON with EXACT field keys above:
+RESPONSE FORMAT - Return ONLY valid JSON with EXACT field keys above (replace ALL placeholders with actual values):
 {
   "fields": {
-    "10_listing_price": { "value": 450000, "source": "Zillow.com", "confidence": "High" },
-    "7_county": { "value": "Pinellas County", "source": "Geographic knowledge", "confidence": "High" },
-    "35_annual_taxes": { "value": 5234.50, "source": "County Property Appraiser", "confidence": "High" },
+    "10_listing_price": { "value": <actual_number>, "source": "Zillow.com", "confidence": "High" },
+    "7_county": { "value": "<actual_county>", "source": "Geographic knowledge", "confidence": "High" },
+    "35_annual_taxes": { "value": <actual_number>, "source": "County Property Appraiser", "confidence": "High" },
     "15_assessed_value": { "value": null, "source": "Not found", "confidence": "Unverified" },
-    "17_bedrooms": { "value": 3, "source": "Zillow.com", "confidence": "High" },
-    "21_living_sqft": { "value": 1850, "source": "County Records", "confidence": "High" }
+    "17_bedrooms": { "value": <actual_number>, "source": "Zillow.com", "confidence": "High" },
+    "21_living_sqft": { "value": <actual_number>, "source": "County Records", "confidence": "High" }
   },
-  "sources_searched": ["Zillow", "County Property Appraiser", "Training data"],
-  "fields_found": 45,
-  "fields_missing": ["2_mls_primary", "3_mls_secondary"],
-  "note": "Found 45 of 168 fields"
+  "sources_searched": ["<actual_sources_you_used>"],
+  "fields_found": <actual_count>,
+  "fields_missing": ["<actual_missing_field_keys>"],
+  "note": "Use ACTUAL values from web search or knowledge for THIS SPECIFIC PROPERTY"
 }
 
 CRITICAL: Use EXACT field key format: [number]_[field_name] (e.g., "10_listing_price", "7_county", "17_bedrooms")
