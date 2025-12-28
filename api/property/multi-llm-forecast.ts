@@ -239,7 +239,6 @@ async function callGPT4Forecast(
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.5,
     max_completion_tokens: 2000,
-    response_format: { type: 'json_object' },
   });
 
   const text = response.choices[0]?.message?.content;
