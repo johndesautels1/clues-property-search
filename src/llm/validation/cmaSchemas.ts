@@ -92,15 +92,15 @@ const percentageField = () => z.object({
 });
 
 // Enum fields (select)
-const selectField = <T extends readonly string[]>(options: T) => z.object({
-  value: z.enum(options as [string, ...string[]]).nullable(),
+const selectField = (options: [string, ...string[]]) => z.object({
+  value: z.enum(options).nullable(),
   source_field: z.string().nullable().optional(),
   missing_reason: z.string().nullable().optional(),
 });
 
 // Multiselect fields (array of enum values)
-const multiselectField = <T extends readonly string[]>(options: T) => z.object({
-  value: z.array(z.enum(options as [string, ...string[]])).nullable(),
+const multiselectField = (options: [string, ...string[]]) => z.object({
+  value: z.array(z.enum(options)).nullable(),
   source_field: z.string().nullable().optional(),
   missing_reason: z.string().nullable().optional(),
 });
@@ -116,7 +116,7 @@ export const CmaSchema = z.object({
   '1_full_address': textField(),
   '2_mls_primary': textField(),
   '3_mls_secondary': textField(),
-  '4_listing_status': selectField(['Active', 'Pending', 'Sold', 'Off-Market'] as const),
+  '4_listing_status': selectField(['Active', 'Pending', 'Sold', 'Off-Market']),
   '5_listing_date': dateField(),
   '6_neighborhood': textField(),
   '7_county': textField(),
@@ -146,7 +146,7 @@ export const CmaSchema = z.object({
   '23_lot_size_sqft': numberField(0, 10000000),
   '24_lot_size_acres': numberField(0, 1000),
   '25_year_built': numberField(1700, new Date().getFullYear() + 2),
-  '26_property_type': selectField(['Single Family', 'Condo', 'Townhouse', 'Multi-Family', 'Land', 'Commercial'] as const),
+  '26_property_type': selectField(['Single Family', 'Condo', 'Townhouse', 'Multi-Family', 'Land', 'Commercial']),
   '27_stories': numberField(0, 100),
   '28_garage_spaces': numberField(0, 20),
   '29_parking_total': textField(),
@@ -158,7 +158,7 @@ export const CmaSchema = z.object({
   '31_hoa_fee_annual': currencyField(0, 100000),
   '32_hoa_name': textField(),
   '33_hoa_includes': textField(),
-  '34_ownership_type': selectField(['Fee Simple', 'Leasehold', 'Condo', 'Co-op'] as const),
+  '34_ownership_type': selectField(['Fee Simple', 'Leasehold', 'Condo', 'Co-op']),
   '35_annual_taxes': currencyField(0, 1000000),
   '36_tax_year': numberField(1900, new Date().getFullYear() + 1),
   '37_property_tax_rate': percentageField(),
@@ -167,23 +167,23 @@ export const CmaSchema = z.object({
   // ================================================================
   // GROUP 5: Structure & Systems (Fields 39-48)
   // ================================================================
-  '39_roof_type': selectField(['Shingle', 'Tile', 'Metal', 'Flat', 'Other'] as const),
+  '39_roof_type': selectField(['Shingle', 'Tile', 'Metal', 'Flat', 'Other']),
   '40_roof_age_est': textField(),
-  '41_exterior_material': selectField(['Block/Stucco', 'Brick', 'Wood', 'Vinyl Siding', 'Fiber Cement', 'Other'] as const),
-  '42_foundation': selectField(['Slab', 'Crawl Space', 'Basement', 'Pier/Beam'] as const),
+  '41_exterior_material': selectField(['Block/Stucco', 'Brick', 'Wood', 'Vinyl Siding', 'Fiber Cement', 'Other']),
+  '42_foundation': selectField(['Slab', 'Crawl Space', 'Basement', 'Pier/Beam']),
   '43_water_heater_type': textField(),
   '44_garage_type': textField(),
   '45_hvac_type': textField(),
   '46_hvac_age': textField(),
   '47_laundry_type': textField(),
-  '48_interior_condition': selectField(['Excellent', 'Good', 'Fair', 'Needs Work', 'Renovated'] as const),
+  '48_interior_condition': selectField(['Excellent', 'Good', 'Fair', 'Needs Work', 'Renovated']),
 
   // ================================================================
   // GROUP 6: Interior Features (Fields 49-53)
   // ================================================================
   '49_flooring_type': textField(),
   '50_kitchen_features': textField(),
-  '51_appliances_included': multiselectField(['Refrigerator', 'Dishwasher', 'Range/Oven', 'Microwave', 'Washer', 'Dryer', 'Disposal'] as const),
+  '51_appliances_included': multiselectField(['Refrigerator', 'Dishwasher', 'Range/Oven', 'Microwave', 'Washer', 'Dryer', 'Disposal']),
   '52_fireplace_yn': booleanField(),
   '53_fireplace_count': numberField(0, 10),
 
@@ -191,7 +191,7 @@ export const CmaSchema = z.object({
   // GROUP 7: Exterior Features (Fields 54-58)
   // ================================================================
   '54_pool_yn': booleanField(),
-  '55_pool_type': multiselectField(['N/A', 'In-ground', 'Above-ground', 'In-ground Heated', 'Community'] as const),
+  '55_pool_type': multiselectField(['N/A', 'In-ground', 'Above-ground', 'In-ground Heated', 'Community']),
   '56_deck_patio': textField(),
   '57_fence': textField(),
   '58_landscaping': textField(),
@@ -318,7 +318,7 @@ export const CmaSchema = z.object({
   '139_carport_yn': booleanField(),
   '140_carport_spaces': numberField(0, 10),
   '141_garage_attached_yn': booleanField(),
-  '142_parking_features': multiselectField(['Assigned Parking', 'Covered Parking', 'Ground Level', 'Guest Parking', 'Garage Door Opener', 'Circular Driveway', 'Driveway', 'On Street', 'Off Street'] as const),
+  '142_parking_features': multiselectField(['Assigned Parking', 'Covered Parking', 'Ground Level', 'Guest Parking', 'Garage Door Opener', 'Circular Driveway', 'Driveway', 'On Street', 'Off Street']),
   '143_assigned_parking_spaces': numberField(0, 20),
 
   // ================================================================
@@ -338,7 +338,7 @@ export const CmaSchema = z.object({
   '151_homestead_yn': booleanField(),
   '152_cdd_yn': booleanField(),
   '153_annual_cdd_fee': currencyField(0, 100000),
-  '154_front_exposure': selectField(['North', 'South', 'East', 'West', 'Northeast', 'Northwest', 'Southeast', 'Southwest'] as const),
+  '154_front_exposure': selectField(['North', 'South', 'East', 'West', 'Northeast', 'Northwest', 'Southeast', 'Southwest']),
 
   // ================================================================
   // GROUP 20: Stellar MLS - Waterfront (Fields 155-159)
@@ -362,9 +362,9 @@ export const CmaSchema = z.object({
   // ================================================================
   // GROUP 22: Stellar MLS - Features & Flood (Fields 166-168)
   // ================================================================
-  '166_community_features': multiselectField(['Pool', 'Clubhouse', 'Tennis Courts', 'Golf', 'Fitness Center', 'Gated', 'Sidewalks', 'Playground', 'Dog Park', 'Marina', 'Beach Access'] as const),
-  '167_interior_features': multiselectField(['Cathedral Ceiling(s)', 'Walk-In Closet(s)', 'Primary Bedroom Main Floor', 'Open Floor Plan', 'Crown Molding', 'Skylight(s)', 'Wet Bar', 'Built-in Features'] as const),
-  '168_exterior_features': multiselectField(['Balcony', 'Outdoor Shower', 'Sidewalk', 'Sliding Doors', 'Hurricane Shutters', 'Sprinkler System', 'Outdoor Kitchen', 'Private Dock'] as const),
+  '166_community_features': multiselectField(['Pool', 'Clubhouse', 'Tennis Courts', 'Golf', 'Fitness Center', 'Gated', 'Sidewalks', 'Playground', 'Dog Park', 'Marina', 'Beach Access']),
+  '167_interior_features': multiselectField(['Cathedral Ceiling(s)', 'Walk-In Closet(s)', 'Primary Bedroom Main Floor', 'Open Floor Plan', 'Crown Molding', 'Skylight(s)', 'Wet Bar', 'Built-in Features']),
+  '168_exterior_features': multiselectField(['Balcony', 'Outdoor Shower', 'Sidewalk', 'Sliding Doors', 'Hurricane Shutters', 'Sprinkler System', 'Outdoor Kitchen', 'Private Dock']),
 });
 
 export type CmaSchemaType = z.infer<typeof CmaSchema>;
