@@ -325,7 +325,7 @@ export default function AddProperty() {
         city,
         state: stateMatch?.[1] || manualForm.state,
         zip: zipMatch?.[1] || manualForm.zip,
-        price: fields['10_listing_price']?.value || parseInt(manualForm.price) || 0,
+        price: safeParseNumber(getFieldValue(fields['10_listing_price'])) || parseInt(manualForm.price) || 0,
         pricePerSqft: safeParseNumber(getFieldValue(fields['11_price_per_sqft'])) || (
           manualForm.sqft && manualForm.price
             ? Math.round(parseInt(manualForm.price) / parseInt(manualForm.sqft))
@@ -335,7 +335,7 @@ export default function AddProperty() {
         bathrooms: safeParseNumber(getFieldValue(fields['20_total_bathrooms'])) || parseFloat(manualForm.bathrooms) || 0,
         sqft: safeParseNumber(getFieldValue(fields['21_living_sqft'])) || parseInt(manualForm.sqft) || 0,
         yearBuilt: safeParseNumber(getFieldValue(fields['25_year_built'])) || parseInt(manualForm.yearBuilt) || new Date().getFullYear(),
-        smartScore: data.completion_percentage || 75,
+        smartScore: undefined,
         dataCompleteness: data.completion_percentage || 0,
         listingStatus: fields['4_listing_status']?.value || manualForm.listingStatus as 'Active' | 'Pending' | 'Sold',
         daysOnMarket: 0,
@@ -517,7 +517,7 @@ export default function AddProperty() {
         bathrooms: safeParseNumber(getFieldValue(fields['20_total_bathrooms'])),
         sqft: safeParseNumber(getFieldValue(fields['21_living_sqft'])),
         yearBuilt: safeParseNumber(getFieldValue(fields['25_year_built'])) || new Date().getFullYear(),
-        smartScore: data.completion_percentage || 75,
+        smartScore: undefined,
         dataCompleteness: data.completion_percentage || 0,
         listingStatus: (getFieldValue(fields['4_listing_status']) || 'Active') as 'Active' | 'Pending' | 'Sold',
         daysOnMarket: 0,
@@ -1047,12 +1047,12 @@ export default function AddProperty() {
         // Create full property with all 168 fields from CSV
         let fullProperty = convertCsvToFullProperty(row, propertyId);
 
-        // ENRICHMENT: Call LLM APIs to fill missing fields if enabled
-        if (enrichWithAI && address) {
+        // ENRICHMENT: Always query MLS and Google APIs; use LLM cascade if enrichWithAI enabled
+        if (address) {
           setStatus('enriching');
           setProgress(50 + (i / dataToImport.length) * 40); // 50-90% for enrichment
 
-          console.log(`🤖 Enriching property ${i + 1}/${dataToImport.length} with AI:`, address);
+          console.log(`🔍 Querying MLS/APIs for property ${i + 1}/${dataToImport.length}:`, address);
 
           try {
             const apiUrl = import.meta.env.VITE_API_URL || '/api/property/search';
@@ -1061,8 +1061,8 @@ export default function AddProperty() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 address: address,
-                engines: ['perplexity', 'grok'],  // ONLY web search LLMs - Claude/GPT/Gemini disabled for testing
-                useCascade: true,
+                engines: enrichWithAI ? ['perplexity', 'grok'] : undefined,  // LLM cascade only if enrichWithAI enabled
+                useCascade: enrichWithAI,
               }),
             });
 
@@ -1094,7 +1094,7 @@ export default function AddProperty() {
           bathrooms,
           sqft,
           yearBuilt,
-          smartScore: Math.floor(Math.random() * 20) + 75,
+          smartScore: undefined,
           dataCompleteness,
           listingStatus: listingStatus as 'Active' | 'Pending' | 'Sold',
           daysOnMarket: 0,
@@ -1344,7 +1344,7 @@ export default function AddProperty() {
         bathrooms: bathrooms,
         sqft: sqft,
         yearBuilt: yearBuilt,
-        smartScore: 85,
+        smartScore: undefined,
         dataCompleteness: Math.round((Object.keys(pdfParsedFields).length / 168) * 100),
         listingStatus: listingStatus,
         daysOnMarket: daysOnMarket,
@@ -1381,8 +1381,8 @@ export default function AddProperty() {
 
         console.log('🔍 Enriching with address:', enrichAddress);
 
-        // Use SSE streaming for real-time progress (same as Address mode)
-        const response = await fetch(`${apiUrl}/api/property/search-stream`, {
+        // Query MLS and all APIs (unified with SearchProperty method)
+        const response = await fetch(`${apiUrl}/api/property/search`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1399,106 +1399,40 @@ export default function AddProperty() {
           throw new Error(`Enrichment API error: ${response.status}`);
         }
 
-        if (!response.body) {
-          throw new Error('No response body from enrichment API');
+        // Parse JSON response (unified with SearchProperty method)
+        const data = await response.json();
+        setProgress(90);
+
+        // Extract enriched fields
+        const enrichedFields = data.fields || {};
+        const fieldSources = data.field_sources || {};
+        const conflicts = data.conflicts || [];
+
+        // Warn if partial data
+        if (data.partial) {
+          console.warn('⚠️ Partial data received:', data.error || 'Timeout');
         }
 
-        // Process SSE stream
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-        let finalData: any = null;
-        let partialFields: Record<string, any> = { ...pdfParsedFields };
+        console.log('🔍 Enrichment Response:', data);
+        console.log('📊 Field Sources:', fieldSources);
+        console.log('⚠️  Conflicts:', conflicts);
 
-        while (true) {
-          const { done, value } = await reader.read();
+        // Merge enriched data with PDF fields (PDF data takes precedence)
+        const mergedFields = { ...enrichedFields, ...pdfParsedFields };
+        const enrichedFullProperty = normalizeToProperty(mergedFields, propertyId, fieldSources, conflicts);
 
-          if (done) {
-            if (!finalData && Object.keys(partialFields).length > Object.keys(pdfParsedFields).length) {
-              console.log('⚠️ Stream ended without complete event, using partial enriched data');
-              finalData = {
-                fields: partialFields,
-                partial: true,
-                total_fields_found: Object.keys(partialFields).length,
-              };
-            }
-            break;
-          }
+        // Update property card with new data completeness
+        const enrichedCard = {
+          ...propertyCard,
+          dataCompleteness: Math.round((Object.keys(mergedFields).length / 168) * 100),
+        };
 
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
+        // Update store with enriched data
+        addProperty(enrichedCard, enrichedFullProperty);
 
-          let eventType = '';
-          for (const line of lines) {
-            if (line.startsWith('event: ')) {
-              eventType = line.slice(7).trim();
-            } else if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.slice(6));
-
-                if (eventType === 'progress') {
-                  const { source, status: sourceStatus, fieldsFound, currentFields, message } = data;
-                  const displayName = getSourceName(source);
-
-                  // Log API progress to debug why Location/Crime/Market fields are empty
-                  console.log(`📡 ${displayName}: ${sourceStatus}`, {
-                    fieldsFound,
-                    message,
-                    currentFieldsCount: currentFields ? Object.keys(currentFields).length : 0
-                  });
-
-                  if (currentFields && Object.keys(currentFields).length > 0) {
-                    partialFields = { ...partialFields, ...currentFields };
-                  }
-
-                  startTransition(() => {
-                    setCascadeStatus(prev => {
-                      const existing = prev.find(s => s.llm === displayName);
-                      if (existing) {
-                        return prev.map(s => s.llm === displayName
-                          ? { ...s, status: sourceStatus as 'pending' | 'running' | 'complete' | 'error', fieldsFound }
-                          : s
-                        );
-                      }
-                      return [...prev, { llm: displayName, status: sourceStatus as 'pending' | 'running' | 'complete' | 'error', fieldsFound }];
-                    });
-                  });
-                } else if (eventType === 'complete') {
-                  finalData = data;
-                } else if (eventType === 'error') {
-                  console.error('Enrichment error:', data.error);
-                }
-              } catch (e) {
-                console.error('Failed to parse SSE data:', e);
-              }
-            }
-          }
-        }
-
-        if (finalData && finalData.fields) {
-          // Merge enriched data with existing property
-          const enrichedFields = { ...pdfParsedFields, ...finalData.fields };
-          const enrichedFullProperty = normalizeToProperty(enrichedFields, propertyId, {}, []);
-
-          // Update property card with new data completeness
-          const enrichedCard = {
-            ...propertyCard,
-            dataCompleteness: Math.round((Object.keys(enrichedFields).length / 168) * 100),
-          };
-
-          // Update store with enriched data
-          addProperty(enrichedCard, enrichedFullProperty);
-
-          console.log('✅ Auto-enrichment complete:', Object.keys(enrichedFields).length, 'total fields');
-          setProgress(100);
-          setStatus('complete');
-        } else {
-          // Enrichment failed, but PDF data is already saved
-          console.warn('⚠️ Auto-enrichment failed, but PDF data was saved');
-          setProgress(100);
-          setStatus('complete');
-        }
+        console.log('✅ Auto-enrichment complete:', Object.keys(mergedFields).length, 'total fields');
+        setProgress(100);
+        setStatus('complete');
 
         // Reset PDF state
         setPdfFile(null);

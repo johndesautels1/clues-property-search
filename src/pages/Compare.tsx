@@ -1013,9 +1013,18 @@ export default function Compare() {
     if (index !== -1 && smartScores[index]) {
       return smartScores[index].finalScore;
     }
-    // Fallback to card smartScore if not in selected properties or calculation failed
-    const prop = properties.find(p => p.id === propertyId);
-    return prop?.smartScore || 50;
+    // Calculate on-demand for dropdown/non-selected properties (unified scoring)
+    const fullProp = fullProperties.get(propertyId);
+    if (fullProp) {
+      try {
+        const score = calculateSmartScore(fullProp, INDUSTRY_WEIGHTS, 'industry-standard');
+        return score.finalScore;
+      } catch (error) {
+        console.error('Error calculating SMART Score for', propertyId, error);
+        return 0;  // Consistent fallback
+      }
+    }
+    return 0;
   };
 
   const handleSelect = (slot: number, id: string) => {
