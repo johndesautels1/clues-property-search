@@ -14,7 +14,7 @@
  * - All fields pass through arbitrateField() for tier-based precedence
  */
 
-import { callLlm } from '../../api/property/llm-client.js';
+import { callLlm } from '../services/llmClient.js';
 import {
   WALK_SCORE_SYSTEM_PROMPT,
   WALK_SCORE_USER_TEMPLATE,

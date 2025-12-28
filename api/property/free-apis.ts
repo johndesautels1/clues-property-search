@@ -1022,7 +1022,7 @@ export async function callFEMARiskIndex(county: string, state: string = 'FL'): P
     // Field 128: sea_level_rise_risk
     if (riskData.coastalFloodingRiskRating || riskData.coastalFloodingRiskScore) {
       const seaLevelRisk = mapRiskRating(riskData.coastalFloodingRiskRating || '');
-      setField(fields, 'sea_level_rise_risk', seaLevelRisk, 'FEMA Risk Index', 'High');
+      setField(fields, '128_sea_level_rise_risk', seaLevelRisk, 'FEMA Risk Index', 'High');
     }
 
     // Field 120: flood_risk_level
@@ -1123,7 +1123,7 @@ export async function callNOAAClimate(lat: number, lon: number, zip: string, cou
       else if (riskScore > 5) riskLevel = 'Moderate';
 
       // Field 121: climate_risk
-      setField(fields, 'climate_risk', `${riskLevel} (Score: ${riskScore}/100)`, 'NOAA Climate', 'High');
+      setField(fields, '121_climate_risk', `${riskLevel} (Score: ${riskScore}/100)`, 'NOAA Climate', 'High');
 
       console.log(`[NOAA Climate] Climate Risk: ${riskLevel} (${riskScore}/100) - Heat: ${extremeHeat}d, Rain: ${heavyRain}d, Wind: ${highWinds}d`);
     }
@@ -1182,10 +1182,10 @@ export async function callNOAAStormEvents(county: string, state: string = 'FL'):
       else if (highWindDays > 20) tornadoRisk = 'Moderate';
 
       // Field 124: hurricane_risk
-      setField(fields, 'hurricane_risk', hurricaneRisk, 'NOAA Storm Events', 'High');
+      setField(fields, '124_hurricane_risk', hurricaneRisk, 'NOAA Storm Events', 'High');
 
       // Field 125: tornado_risk
-      setField(fields, 'tornado_risk', tornadoRisk, 'NOAA Storm Events', 'Medium');
+      setField(fields, '125_tornado_risk', tornadoRisk, 'NOAA Storm Events', 'Medium');
 
       console.log(`[NOAA Storm] Hurricane: ${hurricaneRisk}, Tornado: ${tornadoRisk} (High winds: ${highWindDays}d, Extreme: ${extremeWindDays}d)`);
     }
@@ -1243,7 +1243,7 @@ export async function callNOAASeaLevel(lat: number, lon: number, beachDistanceMi
     else seaLevelRisk = 'Minimal';
 
     // Field 128: sea_level_rise_risk
-    setField(fields, 'sea_level_rise_risk', `${seaLevelRisk} (${Math.round(distanceToCoast)} mi from coast)`, distanceSource, 'High');
+    setField(fields, '128_sea_level_rise_risk', `${seaLevelRisk} (${Math.round(distanceToCoast)} mi from coast)`, distanceSource, 'High');
 
     return { success: Object.keys(fields).length > 0, source: distanceSource, fields };
 
