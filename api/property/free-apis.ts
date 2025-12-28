@@ -1381,7 +1381,7 @@ export async function callEPAFRS(lat: number, lon: number): Promise<ApiResult> {
         });
 
         // Sort by distance
-        facilitiesWithDistance.sort((a, b) => a.calculatedDistance - b.calculatedDistance);
+        facilitiesWithDistance.sort((a: any, b: any) => a.calculatedDistance - b.calculatedDistance);
 
         const nearestSite = facilitiesWithDistance[0];
         const facilityName = nearestSite.FacilityName || 'Unknown';
