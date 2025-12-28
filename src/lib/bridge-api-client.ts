@@ -598,6 +598,29 @@ export class BridgeAPIClient {
       }
     }
 
+    // CRITICAL: Use YearBuilt from OLDEST listing (most reliable)
+    // Newer listings may have incorrect/updated year built values
+    // The listing closest to construction date has most accurate data
+    if (sorted.length > 1) {
+      // Sort by listing date (oldest first) to find original listing
+      const sortedByAge = [...sorted].sort((a, b) => {
+        const aDate = new Date(a.ListingContractDate || a.OnMarketDate || a.CloseDate || '2999-01-01');
+        const bDate = new Date(b.ListingContractDate || b.OnMarketDate || b.CloseDate || '2999-01-01');
+        return aDate.getTime() - bDate.getTime();
+      });
+
+      const oldestListing = sortedByAge[0];
+
+      // If oldest listing has YearBuilt and it's different from current
+      if (oldestListing.YearBuilt &&
+          best.YearBuilt &&
+          oldestListing.YearBuilt !== best.YearBuilt) {
+        console.warn(`[Bridge API] ⚠️ YearBuilt conflict: Active listing shows ${best.YearBuilt}, oldest listing (MLS# ${oldestListing.ListingId}) shows ${oldestListing.YearBuilt}`);
+        console.log(`[Bridge API] 📝 Using YearBuilt from oldest listing: ${oldestListing.YearBuilt} (more reliable)`);
+        best.YearBuilt = oldestListing.YearBuilt;
+      }
+    }
+
     if (sorted.length > 1) {
       console.log(`[Bridge API] 📋 Other listings found:`);
       sorted.slice(1).forEach((prop, idx) => {
