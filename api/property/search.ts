@@ -1078,6 +1078,7 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lon: numb
           const result = matchingResult;
           let county = '';
           let zipCode = '';
+          let state = '';
           for (const component of result.address_components) {
             if (component.types.includes('administrative_area_level_2')) {
               county = component.long_name;
@@ -1085,8 +1086,11 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lon: numb
             if (component.types.includes('postal_code')) {
               zipCode = component.long_name;
             }
+            if (component.types.includes('administrative_area_level_1')) {
+              state = component.short_name; // e.g., "FL"
+            }
           }
-          return { lat: result.geometry.location.lat, lon: result.geometry.location.lng, county, zipCode };
+          return { lat: result.geometry.location.lat, lon: result.geometry.location.lng, county, zipCode, state };
         } else {
           console.warn(`[Geocode] ⚠️ No result matched expected ZIP ${expectedZip}, using first result`);
         }
@@ -1097,6 +1101,7 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lon: numb
     const result = data.results[0];
     let county = '';
     let zipCode = '';
+    let state = '';
     for (const component of result.address_components) {
       if (component.types.includes('administrative_area_level_2')) {
         county = component.long_name;
@@ -1104,15 +1109,18 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lon: numb
       if (component.types.includes('postal_code')) {
         zipCode = component.long_name;
       }
+      if (component.types.includes('administrative_area_level_1')) {
+        state = component.short_name; // e.g., "FL"
+      }
     }
 
     // Log warning if geocoded ZIP doesn't match expected ZIP
     if (expectedZip && zipCode && zipCode !== expectedZip) {
       console.error(`[Geocode] 🚨 ZIP MISMATCH! Expected: ${expectedZip}, Got: ${zipCode} for address: ${address}`);
-      console.error(`[Geocode] County: ${county}, Lat/Lon: ${result.geometry.location.lat}, ${result.geometry.location.lng}`);
+      console.error(`[Geocode] County: ${county}, State: ${state}, Lat/Lon: ${result.geometry.location.lat}, ${result.geometry.location.lng}`);
     }
 
-    return { lat: result.geometry.location.lat, lon: result.geometry.location.lng, county, zipCode };
+    return { lat: result.geometry.location.lat, lon: result.geometry.location.lng, county, zipCode, state };
   } catch (e) {
     console.error('[Geocode] Error:', e);
   }
@@ -1724,7 +1732,7 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   const apiStartTime = Date.now();
 
   // Extract ZIP code from geo object for Census API
-  const zipCode = geo.zipCode || geo.zip || '';
+  const zipCode = geo.zipCode || '';
 
   // STEP 1: Call Google Places first to get beach distance (needed for accurate sea level risk)
   console.log('🔵 [Step 1/2] Calling Google Places for beach distance...');
@@ -1749,7 +1757,7 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
     callCrimeGrade(geo.lat, geo.lon, address),
     callSchoolDigger(geo.lat, geo.lon),
     callFEMARiskIndex(geo.county, 'FL'),
-    callNOAAClimate(geo.lat, geo.lon, geo.zip, geo.county), // RE-ENABLED: Detailed climate risk analysis
+    callNOAAClimate(geo.lat, geo.lon, geo.zipCode, geo.county), // RE-ENABLED: Detailed climate risk analysis
     callNOAAStormEvents(geo.county, geo.state || 'FL'), // RE-ENABLED: Historical hurricane/tornado data
     callNOAASeaLevel(geo.lat, geo.lon, beachDistanceMiles), // Pass accurate beach distance from Google Places
     callUSGSElevation(geo.lat, geo.lon),
