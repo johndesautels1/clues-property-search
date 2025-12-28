@@ -394,11 +394,15 @@ export class BridgeAPIClient {
       filters.push(`PropertyType eq '${escapedType}'`);
     }
 
-    // Status - DEFAULT TO ACTIVE to prevent showing closed/prior listings
-    // Only override if explicitly specified
-    const statusToFilter = params.status || 'Active';
-    const escapedStatus = statusToFilter.replace(/'/g, "''");
-    filters.push(`StandardStatus eq '${escapedStatus}'`);
+    // Status - REMOVED FILTER: Don't filter by status in query
+    // Instead, we'll get ALL listings and filter client-side to prefer most recent Active
+    // This prevents missing listings due to status value variations (Active vs Active-Contingent, etc.)
+    // The client-side filter happens in getPropertyByAddress()
+    if (params.status) {
+      // Only apply status filter if EXPLICITLY requested by caller
+      const escapedStatus = params.status.replace(/'/g, "''");
+      filters.push(`StandardStatus eq '${escapedStatus}'`);
+    }
 
     // Geographic search (radius)
     if (params.latitude && params.longitude && params.radiusMiles) {
@@ -510,8 +514,72 @@ export class BridgeAPIClient {
   }
 
   /**
+   * Helper: Select best listing from multiple results
+   * Prefer: Active > Pending > Closed
+   * Then: Most recent listing date
+   */
+  private selectBestListing(properties: BridgeProperty[]): BridgeProperty | null {
+    if (properties.length === 0) return null;
+    if (properties.length === 1) return properties[0];
+
+    console.log(`[Bridge API] 🔍 Selecting best from ${properties.length} listings...`);
+
+    // Define status priority (lower = better)
+    const statusPriority: Record<string, number> = {
+      'Active': 1,
+      'Active-Contingent': 2,
+      'Active-Under Contract': 3,
+      'Pending': 4,
+      'Closed': 5,
+      'Sold': 6,
+      'Canceled': 7,
+      'Expired': 8,
+    };
+
+    const getStatusPriority = (status: string | undefined): number => {
+      if (!status) return 99;
+      // Check exact match first
+      if (statusPriority[status]) return statusPriority[status];
+      // Check partial match (e.g., "Active" in "Active-Open")
+      const lowerStatus = status.toLowerCase();
+      if (lowerStatus.includes('active')) return 1;
+      if (lowerStatus.includes('pending')) return 4;
+      if (lowerStatus.includes('closed') || lowerStatus.includes('sold')) return 5;
+      return 99;
+    };
+
+    // Sort by: 1) Status priority, 2) Most recent listing date
+    const sorted = [...properties].sort((a, b) => {
+      const aPriority = getStatusPriority(a.StandardStatus || a.MlsStatus);
+      const bPriority = getStatusPriority(b.StandardStatus || b.MlsStatus);
+
+      if (aPriority !== bPriority) {
+        return aPriority - bPriority; // Lower priority number = better
+      }
+
+      // Same status - prefer most recent listing date
+      const aDate = new Date(a.ListingContractDate || a.OnMarketDate || '1900-01-01');
+      const bDate = new Date(b.ListingContractDate || b.OnMarketDate || '1900-01-01');
+      return bDate.getTime() - aDate.getTime(); // Most recent first
+    });
+
+    const best = sorted[0];
+    console.log(`[Bridge API] ✅ Selected: MLS# ${best.ListingId}, Status: ${best.StandardStatus || best.MlsStatus}, Date: ${best.ListingContractDate || best.OnMarketDate}`);
+
+    if (sorted.length > 1) {
+      console.log(`[Bridge API] 📋 Other listings found:`);
+      sorted.slice(1).forEach((prop, idx) => {
+        console.log(`   ${idx + 2}. MLS# ${prop.ListingId}, Status: ${prop.StandardStatus || prop.MlsStatus}, Date: ${prop.ListingContractDate || prop.OnMarketDate}`);
+      });
+    }
+
+    return best;
+  }
+
+  /**
    * Get property by address with fallback strategies
    * Tries multiple search variations to handle different MLS formats
+   * CRITICAL: Returns most recent Active listing if multiple listings exist
    */
   async getPropertyByAddress(address: string, city?: string, state?: string, zipCode?: string): Promise<BridgeProperty | null> {
     console.log('[Bridge API] Smart search - trying multiple strategies for:', address);
@@ -523,12 +591,12 @@ export class BridgeAPIClient {
       city,
       state,
       zipCode,
-      top: 1,
+      top: 10, // Get multiple to handle properties with multiple listings (Active + Closed)
     });
 
     if (response.value.length > 0) {
-      console.log('[Bridge API] ✅ Found with full address');
-      return response.value[0];
+      console.log(`[Bridge API] ✅ Found ${response.value.length} listing(s) with full address`);
+      return this.selectBestListing(response.value);
     }
 
     // Strategy 2: Try without unit/apt number (strip common patterns)
@@ -550,12 +618,12 @@ export class BridgeAPIClient {
           city,
           state,
           zipCode,
-          top: 1,
+          top: 10,
         });
 
         if (response.value.length > 0) {
-          console.log('[Bridge API] ✅ Found without unit number');
-          return response.value[0];
+          console.log(`[Bridge API] ✅ Found ${response.value.length} listing(s) without unit number`);
+          return this.selectBestListing(response.value);
         }
         break; // Only try one unit pattern
       }
@@ -573,12 +641,12 @@ export class BridgeAPIClient {
         city,
         state,
         zipCode,
-        top: 5, // Get multiple to handle variations
+        top: 10,
       });
 
       if (response.value.length > 0) {
         console.log(`[Bridge API] ✅ Found ${response.value.length} matches with base street`);
-        return response.value[0]; // Return first match
+        return this.selectBestListing(response.value);
       }
     }
 
@@ -607,8 +675,7 @@ export class BridgeAPIClient {
         const data = await lenientResponse.json();
         if (data.value && data.value.length > 0) {
           console.log(`[Bridge API] ✅ Found ${data.value.length} matches with lenient search (zip + number only)`);
-          console.log(`[Bridge API] First match address: ${data.value[0].UnparsedAddress}`);
-          return data.value[0]; // Return first match
+          return this.selectBestListing(data.value);
         }
       }
     }
