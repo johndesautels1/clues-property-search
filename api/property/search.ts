@@ -1566,24 +1566,72 @@ async function getTransitAccess(lat: number, lon: number): Promise<Record<string
   const fields: Record<string, any> = {};
 
   try {
-    // Search for transit stations nearby
-    const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${origin}&radius=1609&type=transit_station&key=${apiKey}`;
-    const searchRes = await fetch(searchUrl);
-    const searchData = await searchRes.json();
+    // CRITICAL: Differentiate between rail stations and bus stops
+    // Google Places "transit_station" includes ALL transit (buses, trains, etc.)
+    // Use specific types to provide accurate descriptions
+
+    // Search for rail/subway stations (high-value transit)
+    const railUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${origin}&radius=1609&type=subway_station&key=${apiKey}`;
+    const railRes = await fetch(railUrl);
+    const railData = await railRes.json();
+
+    // Search for light rail/tram
+    const lightRailUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${origin}&radius=1609&type=light_rail_station&key=${apiKey}`;
+    const lightRailRes = await fetch(lightRailUrl);
+    const lightRailData = await lightRailRes.json();
+
+    // Search for bus stops
+    const busUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${origin}&radius=1609&type=bus_station&key=${apiKey}`;
+    const busRes = await fetch(busUrl);
+    const busData = await busRes.json();
+
+    const railCount = (railData.results?.length || 0) + (lightRailData.results?.length || 0);
+    const busCount = busData.results?.length || 0;
+    const totalCount = railCount + busCount;
 
     // Field 81 = public_transit_access per fields-schema.ts
-    if (searchData.results && searchData.results.length > 0) {
-      const stations = searchData.results.slice(0, 3).map((s: any) => s.name);
+    if (totalCount > 0) {
+      let description = 'Yes - ';
+      const parts: string[] = [];
+
+      if (railCount > 0) {
+        parts.push(`${railCount} rail station${railCount > 1 ? 's' : ''}`);
+      }
+      if (busCount > 0) {
+        parts.push(`${busCount} bus stop${busCount > 1 ? 's' : ''}`);
+      }
+
+      description += parts.join(' + ') + ' within 1 mile';
+
+      // Add sample names (prioritize rail stations)
+      const sampleStations: string[] = [];
+      if (railData.results && railData.results.length > 0) {
+        sampleStations.push(...railData.results.slice(0, 2).map((s: any) => s.name));
+      }
+      if (lightRailData.results && lightRailData.results.length > 0 && sampleStations.length < 2) {
+        sampleStations.push(...lightRailData.results.slice(0, 2 - sampleStations.length).map((s: any) => s.name));
+      }
+      if (busData.results && busData.results.length > 0 && sampleStations.length < 2) {
+        sampleStations.push(...busData.results.slice(0, 2 - sampleStations.length).map((s: any) => s.name));
+      }
+
+      if (sampleStations.length > 0) {
+        description += `: ${sampleStations.join(', ')}`;
+      }
+
       fields['81_public_transit_access'] = {
-        value: `Yes - ${searchData.results.length} stations within 1 mile: ${stations.join(', ')}`,
+        value: description,
         source: 'Google Places',
         confidence: 'High'
       };
+
+      console.log(`[Transit Access] Found ${railCount} rail + ${busCount} bus stops within 1 mile`);
     } else {
-      // Check for bus stops
-      const busUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${origin}&radius=805&type=bus_station&key=${apiKey}`;
-      const busRes = await fetch(busUrl);
-      const busData = await busRes.json();
+      // No transit found within 1 mile
+      // Check for bus stops at 0.5 mile radius as fallback
+      const busNearUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${origin}&radius=805&type=bus_station&key=${apiKey}`;
+      const busNearRes = await fetch(busNearUrl);
+      const busNearData = await busNearRes.json();
 
       if (busData.results && busData.results.length > 0) {
         fields['81_public_transit_access'] = {
