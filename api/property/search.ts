@@ -1376,35 +1376,14 @@ async function getClimateData(lat: number, lon: number): Promise<Record<string, 
 
     if (isOpenWeather && data.main) {
       // OpenWeatherMap format
-      const conditions: string[] = [];
-      if (data.main.temp) conditions.push(`Current: ${Math.round(data.main.temp)}°F`);
-      if (data.main.feels_like) conditions.push(`Feels like: ${Math.round(data.main.feels_like)}°F`);
-      if (data.main.humidity) conditions.push(`Humidity: ${data.main.humidity}%`);
-      if (data.weather?.[0]?.description) conditions.push(data.weather[0].description);
-
-      if (conditions.length > 0) {
-        fields['121_climate_risk'] = {
-          value: conditions.join(', '),
-          source: 'Weather',
-          confidence: 'High'
-        };
-      }
+      // NOTE: Current weather conditions removed from field 121_climate_risk
+      // Field 121 is for climate RISK assessment (FEMA/NOAA), not current temperature
+      // Weather API does not provide climate risk data
     } else if (!isOpenWeather && data) {
       // Weather.com format
-      const conditions: string[] = [];
-      if (data.temperature) conditions.push(`Current: ${data.temperature}°F`);
-      if (data.temperatureFeelsLike) conditions.push(`Feels like: ${data.temperatureFeelsLike}°F`);
-      if (data.relativeHumidity) conditions.push(`Humidity: ${data.relativeHumidity}%`);
-      if (data.wxPhraseLong) conditions.push(data.wxPhraseLong);
-
-      // UPDATED: 2025-11-30 - Corrected field numbers to match fields-schema.ts
-      if (conditions.length > 0) {
-        fields['121_climate_risk'] = {
-          value: conditions.join(', '),
-          source: 'Weather',
-          confidence: 'High'
-        };
-      }
+      // NOTE: Current weather conditions removed from field 121_climate_risk
+      // Field 121 is for climate RISK assessment (FEMA/NOAA), not current temperature
+      // Weather API does not provide climate risk data
 
       // UV Index for solar potential estimate (Weather.com only)
       if (data.uvIndex !== undefined) {
