@@ -188,35 +188,89 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lon: numb
   if (!apiKey) return null;
 
   try {
+    // Extract expected ZIP from address if present (for validation)
+    const zipMatch = address.match(/\b(\d{5})(?:-\d{4})?\b/);
+    const expectedZip = zipMatch ? zipMatch[1] : null;
+
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
     const fetchResult = await safeFetch<any>(url, undefined, 'Google-Geocode');
 
     if (!fetchResult.success || !fetchResult.data) return null;
     const data = fetchResult.data;
 
-    if (data.results && data.results.length > 0) {
-      const geoResult = data.results[0];
-      const location = geoResult.geometry?.location;
+    if (!data.results || data.results.length === 0) {
+      console.error('[Geocode] No results found for address:', address);
+      return null;
+    }
 
-      if (!location) return null;
+    // CRITICAL: If multiple results, prefer the one matching expected ZIP
+    // This prevents wrong school/location data when addresses are ambiguous
+    if (data.results.length > 1) {
+      console.warn(`[Geocode] ⚠️ Multiple results (${data.results.length}) for address: ${address}`);
 
-      // Find county from address components
-      let county = '';
-      for (const component of geoResult.address_components || []) {
-        if (component.types.includes('administrative_area_level_2')) {
-          county = component.long_name;
-          break;
+      if (expectedZip) {
+        // Try to find result matching expected ZIP
+        const matchingResult = data.results.find((r: any) => {
+          const components = r.address_components || [];
+          const zip = components.find((c: any) => c.types.includes('postal_code'));
+          return zip && zip.long_name === expectedZip;
+        });
+
+        if (matchingResult) {
+          console.log(`[Geocode] ✅ Selected result matching ZIP ${expectedZip}`);
+          const location = matchingResult.geometry?.location;
+          if (!location) return null;
+
+          let county = '';
+          for (const component of matchingResult.address_components || []) {
+            if (component.types.includes('administrative_area_level_2')) {
+              county = component.long_name;
+              break;
+            }
+          }
+
+          return {
+            lat: location.lat,
+            lon: location.lng,
+            county
+          };
+        } else {
+          console.warn(`[Geocode] ⚠️ No result matched expected ZIP ${expectedZip}, using first result`);
         }
       }
-
-      return {
-        lat: location.lat,
-        lon: location.lng,
-        county
-      };
     }
+
+    // Use first result (either single result or fallback when no ZIP match)
+    const geoResult = data.results[0];
+    const location = geoResult.geometry?.location;
+
+    if (!location) return null;
+
+    // Find county from address components
+    let county = '';
+    let zipCode = '';
+    for (const component of geoResult.address_components || []) {
+      if (component.types.includes('administrative_area_level_2')) {
+        county = component.long_name;
+      }
+      if (component.types.includes('postal_code')) {
+        zipCode = component.long_name;
+      }
+    }
+
+    // Log warning if geocoded ZIP doesn't match expected ZIP
+    if (expectedZip && zipCode && zipCode !== expectedZip) {
+      console.error(`[Geocode] 🚨 ZIP MISMATCH! Expected: ${expectedZip}, Got: ${zipCode} for address: ${address}`);
+      console.error(`[Geocode] County: ${county}, Lat/Lon: ${location.lat}, ${location.lng}`);
+    }
+
+    return {
+      lat: location.lat,
+      lon: location.lng,
+      county
+    };
   } catch (e) {
-    console.error('Geocode error:', e);
+    console.error('[Geocode] Error:', e);
   }
 
   return null;
