@@ -1022,7 +1022,7 @@ export async function callFEMARiskIndex(county: string, state: string = 'FL'): P
     // Field 128: sea_level_rise_risk
     if (riskData.coastalFloodingRiskRating || riskData.coastalFloodingRiskScore) {
       const seaLevelRisk = mapRiskRating(riskData.coastalFloodingRiskRating || '');
-      setField(fields, '128_sea_level_rise_risk', seaLevelRisk, 'FEMA Risk Index', 'High');
+      setField(fields, 'sea_level_rise_risk', seaLevelRisk, 'FEMA Risk Index', 'High');
     }
 
     // Field 120: flood_risk_level
@@ -1243,7 +1243,7 @@ export async function callNOAASeaLevel(lat: number, lon: number, beachDistanceMi
     else seaLevelRisk = 'Minimal';
 
     // Field 128: sea_level_rise_risk
-    setField(fields, '128_sea_level_rise_risk', `${seaLevelRisk} (${Math.round(distanceToCoast)} mi from coast)`, distanceSource, 'High');
+    setField(fields, 'sea_level_rise_risk', `${seaLevelRisk} (${Math.round(distanceToCoast)} mi from coast)`, distanceSource, 'High');
 
     return { success: Object.keys(fields).length > 0, source: distanceSource, fields };
 
