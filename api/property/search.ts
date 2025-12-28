@@ -2691,6 +2691,127 @@ RETURN ONLY valid JSON in this exact wrapper:
 }`;
 
 // ============================================
+// GPT-5.2 LLM-ONLY AUDITOR - Validates only LLM-populated fields
+// Used to audit fields from Perplexity/Claude/GPT/Grok (Tier 4/5)
+// DOES NOT audit Stellar MLS, Google APIs, County, or other API sources (Tier 1-3)
+// ============================================
+const PROMPT_GPT_LLM_AUDITOR = `YOU ARE: GPT-5.2, LLM-Field-Only Auditor and Hallucination Detector.
+
+PURPOSE:
+Validate ONLY the fields that were populated by LLMs (Perplexity, Claude, GPT, Grok, Gemini).
+DO NOT audit fields from Stellar MLS, Google APIs, County, or other trusted API sources - those are already authoritative.
+
+CRITICAL SCOPE:
+You will receive ONLY the subset of fields that LLMs populated (~30-80 fields out of 168 total).
+API-populated fields are PRE-VALIDATED and must not be re-audited.
+
+NON-NEGOTIABLE RULES:
+1) NO OUTSIDE FACTS. Use only INPUT_DATA to validate LLM claims.
+2) For each LLM field, check:
+   a) Is the value supported by INPUT_DATA? If not → null it
+   b) If computed, are ALL inputs present and calculation correct?
+   c) If claiming a source not in INPUT_DATA → null it
+   d) Does it violate tier precedence? (e.g., used Tier 4 when Tier 3 had data)
+3) You are NOT validating API fields (Tier 1-3) - those are pre-validated and trusted.
+4) Focus on catching:
+   - Hallucinations (invented values like "typical for Pinellas County is $5000")
+   - Wrong computations (11_price_per_sqft = price × sqft instead of ÷)
+   - Tier violations (used webChunks when countyJson had same field)
+   - Forbidden inferences (estimated taxes, guessed HOA fees)
+   - Suspicious sources (claims "Zillow.com" but no Zillow data in INPUT_DATA)
+
+NULL REASONS (use exactly one for null fields):
+- "not_in_input_data" - Field not found in any INPUT_DATA blob
+- "requires_live_lookup" - Needs real-time API call (not available)
+- "conflicting_input_data" - Multiple sources disagree
+- "forbidden_inference" - LLM guessed/estimated without evidence
+- "computation_failed" - Missing required inputs for calculation
+
+SAFE COMPUTATIONS (ONLY THESE - recalculate if wrong):
+- 11_price_per_sqft = 10_listing_price ÷ 21_living_sqft
+- 20_total_bathrooms = 18_full_bathrooms + (19_half_bathrooms × 0.5)
+- 24_lot_size_acres = 23_lot_size_sqft ÷ 43560
+- 99_rental_yield = (98_rental_estimate_monthly × 12) ÷ 10_listing_price × 100
+- 101_cap_rate = ((98_rental_estimate_monthly × 12) - 35_annual_taxes) ÷ 10_listing_price × 100
+
+SOURCE NORMALIZATION (use ONLY these in output):
+- "Stellar MLS" (Tier 1)
+- "Paid APIs" (Tier 2)
+- "County" (Tier 3)
+- "Web Chunks" (Tier 4 - Perplexity micro-prompts)
+- "Address Parse" (Tier 5)
+- "Not found" (null values)
+
+TIER PRECEDENCE (enforce strictly):
+Tier 1 (Stellar MLS) > Tier 2 (Paid APIs) > Tier 3 (County) > Tier 4 (Web Chunks) > Tier 5 (Address Parse)
+If a lower-tier LLM populated a field when higher-tier had data → override with higher tier.
+
+CONFIDENCE ALIGNMENT:
+- Tier 1 direct: High
+- Tier 2 direct: High
+- Tier 3 direct: Medium
+- Tier 4 direct: Low
+- Tier 5 direct: Low
+- Computed: Medium (or Low if inputs are low-confidence)
+- Null: Unverified`;
+
+/**
+ * GPT LLM-Only Auditor User Template
+ * Provides INPUT_DATA and LLM-populated fields for validation
+ */
+const GPT_LLM_AUDITOR_USER_TEMPLATE = (params: {
+  address: string;
+  stellarMlsJson: unknown;
+  countyJson: unknown;
+  paidApisJson: unknown;
+  webChunksJson: unknown;
+  llmOnlyFields: Record<string, any>;
+  apiPopulatedFieldKeys: string[];
+}) => `API_POPULATED_FIELDS (already validated, DO NOT audit these):
+${params.apiPopulatedFieldKeys.join(', ')}
+
+INPUT_DATA (authoritative blobs for validation):
+{
+  "address": "${params.address}",
+  "stellarMlsJson": ${JSON.stringify(params.stellarMlsJson, null, 2)},
+  "countyJson": ${JSON.stringify(params.countyJson, null, 2)},
+  "paidApisJson": ${JSON.stringify(params.paidApisJson, null, 2)},
+  "webChunksJson": ${JSON.stringify(params.webChunksJson, null, 2)}
+}
+
+LLM_FIELDS_TO_AUDIT (ONLY these fields, not the full 168-field schema):
+${JSON.stringify(params.llmOnlyFields, null, 2)}
+
+TASK:
+Audit and correct ONLY the LLM-populated fields above using INPUT_DATA.
+Recalculate any computed fields. Null any hallucinations. Fix tier violations.
+
+OUTPUT:
+Return ONLY the audited LLM fields (not the full schema):
+
+{
+  "fields": {
+    "<llm_field_key>": {
+      "value": <corrected_or_null>,
+      "source": "<Stellar MLS|Paid APIs|County|Web Chunks|Address Parse|Not found>",
+      "confidence": "High|Medium|Low|Unverified",
+      "evidence_type": "direct_from_input|safe_computation|geographic_inference|not_found",
+      "source_tier": <1|2|3|4|5>,
+      "computation_rule": <string_or_null>,
+      "inputs_used": <array_of_field_keys_or_empty_array>,
+      "null_reason": <string_or_null>
+    }
+  },
+  "fields_audited": <count_of_llm_fields_received>,
+  "fields_corrected": <count_of_changes_made>,
+  "fields_nulled": <count_of_hallucinations_removed>,
+  "conflicts": [
+    { "field": "<field_key>", "tier_values": [{ "tier": <n>, "value": <x> }], "resolution": "Tier <n>" }
+  ],
+  "note": "Audited LLM-populated fields only; API fields trusted and excluded from audit."
+}`;
+
+// ============================================
 // CLAUDE SONNET PROMPT - NO WEB - Fast, efficient
 // ============================================
 const PROMPT_CLAUDE_SONNET = `You are Claude Sonnet, a fast and efficient property data extractor. No web access.
@@ -3027,6 +3148,159 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
   } catch (error) {
     return { error: String(error), fields: {}, llm: 'GPT' };
   }
+}
+
+// ============================================
+// GPT-5.2 LLM-ONLY AUDITOR - Validates LLM-populated fields only
+// ============================================
+
+/**
+ * Call GPT-5.2 LLM-Only Auditor
+ * Validates ONLY fields populated by LLMs (Tier 4/5), skips API fields (Tier 1-3)
+ */
+async function callGPT_LLMFieldAuditor(
+  address: string,
+  inputs: {
+    stellarMlsJson: unknown;
+    countyJson: unknown;
+    paidApisJson: unknown;
+    webChunksJson: unknown;
+    llmOnlyFields: Record<string, any>;
+    apiPopulatedFieldKeys: string[];
+  }
+): Promise<any> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    console.error('[GPT LLM Auditor] OPENAI_API_KEY not set');
+    return { fields: inputs.llmOnlyFields, fields_audited: 0, fields_corrected: 0, fields_nulled: 0 };
+  }
+
+  try {
+    const systemPrompt = PROMPT_GPT_LLM_AUDITOR;
+    const userPrompt = GPT_LLM_AUDITOR_USER_TEMPLATE({
+      address,
+      stellarMlsJson: inputs.stellarMlsJson,
+      countyJson: inputs.countyJson,
+      paidApisJson: inputs.paidApisJson,
+      webChunksJson: inputs.webChunksJson,
+      llmOnlyFields: inputs.llmOnlyFields,
+      apiPopulatedFieldKeys: inputs.apiPopulatedFieldKeys,
+    });
+
+    console.log(`[GPT LLM Auditor] Auditing ${Object.keys(inputs.llmOnlyFields).length} LLM-populated fields`);
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-5.2',
+        max_tokens: 12000, // Smaller than full schema (only auditing 30-80 fields)
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.1, // Low temperature for deterministic auditing
+      }),
+    });
+
+    const data = await response.json();
+    if (data.choices && data.choices[0]?.message?.content) {
+      const text = data.choices[0].message.content;
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          console.log(`[GPT LLM Auditor] Audit complete:`);
+          console.log(`  - Fields audited: ${parsed.fields_audited || 0}`);
+          console.log(`  - Fields corrected: ${parsed.fields_corrected || 0}`);
+          console.log(`  - Fields nulled (hallucinations): ${parsed.fields_nulled || 0}`);
+          console.log(`  - Conflicts detected: ${parsed.conflicts?.length || 0}`);
+          return parsed;
+        } catch (parseError) {
+          console.error('[GPT LLM Auditor] JSON parse error:', parseError);
+          return { fields: inputs.llmOnlyFields, fields_audited: 0, fields_corrected: 0, fields_nulled: 0 };
+        }
+      }
+    }
+    console.error('[GPT LLM Auditor] No valid response');
+    return { fields: inputs.llmOnlyFields, fields_audited: 0, fields_corrected: 0, fields_nulled: 0 };
+  } catch (error) {
+    console.error('[GPT LLM Auditor] Error:', error);
+    return { fields: inputs.llmOnlyFields, fields_audited: 0, fields_corrected: 0, fields_nulled: 0 };
+  }
+}
+
+/**
+ * Extract LLM-only fields from orchestrator output
+ * Filters out API-populated fields (Tier 1-3) to focus audit on LLM fields (Tier 4-5)
+ */
+function extractLLMOnlyFields(
+  cmaSchema: any,
+  apiPopulatedFieldKeys: Set<string>
+): { llmOnlyFields: Record<string, any>; llmFieldCount: number } {
+  const llmOnlyFields: Record<string, any> = {};
+  let llmFieldCount = 0;
+
+  for (const [fieldKey, fieldData] of Object.entries(cmaSchema.fields || {})) {
+    const field = fieldData as any;
+
+    // Skip if from trusted API sources (Tier 1-3)
+    if (apiPopulatedFieldKeys.has(fieldKey)) {
+      continue;
+    }
+
+    // Skip if null (nothing to audit)
+    if (field.value === null || field.value === undefined) {
+      continue;
+    }
+
+    // This is an LLM-populated field - needs audit
+    llmOnlyFields[fieldKey] = field;
+    llmFieldCount++;
+  }
+
+  return { llmOnlyFields, llmFieldCount };
+}
+
+/**
+ * Determines if LLM fields need GPT-5.2 audit
+ * Feature flag + quality gates
+ */
+function shouldAuditLLMFields(llmFieldCount: number, llmOnlyFields: Record<string, any>): boolean {
+  // Feature flag (can be toggled via environment variable)
+  const ENABLE_LLM_AUDITOR = process.env.ENABLE_LLM_AUDITOR !== 'false'; // Default: enabled
+
+  if (!ENABLE_LLM_AUDITOR) {
+    console.log('[Audit Gate] LLM Auditor disabled via ENABLE_LLM_AUDITOR=false');
+    return false;
+  }
+
+  // Gate 1: No LLM fields to audit
+  if (llmFieldCount === 0) {
+    console.log('[Audit Gate] No LLM fields to audit (all from APIs)');
+    return false;
+  }
+
+  // Gate 2: Has computed fields (always audit calculations)
+  const hasComputedFields = Object.values(llmOnlyFields).some(
+    (field: any) => field.evidence_type === 'safe_computation'
+  );
+  if (hasComputedFields) {
+    console.log(`[Audit Gate] Has computed fields - audit enabled`);
+    return true;
+  }
+
+  // Gate 3: Sufficient LLM fields to warrant audit (threshold: 5+)
+  if (llmFieldCount >= 5) {
+    console.log(`[Audit Gate] ${llmFieldCount} LLM fields - audit enabled`);
+    return true;
+  }
+
+  console.log(`[Audit Gate] Only ${llmFieldCount} LLM fields - skipping audit`);
+  return false;
 }
 
 // ============================================
@@ -3766,9 +4040,68 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         console.log(`📦 Orchestrator returned ${orchestratorFieldCount} non-null fields`);
 
+        // ========================================
+        // GPT-5.2 LLM-ONLY AUDITOR (OPTIONAL)
+        // Validates ONLY LLM-populated fields (Tier 4/5), skips API fields (Tier 1-3)
+        // ========================================
+
+        // Track which fields came from APIs (Tier 1-3) - these are already trusted
+        const apiPopulatedFieldKeys = new Set<string>();
+        const intermediateBeforeOrchestrator = arbitrationPipeline.getResult();
+        for (const fieldKey of Object.keys(intermediateBeforeOrchestrator.fields)) {
+          apiPopulatedFieldKeys.add(fieldKey);
+        }
+        console.log(`[LLM Auditor] ${apiPopulatedFieldKeys.size} fields from trusted API sources (Tier 1-3)`);
+
+        // Extract LLM-only fields from orchestrator output
+        const { llmOnlyFields, llmFieldCount } = extractLLMOnlyFields(cmaSchema, apiPopulatedFieldKeys);
+        console.log(`[LLM Auditor] ${llmFieldCount} fields populated by LLMs (Tier 4/5)`);
+
+        // Conditionally audit LLM fields
+        if (shouldAuditLLMFields(llmFieldCount, llmOnlyFields)) {
+          try {
+            console.log('========================================');
+            console.log('GPT-5.2 LLM-ONLY AUDITOR');
+            console.log('========================================');
+
+            const auditStartTime = Date.now();
+            const webChunksJson = {}; // TODO: Extract from orchestrator if exposed
+
+            const auditResult = await withTimeout(
+              callGPT_LLMFieldAuditor(searchQuery, {
+                stellarMlsJson,
+                countyJson,
+                paidApisJson,
+                webChunksJson,
+                llmOnlyFields,
+                apiPopulatedFieldKeys: Array.from(apiPopulatedFieldKeys),
+              }),
+              LLM_TIMEOUT,
+              { fields: llmOnlyFields, fields_audited: 0, fields_corrected: 0, fields_nulled: 0 }
+            );
+
+            const auditEndTime = Date.now();
+            console.log(`✅ LLM Audit completed in ${auditEndTime - auditStartTime}ms`);
+
+            // Merge audited LLM fields back into orchestrator schema
+            for (const [fieldKey, auditedField] of Object.entries(auditResult.fields || {})) {
+              cmaSchema.fields[fieldKey] = auditedField;
+            }
+
+            console.log(`✅ LLM AUDIT COMPLETE:`);
+            console.log(`   - Hallucinations removed: ${auditResult.fields_nulled || 0}`);
+            console.log(`   - Computations corrected: ${auditResult.fields_corrected || 0}`);
+            console.log(`   - Conflicts resolved: ${auditResult.conflicts?.length || 0}`);
+
+          } catch (auditError) {
+            console.error('❌ LLM Auditor failed (using unaudited orchestrator output):', auditError);
+            // Continue with unaudited orchestrator output
+          }
+        }
+
         // Feed results into arbitration with source="LLM Orchestrator"
         const added = arbitrationPipeline.addFieldsFromSource(cmaSchema, 'LLM Orchestrator');
-        console.log(`✅ TIER 3.5 COMPLETE: Added ${added} fields from LLM Orchestrator`);
+        console.log(`✅ TIER 3.5 COMPLETE: Added ${added} fields from LLM Orchestrator (audited)`);
 
         // ========================================
         // GPT-5.2 EVIDENCE-LOCKED DATA MERGE (SUPPLEMENTAL)
