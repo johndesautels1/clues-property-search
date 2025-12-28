@@ -26,7 +26,7 @@ const CluesHeader: React.FC = () => {
           <h1 className="font-montserrat text-2xl md:text-3xl font-bold tracking-[2px] bg-gradient-to-r from-cyan-400 to-cyan-200 bg-clip-text text-transparent mb-3 drop-shadow-[0_0_30px_rgba(0,255,255,0.5)] filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
             JOHN E. DESAUTELS & ASSOCIATES
           </h1>
-          <div className="flex items-center justify-center gap-3 flex-wrap">
+          <div className="flex items-center justify-center gap-3 flex-wrap ml-[-2px]">
             <span className="text-2xl filter drop-shadow-[0_0_15px_rgba(255,153,51,0.8)]">🔍🌍</span>
             <span className="font-montserrat text-xl font-extrabold bg-gradient-to-r from-[#0F52BA] to-[#FF9933] bg-clip-text text-transparent tracking-[3px] drop-shadow-[0_0_20px_rgba(15,82,186,0.5)] filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
               CLUES™
