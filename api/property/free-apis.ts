@@ -1175,54 +1175,52 @@ export async function callNOAAStormEvents(county: string, state: string = 'FL'):
 // ============================================
 // NOAA SEA LEVEL API - Sea Level Rise Risk
 // ============================================
-export async function callNOAASeaLevel(lat: number, lon: number): Promise<ApiResult> {
+export async function callNOAASeaLevel(lat: number, lon: number, beachDistanceMiles?: number): Promise<ApiResult> {
   const fields: Record<string, ApiField> = {};
 
   try {
-    // Find nearest NOAA tide station (Florida has many coastal stations)
-    // For Tampa Bay area: Station 8726520 (St. Petersburg)
-    // For general use: This is a simplified implementation
+    // Calculate distance to coast
+    // CRITICAL: Use beachDistanceMiles from Google Places (field 87) if available
+    // Fallback: Calculate distance to nearest tide station (less accurate)
+    let distanceToCoast: number;
+    let distanceSource: string;
 
-    // Florida coastal stations by region
-    const floridaStations: Record<string, { id: string; name: string; lat: number; lon: number }> = {
-      'tampa_bay': { id: '8726520', name: 'St. Petersburg', lat: 27.76, lon: -82.63 },
-      'clearwater': { id: '8726724', name: 'Clearwater Beach', lat: 27.98, lon: -82.83 },
-      'naples': { id: '8725110', name: 'Naples', lat: 26.13, lon: -81.81 },
-      'miami': { id: '8723170', name: 'Miami Beach', lat: 25.77, lon: -80.13 },
-      'key_west': { id: '8724580', name: 'Key West', lat: 24.55, lon: -81.81 },
-    };
+    if (beachDistanceMiles !== undefined && beachDistanceMiles !== null && !isNaN(beachDistanceMiles)) {
+      // Use accurate Google Places beach distance
+      distanceToCoast = beachDistanceMiles;
+      distanceSource = 'Google Places (Beach Distance)';
+      console.log(`[NOAA Sea Level] Using accurate beach distance: ${distanceToCoast.toFixed(1)} mi from Google Places`);
+    } else {
+      // Fallback: Calculate distance to nearest NOAA tide station
+      // Florida coastal stations by region
+      const floridaStations: Record<string, { id: string; name: string; lat: number; lon: number }> = {
+        'tampa_bay': { id: '8726520', name: 'St. Petersburg', lat: 27.76, lon: -82.63 },
+        'clearwater': { id: '8726724', name: 'Clearwater Beach', lat: 27.98, lon: -82.83 },
+        'naples': { id: '8725110', name: 'Naples', lat: 26.13, lon: -81.81 },
+        'miami': { id: '8723170', name: 'Miami Beach', lat: 25.77, lon: -80.13 },
+        'key_west': { id: '8724580', name: 'Key West', lat: 24.55, lon: -81.81 },
+      };
 
-    // Find nearest station (simplified - using Tampa Bay as default for FL properties)
-    const station = floridaStations.tampa_bay;
-
-    // NOAA Tides & Currents API - Get water level trends
-    const url = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=${station.id}&product=water_level&datum=MLLW&time_zone=lst_ldt&units=english&format=json&range=720`;
-
-    const fetchResult = await safeFetch<any>(url, undefined, 'NOAA-SeaLevel');
-
-    if (!fetchResult.success || !fetchResult.data) {
-      return { success: false, source: 'NOAA Sea Level', fields, error: fetchResult.error || 'Fetch failed' };
+      // Find nearest station (simplified - using Tampa Bay as default for FL properties)
+      const station = floridaStations.tampa_bay;
+      distanceToCoast = Math.sqrt(Math.pow(lat - station.lat, 2) + Math.pow(lon - station.lon, 2)) * 69; // miles
+      distanceSource = 'NOAA Tide Station (Estimated)';
+      console.warn(`[NOAA Sea Level] ⚠️ Using estimated distance to tide station (${distanceToCoast.toFixed(1)} mi) - Google beach distance unavailable`);
     }
 
-    const data = fetchResult.data;
+    // Determine sea level rise risk based on distance to coast
+    // Florida is particularly vulnerable to sea level rise
+    // NOAA data shows 3-4mm/year rise in Tampa Bay
+    let seaLevelRisk = 'Low';
+    if (distanceToCoast < 5) seaLevelRisk = 'High';
+    else if (distanceToCoast < 15) seaLevelRisk = 'Moderate';
+    else if (distanceToCoast < 30) seaLevelRisk = 'Low';
+    else seaLevelRisk = 'Minimal';
 
-    // Analyze sea level trends
-    if (data.data && Array.isArray(data.data)) {
-      // For Florida coastal properties, sea level rise is a known risk
-      // NOAA data shows 3-4mm/year rise in Tampa Bay
-      const distanceToCoast = Math.sqrt(Math.pow(lat - station.lat, 2) + Math.pow(lon - station.lon, 2)) * 69; // miles
+    // Field 128: sea_level_rise_risk
+    setField(fields, '128_sea_level_rise_risk', `${seaLevelRisk} (${Math.round(distanceToCoast)} mi from coast)`, distanceSource, 'High');
 
-      let seaLevelRisk = 'Low';
-      if (distanceToCoast < 5) seaLevelRisk = 'High';
-      else if (distanceToCoast < 15) seaLevelRisk = 'Moderate';
-      else if (distanceToCoast < 30) seaLevelRisk = 'Low';
-      else seaLevelRisk = 'Minimal';
-
-      // Field 128: sea_level_rise_risk
-      setField(fields, '128_sea_level_rise_risk', `${seaLevelRisk} (${Math.round(distanceToCoast)} mi from coast)`, 'NOAA Sea Level', 'Medium');
-    }
-
-    return { success: Object.keys(fields).length > 0, source: 'NOAA Sea Level', fields };
+    return { success: Object.keys(fields).length > 0, source: distanceSource, fields };
 
   } catch (error) {
     return { success: false, source: 'NOAA Sea Level', fields, error: String(error) };

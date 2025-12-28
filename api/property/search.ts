@@ -1672,21 +1672,29 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   fields['7_county'] = { value: geo.county, source: 'Google Geocode', confidence: 'High' };
   fields['coordinates'] = { value: { lat: geo.lat, lon: geo.lon }, source: 'Google Geocode', confidence: 'High' };
 
-  console.log('🔵 [enrichWithFreeAPIs] Calling 22 APIs in parallel (including Google Solar API)...');
+  console.log('🔵 [enrichWithFreeAPIs] Calling 22 APIs...');
   const apiStartTime = Date.now();
 
   // Extract ZIP code from geo object for Census API
   const zipCode = geo.zipCode || geo.zip || '';
 
-  // Call all APIs in parallel
-  const [walkScore, floodZone, airQuality, censusData, noiseDataResult, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeDataResult, schoolDiggerResult, femaRiskResult, noaaClimateResult, noaaStormResult, noaaSeaLevelResult, usgsElevationResult, usgsEarthquakeResult, epaFRSResult, epaRadonResult, streetViewResult, googleSolarResult/*, redfinResult*/] = await Promise.all([
+  // STEP 1: Call Google Places first to get beach distance (needed for accurate sea level risk)
+  console.log('🔵 [Step 1/2] Calling Google Places for beach distance...');
+  const distances = await getDistances(geo.lat, geo.lon);
+
+  // Extract beach distance from Google Places result (field 87_distance_beach_mi)
+  const beachDistanceMiles = distances['87_distance_beach_mi']?.value as number | undefined;
+  console.log(`🔵 Beach distance extracted: ${beachDistanceMiles !== undefined ? beachDistanceMiles.toFixed(1) + ' mi' : 'unavailable'}`);
+
+  // STEP 2: Call all other APIs in parallel (including NOAA Sea Level with beach distance)
+  console.log('🔵 [Step 2/2] Calling remaining 21 APIs in parallel...');
+  const [walkScore, floodZone, airQuality, censusData, noiseDataResult, climateData, commuteTime, schoolDistances, transitAccess, crimeDataResult, schoolDiggerResult, femaRiskResult, noaaClimateResult, noaaStormResult, noaaSeaLevelResult, usgsElevationResult, usgsEarthquakeResult, epaFRSResult, epaRadonResult, streetViewResult, googleSolarResult/*, redfinResult*/] = await Promise.all([
     getWalkScore(geo.lat, geo.lon, address),
     getFloodZone(geo.lat, geo.lon),
     getAirQuality(geo.lat, geo.lon),
     getCensusData(zipCode),
     callHowLoud(geo.lat, geo.lon),
     getClimateData(geo.lat, geo.lon),
-    getDistances(geo.lat, geo.lon),
     getCommuteTime(geo.lat, geo.lon, geo.county),
     getSchoolDistances(geo.lat, geo.lon),
     getTransitAccess(geo.lat, geo.lon),
@@ -1695,7 +1703,7 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
     callFEMARiskIndex(geo.county, 'FL'),
     callNOAAClimate(geo.lat, geo.lon, geo.zip, geo.county), // RE-ENABLED: Detailed climate risk analysis
     callNOAAStormEvents(geo.county, geo.state || 'FL'), // RE-ENABLED: Historical hurricane/tornado data
-    callNOAASeaLevel(geo.lat, geo.lon),
+    callNOAASeaLevel(geo.lat, geo.lon, beachDistanceMiles), // Pass accurate beach distance from Google Places
     callUSGSElevation(geo.lat, geo.lon),
     callUSGSEarthquake(geo.lat, geo.lon),
     callEPAFRS(geo.lat, geo.lon),
