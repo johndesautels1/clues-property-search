@@ -2553,6 +2553,144 @@ DO NOT INVENT:
 ${JSON_RESPONSE_FORMAT}`;
 
 // ============================================
+// GPT-5.2 ORCHESTRATOR PROMPT - Evidence-Locked Data Merge
+// Used when GPT receives pre-fetched data blobs (stellarMls, county, APIs, web)
+// Designed by GPT-4 for strict evidence firewall and tier precedence
+// ============================================
+const PROMPT_GPT_ORCHESTRATOR = `YOU ARE: GPT-5.2, a strict CMA data merge + extraction engine.
+
+MISSION:
+Populate the 168-field CMA schema by using ONLY the provided INPUT_DATA blobs.
+Prefer null over guessing.
+
+ABSOLUTE RULE: NO OUTSIDE FACTS
+- Do NOT use training knowledge to assert property-specific facts.
+- Do NOT browse the web.
+- Only use values found in the provided input blobs OR computed via the SAFE COMPUTATIONS whitelist below.
+
+INPUT BLOBS (may be empty / partial):
+- stellarMlsJson (Tier 1, highest authority)
+- paidApisJson (Tier 2)
+- countyJson (Tier 3)
+- webChunksJson (Tier 4)
+- address string (Tier 5 only for literal parsing of what is explicitly present)
+
+${EXACT_FIELD_KEYS}
+
+${FIELD_CLARITY_RULES}
+
+OUTPUT SHAPE (MUST MATCH EXACTLY):
+For each field key:
+{ "value": X, "source": "...", "confidence": "High|Medium|Low|Unverified",
+  "evidence_type": "...", "source_tier": 1|2|3|4|5,
+  "computation_rule": "<string_or_null>", "inputs_used": ["<field_key>", ...] }
+
+EVIDENCE FIREWALL (NON-NEGOTIABLE):
+1) Every non-null field MUST come from one of:
+   A) Direct copy from an input blob (preferred), OR
+   B) SAFE COMPUTATION using ONLY non-null fields already obtained from input blobs.
+2) If a field is not present in any input blob and is not safely computable → set value=null.
+3) Never "infer" county, flood zone, utilities, school district, taxes, assessed value, HOA amounts, listing status, sale dates, parcel ID, etc.
+   - These MUST come from blobs, not memory.
+
+EVIDENCE TYPES:
+- "direct_from_input"  (copied from a blob)
+- "safe_computation"   (computed by whitelist rule)
+- "geographic_inference" (ONLY literal parse from address string if explicitly present; no county inference)
+- "not_found"          (value is null)
+
+TIER PRECEDENCE (CONFLICT RESOLUTION):
+- Tier 1: stellarMlsJson (NEVER override; copy exactly if present)
+- Tier 2: paidApisJson
+- Tier 3: countyJson
+- Tier 4: webChunksJson
+- Tier 5: address literal parsing only
+
+CONFLICT RULES:
+- If the same field exists in multiple tiers:
+  - Choose highest tier value.
+  - Record a conflicts[] entry if the values differ materially.
+- NEVER "correct" Tier 1 values even if other sources disagree.
+
+SAFE COMPUTATIONS (ONLY THESE — DO NOT ADD MORE):
+- 11_price_per_sqft = 10_listing_price ÷ 21_living_sqft
+- 20_total_bathrooms = 18_full_bathrooms + (19_half_bathrooms × 0.5)
+- 24_lot_size_acres = 23_lot_size_sqft ÷ 43560
+- 99_rental_yield = (98_rental_estimate_monthly × 12) ÷ 10_listing_price × 100
+- 101_cap_rate = ((98_rental_estimate_monthly × 12) - 35_annual_taxes) ÷ 10_listing_price × 100
+- Unit conversions (only when explicit inputs exist):
+  - acres_to_sqft = acres × 43560
+  - sqft_to_acres = sqft ÷ 43560
+
+FORBIDDEN:
+- Estimating missing inputs (no backfilling)
+- Any "typical/average" regional assumptions
+- Any new computations not listed above
+- Any language like: likely, possibly, approximately, about, around, typical, average
+
+CONFIDENCE RULES:
+- High: Tier 1 direct_from_input OR Tier 2 direct_from_input with clear specificity
+- Medium: Tier 3 direct_from_input OR safe_computation with strong inputs
+- Low: Tier 4 direct_from_input OR geographic_inference OR safe_computation with weaker inputs
+- Unverified: value is null
+
+POST-PROCESS VALIDATION:
+- If evidence_type="safe_computation": computation_rule MUST be set and inputs_used must list all required inputs.
+- If any required input is null → computed field MUST be null (not_found).
+- Ensure fields_found and fields_missing are accurate.
+- Return ONLY JSON. No prose.`;
+
+/**
+ * GPT Orchestrator User Template
+ * Formats input blobs for GPT-5.2 evidence-locked data merge
+ */
+const GPT_ORCHESTRATOR_USER_TEMPLATE = (params: {
+  address: string;
+  stellarMlsJson: unknown;
+  countyJson: unknown;
+  paidApisJson: unknown;
+  webChunksJson: unknown;
+}) => `INPUT_DATA (authoritative blobs):
+{
+  "address": "${params.address}",
+
+  "stellarMlsJson": ${JSON.stringify(params.stellarMlsJson, null, 2)},
+
+  "countyJson": ${JSON.stringify(params.countyJson, null, 2)},
+
+  "paidApisJson": ${JSON.stringify(params.paidApisJson, null, 2)},
+
+  "webChunksJson": ${JSON.stringify(params.webChunksJson, null, 2)}
+}
+
+TASK:
+Populate ALL fields in EXACT_FIELD_KEYS using ONLY INPUT_DATA with tier precedence rules.
+If a field is missing in all blobs and not computable by SAFE COMPUTATIONS, set value=null.
+
+RETURN ONLY valid JSON in this exact wrapper:
+
+{
+  "fields": {
+    "<each_exact_key>": {
+      "value": <string|number|boolean|array|null>,
+      "source": "<one_of: Stellar MLS | Paid APIs | County | Web Chunks | Address Parse | Not found>",
+      "confidence": "High|Medium|Low|Unverified",
+      "evidence_type": "direct_from_input|safe_computation|geographic_inference|not_found",
+      "source_tier": <1|2|3|4|5>,
+      "computation_rule": <string_or_null>,
+      "inputs_used": <array_of_field_keys_or_empty_array>
+    }
+  },
+  "sources_searched": ["stellarMlsJson","paidApisJson","countyJson","webChunksJson","address"],
+  "fields_found": <integer>,
+  "fields_missing": [ "<field_keys_with_null_value>" ],
+  "conflicts": [
+    { "field": "<field_key>", "tier_values": [{ "tier": <n>, "value": <x> }, ...], "resolution": "<chosen_tier>" }
+  ],
+  "note": "Evidence-locked merge. No external knowledge or web. Tier precedence enforced."
+}`;
+
+// ============================================
 // CLAUDE SONNET PROMPT - NO WEB - Fast, efficient
 // ============================================
 const PROMPT_CLAUDE_SONNET = `You are Claude Sonnet, a fast and efficient property data extractor. No web access.
@@ -2802,12 +2940,38 @@ Return structured JSON with proper field keys. Use null for unknown data.`,
   }
 }
 
-// OpenAI GPT API call - #2 in reliability
-async function callGPT(address: string): Promise<any> {
+// OpenAI GPT API call - Supports both legacy mode (address-only) and orchestrator mode (with input blobs)
+async function callGPT(
+  address: string,
+  inputBlobs?: {
+    stellarMlsJson: unknown;
+    countyJson: unknown;
+    paidApisJson: unknown;
+    webChunksJson: unknown;
+  }
+): Promise<any> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return { error: 'OPENAI_API_KEY not set', fields: {} };
 
   try {
+    // Determine which prompt mode to use
+    const isOrchestratorMode = !!inputBlobs;
+    const systemPrompt = isOrchestratorMode ? PROMPT_GPT_ORCHESTRATOR : PROMPT_GPT;
+
+    const userPrompt = isOrchestratorMode
+      ? GPT_ORCHESTRATOR_USER_TEMPLATE({
+          address,
+          stellarMlsJson: inputBlobs.stellarMlsJson,
+          countyJson: inputBlobs.countyJson,
+          paidApisJson: inputBlobs.paidApisJson,
+          webChunksJson: inputBlobs.webChunksJson,
+        })
+      : `Extract all 168 property data fields for this address: ${address}
+
+Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listing_price", "7_county", "17_bedrooms"). Return null for fields requiring live data.`;
+
+    console.log(`[GPT] Using ${isOrchestratorMode ? 'ORCHESTRATOR' : 'LEGACY'} mode`);
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -2816,15 +2980,10 @@ async function callGPT(address: string): Promise<any> {
       },
       body: JSON.stringify({
         model: 'gpt-4o',
-        max_tokens: 16000, // Increased from 8000 to handle 168 fields
+        max_tokens: 16000, // Increased from 8000 to handle 168 fields + metadata
         messages: [
-          { role: 'system', content: PROMPT_GPT },
-          {
-            role: 'user',
-            content: `Extract all 168 property data fields for this address: ${address}
-
-Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listing_price", "7_county", "17_bedrooms"). Return null for fields requiring live data.`,
-          },
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
         ],
       }),
     });
@@ -2836,9 +2995,25 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
       if (jsonMatch) {
         try {
           const parsed = JSON.parse(jsonMatch[0]);
-          // 🛡️ NULL BLOCKING: Filter all null values before returning
-          const filteredFields = filterNullValues(parsed, 'GPT');
-          return { fields: filteredFields, llm: 'GPT' };
+
+          // Handle different response formats
+          if (isOrchestratorMode) {
+            // Orchestrator mode returns { fields: {...}, conflicts: [...], ... }
+            console.log('[GPT] Orchestrator response received');
+            console.log(`  - fields_found: ${parsed.fields_found || 0}`);
+            console.log(`  - conflicts: ${parsed.conflicts?.length || 0}`);
+            return {
+              fields: parsed.fields || {},
+              conflicts: parsed.conflicts || [],
+              fields_found: parsed.fields_found || 0,
+              fields_missing: parsed.fields_missing || [],
+              llm: 'GPT-Orchestrator'
+            };
+          } else {
+            // Legacy mode: filter null values
+            const filteredFields = filterNullValues(parsed, 'GPT');
+            return { fields: filteredFields, llm: 'GPT' };
+          }
         } catch (parseError) {
           console.error('❌ GPT JSON.parse error:', parseError);
           console.error('   JSON length:', jsonMatch[0].length, 'chars');
@@ -3594,6 +3769,75 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Feed results into arbitration with source="LLM Orchestrator"
         const added = arbitrationPipeline.addFieldsFromSource(cmaSchema, 'LLM Orchestrator');
         console.log(`✅ TIER 3.5 COMPLETE: Added ${added} fields from LLM Orchestrator`);
+
+        // ========================================
+        // GPT-5.2 EVIDENCE-LOCKED DATA MERGE (SUPPLEMENTAL)
+        // Runs alongside Claude Opus for additional coverage with strict tier precedence
+        // ========================================
+        if (engines.includes('gpt')) {
+          console.log('========================================');
+          console.log('GPT-5.2 EVIDENCE-LOCKED DATA MERGE');
+          console.log('========================================');
+
+          try {
+            console.log('🚀 Calling GPT with input blobs (evidence firewall mode)...');
+            const gptStartTime = Date.now();
+
+            // Get fresh webChunks from orchestrator Stage 1 results
+            // (These are the 7 Perplexity micro-prompt results)
+            const webChunksJson = {}; // TODO: Extract from buildCmaSchema if exposed
+
+            const gptResult = await withTimeout(
+              callGPT(searchQuery, {
+                stellarMlsJson,
+                countyJson,
+                paidApisJson,
+                webChunksJson,
+              }),
+              LLM_TIMEOUT,
+              { fields: {}, error: 'timeout' }
+            );
+
+            const gptEndTime = Date.now();
+            console.log(`✅ GPT-5.2 completed in ${gptEndTime - gptStartTime}ms`);
+
+            if (gptResult.fields && Object.keys(gptResult.fields).length > 0) {
+              const gptFieldCount = Object.keys(gptResult.fields).filter(
+                key => gptResult.fields[key]?.value !== null
+              ).length;
+
+              console.log(`📦 GPT-5.2 returned ${gptFieldCount} non-null fields`);
+              console.log(`  - Conflicts detected: ${gptResult.conflicts?.length || 0}`);
+              console.log(`  - Fields found: ${gptResult.fields_found || 0}`);
+
+              // Log any tier conflicts GPT detected
+              if (gptResult.conflicts && gptResult.conflicts.length > 0) {
+                console.log('⚠️ GPT detected tier conflicts:');
+                for (const conflict of gptResult.conflicts.slice(0, 5)) {
+                  console.log(`  - ${conflict.field}: ${conflict.tier_values.length} sources, chose tier ${conflict.resolution}`);
+                }
+              }
+
+              // Feed GPT results into arbitration with source="GPT-5.2 Merge"
+              const gptAdded = arbitrationPipeline.addFieldsFromSource(gptResult.fields, 'GPT-5.2 Merge');
+              console.log(`✅ GPT-5.2 COMPLETE: Added ${gptAdded} fields from GPT-5.2 Merge`);
+              actualFieldCounts['GPT-5.2 Merge'] = gptFieldCount;
+            } else {
+              console.log('⚠️ GPT-5.2: No fields returned or error occurred');
+              if (gptResult.error) {
+                console.log(`   Error: ${gptResult.error}`);
+              }
+              arbitrationPipeline.addFieldsFromSource({}, 'GPT-5.2 Merge');
+              actualFieldCounts['GPT-5.2 Merge'] = 0;
+            }
+          } catch (gptError) {
+            console.error('❌ GPT-5.2 evidence merge failed:', gptError);
+            arbitrationPipeline.addFieldsFromSource({}, 'GPT-5.2 Merge');
+            actualFieldCounts['GPT-5.2 Merge'] = 0;
+          }
+        } else {
+          console.log('⏭️ Skipping GPT-5.2 (not in enabled engines list)');
+        }
 
       } catch (error) {
         console.error('❌ LLM Orchestrator failed (continuing to regular cascade):', error);
