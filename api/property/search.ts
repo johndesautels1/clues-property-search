@@ -1042,7 +1042,7 @@ function convertFlatToNestedStructure(flatFields: Record<string, any>): any {
 // FREE API ENRICHMENT
 // ============================================
 
-async function geocodeAddress(address: string): Promise<{ lat: number; lon: number; county: string; zipCode: string } | null> {
+async function geocodeAddress(address: string): Promise<{ lat: number; lon: number; county: string; zipCode: string; state: string } | null> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) return null;
 
@@ -3109,6 +3109,13 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
       }),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[GPT] API error: ${response.status} ${response.statusText}`);
+      console.error(`[GPT] Error details:`, errorText);
+      return { error: `API error: ${response.status} - ${errorText.substring(0, 200)}`, fields: {}, llm: 'GPT' };
+    }
+
     const data = await response.json();
     if (data.choices && data.choices[0]?.message?.content) {
       const text = data.choices[0].message.content;
@@ -3205,6 +3212,13 @@ async function callGPT_LLMFieldAuditor(
         temperature: 0.1, // Low temperature for deterministic auditing
       }),
     });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[GPT LLM Auditor] API error: ${response.status} ${response.statusText}`);
+      console.error(`[GPT LLM Auditor] Error details:`, errorText);
+      return { fields: inputs.llmOnlyFields, fields_audited: 0, fields_corrected: 0, fields_nulled: 0, error: `API error: ${response.status}` };
+    }
 
     const data = await response.json();
     if (data.choices && data.choices[0]?.message?.content) {
