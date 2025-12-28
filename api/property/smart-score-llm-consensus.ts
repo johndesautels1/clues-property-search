@@ -4,7 +4,7 @@
  * Implements 2-tier voting consensus model:
  * 1. Call Perplexity + Claude Opus simultaneously
  * 2. If they agree (within 10 points), use consensus
- * 3. If they disagree, call GPT-4.5 as tiebreaker
+ * 3. If they disagree, call GPT-5.2 as tiebreaker
  * 4. Return final LLM consensus scores for all 3 properties
  *
  * @module smart-score-llm-consensus
@@ -69,7 +69,7 @@ interface ConsensusResult {
     perplexity: number[];
     claudeOpus: number[];
     tiebreaker?: {
-      model: 'gpt-4.5' | 'grok';
+      model: 'gpt-5.2' | 'grok';
       scores: number[];
     };
   };
@@ -238,7 +238,7 @@ async function callClaudeOpus(prompt: string): Promise<LLMResponse> {
 }
 
 /**
- * Call GPT-4.5 API (tiebreaker)
+ * Call GPT-5.2 API (tiebreaker)
  */
 async function callGPT4(prompt: string): Promise<LLMResponse> {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -254,7 +254,7 @@ async function callGPT4(prompt: string): Promise<LLMResponse> {
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'gpt-4.5-turbo',
+      model: 'gpt-5.2',
       messages: [
         {
           role: 'system',
@@ -273,14 +273,14 @@ async function callGPT4(prompt: string): Promise<LLMResponse> {
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`GPT-4.5 API error: ${response.status} ${error}`);
+    throw new Error(`GPT-5.2 API error: ${response.status} ${error}`);
   }
 
   const data = await response.json();
   const content = data.choices[0]?.message?.content;
 
   if (!content) {
-    throw new Error('GPT-4.5 returned empty response');
+    throw new Error('GPT-5.2 returned empty response');
   }
 
   return JSON.parse(content);
@@ -407,14 +407,14 @@ async function calculateConsensus(
   console.log('[LLM Consensus] ⚠️ DISAGREEMENT detected - calling tiebreaker...');
 
   let tiebreakerResult: LLMResponse;
-  let tiebreakerModel: 'gpt-4.5' | 'grok';
+  let tiebreakerModel: 'gpt-5.2' | 'grok';
 
   try {
     tiebreakerResult = await callGPT4(prompt);
-    tiebreakerModel = 'gpt-4.5';
-    console.log('[LLM Consensus] Tiebreaker: GPT-4.5');
+    tiebreakerModel = 'gpt-5.2';
+    console.log('[LLM Consensus] Tiebreaker: GPT-5.2');
   } catch (error) {
-    console.log('[LLM Consensus] GPT-4.5 failed, trying Grok...');
+    console.log('[LLM Consensus] GPT-5.2 failed, trying Grok...');
     tiebreakerResult = await callGrok(prompt);
     tiebreakerModel = 'grok';
     console.log('[LLM Consensus] Tiebreaker: Grok');

@@ -26,7 +26,7 @@ export const LLM_DISPLAY_NAMES: Record<LLMEngine, string> = {
   'perplexity': 'Perplexity',
   'grok': 'Grok',
   'claude-opus': 'Claude Opus',
-  'gpt': 'GPT-4o',
+  'gpt': 'GPT-5.2',
   'claude-sonnet': 'Claude Sonnet',
   'gemini': 'Gemini',
 };

@@ -55,7 +55,7 @@ export const DATA_TIERS: Record<string, TierConfig> = {
   'perplexity': { tier: 4, name: 'Perplexity', description: 'LLM with web search (HIGHEST LLM PRIORITY)', reliability: 75 },
   'grok': { tier: 5, name: 'Grok/xAI', description: 'LLM with real-time data', reliability: 70 },
   'claude-opus': { tier: 5, name: 'Claude Opus', description: 'High-quality LLM', reliability: 65 },
-  'gpt': { tier: 5, name: 'GPT-4', description: 'OpenAI LLM', reliability: 60 },
+  'gpt': { tier: 5, name: 'GPT-5.2', description: 'OpenAI LLM', reliability: 60 },
   'claude-sonnet': { tier: 5, name: 'Claude Sonnet', description: 'Fast LLM fallback', reliability: 55 },
   'gemini': { tier: 5, name: 'Gemini', description: 'Google LLM', reliability: 50 },
 };

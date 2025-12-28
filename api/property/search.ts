@@ -2519,9 +2519,9 @@ Be HONEST about uncertainty. It's better to return null than to guess.
 ${JSON_RESPONSE_FORMAT}`;
 
 // ============================================
-// GPT-4 PROMPT - NO WEB - Strong reasoning
+// GPT-5.2 PROMPT - NO WEB - Strong reasoning
 // ============================================
-const PROMPT_GPT = `You are GPT-4, a real estate data extraction assistant. You do NOT have web access.
+const PROMPT_GPT = `You are GPT-5.2, a real estate data extraction assistant. You do NOT have web access.
 
 YOUR MISSION: Extract property data fields using your training knowledge (cutoff: early 2024).
 
@@ -2979,7 +2979,7 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-5.2',
         max_tokens: 16000, // Increased from 8000 to handle 168 fields + metadata
         messages: [
           { role: 'system', content: systemPrompt },

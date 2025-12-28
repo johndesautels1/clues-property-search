@@ -4,7 +4,7 @@
  * Calls 6 different LLMs to get consensus on property market forecasts:
  * - Claude Sonnet 4.5: Fast, efficient analysis + pattern recognition
  * - Claude Opus 4.5: Deep reasoning + complex market modeling
- * - GPT-5.1: Market psychology + buyer behavior
+ * - GPT-5.2: Market psychology + buyer behavior
  * - Gemini 2.5 Pro: Google data integration + local trends
  * - Perplexity Sonar Reasoning Pro: LIVE web search for breaking news
  * - Grok 4 Expert: X (Twitter) data + real-time social sentiment
@@ -217,7 +217,7 @@ async function callClaudeOpusForecast(
 }
 
 /**
- * GPT-5.1 - Market psychology + buyer behavior
+ * GPT-5.2 - Market psychology + buyer behavior
  */
 async function callGPT4Forecast(
   address: string,
@@ -235,7 +235,7 @@ async function callGPT4Forecast(
   const prompt = buildForecastPrompt(address, price, neighborhood, propertyType);
 
   const response = await client.chat.completions.create({
-    model: 'gpt-5.1',
+    model: 'gpt-5.2',
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.5,
     max_completion_tokens: 2000,
@@ -244,13 +244,13 @@ async function callGPT4Forecast(
 
   const text = response.choices[0]?.message?.content;
   if (!text) {
-    throw new Error('No content in GPT-5.1 response');
+    throw new Error('No content in GPT-5.2 response');
   }
 
   const data = JSON.parse(text);
 
   return {
-    source: 'GPT-5.1',
+    source: 'GPT-5.2',
     appreciation1Yr: data.appreciation1Yr,
     appreciation5Yr: data.appreciation5Yr,
     confidence: data.confidence,
@@ -506,7 +506,7 @@ export async function getMultiLLMMarketForecast(
   // Extract successful forecasts
   const successfulForecasts: LLMForecast[] = [];
   forecasts.forEach((result, index) => {
-    const sources = ['Claude Sonnet 4.5', 'Claude Opus 4.5', 'GPT-5.1', 'Gemini 2.5', 'Perplexity Sonar Reasoning Pro', 'Grok 4'];
+    const sources = ['Claude Sonnet 4.5', 'Claude Opus 4.5', 'GPT-5.2', 'Gemini 2.5', 'Perplexity Sonar Reasoning Pro', 'Grok 4'];
     if (result.status === 'fulfilled') {
       successfulForecasts.push(result.value);
       console.log(`✅ ${sources[index]}: ${result.value.appreciation1Yr.toFixed(1)}% (1yr)`);

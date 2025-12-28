@@ -608,7 +608,7 @@ Only include fields you have reasonable confidence about. Return ONLY the JSON o
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-5.2',
         max_tokens: 4000,
         messages: [{ role: 'user', content: prompt }],
       }),
