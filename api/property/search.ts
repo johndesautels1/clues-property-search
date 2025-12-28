@@ -1060,21 +1060,51 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lon: numb
       return null;
     }
 
-    // CRITICAL: If multiple results, prefer the one matching expected ZIP
-    // This prevents wrong school/location data when addresses are ambiguous
+    // CRITICAL: If multiple results, prefer the one matching expected ZIP AND street suffix
+    // This prevents wrong property when "100 160th Street" vs "100 160th Court" exist
     if (data.results.length > 1) {
       console.warn(`[Geocode] ⚠️ Multiple results (${data.results.length}) for address: ${address}`);
 
-      if (expectedZip) {
-        // Try to find result matching expected ZIP
+      // Extract street suffix from user query (Street, St, Court, Ct, Avenue, Ave, etc.)
+      const suffixMatch = address.match(/\b(Street|St|Court|Ct|Avenue|Ave|Drive|Dr|Road|Rd|Lane|Ln|Boulevard|Blvd|Way|Place|Pl|Circle|Cir|Terrace|Ter|Parkway|Pkwy)\b/i);
+      const expectedSuffix = suffixMatch ? suffixMatch[1].toLowerCase() : null;
+
+      if (expectedZip || expectedSuffix) {
+        // Try to find result matching BOTH expected ZIP and street suffix
         const matchingResult = data.results.find((r: any) => {
           const components = r.address_components || [];
+          const formattedAddress = r.formatted_address || '';
+
+          // Check ZIP match
           const zip = components.find((c: any) => c.types.includes('postal_code'));
-          return zip && zip.long_name === expectedZip;
+          const zipMatches = !expectedZip || (zip && zip.long_name === expectedZip);
+
+          // Check street suffix match
+          let suffixMatches = true;
+          if (expectedSuffix) {
+            const normalizedSuffix = expectedSuffix.replace(/^(street|court|avenue|drive|road|lane|boulevard|place|circle|terrace|parkway)$/i, (match) => {
+              const abbrevMap: Record<string, string> = {
+                'street': 'st', 'court': 'ct', 'avenue': 'ave', 'drive': 'dr',
+                'road': 'rd', 'lane': 'ln', 'boulevard': 'blvd', 'place': 'pl',
+                'circle': 'cir', 'terrace': 'ter', 'parkway': 'pkwy'
+              };
+              return abbrevMap[match.toLowerCase()] || match;
+            });
+
+            // Check if formatted address contains the expected suffix (or its abbreviation)
+            const addressLower = formattedAddress.toLowerCase();
+            const hasFullSuffix = addressLower.includes(` ${expectedSuffix.toLowerCase()} `) ||
+                                  addressLower.includes(` ${expectedSuffix.toLowerCase()},`);
+            const hasAbbrevSuffix = addressLower.includes(` ${normalizedSuffix} `) ||
+                                    addressLower.includes(` ${normalizedSuffix},`);
+            suffixMatches = hasFullSuffix || hasAbbrevSuffix;
+          }
+
+          return zipMatches && suffixMatches;
         });
 
         if (matchingResult) {
-          console.log(`[Geocode] ✅ Selected result matching ZIP ${expectedZip}`);
+          console.log(`[Geocode] ✅ Selected result matching ZIP ${expectedZip || 'any'} and suffix ${expectedSuffix || 'any'}`);
           const result = matchingResult;
           let county = '';
           let zipCode = '';
@@ -1092,7 +1122,11 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lon: numb
           }
           return { lat: result.geometry.location.lat, lon: result.geometry.location.lng, county, zipCode, state };
         } else {
-          console.warn(`[Geocode] ⚠️ No result matched expected ZIP ${expectedZip}, using first result`);
+          console.warn(`[Geocode] ⚠️ No result matched expected ZIP ${expectedZip || 'any'} and suffix ${expectedSuffix || 'any'}, using first result`);
+          console.warn(`[Geocode] 🚨 WARNING: May have selected wrong property! Available results:`);
+          data.results.forEach((r: any, idx: number) => {
+            console.warn(`  [${idx}] ${r.formatted_address}`);
+          });
         }
       }
     }
