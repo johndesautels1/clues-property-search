@@ -3494,7 +3494,79 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // ========================================
-    // TIER 4: LLM CASCADE
+    // TIER 3.5: TWO-STAGE LLM ORCHESTRATOR (SUPPLEMENTAL)
+    // Runs in addition to existing LLM cascade
+    // Stage 1: Perplexity micro-prompts (Tier 4)
+    // Stage 2: Claude Opus normalizer (Tier 5)
+    // ========================================
+    if (!skipLLMs && !skipApis) {
+      console.log('========================================');
+      console.log('TIER 3.5: TWO-STAGE LLM ORCHESTRATOR');
+      console.log('========================================');
+
+      try {
+        // Import orchestrator and county client
+        const { buildCmaSchema, flattenWebChunks } = await import('../../src/llm/orchestrator.js');
+        const { fetchCountyData } = await import('../../src/api/county-client.js');
+
+        // Get county data (if geo available from enrichWithFreeAPIs)
+        console.log('🔍 Fetching county data...');
+        const geo = await geocodeAddress(searchQuery);
+        const countyJson = geo?.county ? await fetchCountyData(searchQuery, geo.county) : {};
+        console.log(`✅ County data fetched: ${Object.keys(countyJson).length} fields`);
+
+        // Get current pipeline state for inputs
+        const intermediateResult = arbitrationPipeline.getResult();
+
+        // Prepare inputs for orchestrator
+        const stellarMlsJson = {}; // Extract from intermediateResult if needed
+        const paidApisJson = intermediateResult.fields; // All current fields from APIs
+
+        console.log('🚀 Starting two-stage orchestrator...');
+        const orchestratorStartTime = Date.now();
+
+        // Call orchestrator (this runs 7 micro-prompts + core normalizer)
+        const cmaSchema = await withTimeout(
+          buildCmaSchema({
+            address: searchQuery,
+            stellarMlsJson,
+            countyJson,
+            paidApisJson,
+          }),
+          PERPLEXITY_TIMEOUT + LLM_TIMEOUT, // Allow time for both Perplexity + Claude Opus
+          {} as any // Fallback to empty schema on timeout
+        );
+
+        const orchestratorEndTime = Date.now();
+        console.log(`✅ Orchestrator completed in ${orchestratorEndTime - orchestratorStartTime}ms`);
+
+        // The orchestrator returns a validated 168-field schema
+        // We need to separate Perplexity micro-prompt results from Claude Opus normalizer
+        // For now, feed all results as mixed Tier 4/5 data
+
+        // Add orchestrator results to pipeline
+        // Note: Individual field sources will determine tier during arbitration
+        const orchestratorFieldCount = Object.keys(cmaSchema).filter(
+          key => (cmaSchema as any)[key]?.value !== null
+        ).length;
+
+        console.log(`📦 Orchestrator returned ${orchestratorFieldCount} non-null fields`);
+
+        // Feed results into arbitration with source="LLM Orchestrator"
+        const added = arbitrationPipeline.addFieldsFromSource(cmaSchema, 'LLM Orchestrator');
+        console.log(`✅ TIER 3.5 COMPLETE: Added ${added} fields from LLM Orchestrator`);
+
+      } catch (error) {
+        console.error('❌ LLM Orchestrator failed (continuing to regular cascade):', error);
+        // Don't crash - continue to existing LLM cascade
+      }
+
+      console.log('========================================');
+      console.log('');
+    }
+
+    // ========================================
+    // TIER 4: LLM CASCADE (EXISTING - UNCHANGED)
     // ========================================
     if (!skipLLMs) {
       const intermediateResult = arbitrationPipeline.getResult();
