@@ -1351,7 +1351,7 @@ async function getClimateData(lat: number, lon: number): Promise<Record<string, 
       if (conditions.length > 0) {
         fields['121_climate_risk'] = {
           value: conditions.join(', '),
-          source: 'OpenWeatherMap',
+          source: 'Weather',
           confidence: 'High'
         };
       }
@@ -1367,7 +1367,7 @@ async function getClimateData(lat: number, lon: number): Promise<Record<string, 
       if (conditions.length > 0) {
         fields['121_climate_risk'] = {
           value: conditions.join(', '),
-          source: 'Weather.com',
+          source: 'Weather',
           confidence: 'High'
         };
       }
@@ -1380,7 +1380,7 @@ async function getClimateData(lat: number, lon: number): Promise<Record<string, 
 
         fields['130_solar_potential'] = {
           value: `${solarPotential} (UV Index: ${data.uvIndex})`,
-          source: 'Weather.com',
+          source: 'Weather',
           confidence: 'Medium'
         };
       }
@@ -1788,7 +1788,7 @@ async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>>
   const apiEndTime = Date.now();
   console.log(`✅ [enrichWithFreeAPIs] All APIs completed in ${apiEndTime - apiStartTime}ms`);
 
-  Object.assign(fields, walkScore, floodZone, airQuality, censusData, noiseData, climateData, distances, commuteTime, schoolDistances, transitAccess, crimeData, schoolDiggerData, femaRiskData, noaaClimateData, noaaStormData, noaaSeaLevelData, usgsElevationData, usgsEarthquakeData, epaFRSData, epaRadonData, streetViewData, googleSolarData/*, redfinData*/);
+  Object.assign(fields, walkScore, floodZone, airQuality, censusData, noiseData, distances, commuteTime, schoolDistances, transitAccess, crimeData, schoolDiggerData, femaRiskData, noaaClimateData, noaaStormData, noaaSeaLevelData, usgsElevationData, usgsEarthquakeData, epaFRSData, epaRadonData, streetViewData, googleSolarData, climateData/*, redfinData*/);
 
   console.log('🔵 [enrichWithFreeAPIs] Raw field count before filtering:', Object.keys(fields).length);
   console.log('🔵 [enrichWithFreeAPIs] Field breakdown:');
