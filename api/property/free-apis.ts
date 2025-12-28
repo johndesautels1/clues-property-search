@@ -1243,7 +1243,7 @@ export async function callNOAASeaLevel(lat: number, lon: number, beachDistanceMi
     else seaLevelRisk = 'Minimal';
 
     // Field 128: sea_level_rise_risk
-    setField(fields, '128_sea_level_rise_risk', `${seaLevelRisk} (${Math.round(distanceToCoast)} mi from coast)`, distanceSource, 'High');
+    setField(fields, '128_sea_level_rise_risk', `${seaLevelRisk} (${Math.round(distanceToCoast)} mi from coast)`, 'NOAA Sea Level', 'High');
 
     return { success: Object.keys(fields).length > 0, source: distanceSource, fields };
 
