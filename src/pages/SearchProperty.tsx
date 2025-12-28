@@ -65,9 +65,18 @@ export default function SearchProperty() {
       console.log('[SearchProperty] Extracted DOM/CDOM:', { daysOnMarket, cumulativeDaysOnMarket });
     }
 
-    const price = getValue('pricing.listingPrice', 0);
-    const sqft = getValue('propertyBasics.livingSqft', 0);
-    const pricePerSqftField = getValue('pricing.pricePerSqft', 0);
+    // Helper to get API field value by numbered key (e.g., "10_listing_price")
+    const getApiValue = (key: string, defaultVal: any = 0): any => {
+      if (!apiFields || !apiFields[key]) return defaultVal;
+      const field = apiFields[key];
+      return field.value !== null && field.value !== undefined ? field.value : defaultVal;
+    };
+
+    // Build PropertyCard from API numbered fields (source of truth) when available,
+    // fall back to formData UI fields if API data missing
+    const price = apiFields ? getApiValue('10_listing_price', 0) : getValue('pricing.listingPrice', 0);
+    const sqft = apiFields ? getApiValue('21_living_sqft', 0) : getValue('propertyBasics.livingSqft', 0);
+    const pricePerSqftField = apiFields ? getApiValue('11_price_per_sqft', 0) : getValue('pricing.pricePerSqft', 0);
 
     // Calculate pricePerSqft if not provided
     const pricePerSqft = pricePerSqftField || (price && sqft ? Math.round(price / sqft) : 0);
@@ -80,14 +89,15 @@ export default function SearchProperty() {
       zip,
       price,
       pricePerSqft,
-      bedrooms: getValue('propertyBasics.bedrooms', 0),
-      bathrooms: getValue('propertyBasics.totalBathrooms', 0) ||
-                 (getValue('propertyBasics.fullBathrooms', 0) + getValue('propertyBasics.halfBathrooms', 0) * 0.5),
+      bedrooms: apiFields ? getApiValue('17_bedrooms', 0) : getValue('propertyBasics.bedrooms', 0),
+      bathrooms: apiFields
+        ? getApiValue('20_total_bathrooms', 0)
+        : (getValue('propertyBasics.totalBathrooms', 0) || (getValue('propertyBasics.fullBathrooms', 0) + getValue('propertyBasics.halfBathrooms', 0) * 0.5)),
       sqft,
-      yearBuilt: getValue('propertyBasics.yearBuilt', new Date().getFullYear()),
+      yearBuilt: apiFields ? getApiValue('25_year_built', new Date().getFullYear()) : getValue('propertyBasics.yearBuilt', new Date().getFullYear()),
       // smartScore omitted - will be calculated via 2-tier system during comparison
       dataCompleteness: calculateCompleteness(formData),
-      listingStatus: getValue('addressIdentity.listingStatus', 'Active') || 'Active',
+      listingStatus: (apiFields ? getApiValue('4_listing_status', 'Active') : getValue('addressIdentity.listingStatus', 'Active')) || 'Active',
       daysOnMarket: daysOnMarket,
       cumulativeDaysOnMarket: cumulativeDaysOnMarket,
     };
