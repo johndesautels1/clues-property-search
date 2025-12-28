@@ -3106,6 +3106,7 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
+        response_format: { type: 'json_object' },
       }),
     });
 
@@ -3203,6 +3204,7 @@ async function callGPT_LLMFieldAuditor(
           { role: 'user', content: userPrompt },
         ],
         temperature: 0.1, // Low temperature for deterministic auditing
+        response_format: { type: 'json_object' },
       }),
     });
 
