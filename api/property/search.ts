@@ -3906,8 +3906,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const address = sanitizeAddress(rawAddress);
   const url = rawUrl ? sanitizeAddress(rawUrl) : undefined;
 
-  if (!address && !url) {
-    return res.status(400).json({ error: 'Address or URL required' });
+  if (!address && !url && !mlsNumber) {
+    return res.status(400).json({ error: 'Address, URL, or MLS number required' });
   }
 
   // Validate address format
@@ -3915,7 +3915,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Invalid address format' });
   }
 
-  const searchQuery = address || `property at URL: ${url}`;
+  const searchQuery = address || (url ? `property at URL: ${url}` : `MLS# ${mlsNumber}`);
 
   try {
     console.log('=== STARTING PROPERTY SEARCH (with Arbitration Pipeline) ===');
