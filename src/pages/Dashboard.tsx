@@ -71,10 +71,10 @@ export default function Dashboard() {
     };
 
     return [
-      { label: 'Total Properties', value: properties.length.toString(), icon: Building2, color: 'cyan' },
+      { label: 'Total Properties Saved', value: properties.length.toString(), icon: Building2, color: 'cyan' },
       { label: 'Avg. SMART Score', value: avgSmartScore.toString(), icon: Zap, color: 'purple' },
-      { label: 'Total Value', value: formatValue(totalValue), icon: DollarSign, color: 'green' },
-      { label: 'Data Complete', value: `${avgDataComplete}%`, icon: BarChart3, color: 'blue' },
+      { label: 'Total Value Properties Saved', value: formatValue(totalValue), icon: DollarSign, color: 'green' },
+      { label: 'Average % Data Available Properties Saved', value: `${avgDataComplete}%`, icon: BarChart3, color: 'blue' },
     ];
   }, [properties]);
 
@@ -111,7 +111,7 @@ export default function Dashboard() {
       animate="visible"
     >
       {/* Welcome Section */}
-      <motion.div variants={itemVariants} className="mb-8">
+      <motion.div variants={itemVariants} className="mb-8 text-center">
         <h1 className="font-orbitron text-2xl md:text-4xl font-bold text-gradient-quantum mb-2">
           CLUES Dashboard
         </h1>
