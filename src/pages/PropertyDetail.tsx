@@ -1712,7 +1712,6 @@ export default function PropertyDetail() {
               <div className="space-y-4">
                 <div className="mb-4">
                   {renderDataField("School District", fullProperty.location.schoolDistrictName, "text", undefined, "63_school_district")}
-                  {renderDataField("Elevation (feet)", fullProperty.location.elevationFeet, "number", undefined, "64_elevation_feet")}
                 </div>
                 {fullProperty.location.assignedElementary.value && (
                   <div className="glass-5d p-4 rounded-lg">
@@ -1915,6 +1914,7 @@ export default function PropertyDetail() {
                   {renderDataField("Air Quality Grade", fullProperty.utilities.airQualityGrade, "text", undefined, "118_air_quality_grade")}
                   {renderDataField("Flood Zone", fullProperty.utilities.floodZone, "text", undefined, "119_flood_zone")}
                   {renderDataField("Flood Risk Level", fullProperty.utilities.floodRiskLevel, "text", undefined, "120_flood_risk_level")}
+                  {renderDataField("Elevation (feet)", fullProperty.location.elevationFeet, "number", undefined, "64_elevation_feet")}
                   {renderDataField("Climate Risk", fullProperty.utilities.climateRiskWildfireFlood, "text", undefined, "121_climate_risk")}
                   {renderDataField("Wildfire Risk", fullProperty.utilities.wildfireRisk, "text", undefined, "122_wildfire_risk")}
                   {renderDataField("Earthquake Risk", fullProperty.utilities.earthquakeRisk, "text", undefined, "123_earthquake_risk")}

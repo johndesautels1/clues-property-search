@@ -1420,14 +1420,88 @@ async function getDistances(lat: number, lon: number): Promise<Record<string, an
   const fields: Record<string, any> = {};
 
   // Helper: Calculate straight-line distance to nearest coastline point
-  // Florida Gulf Coast approximate coordinates (Tampa Bay to Naples area)
+  // Comprehensive Florida coastline points (Gulf, Atlantic, Intracoastal, Tampa Bay, Biscayne Bay)
   const calculateCoastlineDistance = (propLat: number, propLon: number): number => {
     const coastlinePoints = [
+      // Gulf Coast - Panhandle (West to East)
+      { lat: 30.3935, lon: -87.2169 }, // Pensacola Beach
+      { lat: 30.3960, lon: -86.4958 }, // Destin
+      { lat: 30.1588, lon: -85.6557 }, // Panama City Beach
+      { lat: 29.9074, lon: -84.9808 }, // St. George Island
+      { lat: 29.6516, lon: -84.3483 }, // Shell Point
+
+      // Gulf Coast - Big Bend
+      { lat: 29.1348, lon: -83.0353 }, // Cedar Key
+      { lat: 28.8206, lon: -82.7579 }, // Crystal River
+      { lat: 28.5383, lon: -82.6465 }, // Homosassa
+
+      // Gulf Coast - Tampa Bay Area
+      { lat: 28.3922, lon: -82.7381 }, // Weeki Wachee
+      { lat: 28.2181, lon: -82.7709 }, // Bayport
+      { lat: 28.1070, lon: -82.7376 }, // Hudson Beach
+      { lat: 28.0156, lon: -82.7523 }, // New Port Richey
       { lat: 27.9506, lon: -82.4572 }, // Tampa Bay
+      { lat: 27.8483, lon: -82.7618 }, // Clearwater Beach
+      { lat: 27.7949, lon: -82.8401 }, // Madeira Beach / Treasure Island
       { lat: 27.7676, lon: -82.6403 }, // St. Pete Beach
-      { lat: 27.3364, lon: -82.5307 }, // Sarasota
+      { lat: 27.6648, lon: -82.7282 }, // Pass-a-Grille
+
+      // Gulf Coast - Central West
+      { lat: 27.4989, lon: -82.5748 }, // Anna Maria Island
+      { lat: 27.4706, lon: -82.7034 }, // Bradenton Beach
+      { lat: 27.3364, lon: -82.5307 }, // Sarasota / Lido Key
+      { lat: 27.2052, lon: -82.4543 }, // Siesta Key
+      { lat: 27.0339, lon: -82.4515 }, // Venice Beach
       { lat: 26.9342, lon: -82.2810 }, // Fort Myers Beach
+      { lat: 26.5629, lon: -82.0231 }, // Sanibel Island
+      { lat: 26.4619, lon: -81.9480 }, // Captiva Island
+
+      // Gulf Coast - Southwest
+      { lat: 26.3856, lon: -81.8073 }, // Bonita Beach
       { lat: 26.1420, lon: -81.7948 }, // Naples
+      { lat: 25.9399, lon: -81.7081 }, // Marco Island
+      { lat: 25.8615, lon: -81.3792 }, // Everglades City
+
+      // Florida Keys - Upper & Middle
+      { lat: 25.5516, lon: -80.3997 }, // Key Largo
+      { lat: 25.1372, lon: -80.6137 }, // Islamorada
+      { lat: 24.7210, lon: -81.1060 }, // Marathon
+      { lat: 24.5557, lon: -81.7782 }, // Key West
+
+      // Atlantic Coast - Southeast
+      { lat: 25.7617, lon: -80.1918 }, // Miami Beach
+      { lat: 25.8736, lon: -80.1239 }, // Sunny Isles Beach
+      { lat: 26.1224, lon: -80.0993 }, // Hollywood Beach
+      { lat: 26.1420, lon: -80.0989 }, // Dania Beach
+      { lat: 26.1224, lon: -80.1043 }, // Fort Lauderdale Beach
+      { lat: 26.2159, lon: -80.0978 }, // Pompano Beach
+      { lat: 26.3683, lon: -80.0832 }, // Boca Raton Beach
+      { lat: 26.7056, lon: -80.0364 }, // Palm Beach
+      { lat: 26.9478, lon: -80.0503 }, // Jupiter Beach
+
+      // Atlantic Coast - Treasure Coast
+      { lat: 27.2046, lon: -80.1937 }, // Stuart Beach
+      { lat: 27.4667, lon: -80.3256 }, // Fort Pierce Beach
+      { lat: 27.6648, lon: -80.3675 }, // Vero Beach
+      { lat: 27.8106, lon: -80.4773 }, // Sebastian Inlet
+
+      // Atlantic Coast - Space Coast
+      { lat: 28.0837, lon: -80.6081 }, // Melbourne Beach
+      { lat: 28.3922, lon: -80.6077 }, // Cocoa Beach
+      { lat: 28.4158, lon: -80.6098 }, // Cape Canaveral
+      { lat: 28.9931, lon: -80.8270 }, // New Smyrna Beach
+      { lat: 29.2283, lon: -81.0226 }, // Daytona Beach
+      { lat: 29.6684, lon: -81.2081 }, // Flagler Beach
+
+      // Atlantic Coast - Northeast
+      { lat: 29.9510, lon: -81.3124 }, // Marineland
+      { lat: 30.2672, lon: -81.3993 }, // St. Augustine Beach
+      { lat: 30.3322, lon: -81.3928 }, // Vilano Beach
+      { lat: 30.4213, lon: -81.4313 }, // Ponte Vedra Beach
+      { lat: 30.6954, lon: -81.5074 }, // Jacksonville Beach
+      { lat: 30.7335, lon: -81.4421 }, // Atlantic Beach
+      { lat: 30.6727, lon: -81.4651 }, // Neptune Beach
+      { lat: 30.5427, lon: -81.4446 }, // Fernandina Beach
     ];
 
     let minDistance = Infinity;
@@ -1477,15 +1551,40 @@ async function getDistances(lat: number, lon: number): Promise<Record<string, an
 
         if (distData.rows?.[0]?.elements?.[0]?.distance) {
           const meters = distData.rows[0].elements[0].distance.value;
-          const miles = (meters / 1609.34).toFixed(1);
+          const googleMiles = (meters / 1609.34).toFixed(1);
 
-          // Use Google Places distance directly - no validation overrides
-          fields[place.field] = {
-            value: parseFloat(miles),
-            source: 'Google Places',
-            confidence: 'High',
-            details: nearest.name
-          };
+          // BEACH/WATERFRONT VALIDATION:
+          // Google Places finds "beaches" (named locations like public beach parks)
+          // For waterfront properties, actual coastline distance is more accurate
+          if (place.type === 'beach') {
+            // If property is within 0.5 mi of actual coast/bay/intracoastal, use that distance
+            // This handles waterfront homes that Google thinks are far from "beaches"
+            if (actualCoastDistance < 0.5) {
+              console.log(`⚠️ Waterfront property detected: coastline ${actualCoastDistance.toFixed(2)} mi, Google says ${googleMiles} mi to "${nearest.name}" - using coastline distance`);
+              fields[place.field] = {
+                value: parseFloat(actualCoastDistance.toFixed(1)),
+                source: 'Coastline Calculation',
+                confidence: 'High',
+                details: 'Waterfront property'
+              };
+            } else {
+              // Not waterfront - use Google Places distance to nearest named beach
+              fields[place.field] = {
+                value: parseFloat(googleMiles),
+                source: 'Google Places',
+                confidence: 'High',
+                details: nearest.name
+              };
+            }
+          } else {
+            // Non-beach amenities - always use Google Places
+            fields[place.field] = {
+              value: parseFloat(googleMiles),
+              source: 'Google Places',
+              confidence: 'High',
+              details: nearest.name
+            };
+          }
         }
       }
     } catch (e) {
