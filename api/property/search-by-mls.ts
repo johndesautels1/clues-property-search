@@ -12,7 +12,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { normalizeCity, normalizeState, normalizeZip } from '../src/lib/address-normalizer.js';
+import { normalizeCity, normalizeState, normalizeZip } from '../../src/lib/address-normalizer.js';
 
 // Vercel serverless config
 export const config = {
