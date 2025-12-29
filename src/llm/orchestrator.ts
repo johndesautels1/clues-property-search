@@ -30,12 +30,12 @@ import {
   ISP_USER_TEMPLATE,
   POI_DISTANCES_SYSTEM_PROMPT,
   POI_DISTANCES_USER_TEMPLATE,
-} from './prompts/microPromptLibrary';
+} from './prompts/microPromptLibrary.js';
 import {
   CORE_SCHEMA_SYSTEM_PROMPT,
   CORE_SCHEMA_USER_TEMPLATE,
-} from './prompts/coreSchemaPrompt';
-import { validateCmaSchema, CmaSchemaType } from './validation/cmaSchemas';
+} from './prompts/coreSchemaPrompt.js';
+import { validateCmaSchema, CmaSchemaType } from './validation/cmaSchemas.js';
 
 // ============================================
 // MICRO-PROMPT EXECUTION
