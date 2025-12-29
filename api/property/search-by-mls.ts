@@ -17,7 +17,6 @@ import { normalizeCity, normalizeState, normalizeZip } from '../../src/lib/addre
 // Vercel serverless config - MLS-first two-step search
 export const config = {
   maxDuration: 300, // 5 minutes - same as search.ts
-  runtime: 'nodejs20.x'
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
