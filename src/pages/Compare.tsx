@@ -1402,14 +1402,14 @@ export default function Compare() {
         <>
           {/* Category Tabs */}
           {selectedProperties.length >= 2 && (
-            <div className="flex flex-wrap gap-2 mb-6">
+            <div className="flex flex-wrap gap-2 mb-6 justify-center">
               {fieldCategories.map((cat) => {
                 const Icon = cat.icon;
                 return (
                   <button
                     key={cat.id}
                     onClick={() => setActiveCategory(cat.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                    className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all w-72 ${
                       activeCategory === cat.id
                         ? 'bg-quantum-cyan/20 text-quantum-cyan border border-quantum-cyan/30'
                         : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-transparent'
