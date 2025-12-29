@@ -3951,6 +3951,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const zipCode = stateMatch && stateMatch[2] ? stateMatch[2] : undefined;
 
       console.log('📍 Parsed address components:', { street, city, state, zipCode });
+      console.log('📍 Validation params provided:', { validationCity, validationState, validationZip });
+
+      // CRITICAL: Validation params from MLS-first flow MUST override parsed values
+      // If validation params are provided, use them exclusively (they came from authoritative Bridge MLS)
+      const finalCity = validationCity || city;
+      const finalState = validationState || state;
+      const finalZip = validationZip || zipCode;
+
+      console.log('📍 Final components being sent to Bridge MLS:', { street, city: finalCity, state: finalState, zipCode: finalZip });
 
       try {
         const bridgeResponse = await withTimeout(
@@ -3959,9 +3968,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               address: street,
-              city: validationCity || city, // Use validation city if provided (from MLS-first flow)
-              state: validationState || state, // Use validation state if provided
-              zipCode: validationZip || zipCode // Use validation zip if provided
+              city: finalCity,
+              state: finalState,
+              zipCode: finalZip
             })
           }),
           STELLAR_MLS_TIMEOUT,
