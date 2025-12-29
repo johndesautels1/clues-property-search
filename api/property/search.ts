@@ -1479,23 +1479,13 @@ async function getDistances(lat: number, lon: number): Promise<Record<string, an
           const meters = distData.rows[0].elements[0].distance.value;
           const miles = (meters / 1609.34).toFixed(1);
 
-          // BEACH VALIDATION: If Google says beach is nearby but coastline is far, use coastline distance
-          if (place.type === 'beach' && parseFloat(miles) < actualCoastDistance * 0.5) {
-            console.log(`⚠️ Beach validation: Google says ${miles} mi but coastline is ${actualCoastDistance.toFixed(1)} mi - using coastline`);
-            fields[place.field] = {
-              value: parseFloat(actualCoastDistance.toFixed(1)),
-              source: 'Coastline Calculation',
-              confidence: 'High',
-              details: `Nearest Gulf Coast point (${actualCoastDistance.toFixed(1)} mi)`
-            };
-          } else {
-            fields[place.field] = {
-              value: parseFloat(miles),
-              source: 'Google Places',
-              confidence: 'High',
-              details: nearest.name
-            };
-          }
+          // Use Google Places distance directly - no validation overrides
+          fields[place.field] = {
+            value: parseFloat(miles),
+            source: 'Google Places',
+            confidence: 'High',
+            details: nearest.name
+          };
         }
       }
     } catch (e) {
