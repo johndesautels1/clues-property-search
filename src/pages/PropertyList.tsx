@@ -3,7 +3,8 @@
  * Mobile-first property grid with filters - CONNECTED TO STORE
  */
 
-import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
   SlidersHorizontal,
@@ -13,6 +14,8 @@ import {
   X,
   Plus,
   Trash2,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import PropertyCardUnified from '@/components/property/PropertyCardUnified';
@@ -37,6 +40,9 @@ export default function PropertyList() {
     clearFilters,
     setProperties,
   } = usePropertyStore();
+
+  // State to toggle filters panel visibility
+  const [showFiltersPanel, setShowFiltersPanel] = useState(false);
 
   const handleDeleteAll = () => {
     if (confirm(`Delete ALL ${allProperties.length} properties? This cannot be undone!`)) {
@@ -110,15 +116,18 @@ export default function PropertyList() {
         {/* Filter & View Controls */}
         <div className="flex gap-3">
           <button
-            onClick={clearFilters}
+            onClick={() => setShowFiltersPanel(!showFiltersPanel)}
             className={`btn-glass flex items-center gap-2 ${
-              showFilters ? 'border-quantum-cyan text-quantum-cyan' : ''
+              showFiltersPanel ? 'border-quantum-cyan text-quantum-cyan' : ''
             }`}
           >
             <SlidersHorizontal className="w-5 h-5" />
-            <span className="hidden md:inline">
-              {showFilters ? 'Clear Filters' : 'Filters'}
-            </span>
+            <span className="hidden md:inline">Filters</span>
+            {showFiltersPanel ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
           </button>
 
           {/* View Mode Toggle - Mobile: Icons only */}
@@ -157,62 +166,82 @@ export default function PropertyList() {
         </div>
       </div>
 
-      {/* Filters Panel - Always visible */}
-      <motion.div
-        initial={{ opacity: 0, height: 0 }}
-        animate={{ opacity: 1, height: 'auto' }}
-        className="glass-card p-4 md:p-6 mb-6"
-      >
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-xs text-gray-500 mb-2">Min Price</label>
-            <input
-              type="number"
-              placeholder="$0"
-              value={filters.minPrice || ''}
-              onChange={(e) => handleFilterChange('minPrice', e.target.value)}
-              className="input-glass text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-2">Max Price</label>
-            <input
-              type="number"
-              placeholder="$10M"
-              value={filters.maxPrice || ''}
-              onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
-              className="input-glass text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-2">Min Beds</label>
-            <select
-              className="input-glass text-sm text-white [&>option]:text-blue-900 [&>option]:bg-white"
-              value={filters.minBeds || ''}
-              onChange={(e) => handleFilterChange('minBeds', e.target.value)}
-            >
-              <option value="">Any</option>
-              <option value="1">1+</option>
-              <option value="2">2+</option>
-              <option value="3">3+</option>
-              <option value="4">4+</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-2">Min Baths</label>
-            <select
-              className="input-glass text-sm text-white [&>option]:text-blue-900 [&>option]:bg-white"
-              value={filters.minBaths || ''}
-              onChange={(e) => handleFilterChange('minBaths', e.target.value)}
-            >
-              <option value="">Any</option>
-              <option value="1">1+</option>
-              <option value="2">2+</option>
-              <option value="3">3+</option>
-            </select>
-          </div>
-        </div>
-      </motion.div>
+      {/* Filters Panel - Toggleable */}
+      <AnimatePresence>
+        {showFiltersPanel && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="glass-card p-4 md:p-6 mb-6 overflow-hidden"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-white flex items-center gap-2">
+                <SlidersHorizontal className="w-5 h-5 text-quantum-cyan" />
+                Filter Properties
+              </h3>
+              {showFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="text-sm text-quantum-cyan hover:text-quantum-cyan/80 transition-colors"
+                >
+                  Clear All Filters
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-xs text-gray-500 mb-2">Min Price</label>
+                <input
+                  type="number"
+                  placeholder="$0"
+                  value={filters.minPrice || ''}
+                  onChange={(e) => handleFilterChange('minPrice', e.target.value)}
+                  className="input-glass text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-2">Max Price</label>
+                <input
+                  type="number"
+                  placeholder="$10M"
+                  value={filters.maxPrice || ''}
+                  onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
+                  className="input-glass text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-2">Min Beds</label>
+                <select
+                  className="input-glass text-sm text-white [&>option]:text-blue-900 [&>option]:bg-white"
+                  value={filters.minBeds || ''}
+                  onChange={(e) => handleFilterChange('minBeds', e.target.value)}
+                >
+                  <option value="">Any</option>
+                  <option value="1">1+</option>
+                  <option value="2">2+</option>
+                  <option value="3">3+</option>
+                  <option value="4">4+</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-2">Min Baths</label>
+                <select
+                  className="input-glass text-sm text-white [&>option]:text-blue-900 [&>option]:bg-white"
+                  value={filters.minBaths || ''}
+                  onChange={(e) => handleFilterChange('minBaths', e.target.value)}
+                >
+                  <option value="">Any</option>
+                  <option value="1">1+</option>
+                  <option value="2">2+</option>
+                  <option value="3">3+</option>
+                </select>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Property Grid/List */}
       {filteredProperties.length > 0 ? (
