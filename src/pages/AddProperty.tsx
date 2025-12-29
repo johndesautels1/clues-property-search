@@ -244,13 +244,13 @@ export default function AddProperty() {
   }, [saveStatus]);
 
   const handleManualSubmit = async () => {
-    if (!manualForm.address || !manualForm.city) {
-      alert('Please fill in at least address and city');
+    if (!manualForm.mlsNumber) {
+      alert('Please enter an MLS number');
       return;
     }
 
-    // Construct full address for API search
-    const fullAddress = `${manualForm.address}, ${manualForm.city}, ${manualForm.state}${manualForm.zip ? ' ' + manualForm.zip : ''}`;
+    // Use MLS number for API search
+    const fullAddress = manualForm.mlsNumber;
 
     // Use startTransition for non-urgent UI updates to improve INP
     startTransition(() => {
@@ -309,11 +309,11 @@ export default function AddProperty() {
       console.log('🔍 Manual Entry SSE Response:', data);
       console.log('📊 Total Fields Found:', data.total_fields_found);
 
-      // Parse address components from API or use form values as fallback (with safe guard for undefined)
-      const apiFullAddress = fields['1_full_address']?.value || fullAddress || '';
+      // Parse address components from API (MLS search should return full address)
+      const apiFullAddress = fields['1_full_address']?.value || '';
       const addressParts = (apiFullAddress || '').split(',').map((s: string) => s.trim());
-      const street = addressParts[0] || manualForm.address;
-      const city = addressParts[1] || manualForm.city;
+      const street = addressParts[0] || 'Unknown Address';
+      const city = addressParts[1] || 'Unknown City';
       const stateZip = addressParts[2] || '';
       const stateMatch = stateZip.match(/([A-Z]{2})/);
       const zipMatch = stateZip.match(/(\d{5})/);
@@ -1814,399 +1814,22 @@ export default function AddProperty() {
           </div>
         ) : inputMode === 'manual' ? (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Address input with autocomplete */}
-              <div className="md:col-span-2 relative" ref={autocompleteRef}>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Street Address * <span className="text-quantum-cyan text-xs">(8 FL Counties)</span>
-                </label>
-                <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                  <input
-                    type="text"
-                    placeholder="Start typing address... (Pinellas, Pasco, Hillsborough, etc.)"
-                    value={manualForm.address}
-                    onChange={(e) => handleAddressInputChange(e.target.value)}
-                    onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                    className="input-glass pl-12"
-                    autoComplete="off"
-                  />
-                  {isLoadingSuggestions && (
-                    <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-quantum-cyan animate-spin" />
-                  )}
-                </div>
-
-                {/* Autocomplete dropdown */}
-                <AnimatePresence>
-                  {showSuggestions && suggestions.length > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="absolute z-50 w-full mt-1 bg-gray-900 border border-quantum-cyan/30 rounded-xl shadow-lg overflow-hidden"
-                    >
-                      {suggestions.map((suggestion, index) => (
-                        <button
-                          key={suggestion.placeId || index}
-                          type="button"
-                          onClick={() => handleSelectSuggestion(suggestion)}
-                          className="w-full px-4 py-3 text-left hover:bg-quantum-cyan/10 transition-colors border-b border-white/5 last:border-b-0"
-                        >
-                          <div className="flex items-start gap-3">
-                            <MapPin className="w-4 h-4 text-quantum-cyan mt-0.5 flex-shrink-0" />
-                            <div>
-                              <p className="text-white font-medium text-sm">{suggestion.mainText}</p>
-                              <p className="text-gray-400 text-xs">{suggestion.secondaryText}</p>
-                            </div>
-                          </div>
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Helper text */}
-                <p className="text-xs text-gray-500 mt-1">
-                  Covers: Pinellas, Pasco, Manatee, Sarasota, Polk, Hernando, Hillsborough, Citrus
-                </p>
-              </div>
-
+            {/* MLS Search - Simplified UI */}
+            <div className="max-w-md mx-auto">
               <div>
                 <label className="block text-sm text-gray-400 mb-2">
-                  City *
+                  MLS # *
                 </label>
                 <input
                   type="text"
-                  placeholder="St Pete Beach"
-                  value={manualForm.city}
-                  onChange={(e) => setManualForm({ ...manualForm, city: e.target.value })}
-                  className="input-glass"
-                  readOnly={!!selectedSuggestion}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">
-                    State
-                  </label>
-                  <select
-                    value={manualForm.state}
-                    onChange={(e) => setManualForm({ ...manualForm, state: e.target.value })}
-                    className="input-glass"
-                  >
-                    <option value="FL">FL</option>
-                    <option value="GA">GA</option>
-                    <option value="TX">TX</option>
-                    <option value="CA">CA</option>
-                    <option value="NY">NY</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">
-                    ZIP
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="33706"
-                    value={manualForm.zip}
-                    onChange={(e) => setManualForm({ ...manualForm, zip: e.target.value })}
-                    className="input-glass"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Price *
-                </label>
-                <input
-                  type="number"
-                  placeholder="549000"
-                  value={manualForm.price}
-                  onChange={(e) => setManualForm({ ...manualForm, price: e.target.value })}
+                  placeholder="TB1234567"
+                  value={manualForm.mlsNumber}
+                  onChange={(e) => setManualForm({ ...manualForm, mlsNumber: e.target.value })}
                   className="input-glass"
                 />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Sq Ft
-                </label>
-                <input
-                  type="number"
-                  placeholder="1426"
-                  value={manualForm.sqft}
-                  onChange={(e) => setManualForm({ ...manualForm, sqft: e.target.value })}
-                  className="input-glass"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Bedrooms
-                </label>
-                <select
-                  value={manualForm.bedrooms}
-                  onChange={(e) => setManualForm({ ...manualForm, bedrooms: e.target.value })}
-                  className="input-glass"
-                >
-                  <option value="">Select</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                  <option value="4">4</option>
-                  <option value="5">5+</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Bathrooms
-                </label>
-                <select
-                  value={manualForm.bathrooms}
-                  onChange={(e) => setManualForm({ ...manualForm, bathrooms: e.target.value })}
-                  className="input-glass"
-                >
-                  <option value="">Select</option>
-                  <option value="1">1</option>
-                  <option value="1.5">1.5</option>
-                  <option value="2">2</option>
-                  <option value="2.5">2.5</option>
-                  <option value="3">3+</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Year Built
-                </label>
-                <input
-                  type="number"
-                  placeholder="1958"
-                  value={manualForm.yearBuilt}
-                  onChange={(e) => setManualForm({ ...manualForm, yearBuilt: e.target.value })}
-                  className="input-glass"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Stories
-                </label>
-                <select
-                  value={manualForm.stories}
-                  onChange={(e) => setManualForm({ ...manualForm, stories: e.target.value })}
-                  className="input-glass"
-                >
-                  <option value="">Select</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3+</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Property Type
-                </label>
-                <select
-                  value={manualForm.propertyType}
-                  onChange={(e) => setManualForm({ ...manualForm, propertyType: e.target.value })}
-                  className="input-glass"
-                >
-                  <option value="Single Family">Single Family</option>
-                  <option value="Condo">Condo</option>
-                  <option value="Townhouse">Townhouse</option>
-                  <option value="Multi-Family">Multi-Family</option>
-                  <option value="Villa">Villa</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Lot Size (Sq Ft)
-                </label>
-                <input
-                  type="number"
-                  placeholder="5000"
-                  value={manualForm.lotSizeSqft}
-                  onChange={(e) => setManualForm({ ...manualForm, lotSizeSqft: e.target.value })}
-                  className="input-glass"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Garage Spaces
-                </label>
-                <select
-                  value={manualForm.garageSpaces}
-                  onChange={(e) => setManualForm({ ...manualForm, garageSpaces: e.target.value })}
-                  className="input-glass"
-                >
-                  <option value="">Select</option>
-                  <option value="0">0</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3+</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Pool
-                </label>
-                <select
-                  value={manualForm.poolYn}
-                  onChange={(e) => setManualForm({ ...manualForm, poolYn: e.target.value })}
-                  className="input-glass"
-                >
-                  <option value="no">No</option>
-                  <option value="yes">Yes</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Roof Type
-                </label>
-                <select
-                  value={manualForm.roofType}
-                  onChange={(e) => setManualForm({ ...manualForm, roofType: e.target.value })}
-                  className="input-glass"
-                >
-                  <option value="">Select</option>
-                  <option value="Shingle">Shingle</option>
-                  <option value="Tile">Tile</option>
-                  <option value="Metal">Metal</option>
-                  <option value="Flat">Flat</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-            </div>
-
-            {/* HOA & Tax Section */}
-            <div className="pt-4 border-t border-white/10">
-              <h4 className="text-sm font-medium text-quantum-cyan mb-3">HOA & Taxes</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">
-                    HOA?
-                  </label>
-                  <select
-                    value={manualForm.hoaYn}
-                    onChange={(e) => setManualForm({ ...manualForm, hoaYn: e.target.value })}
-                    className="input-glass"
-                  >
-                    <option value="no">No</option>
-                    <option value="yes">Yes</option>
-                  </select>
-                </div>
-                {manualForm.hoaYn === 'yes' && (
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">
-                      HOA Annual Fee
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="1200"
-                      value={manualForm.hoaFeeAnnual}
-                      onChange={(e) => setManualForm({ ...manualForm, hoaFeeAnnual: e.target.value })}
-                      className="input-glass"
-                    />
-                  </div>
-                )}
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">
-                    Annual Taxes
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="3500"
-                    value={manualForm.annualTaxes}
-                    onChange={(e) => setManualForm({ ...manualForm, annualTaxes: e.target.value })}
-                    className="input-glass"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">
-                    Tax Year
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="2024"
-                    value={manualForm.taxYear}
-                    onChange={(e) => setManualForm({ ...manualForm, taxYear: e.target.value })}
-                    className="input-glass"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Listing Info Section */}
-            <div className="pt-4 border-t border-white/10">
-              <h4 className="text-sm font-medium text-quantum-cyan mb-3">Listing Info</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">
-                    Status
-                  </label>
-                  <select
-                    value={manualForm.listingStatus}
-                    onChange={(e) => setManualForm({ ...manualForm, listingStatus: e.target.value })}
-                    className="input-glass"
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Sold">Sold</option>
-                    <option value="OffMarket">Off Market</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">
-                    MLS #
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="TB1234567"
-                    value={manualForm.mlsNumber}
-                    onChange={(e) => setManualForm({ ...manualForm, mlsNumber: e.target.value })}
-                    className="input-glass"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">
-                    List Date
-                  </label>
-                  <input
-                    type="date"
-                    value={manualForm.listingDate}
-                    onChange={(e) => setManualForm({ ...manualForm, listingDate: e.target.value })}
-                    className="input-glass"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">
-                    Last Sale Price
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="450000"
-                    value={manualForm.lastSalePrice}
-                    onChange={(e) => setManualForm({ ...manualForm, lastSalePrice: e.target.value })}
-                    className="input-glass"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">
-                    County
-                  </label>
-                  <select
-                    value={manualForm.county}
-                    onChange={(e) => setManualForm({ ...manualForm, county: e.target.value })}
-                    className="input-glass"
-                  >
-                    <option value="">Select</option>
-                    <option value="Pinellas">Pinellas</option>
-                    <option value="Pasco">Pasco</option>
-                    <option value="Hillsborough">Hillsborough</option>
-                    <option value="Manatee">Manatee</option>
-                    <option value="Sarasota">Sarasota</option>
-                    <option value="Polk">Polk</option>
-                    <option value="Hernando">Hernando</option>
-                    <option value="Citrus">Citrus</option>
-                  </select>
-                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Enter Stellar MLS number to fetch complete property data (168 fields)
+                </p>
               </div>
             </div>
 
@@ -2217,8 +1840,8 @@ export default function AddProperty() {
             >
               {status === 'idle' || status === 'complete' || status === 'error' ? (
                 <>
-                  <Sparkles className="w-5 h-5" />
-                  Search & Add Property
+                  <Search className="w-5 h-5" />
+                  MLS Search
                 </>
               ) : (
                 <>
