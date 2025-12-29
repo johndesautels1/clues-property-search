@@ -47,7 +47,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('========================================');
     console.log('[MLS-First Search] ENDPOINT CALLED');
     console.log('========================================');
-    console.log('[MLS-First Search] MLS Number:', mls);
+    console.log('[MLS-First Search] MLS Number:', JSON.stringify(mls));
+    console.log('[MLS-First Search] MLS Type:', typeof mls);
+    console.log('[MLS-First Search] MLS Length:', mls?.length);
     console.log('[MLS-First Search] Engines:', engines || 'Auto (all 6 LLMs)');
 
     // ========================================
@@ -65,21 +67,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     if (!bridgeResponse.ok) {
+      const errorText = await bridgeResponse.text();
       console.log('[MLS-First Search] ❌ Bridge MLS failed:', bridgeResponse.status, bridgeResponse.statusText);
+      console.log('[MLS-First Search] ❌ Error response:', errorText);
 
       // Return error if MLS not found
       if (bridgeResponse.status === 404) {
         return res.status(404).json({
-          error: 'MLS number not found in Stellar MLS database',
+          error: `MLS number "${mls}" not found in Stellar MLS database. Searched in both ListingId and ListingKey fields.`,
           success: false,
           total_fields_found: 0,
           fields: {},
           field_sources: {},
-          data_sources: []
+          data_sources: [],
+          debug: {
+            mlsNumber: mls,
+            searchedFields: ['ListingId', 'ListingKey']
+          }
         });
       }
 
-      throw new Error(`Bridge MLS API error: ${bridgeResponse.status}`);
+      throw new Error(`Bridge MLS API error: ${bridgeResponse.status} - ${errorText}`);
     }
 
     const bridgeData = await bridgeResponse.json();
