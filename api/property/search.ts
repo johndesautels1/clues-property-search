@@ -3890,6 +3890,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const {
     address: rawAddress,
     url: rawUrl,
+    mlsNumber,  // Optional: MLS# for direct MLS search (Manual tab)
     city: validationCity,  // Optional: City for Stellar MLS validation (prevents wrong property match)
     state: validationState,  // Optional: State for Stellar MLS validation
     zipCode: validationZip,  // Optional: Zip for Stellar MLS validation
@@ -3969,6 +3970,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               address: street,
+              mlsNumber: mlsNumber,  // Pass MLS# if provided (Manual tab)
               city: finalCity,
               state: finalState,
               zipCode: finalZip

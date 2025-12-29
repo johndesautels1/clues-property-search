@@ -362,14 +362,11 @@ export class BridgeAPIClient {
     } else {
       console.log('[Bridge API] ⚠️ params.zipCode is undefined/null/empty');
     }
-    // MLS Number filter - try BOTH ListingId and ListingKey (different MLS systems use different fields)
+    // MLS Number filter - exact match on ListingId
     if (params.mlsNumber) {
       const escapedMls = params.mlsNumber.replace(/'/g, "''");
-      const mlsFilter = `(ListingId eq '${escapedMls}' or ListingKey eq '${escapedMls}')`;
-      console.log('[Bridge API] 🔍 MLS# Search Filter:', mlsFilter);
-      console.log('[Bridge API] 🔍 Raw MLS# received:', params.mlsNumber);
-      console.log('[Bridge API] 🔍 Escaped MLS#:', escapedMls);
-      filters.push(mlsFilter);
+      console.log('[Bridge API] 🔍 Searching for MLS#:', escapedMls);
+      filters.push(`ListingId eq '${escapedMls}'`);
     }
 
     // Price range

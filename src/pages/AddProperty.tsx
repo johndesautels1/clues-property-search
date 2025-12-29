@@ -277,14 +277,15 @@ export default function AddProperty() {
         return [selectedEngine];
       };
 
-      // Call NEW MLS-first endpoint (Manual tab only)
-      // This does 2-step: (1) Stellar MLS with MLS #, (2) Full hierarchy with returned address
-      const response = await fetch(`${apiUrl}/api/property/search-by-mls`, {
+      // Call EXISTING search endpoint with MLS# (SAME as Property Search page)
+      const response = await fetch(`${apiUrl}/api/property/search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          mls: fullAddress, // MLS number (e.g. "TB1234567")
+          mlsNumber: fullAddress, // MLS number (e.g. "TB1234567")
           engines: getEngines(),
+          skipLLMs: false,
+          skipApis: false,
         }),
       });
 
