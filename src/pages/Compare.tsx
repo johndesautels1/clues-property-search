@@ -464,7 +464,6 @@ const comparisonFields: Record<string, Array<{
     { key: 'noiseLevel', label: 'Noise Level', path: 'location.noiseLevel.value', fieldNum: 78, format: 'text', higherIsBetter: false },
     { key: 'noiseLevelDb', label: 'Noise Level (dB Est)', path: 'utilities.noiseLevelDbEst.value', fieldNum: 129, format: 'text', higherIsBetter: false },
     { key: 'trafficLevel', label: 'Traffic Level', path: 'location.trafficLevel.value', fieldNum: 79, format: 'text', higherIsBetter: false },
-    { key: 'elevationFeet', label: 'Elevation (feet)', path: 'location.elevationFeet.value', fieldNum: 64, format: 'number' },
   ],
   schools: [
     { key: 'schoolDistrict', label: 'School District', path: 'location.schoolDistrictName.value', fieldNum: 63, format: 'text' },
@@ -505,6 +504,7 @@ const comparisonFields: Record<string, Array<{
     { key: 'airQualityGrade', label: 'Air Quality Grade', path: 'utilities.airQualityGrade.value', fieldNum: 118, format: 'text', higherIsBetter: true },
     { key: 'floodZone', label: 'Flood Zone', path: 'utilities.floodZone.value', fieldNum: 119, format: 'text' },
     { key: 'floodRiskLevel', label: 'Flood Risk Level', path: 'utilities.floodRiskLevel.value', fieldNum: 120, format: 'text', higherIsBetter: false },
+    { key: 'elevationFeet', label: 'Elevation (feet)', path: 'location.elevationFeet.value', fieldNum: 64, format: 'number', higherIsBetter: true },
     { key: 'climateRisk', label: 'Climate Risk', path: 'utilities.climateRiskWildfireFlood.value', fieldNum: 121, format: 'text', higherIsBetter: false },
     { key: 'wildfireRisk', label: 'Wildfire Risk', path: 'utilities.wildfireRisk.value', fieldNum: 122, format: 'text', higherIsBetter: false },
     { key: 'earthquakeRisk', label: 'Earthquake Risk', path: 'utilities.earthquakeRisk.value', fieldNum: 123, format: 'text', higherIsBetter: false },
