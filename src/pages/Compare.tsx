@@ -1185,13 +1185,10 @@ export default function Compare() {
           {selectedProperties.length === 3 && (
             <button
               onClick={() => setShowProgressiveAnalysis(!showProgressiveAnalysis)}
-              className="flex items-center gap-2 px-6 py-3 rounded-xl text-base font-medium transition-all bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:opacity-90 relative shadow-lg"
+              className="flex items-center gap-3 px-8 py-4 rounded-xl text-lg font-semibold transition-all bg-gradient-to-r from-blue-600 via-orange-500 to-amber-400 text-white hover:shadow-2xl hover:scale-105 shadow-xl transform"
             >
-              <Brain className="w-5 h-5" />
+              <Brain className="w-6 h-6" />
               Advanced Olivia Analysis
-              <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-[10px] font-bold bg-green-500 text-white rounded-full animate-pulse">
-                NEW!
-              </span>
             </button>
           )}
 
