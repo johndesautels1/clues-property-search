@@ -416,6 +416,23 @@ export function normalizeValueForComparison(value: any, fieldKey: string = ''): 
     str = str.replace(/\bcounty\b/g, '');
   }
 
+  // Flood zone normalizations - "FEMA Zone AE", "Zone AE", "AE" all become "ae"
+  if (fieldKey.includes('flood_zone') || fieldKey.includes('119_')) {
+    str = str.replace(/\bfema\s+zone\s*/g, '');
+    str = str.replace(/\bzone\s*/g, '');
+  }
+
+  // Flood/climate risk normalizations - "High Risk (Special Flood Hazard Area)", "High", "High Risk" all become "high"
+  if (fieldKey.includes('flood_risk') || fieldKey.includes('120_') ||
+      fieldKey.includes('climate_risk') || fieldKey.includes('121_') ||
+      fieldKey.includes('wildfire_risk') || fieldKey.includes('122_') ||
+      fieldKey.includes('hurricane_risk') || fieldKey.includes('124_')) {
+    // Extract just the risk level (High, Moderate, Low, Minimal)
+    if (str.includes('high')) return 'high';
+    if (str.includes('moderate')) return 'moderate';
+    if (str.includes('low') || str.includes('minimal')) return 'low';
+  }
+
   // HVAC normalizations
   if (fieldKey.includes('hvac') || fieldKey.includes('45_')) {
     str = str.replace(/\bair\b/g, '');
