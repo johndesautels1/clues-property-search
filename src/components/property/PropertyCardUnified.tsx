@@ -42,6 +42,7 @@ interface PropertyCardUnifiedProps {
   showDelete?: boolean;
   defaultExpanded?: boolean;
   neonGreenScore?: boolean;
+  alwaysStartCollapsed?: boolean;
 }
 
 export default function PropertyCardUnified({
@@ -50,11 +51,13 @@ export default function PropertyCardUnified({
   showDelete = true,
   defaultExpanded = false,
   neonGreenScore = false,
+  alwaysStartCollapsed = false,
 }: PropertyCardUnifiedProps) {
   const { removeProperty, fullProperties, compareList, addToCompare, removeFromCompare } = usePropertyStore();
 
-  // Get user's preference from localStorage
+  // Get user's preference from localStorage (unless alwaysStartCollapsed is true)
   const getStoredPreference = () => {
+    if (alwaysStartCollapsed) return false;
     const stored = localStorage.getItem(`card-expanded-${property.id}`);
     if (stored !== null) return stored === 'true';
     return defaultExpanded;
@@ -62,10 +65,12 @@ export default function PropertyCardUnified({
 
   const [isExpanded, setIsExpanded] = useState(getStoredPreference);
 
-  // Save preference to localStorage
+  // Save preference to localStorage (unless alwaysStartCollapsed is true)
   useEffect(() => {
-    localStorage.setItem(`card-expanded-${property.id}`, String(isExpanded));
-  }, [isExpanded, property.id]);
+    if (!alwaysStartCollapsed) {
+      localStorage.setItem(`card-expanded-${property.id}`, String(isExpanded));
+    }
+  }, [isExpanded, property.id, alwaysStartCollapsed]);
 
   // Get full property object (168 fields) if available
   const fullProperty = fullProperties.get(property.id);

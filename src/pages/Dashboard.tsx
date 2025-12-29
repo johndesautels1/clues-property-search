@@ -160,7 +160,7 @@ export default function Dashboard() {
         <div className="space-y-4">
           {recentProperties.length > 0 ? (
             recentProperties.map((property) => (
-              <PropertyCardUnified key={property.id} property={property} neonGreenScore={true} />
+              <PropertyCardUnified key={property.id} property={property} neonGreenScore={true} alwaysStartCollapsed={true} />
             ))
           ) : (
             <div className="glass-card p-8 text-center">

@@ -32,7 +32,7 @@ const CluesHeader: React.FC = () => {
               CLUES™
             </span>
             <span className="font-montserrat text-xs font-medium text-[#C0C0C0] tracking-wider uppercase opacity-90 drop-shadow-[0_0_10px_rgba(192,192,192,0.6)] ml-[-2px]">
-              Comprehensive Location & Utility Evaluation System
+              Comprehensive Location Utility & Evaluation System
             </span>
           </div>
         </div>
