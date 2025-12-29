@@ -148,7 +148,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         zipCode: zipCode, // CRITICAL: Pass zip for validation
         engines: engines || ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'], // Default to all 6 LLMs
         skipLLMs: false,
-        skipApis: false // Run all TIER 1-5 (Bridge MLS will run twice but arbitration handles duplicates)
+        skipMLS: true, // CRITICAL: Skip TIER 1 (Stellar MLS) - already fetched in STEP 1
+        skipApis: false // Run TIER 2-3 (Google APIs, WalkScore, SchoolDigger, FEMA, etc.)
       })
     });
 

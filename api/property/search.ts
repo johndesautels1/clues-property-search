@@ -3898,6 +3898,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     useCascade = true, // Enable cascade mode by default
     existingFields = {},  // Previously accumulated fields from prior LLM calls
     skipApis = false,  // Skip free APIs if we already have their data
+    skipMLS = false,  // Skip ONLY Stellar MLS (TIER 1) - used by MLS-first search flow to avoid double-fetch
   } = req.body;
 
   // 🛡️ INPUT SANITIZATION: Prevent prompt injection attacks
@@ -3934,7 +3935,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // TIER 1: MLS DATA (Stellar MLS via Bridge Interactive API)
     // Highest authority - search first for property listings
     // ========================================
-    if (!skipApis) {
+    if (!skipApis && !skipMLS) {
       console.log('========================================');
       console.log('TIER 1: STELLAR MLS (via Bridge Interactive API)');
       console.log('========================================');
@@ -4047,6 +4048,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         arbitrationPipeline.addFieldsFromSource({}, STELLAR_MLS_SOURCE);
         actualFieldCounts[STELLAR_MLS_SOURCE] = 0;
       }
+      console.log('========================================');
+      console.log('');
+    } else if (skipMLS) {
+      console.log('========================================');
+      console.log('TIER 1: STELLAR MLS - SKIPPED (MLS-first flow already fetched)');
       console.log('========================================');
       console.log('');
     }
