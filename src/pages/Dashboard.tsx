@@ -6,7 +6,7 @@
  */
 
 import { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
   Building2,
@@ -14,6 +14,7 @@ import {
   BarChart3,
   ChevronRight,
   ChevronDown,
+  ChevronUp,
   Zap,
   Plus,
   HelpCircle,
@@ -46,6 +47,9 @@ export default function Dashboard() {
   const fullPropertiesArray = useMemo(() => {
     return Array.from(fullPropertiesMap.values());
   }, [fullPropertiesMap]);
+
+  // State for toggling Data Quality Overview (collapsed by default)
+  const [showDataQuality, setShowDataQuality] = useState(false);
 
   // State for toggling optional sections in Data Quality Overview
   const [showOptionalSections, setShowOptionalSections] = useState(false);
@@ -206,8 +210,35 @@ export default function Dashboard() {
             )}
           </h3>
 
-          {/* CRITICAL SECTIONS - Always Visible */}
-          <div className="space-y-4 mb-6">
+          {/* Toggle Button */}
+          <button
+            onClick={() => setShowDataQuality(!showDataQuality)}
+            className="w-full mt-4 py-2 px-4 rounded-lg bg-quantum-cyan/10 hover:bg-quantum-cyan/20 border border-quantum-cyan/30 transition-colors flex items-center justify-center gap-2 text-quantum-cyan font-medium text-sm"
+          >
+            {showDataQuality ? (
+              <>
+                <ChevronUp className="w-4 h-4" />
+                Hide Details
+              </>
+            ) : (
+              <>
+                <ChevronDown className="w-4 h-4" />
+                Show Detailed Data Quality
+              </>
+            )}
+          </button>
+
+          <AnimatePresence>
+            {showDataQuality && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden"
+              >
+                {/* CRITICAL SECTIONS - Always Visible */}
+                <div className="space-y-4 mb-6 mt-4">
             <h4 className="text-xs font-semibold text-quantum-cyan uppercase tracking-wider">
               Critical Sections (94.44% of SMART Score)
             </h4>
@@ -287,6 +318,9 @@ export default function Dashboard() {
               </div>
             )}
           </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </motion.div>
     </motion.div>
