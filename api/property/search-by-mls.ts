@@ -12,6 +12,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { normalizeCity, normalizeState, normalizeZip } from '../src/lib/address-normalizer.js';
 
 // Vercel serverless config
 export const config = {
@@ -86,12 +87,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Extract full address AND city/state/zip from Bridge response for validation
     const fullAddress = bridgeData.fields?.['1_full_address']?.value;
-    const city = bridgeData.fields?.['1_full_address']?.value?.split(',')[1]?.trim(); // Parse from full address
+    const rawCity = bridgeData.fields?.['1_full_address']?.value?.split(',')[1]?.trim(); // Parse from full address
     const stateZip = bridgeData.fields?.['1_full_address']?.value?.split(',')[2]?.trim() || '';
-    const state = stateZip.match(/([A-Z]{2})/)?.[1];
-    const zipCode = bridgeData.fields?.['8_zip_code']?.value;
+    const rawState = stateZip.match(/([A-Z]{2})/)?.[1];
+    const rawZip = bridgeData.fields?.['8_zip_code']?.value;
 
-    console.log('[MLS-First Search] 📍 Address components:', { fullAddress, city, state, zipCode });
+    // NORMALIZE address components to handle variations
+    // - City: "St. Petersburg" vs "Saint Petersburg"
+    // - State: "FL" vs "Fl" vs "Florida"
+    // - Zip: "33706-1234" vs "33706"
+    const city = normalizeCity(rawCity);
+    const state = normalizeState(rawState);
+    const zipCode = normalizeZip(rawZip);
+
+    console.log('[MLS-First Search] 📍 Raw components:', { rawCity, rawState, rawZip });
+    console.log('[MLS-First Search] 📍 Normalized components:', { fullAddress, city, state, zipCode });
 
     if (!fullAddress) {
       console.log('[MLS-First Search] ⚠️ WARNING: No full_address in Bridge response, proceeding with MLS data only');
