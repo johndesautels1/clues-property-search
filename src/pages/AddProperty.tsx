@@ -269,8 +269,9 @@ export default function AddProperty() {
       // Determine which engines to use based on selection
       const getEngines = () => {
         if (selectedEngine === 'Auto') {
-          // ONLY Perplexity and Grok (web search LLMs) - Claude/GPT/Gemini disabled for testing
-          return ['perplexity', 'grok'];
+          // ALL 6 LLMs in CASCADE ORDER (MUST MATCH api/property/llm-constants.ts line 14)
+          // Perplexity → Grok → Claude Opus → GPT → Claude Sonnet → Gemini
+          return ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'];
         }
         return [selectedEngine];
       };
