@@ -4,7 +4,7 @@
  * Used by CMA schema orchestrator as "countyJson" input
  */
 
-import { scrapePinellas } from '../../api/property/florida-counties';
+import { scrapePinellas } from '../../api/property/florida-counties.js';
 
 export interface CountyDataResult {
   parcel_id?: string;
