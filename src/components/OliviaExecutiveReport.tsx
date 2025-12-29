@@ -23,9 +23,10 @@ import {
   Phone, Mail, Video, FileText, ArrowRight, ExternalLink,
   DollarSign, Home, MapPin, Shield, CloudRain, GraduationCap,
   Receipt, Wrench, TreePine, Navigation, Car, Building, Waves,
-  Users, Scale, FileCheck
+  Users, Scale, FileCheck, Save, Download
 } from 'lucide-react';
 import type { OliviaEnhancedAnalysisResult, SectionAnalysis, KeyFinding } from '@/types/olivia-enhanced';
+import { saveReport, exportReportAsJSON } from '@/lib/reports-manager';
 
 interface OliviaExecutiveReportProps {
   result: OliviaEnhancedAnalysisResult;
@@ -73,6 +74,45 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
   // Q&A state
   const [qaQuestion, setQaQuestion] = useState('');
   const [qaHistory, setQaHistory] = useState(result.qaState?.conversationHistory || []);
+
+  // Save state
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [reportSaved, setReportSaved] = useState(false);
+  const [saveTitle, setSaveTitle] = useState(
+    properties.map(p => p.address.split(',')[0]).join(' vs ') + ' - Analysis'
+  );
+  const [saveNotes, setSaveNotes] = useState('');
+
+  // Handle save report
+  const handleSaveReport = () => {
+    try {
+      saveReport(saveTitle, properties, result, saveNotes);
+      setReportSaved(true);
+      setShowSaveDialog(false);
+      // Show success message briefly
+      setTimeout(() => {
+        const msg = document.createElement('div');
+        msg.className = 'fixed top-4 right-4 z-[100] glass-card border border-quantum-green/30 px-6 py-3 rounded-xl text-quantum-green font-medium animate-fade-in';
+        msg.textContent = '✓ Report saved successfully!';
+        document.body.appendChild(msg);
+        setTimeout(() => {
+          msg.remove();
+        }, 3000);
+      }, 100);
+    } catch (error) {
+      alert('Failed to save report. Storage may be full.');
+    }
+  };
+
+  // Handle close with confirmation if not saved
+  const handleClose = () => {
+    if (!reportSaved) {
+      setShowCloseConfirm(true);
+    } else {
+      onClose();
+    }
+  };
 
   // Get property address helper
   const getPropertyAddress = (propertyId: string) => {
@@ -149,12 +189,40 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
                   </p>
                 </div>
               </div>
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-white/10 rounded-lg transition-all duration-200 hover:rotate-90"
-              >
-                <X className="w-6 h-6 text-gray-400 hover:text-white" />
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Export JSON Button */}
+                <button
+                  onClick={() => exportReportAsJSON({ id: `temp_${Date.now()}`, timestamp: Date.now(), title: saveTitle, properties, result })}
+                  className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10 rounded-lg transition-all"
+                  title="Export as JSON"
+                >
+                  <Download className="w-4 h-4" />
+                  <span className="hidden sm:inline text-sm">Export</span>
+                </button>
+                {/* Save Button */}
+                <button
+                  onClick={() => setShowSaveDialog(true)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                    reportSaved
+                      ? 'bg-quantum-green/20 text-quantum-green border border-quantum-green/30'
+                      : 'bg-quantum-cyan/20 text-quantum-cyan border border-quantum-cyan/30 hover:bg-quantum-cyan/30'
+                  }`}
+                  title={reportSaved ? 'Report saved' : 'Save report'}
+                >
+                  <Save className="w-4 h-4" />
+                  <span className="hidden sm:inline text-sm font-medium">
+                    {reportSaved ? 'Saved' : 'Save'}
+                  </span>
+                </button>
+                {/* Close Button */}
+                <button
+                  onClick={handleClose}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-all duration-200 hover:rotate-90"
+                  title="Close report"
+                >
+                  <X className="w-6 h-6 text-gray-400 hover:text-white" />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -937,6 +1005,146 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
           </div>
         </motion.div>
       </div>
+
+      {/* ============================================================
+          SAVE DIALOG
+      ============================================================ */}
+      <AnimatePresence>
+        {showSaveDialog && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setShowSaveDialog(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="glass-card border border-quantum-cyan/30 rounded-2xl p-6 max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-quantum-cyan/20 flex items-center justify-center">
+                  <Save className="w-6 h-6 text-quantum-cyan" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Save Report</h3>
+                  <p className="text-sm text-gray-400">Save this analysis for later</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Report Title
+                  </label>
+                  <input
+                    type="text"
+                    value={saveTitle}
+                    onChange={(e) => setSaveTitle(e.target.value)}
+                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-quantum-cyan/50"
+                    placeholder="Enter report title..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Notes (Optional)
+                  </label>
+                  <textarea
+                    value={saveNotes}
+                    onChange={(e) => setSaveNotes(e.target.value)}
+                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-quantum-cyan/50 resize-none"
+                    rows={3}
+                    placeholder="Add notes about this analysis..."
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleSaveReport}
+                    className="flex-1 px-4 py-2 bg-quantum-cyan/20 text-quantum-cyan border border-quantum-cyan/30 rounded-lg hover:bg-quantum-cyan/30 transition-all font-medium"
+                  >
+                    Save Report
+                  </button>
+                  <button
+                    onClick={() => setShowSaveDialog(false)}
+                    className="flex-1 px-4 py-2 bg-white/5 text-gray-400 border border-white/10 rounded-lg hover:bg-white/10 transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ============================================================
+          CLOSE CONFIRMATION DIALOG
+      ============================================================ */}
+      <AnimatePresence>
+        {showCloseConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setShowCloseConfirm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="glass-card border border-yellow-500/30 rounded-2xl p-6 max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                  <AlertTriangle className="w-6 h-6 text-yellow-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Unsaved Report</h3>
+                  <p className="text-sm text-gray-400">You haven't saved this analysis yet</p>
+                </div>
+              </div>
+
+              <p className="text-gray-300 mb-6">
+                This comprehensive analysis took time to generate. Would you like to save it before closing?
+              </p>
+
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    setShowCloseConfirm(false);
+                    setShowSaveDialog(true);
+                  }}
+                  className="px-4 py-2 bg-quantum-cyan/20 text-quantum-cyan border border-quantum-cyan/30 rounded-lg hover:bg-quantum-cyan/30 transition-all font-medium"
+                >
+                  Save & Close
+                </button>
+                <button
+                  onClick={() => {
+                    setShowCloseConfirm(false);
+                    onClose();
+                  }}
+                  className="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-all"
+                >
+                  Close Without Saving
+                </button>
+                <button
+                  onClick={() => setShowCloseConfirm(false)}
+                  className="px-4 py-2 bg-white/5 text-gray-400 border border-white/10 rounded-lg hover:bg-white/10 transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

@@ -13,6 +13,7 @@ import {
   User,
   Sparkles,
   BarChart3,
+  FileText,
 } from 'lucide-react';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
@@ -28,6 +29,7 @@ const navItems: NavItem[] = [
   { path: '/properties', icon: Building2, label: 'Properties' },
   { path: '/search', icon: Search, label: 'Search' },
   { path: '/compare', icon: GitCompare, label: 'Compare' },
+  { path: '/reports', icon: FileText, label: 'Reports' },
   { path: '/visuals', icon: BarChart3, label: 'Visuals' },
   { path: '/settings', icon: User, label: 'Account' },
 ];

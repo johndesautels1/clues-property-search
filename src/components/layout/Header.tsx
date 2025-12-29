@@ -18,6 +18,7 @@ import {
   LayoutDashboard,
   Sparkles,
   BarChart3,
+  FileText,
 } from 'lucide-react';
 import { useAuthStore, useCurrentUser, useIsAdmin } from '@/store/authStore';
 
@@ -27,6 +28,7 @@ const navItems = [
   { path: '/search', icon: Search, label: 'Search Property' },
   { path: '/add', icon: PlusCircle, label: 'Add Property' },
   { path: '/compare', icon: GitCompare, label: 'Advanced Comparison Analytics' },
+  { path: '/reports', icon: FileText, label: 'Saved Reports' },
   { path: '/visuals', icon: BarChart3, label: 'Advanced Visuals' },
   { path: '/broker', icon: LayoutDashboard, label: 'Broker Executive Dashboard' },
   { path: '/perplexity', icon: Sparkles, label: 'Perplexity Analysis' },

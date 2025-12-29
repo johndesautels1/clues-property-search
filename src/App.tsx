@@ -19,6 +19,7 @@ const PropertyDebug = lazy(() => import('@/pages/PropertyDebug'));
 const AddProperty = lazy(() => import('@/pages/AddProperty'));
 const SearchProperty = lazy(() => import('@/pages/SearchProperty'));
 const Compare = lazy(() => import('@/pages/Compare'));
+const SavedReports = lazy(() => import('@/pages/SavedReports'));
 const Settings = lazy(() => import('@/pages/Settings'));
 const BrokerDashboardPage = lazy(() => import('@/pages/BrokerDashboardPage'));
 const PerplexityAnalysis = lazy(() => import('@/pages/PerplexityAnalysis'));
@@ -77,6 +78,7 @@ function App() {
                     <Route path="/add" element={<AddProperty />} />
                     <Route path="/search" element={<SearchProperty />} />
                     <Route path="/compare" element={<Compare />} />
+                    <Route path="/reports" element={<SavedReports />} />
                     <Route path="/broker" element={<BrokerDashboardPage />} />
                     <Route path="/perplexity" element={<PerplexityAnalysis />} />
                     <Route path="/visuals" element={<Visuals />} />
