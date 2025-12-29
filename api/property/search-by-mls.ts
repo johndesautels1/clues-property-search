@@ -84,8 +84,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const bridgeData = await bridgeResponse.json();
     console.log('[MLS-First Search] ✅ Bridge MLS returned', bridgeData.mappedFieldCount || 0, 'fields');
 
-    // Extract full address from Bridge response
+    // Extract full address AND city/state/zip from Bridge response for validation
     const fullAddress = bridgeData.fields?.['1_full_address']?.value;
+    const city = bridgeData.fields?.['1_full_address']?.value?.split(',')[1]?.trim(); // Parse from full address
+    const stateZip = bridgeData.fields?.['1_full_address']?.value?.split(',')[2]?.trim() || '';
+    const state = stateZip.match(/([A-Z]{2})/)?.[1];
+    const zipCode = bridgeData.fields?.['8_zip_code']?.value;
+
+    console.log('[MLS-First Search] 📍 Address components:', { fullAddress, city, state, zipCode });
 
     if (!fullAddress) {
       console.log('[MLS-First Search] ⚠️ WARNING: No full_address in Bridge response, proceeding with MLS data only');
@@ -119,6 +125,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         address: fullAddress,
+        city: city, // CRITICAL: Pass city for validation
+        state: state, // CRITICAL: Pass state for validation
+        zipCode: zipCode, // CRITICAL: Pass zip for validation
         engines: engines || ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'], // Default to all 6 LLMs
         skipLLMs: false,
         skipApis: false // Run all TIER 1-5 (Bridge MLS will run twice but arbitration handles duplicates)

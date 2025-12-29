@@ -3890,6 +3890,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const {
     address: rawAddress,
     url: rawUrl,
+    city: validationCity,  // Optional: City for Stellar MLS validation (prevents wrong property match)
+    state: validationState,  // Optional: State for Stellar MLS validation
+    zipCode: validationZip,  // Optional: Zip for Stellar MLS validation
     engines = [...LLM_CASCADE_ORDER],  // All 6 LLMs enabled: Perplexity → Grok → Claude Opus → GPT → Claude Sonnet → Gemini
     skipLLMs = false,
     useCascade = true, // Enable cascade mode by default
@@ -3956,9 +3959,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               address: street,
-              city: city,
-              state: state,
-              zipCode: zipCode
+              city: validationCity || city, // Use validation city if provided (from MLS-first flow)
+              state: validationState || state, // Use validation state if provided
+              zipCode: validationZip || zipCode // Use validation zip if provided
             })
           }),
           STELLAR_MLS_TIMEOUT,
