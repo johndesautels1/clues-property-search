@@ -24,7 +24,8 @@ import type { PropertyCard, Property, DataField } from '@/types/property';
 import { LLM_CASCADE_ORDER, LLM_DISPLAY_NAMES } from '@/lib/llm-constants';
 import { normalizeToProperty } from '@/lib/field-normalizer';
 import { validateCsvData, getValidationSummary, type ValidationResult } from '@/lib/csv-validator';
-import { initializeCascadeStatus, getSourceName } from '@/lib/data-sources';
+import { initializeSourceProgress, type SourceProgress, getSourceName } from '@/lib/data-sources';
+import SearchProgressTracker from '@/components/property/SearchProgressTracker';
 
 // Helper to parse numbers and remove commas (e.g., "1,345" → 1345)
 const safeParseNumber = (val: any): number => {
@@ -88,7 +89,7 @@ export default function AddProperty() {
   const [pdfParsedFields, setPdfParsedFields] = useState<Record<string, any>>({});
   const [pdfParseStatus, setPdfParseStatus] = useState<'idle' | 'uploading' | 'parsing' | 'complete' | 'error'>('idle');
   const [pdfError, setPdfError] = useState<string | null>(null);
-  const [cascadeStatus, setCascadeStatus] = useState<{llm: string; status: 'pending' | 'running' | 'complete' | 'error' | 'skipped'; fieldsFound?: number}[]>([]);
+  const [sourcesProgress, setSourcesProgress] = useState<SourceProgress[]>(initializeSourceProgress());
 
   // Manual entry form state - Expanded to 25 high-value fields per 5-Agent Audit
   const [manualForm, setManualForm] = useState({
@@ -257,7 +258,7 @@ export default function AddProperty() {
       setStatus('searching');
       setProgress(0);
       setTotalFieldsFound(0);
-      setCascadeStatus(initializeCascadeStatus());
+      setSourcesProgress(initializeSourceProgress());
     });
 
     // Allow browser to paint before heavy async work
@@ -308,8 +309,38 @@ export default function AddProperty() {
       const fieldSources = data.field_sources || {};
       const conflicts = data.conflicts || [];
 
-      console.log('🔍 Manual Entry SSE Response:', data);
+      console.log('🔍 Manual Entry Response:', data);
       console.log('📊 Total Fields Found:', data.total_fields_found);
+      console.log('📊 Field Sources:', fieldSources);
+
+      // Update cascade status with field counts from API
+      if (fieldSources && Object.keys(fieldSources).length > 0) {
+        startTransition(() => {
+          setSourcesProgress(prev => prev.map(source => {
+            // Map source names to API field_sources keys
+            const sourceKey = source.name === 'Stellar MLS' ? 'Stellar MLS' :
+                             source.name === 'Perplexity' ? 'Perplexity' :
+                             source.name === 'Grok' ? 'Grok' :
+                             source.name === 'Claude Opus' ? 'Claude Opus' :
+                             source.name === 'GPT-5.2' ? 'GPT' :
+                             source.name === 'Claude Sonnet' ? 'Claude Sonnet' :
+                             source.name === 'Gemini' ? 'Gemini' :
+                             source.name === 'Google Geocode' ? 'Google Geocode' :
+                             source.name === 'Google Places' ? 'Google Places' :
+                             source.name === 'WalkScore' ? 'WalkScore' :
+                             source.name === 'SchoolDigger' ? 'SchoolDigger' :
+                             source.name;
+
+            const fieldsFound = fieldSources[sourceKey] || 0;
+
+            return {
+              ...source,
+              status: fieldsFound > 0 ? 'complete' : (data.data_sources?.includes(sourceKey) ? 'complete' : 'skipped'),
+              fieldsFound,
+            };
+          }));
+        });
+      }
 
       // Parse address components from API (MLS search should return full address)
       const apiFullAddress = fields['1_full_address']?.value || '';
@@ -1374,7 +1405,7 @@ export default function AddProperty() {
       try {
         setStatus('scraping');
         setProgress(80);
-        setCascadeStatus(initializeCascadeStatus());
+        setSourcesProgress(initializeSourceProgress());
 
         const apiUrl = import.meta.env.VITE_API_URL || '';
 
@@ -2075,47 +2106,13 @@ Beautiful 3BR/2BA beach house at 290 41st Ave, St Pete Beach, FL 33706. Built in
             />
           </div>
 
-          {/* Real-time API Status */}
-          <div className="space-y-2">
-            <div className="text-xs text-gray-400 uppercase tracking-wider mb-2">Data Sources</div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {cascadeStatus.map((source) => (
-                <div
-                  key={source.llm}
-                  className={`flex items-center gap-2 p-2 rounded-lg text-xs ${
-                    source.status === 'complete' ? 'bg-quantum-green/10 border border-quantum-green/30' :
-                    source.status === 'running' || source.status === 'searching' as any ? 'bg-quantum-cyan/10 border border-quantum-cyan/30' :
-                    source.status === 'error' ? 'bg-red-500/10 border border-red-500/30' :
-                    'bg-white/5 border border-white/10'
-                  }`}
-                >
-                  {source.status === 'complete' ? (
-                    <CheckCircle className="w-3 h-3 text-quantum-green flex-shrink-0" />
-                  ) : source.status === 'running' || source.status === 'searching' as any ? (
-                    <Loader2 className="w-3 h-3 text-quantum-cyan animate-spin flex-shrink-0" />
-                  ) : source.status === 'error' ? (
-                    <AlertCircle className="w-3 h-3 text-red-400 flex-shrink-0" />
-                  ) : (
-                    <div className="w-3 h-3 rounded-full bg-gray-600 flex-shrink-0" />
-                  )}
-                  <span className={`truncate ${
-                    source.status === 'complete' ? 'text-quantum-green' :
-                    source.status === 'running' || source.status === 'searching' as any ? 'text-quantum-cyan' :
-                    source.status === 'error' ? 'text-red-400' :
-                    'text-gray-500'
-                  }`}>
-                    {source.llm}
-                  </span>
-                  {source.fieldsFound !== undefined && source.fieldsFound > 0 && (
-                    <span className="text-quantum-green text-[10px] ml-auto">+{source.fieldsFound}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-            <div className="text-xs text-gray-500 mt-2">
-              {progress}% complete ({totalFieldsFound || Math.round(progress * 1.68)} of 168 fields)
-            </div>
-          </div>
+          {/* Real-time API/LLM Progress Tracker */}
+          <SearchProgressTracker
+            sources={sourcesProgress}
+            isSearching={status === 'searching' || status === 'scraping'}
+            totalFieldsFound={totalFieldsFound || Math.round(progress * 1.68)}
+            completionPercentage={progress}
+          />
 
           {/* Show View Partial Data button when error but we have some data */}
           {status === 'error' && Object.keys(accumulatedFields).length > 0 && (
