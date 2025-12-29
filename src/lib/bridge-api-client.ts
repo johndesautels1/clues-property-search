@@ -365,8 +365,11 @@ export class BridgeAPIClient {
     // MLS Number filter - try BOTH ListingId and ListingKey (different MLS systems use different fields)
     if (params.mlsNumber) {
       const escapedMls = params.mlsNumber.replace(/'/g, "''");
-      console.log('[Bridge API] Searching for MLS#:', escapedMls);
-      filters.push(`(ListingId eq '${escapedMls}' or ListingKey eq '${escapedMls}')`);
+      const mlsFilter = `(ListingId eq '${escapedMls}' or ListingKey eq '${escapedMls}')`;
+      console.log('[Bridge API] 🔍 MLS# Search Filter:', mlsFilter);
+      console.log('[Bridge API] 🔍 Raw MLS# received:', params.mlsNumber);
+      console.log('[Bridge API] 🔍 Escaped MLS#:', escapedMls);
+      filters.push(mlsFilter);
     }
 
     // Price range
