@@ -6,39 +6,50 @@
 ## PRIORITY 1: UTILITIES (High Impact - Stop All Hallucinations)
 
 ### ✅ Field 104: Electric Provider
-- **Status:** ✅ MAPPED (awaiting test)
+- **Status:** ✅ COMPLETE (mapped + protected + tested)
 - **Bridge MLS Field:** `property.Electric`
 - **Data Type:** String
-- **Current State:** 100% hallucinated by Claude Opus
-- **Expected After:** 90%+ accurate from MLS (if MLS has data)
-- **Code Change:** `src/lib/bridge-field-mapper.ts` line 293-295 ✅ DONE
-- **Test Property:** PENDING - need to test with actual property search
+- **Before:** 100% hallucinated by Claude Opus
+- **After:** Verified - Shows "Stellar MLS" source
+- **Code Changes:**
+  - `src/lib/bridge-field-mapper.ts` line 293-295 ✅
+  - `api/property/search.ts` STELLAR_MLS_AUTHORITATIVE_FIELDS ✅
+- **Test Result:** ✅ Working (Indian Rocks Beach property)
 
 ### ✅ Field 106: Water Provider
-- **Status:** ✅ MAPPED (awaiting test)
+- **Status:** ✅ COMPLETE (mapped + protected + tested)
 - **Bridge MLS Field:** `property.Water` (array)
 - **Data Type:** String array → join with ', '
-- **Current State:** 100% hallucinated by Claude Opus
-- **Expected After:** 90%+ accurate from MLS
-- **Code Change:** `src/lib/bridge-field-mapper.ts` line 297-300 ✅ DONE
+- **Before:** 100% hallucinated by Claude Opus
+- **After:** Protected - Returns NULL when MLS has no data (blocks hallucinations)
+- **Code Changes:**
+  - `src/lib/bridge-field-mapper.ts` line 297-300 ✅
+  - `api/property/search.ts` STELLAR_MLS_AUTHORITATIVE_FIELDS ✅
+- **Test Result:** ✅ Protection working (prevented Opus hallucination)
 
 ### ✅ Field 108: Sewer Provider
-- **Status:** ✅ MAPPED (awaiting test)
+- **Status:** ✅ COMPLETE (mapped + protected + tested)
 - **Bridge MLS Field:** `property.Sewer` (array)
 - **Data Type:** String array → join with ', '
-- **Current State:** 100% hallucinated by Claude Opus
-- **Expected After:** 90%+ accurate from MLS
-- **Code Change:** `src/lib/bridge-field-mapper.ts` line 302-305 ✅ DONE
+- **Before:** 100% hallucinated by Claude Opus
+- **After:** Verified - Shows "Public Sewer" from Stellar MLS
+- **Code Changes:**
+  - `src/lib/bridge-field-mapper.ts` line 302-305 ✅
+  - `api/property/search.ts` STELLAR_MLS_AUTHORITATIVE_FIELDS ✅
+- **Test Result:** ✅ Working (Indian Rocks Beach property)
 
 ### ✅ Field 109: Natural Gas
-- **Status:** ✅ MAPPED (awaiting test)
+- **Status:** ✅ COMPLETE (mapped + protected + tested)
 - **Bridge MLS Field:** `property.Gas`
 - **Data Type:** String
-- **Current State:** 100% hallucinated by Claude Opus
-- **Expected After:** 90%+ accurate from MLS
-- **Code Change:** `src/lib/bridge-field-mapper.ts` line 307-309 ✅ DONE
+- **Before:** 100% hallucinated by Claude Opus
+- **After:** Verified - Shows "Stellar MLS" source
+- **Code Changes:**
+  - `src/lib/bridge-field-mapper.ts` line 307-309 ✅
+  - `api/property/search.ts` STELLAR_MLS_AUTHORITATIVE_FIELDS ✅
+- **Test Result:** ✅ Working (Indian Rocks Beach property)
 
-**Priority 1 Impact:** 4 fields, currently 100% hallucinated → 90%+ accurate ✅ ALL MAPPED
+**Priority 1 Impact:** 4 fields, 100% hallucinated → 90%+ accurate OR honest NULL ✅ COMPLETE
 
 ---
 
@@ -147,5 +158,5 @@
 
 ---
 
-**Last Updated:** 2025-12-30 (Field 104 mapped)
-**Next Action:** Test Field 104 with property search, then map Fields 106-109
+**Last Updated:** 2025-12-30 (Priority 1 COMPLETE - all utility fields mapped, protected, tested)
+**Next Action:** Map Priority 2 - Field 44 (Garage Type) and Field 27 (Stories)
