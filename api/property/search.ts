@@ -32,9 +32,9 @@ export const config = {
 
 // Timeout wrapper for API/LLM calls - prevents hanging
 const STELLAR_MLS_TIMEOUT = 90000; // 90 seconds (1.5 minutes) for Stellar MLS via Bridge API (Tier 1)
-const FREE_API_TIMEOUT = 60000; // 60 seconds for Redfin, Google, and all free APIs (Tier 2 & 3)
-const LLM_TIMEOUT = 180000; // 180 seconds (3 minutes) for Claude, GPT-4, Gemini, Grok LLM enrichment (Tier 4)
-const PERPLEXITY_TIMEOUT = 195000; // 195 seconds (3.25 minutes) for Perplexity (needs extra time for deep web search)
+const FREE_API_TIMEOUT = 90000; // 90 seconds for Redfin, Google, and all free APIs (Tier 2 & 3) - increased from 60s
+const LLM_TIMEOUT = 210000; // 210 seconds (3.5 minutes) for Claude, GPT-4, Gemini, Grok LLM enrichment (Tier 4) - increased from 180s
+const PERPLEXITY_TIMEOUT = 225000; // 225 seconds (3.75 minutes) for Perplexity (needs extra time for deep web search) - increased from 195s
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([
     promise,
