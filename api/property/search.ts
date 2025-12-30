@@ -3659,6 +3659,10 @@ const STELLAR_MLS_AUTHORITATIVE_FIELDS = new Set([
   // Utility providers from Bridge MLS (Fields 104-109)
   '104_electric_provider', '106_water_provider', '108_sewer_provider', '109_natural_gas',
 
+  // Enhanced Bridge MLS fields (Priority 3 & 4)
+  '132_lot_features', // Enhanced with Topography and Vegetation
+  '138_special_assessments', // From SpecialListingConditions array
+
   // Stellar MLS exclusive fields (139-168)
   '139_carport_yn', '140_carport_spaces', '141_garage_attached_yn',
   '142_parking_features', '143_assigned_parking_spaces',

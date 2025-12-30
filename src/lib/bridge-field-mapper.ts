@@ -338,8 +338,20 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
     addField('131_view_type', property.View.join(', '));
   }
 
+  // Lot Features - combine LotFeatures, Topography, and Vegetation
+  const lotFeaturesParts = [];
   if (property.LotFeatures && Array.isArray(property.LotFeatures)) {
-    addField('132_lot_features', property.LotFeatures.join(', '));
+    lotFeaturesParts.push(...property.LotFeatures);
+  }
+  if (property.Topography && Array.isArray(property.Topography)) {
+    lotFeaturesParts.push(...property.Topography);
+  }
+  if (property.Vegetation && Array.isArray(property.Vegetation)) {
+    lotFeaturesParts.push(...property.Vegetation);
+  }
+  if (lotFeaturesParts.length > 0) {
+    const uniqueFeatures = [...new Set(lotFeaturesParts)]; // Remove duplicates
+    addField('132_lot_features', uniqueFeatures.join(', '));
   }
 
   // EV Charging
@@ -425,13 +437,29 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
     }
   }
 
-  // Field 138: Special Assessments - Parse from PublicRemarks
-  if (property.PublicRemarks) {
+  // Field 138: Special Assessments - Check SpecialListingConditions first, then PublicRemarks
+  let foundAssessment = false;
+
+  // First check SpecialListingConditions array from Bridge MLS
+  if (property.SpecialListingConditions && Array.isArray(property.SpecialListingConditions)) {
+    const assessmentKeywords = ['assessment', 'special fee', 'pending fee', 'capital improvement'];
+    const assessmentConditions = property.SpecialListingConditions.filter(condition => {
+      const lowerCondition = condition.toLowerCase();
+      return assessmentKeywords.some(keyword => lowerCondition.includes(keyword));
+    });
+
+    if (assessmentConditions.length > 0) {
+      addField('138_special_assessments', assessmentConditions.join('; '), 'High');
+      foundAssessment = true;
+    }
+  }
+
+  // Fallback: Parse from PublicRemarks if not found in SpecialListingConditions
+  if (!foundAssessment && property.PublicRemarks) {
     const assessmentKeywords = ['special assessment', 'assessment due', 'pending assessment', 'special fee', 'one-time assessment', 'capital assessment'];
     const remarks = property.PublicRemarks;
     const sentences = remarks.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 10);
 
-    let foundAssessment = false;
     sentences.forEach(sentence => {
       const lowerSentence = sentence.toLowerCase();
       assessmentKeywords.forEach(keyword => {
@@ -487,7 +515,14 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // GROUP 21: Waterfront (Fields 155-159)
   // ================================================================
   addField('155_water_frontage_yn', property.WaterfrontYN);
-  addField('156_waterfront_feet', property.WaterfrontFeet);
+
+  // Waterfront Feet - use WaterfrontFeet first, fallback to CanalFrontage
+  if (property.WaterfrontFeet) {
+    addField('156_waterfront_feet', property.WaterfrontFeet);
+  } else if (property.CanalFrontage) {
+    addField('156_waterfront_feet', property.CanalFrontage, 'Medium');
+  }
+
   addField('157_water_access_yn', property.WaterAccessYN);
   addField('158_water_view_yn', property.WaterViewYN);
   addField('159_water_body_name', property.WaterBodyName);
