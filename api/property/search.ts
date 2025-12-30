@@ -1241,6 +1241,7 @@ async function getWalkScore(lat: number, lon: number, address: string): Promise<
 }
 
 async function getFloodZone(lat: number, lon: number): Promise<Record<string, any>> {
+  console.log('🔍 [DIAGNOSIS] getFloodZone() CALLED with:', { lat, lon });
   console.log(`🔵 [FEMA] Calling API for coordinates: ${lat}, ${lon}`);
   try {
     // Updated 2025-12-04: FEMA changed URL from /gis/nfhl/rest to /arcgis/rest
@@ -1297,9 +1298,18 @@ async function getAirQuality(lat: number, lon: number): Promise<Record<string, a
 
 // U.S. Census API - Vacancy Rate
 async function getCensusData(zipCode: string): Promise<Record<string, any>> {
+  console.log('🔍 [DIAGNOSIS] getCensusData() CALLED with:', { zipCode });
+
   const apiKey = process.env.CENSUS_API_KEY;
   if (!apiKey) {
     console.log('❌ [Census] CENSUS_API_KEY not set in environment variables');
+    console.log('🔍 [DIAGNOSIS] Census SKIPPED - API key missing');
+    return {};
+  }
+  console.log('🔍 [DIAGNOSIS] Census API key exists:', !!apiKey);
+
+  if (!zipCode || zipCode === '') {
+    console.log('🔍 [DIAGNOSIS] Census SKIPPED - zipCode is empty or missing!');
     return {};
   }
 
@@ -1389,11 +1399,15 @@ async function getCensusData(zipCode: string): Promise<Record<string, any>> {
 
 // Weather.com API - Climate data
 async function getClimateData(lat: number, lon: number): Promise<Record<string, any>> {
+  console.log('🔍 [DIAGNOSIS] getClimateData() CALLED with:', { lat, lon });
+
   const apiKey = process.env.WEATHERCOM_API_KEY || process.env.OPENWEATHERMAP_API_KEY;
   if (!apiKey) {
     console.log('❌ [Weather] Neither WEATHERCOM_API_KEY nor OPENWEATHERMAP_API_KEY set in environment variables');
+    console.log('🔍 [DIAGNOSIS] Weather SKIPPED - API key missing');
     return {};
   }
+  console.log('🔍 [DIAGNOSIS] Weather API key exists:', !!apiKey);
   console.log(`🔵 [Weather] Calling API for coordinates: ${lat}, ${lon}`);
 
   try {
@@ -1807,8 +1821,14 @@ async function getTransitAccess(lat: number, lon: number): Promise<Record<string
 
 // Google Distance Matrix - Commute time to downtown
 async function getCommuteTime(lat: number, lon: number, county: string): Promise<Record<string, any>> {
+  console.log('🔍 [DIAGNOSIS] getCommuteTime() CALLED with:', { lat, lon, county });
+
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-  if (!apiKey) return {};
+  if (!apiKey) {
+    console.log('🔍 [DIAGNOSIS] Google Distance SKIPPED - API key missing');
+    return {};
+  }
+  console.log('🔍 [DIAGNOSIS] Google Distance API key exists:', !!apiKey);
 
   // Downtown coordinates for your counties
   const downtowns: Record<string, { coords: string; name: string }> = {
@@ -1825,11 +1845,14 @@ async function getCommuteTime(lat: number, lon: number, county: string): Promise
 
   try {
     const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${lat},${lon}&destinations=${downtown.coords}&departure_time=now&key=${apiKey}`;
+    console.log('🔍 [DIAGNOSIS] Google Distance making API call to:', downtown.name);
     const response = await fetch(url);
     const data = await response.json();
+    console.log('🔍 [DIAGNOSIS] Google Distance response status:', data.status);
 
     // Field 82 = commute_to_city_center per fields-schema.ts
     if (data.rows?.[0]?.elements?.[0]?.duration_in_traffic) {
+      console.log('🔍 [DIAGNOSIS] Google Distance SUCCESS - returning field 82');
       return {
         '82_commute_to_city_center': {
           value: data.rows[0].elements[0].duration_in_traffic.text,
@@ -1839,6 +1862,7 @@ async function getCommuteTime(lat: number, lon: number, county: string): Promise
         }
       };
     } else if (data.rows?.[0]?.elements?.[0]?.duration) {
+      console.log('🔍 [DIAGNOSIS] Google Distance SUCCESS (no traffic) - returning field 82');
       return {
         '82_commute_to_city_center': {
           value: data.rows[0].elements[0].duration.text,
@@ -1848,10 +1872,13 @@ async function getCommuteTime(lat: number, lon: number, county: string): Promise
         }
       };
     }
+    console.log('🔍 [DIAGNOSIS] Google Distance FAILED - no valid data in response');
   } catch (e) {
     console.error('Commute time error:', e);
+    console.log('🔍 [DIAGNOSIS] Google Distance EXCEPTION:', e);
   }
 
+  console.log('🔍 [DIAGNOSIS] Google Distance returning empty {}');
   return {};
 }
 
@@ -1867,10 +1894,17 @@ async function enrichWithFreeAPIs(
   const geo = await geocodeAddress(address, expectedCity, expectedState, expectedZip);
   if (!geo) {
     console.log('❌ [enrichWithFreeAPIs] FAILED - Geocoding returned null or wrong location');
+    console.log('🔍 [DIAGNOSIS] Geocoding failed for address:', address);
+    console.log('🔍 [DIAGNOSIS] Expected location:', { city: expectedCity, state: expectedState, zip: expectedZip });
+    console.log('🔍 [DIAGNOSIS] This will cause ALL 22 APIs to be skipped!');
     return {};
   }
 
-  console.log('✅ [enrichWithFreeAPIs] Geocoding success:', { lat: geo.lat, lon: geo.lon, county: geo.county });
+  console.log('✅ [enrichWithFreeAPIs] Geocoding success:', { lat: geo.lat, lon: geo.lon, county: geo.county, zipCode: geo.zipCode, state: geo.state });
+  console.log('🔍 [DIAGNOSIS] Geocoding returned all required parameters:');
+  console.log('🔍 [DIAGNOSIS]   - lat/lon for Google Distance, FEMA Flood, Weather APIs:', geo.lat, geo.lon);
+  console.log('🔍 [DIAGNOSIS]   - zipCode for Census API:', geo.zipCode || 'MISSING!');
+  console.log('🔍 [DIAGNOSIS]   - county for Google Distance API:', geo.county || 'MISSING!');
 
   const fields: Record<string, any> = {};
   // Field 7 = county per fields-schema.ts
@@ -1882,6 +1916,7 @@ async function enrichWithFreeAPIs(
 
   // Extract ZIP code from geo object for Census API
   const zipCode = geo.zipCode || '';
+  console.log('🔍 [DIAGNOSIS] Extracted zipCode for Census API:', zipCode || 'EMPTY!');
 
   // STEP 1: Call Google Places first to get beach distance (needed for accurate sea level risk)
   console.log('🔵 [Step 1/2] Calling Google Places for beach distance...');
