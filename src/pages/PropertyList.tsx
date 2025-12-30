@@ -253,7 +253,7 @@ export default function PropertyList() {
           }
         >
           {filteredProperties.map((property) => (
-            <PropertyCardUnified key={property.id} property={property} />
+            <PropertyCardUnified key={property.id} property={property} alwaysStartCollapsed={true} />
           ))}
         </div>
       ) : (
