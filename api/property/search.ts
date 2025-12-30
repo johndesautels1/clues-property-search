@@ -4291,6 +4291,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Feed results into arbitration with source="LLM Orchestrator"
         const added = arbitrationPipeline.addFieldsFromSource(cmaSchema, 'LLM Orchestrator');
+        actualFieldCounts['LLM Orchestrator'] = orchestratorFieldCount; // Track field count for source_breakdown
         console.log(`✅ TIER 3.5 COMPLETE: Added ${added} fields from LLM Orchestrator (audited)`);
 
         // ========================================
@@ -4364,6 +4365,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       } catch (error) {
         console.error('❌ LLM Orchestrator failed (continuing to regular cascade):', error);
+        console.error('Error details:', error instanceof Error ? error.message : String(error));
+        console.error('Stack trace:', error instanceof Error ? error.stack : 'N/A');
+        // Track failure in actualFieldCounts so UI shows error instead of "Waiting"
+        actualFieldCounts['LLM Orchestrator'] = 0;
         // Don't crash - continue to existing LLM cascade
       }
 
@@ -4644,6 +4649,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       completion_percentage: completionPercentage,
       sources: sources,
       source_breakdown: sourceBreakdown,
+      field_sources: sourceBreakdown, // Alias for backwards compatibility with Manual tab UI
       conflicts: arbitrationResult.conflicts,
       validation_failures: arbitrationResult.validationFailures,
       llm_quorum_fields: arbitrationResult.llmQuorumFields,

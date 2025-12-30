@@ -318,25 +318,29 @@ export default function AddProperty() {
       if (fieldSources && Object.keys(fieldSources).length > 0) {
         startTransition(() => {
           setSourcesProgress(prev => prev.map(source => {
-            // Map source names to API field_sources keys
-            const sourceKey = source.name === 'Stellar MLS' ? 'Stellar MLS' :
-                             source.name === 'Perplexity' ? 'Perplexity' :
-                             source.name === 'Grok' ? 'Grok' :
-                             source.name === 'Claude Opus' ? 'Claude Opus' :
-                             source.name === 'GPT-5.2' ? 'GPT' :
-                             source.name === 'Claude Sonnet' ? 'Claude Sonnet' :
-                             source.name === 'Gemini' ? 'Gemini' :
-                             source.name === 'Google Geocode' ? 'Google Geocode' :
-                             source.name === 'Google Places' ? 'Google Places' :
-                             source.name === 'WalkScore' ? 'WalkScore' :
-                             source.name === 'SchoolDigger' ? 'SchoolDigger' :
-                             source.name;
+            // Try multiple variations to find matching field source
+            // 1. Exact match
+            let fieldsFound = fieldSources[source.name] || 0;
 
-            const fieldsFound = fieldSources[sourceKey] || 0;
+            // 2. Try common variations if exact match failed
+            if (fieldsFound === 0) {
+              const variations = [
+                source.name.replace('GPT-5.2', 'GPT'),
+                source.name.replace('FBI Crime', 'FBI Crime Data'),
+                source.name,
+              ];
+
+              for (const variation of variations) {
+                if (fieldSources[variation]) {
+                  fieldsFound = fieldSources[variation];
+                  break;
+                }
+              }
+            }
 
             return {
               ...source,
-              status: fieldsFound > 0 ? 'complete' : (data.data_sources?.includes(sourceKey) ? 'complete' : 'skipped'),
+              status: fieldsFound > 0 ? 'complete' : 'skipped',
               fieldsFound,
             };
           }));

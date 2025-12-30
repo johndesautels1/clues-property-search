@@ -230,6 +230,19 @@ export const DATA_SOURCES: DataSource[] = [
     description: 'Radon risk zones'
   },
 
+  // Tier 4: LLM Orchestrator (Perplexity micro-prompts + Claude Opus normalizer)
+  // Note: Runs as TIER 3.5 in search logic, but UI tier type only supports 1-5
+  {
+    id: 'llm-orchestrator',
+    name: 'LLM Orchestrator',
+    type: 'llm',
+    tier: 4,
+    icon: 'brain',
+    color: 'purple',
+    enabled: true,
+    description: '7 Perplexity micro-prompts + Claude Opus normalizer'
+  },
+
   // Tier 4: Perplexity ONLY (Web-grounded LLM - highest LLM priority)
   {
     id: 'perplexity',
