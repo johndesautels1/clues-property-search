@@ -281,7 +281,7 @@ export async function callFemaFlood(lat: number, lon: number): Promise<ApiResult
     const fetchResult = await safeFetch<any>(url, undefined, 'FEMA-Flood');
 
     if (!fetchResult.success || !fetchResult.data) {
-      return { success: false, source: 'FEMA NFHL', fields, error: fetchResult.error || 'Fetch failed' };
+      return { success: false, source: 'FEMA Flood', fields, error: fetchResult.error || 'Fetch failed' };
     }
 
     const data = fetchResult.data;
@@ -292,19 +292,19 @@ export async function callFemaFlood(lat: number, lon: number): Promise<ApiResult
       const isHighRisk = ['A', 'AE', 'AH', 'AO', 'V', 'VE'].some(z => floodZone.startsWith(z));
 
       // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Environment & Risk (117-130)
-      setField(fields, '119_flood_zone', `FEMA Zone ${floodZone}`, 'FEMA NFHL');
-      setField(fields, '120_flood_risk_level', isHighRisk ? 'High Risk (Special Flood Hazard Area)' : 'Minimal Risk', 'FEMA NFHL');
+      setField(fields, '119_flood_zone', `FEMA Zone ${floodZone}`, 'FEMA Flood');
+      setField(fields, '120_flood_risk_level', isHighRisk ? 'High Risk (Special Flood Hazard Area)' : 'Minimal Risk', 'FEMA Flood');
 
       // Note: No separate flood_insurance_required field in 168-field schema
     } else {
-      setField(fields, '119_flood_zone', 'Zone X (Minimal Risk)', 'FEMA NFHL', 'Medium');
-      setField(fields, '120_flood_risk_level', 'Minimal', 'FEMA NFHL', 'Medium');
+      setField(fields, '119_flood_zone', 'Zone X (Minimal Risk)', 'FEMA Flood', 'Medium');
+      setField(fields, '120_flood_risk_level', 'Minimal', 'FEMA Flood', 'Medium');
     }
 
-    return { success: true, source: 'FEMA NFHL', fields };
+    return { success: true, source: 'FEMA Flood', fields };
 
   } catch (error) {
-    return { success: false, source: 'FEMA NFHL', fields, error: String(error) };
+    return { success: false, source: 'FEMA Flood', fields, error: String(error) };
   }
 }
 

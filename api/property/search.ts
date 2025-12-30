@@ -1376,7 +1376,7 @@ async function getCensusData(zipCode: string): Promise<Record<string, any>> {
     return {
       '100_vacancy_rate_neighborhood': {
         value: `${vacancyRateFormatted}%`,
-        source: 'Census',
+        source: 'U.S. Census',
         confidence: 'High',
         metadata: {
           totalUnits,
@@ -1430,10 +1430,26 @@ async function getClimateData(lat: number, lon: number): Promise<Record<string, 
     const fields: Record<string, any> = {};
 
     if (isOpenWeather && data.main) {
-      // OpenWeatherMap format
+      // OpenWeatherMap format - estimate solar potential from current conditions
       // NOTE: Current weather conditions removed from field 121_climate_risk
       // Field 121 is for climate RISK assessment (FEMA/NOAA), not current temperature
-      // Weather API does not provide climate risk data
+
+      // Estimate solar potential based on cloud cover and weather conditions
+      let solarPotential = 'Moderate';
+      const cloudCover = data.clouds?.all || 50; // Cloud cover percentage (0-100)
+      const weatherMain = data.weather?.[0]?.main || '';
+
+      if (cloudCover <= 20 && !['Rain', 'Drizzle', 'Thunderstorm', 'Snow'].includes(weatherMain)) {
+        solarPotential = 'High';
+      } else if (cloudCover >= 70 || ['Rain', 'Drizzle', 'Thunderstorm', 'Snow'].includes(weatherMain)) {
+        solarPotential = 'Low';
+      }
+
+      fields['130_solar_potential'] = {
+        value: `${solarPotential} (${cloudCover}% cloud cover)`,
+        source: 'Weather',
+        confidence: 'Medium'
+      };
     } else if (!isOpenWeather && data) {
       // Weather.com format
       // NOTE: Current weather conditions removed from field 121_climate_risk
@@ -1856,7 +1872,7 @@ async function getCommuteTime(lat: number, lon: number, county: string): Promise
       return {
         '82_commute_to_city_center': {
           value: data.rows[0].elements[0].duration_in_traffic.text,
-          source: 'Google Distance Matrix',
+          source: 'Google Distance',
           confidence: 'High',
           details: `To ${downtown.name}`
         }
@@ -1866,7 +1882,7 @@ async function getCommuteTime(lat: number, lon: number, county: string): Promise
       return {
         '82_commute_to_city_center': {
           value: data.rows[0].elements[0].duration.text,
-          source: 'Google Distance Matrix',
+          source: 'Google Distance',
           confidence: 'High',
           details: `To ${downtown.name}`
         }
@@ -4325,7 +4341,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // CRITICAL: Track sources that were called but returned 0 fields
         // This ensures SchoolDigger, FBI Crime, etc. show up even if they fail or return nothing
-        const allTier3Sources = ['SchoolDigger', FBI_CRIME_SOURCE, 'WalkScore', 'FEMA NFHL', 'AirNow', 'HowLoud', 'OpenWeatherMap'];
+        const allTier3Sources = ['SchoolDigger', FBI_CRIME_SOURCE, 'WalkScore', 'FEMA Flood', 'AirNow', 'HowLoud', 'Weather', 'U.S. Census'];
         for (const sourceName of allTier3Sources) {
           if (!tier3Groups[sourceName]) {
             // Source returned 0 fields - add to audit trail so it shows in source_breakdown
