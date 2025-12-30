@@ -3650,6 +3650,9 @@ const STELLAR_MLS_AUTHORITATIVE_FIELDS = new Set([
   // Structure details from MLS (inferred from Bridge MLS data)
   '44_garage_type', // Inferred from GarageType or AttachedGarageYN
 
+  // Permit history (Backend-only: will come from BuildFax/Accela scraper)
+  '60_permit_history_roof', '61_permit_history_hvac', '62_permit_history_other',
+
   // HOA data from MLS
   '30_hoa_yn', '31_hoa_fee_annual', '32_hoa_name', '33_hoa_includes', '34_ownership_type',
 
