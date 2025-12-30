@@ -45,7 +45,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
 import { scrapeFloridaCounty } from './florida-counties.js';
 import { LLM_CASCADE_ORDER } from './llm-constants.js';
 import { createArbitrationPipeline, type FieldValue, type ArbitrationResult } from './arbitration.js';
-import { sanitizeAddress, isValidAddress } from '../../src/lib/safe-json-parse.js';
+import { sanitizeAddress, isValidAddress, safeFetch } from '../../src/lib/safe-json-parse.js';
 import { callCrimeGrade, callSchoolDigger, callFEMARiskIndex, callNOAAClimate, callNOAAStormEvents, callNOAASeaLevel, callUSGSElevation, callUSGSEarthquake, callEPAFRS, getRadonRisk, callGoogleStreetView, callGoogleSolarAPI, callHowLoud/*, callRedfinProperty*/ } from './free-apis.js';
 import { STELLAR_MLS_SOURCE, FBI_CRIME_SOURCE } from './source-constants.js';
 
@@ -1246,16 +1246,15 @@ async function getFloodZone(lat: number, lon: number): Promise<Record<string, an
   try {
     // Updated 2025-12-04: FEMA changed URL from /gis/nfhl/rest to /arcgis/rest
     const url = `https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query?where=1%3D1&geometry=${lon}%2C${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE%2CZONE_SUBTY%2CSFHA_TF&returnGeometry=false&f=json`;
-    const response = await fetch(url);
+    const fetchResult = await safeFetch<any>(url, undefined, 'FEMA-Flood', 60000); // 60s timeout
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`❌ [FEMA] HTTP ${response.status}: ${errorText.substring(0, 200)}`);
+    if (!fetchResult.success || !fetchResult.data) {
+      console.error(`❌ [FEMA] Fetch failed: ${fetchResult.error || 'Unknown error'}`);
       return {};
     }
 
-    const data = await response.json();
-    console.log(`🔵 [FEMA] Response status: ${response.status}, features: ${data.features?.length || 0}`);
+    const data = fetchResult.data;
+    console.log(`🔵 [FEMA] Response status: ${fetchResult.status}, features: ${data.features?.length || 0}`);
 
     // UPDATED: 2025-11-30 - Corrected field numbers to match fields-schema.ts
     if (data.features?.[0]) {
@@ -4271,7 +4270,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('========================================');
       console.log('TIER 2 & 3: FREE APIs (Google, WalkScore, FEMA, etc.)');
       console.log('========================================');
-      console.log('🔍 Calling enrichWithFreeAPIs with 60s timeout for:', realAddress);
+      console.log('🔍 Calling enrichWithFreeAPIs with 90s timeout for:', realAddress);
       console.log('🔍 With validation: city=', mlsCity, 'state=', mlsState, 'zip=', mlsZip);
       try {
         const enrichedData = await withTimeout(
