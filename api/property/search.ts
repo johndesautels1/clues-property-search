@@ -1999,24 +1999,128 @@ async function callPerplexity(address: string): Promise<Record<string, any>> {
     return {};
   }
 
-  // User message structured per Perplexity guidance:
-  // TASK at top, then PROPERTY, then PRIORITY, then FIELDS, then FORMAT
-  const userPrompt = `TASK:
-1. Use REAL-TIME WEB SEARCH to look up this EXACT property
-2. For each field below, find a SPECIFIC value from web sources
-3. If you CANNOT find verified data for a field, DO NOT include it - simply omit it
-4. NEVER return null values - only return fields where you found REAL data
+  // UNIFIED RETRIEVAL-ONLY PROMPT (combines 7 micro-prompts + general research)
+  const userPrompt = `You are a retrieval-only real estate research agent with LIVE WEB SEARCH capabilities.
 
-PROPERTY:
-Address: ${address}
+Your mission: For the property at:
 
-PRIORITY:
-- P1 (MUST attempt): prices, MLS ID, taxes, HOA fees, beds, baths, sqft, year built, lot size, schools, flood zone
-- P2 (SHOULD attempt): utilities, systems, distances, environment/risk fields
-- P3 (IF EASY): all remaining fields
-If time/coverage is limited, prioritize: P1 > P2 > P3
+"${address}"
 
-FIELD SCHEMA (168 fields, grouped with source hints):
+research and extract ALL relevant data for the specific fields listed below, using the strict retrieval rules in this prompt. You must use web search, consult multiple reputable sources, and return ONLY explicitly stated information. For every populated field, include a source and source_url.
+
+Global rules (apply to everything):
+- You are a retrieval-only agent.
+- Use web search to locate authoritative, original, or well-established data sources.
+- Do NOT guess, infer, estimate, or interpolate any values.
+- Only return values that are explicitly stated on a page.
+- If a field cannot be confidently populated from an explicit statement, omit that field entirely.
+- Do NOT use hedging or approximation words such as "likely", "possibly", "about", "around", "approximately", "roughly", or similar.
+- Do NOT compute your own indices, ratings, or distances.
+- For every field you populate:
+  - Include "source" as either the site name or provider.
+  - Include "source_url" as the page URL where the value was found.
+- If multiple sources disagree, prioritize:
+  1. Official government or county records
+  2. Original provider sites (e.g., WalkScore, FEMA, BroadbandNow, official utilities)
+  3. Major real estate portals (Zillow, Redfin, Realtor.com, Trulia, Homes.com)
+- Omit any field you cannot reliably retrieve.
+- Output JSON ONLY, with no commentary, no explanations, and no extra keys beyond those specified.
+
+Required search strategy:
+Perform a focused but thorough set of searches, including but not limited to:
+
+General listing and property data:
+- "${address} Zillow"
+- "${address} Redfin"
+- "${address} Realtor.com"
+- "${address} Trulia"
+- "${address} Homes.com"
+
+County records and tax/ownership/parcel data:
+- "[County Name] Property Appraiser ${address}"
+- "[County Name] Assessor ${address}"
+
+Sale history and market context:
+- "${address} sold"
+- "[Neighborhood] median home price"
+- "[ZIP code] real estate market"
+
+Schools and ratings:
+- "Schools near ${address}"
+- "${address} GreatSchools"
+
+Walkability and transportation:
+- "${address} WalkScore"
+
+Crime and safety:
+- "${address} NeighborhoodScout"
+- "${address} CrimeGrade"
+- "[City or County] crime statistics ${address}"
+
+Climate, hazards, and environmental risk:
+- "[ZIP code] flood zone FEMA"
+- "${address} flood risk FirstStreet"
+- "${address} ClimateCheck"
+- "[City] air quality index AirNow"
+
+Utilities and ISPs:
+- "[City] electric utility provider"
+- "[City] water utility provider"
+- "[City] sewer utility provider"
+- "[City] trash collection services"
+- "${address} BroadbandNow"
+- "${address} fiber internet availability"
+- "${address} cell coverage"
+
+Points of interest (distances):
+- "Google Maps ${address} nearest grocery store"
+- "Google Maps ${address} nearest hospital"
+- "Google Maps ${address} nearest airport"
+- "Google Maps ${address} nearest park"
+- "Google Maps ${address} nearest beach"
+
+Use these patterns to locate the most reliable, explicit values for each of the fields below.
+
+Domain-specific rules:
+
+Walkability metrics (WalkScore):
+- Use web search ONLY to find pages from WalkScore.com.
+- Retrieve walk_score, transit_score, and bike_score ONLY if explicitly shown.
+- Do NOT guess or derive scores from any other source.
+- If a given score is not explicitly present, omit that field.
+
+Schools and ratings:
+- Use web search ONLY on GreatSchools.org or official school district websites.
+- Retrieve: School district name, Elementary/middle/high school names, GreatSchools ratings (1–10 scale), Distance in miles to each school
+- Do NOT infer attendance boundaries or ratings.
+- Omit any school-related field if not clearly stated.
+
+Crime and safety:
+- Use web search ONLY on reputable crime data providers: NeighborhoodScout, CrimeGrade, Official police/open-data portals
+- Retrieve only: Violent crime index, Property crime index, Neighborhood safety rating (A–F or 1–10)
+- Do NOT compute your own index.
+
+Climate and environmental risk:
+- Use web search ONLY on authoritative sources: FEMA.gov, NOAA.gov, FirstStreet.org, ClimateCheck.com, AirNow.gov
+- Retrieve ONLY explicitly stated values for: AQI, air quality grade, FEMA flood zone, flood risk, climate/wildfire/earthquake/hurricane/tornado/radon risks, sea level rise, solar potential
+- Do NOT infer regional climate risks.
+
+Utilities:
+- Use web search ONLY on: Official utility websites, Local government utility pages, Public utility commission databases
+- Retrieve ONLY explicitly stated: Electric/water/sewer/trash providers, natural gas availability, cable TV providers
+- Do NOT guess providers based on territory maps.
+
+Internet service providers (ISP):
+- Use web search ONLY on: BroadbandNow.com, FCC broadband maps, Official ISP coverage pages
+- Retrieve ONLY explicitly stated: Top 3 ISPs, max internet speed (Mbps), fiber availability, cell coverage quality
+- Do NOT estimate speeds.
+
+Points of interest (POI) distances:
+- Use web search ONLY on: Google Maps, MapQuest
+- Retrieve distances in miles ONLY when explicitly displayed by mapping service
+- Do NOT calculate distances yourself.
+- Target: Nearest grocery/hospital/airport/park/beach
+
 ${FIELD_GROUPS_PERPLEXITY}
 
 ${JSON_RESPONSE_FORMAT_PERPLEXITY}`;
@@ -4233,212 +4337,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // ========================================
-    // TIER 3.5: TWO-STAGE LLM ORCHESTRATOR (SUPPLEMENTAL)
-    // Runs in addition to existing LLM cascade
-    // Stage 1: Perplexity micro-prompts (Tier 4)
-    // Stage 2: Claude Opus normalizer (Tier 5)
-    // ========================================
-    if (!skipLLMs && !skipApis) {
-      console.log('========================================');
-      console.log('TIER 3.5: TWO-STAGE LLM ORCHESTRATOR');
-      console.log('========================================');
-
-      try {
-        // Import orchestrator and county client
-        const { buildCmaSchema, flattenWebChunks } = await import('../../src/llm/orchestrator.js');
-        const { fetchCountyData } = await import('../../src/api/county-client.js');
-
-        // Get county data (if geo available from enrichWithFreeAPIs)
-        console.log('🔍 Fetching county data with geocoding validation...');
-        const geo = await geocodeAddress(realAddress, mlsCity, mlsState, mlsZip);
-        const countyJson = geo?.county ? await fetchCountyData(realAddress, geo.county) : {};
-        console.log(`✅ County data fetched: ${Object.keys(countyJson).length} fields`);
-
-        // Get current pipeline state for inputs
-        const intermediateResult = arbitrationPipeline.getResult();
-
-        // Prepare inputs for orchestrator
-        const stellarMlsJson = {}; // Extract from intermediateResult if needed
-        const paidApisJson = intermediateResult.fields; // All current fields from APIs
-
-        console.log('🚀 Starting two-stage orchestrator...');
-        const orchestratorStartTime = Date.now();
-
-        // Call orchestrator (this runs 7 micro-prompts + core normalizer)
-        const cmaSchema = await withTimeout(
-          buildCmaSchema({
-            address: realAddress,
-            stellarMlsJson,
-            countyJson,
-            paidApisJson,
-          }),
-          PERPLEXITY_TIMEOUT + LLM_TIMEOUT, // Allow time for both Perplexity + Claude Opus
-          {} as any // Fallback to empty schema on timeout
-        );
-
-        const orchestratorEndTime = Date.now();
-        console.log(`✅ Orchestrator completed in ${orchestratorEndTime - orchestratorStartTime}ms`);
-
-        // The orchestrator returns a validated 168-field schema
-        // We need to separate Perplexity micro-prompt results from Claude Opus normalizer
-        // For now, feed all results as mixed Tier 4/5 data
-
-        // Add orchestrator results to pipeline
-        // Note: Individual field sources will determine tier during arbitration
-        const orchestratorFieldCount = Object.keys(cmaSchema).filter(
-          key => (cmaSchema as any)[key]?.value !== null
-        ).length;
-
-        console.log(`📦 Orchestrator returned ${orchestratorFieldCount} non-null fields`);
-
-        // ========================================
-        // GPT-5.2 LLM-ONLY AUDITOR (OPTIONAL)
-        // Validates ONLY LLM-populated fields (Tier 4/5), skips API fields (Tier 1-3)
-        // ========================================
-
-        // Track which fields came from APIs (Tier 1-3) - these are already trusted
-        const apiPopulatedFieldKeys = new Set<string>();
-        const intermediateBeforeOrchestrator = arbitrationPipeline.getResult();
-        for (const fieldKey of Object.keys(intermediateBeforeOrchestrator.fields)) {
-          apiPopulatedFieldKeys.add(fieldKey);
-        }
-        console.log(`[LLM Auditor] ${apiPopulatedFieldKeys.size} fields from trusted API sources (Tier 1-3)`);
-
-        // Extract LLM-only fields from orchestrator output
-        const { llmOnlyFields, llmFieldCount } = extractLLMOnlyFields(cmaSchema, apiPopulatedFieldKeys);
-        console.log(`[LLM Auditor] ${llmFieldCount} fields populated by LLMs (Tier 4/5)`);
-
-        // Conditionally audit LLM fields
-        if (shouldAuditLLMFields(llmFieldCount, llmOnlyFields)) {
-          try {
-            console.log('========================================');
-            console.log('GPT-5.2 LLM-ONLY AUDITOR');
-            console.log('========================================');
-
-            const auditStartTime = Date.now();
-            const webChunksJson = {}; // TODO: Extract from orchestrator if exposed
-
-            const auditResult = await withTimeout(
-              callGPT_LLMFieldAuditor(realAddress, {
-                stellarMlsJson,
-                countyJson,
-                paidApisJson,
-                webChunksJson,
-                llmOnlyFields,
-                apiPopulatedFieldKeys: Array.from(apiPopulatedFieldKeys),
-              }),
-              LLM_TIMEOUT,
-              { fields: llmOnlyFields, fields_audited: 0, fields_corrected: 0, fields_nulled: 0 }
-            );
-
-            const auditEndTime = Date.now();
-            console.log(`✅ LLM Audit completed in ${auditEndTime - auditStartTime}ms`);
-
-            // Merge audited LLM fields back into orchestrator schema
-            for (const [fieldKey, auditedField] of Object.entries(auditResult.fields || {})) {
-              cmaSchema.fields[fieldKey] = auditedField;
-            }
-
-            console.log(`✅ LLM AUDIT COMPLETE:`);
-            console.log(`   - Hallucinations removed: ${auditResult.fields_nulled || 0}`);
-            console.log(`   - Computations corrected: ${auditResult.fields_corrected || 0}`);
-            console.log(`   - Conflicts resolved: ${auditResult.conflicts?.length || 0}`);
-
-          } catch (auditError) {
-            console.error('❌ LLM Auditor failed (using unaudited orchestrator output):', auditError);
-            // Continue with unaudited orchestrator output
-          }
-        }
-
-        // Feed results into arbitration with source="LLM Orchestrator"
-        const added = arbitrationPipeline.addFieldsFromSource(cmaSchema, 'LLM Orchestrator');
-        actualFieldCounts['LLM Orchestrator'] = orchestratorFieldCount; // Track field count for source_breakdown
-        console.log(`✅ TIER 3.5 COMPLETE: Added ${added} fields from LLM Orchestrator (audited)`);
-
-        // ========================================
-        // GPT-5.2 EVIDENCE-LOCKED DATA MERGE (SUPPLEMENTAL)
-        // Runs alongside Claude Opus for additional coverage with strict tier precedence
-        // ========================================
-        if (engines.includes('gpt')) {
-          console.log('========================================');
-          console.log('GPT-5.2 EVIDENCE-LOCKED DATA MERGE');
-          console.log('========================================');
-
-          try {
-            console.log('🚀 Calling GPT with input blobs (evidence firewall mode)...');
-            const gptStartTime = Date.now();
-
-            // Get fresh webChunks from orchestrator Stage 1 results
-            // (These are the 7 Perplexity micro-prompt results)
-            const webChunksJson = {}; // TODO: Extract from buildCmaSchema if exposed
-
-            const gptResult = await withTimeout(
-              callGPT(realAddress, {
-                stellarMlsJson,
-                countyJson,
-                paidApisJson,
-                webChunksJson,
-              }),
-              LLM_TIMEOUT,
-              { fields: {}, error: 'timeout' }
-            );
-
-            const gptEndTime = Date.now();
-            console.log(`✅ GPT-5.2 completed in ${gptEndTime - gptStartTime}ms`);
-
-            if (gptResult.fields && Object.keys(gptResult.fields).length > 0) {
-              const gptFieldCount = Object.keys(gptResult.fields).filter(
-                key => gptResult.fields[key]?.value !== null
-              ).length;
-
-              console.log(`📦 GPT-5.2 returned ${gptFieldCount} non-null fields`);
-              console.log(`  - Conflicts detected: ${gptResult.conflicts?.length || 0}`);
-              console.log(`  - Fields found: ${gptResult.fields_found || 0}`);
-
-              // Log any tier conflicts GPT detected
-              if (gptResult.conflicts && gptResult.conflicts.length > 0) {
-                console.log('⚠️ GPT detected tier conflicts:');
-                for (const conflict of gptResult.conflicts.slice(0, 5)) {
-                  console.log(`  - ${conflict.field}: ${conflict.tier_values.length} sources, chose tier ${conflict.resolution}`);
-                }
-              }
-
-              // Feed GPT results into arbitration with source="GPT-5.2 Merge"
-              const gptAdded = arbitrationPipeline.addFieldsFromSource(gptResult.fields, 'GPT-5.2 Merge');
-              console.log(`✅ GPT-5.2 COMPLETE: Added ${gptAdded} fields from GPT-5.2 Merge`);
-              actualFieldCounts['GPT-5.2 Merge'] = gptFieldCount;
-            } else {
-              console.log('⚠️ GPT-5.2: No fields returned or error occurred');
-              if (gptResult.error) {
-                console.log(`   Error: ${gptResult.error}`);
-              }
-              arbitrationPipeline.addFieldsFromSource({}, 'GPT-5.2 Merge');
-              actualFieldCounts['GPT-5.2 Merge'] = 0;
-            }
-          } catch (gptError) {
-            console.error('❌ GPT-5.2 evidence merge failed:', gptError);
-            arbitrationPipeline.addFieldsFromSource({}, 'GPT-5.2 Merge');
-            actualFieldCounts['GPT-5.2 Merge'] = 0;
-          }
-        } else {
-          console.log('⏭️ Skipping GPT-5.2 (not in enabled engines list)');
-        }
-
-      } catch (error) {
-        console.error('❌ LLM Orchestrator failed (continuing to regular cascade):', error);
-        console.error('Error details:', error instanceof Error ? error.message : String(error));
-        console.error('Stack trace:', error instanceof Error ? error.stack : 'N/A');
-        // Track failure in actualFieldCounts so UI shows error instead of "Waiting"
-        actualFieldCounts['LLM Orchestrator'] = 0;
-        // Don't crash - continue to existing LLM cascade
-      }
-
-      console.log('========================================');
-      console.log('');
-    }
-
-    // ========================================
-    // TIER 4: LLM CASCADE (EXISTING - UNCHANGED)
+    // TIER 4: LLM CASCADE (Unified Perplexity + other LLMs)
     // ========================================
     if (!skipLLMs) {
       const intermediateResult = arbitrationPipeline.getResult();
