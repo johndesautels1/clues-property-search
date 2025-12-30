@@ -58,7 +58,19 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // ================================================================
   // GROUP 1: Address & Identity (Fields 1-9)
   // ================================================================
-  addField('1_full_address', property.UnparsedAddress);
+
+  // CRITICAL FIX: Construct full address from components (UnparsedAddress is often incomplete)
+  // Example: UnparsedAddress = "12609 130TH STREET" (missing city/state/zip)
+  // Need: "12609 130TH STREET, LARGO, FL 33774" for geocoding to work
+  const streetAddress = property.UnparsedAddress ||
+                       [property.StreetNumber, property.StreetName].filter(Boolean).join(' ');
+  const cityStateZip = [
+    property.City,
+    [property.StateOrProvince, property.PostalCode].filter(Boolean).join(' ')
+  ].filter(Boolean).join(', ');
+
+  const fullAddress = [streetAddress, cityStateZip].filter(Boolean).join(', ');
+  addField('1_full_address', fullAddress);
   addField('2_mls_primary', property.ListingId || property.ListingKey);
   addField('4_listing_status', property.StandardStatus || property.MlsStatus);
   addField('5_listing_date', property.ListingContractDate || property.OnMarketDate);
