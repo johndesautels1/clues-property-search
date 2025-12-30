@@ -1042,14 +1042,22 @@ function convertFlatToNestedStructure(flatFields: Record<string, any>): any {
 // FREE API ENRICHMENT
 // ============================================
 
-async function geocodeAddress(address: string): Promise<{ lat: number; lon: number; county: string; zipCode: string; state: string } | null> {
+async function geocodeAddress(
+  address: string,
+  expectedCity?: string,
+  expectedState?: string,
+  expectedZip?: string
+): Promise<{ lat: number; lon: number; county: string; zipCode: string; state: string } | null> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) return null;
 
   try {
-    // Extract expected ZIP from address if present (for validation)
+    // Extract expected ZIP from address if not provided explicitly
     const zipMatch = address.match(/\b(\d{5})(?:-\d{4})?\b/);
-    const expectedZip = zipMatch ? zipMatch[1] : null;
+    const expectedZipFromAddress = zipMatch ? zipMatch[1] : null;
+    const finalExpectedZip = expectedZip || expectedZipFromAddress;
+
+    console.log('[Geocode] Validation params:', { expectedCity, expectedState, expectedZip: finalExpectedZip });
 
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
     const response = await fetch(url);
@@ -1069,18 +1077,45 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lon: numb
       const suffixMatch = address.match(/\b(Street|St|Court|Ct|Avenue|Ave|Drive|Dr|Road|Rd|Lane|Ln|Boulevard|Blvd|Way|Place|Pl|Circle|Cir|Terrace|Ter|Parkway|Pkwy)\b/i);
       const expectedSuffix = suffixMatch ? suffixMatch[1].toLowerCase() : null;
 
-      if (expectedZip || expectedSuffix) {
-        // Try to find result matching BOTH expected ZIP and street suffix
+      if (finalExpectedZip || expectedSuffix || expectedCity || expectedState) {
+        // Try to find result matching ALL expected params: city, state, ZIP, and street suffix
         const matchingResult = data.results.find((r: any) => {
           const components = r.address_components || [];
           const formattedAddress = r.formatted_address || '';
 
+          // Check CITY match (locality or sublocality)
+          let cityMatches = !expectedCity;
+          if (expectedCity) {
+            const city = components.find((c: any) =>
+              c.types.includes('locality') || c.types.includes('sublocality'));
+            if (city) {
+              // Normalize both for comparison (handle "St Pete Beach" vs "St. Pete Beach")
+              const normalizedExpected = expectedCity.toLowerCase().replace(/\./g, '');
+              const normalizedActual = city.long_name.toLowerCase().replace(/\./g, '');
+              cityMatches = normalizedActual === normalizedExpected ||
+                           normalizedActual.includes(normalizedExpected) ||
+                           normalizedExpected.includes(normalizedActual);
+            }
+          }
+
+          // Check STATE match
+          let stateMatches = !expectedState;
+          if (expectedState) {
+            const state = components.find((c: any) => c.types.includes('administrative_area_level_1'));
+            if (state) {
+              stateMatches = state.short_name === expectedState || state.long_name === expectedState;
+            }
+          }
+
           // Check ZIP match
-          const zip = components.find((c: any) => c.types.includes('postal_code'));
-          const zipMatches = !expectedZip || (zip && zip.long_name === expectedZip);
+          let zipMatches = !finalExpectedZip;
+          if (finalExpectedZip) {
+            const zip = components.find((c: any) => c.types.includes('postal_code'));
+            zipMatches = zip && zip.long_name === finalExpectedZip;
+          }
 
           // Check street suffix match
-          let suffixMatches = true;
+          let suffixMatches = !expectedSuffix;
           if (expectedSuffix) {
             const normalizedSuffix = expectedSuffix.replace(/^(street|court|avenue|drive|road|lane|boulevard|place|circle|terrace|parkway)$/i, (match) => {
               const abbrevMap: Record<string, string> = {
@@ -1100,11 +1135,15 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lon: numb
             suffixMatches = hasFullSuffix || hasAbbrevSuffix;
           }
 
-          return zipMatches && suffixMatches;
+          const allMatch = cityMatches && stateMatches && zipMatches && suffixMatches;
+          if (allMatch) {
+            console.log('[Geocode] ✅ Found match:', formattedAddress, { cityMatches, stateMatches, zipMatches, suffixMatches });
+          }
+          return allMatch;
         });
 
         if (matchingResult) {
-          console.log(`[Geocode] ✅ Selected result matching ZIP ${expectedZip || 'any'} and suffix ${expectedSuffix || 'any'}`);
+          console.log(`[Geocode] ✅ Selected result matching city=${expectedCity||'any'} state=${expectedState||'any'} ZIP=${finalExpectedZip||'any'} suffix=${expectedSuffix||'any'}`);
           const result = matchingResult;
           let county = '';
           let zipCode = '';
@@ -1122,8 +1161,10 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lon: numb
           }
           return { lat: result.geometry.location.lat, lon: result.geometry.location.lng, county, zipCode, state };
         } else {
-          console.warn(`[Geocode] ⚠️ No result matched expected ZIP ${expectedZip || 'any'} and suffix ${expectedSuffix || 'any'}, using first result`);
-          console.warn(`[Geocode] 🚨 WARNING: May have selected wrong property! Available results:`);
+          console.warn(`[Geocode] ⚠️ No result matched expected city=${expectedCity||'any'} state=${expectedState||'any'} ZIP=${finalExpectedZip||'any'} suffix=${expectedSuffix||'any'}`);
+          console.warn(`[Geocode] 🚨 CRITICAL: Using first result - MAY BE WRONG PROPERTY!`);
+          console.warn(`[Geocode] Expected: ${expectedCity}, ${expectedState} ${finalExpectedZip}`);
+          console.warn(`[Geocode] Available results:`);
           data.results.forEach((r: any, idx: number) => {
             console.warn(`  [${idx}] ${r.formatted_address}`);
           });
@@ -1814,12 +1855,18 @@ async function getCommuteTime(lat: number, lon: number, county: string): Promise
   return {};
 }
 
-async function enrichWithFreeAPIs(address: string): Promise<Record<string, any>> {
+async function enrichWithFreeAPIs(
+  address: string,
+  expectedCity?: string,
+  expectedState?: string,
+  expectedZip?: string
+): Promise<Record<string, any>> {
   console.log('🔵 [enrichWithFreeAPIs] START - Address:', address);
+  console.log('🔵 [enrichWithFreeAPIs] Validation:', { expectedCity, expectedState, expectedZip });
 
-  const geo = await geocodeAddress(address);
+  const geo = await geocodeAddress(address, expectedCity, expectedState, expectedZip);
   if (!geo) {
-    console.log('❌ [enrichWithFreeAPIs] FAILED - Geocoding returned null');
+    console.log('❌ [enrichWithFreeAPIs] FAILED - Geocoding returned null or wrong location');
     return {};
   }
 
@@ -3926,6 +3973,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const llmResponses: any[] = [];
     const actualFieldCounts: Record<string, number> = {}; // Track ACTUAL fields returned by each source
 
+    // CRITICAL: City/State/Zip from Bridge MLS for geocoding validation
+    let mlsCity: string | undefined;
+    let mlsState: string | undefined;
+    let mlsZip: string | undefined;
+
     // Pre-load existing fields into the pipeline (from previous LLM calls)
     if (existingFields && Object.keys(existingFields).length > 0) {
       console.log(`[ACCUMULATE] Loading ${Object.keys(existingFields).length} existing fields into pipeline`);
@@ -3990,6 +4042,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const mlsFieldCount = Object.keys(bridgeData.fields).length;
             console.log('✅ Bridge returned fields:', mlsFieldCount, 'fields');
             console.log('📋 Field keys sample:', Object.keys(bridgeData.fields).slice(0, 10));
+
+            // 🔍 CRITICAL: Extract city/state/zip from raw Bridge data for geocoding validation
+            mlsCity = bridgeData.rawData?.City;
+            mlsState = bridgeData.rawData?.StateOrProvince;
+            mlsZip = bridgeData.rawData?.PostalCode;
+            console.log('🔍 Bridge MLS location (for validation):', { city: mlsCity, state: mlsState, zip: mlsZip });
 
             // 🔍 DEBUG: Check for photo fields specifically
             const hasPhotoUrl = 'property_photo_url' in bridgeData.fields;
@@ -4074,6 +4132,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('========================================');
       console.log('Original query:', searchQuery);
       console.log('Real address from Bridge MLS:', realAddress);
+      console.log('Expected location:', { city: mlsCity, state: mlsState, zip: mlsZip });
+      console.log('⚠️  GEOCODING VALIDATION ENABLED: Will reject results not matching', mlsCity, mlsState, mlsZip);
       console.log('Using real address for TIER 2-5 (APIs + LLMs)');
       console.log('========================================');
       console.log('');
@@ -4088,9 +4148,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('TIER 2 & 3: FREE APIs (Google, WalkScore, FEMA, etc.)');
       console.log('========================================');
       console.log('🔍 Calling enrichWithFreeAPIs with 60s timeout for:', realAddress);
+      console.log('🔍 With validation: city=', mlsCity, 'state=', mlsState, 'zip=', mlsZip);
       try {
         const enrichedData = await withTimeout(
-          enrichWithFreeAPIs(realAddress),
+          enrichWithFreeAPIs(realAddress, mlsCity, mlsState, mlsZip),
           FREE_API_TIMEOUT,
           {} // Empty object fallback if timeout
         );
@@ -4188,8 +4249,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { fetchCountyData } = await import('../../src/api/county-client.js');
 
         // Get county data (if geo available from enrichWithFreeAPIs)
-        console.log('🔍 Fetching county data...');
-        const geo = await geocodeAddress(realAddress);
+        console.log('🔍 Fetching county data with geocoding validation...');
+        const geo = await geocodeAddress(realAddress, mlsCity, mlsState, mlsZip);
         const countyJson = geo?.county ? await fetchCountyData(realAddress, geo.county) : {};
         console.log(`✅ County data fetched: ${Object.keys(countyJson).length} fields`);
 
