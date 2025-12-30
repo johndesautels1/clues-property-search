@@ -1555,7 +1555,7 @@ export default function AddProperty() {
           }`}
         >
           <PenLine className="w-4 h-4" />
-          Manual
+          MLS Search
         </button>
         <button
           onClick={() => setInputMode('address')}
