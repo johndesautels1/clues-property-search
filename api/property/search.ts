@@ -3647,6 +3647,9 @@ const STELLAR_MLS_AUTHORITATIVE_FIELDS = new Set([
   '25_year_built', '26_property_type', '27_stories',
   '28_garage_spaces', '29_parking_total',
 
+  // Structure details from MLS (inferred from Bridge MLS data)
+  '44_garage_type', // Inferred from GarageType or AttachedGarageYN
+
   // HOA data from MLS
   '30_hoa_yn', '31_hoa_fee_annual', '32_hoa_name', '33_hoa_includes', '34_ownership_type',
 

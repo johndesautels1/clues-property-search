@@ -107,7 +107,23 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   addField('24_lot_size_acres', property.LotSizeAcres);
   addField('25_year_built', property.YearBuilt);
   addField('26_property_type', property.PropertyType || property.PropertySubType);
-  addField('27_stories', property.Stories || property.StoriesTotal);
+
+  // Stories - try explicit count, then extract from ArchitecturalStyle, then use Levels
+  if (property.Stories || property.StoriesTotal) {
+    addField('27_stories', property.Stories || property.StoriesTotal);
+  } else if (property.ArchitecturalStyle && Array.isArray(property.ArchitecturalStyle)) {
+    const styleText = property.ArchitecturalStyle.join(' ').toLowerCase();
+    if (styleText.includes('one story') || styleText.includes('ranch') || styleText.includes('single level')) {
+      addField('27_stories', 1, 'Medium');
+    } else if (styleText.includes('two story') || styleText.includes('2 story') || styleText.includes('two-story')) {
+      addField('27_stories', 2, 'Medium');
+    } else if (styleText.includes('three story') || styleText.includes('3 story') || styleText.includes('tri-level')) {
+      addField('27_stories', 3, 'Medium');
+    }
+  } else if (property.Levels) {
+    addField('27_stories', property.Levels, 'Medium');
+  }
+
   addField('28_garage_spaces', property.GarageSpaces);
   addField('29_parking_total', property.ParkingTotal);
 
@@ -167,7 +183,14 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   }
 
   addField('43_water_heater_type', property.WaterHeaterType);
-  addField('44_garage_type', property.GarageType);
+
+  // Garage Type - use explicit type if available, else infer from AttachedGarageYN
+  if (property.GarageType) {
+    addField('44_garage_type', property.GarageType);
+  } else if (property.AttachedGarageYN !== undefined) {
+    // Fallback: infer from attached flag
+    addField('44_garage_type', property.AttachedGarageYN ? 'Attached' : 'Detached', 'Medium');
+  }
 
   // HVAC - combine heating and cooling
   const hvacParts = [];
