@@ -35,6 +35,12 @@ const safeParseNumber = (val: any): number => {
   return !isNaN(num) ? num : 0;
 };
 
+// Helper to extract value from DataField or direct value
+const getFieldValue = (field: any): any => {
+  if (!field) return null;
+  return field.value !== undefined ? field.value : field;
+};
+
 // Autocomplete suggestion type
 interface AddressSuggestion {
   description: string;
@@ -526,11 +532,6 @@ export default function AddProperty() {
       const zipMatch = stateZip.match(/(\d{5})/);
 
       // Create property card from API response with type coercion
-      const getFieldValue = (field: any): any => {
-        if (!field) return null;
-        return field.value !== undefined ? field.value : field;
-      };
-
       const parseNumber = (val: any): number => {
         if (typeof val === 'number') return val;
         // Remove commas from formatted numbers (e.g., "1,345" → "1345")
