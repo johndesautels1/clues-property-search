@@ -3653,6 +3653,9 @@ const STELLAR_MLS_AUTHORITATIVE_FIELDS = new Set([
   // Tax data (CRITICAL: LLMs often return old tax amounts)
   '35_annual_taxes', '36_tax_year', // County Tax Collector is authoritative
 
+  // Utility providers from Bridge MLS (Fields 104-109)
+  '104_electric_provider', '106_water_provider', '108_sewer_provider', '109_natural_gas',
+
   // Stellar MLS exclusive fields (139-168)
   '139_carport_yn', '140_carport_spaces', '141_garage_attached_yn',
   '142_parking_features', '143_assigned_parking_spaces',
