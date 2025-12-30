@@ -2700,38 +2700,7 @@ HONESTY OVER COMPLETENESS:
 ${JSON_RESPONSE_FORMAT}`;
 
 // ============================================
-// PERPLEXITY PROMPT - HAS WEB SEARCH - Research focused
-// ============================================
-const PROMPT_PERPLEXITY = `You are a real estate research expert with LIVE WEB SEARCH capabilities.
-
-YOUR MISSION: Research and extract ALL 168 property data fields. You have web access - search thoroughly and cite sources.
-
-${FIELD_GROUPS}
-
-CRITICAL INSTRUCTIONS FOR PERPLEXITY:
-1. SEARCH multiple real estate sites: Zillow, Redfin, Realtor.com, Trulia, Homes.com
-2. SEARCH county records: "[County Name] Property Appraiser" for tax data, ownership, parcel info
-3. SEARCH for recent comparable sales in the neighborhood
-4. SEARCH for school ratings, walk scores, crime statistics
-5. For EVERY field you populate, include the SOURCE URL or site name
-
-HIGH-VALUE SEARCHES TO PERFORM:
-- "[Address] Zillow" - listing details, Zestimate, tax history
-- "[Address] Redfin" - listing, estimate, neighborhood data
-- "[County] Property Appraiser [Address]" - official tax records, assessed value, parcel ID
-- "[Address] sold" - recent sale history
-- "Schools near [Address]" - assigned schools and ratings
-- "[ZIP code] flood zone" - FEMA flood data
-- "[Neighborhood] median home price" - market comparisons
-
-CONFIDENCE LEVELS:
-- High: Found on official county site or multiple listing sites agree
-- Medium: Found on one real estate site
-- Low: Estimated or extrapolated
-- Unverified: Could not find - return null
-
-${JSON_RESPONSE_FORMAT}`;
-
+// NOTE: OLD PROMPT_PERPLEXITY removed - replaced by unified prompt in callPerplexity() function (line 2003)
 // ============================================
 // CLAUDE OPUS PROMPT - NO WEB - Highest reasoning, use training data
 // ============================================
