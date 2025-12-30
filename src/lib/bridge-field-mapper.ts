@@ -287,6 +287,28 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   addField('119_flood_zone', property.FloodZone);
 
   // ================================================================
+  // GROUP 14: Utilities & Connectivity (Fields 104-116)
+  // ================================================================
+  // Map utility provider fields from Bridge MLS (previously in extended data only)
+  if (property.Electric) {
+    addField('104_electric_provider', property.Electric);
+  }
+
+  if (property.Water) {
+    const waterProvider = Array.isArray(property.Water) ? property.Water.join(', ') : property.Water;
+    addField('106_water_provider', waterProvider);
+  }
+
+  if (property.Sewer) {
+    const sewerProvider = Array.isArray(property.Sewer) ? property.Sewer.join(', ') : property.Sewer;
+    addField('108_sewer_provider', sewerProvider);
+  }
+
+  if (property.Gas) {
+    addField('109_natural_gas', property.Gas);
+  }
+
+  // ================================================================
   // GROUP 16: View & Location (Fields 131-138)
   // ================================================================
   if (property.View && Array.isArray(property.View)) {

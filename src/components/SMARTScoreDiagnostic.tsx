@@ -380,9 +380,10 @@ export default function SMARTScoreDiagnostic({ property, compact = false }: Prop
           <div className="text-xs text-gray-500">of 100</div>
         </div>
         <div className="bg-white/5 rounded-lg p-3">
-          <div className="text-gray-400 text-xs mb-1">Zero Scores</div>
+          <div className="text-gray-400 text-xs mb-1">Zero-Score Fields</div>
           <div className="text-2xl font-bold text-yellow-400">{zeroScores}</div>
           <div className="text-xs text-gray-500">{populatedFields > 0 ? ((zeroScores / populatedFields) * 100).toFixed(0) : 0}%</div>
+          <div className="text-xs text-gray-400 mt-1">Fields with data that scored 0 points</div>
         </div>
         <div className="bg-white/5 rounded-lg p-3">
           <div className="text-gray-400 text-xs mb-1">Errors</div>
