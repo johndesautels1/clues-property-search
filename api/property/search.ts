@@ -1241,38 +1241,47 @@ async function getWalkScore(lat: number, lon: number, address: string): Promise<
 }
 
 async function getFloodZone(lat: number, lon: number): Promise<Record<string, any>> {
-  console.log(`🔵 [FEMA] Calling API for coordinates: ${lat}, ${lon}`);
+  console.log(`🔵 [FEMA Flood] Calling API for coordinates: ${lat}, ${lon}`);
   try {
     // Updated 2025-12-04: FEMA changed URL from /gis/nfhl/rest to /arcgis/rest
     const url = `https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query?where=1%3D1&geometry=${lon}%2C${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE%2CZONE_SUBTY%2CSFHA_TF&returnGeometry=false&f=json`;
-    const response = await fetch(url);
+
+    const startTime = Date.now();
+    const response = await fetch(url, { signal: AbortSignal.timeout(45000) }); // 45s timeout
+    const fetchTime = Date.now() - startTime;
+    console.log(`🔵 [FEMA Flood] Fetch completed in ${fetchTime}ms`);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`❌ [FEMA] HTTP ${response.status}: ${errorText.substring(0, 200)}`);
+      console.error(`❌ [FEMA Flood] HTTP ${response.status}: ${errorText.substring(0, 200)}`);
       return {};
     }
 
     const data = await response.json();
-    console.log(`🔵 [FEMA] Response status: ${response.status}, features: ${data.features?.length || 0}`);
+    console.log(`🔵 [FEMA Flood] Response parsed, features: ${data.features?.length || 0}`);
 
     // UPDATED: 2025-11-30 - Corrected field numbers to match fields-schema.ts
     if (data.features?.[0]) {
       const zone = data.features[0].attributes;
       const floodZone = zone.FLD_ZONE || 'Unknown';
       const isHighRisk = ['A', 'AE', 'AH', 'AO', 'V', 'VE'].some(z => floodZone.startsWith(z));
+      console.log(`✅ [FEMA Flood] Success: Zone ${floodZone}, Risk: ${isHighRisk ? 'High' : 'Minimal'}`);
       return {
         '119_flood_zone': { value: `FEMA Zone ${floodZone}`, source: 'FEMA NFHL', confidence: 'High' },
         '120_flood_risk_level': { value: isHighRisk ? 'High Risk (Special Flood Hazard Area)' : 'Minimal Risk', source: 'FEMA NFHL', confidence: 'High' }
       };
     }
-    console.log(`✅ [FEMA] Returning default minimal risk zone`);
+    console.log(`⚠️ [FEMA Flood] No features found - returning default minimal risk zone`);
     return {
       '119_flood_zone': { value: 'Zone X (Minimal Risk)', source: 'FEMA NFHL', confidence: 'Medium' },
       '120_flood_risk_level': { value: 'Minimal', source: 'FEMA NFHL', confidence: 'Medium' }
     };
   } catch (e) {
-    console.error('❌ [FEMA] Exception:', e);
+    if (e instanceof Error && e.name === 'TimeoutError') {
+      console.error('❌ [FEMA Flood] Timeout after 45 seconds');
+    } else {
+      console.error('❌ [FEMA Flood] Exception:', e);
+    }
     return {};
   }
 }
@@ -1320,12 +1329,16 @@ async function getCensusData(zipCode: string): Promise<Record<string, any>> {
 
     console.log(`🔵 [Census] Requesting: ${url.replace(apiKey, 'REDACTED')}`);
 
+    const startTime = Date.now();
     const response = await fetch(url, {
       method: 'GET',
       headers: {
         'User-Agent': 'CLUES Property Dashboard (contact: admin@clues.com)',
       },
+      signal: AbortSignal.timeout(30000), // 30s timeout
     });
+    const fetchTime = Date.now() - startTime;
+    console.log(`🔵 [Census] Fetch completed in ${fetchTime}ms`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -1379,7 +1392,11 @@ async function getCensusData(zipCode: string): Promise<Record<string, any>> {
     };
 
   } catch (error) {
-    console.error('❌ [Census] Exception:', error);
+    if (error instanceof Error && error.name === 'TimeoutError') {
+      console.error('❌ [Census] Timeout after 30 seconds');
+    } else {
+      console.error('❌ [Census] Exception:', error);
+    }
     return {};
   }
 }
@@ -1404,7 +1421,11 @@ async function getClimateData(lat: number, lon: number): Promise<Record<string, 
       : `https://api.weather.com/v3/wx/observations/current?geocode=${lat},${lon}&units=e&language=en-US&format=json&apiKey=${apiKey}`;
 
     console.log(`🔵 [Weather] Using ${isOpenWeather ? 'OpenWeatherMap' : 'Weather.com'} API`);
-    const response = await fetch(url);
+
+    const startTime = Date.now();
+    const response = await fetch(url, { signal: AbortSignal.timeout(30000) }); // 30s timeout
+    const fetchTime = Date.now() - startTime;
+    console.log(`🔵 [Weather] Fetch completed in ${fetchTime}ms`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -1808,7 +1829,12 @@ async function getTransitAccess(lat: number, lon: number): Promise<Record<string
 // Google Distance Matrix - Commute time to downtown
 async function getCommuteTime(lat: number, lon: number, county: string): Promise<Record<string, any>> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-  if (!apiKey) return {};
+  if (!apiKey) {
+    console.log('❌ [Google Distance] GOOGLE_MAPS_API_KEY not set');
+    return {};
+  }
+
+  console.log(`🔵 [Google Distance] Calling API for coordinates: ${lat}, ${lon}, county: ${county}`);
 
   // Downtown coordinates for your counties
   const downtowns: Record<string, { coords: string; name: string }> = {
@@ -1825,11 +1851,27 @@ async function getCommuteTime(lat: number, lon: number, county: string): Promise
 
   try {
     const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${lat},${lon}&destinations=${downtown.coords}&departure_time=now&key=${apiKey}`;
+    console.log(`🔵 [Google Distance] Requesting to ${downtown.name}`);
+
     const response = await fetch(url);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ [Google Distance] HTTP ${response.status}: ${errorText.substring(0, 200)}`);
+      return {};
+    }
+
     const data = await response.json();
+    console.log(`🔵 [Google Distance] Response status: ${data.status}, rows: ${data.rows?.length || 0}`);
+
+    if (data.status !== 'OK') {
+      console.error(`❌ [Google Distance] API status error: ${data.status} - ${data.error_message || 'No error message'}`);
+      return {};
+    }
 
     // Field 82 = commute_to_city_center per fields-schema.ts
     if (data.rows?.[0]?.elements?.[0]?.duration_in_traffic) {
+      console.log(`✅ [Google Distance] Success: ${data.rows[0].elements[0].duration_in_traffic.text} to ${downtown.name}`);
       return {
         '82_commute_to_city_center': {
           value: data.rows[0].elements[0].duration_in_traffic.text,
@@ -1839,6 +1881,7 @@ async function getCommuteTime(lat: number, lon: number, county: string): Promise
         }
       };
     } else if (data.rows?.[0]?.elements?.[0]?.duration) {
+      console.log(`✅ [Google Distance] Success (no traffic): ${data.rows[0].elements[0].duration.text} to ${downtown.name}`);
       return {
         '82_commute_to_city_center': {
           value: data.rows[0].elements[0].duration.text,
@@ -1847,9 +1890,11 @@ async function getCommuteTime(lat: number, lon: number, county: string): Promise
           details: `To ${downtown.name}`
         }
       };
+    } else {
+      console.error(`❌ [Google Distance] No duration data in response:`, JSON.stringify(data).substring(0, 300));
     }
   } catch (e) {
-    console.error('Commute time error:', e);
+    console.error('❌ [Google Distance] Exception:', e);
   }
 
   return {};
