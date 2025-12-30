@@ -4060,6 +4060,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // ========================================
+    // CRITICAL: Extract real address for TIER 2-5
+    // ========================================
+    // After TIER 1 (Stellar MLS) completes, extract real address from results
+    // Property Search: searchQuery is already full address (no change needed)
+    // Manual tab MLS#: searchQuery is "MLS# TB1234567", need real address from field 1_full_address
+    const intermediateResultForAddress = arbitrationPipeline.getResult();
+    const realAddress = intermediateResultForAddress.fields['1_full_address']?.value || searchQuery;
+
+    if (realAddress !== searchQuery) {
+      console.log('========================================');
+      console.log('🔄 ADDRESS SUBSTITUTION (MLS# Search)');
+      console.log('========================================');
+      console.log('Original query:', searchQuery);
+      console.log('Real address from Bridge MLS:', realAddress);
+      console.log('Using real address for TIER 2-5 (APIs + LLMs)');
+      console.log('========================================');
+      console.log('');
+    }
+
+    // ========================================
     // TIER 2 & 3: FREE APIs (Google, WalkScore, FEMA, etc.)
     // Skip if we're only adding LLM data to existing session
     // ========================================
@@ -4067,10 +4087,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('========================================');
       console.log('TIER 2 & 3: FREE APIs (Google, WalkScore, FEMA, etc.)');
       console.log('========================================');
-      console.log('🔍 Calling enrichWithFreeAPIs with 60s timeout for:', searchQuery);
+      console.log('🔍 Calling enrichWithFreeAPIs with 60s timeout for:', realAddress);
       try {
         const enrichedData = await withTimeout(
-          enrichWithFreeAPIs(searchQuery),
+          enrichWithFreeAPIs(realAddress),
           FREE_API_TIMEOUT,
           {} // Empty object fallback if timeout
         );
@@ -4169,8 +4189,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Get county data (if geo available from enrichWithFreeAPIs)
         console.log('🔍 Fetching county data...');
-        const geo = await geocodeAddress(searchQuery);
-        const countyJson = geo?.county ? await fetchCountyData(searchQuery, geo.county) : {};
+        const geo = await geocodeAddress(realAddress);
+        const countyJson = geo?.county ? await fetchCountyData(realAddress, geo.county) : {};
         console.log(`✅ County data fetched: ${Object.keys(countyJson).length} fields`);
 
         // Get current pipeline state for inputs
@@ -4186,7 +4206,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Call orchestrator (this runs 7 micro-prompts + core normalizer)
         const cmaSchema = await withTimeout(
           buildCmaSchema({
-            address: searchQuery,
+            address: realAddress,
             stellarMlsJson,
             countyJson,
             paidApisJson,
@@ -4238,7 +4258,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const webChunksJson = {}; // TODO: Extract from orchestrator if exposed
 
             const auditResult = await withTimeout(
-              callGPT_LLMFieldAuditor(searchQuery, {
+              callGPT_LLMFieldAuditor(realAddress, {
                 stellarMlsJson,
                 countyJson,
                 paidApisJson,
@@ -4291,7 +4311,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const webChunksJson = {}; // TODO: Extract from buildCmaSchema if exposed
 
             const gptResult = await withTimeout(
-              callGPT(searchQuery, {
+              callGPT(realAddress, {
                 stellarMlsJson,
                 countyJson,
                 paidApisJson,
@@ -4392,7 +4412,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const llmResults = await Promise.allSettled(
             enabledLlms.map(llm =>
               withTimeout(
-                llm.fn(searchQuery),
+                llm.fn(realAddress),
                 llm.id === 'perplexity' ? PERPLEXITY_TIMEOUT : LLM_TIMEOUT,
                 { fields: {}, error: 'timeout' }
               )
@@ -4617,7 +4637,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({
       success: true,
-      address: searchQuery,
+      address: realAddress,
       fields: convertedFields,
       nestedFields: nestedFields,
       total_fields_found: totalFields,
