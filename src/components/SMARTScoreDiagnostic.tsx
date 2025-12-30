@@ -356,7 +356,7 @@ export default function SMARTScoreDiagnostic({ property, compact = false }: Prop
       {/* Header */}
       <div className="mb-4">
         <h2 className={compact ? 'text-lg font-bold text-white mb-2' : 'text-2xl font-bold text-white mb-3'}>
-          SMART Score Field Diagnostic
+          Smart Score Breakdown
         </h2>
         <div className="text-gray-400">
           Property: {property.address.fullAddress?.value || 'Unknown'}
