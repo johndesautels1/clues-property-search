@@ -362,12 +362,12 @@ export class BridgeAPIClient {
     } else {
       console.log('[Bridge API] ⚠️ params.zipCode is undefined/null/empty');
     }
-    // MLS Number filter - try ListingKey (Stellar MLS uses ListingKey, not ListingId)
+    // MLS Number filter - try BOTH ListingId AND ListingKey (bridge-field-mapper uses ListingId || ListingKey)
     if (params.mlsNumber) {
       const escapedMls = params.mlsNumber.replace(/'/g, "''");
       console.log('[Bridge API] 🔍 Searching for MLS#:', escapedMls);
-      // Stellar MLS stores MLS# in ListingKey field, not ListingId
-      filters.push(`ListingKey eq '${escapedMls}'`);
+      // Try both fields - Stellar MLS may use either ListingId or ListingKey
+      filters.push(`(ListingId eq '${escapedMls}' or ListingKey eq '${escapedMls}')`);
     }
 
     // Price range
