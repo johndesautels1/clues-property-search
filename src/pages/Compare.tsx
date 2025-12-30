@@ -881,10 +881,10 @@ function AnalyticsSummary({
         <div className="bg-white/5 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <Home className="w-4 h-4 text-quantum-gold" />
-            <span className="text-xs text-gray-400">Avg Price/SF</span>
+            <span className="text-xs text-gray-400">Avg Price/SF (All)</span>
           </div>
           <p className="text-lg font-semibold text-white">${Math.round(analytics.avgPricePerSqft)}</p>
-          <p className="text-xs text-gray-400">Per square foot</p>
+          <p className="text-xs text-gray-400">Across all properties</p>
         </div>
 
         <div className="bg-white/5 rounded-xl p-4">
@@ -913,10 +913,10 @@ function AnalyticsSummary({
         <div className="bg-white/5 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <Eye className="w-4 h-4 text-quantum-orange" />
-            <span className="text-xs text-gray-400">Avg Completeness</span>
+            <span className="text-xs text-gray-400">Avg Completeness (All)</span>
           </div>
           <p className="text-lg font-semibold text-white">{analytics.completenessAvg.toFixed(0)}%</p>
-          <p className="text-xs text-gray-400">Data coverage</p>
+          <p className="text-xs text-gray-400">Across all properties</p>
         </div>
       </div>
     </motion.div>
