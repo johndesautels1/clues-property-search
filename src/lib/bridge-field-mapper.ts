@@ -266,6 +266,83 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // ================================================================
   // GROUP 8: Permits & Renovations (Fields 59-62)
   // ================================================================
+
+  // Field 59: Recent Renovations - Extract from multiple sources
+  let renovationData: string[] = [];
+
+  // Source 1: Check if Bridge has structured Renovations field
+  if (property.Renovations) {
+    renovationData.push(property.Renovations);
+  }
+
+  // Source 2: Extract from PublicRemarks with multiple patterns
+  if (property.PublicRemarks) {
+    const remarks = property.PublicRemarks;
+    const currentYear = new Date().getFullYear();
+    const yearBuilt = property.YearBuilt;
+
+    // Pattern 1: Action word + Area + Year
+    const pattern1 = /(renovated|remodeled|updated|new|replaced)\s+([^.!?]*?)(kitchen|bathroom|bath|flooring|floor|roof|hvac|ac|air|appliances|cabinets|countertops|counters|windows|doors|paint)([^.!?]*?)(20(?:1[8-9]|2[0-5]))/gi;
+    let matches1 = remarks.matchAll(pattern1);
+    for (const match of matches1) {
+      const year = parseInt(match[5]);
+      // Skip if year matches year built (not a renovation)
+      if (yearBuilt && year === yearBuilt) continue;
+      // Skip if year is in future
+      if (year > currentYear) continue;
+      renovationData.push(match[0].trim());
+    }
+
+    // Pattern 2: Area + Action word + Year (reverse order)
+    const pattern2 = /(kitchen|bathroom|bath|flooring|floor|roof|hvac|ac|air|appliances|cabinets|countertops|counters|windows|doors)([^.!?]*?)(renovated|remodeled|updated|new|replaced|installed)([^.!?]*?)(20(?:1[8-9]|2[0-5]))/gi;
+    let matches2 = remarks.matchAll(pattern2);
+    for (const match of matches2) {
+      const year = parseInt(match[5]);
+      if (yearBuilt && year === yearBuilt) continue;
+      if (year > currentYear) continue;
+      const text = match[0].trim();
+      // Avoid duplicates from pattern1
+      if (!renovationData.some(r => r.toLowerCase().includes(text.toLowerCase()))) {
+        renovationData.push(text);
+      }
+    }
+
+    // Pattern 3: Year at start (e.g., "2022 kitchen remodel")
+    const pattern3 = /(20(?:1[8-9]|2[0-5]))\s+([^.!?]*?)(kitchen|bathroom|flooring|roof|hvac|remodel|renovation|update)/gi;
+    let matches3 = remarks.matchAll(pattern3);
+    for (const match of matches3) {
+      const year = parseInt(match[1]);
+      if (yearBuilt && year === yearBuilt) continue;
+      if (year > currentYear) continue;
+      const text = match[0].trim();
+      if (!renovationData.some(r => r.toLowerCase().includes(text.toLowerCase()))) {
+        renovationData.push(text);
+      }
+    }
+  }
+
+  // Source 3: Check InteriorFeatures for renovation keywords (fallback only)
+  if (renovationData.length === 0 && property.InteriorFeatures && Array.isArray(property.InteriorFeatures)) {
+    const renovationKeywords = ['updated', 'renovated', 'remodeled', 'new', 'upgraded', 'modern'];
+    const renovatedFeatures = property.InteriorFeatures.filter(feature => {
+      const lower = feature.toLowerCase();
+      return renovationKeywords.some(kw => lower.includes(kw));
+    });
+
+    if (renovatedFeatures.length > 0) {
+      renovationData.push(`Updated features: ${renovatedFeatures.join(', ')}`);
+    }
+  }
+
+  // Add to field if we found renovation data
+  if (renovationData.length > 0) {
+    // Remove duplicates and limit to first 3 most significant mentions
+    const unique = [...new Set(renovationData)].slice(0, 3);
+    const confidence = property.Renovations ? 'High' : 'Medium';
+    addField('59_recent_renovations', unique.join('; '), confidence);
+  }
+
+  // Fields 60-62: Permit History
   addField('60_permit_history_roof', property.PermitRoof);
   addField('61_permit_history_hvac', property.PermitHVAC);
   addField('62_permit_history_other', property.PermitAdditions);
