@@ -48,6 +48,7 @@ import { createArbitrationPipeline, type FieldValue, type ArbitrationResult } fr
 import { sanitizeAddress, isValidAddress, safeFetch } from '../../src/lib/safe-json-parse.js';
 import { callCrimeGrade, callSchoolDigger, callFEMARiskIndex, callNOAAClimate, callNOAAStormEvents, callNOAASeaLevel, callUSGSElevation, callUSGSEarthquake, callEPAFRS, getRadonRisk, callGoogleStreetView, callGoogleSolarAPI, callHowLoud/*, callRedfinProperty*/ } from './free-apis.js';
 import { STELLAR_MLS_SOURCE, FBI_CRIME_SOURCE } from './source-constants.js';
+import { calculateAllDerivedFields, type PropertyData } from '../../src/lib/calculate-derived-fields.js';
 
 
 // ============================================
@@ -3660,6 +3661,12 @@ const STELLAR_MLS_AUTHORITATIVE_FIELDS = new Set([
   // Tax data (CRITICAL: LLMs often return old tax amounts)
   '35_annual_taxes', '36_tax_year', // County Tax Collector is authoritative
 
+  // Backend calculations (Math-only: LLMs forbidden from calculating)
+  '11_price_per_sqft', '20_total_bathrooms', '37_property_tax_rate',
+  '40_roof_age_est', '46_hvac_age', '53_fireplace_count',
+  '93_price_to_rent_ratio', '94_price_vs_median_percent',
+  '99_rental_yield_est', '101_cap_rate_est',
+
   // Utility providers from Bridge MLS (Fields 104-109)
   '104_electric_provider', '106_water_provider', '108_sewer_provider', '109_natural_gas',
 
@@ -4512,6 +4519,72 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       // Removed "Sufficient data" skip logic - LLMs always run if enabled
     }
+
+    // ========================================
+    // BACKEND CALCULATIONS (Tier 1 Priority)
+    // Calculate derived fields using backend math (never LLM)
+    // ========================================
+    console.log('========================================');
+    console.log('BACKEND CALCULATIONS: Derived Fields');
+    console.log('========================================');
+
+    // Get current field values from arbitration pipeline
+    const interimResult = arbitrationPipeline.getResult();
+
+    // Helper to safely extract field value
+    const getFieldValue = (fieldKey: string): any => {
+      return interimResult.fields[fieldKey]?.value;
+    };
+
+    // Build PropertyData object from current field values
+    const propertyData: PropertyData = {
+      field_10_listing_price: getFieldValue('10_listing_price'),
+      field_15_assessed_value: getFieldValue('15_assessed_value'),
+      field_18_full_bathrooms: getFieldValue('18_full_bathrooms'),
+      field_19_half_bathrooms: getFieldValue('19_half_bathrooms'),
+      field_21_living_sqft: getFieldValue('21_living_sqft'),
+      field_28_garage_spaces: getFieldValue('28_garage_spaces'),
+      field_31_hoa_fee_annual: getFieldValue('31_hoa_fee_annual'),
+      field_35_annual_taxes: getFieldValue('35_annual_taxes'),
+      field_52_fireplace_yn: getFieldValue('52_fireplace_yn'),
+      field_91_median_home_price: getFieldValue('91_median_home_price'),
+      field_97_insurance_annual: getFieldValue('97_insurance_annual'),
+      field_98_rental_estimate_monthly: getFieldValue('98_rental_estimate_monthly'),
+      field_140_carport_spaces: getFieldValue('140_carport_spaces'),
+      field_143_assigned_parking: getFieldValue('143_assigned_parking')
+    };
+
+    // Run all backend calculations
+    const calculatedFields = calculateAllDerivedFields(propertyData);
+
+    // Add calculated fields to arbitration pipeline with Tier 1 priority
+    const backendCalcFields: Record<string, FieldValue> = {};
+    let calculationsAdded = 0;
+
+    for (const [fieldKey, result] of Object.entries(calculatedFields)) {
+      if (result !== null) {
+        backendCalcFields[fieldKey] = {
+          value: result.value,
+          source: result.source,
+          confidence: result.confidence,
+          tier: 1 // Tier 1 = highest priority (same as Stellar MLS)
+        };
+        calculationsAdded++;
+        console.log(`✅ Calculated ${fieldKey}: ${result.value} (method: ${result.calculation_method || 'N/A'})`);
+      } else {
+        console.log(`⏭️  Skipped ${fieldKey}: Missing input fields`);
+      }
+    }
+
+    if (calculationsAdded > 0) {
+      arbitrationPipeline.addFieldsFromSource(backendCalcFields, 'Backend Calculation');
+      console.log(`✅ Added ${calculationsAdded} calculated fields to arbitration pipeline (Tier 1)`);
+    } else {
+      console.log('⚠️  No calculations performed - missing required input fields');
+    }
+
+    console.log('========================================');
+    console.log('');
 
     // ========================================
     // GET FINAL ARBITRATION RESULT
