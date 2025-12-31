@@ -46,7 +46,7 @@ import { scrapeFloridaCounty } from './florida-counties.js';
 import { LLM_CASCADE_ORDER } from './llm-constants.js';
 import { createArbitrationPipeline, type FieldValue, type ArbitrationResult } from './arbitration.js';
 import { sanitizeAddress, isValidAddress, safeFetch } from '../../src/lib/safe-json-parse.js';
-import { callCrimeGrade, callSchoolDigger, callFEMARiskIndex, callNOAAClimate, callNOAAStormEvents, callNOAASeaLevel, callUSGSElevation, callUSGSEarthquake, callEPAFRS, getRadonRisk, callGoogleStreetView, callGoogleSolarAPI, callHowLoud/*, callRedfinProperty*/ } from './free-apis.js';
+import { callCrimeGrade, callSchoolDigger, callGreatSchools, callFEMARiskIndex, callNOAAClimate, callNOAAStormEvents, callNOAASeaLevel, callUSGSElevation, callUSGSEarthquake, callEPAFRS, getRadonRisk, callGoogleStreetView, callGoogleSolarAPI, callHowLoud/*, callRedfinProperty*/ } from './free-apis.js';
 import { STELLAR_MLS_SOURCE, FBI_CRIME_SOURCE } from './source-constants.js';
 import { calculateAllDerivedFields, type PropertyData } from '../../src/lib/calculate-derived-fields.js';
 
@@ -1972,6 +1972,28 @@ async function enrichWithFreeAPIs(
   // Extract fields from API result objects
   const crimeData = crimeDataResult.fields || {};
   const schoolDiggerData = schoolDiggerResult.fields || {};
+
+  // FALLBACK: GreatSchools API if SchoolDigger missing ratings (Fields 66, 69, 72)
+  let greatSchoolsData: Record<string, any> = {};
+  const missingElemRating = !schoolDiggerData['66_elementary_rating'];
+  const missingMidRating = !schoolDiggerData['69_middle_rating'];
+  const missingHighRating = !schoolDiggerData['72_high_rating'];
+
+  if (missingElemRating || missingMidRating || missingHighRating) {
+    console.log(`[GreatSchools Fallback] SchoolDigger missing ratings - attempting GreatSchools API`);
+    const schoolNames = {
+      elem: missingElemRating ? schoolDiggerData['65_elementary_school']?.value : undefined,
+      middle: missingMidRating ? schoolDiggerData['68_middle_school']?.value : undefined,
+      high: missingHighRating ? schoolDiggerData['71_high_school']?.value : undefined
+    };
+
+    if (schoolNames.elem || schoolNames.middle || schoolNames.high) {
+      const greatSchoolsResult = await callGreatSchools(geo.lat, geo.lon, schoolNames);
+      greatSchoolsData = greatSchoolsResult.fields || {};
+      console.log(`[GreatSchools Fallback] Retrieved ${Object.keys(greatSchoolsData).length} rating fields`);
+    }
+  }
+
   const femaRiskData = femaRiskResult.fields || {}; // FEMA Risk Index
   const noaaClimateData = noaaClimateResult.fields || {}; // NOAA Climate risk analysis
   const noaaStormData = noaaStormResult.fields || {}; // NOAA Storm Events (hurricanes/tornadoes)
@@ -1988,7 +2010,7 @@ async function enrichWithFreeAPIs(
   const apiEndTime = Date.now();
   console.log(`✅ [enrichWithFreeAPIs] All APIs completed in ${apiEndTime - apiStartTime}ms`);
 
-  Object.assign(fields, walkScore, floodZone, airQuality, censusData, noiseData, distances, commuteTime, schoolDistances, transitAccess, crimeData, schoolDiggerData, femaRiskData, noaaClimateData, noaaStormData, noaaSeaLevelData, usgsElevationData, usgsEarthquakeData, epaFRSData, epaRadonData, streetViewData, googleSolarData, climateData/*, redfinData*/);
+  Object.assign(fields, walkScore, floodZone, airQuality, censusData, noiseData, distances, commuteTime, schoolDistances, transitAccess, crimeData, schoolDiggerData, greatSchoolsData, femaRiskData, noaaClimateData, noaaStormData, noaaSeaLevelData, usgsElevationData, usgsEarthquakeData, epaFRSData, epaRadonData, streetViewData, googleSolarData, climateData/*, redfinData*/);
 
   console.log('🔵 [enrichWithFreeAPIs] Raw field count before filtering:', Object.keys(fields).length);
   console.log('🔵 [enrichWithFreeAPIs] Field breakdown:');

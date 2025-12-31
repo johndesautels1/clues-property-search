@@ -397,19 +397,38 @@ export async function callSchoolDigger(lat: number, lon: number): Promise<ApiRes
     // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Assigned Schools (63-73)
     if (elementary) {
       setField(fields, '65_elementary_school', elementary.schoolName, 'SchoolDigger');
-      setField(fields, '66_elementary_rating', elementary.rankHistory?.[0]?.rank || elementary.schoolDiggerRank, 'SchoolDigger');
+      // Try multiple rating field paths (SchoolDigger API has inconsistent field names)
+      const elemRating = elementary.rankHistory?.[0]?.rank ||
+                         elementary.schoolDiggerRank ||
+                         elementary.rank ||
+                         elementary.rating;
+      if (elemRating) {
+        setField(fields, '66_elementary_rating', elemRating, 'SchoolDigger');
+      }
       setField(fields, '67_elementary_distance_mi', elementary.distance, 'SchoolDigger');
     }
 
     if (middle) {
       setField(fields, '68_middle_school', middle.schoolName, 'SchoolDigger');
-      setField(fields, '69_middle_rating', middle.rankHistory?.[0]?.rank || middle.schoolDiggerRank, 'SchoolDigger');
+      const midRating = middle.rankHistory?.[0]?.rank ||
+                        middle.schoolDiggerRank ||
+                        middle.rank ||
+                        middle.rating;
+      if (midRating) {
+        setField(fields, '69_middle_rating', midRating, 'SchoolDigger');
+      }
       setField(fields, '70_middle_distance_mi', middle.distance, 'SchoolDigger');
     }
 
     if (high) {
       setField(fields, '71_high_school', high.schoolName, 'SchoolDigger');
-      setField(fields, '72_high_rating', high.rankHistory?.[0]?.rank || high.schoolDiggerRank, 'SchoolDigger');
+      const highRating = high.rankHistory?.[0]?.rank ||
+                         high.schoolDiggerRank ||
+                         high.rank ||
+                         high.rating;
+      if (highRating) {
+        setField(fields, '72_high_rating', highRating, 'SchoolDigger');
+      }
       setField(fields, '73_high_distance_mi', high.distance, 'SchoolDigger');
     }
 
@@ -425,6 +444,65 @@ export async function callSchoolDigger(lat: number, lon: number): Promise<ApiRes
 
   } catch (error) {
     return { success: false, source: 'SchoolDigger', fields, error: String(error) };
+  }
+}
+
+// ============================================
+// GREATSCHOOLS API - School Ratings Fallback
+// Used when SchoolDigger doesn't have rating data
+// ============================================
+export async function callGreatSchools(lat: number, lon: number, schoolNames: { elem?: string; middle?: string; high?: string }): Promise<ApiResult> {
+  const fields: Record<string, ApiField> = {};
+  const apiKey = process.env.GREATSCHOOLS_API_KEY;
+
+  if (!apiKey) {
+    console.log('[GreatSchools] API key not configured - skipping');
+    return { success: false, source: 'GreatSchools', fields, error: 'GREATSCHOOLS_API_KEY not configured' };
+  }
+
+  try {
+    // GreatSchools API v2: Search by school name and location
+    // API docs: https://www.greatschools.org/api/
+    const baseUrl = 'https://api.greatschools.org/schools';
+
+    // Helper to fetch rating for a specific school
+    const fetchSchoolRating = async (schoolName: string, fieldKey: string): Promise<void> => {
+      if (!schoolName) return;
+
+      try {
+        // Search for school by name and location
+        const url = `${baseUrl}?state=FL&q=${encodeURIComponent(schoolName)}&lat=${lat}&lon=${lon}&limit=1&key=${apiKey}`;
+        console.log(`[GreatSchools] Fetching rating for: ${schoolName}`);
+
+        const result = await safeFetch<any>(url, undefined, 'GreatSchools', 15000); // 15s timeout
+
+        if (result.success && result.data?.schools?.[0]) {
+          const school = result.data.schools[0];
+          const rating = school.rating || school.gsRating || school.parentRating;
+
+          if (rating) {
+            console.log(`[GreatSchools] ✅ Found rating for ${schoolName}: ${rating}/10`);
+            setField(fields, fieldKey, rating, 'GreatSchools', 'Medium');
+          } else {
+            console.log(`[GreatSchools] ⚠️ No rating found for ${schoolName}`);
+          }
+        }
+      } catch (err) {
+        console.log(`[GreatSchools] Error fetching ${schoolName}: ${err}`);
+      }
+    };
+
+    // Fetch ratings for all three school levels in parallel
+    await Promise.all([
+      schoolNames.elem ? fetchSchoolRating(schoolNames.elem, '66_elementary_rating') : Promise.resolve(),
+      schoolNames.middle ? fetchSchoolRating(schoolNames.middle, '69_middle_rating') : Promise.resolve(),
+      schoolNames.high ? fetchSchoolRating(schoolNames.high, '72_high_rating') : Promise.resolve()
+    ]);
+
+    return { success: Object.keys(fields).length > 0, source: 'GreatSchools', fields };
+
+  } catch (error) {
+    return { success: false, source: 'GreatSchools', fields, error: String(error) };
   }
 }
 
