@@ -614,17 +614,30 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
     }
 
     const stateCode = stateMatch[1].toUpperCase();
-    // Use 2022 data (most complete available) with MM-YYYY format
-    const url = `https://api.usa.gov/crime/fbi/cde/summarized/state/${stateCode}/violent-crime?from=01-2022&to=12-2022&API_KEY=${apiKey}`;
 
-    console.log(`[FBI Crime] Fetching from: ${url.replace(apiKey, 'API_KEY_HIDDEN')}`);
-    const fetchResult = await safeFetch<any>(url, undefined, 'FBI-Crime', 60000); // 60s timeout
+    // Fetch BOTH violent crime AND property crime data (two API calls in parallel)
+    const violentUrl = `https://api.usa.gov/crime/fbi/cde/summarized/state/${stateCode}/violent-crime?from=01-2022&to=12-2022&API_KEY=${apiKey}`;
+    const propertyUrl = `https://api.usa.gov/crime/fbi/cde/summarized/state/${stateCode}/property-crime?from=01-2022&to=12-2022&API_KEY=${apiKey}`;
 
-    if (!fetchResult.success || !fetchResult.data) {
-      return { success: false, source: FBI_CRIME_SOURCE, fields, error: fetchResult.error || 'Fetch failed' };
+    console.log(`[FBI Crime] Fetching violent crime: ${violentUrl.replace(apiKey, 'API_KEY_HIDDEN')}`);
+    console.log(`[FBI Crime] Fetching property crime: ${propertyUrl.replace(apiKey, 'API_KEY_HIDDEN')}`);
+
+    const [violentResult, propertyResult] = await Promise.all([
+      safeFetch<any>(violentUrl, undefined, 'FBI-Crime-Violent', 60000),
+      safeFetch<any>(propertyUrl, undefined, 'FBI-Crime-Property', 60000)
+    ]);
+
+    if (!violentResult.success || !violentResult.data) {
+      console.log(`[FBI Crime] ⚠️ Violent crime fetch failed: ${violentResult.error}`);
     }
 
-    const data = fetchResult.data;
+    if (!propertyResult.success || !propertyResult.data) {
+      console.log(`[FBI Crime] ⚠️ Property crime fetch failed: ${propertyResult.error}`);
+    }
+
+    // Process violent crime data
+    const data = violentResult.data;
+    const propertyData = propertyResult.data;
 
     // FBI API returns keys like "Florida Offenses", "United States Offenses" (not "FL")
     // Map state code to full state name
@@ -714,6 +727,47 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
           setField(fields, '90_neighborhood_safety_rating', grade, FBI_CRIME_SOURCE, 'Medium');
         }
       }
+    }
+
+    // ========================================
+    // PROCESS PROPERTY CRIME DATA (Field 89)
+    // ========================================
+    if (propertyData?.offenses?.rates) {
+      const stateOffensesKey = `${stateName} Offenses`;
+      console.log(`[FBI Crime] Processing property crime for key: "${stateOffensesKey}"`);
+      console.log(`[FBI Crime] Available property crime keys:`, Object.keys(propertyData.offenses.rates));
+
+      if (propertyData.offenses.rates[stateOffensesKey]) {
+        const stateRates = propertyData.offenses.rates[stateOffensesKey];
+        const monthlyRates = Object.values(stateRates).filter((v): v is number => typeof v === 'number');
+
+        if (monthlyRates.length > 0) {
+          // Sum monthly rates for annual rate (rates are per 100k per month)
+          const annualRate = Math.round(monthlyRates.reduce((a, b) => a + b, 0));
+          console.log(`[FBI Crime] ✅ Annual property crime rate: ${annualRate} per 100k`);
+
+          setField(fields, '89_property_crime_index', annualRate.toString(), FBI_CRIME_SOURCE);
+        }
+      } else {
+        // Fallback: Try to extract ANY state data if exact key match fails
+        const allKeys = Object.keys(propertyData.offenses.rates);
+        const stateKeys = allKeys.filter(k => k.includes('Offenses') && !k.includes('United States'));
+
+        if (stateKeys.length > 0) {
+          console.log(`[FBI Crime] Found alternative property crime key: ${stateKeys[0]}`);
+          const stateRates = propertyData.offenses.rates[stateKeys[0]];
+          const monthlyRates = Object.values(stateRates).filter((v): v is number => typeof v === 'number');
+
+          if (monthlyRates.length > 0) {
+            const annualRate = Math.round(monthlyRates.reduce((a, b) => a + b, 0));
+            console.log(`[FBI Crime] ✅ Annual property crime rate (fallback): ${annualRate} per 100k`);
+
+            setField(fields, '89_property_crime_index', annualRate.toString(), FBI_CRIME_SOURCE, 'Medium');
+          }
+        }
+      }
+    } else {
+      console.log(`[FBI Crime] ⚠️ No property crime data available`);
     }
 
     console.log(`[FBI Crime] Returning ${Object.keys(fields).length} fields`);
