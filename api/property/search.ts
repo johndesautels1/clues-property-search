@@ -4620,7 +4620,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         } else {
           console.log('⚠️  Gemini Tier 4 returned no new fields');
         }
-        
+
       } catch (error) {
         console.error('[Tier 4 Gemini] Gemini batch extraction failed:', error);
         // Fields remain null, will fall through to Tier 4
@@ -4628,12 +4628,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } else {
       console.log('[Tier 4 Gemini] Skipped - all Tier 4 Gemini fields already populated');
     }
-    
+
+    console.log('[DEBUG] About to start Tier 4 LLM Cascade...');
     console.log('========================================');
     console.log('TIER 4: LLM CASCADE (Perplexity Micro-Prompts + Other LLMs)');
     console.log('========================================');
+    console.log(`[DEBUG] skipLLMs = ${skipLLMs}`);
 
     if (!skipLLMs) {
+      console.log('[DEBUG] Entering Tier 4 LLM cascade (skipLLMs is false)...');
       const intermediateResult = arbitrationPipeline.getResult();
       const currentFieldCount = Object.keys(intermediateResult.fields).length;
       console.log(`[LLM GATE] Current field count before LLMs: ${currentFieldCount}`);
