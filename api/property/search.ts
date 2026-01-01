@@ -4533,10 +4533,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return;
           }
 
-          // FIX: Coerce string numbers to actual numbers
-          if (typeof geminiField.value === 'string') {
+          // FIX: Coerce string numbers to actual numbers for ALL Tier 3.5 numeric fields
+          // Fields that should be numbers: 12, 16, 31, 37, 60, 61, 62, 75, 76, 91, 95, 98, 116
+          const numericFields = [12, 16, 31, 37, 60, 61, 62, 75, 76, 91, 95, 98, 116];
+          if (typeof geminiField.value === 'string' && numericFields.includes(fieldId)) {
             const numValue = parseFloat(geminiField.value.replace(/[^0-9.-]/g, ''));
-            if (!isNaN(numValue) && [37, 75, 76, 91, 95, 116].includes(fieldId)) {
+            if (!isNaN(numValue)) {
               geminiField.value = numValue;
             }
           }
