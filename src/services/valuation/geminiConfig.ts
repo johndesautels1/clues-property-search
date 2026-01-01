@@ -7,6 +7,14 @@
  * - Batch 3: Portal data (Zillow, Redfin, Realtor)
  *
  * Uses Zod schemas converted to Gemini JSON format for type safety and validation.
+ *
+ * IMPORTANT: Derived/Calculated Fields
+ * - Some fields like Field 11 (Price Per Sq Ft) are calculated from other fields
+ * - Derived fields use the FINAL ARBITRATED VALUES from the arbitration pipeline
+ * - They do NOT use raw Gemini batch outputs directly
+ * - Example: Field 11 = Field 12 (market value) ÷ Field 21 (living sqft)
+ *   If Gemini returns Field 12 = averaged estimate, derived field uses that averaged value
+ * - No double-averaging occurs because derived calculation happens AFTER arbitration
  */
 
 import {
@@ -48,11 +56,16 @@ FIELD EXTRACTION RULES:
 - Field 153 (CDD Fee): If CDD exists, extract the annual dollar amount.
 
 HALLUCINATION GUARD:
-- If no explicit permit year is found, return null for that field.
-- If tax data is unavailable, return null for tax rate.
+- If no explicit permit year is found, OMIT that field from JSON response.
+- If tax data is unavailable, OMIT tax rate field.
 - Never guess or estimate. Only return data explicitly shown on government sites.
+- If county website is down or inaccessible, OMIT all fields from this batch (do NOT use non-government sources as fallback)
 
-OUTPUT: Return JSON with all 8 fields. Use null for any field not found.
+OUTPUT FORMAT:
+- Return ONLY fields where you found explicit values on government websites
+- OMIT any field you could not find (do NOT include with null value)
+- Example: If you only found Field 37 and Field 60, return: {"37_tax_rate": 1.85, "60_roof_permit_year": "2021"}
+- If county portals are inaccessible, return: {} (empty object - all fields will fall through to Tier 4)
 `;
 }
 
@@ -85,11 +98,14 @@ FIELD EXTRACTION RULES:
 
 HALLUCINATION GUARD:
 - Use ZIP-level data only (not city-wide or county-wide).
-- If WalkScore doesn't show Transit or Bike scores, return null.
-- If no market data for ZIP code, return null.
-- For water bodies, only return if within 10 miles.
+- If WalkScore doesn't show Transit or Bike scores, OMIT those fields.
+- If no market data for ZIP code, OMIT those fields.
+- For water bodies, only return if within 10 miles, otherwise OMIT.
 
-OUTPUT: Return JSON with all 6 fields. Use null for any field not found.
+OUTPUT FORMAT:
+- Return ONLY fields where you found explicit values
+- OMIT any field you could not find (do NOT include with null value)
+- Example: If you only found Fields 75 and 91, return: {"75_transit_score": 52, "91_median_home_price_neighborhood": 425000}
 `;
 
 // Generate schema from Zod
@@ -115,14 +131,24 @@ FIELD EXTRACTION RULES:
 
 Field 12 (Market Value):
 - Find the home value estimate from these 4 sources:
-  1. Zillow.com - Look for "Zestimate" on the property page
-  2. Realtor.com - Look for home value estimate
-  3. Homes.com - Look for home value estimate
-  4. Redfin.com - Look for "Redfin Estimate"
-- Extract ONE value from each source (if available)
-- If only 1 source has a value, return that value
-- If 2 or more sources have values, calculate AVERAGE = (Sum of all values) ÷ (Count of values)
-- Example: If Zillow=$500k, Redfin=$520k, Realtor=$510k → AVERAGE = (500000+520000+510000)÷3 = 510000
+  1. Zillow.com - Look for "Zestimate" on the property page (look for "Total Price" badge nearby)
+  2. Realtor.com - Look for home value estimate (grouped under "RealEstimate" umbrella)
+  3. Homes.com - Look for home value estimate (powered by CoStar data; usually in "Estimates" tab)
+  4. Redfin.com - Look for "Redfin Estimate" (found in "Property Value" or "Public Facts" section)
+
+EXTRACTION RULES:
+- Extract ONE value from each source that has an estimate available
+- If source says "Estimate Not Available" or estimate is missing → skip that source, do NOT count it
+- IMPORTANT: Averaging existing values is NOT estimation or guessing - it's mathematical synthesis
+
+CALCULATION LOGIC:
+- If you find values from 1 source only → return that single value
+- If you find values from 2 or more sources → calculate AVERAGE = (Sum of found values) ÷ (Count of found values)
+- Example 1: Zillow=$500k, Redfin=$520k, Realtor=$510k, Homes=unavailable → AVERAGE = (500000+520000+510000)÷3 = 510000
+- Example 2: Zillow=$500k, Redfin=unavailable, Realtor=unavailable, Homes=unavailable → return 500000 (single source)
+- Example 3: All sources unavailable → OMIT field entirely
+
+VALIDATION:
 - DO NOT add values together without dividing
 - DO NOT use list price or tax assessed value
 - Return as integer (e.g., 500000 not $500,000)
@@ -137,10 +163,20 @@ Field 98 (Rental Estimate):
   2. Redfin.com - Look for "Redfin Rental Estimate" (found in "Property Value" or "Public Facts" section)
   3. Realtor.com - Look for "RealEstimate™ (Rent)" (grouped under "RealEstimate" umbrella)
   4. Homes.com - Look for "Estimated Monthly Rent" (powered by CoStar data; usually in "Estimates" tab)
-- Extract ONE value from each source (if available)
-- If only 1 source has a value, return that value
-- If 2 or more sources have values, calculate AVERAGE = (Sum of all values) ÷ (Count of values)
-- Example: If Zillow=$2,500/mo, Redfin=$2,600/mo, Realtor=$2,550/mo → AVERAGE = (2500+2600+2550)÷3 = 2550
+
+EXTRACTION RULES:
+- Extract ONE value from each source that has a rental estimate available
+- If source says "Estimate Not Available" or rental estimate is missing → skip that source, do NOT count it
+- IMPORTANT: Averaging existing values is NOT estimation or guessing - it's mathematical synthesis
+
+CALCULATION LOGIC:
+- If you find values from 1 source only → return that single value
+- If you find values from 2 or more sources → calculate AVERAGE = (Sum of found values) ÷ (Count of found values)
+- Example 1: Zillow=$2,500/mo, Redfin=$2,600/mo, Realtor=$2,550/mo, Homes=unavailable → AVERAGE = (2500+2600+2550)÷3 = 2550
+- Example 2: Zillow=$2,500/mo, Redfin=unavailable, Realtor=unavailable, Homes=unavailable → return 2500 (single source)
+- Example 3: All sources unavailable → OMIT field entirely
+
+VALIDATION:
 - DO NOT add values together without dividing
 - Return as integer (e.g., 2500 not $2,500)
 
@@ -148,18 +184,25 @@ Field 131 (View Type):
 1. Search the "Public Facts," "Key Features," or "Interior Features" sections
 2. Map to exactly one: [Water, Golf, Park, City, None]
 3. Priority: Water > Golf > Park > City
-4. Hallucination Guard: If vague adjectives like "Great View" or "Stunning Vista" without a specific feature (Water/Golf/etc.), return "None"
-5. Strict Mapping:
-   - Return "None" ONLY if portal explicitly lists "View: None"
-   - Return null if View category is missing from data table entirely
+4. Strict Mapping Rules:
+   - If portal explicitly lists "View: Water" or "Waterfront" → return "Water"
+   - If portal explicitly lists "View: Golf" or "Golf Course" → return "Golf"
+   - If portal explicitly lists "View: Park" → return "Park"
+   - If portal explicitly lists "View: City" or "Downtown" → return "City"
+   - If portal explicitly lists "View: None" or "No View" → return "None"
+   - If vague descriptions like "Great View" or "Stunning Vista" without specific feature → OMIT field entirely
+   - If View category is missing from data table → OMIT field entirely
 
 HALLUCINATION GUARD:
-- Only use labeled estimates (Zestimate, Redfin Estimate, etc.). Do NOT use list price or tax assessment.
-- If a portal says "Estimate Not Available", return null for that field.
+- Only use labeled estimates (Zestimate, Redfin Estimate, etc.). DO NOT use list price or tax assessment.
+- If a portal says "Estimate Not Available", OMIT that field entirely from JSON response.
 - For ranges (e.g., "$1.1M - $1.3M"), use the midpoint.
 - Never infer or estimate values not explicitly shown.
 
-OUTPUT: Return JSON with all 6 fields. Use null for any field not found.
+OUTPUT FORMAT:
+- Return ONLY fields where you found explicit values
+- OMIT any field you could not find (do NOT include with null value)
+- Example: If you only found Field 12 and Field 31, return: {"12_market_value_estimate": 500000, "31_hoa_fee_annual": 3600}
 `;
 
 // Generate schema from Zod
