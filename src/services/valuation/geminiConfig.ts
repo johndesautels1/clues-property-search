@@ -130,8 +130,28 @@ Field 12 (Market Value):
 Field 16 (Redfin Estimate): Extract the exact "Redfin Estimate" value (not the average).
 - Field 31 (HOA Fee Annual): Find the annual HOA fee. If monthly is shown, multiply by 12.
 - Field 33 (HOA Includes): List exactly what HOA covers (e.g., "Pool, Trash, Landscaping").
-- Field 98 (Rental Estimate): Extract "Rent Zestimate" from Zillow or "Rental Estimate" from Redfin.
-- Field 131 (View Type): Identify the specific view mentioned (e.g., "Water", "Golf", "Park", "City", "None").
+
+Field 98 (Rental Estimate):
+- Find the monthly rental estimate from these 4 sources:
+  1. Zillow.com - Look for "Rent Zestimate®" (look for "Total Price" badge nearby)
+  2. Redfin.com - Look for "Redfin Rental Estimate" (found in "Property Value" or "Public Facts" section)
+  3. Realtor.com - Look for "RealEstimate™ (Rent)" (grouped under "RealEstimate" umbrella)
+  4. Homes.com - Look for "Estimated Monthly Rent" (powered by CoStar data; usually in "Estimates" tab)
+- Extract ONE value from each source (if available)
+- If only 1 source has a value, return that value
+- If 2 or more sources have values, calculate AVERAGE = (Sum of all values) ÷ (Count of values)
+- Example: If Zillow=$2,500/mo, Redfin=$2,600/mo, Realtor=$2,550/mo → AVERAGE = (2500+2600+2550)÷3 = 2550
+- DO NOT add values together without dividing
+- Return as integer (e.g., 2500 not $2,500)
+
+Field 131 (View Type):
+1. Search the "Public Facts," "Key Features," or "Interior Features" sections
+2. Map to exactly one: [Water, Golf, Park, City, None]
+3. Priority: Water > Golf > Park > City
+4. Hallucination Guard: If vague adjectives like "Great View" or "Stunning Vista" without a specific feature (Water/Golf/etc.), return "None"
+5. Strict Mapping:
+   - Return "None" ONLY if portal explicitly lists "View: None"
+   - Return null if View category is missing from data table entirely
 
 HALLUCINATION GUARD:
 - Only use labeled estimates (Zestimate, Redfin Estimate, etc.). Do NOT use list price or tax assessment.
