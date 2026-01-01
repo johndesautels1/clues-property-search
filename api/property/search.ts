@@ -1997,9 +1997,9 @@ async function enrichWithFreeAPIs(
   if (missingElemRating || missingMidRating || missingHighRating) {
     console.log(`[GreatSchools Fallback] SchoolDigger missing ratings - attempting GreatSchools API`);
     const schoolNames = {
-      elem: missingElemRating ? schoolDiggerData['65_elementary_school']?.value : undefined,
-      middle: missingMidRating ? schoolDiggerData['68_middle_school']?.value : undefined,
-      high: missingHighRating ? schoolDiggerData['71_high_school']?.value : undefined
+      elem: missingElemRating && typeof schoolDiggerData['65_elementary_school']?.value === 'string' ? schoolDiggerData['65_elementary_school'].value : undefined,
+      middle: missingMidRating && typeof schoolDiggerData['68_middle_school']?.value === 'string' ? schoolDiggerData['68_middle_school'].value : undefined,
+      high: missingHighRating && typeof schoolDiggerData['71_high_school']?.value === 'string' ? schoolDiggerData['71_high_school'].value : undefined
     };
 
     if (schoolNames.elem || schoolNames.middle || schoolNames.high) {
