@@ -241,3 +241,7 @@ export const TIER_35_FIELDS = {
 };
 
 export const TIER_35_FIELD_IDS = Object.keys(TIER_35_FIELDS).map(Number);
+
+// Backwards-compatible aliases (Tier 4 naming)
+export const TIER_4_GEMINI_FIELDS = TIER_35_FIELDS;
+export const TIER_4_GEMINI_FIELD_IDS = TIER_35_FIELD_IDS;

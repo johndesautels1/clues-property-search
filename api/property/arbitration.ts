@@ -1,17 +1,16 @@
 /**
- * CLUES Property Dashboard - Tiered Arbitration Service (API Version)
- *
+ * CLUES Property Dashboard - Tiered Arbitration Service
+ * 
  * SINGLE SOURCE OF TRUTH for data source precedence and conflict resolution.
- *
+ * 
  * Tier Hierarchy (Higher tier ALWAYS wins):
- *   Tier 1: Stellar MLS & Claude PDF Parser (Primary trusted sources - 100% reliability)
- *   Tier 2: Google APIs (Geocode, Places, Distance Matrix - 95% reliability)
- *   Tier 3: Paid/Free APIs (WalkScore, SchoolDigger, FEMA, AirNow, HowLoud, Weather, FBI Crime - 85-95% reliability)
- *   Tier 4: LLM Web Search (Perplexity, Grok, Claude Opus, GPT, Claude Sonnet, Gemini - 50-75% reliability)
- *
+ *   Tier 1: Stellar MLS (Primary source - when eKey obtained)
+ *   Tier 2: Google APIs (Geocode, Places, Distance Matrix)
+ *   Tier 3: Paid/Free APIs (WalkScore, SchoolDigger, FEMA, AirNow, HowLoud, Weather, FBI Crime)
+ *   Tier 4: LLM Cascade (Perplexity, Grok, Claude Opus, GPT, Claude Sonnet, Gemini)
+ * 
  * Key Principles:
  *   - Higher tier data NEVER gets overwritten by lower tier
- *   - Value normalization prevents false conflicts (e.g., "Condo" = "Condominium", "St Pete" = "Saint Pete")
  *   - LLM quorum voting for numeric/text fields when multiple LLMs return same value
  *   - Validation gates for all fields (price range, year range, geo coords, bathroom math)
  *   - Single-source hallucination protection (flag data from only one LLM)
@@ -29,12 +28,9 @@ export interface TierConfig {
 
 export const DATA_TIERS: Record<string, TierConfig> = {
   'stellar-mls': { tier: 1, name: 'Stellar MLS', description: 'Primary MLS data source', reliability: 100 },
-  'stellar-mls-pdf': { tier: 1, name: 'Stellar MLS PDF', description: 'Claude PDF parser (trusted)', reliability: 100 },
   'google-geocode': { tier: 2, name: 'Google Geocode', description: 'Address geocoding', reliability: 95 },
   'google-places': { tier: 2, name: 'Google Places', description: 'Nearby amenities', reliability: 95 },
   'google-distance': { tier: 2, name: 'Google Distance Matrix', description: 'Commute times', reliability: 95 },
-  'google-maps': { tier: 2, name: 'Google Maps', description: 'Google Maps API', reliability: 95 },
-  // 'redfin': { tier: 2, name: 'Redfin', description: 'Redfin property data and estimates', reliability: 90 }, // DISABLED: API not working
   'walkscore': { tier: 3, name: 'WalkScore', description: 'Walkability scores', reliability: 90 },
   'schooldigger': { tier: 3, name: 'SchoolDigger', description: 'School ratings', reliability: 85 },
   'fema': { tier: 3, name: 'FEMA NFHL', description: 'Flood zones', reliability: 95 },
@@ -42,53 +38,13 @@ export const DATA_TIERS: Record<string, TierConfig> = {
   'howloud': { tier: 3, name: 'HowLoud', description: 'Noise levels', reliability: 85 },
   'weather': { tier: 3, name: 'Weather API', description: 'Climate data', reliability: 85 },
   'fbi-crime': { tier: 3, name: 'FBI Crime', description: 'Crime statistics', reliability: 90 },
-  'crime': { tier: 3, name: 'FBI Crime', description: 'Crime statistics', reliability: 90 },
-  'noaa-climate': { tier: 3, name: 'NOAA Climate', description: 'Climate risk data', reliability: 95 },
-  'noaa-storm': { tier: 3, name: 'NOAA Storm Events', description: 'Hurricane/tornado risk', reliability: 95 },
-  'noaa-storm-events': { tier: 3, name: 'NOAA Storm Events', description: 'Hurricane/tornado risk', reliability: 95 },
-  'noaa-sealevel': { tier: 3, name: 'NOAA Sea Level', description: 'Sea level rise risk', reliability: 90 },
-  'noaa-sea-level': { tier: 3, name: 'NOAA Sea Level', description: 'Sea level rise risk', reliability: 90 },
-  'usgs-elevation': { tier: 3, name: 'USGS Elevation', description: 'Elevation above sea level', reliability: 95 },
-  'usgs-earthquake': { tier: 3, name: 'USGS Earthquake', description: 'Earthquake risk data', reliability: 95 },
-  'epa-frs': { tier: 3, name: 'EPA FRS', description: 'Superfund site proximity', reliability: 95 },
-  'epa-radon': { tier: 3, name: 'EPA Radon', description: 'Radon risk zones', reliability: 90 },
   'perplexity': { tier: 4, name: 'Perplexity', description: 'LLM with web search (HIGHEST LLM PRIORITY)', reliability: 75 },
   'grok': { tier: 5, name: 'Grok/xAI', description: 'LLM with real-time data', reliability: 70 },
   'claude-opus': { tier: 5, name: 'Claude Opus', description: 'High-quality LLM', reliability: 65 },
-  'gpt': { tier: 5, name: 'GPT-5.2', description: 'OpenAI LLM', reliability: 60 },
+  'gpt': { tier: 5, name: 'GPT-4', description: 'OpenAI LLM', reliability: 60 },
   'claude-sonnet': { tier: 5, name: 'Claude Sonnet', description: 'Fast LLM fallback', reliability: 55 },
   'gemini': { tier: 5, name: 'Gemini', description: 'Google LLM', reliability: 50 },
 };
-
-/**
- * FIX #4 & #5: Pre-built lookup Maps for O(1) source tier and reliability lookups
- * Built once at module load instead of iterating Object.entries on every call
- */
-const sourceTierLookup = new Map<string, DataTier>();
-const sourceReliabilityLookup = new Map<string, number>();
-
-// Build lookup maps at module initialization
-for (const [key, config] of Object.entries(DATA_TIERS)) {
-  sourceTierLookup.set(key, config.tier);
-  sourceReliabilityLookup.set(key, config.reliability);
-}
-
-/**
- * FIX #4 & #5: Memoization cache for dynamic source name lookups
- */
-const sourceTierCache = new Map<string, DataTier>();
-const sourceReliabilityCache = new Map<string, number>();
-
-/**
- * Default values for arbitration - centralized for consistency
- * FIX #12: Centralized defaults
- */
-const ARBITRATION_DEFAULTS = {
-  TIER: 4 as DataTier,
-  RELIABILITY: 50,
-  CONFIDENCE: 'Medium' as const,
-  LLM_SOURCES: [] as string[],
-} as const;
 
 export interface FieldValue {
   value: any;
@@ -124,85 +80,96 @@ export interface ArbitrationResult {
   singleSourceWarnings: Array<{ field: string; source: string }>;
 }
 
-/**
- * FIX #4: Optimized getSourceTier with O(1) Map lookup + memoization cache
- * Previously: O(n) iteration through Object.entries on every call
- * Now: O(1) Map lookup with fallback caching for dynamic names
- */
 export function getSourceTier(sourceName: string): DataTier {
-  // Check memoization cache first
-  const cached = sourceTierCache.get(sourceName);
-  if (cached !== undefined) return cached;
-
   const sourceKey = sourceName.toLowerCase().replace(/\s+/g, '-').replace('maps', 'geocode');
-
-  // Try direct Map lookup first (O(1))
-  const directLookup = sourceTierLookup.get(sourceKey);
-  if (directLookup !== undefined) {
-    sourceTierCache.set(sourceName, directLookup);
-    return directLookup;
-  }
-
-  // Fallback: check for partial matches using pre-built keys
-  let tier: DataTier = ARBITRATION_DEFAULTS.TIER;
-
-  for (const key of sourceTierLookup.keys()) {
+  
+  for (const [key, config] of Object.entries(DATA_TIERS)) {
     if (sourceKey.includes(key) || key.includes(sourceKey)) {
-      tier = sourceTierLookup.get(key)!;
-      break;
+      return config.tier;
     }
   }
+  
+  if (sourceName.toLowerCase().includes('google')) return 2;
 
-  // Additional pattern matching
-  if (tier === ARBITRATION_DEFAULTS.TIER) {
-    const lowerName = sourceName.toLowerCase();
-    if (lowerName.includes('google')) {
-      tier = 2;
-    } else if (lowerName.includes('perplexity')) {
-      tier = 4;  // Perplexity = Tier 4 (web search verified)
-    } else if (['grok', 'claude', 'gpt', 'gemini', 'anthropic', 'openai'].some(
-      llm => lowerName.includes(llm)
-    )) {
-      tier = 5;  // All other LLMs = Tier 5 (prone to hallucination)
-    }
-  }
+  // Fallback classification for LLMs when the source name doesn't match an exact key in DATA_TIERS
+  if (sourceKey.includes('perplexity')) return 4; // highest-priority LLM tier
+  if (['grok', 'claude', 'gpt', 'gemini', 'anthropic', 'openai'].some(
+    llm => sourceName.toLowerCase().includes(llm)
+  )) return 5; // other LLMs
 
-  // Cache the result for future lookups
-  sourceTierCache.set(sourceName, tier);
-  return tier;
+  return 4;
 }
 
-/**
- * FIX #5: Optimized getSourceReliability with O(1) Map lookup + memoization cache
- * Previously: O(n) iteration through Object.entries on every call
- * Now: O(1) Map lookup with fallback caching for dynamic names
- */
 export function getSourceReliability(sourceName: string): number {
-  // Check memoization cache first
-  const cached = sourceReliabilityCache.get(sourceName);
-  if (cached !== undefined) return cached;
-
   const sourceKey = sourceName.toLowerCase().replace(/\s+/g, '-');
 
-  // Try direct Map lookup first (O(1))
-  const directLookup = sourceReliabilityLookup.get(sourceKey);
-  if (directLookup !== undefined) {
-    sourceReliabilityCache.set(sourceName, directLookup);
-    return directLookup;
-  }
-
-  // Fallback: check for partial matches using pre-built keys
-  for (const key of sourceReliabilityLookup.keys()) {
+  for (const [key, config] of Object.entries(DATA_TIERS)) {
     if (sourceKey.includes(key) || key.includes(sourceKey)) {
-      const reliability = sourceReliabilityLookup.get(key)!;
-      sourceReliabilityCache.set(sourceName, reliability);
-      return reliability;
+      return config.reliability;
     }
   }
 
-  // Cache default and return
-  sourceReliabilityCache.set(sourceName, ARBITRATION_DEFAULTS.RELIABILITY);
-  return ARBITRATION_DEFAULTS.RELIABILITY;
+  return 50;
+}
+
+// HIGH CONFIDENCE sources (normal color)
+const HIGH_CONFIDENCE_SOURCES = [
+  'perplexity',  // Has web citations
+  'grok',        // Has real-time data
+  'google',
+  'walkscore',
+  'fema',
+  'weather',
+  'schooldigger',
+  'airnow',
+  'stellar',
+  'mls',
+];
+
+// MEDIUM CONFIDENCE sources (yellow)
+const MEDIUM_CONFIDENCE_SOURCES = [
+  'claude-opus',
+  'opus',
+  'howloud',
+  'fbi',
+  'crime',
+];
+
+// LOW CONFIDENCE sources (red) - everything else including:
+// gpt, claude-sonnet, gemini
+// NOTE: Gemini consistently returns incorrect data and should be treated as CODE RED
+
+export function getSourceConfidence(sourceName: string, hasCitations: boolean = false): 'High' | 'Medium' | 'Low' {
+  const sourceKey = sourceName.toLowerCase();
+
+  // Gemini: treat as Medium only when explicitly web-grounded (e.g., "Gemini 2.0 Search")
+  if (sourceKey.includes('gemini')) {
+    if (hasCitations || sourceKey.includes('2.0') || sourceKey.includes('search')) return 'Medium';
+    return 'Low';
+  }
+
+// Perplexity and Grok with citations = High
+  if ((sourceKey.includes('perplexity') || sourceKey.includes('grok')) && hasCitations) {
+    return 'High';
+  }
+
+  // Perplexity and Grok without citations = Medium
+  if (sourceKey.includes('perplexity') || sourceKey.includes('grok')) {
+    return 'Medium';
+  }
+
+  // Check high confidence sources
+  if (HIGH_CONFIDENCE_SOURCES.some(s => sourceKey.includes(s))) {
+    return 'High';
+  }
+
+  // Check medium confidence sources
+  if (MEDIUM_CONFIDENCE_SOURCES.some(s => sourceKey.includes(s))) {
+    return 'Medium';
+  }
+
+  // Everything else (GPT, Claude Sonnet) = Low
+  return 'Low';
 }
 
 export interface ValidationRule {
@@ -210,14 +177,13 @@ export interface ValidationRule {
   validate: (value: any) => { valid: boolean; message?: string };
 }
 
-// Updated: 2025-11-30 - Added Stellar MLS field validations (139-168)
 export const VALIDATION_RULES: ValidationRule[] = [
   {
-    fieldPattern: /price|sale_price|listing_price|market_value|assessed_value|annual_cdd_fee/i,
+    fieldPattern: /price|sale_price|listing_price|market_value|assessed_value/i,
     validate: (v) => {
       const num = typeof v === 'number' ? v : parseFloat(String(v).replace(/[$,]/g, ''));
       if (isNaN(num)) return { valid: false, message: 'Price must be a number' };
-      if (num < 0) return { valid: false, message: 'Price cannot be negative' };
+      if (num < 1000) return { valid: false, message: 'Price too low (<$1,000)' };
       if (num > 100000000) return { valid: false, message: 'Price too high (>$100M)' };
       return { valid: true };
     }
@@ -287,254 +253,36 @@ export const VALIDATION_RULES: ValidationRule[] = [
       return { valid: true };
     }
   },
-
-  // ================================================================
-  // STELLAR MLS FIELD VALIDATIONS (139-168) - Added 2025-11-30
-  // ================================================================
-
-  // Parking fields (139-143)
-  {
-    fieldPattern: /carport_spaces|assigned_parking_spaces|garage_spaces/i,
-    validate: (v) => {
-      const num = typeof v === 'number' ? v : parseInt(String(v));
-      if (isNaN(num)) return { valid: false, message: 'Parking spaces must be a number' };
-      if (num < 0 || num > 20) return { valid: false, message: 'Parking spaces out of range (0-20)' };
-      return { valid: true };
-    }
-  },
-
-  // Building fields (144-148)
-  {
-    fieldPattern: /floor_number|floors_in_unit/i,
-    validate: (v) => {
-      const num = typeof v === 'number' ? v : parseInt(String(v));
-      if (isNaN(num)) return { valid: false, message: 'Floor number must be a number' };
-      if (num < 0 || num > 200) return { valid: false, message: 'Floor number out of range (0-200)' };
-      return { valid: true };
-    }
-  },
-  {
-    fieldPattern: /building_total_floors/i,
-    validate: (v) => {
-      const num = typeof v === 'number' ? v : parseInt(String(v));
-      if (isNaN(num)) return { valid: false, message: 'Total floors must be a number' };
-      if (num < 1 || num > 200) return { valid: false, message: 'Total floors out of range (1-200)' };
-      return { valid: true };
-    }
-  },
-
-  // Waterfront fields (155-159)
-  {
-    fieldPattern: /waterfront_feet/i,
-    validate: (v) => {
-      const num = typeof v === 'number' ? v : parseFloat(String(v));
-      if (isNaN(num)) return { valid: false, message: 'Waterfront feet must be a number' };
-      if (num < 0 || num > 10000) return { valid: false, message: 'Waterfront feet out of range (0-10,000)' };
-      return { valid: true };
-    }
-  },
-
-  // Leasing fields (160-165)
-  {
-    fieldPattern: /max_pet_weight/i,
-    validate: (v) => {
-      const num = typeof v === 'number' ? v : parseFloat(String(v));
-      if (isNaN(num)) return { valid: false, message: 'Pet weight must be a number' };
-      if (num < 0 || num > 500) return { valid: false, message: 'Pet weight out of range (0-500 lbs)' };
-      return { valid: true };
-    }
-  },
-
-  // Boolean Y/N fields (various Stellar MLS)
-  {
-    fieldPattern: /carport_yn|garage_attached_yn|building_elevator_yn|homestead_yn|cdd_yn|water_frontage_yn|water_access_yn|water_view_yn|can_be_leased_yn|lease_restrictions_yn|association_approval_yn/i,
-    validate: (v) => {
-      if (typeof v === 'boolean') return { valid: true };
-      const str = String(v).toLowerCase().trim();
-      const validBools = ['true', 'false', 'yes', 'no', 'y', 'n', '1', '0'];
-      if (!validBools.includes(str)) {
-        return { valid: false, message: 'Must be a boolean (Yes/No, True/False)' };
-      }
-      return { valid: true };
-    }
-  },
 ];
 
-/**
- * FIX #6: Pre-build validation rule cache for common field patterns
- * Maps common field key patterns to their rules for O(1) lookup
- * Falls back to regex matching for unknown patterns
- */
-const validationRuleCache = new Map<string, ValidationRule | null>();
-
-/**
- * FIX #6: Optimized validateField with caching
- * Previously: O(n) linear scan through all VALIDATION_RULES on every call
- * Now: O(1) cache lookup for previously validated field keys
- */
-/**
- * Normalize values to detect trivial variations that shouldn't be flagged as conflicts
- * Examples:
- * - "Condominium" vs "Condo" → both become "condo"
- * - "St Pete Beach" vs "Saint Pete Beach" → both become "st pete beach"
- * - "APT 203" vs "#203" → both become "203"
- * - "Pinellas County" vs "Pinellas" → both become "pinellas"
- * - "Central Air" vs "Central" → both become "central"
- * - "Wood" vs "Hardwood" → both become "wood"
- * - "Active" vs "For Sale" → both become "active"
- * - "Pinellas County Schools" vs "Pinellas County School District" → both become "pinellas schools"
- */
-export function normalizeValueForComparison(value: any, fieldKey: string = ''): string {
-  if (value === null || value === undefined) return '';
-
-  let str = String(value).toLowerCase().trim();
-
-  // Remove common abbreviation symbols and extra whitespace
-  str = str.replace(/[#,\.]/g, '').replace(/\s+/g, ' ');
-
-  // Property type normalizations
-  if (fieldKey.includes('property_type') || fieldKey.includes('26_') || fieldKey.includes('ownership')) {
-    if (str.includes('condo')) return 'condo';
-    if (str.includes('single family')) return 'single-family';
-    if (str.includes('townhouse') || str.includes('town home')) return 'townhouse';
-  }
-
-  // Address normalizations
-  if (fieldKey.includes('address') || fieldKey.includes('1_')) {
-    str = str.replace(/\bapt\b/g, '').replace(/\bunit\b/g, '').replace(/\bste\b/g, '');
-    str = str.replace(/\bsaint\b/g, 'st').replace(/\bst\./g, 'st');
-  }
-
-  // County normalizations
-  if (fieldKey.includes('county') || fieldKey.includes('7_')) {
-    str = str.replace(/\bcounty\b/g, '');
-  }
-
-  // School district normalizations
-  if (fieldKey.includes('school') || fieldKey.includes('63_')) {
-    str = str.replace(/\bschool district\b/g, 'schools');
-    str = str.replace(/\bcounty\b/g, '');
-  }
-
-  // Flood zone normalizations - "FEMA Zone AE", "Zone AE", "AE" all become "ae"
-  if (fieldKey.includes('flood_zone') || fieldKey.includes('119_')) {
-    str = str.replace(/\bfema\s+zone\s*/g, '');
-    str = str.replace(/\bzone\s*/g, '');
-  }
-
-  // Flood/climate risk normalizations - "High Risk (Special Flood Hazard Area)", "High", "High Risk" all become "high"
-  if (fieldKey.includes('flood_risk') || fieldKey.includes('120_') ||
-      fieldKey.includes('climate_risk') || fieldKey.includes('121_') ||
-      fieldKey.includes('wildfire_risk') || fieldKey.includes('122_') ||
-      fieldKey.includes('hurricane_risk') || fieldKey.includes('124_')) {
-    // Extract just the risk level (High, Moderate, Low, Minimal)
-    if (str.includes('high')) return 'high';
-    if (str.includes('moderate')) return 'moderate';
-    if (str.includes('low') || str.includes('minimal')) return 'low';
-  }
-
-  // HVAC normalizations
-  if (fieldKey.includes('hvac') || fieldKey.includes('45_')) {
-    str = str.replace(/\bair\b/g, '');
-  }
-
-  // Flooring normalizations
-  if (fieldKey.includes('flooring') || fieldKey.includes('49_')) {
-    str = str.replace(/\bhardwood\b/g, 'wood');
-    str = str.replace(/\bluxury vinyl\b/g, 'vinyl');
-  }
-
-  // Status normalizations - "Active" and "For Sale" are the same
-  if (fieldKey.includes('listing_status') || fieldKey.includes('4_')) {
-    if (str.includes('sale') || str.includes('active')) return 'active';
-    if (str.includes('pending')) return 'pending';
-    if (str.includes('sold')) return 'sold';
-  }
-
-  // Price/money normalizations - ignore minor rounding differences
-  if (fieldKey.includes('price') || fieldKey.includes('_per_sqft') || fieldKey.includes('11_')) {
-    const num = parseFloat(str.replace(/[^0-9.]/g, ''));
-    if (!isNaN(num)) {
-      // Round to nearest $10 to ignore $1-2 differences
-      return Math.round(num / 10).toString();
-    }
-  }
-
-  // Address normalization - APT = Apt, ignore ", USA", Saint = St
-  if (fieldKey.includes('address') || fieldKey.includes('1_') || fieldKey.includes('city') || fieldKey.includes('neighborhood')) {
-    str = str.replace(/,\s*USA$/i, ''); // Remove ", USA"
-    str = str.replace(/\bAPT\b/gi, 'Apt'); // APT → Apt
-    str = str.replace(/\bApartment\b/gi, 'Apt'); // Apartment → Apt
-    str = str.replace(/\bUnit\b/gi, 'Apt'); // Unit → Apt
-    str = str.replace(/\bSaint\b/gi, 'St'); // Saint Pete Beach → St Pete Beach
-    str = str.replace(/\bSt\.\s*/gi, 'St '); // St. → St (normalize periods)
-  }
-
-  // Property type - Residential = Single Family = Single Family Residence = Single Family Home
-  if (fieldKey.includes('property_type') || fieldKey.includes('26_') || fieldKey.includes('ownership') || fieldKey.includes('34_')) {
-    if (str.includes('condo')) return 'condo';
-    if (str.includes('townhouse') || str.includes('townhome')) return 'townhouse';
-    if (str.includes('single') || str.includes('residential') || str.includes('sfr')) return 'single family';
-    if (str.includes('multi') || str.includes('duplex') || str.includes('triplex')) return 'multi-family';
-  }
-
-  // Walkability - semantic equivalence
-  if (fieldKey.includes('walkability') || fieldKey.includes('75_')) {
-    if (str.includes('moderate') || str.includes('somewhat')) return 'moderate';
-    if (str.includes('very walkable') || str.includes('highly')) return 'high';
-    if (str.includes('car-dependent') || str.includes('low')) return 'low';
-  }
-
-  // Risk levels - High = Very High for practical purposes
-  if (fieldKey.includes('risk') || fieldKey.includes('hurricane') || fieldKey.includes('flood')) {
-    if (str.includes('very high') || str.includes('high')) return 'high';
-    if (str.includes('very low') || str.includes('low')) return 'low';
-    if (str.includes('moderate') || str.includes('medium')) return 'moderate';
-  }
-
-  // Numeric estimates - round to nearest $100 for estimates (reduces noise)
-  if (fieldKey.includes('estimate') || fieldKey.includes('median') || fieldKey.includes('rental') || fieldKey.includes('insurance')) {
-    const num = parseFloat(str.replace(/[^0-9.]/g, ''));
-    if (!isNaN(num)) {
-      // Round to nearest $100 to ignore minor variations
-      return Math.round(num / 100).toString();
-    }
-  }
-
-  // Air Quality Index - round to nearest 10 to ignore 1-5 point differences
-  if (fieldKey.includes('air_quality') || fieldKey.includes('aqi') || fieldKey.includes('101_')) {
-    const num = parseFloat(str.replace(/[^0-9.]/g, ''));
-    if (!isNaN(num)) {
-      // Round to nearest 10 (27→30, 28→30, 32→30, 35→40, 44→40, 45→50)
-      return (Math.round(num / 10) * 10).toString();
-    }
-  }
-
-  // FIX #10: Substring/Subset matching for fields that commonly have variations
-  // (e.g., "Belle Vista" vs "Belle Vista Beach", "Water view" vs "Water view, river view")
-  // This is applied AFTER all normalization to handle natural language variations
-  // NOTE: We store the original string for this check to avoid false positives from normalized values
-  return str.trim();
-}
-
 export function validateField(fieldKey: string, value: any): { valid: boolean; message?: string } {
-  // Check cache first
-  const cachedRule = validationRuleCache.get(fieldKey);
-  if (cachedRule !== undefined) {
-    // null means no rule matched for this field
-    return cachedRule ? cachedRule.validate(value) : { valid: true };
-  }
-
-  // Find matching rule and cache it
   for (const rule of VALIDATION_RULES) {
     if (rule.fieldPattern.test(fieldKey)) {
-      validationRuleCache.set(fieldKey, rule);
       return rule.validate(value);
     }
   }
+  return { valid: true };
+}
 
-  // No rule matched - cache null to avoid re-scanning
-  validationRuleCache.set(fieldKey, null);
+export function validateBathroomMath(
+  fullBathrooms: number | undefined,
+  halfBathrooms: number | undefined,
+  totalBathrooms: number | undefined
+): { valid: boolean; message?: string } {
+  if (fullBathrooms === undefined || halfBathrooms === undefined || totalBathrooms === undefined) {
+    return { valid: true };
+  }
+  
+  const expectedTotal = fullBathrooms + (halfBathrooms * 0.5);
+  const tolerance = 0.5;
+  
+  if (Math.abs(expectedTotal - totalBathrooms) > tolerance) {
+    return {
+      valid: false,
+      message: `Bathroom math mismatch: ${fullBathrooms} full + ${halfBathrooms} half = ${expectedTotal}, but total is ${totalBathrooms}`
+    };
+  }
+  
   return { valid: true };
 }
 
@@ -542,40 +290,25 @@ export function arbitrateField(
   existingField: FieldValue | undefined,
   newValue: any,
   newSource: string,
-  auditTrail: AuditEntry[],
-  fieldKey: string = '',
-  explicitTier?: DataTier
+  auditTrail: AuditEntry[]
 ): { result: FieldValue | null; action: 'set' | 'skip' | 'override' | 'conflict' | 'validation_fail' } {
-  const newTier = explicitTier !== undefined ? explicitTier : getSourceTier(newSource);
+  const newTier = getSourceTier(newSource);
   const timestamp = new Date().toISOString();
-
-  // CRITICAL DEBUG: Log tier assignment for Stellar MLS fields
-  if (newSource === 'Stellar MLS' || newSource.toLowerCase().includes('stellar')) {
-    console.log(`[ARBITRATION-DEBUG] Field: ${fieldKey}, Source: ${newSource}, Tier: ${newTier}, Explicit: ${explicitTier}, Value: ${JSON.stringify(newValue).slice(0, 100)}`);
-  }
-
-  // Reject null, undefined, empty, NaN, or invalid values
+  
   if (newValue === null || newValue === undefined || newValue === '') {
     return { result: null, action: 'skip' };
   }
-
-  // Reject NaN values (both number NaN and string "NaN")
-  const strValue = String(newValue).trim().toLowerCase();
-  if (strValue === 'nan' || (typeof newValue === 'number' && isNaN(newValue))) {
-    console.warn(`[ARBITRATION] Rejecting NaN value for field ${fieldKey} from ${newSource}`);
-    return { result: null, action: 'skip' };
-  }
-
+  
   if (!existingField) {
     const newField: FieldValue = {
       value: newValue,
       source: newSource,
-      confidence: newTier <= 2 ? 'High' : newTier === 3 ? 'Medium' : 'Low',
+      confidence: getSourceConfidence(newSource, true), // Assume citations for Perplexity/Grok
       tier: newTier,
       timestamp,
-      llmSources: newTier === 4 ? [newSource] : undefined,
+      llmSources: newTier >= 4 ? [newSource] : undefined,
     };
-
+    
     auditTrail.push({
       field: '',
       action: 'set',
@@ -585,41 +318,23 @@ export function arbitrateField(
       reason: 'Field was empty',
       timestamp,
     });
-
+    
     return { result: newField, action: 'set' };
   }
-
-  // Normalize values for comparison to avoid false conflicts
-  // Coerce objects to strings first (fixes Grok's [object Object] bug)
-  const safeNewValue = typeof newValue === 'object' && newValue !== null ? JSON.stringify(newValue) : newValue;
-  const safeExistingValue = typeof existingField.value === 'object' && existingField.value !== null ? JSON.stringify(existingField.value) : existingField.value;
-
-  const normalizedNew = normalizeValueForComparison(safeNewValue, fieldKey);
-  const normalizedExisting = normalizeValueForComparison(safeExistingValue, fieldKey);
-  const areValuesEquivalent = normalizedNew === normalizedExisting;
-
+  
   if (newTier < existingField.tier) {
-    // CRITICAL DEBUG: Log when Stellar MLS is being overridden OR when it's overriding
-    if (newSource === 'Stellar MLS' || existingField.source === 'Stellar MLS' ||
-        newSource.toLowerCase().includes('stellar') || existingField.source.toLowerCase().includes('stellar')) {
-      console.warn(`[ARBITRATION-OVERRIDE] Field: ${fieldKey}`);
-      console.warn(`  → OLD: ${existingField.source} (Tier ${existingField.tier}): ${JSON.stringify(existingField.value).slice(0, 100)}`);
-      console.warn(`  → NEW: ${newSource} (Tier ${newTier}): ${JSON.stringify(newValue).slice(0, 100)}`);
-      console.warn(`  → RESULT: ${newSource} wins (higher priority tier)`);
-    }
-
     const overrideField: FieldValue = {
       value: newValue,
       source: newSource,
-      confidence: newTier <= 2 ? 'High' : 'Medium',
+      confidence: getSourceConfidence(newSource, true),
       tier: newTier,
       timestamp,
-      hasConflict: !areValuesEquivalent,
-      conflictValues: !areValuesEquivalent
+      hasConflict: JSON.stringify(existingField.value) !== JSON.stringify(newValue),
+      conflictValues: existingField.value !== newValue 
         ? [{ source: existingField.source, value: existingField.value }]
         : undefined,
     };
-
+    
     auditTrail.push({
       field: '',
       action: 'override',
@@ -631,56 +346,12 @@ export function arbitrateField(
       reason: `Higher tier (${newTier}) overrides lower tier (${existingField.tier})`,
       timestamp,
     });
-
+    
     return { result: overrideField, action: 'override' };
   }
-
-  // Same tier but different values - check if it's a real conflict after normalization
-  if (newTier === existingField.tier && !areValuesEquivalent) {
-    if (newTier === 4) {
-      // LLM conflict - add to conflict list only if this source+value combo doesn't already exist
-      const existingConflicts = existingField.conflictValues || [];
-
-      // Check for exact duplicates (same source + normalized value)
-      const alreadyExists = existingConflicts.some(
-        cv => cv.source === newSource && normalizeValueForComparison(cv.value, fieldKey) === normalizedNew
-      );
-
-      // Check for near-duplicates from same source (e.g., Gemini: $665 vs $666)
-      const isNearDuplicate = existingConflicts.some(cv => {
-        if (cv.source !== newSource) return false; // Different source = not a duplicate
-
-        // Extract numeric values for comparison
-        const existingNum = parseFloat(String(cv.value).replace(/[^0-9.-]/g, ''));
-        const newNum = parseFloat(String(newValue).replace(/[^0-9.-]/g, ''));
-
-        // If both are numbers, check if within 3% tolerance (handles sqft 1519 vs 1500 = 1.3%)
-        if (!isNaN(existingNum) && !isNaN(newNum) && existingNum > 0) {
-          const percentDiff = Math.abs(existingNum - newNum) / existingNum;
-          if (percentDiff < 0.03) return true; // Within 3% = near-duplicate
-        }
-
-        // FIX #10: Substring/Subset matching - if one string contains the other, treat as duplicate
-        // (e.g., "Belle Vista" ⊂ "Belle Vista Beach", "Water view" ⊂ "Water view, river view")
-        const existingStr = String(cv.value).toLowerCase().trim();
-        const newStr = String(newValue).toLowerCase().trim();
-
-        // Only apply to non-numeric text fields (avoid false positives on numbers/codes)
-        if (existingStr.length > 3 && newStr.length > 3 && isNaN(parseFloat(existingStr))) {
-          // Check if one is a substring of the other
-          if (existingStr.includes(newStr) || newStr.includes(existingStr)) {
-            return true; // Subset match = near-duplicate
-          }
-        }
-
-        return false;
-      });
-
-      // Don't add duplicate or near-duplicate source+value combinations
-      if (alreadyExists || isNearDuplicate) {
-        return { result: existingField, action: 'skip' };
-      }
-
+  
+  if (newTier === existingField.tier && JSON.stringify(existingField.value) !== JSON.stringify(newValue)) {
+    if (newTier >= 4) {
       const updatedField: FieldValue = {
         ...existingField,
         llmSources: [...(existingField.llmSources || [existingField.source]), newSource],
@@ -690,7 +361,7 @@ export function arbitrateField(
           { source: newSource, value: newValue }
         ],
       };
-
+      
       auditTrail.push({
         field: '',
         action: 'conflict',
@@ -702,10 +373,10 @@ export function arbitrateField(
         reason: 'LLM conflict - added to conflict list',
         timestamp,
       });
-
+      
       return { result: updatedField, action: 'conflict' };
     }
-
+    
     auditTrail.push({
       field: '',
       action: 'skip',
@@ -717,30 +388,19 @@ export function arbitrateField(
       reason: 'Same tier conflict - keeping first value',
       timestamp,
     });
-
+    
     return { result: existingField, action: 'skip' };
   }
-
-  // Same tier, same value (after normalization) - just add source if LLM
+  
   if (newTier === 4 && existingField.tier === 4) {
     const updatedField: FieldValue = {
       ...existingField,
       llmSources: [...(existingField.llmSources || [existingField.source]), newSource],
     };
-
+    
     return { result: updatedField, action: 'skip' };
   }
-
-  // CRITICAL DEBUG: Log when LLM tries to override Stellar MLS (BLOCKED)
-  if ((newSource.includes('GPT') || newSource.includes('Claude') || newSource.includes('Gemini') ||
-       newSource.includes('Grok') || newSource.includes('Perplexity')) &&
-      (existingField.source === 'Stellar MLS' || existingField.source.toLowerCase().includes('stellar'))) {
-    console.log(`[ARBITRATION-BLOCKED] ✅ LLM Override Prevented - Field: ${fieldKey}`);
-    console.log(`  → EXISTING: ${existingField.source} (Tier ${existingField.tier}): ${JSON.stringify(existingField.value).slice(0, 100)}`);
-    console.log(`  → REJECTED: ${newSource} (Tier ${newTier}): ${JSON.stringify(newValue).slice(0, 100)}`);
-    console.log(`  → RESULT: ${existingField.source} protected (higher priority tier)`);
-  }
-
+  
   auditTrail.push({
     field: '',
     action: 'skip',
@@ -752,72 +412,63 @@ export function arbitrateField(
     reason: `Lower tier (${newTier}) cannot override higher tier (${existingField.tier})`,
     timestamp,
   });
-
+  
   return { result: null, action: 'skip' };
 }
 
-/**
- * FIX #10: Optimized LLM quorum voting with single-pass max finding
- * FIX #16: Validate minQuorum parameter
- * Previously: Two-pass (build counts, then find max via Array.from + loop)
- * Now: Track max during count building for single-pass operation
- */
 export function applyLLMQuorumVoting(
   fields: Record<string, FieldValue>,
   minQuorum: number = 2
 ): { fields: Record<string, FieldValue>; quorumFields: Array<{ field: string; value: any; sources: string[]; quorumCount: number }> } {
-  // FIX #16: Validate minQuorum parameter - must be at least 1
-  const validMinQuorum = Math.max(1, Math.floor(minQuorum));
-
   const quorumFields: Array<{ field: string; value: any; sources: string[]; quorumCount: number }> = [];
-
+  
   for (const [key, field] of Object.entries(fields)) {
     if (field.tier !== 4 || !field.conflictValues || field.conflictValues.length === 0) {
       continue;
     }
-
+    
     const valueCounts = new Map<string, { count: number; sources: string[]; value: any }>();
-
-    // FIX #10: Track max during count building (single-pass)
-    let maxCount = 1;
-    let winningEntry: { count: number; sources: string[]; value: any } = {
+    
+    valueCounts.set(JSON.stringify(field.value), {
       count: 1,
       sources: [field.source],
       value: field.value,
-    };
-
-    valueCounts.set(JSON.stringify(field.value), winningEntry);
-
+    });
+    
     for (const conflict of field.conflictValues) {
-      const valKey = JSON.stringify(conflict.value);
-      const existing = valueCounts.get(valKey);
+      const key = JSON.stringify(conflict.value);
+      const existing = valueCounts.get(key);
       if (existing) {
         existing.count++;
         existing.sources.push(conflict.source);
-        // Update max if this entry is now the winner
-        if (existing.count > maxCount) {
-          maxCount = existing.count;
-          winningEntry = existing;
-        }
       } else {
-        valueCounts.set(valKey, {
+        valueCounts.set(key, {
           count: 1,
           sources: [conflict.source],
           value: conflict.value,
         });
       }
     }
-
-    // No need for second pass - we already have the winner
-    if (maxCount >= validMinQuorum) {
+    
+    let maxCount = 0;
+    let winningEntry: { count: number; sources: string[]; value: any } | null = null;
+    
+    for (const entry of valueCounts.values()) {
+      if (entry.count > maxCount) {
+        maxCount = entry.count;
+        winningEntry = entry;
+      }
+    }
+    
+    if (winningEntry && maxCount >= minQuorum) {
       fields[key] = {
         ...field,
         value: winningEntry.value,
-        confidence: maxCount >= 3 ? 'High' : ARBITRATION_DEFAULTS.CONFIDENCE,
+        confidence: maxCount >= 3 ? 'High' : 'Medium',
         llmSources: winningEntry.sources,
         hasConflict: valueCounts.size > 1,
       };
-
+      
       quorumFields.push({
         field: key,
         value: winningEntry.value,
@@ -826,7 +477,7 @@ export function applyLLMQuorumVoting(
       });
     }
   }
-
+  
   return { fields, quorumFields };
 }
 
@@ -847,74 +498,56 @@ export function detectSingleSourceHallucinations(
   return warnings;
 }
 
-/**
- * FIX #3 & #16: Optimized createArbitrationPipeline
- * - Uses Map for O(1) conflict lookup instead of .find() (FIX #3)
- * - Validates minLLMQuorum parameter (FIX #16)
- */
 export function createArbitrationPipeline(minLLMQuorum: number = 2): {
   addField: (fieldKey: string, value: any, source: string) => void;
-  addFieldsFromSource: (sourceFields: Record<string, any>, sourceName: string) => number;
-  getFieldCount: () => number;
   getResult: () => ArbitrationResult;
 } {
-  // FIX #16: Validate minLLMQuorum - must be at least 1
-  const validMinQuorum = Math.max(1, Math.floor(minLLMQuorum));
-
   const fields: Record<string, FieldValue> = {};
   const auditTrail: AuditEntry[] = [];
   const conflicts: ArbitrationResult['conflicts'] = [];
   const validationFailures: ArbitrationResult['validationFailures'] = [];
-
-  // FIX #3: Use Map for O(1) conflict lookup instead of .find() per field
-  const conflictIndexMap = new Map<string, number>();
-
+  
   return {
-    addField(fieldKey: string, value: any, source: string, explicitTier?: DataTier) {
+    addField(fieldKey: string, value: any, source: string) {
       const validation = validateField(fieldKey, value);
-
+      
       if (!validation.valid) {
         validationFailures.push({
           field: fieldKey,
           value,
           reason: validation.message || 'Validation failed',
         });
-
+        
         auditTrail.push({
           field: fieldKey,
           action: 'validation_fail',
           source,
-          tier: explicitTier !== undefined ? explicitTier : getSourceTier(source),
+          tier: getSourceTier(source),
           value,
           reason: validation.message || 'Validation failed',
           timestamp: new Date().toISOString(),
         });
-
+        
         return;
       }
-
-      const { result, action } = arbitrateField(fields[fieldKey], value, source, auditTrail, fieldKey, explicitTier);
-
+      
+      const { result, action } = arbitrateField(fields[fieldKey], value, source, auditTrail);
+      
       if (result) {
         if (auditTrail.length > 0) {
           auditTrail[auditTrail.length - 1].field = fieldKey;
         }
-        // Mark field as validation passed since it got through validation gate
-        result.validationStatus = 'passed';
         fields[fieldKey] = result;
-
+        
         if (action === 'conflict' && result.conflictValues) {
-          // FIX #3: O(1) Map lookup instead of O(n) .find()
-          const existingIndex = conflictIndexMap.get(fieldKey);
-          if (existingIndex !== undefined) {
-            conflicts[existingIndex].values.push({
+          const existingConflict = conflicts.find(c => c.field === fieldKey);
+          if (existingConflict) {
+            existingConflict.values.push({
               source,
               value,
               tier: getSourceTier(source),
             });
           } else {
-            // Store the index for future O(1) lookups
-            conflictIndexMap.set(fieldKey, conflicts.length);
             conflicts.push({
               field: fieldKey,
               values: [
@@ -926,54 +559,10 @@ export function createArbitrationPipeline(minLLMQuorum: number = 2): {
         }
       }
     },
-
-    addFieldsFromSource(sourceFields: Record<string, any>, sourceName: string): number {
-      let addedCount = 0;
-      for (const [key, fieldData] of Object.entries(sourceFields)) {
-        // CRITICAL FIX: Extract tier if present in FieldValue object
-        let value = fieldData;
-        let explicitTier: DataTier | undefined = undefined;
-
-        if (typeof fieldData === 'object' && fieldData !== null && 'value' in fieldData) {
-          value = fieldData.value;
-          // Preserve the tier if it was explicitly set (e.g., for Stellar MLS = Tier 1)
-          if ('tier' in fieldData && typeof fieldData.tier === 'number') {
-            explicitTier = fieldData.tier as DataTier;
-          }
-        }
-
-        if (value === null || value === undefined || value === '') continue;
-
-        const strVal = String(value).toLowerCase().trim();
-        const isBadValue = strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' ||
-          strVal === 'na' || strVal === 'nan' || strVal === 'unknown' ||
-          strVal === 'not available' || strVal === 'not found' || strVal === 'none' ||
-          strVal === '-' || strVal === '--' || strVal === 'tbd';
-
-        if (!isBadValue) {
-          this.addField(key, value, sourceName, explicitTier);
-          addedCount++;
-        }
-      }
-      return addedCount;
-    },
-
-    getFieldCount(): number {
-      return Object.keys(fields).length;
-    },
-
+    
     getResult(): ArbitrationResult {
-      // Use validated quorum value
-      const { fields: votedFields, quorumFields } = applyLLMQuorumVoting(fields, validMinQuorum);
+      const { fields: votedFields, quorumFields } = applyLLMQuorumVoting(fields, minLLMQuorum);
       const singleSourceWarnings = detectSingleSourceHallucinations(votedFields);
-      
-      // Apply single-source warning status to fields for UI display
-      for (const warning of singleSourceWarnings) {
-        if (votedFields[warning.field]) {
-          votedFields[warning.field].validationStatus = 'warning';
-          votedFields[warning.field].validationMessage = `Only one LLM (${warning.source}) provided this data - potential hallucination`;
-        }
-      }
       
       return {
         fields: votedFields,
@@ -985,4 +574,14 @@ export function createArbitrationPipeline(minLLMQuorum: number = 2): {
       };
     },
   };
+}
+
+export function getTierDisplayInfo(tier: DataTier): { label: string; color: string } {
+  switch (tier) {
+    case 1: return { label: 'MLS', color: 'text-quantum-gold' };
+    case 2: return { label: 'Google', color: 'text-quantum-green' };
+    case 3: return { label: 'API', color: 'text-quantum-cyan' };
+    case 4: return { label: 'LLM (High)', color: 'text-quantum-purple' };
+    case 5: return { label: 'LLM (Low)', color: 'text-quantum-pink' };
+  }
 }

@@ -391,6 +391,19 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   '168_exterior_features': 'multiselect', 'exterior_features': 'multiselect',
 };
 
+// Build a stable map from numeric field id -> primary numbered field key (e.g., 37 -> '37_property_tax_rate')
+const FIELD_ID_TO_KEY: Record<number, string> = (() => {
+  const map: Record<number, string> = {};
+  for (const key of Object.keys(FIELD_TYPE_MAP)) {
+    const m = key.match(/^(\d+)_/);
+    if (!m) continue;
+    const id = Number(m[1]);
+    if (!map[id]) map[id] = key;
+  }
+  return map;
+})();
+
+
 // ============================================
 // TYPE COERCION FUNCTION - Validates and coerces LLM values
 // Ensures values match expected types from the 168-field schema
@@ -2270,6 +2283,54 @@ JSON format: { "111_internet_providers_top3": { "value": ["Spectrum", "Frontier"
 /**
  * Shared Perplexity API call helper
  */
+
+function stripJsonCodeFences(text: string): string {
+  return text
+    .replace(/```json\s*/gi, '')
+    .replace(/```\s*/g, '')
+    .trim();
+}
+
+// Extract the first complete JSON object from a string by balancing braces (handles nested objects)
+function extractFirstJsonObject(text: string): string | null {
+  const start = text.indexOf('{');
+  if (start === -1) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+
+    if (inString) {
+      if (escape) {
+        escape = false;
+      } else if (ch === '\\') {
+        escape = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (ch === '{') depth++;
+    if (ch === '}') {
+      depth--;
+      if (depth === 0) {
+        return text.slice(start, i + 1);
+      }
+    }
+  }
+
+  return null;
+}
+
 async function callPerplexityHelper(promptName: string, userPrompt: string): Promise<Record<string, any>> {
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) {
@@ -2288,7 +2349,7 @@ async function callPerplexityHelper(promptName: string, userPrompt: string): Pro
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'sonar-pro',
+        model: process.env.PERPLEXITY_MODEL || 'sonar-pro',
         messages: [
           { role: 'system', content: systemMessage },
           { role: 'user', content: userPrompt }
@@ -2309,11 +2370,18 @@ async function callPerplexityHelper(promptName: string, userPrompt: string): Pro
       const text = data.choices[0].message.content;
       console.log(`✅ [Perplexity ${promptName}] Response received (${text.length} chars)`);
 
-      // FIX: Use non-greedy regex to match FIRST JSON object only
-      const jsonMatch = text.match(/\{[\s\S]*?\}/);
-      if (jsonMatch) {
+      // Parse JSON safely (Perplexity often returns nested objects, so regex is not enough)
+      const cleaned = stripJsonCodeFences(text);
+      const candidate = (() => {
+        // Fast path: whole content is valid JSON
+        try { JSON.parse(cleaned); return cleaned; } catch {}
+        // Fallback: extract first balanced JSON object
+        return extractFirstJsonObject(cleaned);
+      })();
+
+      if (candidate) {
         try {
-          const parsed = JSON.parse(jsonMatch[0]);
+          const parsed = JSON.parse(candidate);
           const rawCount = Object.keys(parsed).length;
           console.log(`✅ [Perplexity ${promptName}] Parsed ${rawCount} raw fields`);
 
@@ -2337,7 +2405,7 @@ async function callPerplexityHelper(promptName: string, userPrompt: string): Pro
         } catch (parseError) {
           console.error(`❌ [Perplexity ${promptName}] JSON parse error:`, parseError);
           console.error(`❌ [Perplexity ${promptName}] Response text:`, text);
-          console.error(`❌ [Perplexity ${promptName}] JSON match:`, jsonMatch[0]);
+          console.error(`❌ [Perplexity ${promptName}] JSON candidate:`, candidate);
         }
       } else {
         console.log(`❌ [Perplexity ${promptName}] No JSON found in response`);
@@ -4200,6 +4268,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     existingFields = {},  // Previously accumulated fields from prior LLM calls
     skipApis = false,  // Skip free APIs if we already have their data
     skipMLS = false,  // Skip ONLY Stellar MLS (TIER 1) - used by MLS-first search flow to avoid double-fetch
+      disableGemini = false,  // Disable Gemini structured search (Tier 4.0)
   } = req.body;
 
   // 🛡️ INPUT SANITIZATION: Prevent prompt injection attacks
@@ -4489,11 +4558,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ========================================
     // TIER 4: GEMINI STRUCTURED SEARCH (20 FIELDS)
     // ========================================
+    // TEMPORARILY DISABLED - GEMINI CRASHES EXECUTION
     console.log('========================================');
-    console.log('TIER 4: Gemini Structured Search');
+    console.log(`TIER 4: Gemini Structured Search - ${disableGemini ? 'SKIPPED (disabled)' : 'RUNNING'}`);
     console.log('========================================');
-    
-    
+
+    if (!disableGemini) {
     // Check if we need Gemini extraction
     const tier35Check = arbitrationPipeline.getResult();
     
@@ -4507,7 +4577,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     
     const tier35NeedsExtraction = TIER_35_FIELD_IDS.some(fieldId => {
-      const key = `${fieldId}_`;
+      const key = FIELD_ID_TO_KEY[fieldId];
+      if (!key) return true; // missing mapping means treat as missing
       const existingField = tier35Check.fields[key];
       return !existingField || existingField.value === null;
     });
@@ -4635,6 +4706,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     } else {
       console.log('[Tier 4 Gemini] Skipped - all Tier 4 Gemini fields already populated');
+    }
+
     }
 
     console.log('[DEBUG] About to start Tier 4 LLM Cascade...');
@@ -5031,4 +5104,3 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 }
-

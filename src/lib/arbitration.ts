@@ -90,10 +90,13 @@ export function getSourceTier(sourceName: string): DataTier {
   }
   
   if (sourceName.toLowerCase().includes('google')) return 2;
-  if (['perplexity', 'grok', 'claude', 'gpt', 'gemini', 'anthropic', 'openai'].some(
+
+  // Fallback classification for LLMs when the source name doesn't match an exact key in DATA_TIERS
+  if (sourceKey.includes('perplexity')) return 4; // highest-priority LLM tier
+  if (['grok', 'claude', 'gpt', 'gemini', 'anthropic', 'openai'].some(
     llm => sourceName.toLowerCase().includes(llm)
-  )) return 4;
-  
+  )) return 5; // other LLMs
+
   return 4;
 }
 
@@ -139,13 +142,13 @@ const MEDIUM_CONFIDENCE_SOURCES = [
 export function getSourceConfidence(sourceName: string, hasCitations: boolean = false): 'High' | 'Medium' | 'Low' {
   const sourceKey = sourceName.toLowerCase();
 
-  // CODE RED: Gemini has shown consistent data quality issues
-  // Always return 'Low' and flag for review
+  // Gemini: treat as Medium only when explicitly web-grounded (e.g., "Gemini 2.0 Search")
   if (sourceKey.includes('gemini')) {
-    return 'Low'; // Explicitly mark as lowest confidence
+    if (hasCitations || sourceKey.includes('2.0') || sourceKey.includes('search')) return 'Medium';
+    return 'Low';
   }
 
-  // Perplexity and Grok with citations = High
+// Perplexity and Grok with citations = High
   if ((sourceKey.includes('perplexity') || sourceKey.includes('grok')) && hasCitations) {
     return 'High';
   }
@@ -303,7 +306,7 @@ export function arbitrateField(
       confidence: getSourceConfidence(newSource, true), // Assume citations for Perplexity/Grok
       tier: newTier,
       timestamp,
-      llmSources: newTier === 4 ? [newSource] : undefined,
+      llmSources: newTier >= 4 ? [newSource] : undefined,
     };
     
     auditTrail.push({
@@ -348,7 +351,7 @@ export function arbitrateField(
   }
   
   if (newTier === existingField.tier && JSON.stringify(existingField.value) !== JSON.stringify(newValue)) {
-    if (newTier === 4) {
+    if (newTier >= 4) {
       const updatedField: FieldValue = {
         ...existingField,
         llmSources: [...(existingField.llmSources || [existingField.source]), newSource],
