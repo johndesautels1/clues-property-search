@@ -1,5 +1,5 @@
 /**
- * Zod Schema Definitions for Tier 3.5 Field Extraction
+ * Zod Schema Definitions for Tier 4 Gemini Field Extraction
  *
  * Type-safe schemas with validation rules.
  * Auto-converted to Gemini JSON schemas at runtime.

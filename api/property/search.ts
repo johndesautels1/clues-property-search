@@ -4487,14 +4487,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 
     // ========================================
-    // TIER 3.5: GEMINI STRUCTURED SEARCH (20 FIELDS)
+    // TIER 4: GEMINI STRUCTURED SEARCH (20 FIELDS)
     // ========================================
     console.log('========================================');
-    console.log('TIER 3.5: Gemini Structured Search');
+    console.log('TIER 4: Gemini Structured Search');
     console.log('========================================');
     
     
-    // Check if we need Tier 3.5 extraction
+    // Check if we need Gemini extraction
     const tier35Check = arbitrationPipeline.getResult();
     
     // Extract county from arbitration pipeline (Field 7 from Google Geocode)
@@ -4503,7 +4503,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (countyField && countyField.value) {
       countyName = String(countyField.value).replace(/\s+County$/i, '').trim();
     }
-    console.log(`[Tier 3.5] Detected county: ${countyName}`);
+    console.log(`[Tier 4 Gemini] Detected county: ${countyName}`);
     
     
     const tier35NeedsExtraction = TIER_35_FIELD_IDS.some(fieldId => {
@@ -4514,7 +4514,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     if (tier35NeedsExtraction) {
       try {
-        console.log(`[Tier 3.5] Launching Gemini batch extraction (County: ${countyName})...`);
+        console.log(`[Tier 4 Gemini] Launching Gemini batch extraction (County: ${countyName})...`);
         
         const geminiResults = await fetchAllMissingFields(searchQuery, countyName);
         
@@ -4533,7 +4533,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return;
           }
 
-          // FIX: Coerce string numbers to actual numbers for ALL Tier 3.5 numeric fields
+          // FIX: Coerce string numbers to actual numbers for ALL Gemini numeric fields
           // Fields that should be numbers: 12, 16, 31, 37, 60, 61, 62, 75, 76, 91, 95, 98, 116
           const numericFields = [12, 16, 31, 37, 60, 61, 62, 75, 76, 91, 95, 98, 116];
           if (typeof geminiField.value === 'string' && numericFields.includes(fieldId)) {
@@ -4548,7 +4548,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           if (fieldId === 37) {
             if (existingField?.source === 'Backend Calculation') {
               // Search takes priority over calculation
-              console.log(`[Tier 3.5] Field 37: Replacing calculation (${existingField.value}%) with search (${geminiField.value}%)`);
+              console.log(`[Tier 4 Gemini] Field 37: Replacing calculation (${existingField.value}%) with search (${geminiField.value}%)`);
               tier35Fields[fieldKey] = {
                 value: geminiField.value,
                 source: geminiField.source,
@@ -4567,7 +4567,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               tier35Added++;
             } else {
               // Higher tier source exists (MLS, API) - don't overwrite
-              console.log(`[Tier 3.5] Field 37: Keeping higher-tier source (${existingField.source})`);
+              console.log(`[Tier 4 Gemini] Field 37: Keeping higher-tier source (${existingField.source})`);
             }
             return;
           }
@@ -4578,10 +4578,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const diff = Math.abs(existingField.value - geminiField.value);
             
             if (diff > 5) { // >5 point difference threshold
-              console.warn(`[Tier 3.5] Field ${fieldId} discrepancy: WalkScore=${existingField.value}, Gemini=${geminiField.value}, diff=${diff}`);
+              console.warn(`[Tier 4 Gemini] Field ${fieldId} discrepancy: WalkScore=${existingField.value}, Gemini=${geminiField.value}, diff=${diff}`);
               // Keep WalkScore value but log discrepancy
             } else {
-              console.log(`[Tier 3.5] Field ${fieldId}: WalkScore and Gemini agree (within ${diff} points)`);
+              console.log(`[Tier 4 Gemini] Field ${fieldId}: WalkScore and Gemini agree (within ${diff} points)`);
             }
             return;
           }
@@ -4595,15 +4595,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               tier: geminiField.tier
             };
             tier35Added++;
-            console.log(`[Tier 3.5] Field ${fieldId}: Populated by Gemini (${geminiField.value})`);
+            console.log(`[Tier 4 Gemini] Field ${fieldId}: Populated by Gemini (${geminiField.value})`);
           } else if (existingField.tier && existingField.tier <= 3) {
             // Higher tier source exists (Tier 1-3: MLS, Google APIs, Free APIs)
             // Don't overwrite
-            console.log(`[Tier 3.5] Field ${fieldId}: Skipped - Tier ${existingField.tier} source exists (${existingField.source})`);
+            console.log(`[Tier 4 Gemini] Field ${fieldId}: Skipped - Tier ${existingField.tier} source exists (${existingField.source})`);
           } else {
             // Existing source is lower priority (Tier 4-5: LLMs) or no tier
             // Overwrite with Gemini
-            console.log(`[Tier 3.5] Field ${fieldId}: Replacing with Gemini`);
+            console.log(`[Tier 4 Gemini] Field ${fieldId}: Replacing with Gemini`);
             tier35Fields[fieldKey] = {
               value: geminiField.value,
               source: geminiField.source,
@@ -4615,18 +4615,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
         
         if (tier35Added > 0) {
-          arbitrationPipeline.addFieldsFromSource(tier35Fields, 'Gemini 2.0 Search (Tier 3.5)');
-          console.log(`✅ Added ${tier35Added} fields from Gemini Tier 3.5`);
+          arbitrationPipeline.addFieldsFromSource(tier35Fields, 'Gemini 2.0 Search');
+          console.log(`✅ Added ${tier35Added} fields from Gemini Tier 4`);
         } else {
-          console.log('⚠️  Gemini Tier 3.5 returned no new fields');
+          console.log('⚠️  Gemini Tier 4 returned no new fields');
         }
         
       } catch (error) {
-        console.error('[Tier 3.5] Gemini batch extraction failed:', error);
+        console.error('[Tier 4 Gemini] Gemini batch extraction failed:', error);
         // Fields remain null, will fall through to Tier 4
       }
     } else {
-      console.log('[Tier 3.5] Skipped - all Tier 3.5 fields already populated');
+      console.log('[Tier 4 Gemini] Skipped - all Tier 4 Gemini fields already populated');
     }
     
     console.log('========================================');

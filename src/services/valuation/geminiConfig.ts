@@ -1,5 +1,5 @@
 /**
- * Gemini 2.0 Flash Tier 3.5 - Structured Field Extraction
+ * Gemini 2.0 Flash Tier 4 - Structured Field Extraction
  *
  * Three specialist batches run in parallel:
  * - Batch 1: Public records (county sites)

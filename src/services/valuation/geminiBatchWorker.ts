@@ -1,5 +1,5 @@
 /**
- * Gemini 2.0 Flash Batch Worker - Tier 3.5 Field Extraction
+ * Gemini 2.0 Flash Batch Worker - Tier 4 Field Extraction
  *
  * Executes 3 specialist batches in parallel using Promise.allSettled
  * for graceful degradation (one batch failure doesn't kill the others).
@@ -39,7 +39,7 @@ const generationConfig = {
 };
 
 /**
- * Main entry point: Fetches all 20 Tier 3.5 fields in parallel
+ * Main entry point: Fetches all 20 Tier 4 Gemini fields in parallel
  *
  * @param address - Full property address
  * @param county - County name (e.g., "Hillsborough", "Pinellas")
@@ -53,7 +53,7 @@ export async function fetchAllMissingFields(
   // Construct full address with county for better search accuracy
   const fullAddress = `${address}, ${county} County, Florida`;
 
-  console.log(`[Tier 3.5] Starting Gemini batch extraction for: ${fullAddress}`);
+  console.log(`[Tier 4 Gemini] Starting Gemini batch extraction for: ${fullAddress}`);
 
   // Generate county-specific instructions for Batch 1
   const batch1Instructions = getBatch1Instructions(county);
@@ -74,17 +74,17 @@ export async function fetchAllMissingFields(
     const batchName = ["Public Records", "Neighborhood", "Portals"][index];
 
     if (result.status === 'fulfilled') {
-      console.log(`[Tier 3.5] ${batchName} batch succeeded`);
+      console.log(`[Tier 4 Gemini] ${batchName} batch succeeded`);
       Object.assign(rawMergedData, result.value);
     } else {
-      console.error(`[Tier 3.5] ${batchName} batch FAILED:`, result.reason);
-      // Failed batch fields will remain null and fall through to Tier 4
+      console.error(`[Tier 4 Gemini] ${batchName} batch FAILED:`, result.reason);
+      // Failed batch fields will remain null and fall through to other Tier 4 LLMs
     }
   });
 
   // Log extraction summary
   const extractedFields = Object.keys(rawMergedData).filter(k => rawMergedData[k] !== null);
-  console.log(`[Tier 3.5] Extracted ${extractedFields.length}/20 fields:`, extractedFields);
+  console.log(`[Tier 4 Gemini] Extracted ${extractedFields.length}/20 fields:`, extractedFields);
 
   // Convert Gemini's output format to app's field structure
   return mapGeminiResultToFields(rawMergedData);
@@ -155,8 +155,8 @@ SEARCH OPERATORS: ${searchHint}
 
 CRITICAL: Use the search operators above to find authoritative sources. Extract data only from the specified websites.`;
 
-    console.log(`[Tier 3.5 DEBUG] ${batchName} search operators:`, searchHint);
-    console.log(`[Tier 3.5 DEBUG] ${batchName} full prompt length:`, prompt.length);
+    console.log(`[Tier 4 Gemini DEBUG] ${batchName} search operators:`, searchHint);
+    console.log(`[Tier 4 Gemini DEBUG] ${batchName} full prompt length:`, prompt.length);
 
     const result = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -167,24 +167,24 @@ CRITICAL: Use the search operators above to find authoritative sources. Extract 
     });
 
     const duration = Date.now() - startTime;
-    console.log(`[Tier 3.5] ${batchName} completed in ${duration}ms`);
+    console.log(`[Tier 4 Gemini] ${batchName} completed in ${duration}ms`);
 
     // Parse JSON response
     const response = result.response.text();
-    console.log(`[Tier 3.5 DEBUG] ${batchName} raw response:`, response);
+    console.log(`[Tier 4 Gemini DEBUG] ${batchName} raw response:`, response);
 
     const parsedData = JSON.parse(response);
-    console.log(`[Tier 3.5 DEBUG] ${batchName} parsed data:`, JSON.stringify(parsedData, null, 2));
+    console.log(`[Tier 4 Gemini DEBUG] ${batchName} parsed data:`, JSON.stringify(parsedData, null, 2));
 
     // Count non-null fields
     const nonNullCount = Object.values(parsedData).filter(v => v !== null).length;
-    console.log(`[Tier 3.5 DEBUG] ${batchName} returned ${nonNullCount} non-null fields`);
+    console.log(`[Tier 4 Gemini DEBUG] ${batchName} returned ${nonNullCount} non-null fields`);
 
     // Validate with Zod
     const validation = validator(parsedData);
 
     if (!validation.success) {
-      console.warn(`[Tier 3.5] ${batchName} validation warnings:`, validation.error.issues);
+      console.warn(`[Tier 4 Gemini] ${batchName} validation warnings:`, validation.error.issues);
       // Return data anyway - Zod just logs issues but doesn't block
     }
 
@@ -192,7 +192,7 @@ CRITICAL: Use the search operators above to find authoritative sources. Extract 
 
   } catch (error) {
     const duration = Date.now() - startTime;
-    console.error(`[Tier 3.5] ${batchName} error after ${duration}ms:`, error);
+    console.error(`[Tier 4 Gemini] ${batchName} error after ${duration}ms:`, error);
     throw error; // Will be caught by Promise.allSettled
   }
 }
@@ -202,8 +202,8 @@ CRITICAL: Use the search operators above to find authoritative sources. Extract 
  *
  * Input:  { "37_tax_rate": 1.85, "60_roof_permit": "2021", ... }
  * Output: {
- *   37: { value: 1.85, source: "Gemini Tier 3.5", tier: 3.5, ... },
- *   60: { value: "2021", source: "Gemini Tier 3.5", tier: 3.5, ... }
+ *   37: { value: 1.85, source: "Gemini 2.0 Search", tier: 4, ... },
+ *   60: { value: "2021", source: "Gemini 2.0 Search", tier: 4, ... }
  * }
  *
  * @param geminiResult - Raw JSON from Gemini batches
@@ -221,8 +221,8 @@ function mapGeminiResultToFields(geminiResult: Record<string, any>): Record<numb
 
       finalFields[fieldId] = {
         value: value,
-        source: value !== null ? 'Gemini 2.0 Search (Tier 3.5)' : null,
-        tier: 3.5,
+        source: value !== null ? 'Gemini 2.0 Search' : null,
+        tier: 4,
         confidence: value !== null ? 'High' : 'Low',
         timestamp: new Date().toISOString(),
         metadata: {
@@ -237,14 +237,14 @@ function mapGeminiResultToFields(geminiResult: Record<string, any>): Record<numb
 }
 
 /**
- * Helper: Check if any Tier 3.5 fields are null and need extraction
+ * Helper: Check if any Tier 4 Gemini fields are null and need extraction
  *
  * @param fields - Current field state
- * @returns True if any Tier 3.5 fields need data
+ * @returns True if any Tier 4 Gemini fields need data
  */
 export function needsTier35Extraction(fields: Record<number, any>): boolean {
   return TIER_35_FIELD_IDS.some(fieldId => {
     const field = fields[fieldId];
-    return !field || field.value === null || field.tier > 3.5;
+    return !field || field.value === null || field.tier > 3;
   });
 }
