@@ -4615,14 +4615,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
         
         if (tier35Added > 0) {
-          arbitrationPipeline.addFieldsFromSource(tier35Fields, 'Gemini 2.0 Search');
-          console.log(`✅ Added ${tier35Added} fields from Gemini Tier 4`);
+          try {
+            console.log(`[DEBUG] About to add ${tier35Added} Gemini fields to arbitration pipeline...`);
+            arbitrationPipeline.addFieldsFromSource(tier35Fields, 'Gemini 2.0 Search');
+            console.log(`✅ Added ${tier35Added} fields from Gemini Tier 4`);
+          } catch (addError) {
+            console.error('[CRITICAL ERROR] arbitrationPipeline.addFieldsFromSource() threw exception:', addError);
+            console.error('[CRITICAL ERROR] Stack trace:', (addError as Error).stack);
+            console.error('[CRITICAL ERROR] tier35Fields:', JSON.stringify(tier35Fields, null, 2));
+          }
         } else {
           console.log('⚠️  Gemini Tier 4 returned no new fields');
         }
 
       } catch (error) {
         console.error('[Tier 4 Gemini] Gemini batch extraction failed:', error);
+        console.error('[Tier 4 Gemini] Stack trace:', (error as Error).stack);
         // Fields remain null, will fall through to Tier 4
       }
     } else {
