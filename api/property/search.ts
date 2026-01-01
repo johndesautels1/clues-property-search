@@ -2273,6 +2273,7 @@ JSON format: { "111_internet_providers_top3": { "value": ["Spectrum", "Frontier"
 async function callPerplexityHelper(promptName: string, userPrompt: string): Promise<Record<string, any>> {
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) {
+    console.error(`❌ [Perplexity ${promptName}] PERPLEXITY_API_KEY not set`);
     return {};
   }
 
@@ -2299,7 +2300,8 @@ async function callPerplexityHelper(promptName: string, userPrompt: string): Pro
     const data = await response.json();
 
     if (!response.ok) {
-      console.error(`❌ [Perplexity ${promptName}] API error:`, response.status, data);
+      console.error(`❌ [Perplexity ${promptName}] API error: ${response.status} ${response.statusText}`);
+      console.error(`❌ [Perplexity ${promptName}] Error data:`, JSON.stringify(data, null, 2));
       return {};
     }
 
@@ -2307,7 +2309,8 @@ async function callPerplexityHelper(promptName: string, userPrompt: string): Pro
       const text = data.choices[0].message.content;
       console.log(`✅ [Perplexity ${promptName}] Response received (${text.length} chars)`);
 
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      // FIX: Use non-greedy regex to match FIRST JSON object only
+      const jsonMatch = text.match(/\{[\s\S]*?\}/);
       if (jsonMatch) {
         try {
           const parsed = JSON.parse(jsonMatch[0]);
@@ -2321,25 +2324,33 @@ async function callPerplexityHelper(promptName: string, userPrompt: string): Pro
 
           // Upgrade confidence to High for Perplexity (has web search)
           for (const key of Object.keys(filteredFields)) {
-            filteredFields[key].confidence = 'High';
-            if (!filteredFields[key].source.includes('Perplexity')) {
-              filteredFields[key].source = `${filteredFields[key].source} (via Perplexity)`;
+            // FIX: Add defensive check for source property
+            if (filteredFields[key] && typeof filteredFields[key] === 'object') {
+              filteredFields[key].confidence = 'High';
+              if (filteredFields[key].source && !filteredFields[key].source.includes('Perplexity')) {
+                filteredFields[key].source = `${filteredFields[key].source} (via Perplexity)`;
+              }
             }
           }
 
           return filteredFields;
         } catch (parseError) {
           console.error(`❌ [Perplexity ${promptName}] JSON parse error:`, parseError);
+          console.error(`❌ [Perplexity ${promptName}] Response text:`, text);
+          console.error(`❌ [Perplexity ${promptName}] JSON match:`, jsonMatch[0]);
         }
       } else {
         console.log(`❌ [Perplexity ${promptName}] No JSON found in response`);
+        console.log(`❌ [Perplexity ${promptName}] Response text:`, text);
       }
     } else {
       console.log(`❌ [Perplexity ${promptName}] No content in response`);
+      console.log(`❌ [Perplexity ${promptName}] Response data:`, JSON.stringify(data, null, 2));
     }
     return {};
   } catch (error) {
     console.error(`❌ [Perplexity ${promptName}] Error:`, error);
+    console.error(`❌ [Perplexity ${promptName}] Stack:`, (error as Error).stack);
     return {};
   }
 }
@@ -4609,11 +4620,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     
     console.log('========================================');
-    console.log('');
+    console.log('TIER 4: LLM CASCADE (Perplexity Micro-Prompts + Other LLMs)');
+    console.log('========================================');
 
-    // ========================================
-    // TIER 4: LLM CASCADE (Unified Perplexity + other LLMs)
-    // ========================================
     if (!skipLLMs) {
       const intermediateResult = arbitrationPipeline.getResult();
       const currentFieldCount = Object.keys(intermediateResult.fields).length;
@@ -4769,9 +4778,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
 
           console.log(`=== LLM processing complete. Total fields: ${arbitrationPipeline.getFieldCount()} ===\n`);
+        } else {
+          console.log('[TIER 4] ⚠️  No LLMs enabled');
+          console.log('[TIER 4] engines parameter:', engines);
+          console.log('[TIER 4] valid engines:', ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini']);
+          console.log('[TIER 4] Enabled LLMs: 0 - skipping LLM cascade');
         }
       }
       // Removed "Sufficient data" skip logic - LLMs always run if enabled
+    } else {
+      console.log('[TIER 4] ⏭️  SKIPPED - skipLLMs flag is true');
+      console.log('[TIER 4] To enable LLMs, pass skipLLMs: false in request or check default settings');
     }
 
     // ========================================
