@@ -116,7 +116,31 @@ async function executeWorker(
       tools: [{ googleSearch: {} }] as any, // Enable Google Search grounding
     });
 
-    const prompt = `Address: ${address}\n\n${instructions}`;
+    // Normalize address for better search results (COURT → CT, STREET → ST, etc.)
+    const normalizedAddress = address
+      .replace(/\bCOURT\b/gi, 'CT')
+      .replace(/\bSTREET\b/gi, 'ST')
+      .replace(/\bDRIVE\b/gi, 'DR')
+      .replace(/\bAVENUE\b/gi, 'AVE')
+      .replace(/\bBOULEVARD\b/gi, 'BLVD');
+
+    // Add search hints based on batch type
+    let searchHint = address;
+    if (batchName.includes('Public Records')) {
+      // For Batch 1: Add "Property Appraiser" and "building permits" to prioritize .gov sites
+      const county = address.match(/,\s*(\w+)\s+County/)?.[1] || '';
+      searchHint = `${address} AND ${normalizedAddress} ${county} County Property Appraiser building permits tax records`;
+    } else if (batchName.includes('Neighborhood')) {
+      // For Batch 2: Add WalkScore and market data hints
+      searchHint = `${address} WalkScore transit bike score median home price days on market`;
+    } else if (batchName.includes('Portals')) {
+      // For Batch 3: Add Zillow/Redfin hints
+      searchHint = `${address} Zestimate "Redfin Estimate" rental estimate HOA`;
+    }
+
+    const prompt = `Address: ${searchHint}\n\n${instructions}`;
+
+    console.log(`[Tier 3.5 DEBUG] ${batchName} search hint:`, searchHint);
 
     const result = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -131,7 +155,14 @@ async function executeWorker(
 
     // Parse JSON response
     const response = result.response.text();
+    console.log(`[Tier 3.5 DEBUG] ${batchName} raw response:`, response);
+
     const parsedData = JSON.parse(response);
+    console.log(`[Tier 3.5 DEBUG] ${batchName} parsed data:`, JSON.stringify(parsedData, null, 2));
+
+    // Count non-null fields
+    const nonNullCount = Object.values(parsedData).filter(v => v !== null).length;
+    console.log(`[Tier 3.5 DEBUG] ${batchName} returned ${nonNullCount} non-null fields`);
 
     // Validate with Zod
     const validation = validator(parsedData);
