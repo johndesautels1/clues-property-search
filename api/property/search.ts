@@ -4416,7 +4416,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let countyName = 'Unknown';
     const countyField = tier35Check.fields['7_county'];
     if (countyField && countyField.value) {
-      countyName = String(countyField.value).replace(/s+County$/i, '').trim();
+      countyName = String(countyField.value).replace(/\s+County$/i, '').trim();
     }
     console.log(`[Tier 3.5] Detected county: ${countyName}`);
     
