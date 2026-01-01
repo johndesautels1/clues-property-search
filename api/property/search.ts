@@ -4527,10 +4527,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const geminiField = geminiResults[fieldId];
           const fieldKey = `${fieldId}_`;
           const existingField = tier35Check.fields[fieldKey];
-          
+
           // Skip if Gemini didn't find data
           if (!geminiField || geminiField.value === null) {
             return;
+          }
+
+          // FIX: Coerce string numbers to actual numbers
+          if (typeof geminiField.value === 'string') {
+            const numValue = parseFloat(geminiField.value.replace(/[^0-9.-]/g, ''));
+            if (!isNaN(numValue) && [37, 75, 76, 91, 95, 116].includes(fieldId)) {
+              geminiField.value = numValue;
+            }
           }
           
           // SPECIAL CASE: Field 37 (Tax Rate)
