@@ -112,8 +112,22 @@ MANDATORY TOOL: Use 'google_search' to find data from:
 - Homes.com (listing details)
 
 FIELD EXTRACTION RULES:
-- Field 12 (Market Value): Calculate the average of Zestimate and Redfin Estimate. If only one available, use that value.
-- Field 16 (Redfin Estimate): Extract the exact "Redfin Estimate" value (not the average).
+
+Field 12 (Market Value):
+- Find the home value estimate from these 4 sources:
+  1. Zillow.com - Look for "Zestimate" on the property page
+  2. Realtor.com - Look for home value estimate
+  3. Homes.com - Look for home value estimate
+  4. Redfin.com - Look for "Redfin Estimate"
+- Extract ONE value from each source (if available)
+- If only 1 source has a value, return that value
+- If 2 or more sources have values, calculate AVERAGE = (Sum of all values) ÷ (Count of values)
+- Example: If Zillow=$500k, Redfin=$520k, Realtor=$510k → AVERAGE = (500000+520000+510000)÷3 = 510000
+- DO NOT add values together without dividing
+- DO NOT use list price or tax assessed value
+- Return as integer (e.g., 500000 not $500,000)
+
+Field 16 (Redfin Estimate): Extract the exact "Redfin Estimate" value (not the average).
 - Field 31 (HOA Fee Annual): Find the annual HOA fee. If monthly is shown, multiply by 12.
 - Field 33 (HOA Includes): List exactly what HOA covers (e.g., "Pool, Trash, Landscaping").
 - Field 98 (Rental Estimate): Extract "Rent Zestimate" from Zillow or "Rental Estimate" from Redfin.
