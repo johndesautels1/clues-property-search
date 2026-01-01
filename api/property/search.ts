@@ -4479,7 +4479,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           
           // VALIDATION MODE: Fields 75, 76 (Transit/Bike Scores)
           // WalkScore API runs first, Gemini validates
-          if ((fieldId === 75 || fieldId === 76) && existingField?.value !== null) {
+          if ((fieldId === 75 || fieldId === 76) && existingField && existingField.value != null) {
             const diff = Math.abs(existingField.value - geminiField.value);
             
             if (diff > 5) { // >5 point difference threshold
