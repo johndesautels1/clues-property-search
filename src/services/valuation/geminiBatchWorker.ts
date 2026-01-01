@@ -124,23 +124,39 @@ async function executeWorker(
       .replace(/\bAVENUE\b/gi, 'AVE')
       .replace(/\bBOULEVARD\b/gi, 'BLVD');
 
-    // Add search hints based on batch type
-    let searchHint = address;
+    // Add search hints based on batch type with site: operators for targeted search
+    let searchHint = '';
+    let searchStrategy = '';
+
     if (batchName.includes('Public Records')) {
-      // For Batch 1: Add "Property Appraiser" and "building permits" to prioritize .gov sites
+      // For Batch 1: Force .gov sites for official records
       const county = address.match(/,\s*(\w+)\s+County/)?.[1] || '';
-      searchHint = `${address} AND ${normalizedAddress} ${county} County Property Appraiser building permits tax records`;
+      searchHint = `site:.gov OR site:.us ${county} County Florida Property Appraiser`;
+      searchStrategy = `1. Search ${county} County Property Appraiser website for tax data\n2. Search ${county} County Building Department for permit records\n3. Focus on finaled/approved permits with specific years`;
     } else if (batchName.includes('Neighborhood')) {
-      // For Batch 2: Add WalkScore and market data hints
-      searchHint = `${address} WalkScore transit bike score median home price days on market`;
+      // For Batch 2: Target WalkScore and Redfin for ZIP-level data
+      searchHint = `site:walkscore.com OR site:redfin.com`;
+      searchStrategy = `1. Search WalkScore.com for exact address to get Transit Score and Bike Score\n2. Search Redfin.com for ZIP code market data (median price, days on market)\n3. Search for nearest emergency room location`;
     } else if (batchName.includes('Portals')) {
-      // For Batch 3: Add Zillow/Redfin hints
-      searchHint = `${address} Zestimate "Redfin Estimate" rental estimate HOA`;
+      // For Batch 3: Target Zillow and Redfin for estimates
+      searchHint = `site:zillow.com OR site:redfin.com OR site:realtor.com`;
+      searchStrategy = `1. Search Zillow for Zestimate and Rent Zestimate\n2. Search Redfin for Redfin Estimate\n3. Search listing details for HOA fees and view type`;
     }
 
-    const prompt = `Address: ${searchHint}\n\n${instructions}`;
+    const prompt = `${instructions}
 
-    console.log(`[Tier 3.5 DEBUG] ${batchName} search hint:`, searchHint);
+PROPERTY ADDRESS: ${address}
+NORMALIZED ADDRESS: ${normalizedAddress}
+
+SEARCH STRATEGY:
+${searchStrategy}
+
+SEARCH OPERATORS: ${searchHint}
+
+CRITICAL: Use the search operators above to find authoritative sources. Extract data only from the specified websites.`;
+
+    console.log(`[Tier 3.5 DEBUG] ${batchName} search operators:`, searchHint);
+    console.log(`[Tier 3.5 DEBUG] ${batchName} full prompt length:`, prompt.length);
 
     const result = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
