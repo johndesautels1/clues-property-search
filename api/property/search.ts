@@ -5034,7 +5034,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Convert arbitration fields to frontend DataField format
     const convertedFields: Record<string, any> = {};
     for (const [key, field] of Object.entries(arbitrationResult.fields)) {
-      let parsedValue = field.value;
+      // Extract actual value - handle both simple values and nested {value, source, confidence} objects
+      let parsedValue = typeof field.value === 'object' && field.value !== null && 'value' in field.value
+        ? field.value.value
+        : field.value;
 
       // Parse dates if they look like date strings
       if (typeof parsedValue === 'string' && /^\d{4}-\d{2}-\d{2}/.test(parsedValue)) {
