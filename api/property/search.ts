@@ -2679,7 +2679,6 @@ RESPONSE FORMAT - Return ONLY valid JSON with EXACT field keys above (replace AL
     "10_listing_price": { "value": <actual_number>, "source": "Zillow.com", "confidence": "High" },
     "7_county": { "value": "<actual_county>", "source": "Geographic knowledge", "confidence": "High" },
     "35_annual_taxes": { "value": <actual_number>, "source": "County Property Appraiser", "confidence": "High" },
-    "15_assessed_value": { "value": null, "source": "Not found", "confidence": "Unverified" },
     "17_bedrooms": { "value": <actual_number>, "source": "Zillow.com", "confidence": "High" },
     "21_living_sqft": { "value": <actual_number>, "source": "County Records", "confidence": "High" }
   },
@@ -2689,8 +2688,11 @@ RESPONSE FORMAT - Return ONLY valid JSON with EXACT field keys above (replace AL
   "note": "Use ACTUAL values from web search or knowledge for THIS SPECIFIC PROPERTY"
 }
 
-CRITICAL: Use EXACT field key format: [number]_[field_name] (e.g., "10_listing_price", "7_county", "17_bedrooms")
-DO NOT use variations like "listing_price", "listingPrice", "7. listing_price", or "field_7"`;
+CRITICAL RULES:
+- Use EXACT field key format: [number]_[field_name] (e.g., "10_listing_price", "7_county", "17_bedrooms")
+- DO NOT use variations like "listing_price", "listingPrice", "7. listing_price", or "field_7"
+- If you cannot find verified data for a field, DO NOT include it in your response (OMIT it entirely)
+- NEVER return fields with null values - simply omit fields you cannot verify from sources`;
 
 // ============================================
 // GROK PROMPT - HAS WEB SEARCH - Use it!
