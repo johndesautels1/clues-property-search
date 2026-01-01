@@ -4408,14 +4408,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('TIER 3.5: Gemini Structured Search');
     console.log('========================================');
     
-    // Extract county from geocoding result
-    let countyName = 'Unknown';
-    if (geocodeResult && geocodeResult.county) {
-      countyName = geocodeResult.county.replace(' County', ''); // Remove "County" suffix if present
-    }
     
     // Check if we need Tier 3.5 extraction
     const tier35Check = arbitrationPipeline.getResult();
+    
+    // Extract county from arbitration pipeline (Field 7 from Google Geocode)
+    let countyName = 'Unknown';
+    const countyField = tier35Check.fields['7_county'];
+    if (countyField && countyField.value) {
+      countyName = String(countyField.value).replace(/s+County$/i, '').trim();
+    }
+    console.log(`[Tier 3.5] Detected county: ${countyName}`);
+    
+    
     const tier35NeedsExtraction = TIER_35_FIELD_IDS.some(fieldId => {
       const key = `${fieldId}_`;
       const existingField = tier35Check.fields[key];
