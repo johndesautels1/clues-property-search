@@ -4446,7 +4446,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Property Search: searchQuery is already full address (no change needed)
     // Manual tab MLS#: searchQuery is "MLS# TB1234567", need real address from field 1_full_address
     const intermediateResultForAddress = arbitrationPipeline.getResult();
-    const realAddress = intermediateResultForAddress.fields['1_full_address']?.value || searchQuery;
+    const addressField = intermediateResultForAddress.fields['1_full_address'];
+    const realAddress = (typeof addressField?.value === 'string' ? addressField.value :
+                        typeof addressField?.value?.value === 'string' ? addressField.value.value :
+                        searchQuery);
 
     if (realAddress !== searchQuery) {
       console.log('========================================');
@@ -4728,9 +4731,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log(`\nStep 2: LLM Cascade (${currentFieldCount}/138 fields filled)...`);
 
         // Extract context for Perplexity micro-prompts (for disambiguation)
+        const addressFieldValue = intermediateResult.fields['1_full_address']?.value;
+        const addressString = typeof addressFieldValue === 'string' ? addressFieldValue :
+                             typeof addressFieldValue?.value === 'string' ? addressFieldValue.value : '';
         const perplexityContext = {
           county: intermediateResult.fields['7_county']?.value || 'Unknown',
-          city: intermediateResult.fields['1_full_address']?.value?.split(',')[1]?.trim() || 'Unknown',
+          city: addressString ? addressString.split(',')[1]?.trim() || 'Unknown' : 'Unknown',
           parcelId: intermediateResult.fields['9_parcel_id']?.value || 'Unknown'
         };
         console.log('[Perplexity Context]', perplexityContext);
