@@ -49,6 +49,8 @@ import { sanitizeAddress, isValidAddress, safeFetch } from '../../src/lib/safe-j
 import { callCrimeGrade, callSchoolDigger, callGreatSchools, callFEMARiskIndex, callNOAAClimate, callNOAAStormEvents, callNOAASeaLevel, callUSGSElevation, callUSGSEarthquake, callEPAFRS, getRadonRisk, callGoogleStreetView, callGoogleSolarAPI, callHowLoud/*, callRedfinProperty*/ } from './free-apis.js';
 import { STELLAR_MLS_SOURCE, FBI_CRIME_SOURCE } from './source-constants.js';
 import { calculateAllDerivedFields, type PropertyData } from '../../src/lib/calculate-derived-fields.js';
+import { fetchAllMissingFields, needsTier35Extraction } from '../../src/services/valuation/geminiBatchWorker.js';
+import { TIER_35_FIELD_IDS } from '../../src/services/valuation/geminiConfig.js';
 
 
 // ============================================
@@ -4397,6 +4399,138 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } else {
       console.log('Skipping free APIs - using cached data from previous session');
     }
+
+
+    // ========================================
+    // TIER 3.5: GEMINI STRUCTURED SEARCH (20 FIELDS)
+    // ========================================
+    console.log('========================================');
+    console.log('TIER 3.5: Gemini Structured Search');
+    console.log('========================================');
+    
+    // Extract county from geocoding result
+    let countyName = 'Unknown';
+    if (geocodeResult && geocodeResult.county) {
+      countyName = geocodeResult.county.replace(' County', ''); // Remove "County" suffix if present
+    }
+    
+    // Check if we need Tier 3.5 extraction
+    const tier35Check = arbitrationPipeline.getResult();
+    const tier35NeedsExtraction = TIER_35_FIELD_IDS.some(fieldId => {
+      const key = `${fieldId}_`;
+      const existingField = tier35Check.fields[key];
+      return !existingField || existingField.value === null;
+    });
+    
+    if (tier35NeedsExtraction) {
+      try {
+        console.log(`[Tier 3.5] Launching Gemini batch extraction (County: ${countyName})...`);
+        
+        const geminiResults = await fetchAllMissingFields(searchQuery, countyName);
+        
+        // Merge logic with Field 37 special handling
+        const tier35Fields: Record<string, FieldValue> = {};
+        let tier35Added = 0;
+        
+        Object.keys(geminiResults).forEach(fieldIdStr => {
+          const fieldId = parseInt(fieldIdStr);
+          const geminiField = geminiResults[fieldId];
+          const fieldKey = `${fieldId}_`;
+          const existingField = tier35Check.fields[fieldKey];
+          
+          // Skip if Gemini didn't find data
+          if (!geminiField || geminiField.value === null) {
+            return;
+          }
+          
+          // SPECIAL CASE: Field 37 (Tax Rate)
+          // Prefer Gemini search over backend calculation
+          if (fieldId === 37) {
+            if (existingField?.source === 'Backend Calculation') {
+              // Search takes priority over calculation
+              console.log(`[Tier 3.5] Field 37: Replacing calculation (${existingField.value}%) with search (${geminiField.value}%)`);
+              tier35Fields[fieldKey] = {
+                value: geminiField.value,
+                source: geminiField.source,
+                confidence: geminiField.confidence,
+                tier: geminiField.tier
+              };
+              tier35Added++;
+            } else if (!existingField || existingField.value === null) {
+              // No existing data
+              tier35Fields[fieldKey] = {
+                value: geminiField.value,
+                source: geminiField.source,
+                confidence: geminiField.confidence,
+                tier: geminiField.tier
+              };
+              tier35Added++;
+            } else {
+              // Higher tier source exists (MLS, API) - don't overwrite
+              console.log(`[Tier 3.5] Field 37: Keeping higher-tier source (${existingField.source})`);
+            }
+            return;
+          }
+          
+          // VALIDATION MODE: Fields 75, 76 (Transit/Bike Scores)
+          // WalkScore API runs first, Gemini validates
+          if ((fieldId === 75 || fieldId === 76) && existingField?.value !== null) {
+            const diff = Math.abs(existingField.value - geminiField.value);
+            
+            if (diff > 5) { // >5 point difference threshold
+              console.warn(`[Tier 3.5] Field ${fieldId} discrepancy: WalkScore=${existingField.value}, Gemini=${geminiField.value}, diff=${diff}`);
+              // Keep WalkScore value but log discrepancy
+            } else {
+              console.log(`[Tier 3.5] Field ${fieldId}: WalkScore and Gemini agree (within ${diff} points)`);
+            }
+            return;
+          }
+          
+          // STANDARD MERGE: Only populate if field is null or from lower tier
+          if (!existingField || existingField.value === null) {
+            tier35Fields[fieldKey] = {
+              value: geminiField.value,
+              source: geminiField.source,
+              confidence: geminiField.confidence,
+              tier: geminiField.tier
+            };
+            tier35Added++;
+            console.log(`[Tier 3.5] Field ${fieldId}: Populated by Gemini (${geminiField.value})`);
+          } else if (existingField.tier && existingField.tier <= 3) {
+            // Higher tier source exists (Tier 1-3: MLS, Google APIs, Free APIs)
+            // Don't overwrite
+            console.log(`[Tier 3.5] Field ${fieldId}: Skipped - Tier ${existingField.tier} source exists (${existingField.source})`);
+          } else {
+            // Existing source is lower priority (Tier 4-5: LLMs) or no tier
+            // Overwrite with Gemini
+            console.log(`[Tier 3.5] Field ${fieldId}: Replacing with Gemini`);
+            tier35Fields[fieldKey] = {
+              value: geminiField.value,
+              source: geminiField.source,
+              confidence: geminiField.confidence,
+              tier: geminiField.tier
+            };
+            tier35Added++;
+          }
+        });
+        
+        if (tier35Added > 0) {
+          arbitrationPipeline.addFieldsFromSource(tier35Fields, 'Gemini 2.0 Search (Tier 3.5)');
+          console.log(`✅ Added ${tier35Added} fields from Gemini Tier 3.5`);
+        } else {
+          console.log('⚠️  Gemini Tier 3.5 returned no new fields');
+        }
+        
+      } catch (error) {
+        console.error('[Tier 3.5] Gemini batch extraction failed:', error);
+        // Fields remain null, will fall through to Tier 4
+      }
+    } else {
+      console.log('[Tier 3.5] Skipped - all Tier 3.5 fields already populated');
+    }
+    
+    console.log('========================================');
+    console.log('');
 
     // ========================================
     // TIER 4: LLM CASCADE (Unified Perplexity + other LLMs)
