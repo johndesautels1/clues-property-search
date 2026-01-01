@@ -4386,8 +4386,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const mlsFields: Record<string, FieldValue> = {};
             for (const [key, fieldData] of Object.entries(bridgeData.fields)) {
               const field = fieldData as any;
+              // Extract actual value from nested Bridge MLS response format
+              const actualValue = typeof field.value === 'object' && field.value !== null && 'value' in field.value
+                ? field.value.value
+                : field.value;
               mlsFields[key] = {
-                value: field.value,
+                value: actualValue,
                 source: field.source || STELLAR_MLS_SOURCE,
                 confidence: field.confidence || 'High',
                 tier: 1
