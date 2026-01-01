@@ -2067,141 +2067,219 @@ async function enrichWithFreeAPIs(
 // web search instructions at top, NO NULL VALUES ALLOWED
 // ============================================
 
-async function callPerplexity(address: string): Promise<Record<string, any>> {
+// ============================================
+// PERPLEXITY MICRO-PROMPTS (5 source-centric prompts)
+// Based on Perplexity team guidance (Jan 1, 2026)
+// Each prompt: 1,000-1,300 tokens, 10-20 fields, 90% confidence threshold
+// ============================================
+
+/**
+ * PROMPT 1: Portal Data (Zillow, Redfin, Realtor.com)
+ * Fields: 10, 12, 16-19, 21, 26, 28, 30-33, 44, 54-55, 59, 98, 102-103 (20 fields)
+ */
+async function callPerplexityPortals(address: string, context: any = {}): Promise<Record<string, any>> {
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) {
     console.log('❌ PERPLEXITY_API_KEY not set');
     return {};
   }
 
-  // UNIFIED RETRIEVAL-ONLY PROMPT (combines 7 micro-prompts + general research)
-  const userPrompt = `You are a retrieval-only real estate research agent with LIVE WEB SEARCH capabilities.
+  const userPrompt = `You are a retrieval-only real estate research agent with LIVE WEB SEARCH.
 
-Your mission: For the property at:
+Property address: "${address}"
 
-"${address}"
+Known context (for disambiguation only):
+- County: ${context.county || 'Unknown'}
+- City: ${context.city || 'Unknown'}
 
-research and extract ALL relevant data for the specific fields listed below, using the strict retrieval rules in this prompt. You must use web search, consult multiple reputable sources, and return ONLY explicitly stated information. For every populated field, include a source and source_url.
+Goal: Extract ONLY explicitly stated values from major listing portals (Redfin, Zillow, Realtor.com, Trulia, Homes.com).
 
-Global rules (apply to everything):
-- You are a retrieval-only agent.
-- Use web search to locate authoritative, original, or well-established data sources.
-- Do NOT guess, infer, estimate, or interpolate any values.
-- Only return values that are explicitly stated on a page.
-- If a field cannot be confidently populated from an explicit statement, omit that field entirely.
-- Do NOT use hedging or approximation words such as "likely", "possibly", "about", "around", "approximately", "roughly", or similar.
-- Do NOT compute your own indices, ratings, or distances.
-- For every field you populate:
-  - Include "source" as either the site name or provider.
-  - Include "source_url" as the page URL where the value was found.
-- If multiple sources disagree, prioritize:
-  1. Official government or county records
-  2. Original provider sites (e.g., WalkScore, FEMA, BroadbandNow, official utilities)
-  3. Major real estate portals (Zillow, Redfin, Realtor.com, Trulia, Homes.com)
-- Omit any field you cannot reliably retrieve.
-- Output JSON ONLY, with no commentary, no explanations, and no extra keys beyond those specified.
+Target fields:
+10_listing_price, 12_market_value_estimate, 16_redfin_estimate, 17_bedrooms, 18_full_bathrooms, 19_half_bathrooms, 21_living_sqft, 26_property_type, 28_garage_spaces, 30_hoa_yn, 31_hoa_fee_annual, 32_hoa_name, 33_hoa_includes, 44_garage_type, 54_pool_yn, 55_pool_type, 59_recent_renovations, 98_rental_estimate_monthly, 102_financing_terms, 103_comparable_sales
 
-Required search strategy:
-Perform a focused but thorough set of searches, including but not limited to:
+Rules:
+- Use ONLY these portals: Redfin, Zillow, Realtor.com, Trulia, Homes.com
+- If 90%+ confident, include field with: value, source, source_url
+- If <90% confident, omit field entirely
+- Never guess, infer, or use AI summaries
+- Prefer Redfin > Zillow > Realtor.com for conflicts
+- Output JSON ONLY, no commentary
 
-General listing and property data:
-- "${address} Zillow"
-- "${address} Redfin"
-- "${address} Realtor.com"
-- "${address} Trulia"
-- "${address} Homes.com"
+Search patterns:
+"${address} Redfin", "${address} Zillow", "${address} Realtor.com"
 
-County records and tax/ownership/parcel data:
-- "[County Name] Property Appraiser ${address}"
-- "[County Name] Assessor ${address}"
+JSON format: { "10_listing_price": { "value": 500000, "source": "Redfin", "source_url": "https://..." }, ... }`;
 
-Sale history and market context:
-- "${address} sold"
-- "[Neighborhood] median home price"
-- "[ZIP code] real estate market"
+  return await callPerplexityHelper('Portals', userPrompt);
+}
 
-Schools and ratings:
-- "Schools near ${address}"
-- "${address} GreatSchools"
+/**
+ * PROMPT 2: County Records & Permits
+ * Fields: 9, 13-15, 35-38, 60-62, 149-153 (16 fields)
+ */
+async function callPerplexityCounty(address: string, context: any = {}): Promise<Record<string, any>> {
+  const apiKey = process.env.PERPLEXITY_API_KEY;
+  if (!apiKey) {
+    console.log('❌ PERPLEXITY_API_KEY not set');
+    return {};
+  }
 
-Walkability and transportation:
-- "${address} WalkScore"
+  const userPrompt = `You are a retrieval-only real estate research agent with LIVE WEB SEARCH.
 
-Crime and safety:
-- "${address} NeighborhoodScout"
-- "${address} CrimeGrade"
-- "[City or County] crime statistics ${address}"
+Property address: "${address}"
 
-Climate, hazards, and environmental risk:
-- "[ZIP code] flood zone FEMA"
-- "${address} flood risk FirstStreet"
-- "${address} ClimateCheck"
-- "[City] air quality index AirNow"
+Known context (for disambiguation only):
+- County: ${context.county || 'Unknown'}
+- Parcel ID: ${context.parcelId || 'Unknown'}
 
-Utilities and ISPs:
-- "[City] electric utility provider"
-- "[City] water utility provider"
-- "[City] sewer utility provider"
-- "[City] trash collection services"
-- "${address} BroadbandNow"
-- "${address} fiber internet availability"
-- "${address} cell coverage"
+Goal: Extract ONLY explicitly stated values from official county .gov websites.
 
-Points of interest (distances):
-- "Google Maps ${address} nearest grocery store"
-- "Google Maps ${address} nearest hospital"
-- "Google Maps ${address} nearest airport"
-- "Google Maps ${address} nearest park"
-- "Google Maps ${address} nearest beach"
+Target fields:
+9_parcel_id, 13_last_sale_date, 14_last_sale_price, 15_assessed_value, 35_annual_taxes, 36_tax_year, 37_property_tax_rate, 38_tax_exemptions, 60_permit_history_roof, 61_permit_history_hvac, 62_permit_history_other, 149_subdivision_name, 150_legal_description, 151_homestead_yn, 152_cdd_yn, 153_annual_cdd_fee
 
-Use these patterns to locate the most reliable, explicit values for each of the fields below.
+Rules:
+- Use ONLY official county .gov sites (Property Appraiser, Tax Collector, Building Dept)
+- If 90%+ confident, include field
+- You MAY compute 37_property_tax_rate as: (35_annual_taxes ÷ 15_assessed_value) × 100 if both explicit
+- Never use Zillow/Redfin for county data
+- Output JSON ONLY
 
-Domain-specific rules:
+Search patterns:
+"${context.county} County Property Appraiser ${address}", "${context.county} County Building Permits ${address}", "site:.gov ${context.county} ${address} parcel"
 
-Walkability metrics (WalkScore):
-- Use web search ONLY to find pages from WalkScore.com.
-- Retrieve walk_score, transit_score, and bike_score ONLY if explicitly shown.
-- Do NOT guess or derive scores from any other source.
-- If a given score is not explicitly present, omit that field.
+JSON format: { "35_annual_taxes": { "value": 15392, "source": "County Tax Collector", "source_url": "https://..." }, ... }`;
 
-Schools and ratings:
-- Use web search ONLY on GreatSchools.org or official school district websites.
-- Retrieve: School district name, Elementary/middle/high school names, GreatSchools ratings (1–10 scale), Distance in miles to each school
-- Do NOT infer attendance boundaries or ratings.
-- Omit any school-related field if not clearly stated.
+  return await callPerplexityHelper('County', userPrompt);
+}
 
-Crime and safety:
-- Use web search ONLY on reputable crime data providers: NeighborhoodScout, CrimeGrade, Official police/open-data portals
-- Retrieve only: Violent crime index, Property crime index, Neighborhood safety rating (A–F or 1–10)
-- Do NOT compute your own index.
+/**
+ * PROMPT 3: Schools & Ratings
+ * Fields: 63, 65-73 (10 fields)
+ */
+async function callPerplexitySchools(address: string, context: any = {}): Promise<Record<string, any>> {
+  const apiKey = process.env.PERPLEXITY_API_KEY;
+  if (!apiKey) {
+    console.log('❌ PERPLEXITY_API_KEY not set');
+    return {};
+  }
 
-Climate and environmental risk:
-- Use web search ONLY on authoritative sources: FEMA.gov, NOAA.gov, FirstStreet.org, ClimateCheck.com, AirNow.gov
-- Retrieve ONLY explicitly stated values for: AQI, air quality grade, FEMA flood zone, flood risk, climate/wildfire/earthquake/hurricane/tornado/radon risks, sea level rise, solar potential
-- Do NOT infer regional climate risks.
+  const userPrompt = `You are a retrieval-only real estate research agent with LIVE WEB SEARCH.
 
-Utilities:
-- Use web search ONLY on: Official utility websites, Local government utility pages, Public utility commission databases
-- Retrieve ONLY explicitly stated: Electric/water/sewer/trash providers, natural gas availability, cable TV providers
-- Do NOT guess providers based on territory maps.
+Property address: "${address}"
 
-Internet service providers (ISP):
-- Use web search ONLY on: BroadbandNow.com, FCC broadband maps, Official ISP coverage pages
-- Retrieve ONLY explicitly stated: Top 3 ISPs, max internet speed (Mbps), fiber availability, cell coverage quality
-- Do NOT estimate speeds.
+Known context (for disambiguation only):
+- County: ${context.county || 'Unknown'}
+- City: ${context.city || 'Unknown'}
 
-Points of interest (POI) distances:
-- Use web search ONLY on: Google Maps, MapQuest
-- Retrieve distances in miles ONLY when explicitly displayed by mapping service
-- Do NOT calculate distances yourself.
-- Target: Nearest grocery/hospital/airport/park/beach
+Goal: Extract ONLY numeric 1-10 school ratings from GreatSchools.org.
 
-${FIELD_GROUPS_PERPLEXITY}
+Target fields:
+63_school_district, 65_elementary_school, 66_elementary_rating, 67_elementary_distance_mi, 68_middle_school, 69_middle_rating, 70_middle_distance_mi, 71_high_school, 72_high_rating, 73_high_distance_mi
 
-${JSON_RESPONSE_FORMAT_PERPLEXITY}`;
+Rules:
+- Use ONLY GreatSchools.org and official school district websites
+- For ratings: ONLY use numeric 1-10 from GreatSchools profile page
+- If numeric 1-10 rating NOT clearly visible, OMIT the *_rating field (do NOT convert from other metrics)
+- For distances: ONLY if miles explicitly shown by GreatSchools
+- Never infer attendance boundaries
+- Output JSON ONLY
+
+Search patterns:
+"${address} GreatSchools", "schools near ${address}"
+
+JSON format: { "66_elementary_rating": { "value": 7, "source": "GreatSchools", "source_url": "https://..." }, ... }`;
+
+  return await callPerplexityHelper('Schools', userPrompt);
+}
+
+/**
+ * PROMPT 4: WalkScore, Crime, Safety
+ * Fields: 74-80, 88-90 (10 fields)
+ */
+async function callPerplexityWalkScoreCrime(address: string, context: any = {}): Promise<Record<string, any>> {
+  const apiKey = process.env.PERPLEXITY_API_KEY;
+  if (!apiKey) {
+    console.log('❌ PERPLEXITY_API_KEY not set');
+    return {};
+  }
+
+  const userPrompt = `You are a retrieval-only real estate research agent with LIVE WEB SEARCH.
+
+Property address: "${address}"
+
+Known context (for disambiguation only):
+- City: ${context.city || 'Unknown'}
+
+Goal: Extract ONLY explicitly stated scores from WalkScore.com and crime data providers.
+
+Target fields:
+74_walk_score, 75_transit_score, 76_bike_score, 77_safety_score, 78_noise_level, 79_traffic_level, 80_walkability_description, 88_violent_crime_index, 89_property_crime_index, 90_neighborhood_safety_rating
+
+Rules:
+- Walkability: Use ONLY WalkScore.com for scores 74-76, 80
+- Noise: Prefer HowLoud.com
+- Crime: Use ONLY NeighborhoodScout, CrimeGrade, or official police portals
+- Never compute your own indices
+- Output JSON ONLY
+
+Search patterns:
+"${address} WalkScore", "${address} NeighborhoodScout", "${address} CrimeGrade"
+
+JSON format: { "74_walk_score": { "value": 62, "source": "WalkScore", "source_url": "https://..." }, ... }`;
+
+  return await callPerplexityHelper('WalkScore/Crime', userPrompt);
+}
+
+/**
+ * PROMPT 5: Utilities & ISP
+ * Fields: 104-116 (13 fields)
+ */
+async function callPerplexityUtilities(address: string, context: any = {}): Promise<Record<string, any>> {
+  const apiKey = process.env.PERPLEXITY_API_KEY;
+  if (!apiKey) {
+    console.log('❌ PERPLEXITY_API_KEY not set');
+    return {};
+  }
+
+  const userPrompt = `You are a retrieval-only real estate research agent with LIVE WEB SEARCH.
+
+Property address: "${address}"
+
+Known context (for disambiguation only):
+- City: ${context.city || 'Unknown'}
+
+Goal: Extract ONLY explicitly stated utility providers and ISP data.
+
+Target fields:
+104_electric_provider, 105_avg_electric_bill, 106_water_provider, 107_avg_water_bill, 108_sewer_provider, 109_natural_gas, 110_trash_provider, 111_internet_providers_top3, 112_max_internet_speed, 113_fiber_available, 114_cable_tv_provider, 115_cell_coverage_quality, 116_emergency_services_distance
+
+Rules:
+- Utilities: Use ONLY official utility websites, local gov pages
+- Internet: Use BroadbandNow.com, FCC broadband maps, ISP pages
+- Never estimate speeds from coverage maps without explicit text
+- Output JSON ONLY
+
+Search patterns:
+"${context.city} electric utility", "${address} BroadbandNow", "${address} fiber internet"
+
+JSON format: { "111_internet_providers_top3": { "value": ["Spectrum", "Frontier"], "source": "BroadbandNow", "source_url": "https://..." }, ... }`;
+
+  return await callPerplexityHelper('Utilities', userPrompt);
+}
+
+/**
+ * Shared Perplexity API call helper
+ */
+async function callPerplexityHelper(promptName: string, userPrompt: string): Promise<Record<string, any>> {
+  const apiKey = process.env.PERPLEXITY_API_KEY;
+  if (!apiKey) {
+    return {};
+  }
+
+  const systemMessage = `You are a retrieval-only real estate research agent with LIVE WEB SEARCH capabilities. Extract ONLY explicitly stated values. Output JSON ONLY with exact field keys. Never guess or fabricate data.`;
 
   try {
-    console.log('✅ Calling Perplexity API with restructured prompt...');
+    console.log(`✅ [Perplexity ${promptName}] Calling API...`);
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
@@ -2211,10 +2289,7 @@ ${JSON_RESPONSE_FORMAT_PERPLEXITY}`;
       body: JSON.stringify({
         model: 'sonar-pro',
         messages: [
-          {
-            role: 'system',
-            content: PERPLEXITY_SYSTEM_MESSAGE
-          },
+          { role: 'system', content: systemMessage },
           { role: 'user', content: userPrompt }
         ],
         temperature: 0.1,
@@ -2224,25 +2299,25 @@ ${JSON_RESPONSE_FORMAT_PERPLEXITY}`;
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('❌ Perplexity API error:', response.status, data);
+      console.error(`❌ [Perplexity ${promptName}] API error:`, response.status, data);
       return {};
     }
 
-    console.log('✅ Perplexity response received:', JSON.stringify(data).substring(0, 500));
-
     if (data.choices?.[0]?.message?.content) {
       const text = data.choices[0].message.content;
-      console.log('📝 Perplexity full response (first 2000 chars):', text.substring(0, 2000));
+      console.log(`✅ [Perplexity ${promptName}] Response received (${text.length} chars)`);
 
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         try {
           const parsed = JSON.parse(jsonMatch[0]);
-          console.log('✅ Perplexity JSON parsed successfully, raw field count:', Object.keys(parsed).length);
+          const rawCount = Object.keys(parsed).length;
+          console.log(`✅ [Perplexity ${promptName}] Parsed ${rawCount} raw fields`);
 
           // Use shared filterNullValues with type coercion
-          const filteredFields = filterNullValues(parsed, 'Perplexity');
-          console.log('✅ Perplexity after filterNullValues:', Object.keys(filteredFields).length, 'fields');
+          const filteredFields = filterNullValues(parsed, `Perplexity ${promptName}`);
+          const finalCount = Object.keys(filteredFields).length;
+          console.log(`✅ [Perplexity ${promptName}] Returning ${finalCount} fields after filtering`);
 
           // Upgrade confidence to High for Perplexity (has web search)
           for (const key of Object.keys(filteredFields)) {
@@ -2251,23 +2326,20 @@ ${JSON_RESPONSE_FORMAT_PERPLEXITY}`;
               filteredFields[key].source = `${filteredFields[key].source} (via Perplexity)`;
             }
           }
-          console.log('✅ Perplexity final return:', Object.keys(filteredFields).length, 'fields');
+
           return filteredFields;
         } catch (parseError) {
-          console.error('❌ Failed to parse Perplexity JSON:', parseError);
-          console.error('❌ Raw text that failed:', text);
+          console.error(`❌ [Perplexity ${promptName}] JSON parse error:`, parseError);
         }
       } else {
-        console.log('❌ No JSON found in Perplexity response');
-        console.log('❌ Full text received:', text);
+        console.log(`❌ [Perplexity ${promptName}] No JSON found in response`);
       }
     } else {
-      console.log('❌ No content in Perplexity response');
-      console.log('❌ Full data object:', JSON.stringify(data));
+      console.log(`❌ [Perplexity ${promptName}] No content in response`);
     }
     return {};
   } catch (error) {
-    console.error('❌ Perplexity error:', error);
+    console.error(`❌ [Perplexity ${promptName}] Error:`, error);
     return {};
   }
 }
@@ -4552,8 +4624,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (true) {  // Always run LLMs if enabled
         console.log(`\nStep 2: LLM Cascade (${currentFieldCount}/138 fields filled)...`);
 
+        // Extract context for Perplexity micro-prompts (for disambiguation)
+        const perplexityContext = {
+          county: intermediateResult.fields['7_county']?.value || 'Unknown',
+          city: intermediateResult.fields['1_full_address']?.value?.split(',')[1]?.trim() || 'Unknown',
+          parcelId: intermediateResult.fields['9_parcel_id']?.value || 'Unknown'
+        };
+        console.log('[Perplexity Context]', perplexityContext);
+
         const llmSourceNames: Record<string, string> = {
-          'perplexity': 'Perplexity',
+          'perplexity-portals': 'Perplexity Portals',
+          'perplexity-county': 'Perplexity County',
+          'perplexity-schools': 'Perplexity Schools',
+          'perplexity-crime': 'Perplexity Crime',
+          'perplexity-utilities': 'Perplexity Utilities',
           'grok': 'Grok',
           'claude-opus': 'Claude Opus',
           'gpt': 'GPT',
@@ -4562,7 +4646,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         };
 
         const llmCascade = [
-          { id: 'perplexity', fn: callPerplexity, enabled: engines.includes('perplexity') },
+          // PERPLEXITY MICRO-PROMPTS (5 source-centric calls, 1,000-1,300 tokens each)
+          { id: 'perplexity-portals', fn: (addr: string) => callPerplexityPortals(addr, perplexityContext), enabled: engines.includes('perplexity') },
+          { id: 'perplexity-county', fn: (addr: string) => callPerplexityCounty(addr, perplexityContext), enabled: engines.includes('perplexity') },
+          { id: 'perplexity-schools', fn: (addr: string) => callPerplexitySchools(addr, perplexityContext), enabled: engines.includes('perplexity') },
+          { id: 'perplexity-crime', fn: (addr: string) => callPerplexityWalkScoreCrime(addr, perplexityContext), enabled: engines.includes('perplexity') },
+          { id: 'perplexity-utilities', fn: (addr: string) => callPerplexityUtilities(addr, perplexityContext), enabled: engines.includes('perplexity') },
+
+          // OTHER LLMs (Tier 4-5)
           { id: 'grok', fn: callGrok, enabled: engines.includes('grok') },
           { id: 'claude-opus', fn: callClaudeOpus, enabled: engines.includes('claude-opus') },
           { id: 'gpt', fn: callGPT, enabled: engines.includes('gpt') },
@@ -4581,7 +4672,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             enabledLlms.map(llm =>
               withTimeout(
                 llm.fn(realAddress),
-                llm.id === 'perplexity' ? PERPLEXITY_TIMEOUT : LLM_TIMEOUT,
+                llm.id.startsWith('perplexity') ? PERPLEXITY_TIMEOUT : LLM_TIMEOUT,
                 { fields: {}, error: 'timeout' }
               )
             )
@@ -4634,7 +4725,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   }
 
                   // Assign tier based on LLM: Perplexity = 4, others = 5
-                  const llmTier = llm.id === 'perplexity' ? 4 : 5;
+                  const llmTier = llm.id.startsWith('perplexity') ? 4 : 5;
 
                   formattedFields[key] = {
                     value: fieldValue,
@@ -4782,7 +4873,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Track ACTUAL field counts from LLM responses
     const llmSourceNameMap: Record<string, string> = {
-      'perplexity': 'Perplexity',
+      'perplexity-portals': 'Perplexity Portals',
+      'perplexity-county': 'Perplexity County',
+      'perplexity-schools': 'Perplexity Schools',
+      'perplexity-crime': 'Perplexity Crime',
+      'perplexity-utilities': 'Perplexity Utilities',
       'grok': 'Grok',
       'claude-opus': 'Claude Opus',
       'gpt': 'GPT',
@@ -4885,7 +4980,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       single_source_warnings: arbitrationResult.singleSourceWarnings,
       llm_responses: llmResponses,
       strategy: 'arbitration_pipeline',
-      cascade_order: ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini']
+      cascade_order: ['perplexity-portals', 'perplexity-county', 'perplexity-schools', 'perplexity-crime', 'perplexity-utilities', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini']
     });
   } catch (error) {
     console.error('=== SEARCH ERROR ===');
