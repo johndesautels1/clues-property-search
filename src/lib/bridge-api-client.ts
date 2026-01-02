@@ -125,6 +125,10 @@ export interface BridgeProperty {
   CDDAnnualFee?: number;
   BuyerFinancingYN?: boolean;
 
+  // Financing
+  Financing?: string[];  // e.g., ["Cash", "Conventional", "FHA", "VA"]
+  FinancingProposed?: string[];
+
   // Structure & Systems
   RoofType?: string[];
   Roof?: string;
@@ -135,6 +139,7 @@ export interface BridgeProperty {
   PermitAdditions?: string;
   ExteriorFeatures?: string[];
   ConstructionMaterials?: string[];
+  ExteriorConstruction?: string[];  // Stellar MLS field name for exterior materials
   FoundationType?: string[];
   FoundationDetails?: string;
   Heating?: string[];
