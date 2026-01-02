@@ -129,12 +129,12 @@ export const DATA_SOURCES: DataSource[] = [
     enabled: true,
     description: 'Noise levels'
   },
-  { 
-    id: 'weather', 
-    name: 'Weather', 
-    type: 'free-api', 
-    tier: 3, 
-    icon: 'sun', 
+  {
+    id: 'weather',
+    name: 'Weather',
+    type: 'free-api',
+    tier: 3,
+    icon: 'sun',
     color: 'orange',
     enabled: true,
     description: 'Climate data'
@@ -148,6 +148,16 @@ export const DATA_SOURCES: DataSource[] = [
     color: 'red',
     enabled: true,
     description: 'Crime statistics'
+  },
+  {
+    id: 'internal',
+    name: 'INTERNAL',
+    type: 'free-api',
+    tier: 3,
+    icon: 'cpu',
+    color: 'gray',
+    enabled: true,
+    description: 'Backend calculations'
   },
   {
     id: 'census',

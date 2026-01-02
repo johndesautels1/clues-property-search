@@ -340,6 +340,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
                   'crime': ['fbicrime'],
                   'schooldigger': ['schooldigger'],
                   'census': ['census', 'uscensus'],
+                  'internal': ['internal', 'backendcalculation', 'backend'],
                   'grok': ['grok'],
                   'claude-opus': ['claudeopus', 'opus'],
                   'gpt': ['gpt', 'gpt4o'],
@@ -418,10 +419,18 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
         console.log('💾 Stored raw API response fields for Property conversion');
 
         const sourceSample: Record<string, string> = {};
+        const lostFields: Array<{apiKey: string, reason: string, value: any}> = [];
 
         for (const [apiKey, fieldData] of Object.entries(data.fields)) {
           const field = fieldData as any;
           const formKey = mapApiFieldToFormKey(apiKey);
+
+          // Track lost fields
+          if (!formKey) {
+            lostFields.push({apiKey, reason: 'No formKey mapping', value: field.value});
+          } else if (field.value === null || field.value === undefined) {
+            lostFields.push({apiKey, reason: 'Null/undefined value', value: field.value});
+          }
 
           if (formKey && field.value !== null && field.value !== undefined) {
             // Parse source to get a valid DataSource
@@ -470,13 +479,26 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
 
             // Debug: Log first few field-source mappings
             if (Object.keys(newFormData).length <= 5) {
-              console.log(`  🔍 Mapped ${formKey}: source="${source}" (from API: "${field.source || 'MISSING'}")`);
+              console.log(`  🔍 Mapped ${formKey}: source="${source}" (from API: "${sourceStr || 'MISSING'}")`);
             }
           }
         }
 
         console.log('📋 Sample sources from API:', sourceSample);
         console.log('✅ Total fields mapped to form:', Object.keys(newFormData).length);
+
+        // Log lost fields analysis
+        if (lostFields.length > 0) {
+          console.log(`🚨 LOST FIELDS ANALYSIS: ${lostFields.length} fields not mapped`);
+          const noMapping = lostFields.filter(f => f.reason === 'No formKey mapping');
+          const nullValues = lostFields.filter(f => f.reason === 'Null/undefined value');
+          if (noMapping.length > 0) {
+            console.log(`  ❌ ${noMapping.length} fields with no formKey mapping:`, noMapping.map(f => f.apiKey));
+          }
+          if (nullValues.length > 0) {
+            console.log(`  ⚠️  ${nullValues.length} fields with null/undefined values:`, nullValues.map(f => f.apiKey));
+          }
+        }
 
         // Count sources in newFormData
         const sourceCounts: Record<string, number> = {};

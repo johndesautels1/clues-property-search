@@ -176,7 +176,7 @@ export default function PropertyCardUnified({
       const photoUrl = fullProperty ? getFieldValue(fullProperty.address?.primaryPhotoUrl) as string | null : null;
       if (fullProperty) {
         console.log('[PropertyCard] Photo URL for', property.address, ':', photoUrl);
-        console.log('[PropertyCard] fullProperty.address:', fullProperty.address);
+        console.log('[PropertyCard] fullProperty.address.fullAddress:', getFieldValue(fullProperty.address?.fullAddress) || fullProperty.address);
       }
       return photoUrl;
     })(),

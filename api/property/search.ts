@@ -5036,8 +5036,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Convert arbitration fields to frontend DataField format
     const convertedFields: Record<string, any> = {};
+    let objectValueCount = 0;
+    let primitiveValueCount = 0;
+    const objectValueSamples: string[] = [];
+
     for (const [key, field] of Object.entries(arbitrationResult.fields)) {
       let parsedValue = field.value;
+
+      // DIAGNOSTIC: Log value types for first 10 fields
+      if (Object.keys(convertedFields).length < 10) {
+        const valueType = Array.isArray(parsedValue) ? 'array' : typeof parsedValue;
+        console.log(`🔍 [VALUE TYPE] ${key}: ${valueType}`,
+          valueType === 'object' && parsedValue !== null ?
+            `(keys: ${Object.keys(parsedValue).join(', ')})` :
+            `(value: ${String(parsedValue).substring(0, 50)})`
+        );
+      }
+
+      // Track object vs primitive counts
+      if (typeof parsedValue === 'object' && parsedValue !== null && !Array.isArray(parsedValue) && key !== 'coordinates' && key !== '_extendedMLSData') {
+        objectValueCount++;
+        if (objectValueSamples.length < 5) {
+          objectValueSamples.push(`${key}: ${JSON.stringify(parsedValue).substring(0, 60)}...`);
+        }
+      } else {
+        primitiveValueCount++;
+      }
 
       // CRITICAL: Deep unwrap if value is still wrapped (defensive fix for double-wrapping bug)
       // Check for wrapped format: {value: X, source: Y, confidence: Z} and extract X
@@ -5086,6 +5110,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         validationStatus,
         validationMessage
       };
+    }
+
+    // DIAGNOSTIC: Log value type summary
+    console.log(`📊 [VALUE TYPE SUMMARY] Objects: ${objectValueCount}, Primitives: ${primitiveValueCount}`);
+    if (objectValueCount > 0) {
+      console.log(`🔍 [OBJECT SAMPLES]:`, objectValueSamples);
     }
 
     // Transform flat fields to nested structure for PropertyDetail & other pages
