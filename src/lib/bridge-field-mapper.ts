@@ -170,11 +170,9 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // ================================================================
   addField('10_listing_price', property.ListPrice);
 
-  // Calculate price per sqft if not provided
-  if (property.ListPrice && property.LivingArea && property.LivingArea > 0) {
-    const pricePerSqft = property.ListPrice / property.LivingArea;
-    addField('11_price_per_sqft', Math.round(pricePerSqft * 100) / 100);
-  }
+  // Field 11: Price per sqft - ALWAYS calculated by backend from Fields 10 & 21 (not set here)
+  // See: src/lib/calculate-derived-fields.ts -> calculatePricePerSqft()
+  // This ensures it uses the arbitrated final values of Fields 10 and 21, not just raw Bridge data
 
   addField('13_last_sale_date', property.CloseDate);
   addField('14_last_sale_price', property.ClosePrice);
