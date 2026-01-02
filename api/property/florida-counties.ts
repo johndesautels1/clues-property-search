@@ -558,7 +558,7 @@ async function scrapeTaxCollector(address: string, county: string, parcelId?: st
 }
 
 // ============================================
-// PERMIT SCRAPERS (fields 37, 41, 52-55)
+// PERMIT SCRAPERS (fields 40, 46, 59-62)
 // Most Florida counties use Accela for permits
 // ============================================
 
@@ -594,14 +594,14 @@ async function scrapePermits(address: string, county: string): Promise<Record<st
       roofPermits.push(match[0]);
     }
     if (roofPermits.length > 0) {
-      fields['53_permit_history_roof'] = { value: roofPermits.slice(0, 3).join('; '), source, confidence: 'High' };
+      fields['60_permit_history_roof'] = { value: roofPermits.slice(0, 3).join('; '), source, confidence: 'High' };
 
       // Calculate roof age from most recent permit
       const yearMatch = roofPermits[0].match(/(\d{4})/);
       if (yearMatch) {
         const roofYear = parseInt(yearMatch[1]);
         const age = new Date().getFullYear() - roofYear;
-        fields['37_roof_age_est'] = { value: `${age} years (permit ${roofYear})`, source, confidence: 'High' };
+        fields['40_roof_age_est'] = { value: `${age} years (permit ${roofYear})`, source, confidence: 'High' };
       }
     }
 
@@ -612,14 +612,14 @@ async function scrapePermits(address: string, county: string): Promise<Record<st
       hvacPermits.push(match[0]);
     }
     if (hvacPermits.length > 0) {
-      fields['54_permit_history_hvac'] = { value: hvacPermits.slice(0, 3).join('; '), source, confidence: 'High' };
+      fields['61_permit_history_hvac'] = { value: hvacPermits.slice(0, 3).join('; '), source, confidence: 'High' };
 
       // Calculate HVAC age
       const yearMatch = hvacPermits[0].match(/(\d{4})/);
       if (yearMatch) {
         const hvacYear = parseInt(yearMatch[1]);
         const age = new Date().getFullYear() - hvacYear;
-        fields['41_hvac_age'] = { value: `${age} years (permit ${hvacYear})`, source, confidence: 'High' };
+        fields['46_hvac_age'] = { value: `${age} years (permit ${hvacYear})`, source, confidence: 'High' };
       }
     }
 
@@ -630,7 +630,7 @@ async function scrapePermits(address: string, county: string): Promise<Record<st
       otherPermits.push(match[0]);
     }
     if (otherPermits.length > 0) {
-      fields['55_permit_history_other'] = { value: otherPermits.slice(0, 5).join('; '), source, confidence: 'High' };
+      fields['62_permit_history_other'] = { value: otherPermits.slice(0, 5).join('; '), source, confidence: 'High' };
     }
 
     // Recent renovations summary
@@ -640,7 +640,7 @@ async function scrapePermits(address: string, county: string): Promise<Record<st
       return yearMatch && parseInt(yearMatch[1]) >= 2019;
     });
     if (recentPermits.length > 0) {
-      fields['52_recent_renovations'] = { value: `${recentPermits.length} permits since 2019`, source, confidence: 'Medium' };
+      fields['59_recent_renovations'] = { value: `${recentPermits.length} permits since 2019`, source, confidence: 'Medium' };
     }
 
     return fields;
