@@ -294,12 +294,12 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
             setLiveCompletionPct(data.completion_percentage || Math.round((data.total_fields_found / 168) * 100));
           }
 
+          // Track Perplexity total to apply in final state update (avoid race condition)
+          let perplexityTotal = 0;
+
           // Mark all sources as complete (since we get final result only)
           if (data.source_breakdown) {
             console.log('📊 Updating progress tracker from source_breakdown:', data.source_breakdown);
-
-            // Track Perplexity total to apply in final state update (avoid race condition)
-            let perplexityTotal = 0;
 
             Object.entries(data.source_breakdown).forEach(([sourceName, count]) => {
               console.log(`  - Trying to map "${sourceName}" to source ID...`);
