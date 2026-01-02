@@ -679,6 +679,17 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   }
 
   // ================================================================
+  // VIRTUAL TOUR - Extract URL for 3D tours/walkthroughs
+  // ================================================================
+  // FIX BUG #16: Extract virtual tour URL from MLS data
+  // Prefer unbranded version for better UX, fall back to branded
+  const virtualTourUrl = property.VirtualTourURLUnbranded || property.VirtualTourURLBranded;
+  if (virtualTourUrl) {
+    addField('virtual_tour_url', virtualTourUrl, 'High');
+    console.log('[Bridge Mapper] ✅ Virtual tour URL extracted:', virtualTourUrl.substring(0, 60) + '...');
+  }
+
+  // ================================================================
   // Clean PublicRemarks by removing extracted sentences
   // ================================================================
   let cleanedRemarks = '';

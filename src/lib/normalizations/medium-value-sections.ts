@@ -333,8 +333,27 @@ export function normalizePropertyTaxRate(value: any): NormalizationResult {
     return { score: 0, confidence: 'Low', notes: 'Tax rate unknown' };
   }
 
-  // Handle both percentage and millage
-  let rate = parseFloat(String(value).replace(/[%]/g, ''));
+  // BUG FIX #19/#20: Handle descriptive LLM strings like "Approximately 1.0-1.2%"
+  let rate: number;
+  const strValue = String(value).trim();
+
+  // Extract numeric values from string (handles ranges like "1.0-1.2" or "1.5%-2.0%")
+  const numericMatches = strValue.match(/[\d.]+/g);
+  if (!numericMatches || numericMatches.length === 0) {
+    return { score: 0, confidence: 'Low', notes: 'Invalid tax rate format' };
+  }
+
+  // If range detected (e.g., "1.0-1.2"), calculate midpoint
+  if (numericMatches.length >= 2) {
+    const low = parseFloat(numericMatches[0]);
+    const high = parseFloat(numericMatches[1]);
+    rate = (low + high) / 2;
+    console.log(`[Bug #19/#20 Fix] Tax rate range detected: ${low}-${high}, using midpoint: ${rate}`);
+  } else {
+    // Single value (e.g., "1.5" or "Approximately 1.5%")
+    rate = parseFloat(numericMatches[0]);
+  }
+
   if (isNaN(rate)) {
     return { score: 0, confidence: 'Low', notes: 'Invalid tax rate format' };
   }
@@ -1041,14 +1060,36 @@ export function normalizeSafetyScore(value: any): NormalizationResult {
 
   let score = Number(value);
   if (isNaN(score)) {
-    // Try parsing text descriptors
-    const text = String(value).toLowerCase();
-    if (text.includes('excellent') || text.includes('very safe')) score = 95;
-    else if (text.includes('good') || text.includes('safe')) score = 80;
-    else if (text.includes('average') || text.includes('moderate')) score = 60;
-    else if (text.includes('below average') || text.includes('caution')) score = 40;
-    else if (text.includes('poor') || text.includes('unsafe')) score = 20;
-    else return { score: 50, confidence: 'Low', notes: 'Could not parse safety score' };
+    const text = String(value).trim();
+
+    // BUG FIX #21: Handle letter grades from LLMs (e.g., "B+", "A-", "C")
+    const letterGradeMatch = text.match(/^([A-F])([+-])?$/i);
+    if (letterGradeMatch) {
+      const letter = letterGradeMatch[1].toUpperCase();
+      const modifier = letterGradeMatch[2] || '';
+
+      // Base scores for each letter grade
+      const gradeMap: Record<string, number> = {
+        'A': 95, 'B': 85, 'C': 75, 'D': 65, 'F': 40
+      };
+
+      score = gradeMap[letter] || 50;
+
+      // Apply +/- modifiers
+      if (modifier === '+' && letter !== 'A') score += 3;  // A+ = A
+      if (modifier === '-') score -= 3;
+
+      console.log(`[Bug #21 Fix] Letter grade "${text}" converted to ${score}`);
+    } else {
+      // Try parsing text descriptors
+      const lowerText = text.toLowerCase();
+      if (lowerText.includes('excellent') || lowerText.includes('very safe')) score = 95;
+      else if (lowerText.includes('good') || lowerText.includes('safe')) score = 80;
+      else if (lowerText.includes('average') || lowerText.includes('moderate')) score = 60;
+      else if (lowerText.includes('below average') || lowerText.includes('caution')) score = 40;
+      else if (lowerText.includes('poor') || lowerText.includes('unsafe')) score = 20;
+      else return { score: 50, confidence: 'Low', notes: 'Could not parse safety score' };
+    }
   }
 
   // Handle scales other than 0-100

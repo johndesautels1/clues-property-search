@@ -879,12 +879,17 @@ export class BridgeAPIClient {
       });
 
       if (!response.ok) {
-        console.log(`[Bridge API] Media fetch failed: ${response.status} ${response.statusText}`);
+        // BUG #13 FIX: Enhanced error logging for Media API failures
+        const errorText = await response.text();
+        console.error(`[Bug #13 Debug] Media API HTTP ${response.status}: ${response.statusText}`);
+        console.error(`[Bug #13 Debug] Error body:`, errorText);
+        console.error(`[Bug #13 Debug] Request URL:`, url);
+        console.error(`[Bug #13 Debug] ListingKey used:`, listingKey);
         return [];
       }
 
       const data = await response.json();
-      console.log(`[Bridge API] Media response:`, data);
+      console.log(`[Bridge API] Media response:`, JSON.stringify(data, null, 2));
 
       // Handle both array response and OData response with value array
       const mediaArray = Array.isArray(data) ? data : (data.value || []);

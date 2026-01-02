@@ -803,6 +803,32 @@ export function normalizeField66(value: number | string | null | undefined, cont
 }
 
 /**
+ * BUG FIX #22/#23: Helper function to parse distance strings from LLMs
+ * Handles strings like "2.3 miles", "Approximately 5 mi", "3.2", etc.
+ */
+function parseDistanceString(value: any): number {
+  if (typeof value === 'number') {
+    return value;
+  }
+
+  if (value === null || value === undefined || value === '') {
+    return NaN;
+  }
+
+  const str = String(value).trim();
+
+  // Extract first numeric value from string (handles "2.3 miles", "Approximately 5 mi", etc.)
+  const numericMatch = str.match(/[\d.]+/);
+  if (!numericMatch) {
+    return NaN;
+  }
+
+  const distance = parseFloat(numericMatch[0]);
+  console.log(`[Bug #22/#23 Fix] Distance string "${str}" parsed to ${distance} miles`);
+  return distance;
+}
+
+/**
  * Field 67: Elementary Distance (miles) (elementary_distance_mi)
  *
  * Closer is better for families with young children.
@@ -813,7 +839,8 @@ export function normalizeField67(value: number, context?: NormalizationContext):
     return 0;
   }
 
-  const distance = Number(value);
+  // BUG FIX #22/#23: Parse distance strings from LLMs
+  const distance = parseDistanceString(value);
 
   if (isNaN(distance) || distance < 0) {
     return 0;
@@ -852,7 +879,8 @@ export function normalizeField70(value: number, context?: NormalizationContext):
     return 0;
   }
 
-  const distance = Number(value);
+  // BUG FIX #22/#23: Parse distance strings from LLMs
+  const distance = parseDistanceString(value);
 
   if (isNaN(distance) || distance < 0) {
     return 0;
@@ -890,7 +918,8 @@ export function normalizeField73(value: number, context?: NormalizationContext):
     return 0;
   }
 
-  const distance = Number(value);
+  // BUG FIX #22/#23: Parse distance strings from LLMs
+  const distance = parseDistanceString(value);
 
   if (isNaN(distance) || distance < 0) {
     return 0;

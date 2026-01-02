@@ -4456,6 +4456,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const intermediateResultForAddress = arbitrationPipeline.getResult();
     const realAddress = intermediateResultForAddress.fields['1_full_address']?.value || searchQuery;
 
+    // BUG FIX #26: If Bridge MLS didn't provide city/state/zip, fallback to parsed values from searchQuery
+    // This prevents "undefined" validation errors when Bridge MLS fails
+    if (!mlsCity || !mlsState || !mlsZip) {
+      console.log('⚠️ [Bug #26 Fix] Bridge MLS did not provide city/state/zip, falling back to parsed values');
+      const addressParts = searchQuery.split(',').map(p => p.trim());
+      const parsedCity = addressParts[1] || undefined;
+      const stateZip = addressParts[2] || '';
+      const stateMatch = stateZip.match(/([A-Z]{2})\s*(\d{5})?/);
+      const parsedState = stateMatch ? stateMatch[1] : undefined;
+      const parsedZip = stateMatch && stateMatch[2] ? stateMatch[2] : undefined;
+
+      mlsCity = mlsCity || parsedCity;
+      mlsState = mlsState || parsedState;
+      mlsZip = mlsZip || parsedZip;
+
+      console.log('🔍 Fallback validation values:', { city: mlsCity, state: mlsState, zip: mlsZip });
+    }
+
     if (realAddress !== searchQuery) {
       console.log('========================================');
       console.log('🔄 ADDRESS SUBSTITUTION (MLS# Search)');

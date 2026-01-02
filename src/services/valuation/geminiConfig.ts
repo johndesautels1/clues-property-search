@@ -64,6 +64,9 @@ HALLUCINATION GUARD:
 OUTPUT FORMAT:
 - Return ONLY fields where you found explicit values on government websites
 - OMIT any field you could not find (do NOT include with null value)
+- CRITICAL JSON TYPE REQUIREMENT: Return ALL numeric values as JSON numbers (NOT strings)
+  * CORRECT: {"37_tax_rate": 1.85, "153_cdd_fee_annual": 500}
+  * WRONG: {"37_tax_rate": "1.85", "153_cdd_fee_annual": "500"}
 - Example: If you only found Field 37 and Field 60, return: {"37_tax_rate": 1.85, "60_roof_permit_year": "2021"}
 - If county portals are inaccessible, return: {} (empty object - all fields will fall through to Tier 4)
 `;
@@ -105,6 +108,9 @@ HALLUCINATION GUARD:
 OUTPUT FORMAT:
 - Return ONLY fields where you found explicit values
 - OMIT any field you could not find (do NOT include with null value)
+- CRITICAL JSON TYPE REQUIREMENT: Return ALL numeric values as JSON numbers (NOT strings)
+  * CORRECT: {"75_transit_score": 52, "91_median_home_price_neighborhood": 425000}
+  * WRONG: {"75_transit_score": "52", "91_median_home_price_neighborhood": "425000"}
 - Example: If you only found Fields 75 and 91, return: {"75_transit_score": 52, "91_median_home_price_neighborhood": 425000}
 `;
 
@@ -202,6 +208,9 @@ HALLUCINATION GUARD:
 OUTPUT FORMAT:
 - Return ONLY fields where you found explicit values
 - OMIT any field you could not find (do NOT include with null value)
+- CRITICAL JSON TYPE REQUIREMENT: Return ALL numeric values as JSON numbers (NOT strings)
+  * CORRECT: {"12_market_value_estimate": 500000, "31_hoa_fee_annual": 3600}
+  * WRONG: {"12_market_value_estimate": "500000", "31_hoa_fee_annual": "3600"}
 - Example: If you only found Field 12 and Field 31, return: {"12_market_value_estimate": 500000, "31_hoa_fee_annual": 3600}
 `;
 
