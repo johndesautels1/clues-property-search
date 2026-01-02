@@ -1936,7 +1936,8 @@ export default function PropertyDetail() {
                       }
                     } catch (e) {
                       // If not valid JSON, check if it's already a text description
-                      if (typeof compData.value === 'string' && compData.value.length > 0) {
+                      const valueStr = compData.value as unknown as string;
+                      if (typeof valueStr === 'string' && valueStr.length > 0) {
                         return renderDataField("Comparable Sales", compData, "text", undefined, "103_comparable_sales");
                       }
                       return null;
@@ -1944,7 +1945,8 @@ export default function PropertyDetail() {
 
                     if (!Array.isArray(comps) || comps.length === 0) {
                       // If we have a value but couldn't parse it as comps, show as text
-                      if (compData.value && typeof compData.value === 'string') {
+                      const valCheck = compData.value as unknown;
+                      if (valCheck && typeof valCheck === 'string') {
                         return renderDataField("Comparable Sales", compData, "text", undefined, "103_comparable_sales");
                       }
                       return null;
