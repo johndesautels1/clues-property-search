@@ -339,6 +339,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
                   'weather': ['weathercom', 'weather'],
                   'crime': ['fbicrime'],
                   'schooldigger': ['schooldigger'],
+                  'census': ['census', 'uscensus'],
                   'grok': ['grok'],
                   'claude-opus': ['claudeopus', 'opus'],
                   'gpt': ['gpt', 'gpt4o'],

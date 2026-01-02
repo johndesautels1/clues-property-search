@@ -5039,9 +5039,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     for (const [key, field] of Object.entries(arbitrationResult.fields)) {
       let parsedValue = field.value;
 
-      // DEBUG: Check if value is still wrapped (should be primitive after addFieldsFromSource extraction)
+      // CRITICAL: Deep unwrap if value is still wrapped (defensive fix for double-wrapping bug)
+      // Check for wrapped format: {value: X, source: Y, confidence: Z} and extract X
       if (typeof parsedValue === 'object' && parsedValue !== null && 'value' in parsedValue && key !== 'coordinates') {
-        console.error(`❌ [BUG] Field ${key} has wrapped value in arbitration result:`, JSON.stringify(parsedValue).substring(0, 200));
+        console.warn(`⚠️ [UNWRAP] Field ${key} has nested value, extracting:`, JSON.stringify(parsedValue).substring(0, 100), '→', parsedValue.value);
+        parsedValue = parsedValue.value;
+        // Double-nested? Extract again
+        if (typeof parsedValue === 'object' && parsedValue !== null && 'value' in parsedValue) {
+          console.warn(`⚠️ [DEEP UNWRAP] Field ${key} triple-nested! Extracting again:`, parsedValue.value);
+          parsedValue = parsedValue.value;
+        }
       }
 
       // Parse dates if they look like date strings
