@@ -298,6 +298,9 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
           if (data.source_breakdown) {
             console.log('📊 Updating progress tracker from source_breakdown:', data.source_breakdown);
 
+            // Track Perplexity total to apply in final state update (avoid race condition)
+            let perplexityTotal = 0;
+
             Object.entries(data.source_breakdown).forEach(([sourceName, count]) => {
               console.log(`  - Trying to map "${sourceName}" to source ID...`);
 
@@ -308,17 +311,9 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
 
               // SPECIAL CASE: Merge all Perplexity micro-prompts into single "perplexity" card
               if (sourceName.toLowerCase().startsWith('perplexity')) {
-                const perplexitySource = DEFAULT_SOURCES.find(s => s.id === 'perplexity');
-                if (perplexitySource) {
-                  console.log(`    ✅ Matched "${sourceName}" to perplexity (micro-prompt) - ${count} fields`);
-                  // Add to existing Perplexity count
-                  setSourcesProgress(prev => prev.map(s =>
-                    s.id === 'perplexity'
-                      ? { ...s, fieldsFound: (s.fieldsFound || 0) + (count as number) }
-                      : s
-                  ));
-                  return; // Skip normal matching for Perplexity micro-prompts
-                }
+                console.log(`    ✅ Matched "${sourceName}" to perplexity (micro-prompt) - ${count} fields`);
+                perplexityTotal += count as number;
+                return; // Skip normal matching for Perplexity micro-prompts
               }
 
               // Find matching source with flexible matching rules
@@ -371,8 +366,16 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
           }
 
           // Mark any sources still in "searching" state as complete with 0 fields
+          // ALSO: Apply accumulated Perplexity total to avoid race condition
           setSourcesProgress(prev => {
             const updated = prev.map(s => {
+              // Apply Perplexity accumulated total
+              if (s.id === 'perplexity' && perplexityTotal > 0) {
+                console.log(`    ✅ Setting Perplexity total: ${perplexityTotal} fields (from ${Object.entries(data.source_breakdown || {}).filter(([k]) => k.toLowerCase().startsWith('perplexity')).length} micro-prompts)`);
+                return { ...s, status: 'complete' as const, fieldsFound: perplexityTotal };
+              }
+
+              // Mark sources still pending/searching as complete with 0 fields
               if (s.status === 'searching' || s.status === 'pending') {
                 console.log(`⚠️ Source "${s.name}" (${s.id}) still ${s.status} - marking complete with 0 fields`);
                 return { ...s, status: 'complete' as const, fieldsFound: 0 };
