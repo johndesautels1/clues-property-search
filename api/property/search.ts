@@ -5039,6 +5039,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     for (const [key, field] of Object.entries(arbitrationResult.fields)) {
       let parsedValue = field.value;
 
+      // DEBUG: Check if value is still wrapped (should be primitive after addFieldsFromSource extraction)
+      if (typeof parsedValue === 'object' && parsedValue !== null && 'value' in parsedValue && key !== 'coordinates') {
+        console.error(`❌ [BUG] Field ${key} has wrapped value in arbitration result:`, JSON.stringify(parsedValue).substring(0, 200));
+      }
+
       // Parse dates if they look like date strings
       if (typeof parsedValue === 'string' && /^\d{4}-\d{2}-\d{2}/.test(parsedValue)) {
         try {
