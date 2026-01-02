@@ -2664,13 +2664,13 @@ Return ONLY the JSON object, no other text.`;
 }
 
 /**
- * DEDICATED MICRO-PROMPT: Fields 112, 113, 115 - Internet & Cell Coverage
- * Uses BroadbandNow, FCC data, and carrier coverage maps
+ * DEDICATED MICRO-PROMPT: Field 112 - Max Internet Speed
+ * Uses FCC National Broadband Map, provider availability checkers
  */
-async function callPerplexityConnectivity(address: string, context: any = {}): Promise<Record<string, any>> {
+async function callPerplexityInternetSpeed(address: string, context: any = {}): Promise<Record<string, any>> {
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) {
-    console.log('❌ [Fields 112,113,115] PERPLEXITY_API_KEY not set');
+    console.log('❌ [Field 112] PERPLEXITY_API_KEY not set');
     return {};
   }
 
@@ -2678,58 +2678,49 @@ async function callPerplexityConnectivity(address: string, context: any = {}): P
   const state = context.state || 'FL';
   const zip = context.zip || '';
 
-  const systemPrompt = `You are a strict, retrieval-only connectivity research assistant for residential real estate.
-Your task is to determine internet availability and cell coverage for a specific address.
+  const systemPrompt = `You are a strict, retrieval-only broadband availability assistant.
+Your ONLY task is to determine the maximum advertised residential wired download speed (in Mbps) available at a specific U.S. residential address and return it as a number or null.
 
 Rules:
-- For internet speeds: Use ONLY BroadbandNow.com, FCC broadband maps, or official ISP websites
-- For fiber availability: Check AT&T Fiber, Verizon Fios, Google Fiber, local fiber providers
-- For cell coverage: Use carrier coverage maps (Verizon, AT&T, T-Mobile, US Cellular)
-- Never extrapolate from nearby areas - only use data for the EXACT address
-- If you cannot find reliable data, return null instead of guessing
+- Use only authoritative broadband sources that allow address or ZIP+address lookup (e.g., FCC National Broadband Map, provider availability checkers, and reputable "internet in my area" aggregators).
+- Prefer provider/official data over generic marketing pages or nationwide statistics.
+- Only consider fixed wired technologies (fiber, cable, DSL, fixed wireless) that advertise specific maximum speeds.
+- If sources disagree, choose the highest clearly advertised residential wired download speed.
+- If you cannot find any trustworthy address-level or ZIP+area data, return null instead of guessing.
+- Never infer speeds from unrelated cities, states, or national reports.
+- Do NOT invent providers, technologies, or speeds.
 
 Output contract (MUST follow exactly):
 {
-  "112_max_internet_speed": {
-    "value": "string or null",
-    "source": "string",
-    "notes": "string"
-  },
-  "113_fiber_available": {
-    "value": "Yes/No or null",
-    "source": "string",
-    "notes": "string"
-  },
-  "115_cell_coverage_quality": {
-    "value": "Excellent/Good/Fair/Poor or null",
-    "source": "string",
-    "notes": "string"
-  }
+  "field_id": 112,
+  "input_id": "string",
+  "max_internet_speed_mbps": 0,
+  "status": "ok",
+  "notes": "string"
 }
 
 Field rules:
-- 112_max_internet_speed: Return fastest available download speed (e.g., "1 Gbps", "500 Mbps", "100 Mbps")
-- 113_fiber_available: "Yes" if fiber-to-home is available, "No" if only cable/DSL, null if unknown
-- 115_cell_coverage_quality:
-  - "Excellent" = 5G available from 2+ carriers
-  - "Good" = Strong 4G LTE from all major carriers
-  - "Fair" = 4G LTE with some weak spots
-  - "Poor" = Limited coverage, frequent drops
+- field_id: Always 112.
+- input_id: Echo the input property id exactly.
+- max_internet_speed_mbps: Integer (Mbps) if a defensible maximum advertised wired download speed exists. null if not determinable from reliable address/ZIP-level data.
+- status: "ok" if max_internet_speed_mbps is not null. "not_available" if max_internet_speed_mbps is null.
+- notes: One short sentence naming the type of source and top technology (e.g., "Cable provider address lookup shows up to 1000 Mbps download").
 
-Do NOT add any extra keys or commentary outside this JSON.`;
+Do NOT add any extra keys or text.`;
 
-  const userPrompt = `Determine internet and cell coverage for this Florida property:
+  const userPrompt = `Determine the maximum advertised wired download speed for this property:
 
-- Address: ${address}
-- City: ${city}
-- State: ${state}
-- ZIP: ${zip}
+Property:
+- input_id: "prop_1"
+- address: "${address}"
+- city: "${city}"
+- state: "${state}"
+- zip: "${zip}"
 
-Search BroadbandNow, FCC broadband map, and carrier coverage maps.
-Return ONLY the JSON object, no other text.`;
+Return only the JSON object, no extra text.`;
 
   try {
-    console.log(`✅ [Fields 112,113,115] Calling Perplexity for connectivity data...`);
+    console.log(`✅ [Field 112] Calling Perplexity for max internet speed...`);
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
@@ -2743,12 +2734,12 @@ Return ONLY the JSON object, no other text.`;
           { role: 'user', content: userPrompt }
         ],
         temperature: 0.1,
-        max_tokens: 600
+        max_tokens: 400
       })
     });
 
     if (!response.ok) {
-      console.error(`❌ [Fields 112,113,115] API error: ${response.status}`);
+      console.error(`❌ [Field 112] API error: ${response.status}`);
       return {};
     }
 
@@ -2756,56 +2747,266 @@ Return ONLY the JSON object, no other text.`;
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
-      console.log(`❌ [Fields 112,113,115] No content in response`);
+      console.log(`❌ [Field 112] No content in response`);
       return {};
     }
 
     const jsonStr = extractFirstJsonObject(content);
     if (!jsonStr) {
-      console.log(`❌ [Fields 112,113,115] No JSON found in response`);
+      console.log(`❌ [Field 112] No JSON found in response`);
       return {};
     }
 
     const parsed = JSON.parse(jsonStr);
-    const fields: Record<string, any> = {};
 
-    // Field 112: Max Internet Speed
-    if (parsed['112_max_internet_speed']?.value) {
-      fields['112_max_internet_speed'] = {
-        value: parsed['112_max_internet_speed'].value,
-        source: parsed['112_max_internet_speed'].source || 'BroadbandNow',
-        confidence: 'Medium',
-        details: parsed['112_max_internet_speed'].notes || ''
+    if (parsed.status === 'ok' && parsed.max_internet_speed_mbps !== null) {
+      const speedMbps = parsed.max_internet_speed_mbps;
+      const speedStr = speedMbps >= 1000 ? `${speedMbps / 1000} Gbps` : `${speedMbps} Mbps`;
+      console.log(`✅ [Field 112] Max speed: ${speedStr}`);
+      return {
+        '112_max_internet_speed': {
+          value: speedStr,
+          source: 'FCC/ISP Data',
+          confidence: 'Medium',
+          details: parsed.notes || ''
+        }
       };
-      console.log(`✅ [Field 112] Max speed: ${parsed['112_max_internet_speed'].value}`);
+    } else {
+      console.log(`❌ [Field 112] Not available: ${parsed.notes || 'Unknown reason'}`);
+      return {};
     }
-
-    // Field 113: Fiber Available
-    if (parsed['113_fiber_available']?.value) {
-      fields['113_fiber_available'] = {
-        value: parsed['113_fiber_available'].value,
-        source: parsed['113_fiber_available'].source || 'ISP Coverage',
-        confidence: 'Medium',
-        details: parsed['113_fiber_available'].notes || ''
-      };
-      console.log(`✅ [Field 113] Fiber: ${parsed['113_fiber_available'].value}`);
-    }
-
-    // Field 115: Cell Coverage Quality
-    if (parsed['115_cell_coverage_quality']?.value) {
-      fields['115_cell_coverage_quality'] = {
-        value: parsed['115_cell_coverage_quality'].value,
-        source: parsed['115_cell_coverage_quality'].source || 'Carrier Coverage Maps',
-        confidence: 'Medium',
-        details: parsed['115_cell_coverage_quality'].notes || ''
-      };
-      console.log(`✅ [Field 115] Cell: ${parsed['115_cell_coverage_quality'].value}`);
-    }
-
-    console.log(`✅ [Fields 112,113,115] Returning ${Object.keys(fields).length} connectivity fields`);
-    return fields;
   } catch (error) {
-    console.error(`❌ [Fields 112,113,115] Error:`, error);
+    console.error(`❌ [Field 112] Error:`, error);
+    return {};
+  }
+}
+
+/**
+ * DEDICATED MICRO-PROMPT: Field 113 - Fiber Available (Y/N)
+ * Uses FCC National Broadband Map, provider fiber availability
+ */
+async function callPerplexityFiberAvailable(address: string, context: any = {}): Promise<Record<string, any>> {
+  const apiKey = process.env.PERPLEXITY_API_KEY;
+  if (!apiKey) {
+    console.log('❌ [Field 113] PERPLEXITY_API_KEY not set');
+    return {};
+  }
+
+  const city = context.city || 'Tampa';
+  const state = context.state || 'FL';
+  const zip = context.zip || '';
+
+  const systemPrompt = `You are a strict, retrieval-only broadband availability assistant.
+Your ONLY task is to determine whether fiber internet service is available (yes/no) at a specific U.S. residential address.
+
+Rules:
+- Use only authoritative broadband/fiber availability sources that support address or ZIP+address lookup, or the FCC National Broadband Map / similar fabric data for fiber service.
+- Confirm that at least one provider lists fiber (fiber to the premises or equivalent) as available for that address.
+- If data only shows cable, DSL, fixed wireless, or satellite and no fiber, treat that as "no".
+- If you cannot confidently confirm presence or absence of fiber from address-level data, return null instead of guessing.
+- Never infer fiber availability from city-level marketing claims alone.
+- Do NOT invent providers or technologies.
+
+Output contract (MUST follow exactly):
+{
+  "field_id": 113,
+  "input_id": "string",
+  "fiber_available": null,
+  "status": "not_available",
+  "notes": "string"
+}
+
+Field rules:
+- field_id: Always 113.
+- input_id: Echo the input property id exactly.
+- fiber_available: true if at least one source clearly shows fiber service available at the address. false if sources clearly show only non-fiber options at the address. null if fiber presence or absence cannot be determined confidently from address-level data.
+- status: "ok" if fiber_available is true or false. "not_available" if fiber_available is null.
+- notes: One short sentence stating the conclusion and source type (e.g., "FCC broadband map shows fiber provider at this address" or "Only cable/DSL providers listed; no fiber").
+
+Do NOT add any extra keys or text.`;
+
+  const userPrompt = `Determine whether fiber internet is available for this property:
+
+Property:
+- input_id: "prop_1"
+- address: "${address}"
+- city: "${city}"
+- state: "${state}"
+- zip: "${zip}"
+
+Return only the JSON object, no extra text.`;
+
+  try {
+    console.log(`✅ [Field 113] Calling Perplexity for fiber availability...`);
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-sonar-small-128k-online',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.1,
+        max_tokens: 400
+      })
+    });
+
+    if (!response.ok) {
+      console.error(`❌ [Field 113] API error: ${response.status}`);
+      return {};
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+      console.log(`❌ [Field 113] No content in response`);
+      return {};
+    }
+
+    const jsonStr = extractFirstJsonObject(content);
+    if (!jsonStr) {
+      console.log(`❌ [Field 113] No JSON found in response`);
+      return {};
+    }
+
+    const parsed = JSON.parse(jsonStr);
+
+    if (parsed.status === 'ok' && parsed.fiber_available !== null) {
+      const fiberValue = parsed.fiber_available ? 'Yes' : 'No';
+      console.log(`✅ [Field 113] Fiber available: ${fiberValue}`);
+      return {
+        '113_fiber_available': {
+          value: fiberValue,
+          source: 'FCC/ISP Data',
+          confidence: 'Medium',
+          details: parsed.notes || ''
+        }
+      };
+    } else {
+      console.log(`❌ [Field 113] Not available: ${parsed.notes || 'Unknown reason'}`);
+      return {};
+    }
+  } catch (error) {
+    console.error(`❌ [Field 113] Error:`, error);
+    return {};
+  }
+}
+
+/**
+ * DEDICATED MICRO-PROMPT: Field 115 - Cell Coverage Quality
+ * Uses carrier coverage maps (Verizon, AT&T, T-Mobile)
+ */
+async function callPerplexityCellCoverage(address: string, context: any = {}): Promise<Record<string, any>> {
+  const apiKey = process.env.PERPLEXITY_API_KEY;
+  if (!apiKey) {
+    console.log('❌ [Field 115] PERPLEXITY_API_KEY not set');
+    return {};
+  }
+
+  const city = context.city || 'Tampa';
+  const state = context.state || 'FL';
+  const zip = context.zip || '';
+
+  const systemPrompt = `You are a strict, retrieval-only cell coverage assistant.
+Your ONLY task is to determine the cell coverage quality at a specific U.S. residential address.
+
+Rules:
+- Use carrier coverage maps (Verizon, AT&T, T-Mobile, US Cellular) or aggregator sites
+- Check for 5G and 4G LTE availability from major carriers
+- If you cannot find address-level data, return null instead of guessing
+- Never infer coverage from city-level claims alone
+
+Output contract (MUST follow exactly):
+{
+  "field_id": 115,
+  "input_id": "string",
+  "cell_coverage_quality": "string or null",
+  "status": "ok or not_available",
+  "notes": "string"
+}
+
+Field rules:
+- cell_coverage_quality:
+  - "Excellent" = 5G available from 2+ carriers
+  - "Good" = Strong 4G LTE from all major carriers
+  - "Fair" = 4G LTE with some weak spots or limited carriers
+  - "Poor" = Limited coverage, frequent drops
+  - null if cannot determine
+
+Do NOT add any extra keys or text.`;
+
+  const userPrompt = `Determine cell coverage quality for this property:
+
+Property:
+- input_id: "prop_1"
+- address: "${address}"
+- city: "${city}"
+- state: "${state}"
+- zip: "${zip}"
+
+Return only the JSON object, no extra text.`;
+
+  try {
+    console.log(`✅ [Field 115] Calling Perplexity for cell coverage...`);
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-sonar-small-128k-online',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.1,
+        max_tokens: 400
+      })
+    });
+
+    if (!response.ok) {
+      console.error(`❌ [Field 115] API error: ${response.status}`);
+      return {};
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+      console.log(`❌ [Field 115] No content in response`);
+      return {};
+    }
+
+    const jsonStr = extractFirstJsonObject(content);
+    if (!jsonStr) {
+      console.log(`❌ [Field 115] No JSON found in response`);
+      return {};
+    }
+
+    const parsed = JSON.parse(jsonStr);
+
+    if (parsed.status === 'ok' && parsed.cell_coverage_quality !== null) {
+      console.log(`✅ [Field 115] Cell coverage: ${parsed.cell_coverage_quality}`);
+      return {
+        '115_cell_coverage_quality': {
+          value: parsed.cell_coverage_quality,
+          source: 'Carrier Coverage Maps',
+          confidence: 'Medium',
+          details: parsed.notes || ''
+        }
+      };
+    } else {
+      console.log(`❌ [Field 115] Not available: ${parsed.notes || 'Unknown reason'}`);
+      return {};
+    }
+  } catch (error) {
+    console.error(`❌ [Field 115] Error:`, error);
     return {};
   }
 }
@@ -5307,7 +5508,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           'perplexity-utilities': 'Perplexity Utilities',
           'perplexity-electric': 'Perplexity Electric Bill',
           'perplexity-water': 'Perplexity Water Bill',
-          'perplexity-connectivity': 'Perplexity Connectivity',
+          'perplexity-internet-speed': 'Perplexity Internet Speed',
+          'perplexity-fiber': 'Perplexity Fiber',
+          'perplexity-cell': 'Perplexity Cell Coverage',
           'grok': 'Grok',
           'claude-opus': 'Claude Opus',
           'gpt': 'GPT',
@@ -5316,7 +5519,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         };
 
         const llmCascade = [
-          // PERPLEXITY MICRO-PROMPTS (8 source-centric calls)
+          // PERPLEXITY MICRO-PROMPTS (10 dedicated calls)
           { id: 'perplexity-portals', fn: (addr: string) => callPerplexityPortals(addr, perplexityContext), enabled: engines.includes('perplexity') },
           { id: 'perplexity-county', fn: (addr: string) => callPerplexityCounty(addr, perplexityContext), enabled: engines.includes('perplexity') },
           { id: 'perplexity-schools', fn: (addr: string) => callPerplexitySchools(addr, perplexityContext), enabled: engines.includes('perplexity') },
@@ -5324,7 +5527,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           { id: 'perplexity-utilities', fn: (addr: string) => callPerplexityUtilities(addr, perplexityContext), enabled: engines.includes('perplexity') },
           { id: 'perplexity-electric', fn: (addr: string) => callPerplexityElectricBill(addr, perplexityContext), enabled: engines.includes('perplexity') },
           { id: 'perplexity-water', fn: (addr: string) => callPerplexityWaterBill(addr, perplexityContext), enabled: engines.includes('perplexity') },
-          { id: 'perplexity-connectivity', fn: (addr: string) => callPerplexityConnectivity(addr, perplexityContext), enabled: engines.includes('perplexity') },
+          { id: 'perplexity-internet-speed', fn: (addr: string) => callPerplexityInternetSpeed(addr, perplexityContext), enabled: engines.includes('perplexity') },
+          { id: 'perplexity-fiber', fn: (addr: string) => callPerplexityFiberAvailable(addr, perplexityContext), enabled: engines.includes('perplexity') },
+          { id: 'perplexity-cell', fn: (addr: string) => callPerplexityCellCoverage(addr, perplexityContext), enabled: engines.includes('perplexity') },
 
           // OTHER LLMs (Tier 4-5)
           { id: 'grok', fn: callGrok, enabled: engines.includes('grok') },
