@@ -1881,6 +1881,74 @@ async function getTransitAccess(lat: number, lon: number): Promise<Record<string
   return fields;
 }
 
+// Google Places - Emergency Services Distance (Field 116)
+async function getEmergencyServicesDistance(lat: number, lon: number): Promise<Record<string, any>> {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey) {
+    console.log('[Emergency Services] GOOGLE_MAPS_API_KEY not set');
+    return {};
+  }
+
+  console.log(`[Emergency Services] Searching near: ${lat}, ${lon}`);
+  const origin = `${lat},${lon}`;
+  const fields: Record<string, any> = {};
+
+  const services = [
+    { type: 'fire_station', name: 'Fire Station' },
+    { type: 'police', name: 'Police Station' },
+    { type: 'hospital', name: 'Hospital' }
+  ];
+
+  const distances: number[] = [];
+  const details: string[] = [];
+
+  for (const service of services) {
+    try {
+      const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${origin}&rankby=distance&type=${service.type}&key=${apiKey}`;
+      const searchRes = await fetch(searchUrl);
+      const searchData = await searchRes.json();
+
+      if (searchData.status && searchData.status !== 'OK' && searchData.status !== 'ZERO_RESULTS') {
+        console.log(`[Emergency Services] API error for ${service.name}: ${searchData.status}`);
+        continue;
+      }
+
+      if (searchData.results && searchData.results.length > 0) {
+        const nearest = searchData.results[0];
+        const destLat = nearest.geometry.location.lat;
+        const destLon = nearest.geometry.location.lng;
+
+        const distUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destLat},${destLon}&units=imperial&key=${apiKey}`;
+        const distRes = await fetch(distUrl);
+        const distData = await distRes.json();
+
+        if (distData.rows?.[0]?.elements?.[0]?.distance) {
+          const meters = distData.rows[0].elements[0].distance.value;
+          const miles = meters / 1609.34;
+          distances.push(miles);
+          details.push(`${service.name}: ${miles.toFixed(1)} mi`);
+          console.log(`[Emergency Services] ${service.name}: ${miles.toFixed(1)} mi (${nearest.name})`);
+        }
+      }
+    } catch (e) {
+      console.error(`[Emergency Services] Error getting ${service.name}:`, e);
+    }
+  }
+
+  if (distances.length > 0) {
+    const avgDistance = distances.reduce((a, b) => a + b, 0) / distances.length;
+    fields['116_emergency_services_distance'] = {
+      value: `${avgDistance.toFixed(1)} mi avg`,
+      source: 'Google Places',
+      confidence: 'High',
+      details: details.join(', ')
+    };
+    console.log(`[Emergency Services] Average distance: ${avgDistance.toFixed(1)} mi`);
+  }
+
+  return fields;
+}
+
 // Google Distance Matrix - Commute time to downtown
 async function getCommuteTime(lat: number, lon: number, county: string): Promise<Record<string, any>> {
   console.log('🔍 [DIAGNOSIS] getCommuteTime() CALLED with:', { lat, lon, county });
@@ -1989,8 +2057,8 @@ async function enrichWithFreeAPIs(
   console.log(`🔵 Beach distance extracted: ${beachDistanceMiles !== undefined ? beachDistanceMiles.toFixed(1) + ' mi' : 'unavailable'}`);
 
   // STEP 2: Call all other APIs in parallel (including NOAA Sea Level with beach distance)
-  console.log('🔵 [Step 2/2] Calling remaining 21 APIs in parallel...');
-  const [walkScore, floodZone, airQuality, censusData, noiseDataResult, climateData, commuteTime, schoolDistances, transitAccess, crimeDataResult, schoolDiggerResult, femaRiskResult, noaaClimateResult, noaaStormResult, noaaSeaLevelResult, usgsElevationResult, usgsEarthquakeResult, epaFRSResult, epaRadonResult, streetViewResult, googleSolarResult/*, redfinResult*/] = await Promise.all([
+  console.log('🔵 [Step 2/2] Calling remaining 22 APIs in parallel...');
+  const [walkScore, floodZone, airQuality, censusData, noiseDataResult, climateData, commuteTime, schoolDistances, transitAccess, emergencyServices, crimeDataResult, schoolDiggerResult, femaRiskResult, noaaClimateResult, noaaStormResult, noaaSeaLevelResult, usgsElevationResult, usgsEarthquakeResult, epaFRSResult, epaRadonResult, streetViewResult, googleSolarResult/*, redfinResult*/] = await Promise.all([
     getWalkScore(geo.lat, geo.lon, address),
     getFloodZone(geo.lat, geo.lon),
     getAirQuality(geo.lat, geo.lon),
@@ -2000,6 +2068,7 @@ async function enrichWithFreeAPIs(
     getCommuteTime(geo.lat, geo.lon, geo.county),
     getSchoolDistances(geo.lat, geo.lon),
     getTransitAccess(geo.lat, geo.lon),
+    getEmergencyServicesDistance(geo.lat, geo.lon), // Field 116: Emergency Services Distance
     callCrimeGrade(geo.lat, geo.lon, address),
     callSchoolDigger(geo.lat, geo.lon),
     callFEMARiskIndex(geo.county, 'FL'),
@@ -2056,7 +2125,7 @@ async function enrichWithFreeAPIs(
   const apiEndTime = Date.now();
   console.log(`✅ [enrichWithFreeAPIs] All APIs completed in ${apiEndTime - apiStartTime}ms`);
 
-  Object.assign(fields, walkScore, floodZone, airQuality, censusData, noiseData, distances, commuteTime, schoolDistances, transitAccess, crimeData, schoolDiggerData, greatSchoolsData, femaRiskData, noaaClimateData, noaaStormData, noaaSeaLevelData, usgsElevationData, usgsEarthquakeData, epaFRSData, epaRadonData, streetViewData, googleSolarData, climateData/*, redfinData*/);
+  Object.assign(fields, walkScore, floodZone, airQuality, censusData, noiseData, distances, commuteTime, schoolDistances, transitAccess, emergencyServices, crimeData, schoolDiggerData, greatSchoolsData, femaRiskData, noaaClimateData, noaaStormData, noaaSeaLevelData, usgsElevationData, usgsEarthquakeData, epaFRSData, epaRadonData, streetViewData, googleSolarData, climateData/*, redfinData*/);
 
   console.log('🔵 [enrichWithFreeAPIs] Raw field count before filtering:', Object.keys(fields).length);
   console.log('🔵 [enrichWithFreeAPIs] Field breakdown:');
@@ -2070,6 +2139,7 @@ async function enrichWithFreeAPIs(
   console.log('  - CommuteTime fields:', Object.keys(commuteTime || {}).length);
   console.log('  - SchoolDistances fields:', Object.keys(schoolDistances || {}).length);
   console.log('  - TransitAccess fields:', Object.keys(transitAccess || {}).length);
+  console.log('  - EmergencyServices fields:', Object.keys(emergencyServices || {}).length);
   console.log('  - CrimeData fields:', Object.keys(crimeData || {}).length);
   console.log('  - SchoolDigger fields:', Object.keys(schoolDiggerData || {}).length);
   console.log('  - FEMA Risk Index fields:', Object.keys(femaRiskData || {}).length);
