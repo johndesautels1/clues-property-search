@@ -150,6 +150,7 @@ export interface BridgeProperty {
 
   // Interior Features
   InteriorFeatures?: string[];
+  AdditionalRooms?: string[];  // e.g., ["Den/Library/Office", "Interior In-Law Suite w/No Private Entry"]
   Flooring?: string[];
   Appliances?: string[];
   FireplacesTotal?: number;

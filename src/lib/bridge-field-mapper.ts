@@ -415,15 +415,22 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
     addField('49_flooring_type', property.Flooring.join(', '));
   }
 
+  // Field 50: Kitchen Features - Extract from InteriorFeatures
+  // Look for counters, kitchen-specific features, and appliance-related items
   if (property.InteriorFeatures && Array.isArray(property.InteriorFeatures)) {
-    // Extract kitchen features if mentioned
-    const kitchenFeats = property.InteriorFeatures.filter(f =>
-      f.toLowerCase().includes('kitchen') ||
-      f.toLowerCase().includes('granite') ||
-      f.toLowerCase().includes('stainless')
-    );
+    const kitchenKeywords = [
+      'kitchen', 'granite', 'stainless', 'counter', 'stone', 'quartz', 'marble',
+      'solid surface', 'corian', 'butcher block', 'tile counter', 'laminate counter',
+      'island', 'breakfast bar', 'pantry', 'eat-in kitchen', 'chef', 'gourmet',
+      'cabinet', 'appliance', 'cooktop', 'range', 'oven', 'microwave'
+    ];
+    const kitchenFeats = property.InteriorFeatures.filter(f => {
+      const lower = f.toLowerCase();
+      return kitchenKeywords.some(keyword => lower.includes(keyword));
+    });
     if (kitchenFeats.length > 0) {
       addField('50_kitchen_features', kitchenFeats.join(', '));
+      console.log('[Bridge Mapper] Field 50 (KitchenFeatures):', kitchenFeats);
     }
   }
 
@@ -722,14 +729,38 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   }
 
   // Field 135: Accessibility Modifications
-  let accessibilityFound = false;
+  // Include elevator for Single Family/Townhouse (luxury or accessibility), NOT for Condo (standard)
+  const accessibilityFeatures: string[] = [];
+
+  // Check AccessibilityFeatures array first
   if (property.AccessibilityFeatures && Array.isArray(property.AccessibilityFeatures)) {
-    addField('135_accessibility_modifications', property.AccessibilityFeatures.join(', '));
-    accessibilityFound = true;
+    accessibilityFeatures.push(...property.AccessibilityFeatures);
   }
 
-  // Fallback: Parse from PublicRemarks
-  if (!accessibilityFound && property.PublicRemarks) {
+  // Check InteriorFeatures for Elevator - only add for SFH/Townhouse, not Condo
+  if (property.InteriorFeatures && Array.isArray(property.InteriorFeatures)) {
+    const hasElevator = property.InteriorFeatures.some(f => f.toLowerCase().includes('elevator'));
+    if (hasElevator) {
+      const propType = (property.PropertyType || property.PropertySubType || '').toLowerCase();
+      const isCondo = propType.includes('condo') || propType.includes('apartment') || propType.includes('co-op');
+
+      if (!isCondo) {
+        // SFH/Townhouse with elevator = accessibility or luxury feature
+        accessibilityFeatures.push('Elevator');
+        console.log('[Bridge Mapper] Field 135: Elevator detected in SFH/Townhouse - added to accessibility');
+      } else {
+        console.log('[Bridge Mapper] Field 135: Elevator in Condo - standard feature, not adding');
+      }
+    }
+  }
+
+  if (accessibilityFeatures.length > 0) {
+    const uniqueFeatures = [...new Set(accessibilityFeatures)];
+    addField('135_accessibility_modifications', uniqueFeatures.join(', '));
+  }
+
+  // Fallback: Parse from PublicRemarks if no features found
+  if (accessibilityFeatures.length === 0 && property.PublicRemarks) {
     const accessKeywords = ['wheelchair', 'accessible', 'ada compliant', 'ada', 'ramp', 'grab bar', 'wide doorway', 'roll-in shower', 'accessible bathroom'];
     const remarks = property.PublicRemarks;
     const sentences = remarks.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 10);
@@ -875,8 +906,21 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
     addField('166_community_features', property.CommunityFeatures.join(', '));
   }
 
+  // Field 167: Interior Features - Combine InteriorFeatures + AdditionalRooms
+  const allInteriorFeatures: string[] = [];
+
   if (property.InteriorFeatures && Array.isArray(property.InteriorFeatures)) {
-    addField('167_interior_features', property.InteriorFeatures.join(', '));
+    allInteriorFeatures.push(...property.InteriorFeatures);
+  }
+
+  // Add AdditionalRooms (Den, In-Law Suite, Office, etc.)
+  if (property.AdditionalRooms && Array.isArray(property.AdditionalRooms)) {
+    allInteriorFeatures.push(...property.AdditionalRooms);
+    console.log('[Bridge Mapper] Field 167: Added AdditionalRooms:', property.AdditionalRooms);
+  }
+
+  if (allInteriorFeatures.length > 0) {
+    addField('167_interior_features', allInteriorFeatures.join(', '));
   }
 
   if (property.ExteriorFeatures && Array.isArray(property.ExteriorFeatures)) {
