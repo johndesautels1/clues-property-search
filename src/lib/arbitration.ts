@@ -566,7 +566,14 @@ export function createArbitrationPipeline(minLLMQuorum: number = 2): {
       let addedCount = 0;
       for (const [key, value] of Object.entries(sourceFields)) {
         if (value !== null && value !== undefined && value !== '') {
-          this.addField(key, value, source);
+          // CRITICAL: Extract primitive value if wrapped in {value, source, confidence} format
+          // Some sources return {value: X, source: Y} - we need just X
+          let actualValue = value;
+          if (typeof value === 'object' && value !== null && 'value' in value) {
+            actualValue = value.value;
+          }
+
+          this.addField(key, actualValue, source);
           addedCount++;
         }
       }

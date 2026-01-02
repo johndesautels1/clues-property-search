@@ -905,16 +905,38 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
             </div>
             {searchResults.llm_responses && (
               <div className="mt-2 flex flex-wrap gap-2">
-                {searchResults.llm_responses.map((resp: any, idx: number) => (
-                  <span
-                    key={idx}
-                    className={`text-xs px-2 py-1 rounded ${
-                      resp.error ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
-                    }`}
-                  >
-                    {resp.llm}: {resp.error ? 'Error' : `${resp.fields_found} fields`}
-                  </span>
-                ))}
+                {(() => {
+                  // Merge Perplexity micro-prompts into single display
+                  const llmResponses = searchResults.llm_responses;
+                  const perplexityResponses = llmResponses.filter((r: any) => r.llm?.startsWith('perplexity-'));
+                  const otherResponses = llmResponses.filter((r: any) => !r.llm?.startsWith('perplexity-'));
+
+                  const displayResponses = [...otherResponses];
+
+                  // Add merged Perplexity if any micro-prompts exist
+                  if (perplexityResponses.length > 0) {
+                    const totalFields = perplexityResponses.reduce((sum: number, r: any) => sum + (r.fields_found || 0), 0);
+                    const hasError = perplexityResponses.every((r: any) => r.error);
+                    const errorCount = perplexityResponses.filter((r: any) => r.error).length;
+
+                    displayResponses.unshift({
+                      llm: 'perplexity',
+                      fields_found: totalFields,
+                      error: hasError ? `${errorCount}/${perplexityResponses.length} prompts failed` : null
+                    });
+                  }
+
+                  return displayResponses.map((resp: any, idx: number) => (
+                    <span
+                      key={idx}
+                      className={`text-xs px-2 py-1 rounded ${
+                        resp.error ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
+                      }`}
+                    >
+                      {resp.llm}: {resp.error ? 'Error' : `${resp.fields_found} fields`}
+                    </span>
+                  ));
+                })()}
               </div>
             )}
             {searchResults.conflicts && searchResults.conflicts.length > 0 && (
