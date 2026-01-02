@@ -756,7 +756,8 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
         console.log(`[FBI Crime] ✅ Annual violent crime rate: ${annualRate} per 100k`);
 
         // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Safety & Crime (88-90)
-        setField(fields, '88_violent_crime_index', annualRate.toString(), FBI_CRIME_SOURCE);
+        // Add "(per 100,000)" text to clarify the rate scale
+        setField(fields, '88_violent_crime_index', `${annualRate} (per 100,000)`, FBI_CRIME_SOURCE);
 
         // Grade based on annual violent crime rate per 100k → Field 90 neighborhood_safety_rating
         let grade = 'A';
@@ -794,7 +795,7 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
           const annualRate = Math.round(monthlyRates.reduce((a, b) => a + b, 0));
           console.log(`[FBI Crime] ✅ Annual violent crime rate (fallback): ${annualRate} per 100k`);
 
-          setField(fields, '88_violent_crime_index', annualRate.toString(), FBI_CRIME_SOURCE, 'Medium');
+          setField(fields, '88_violent_crime_index', `${annualRate} (per 100,000)`, FBI_CRIME_SOURCE, 'Medium');
 
           let grade = 'A';
           if (annualRate > 500) grade = 'F';
@@ -824,7 +825,7 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
           const annualRate = Math.round(monthlyRates.reduce((a, b) => a + b, 0));
           console.log(`[FBI Crime] ✅ Annual property crime rate: ${annualRate} per 100k`);
 
-          setField(fields, '89_property_crime_index', annualRate.toString(), FBI_CRIME_SOURCE);
+          setField(fields, '89_property_crime_index', `${annualRate} (per 100,000)`, FBI_CRIME_SOURCE);
         }
       } else {
         // Fallback: Try to extract ANY state data if exact key match fails
@@ -840,7 +841,7 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
             const annualRate = Math.round(monthlyRates.reduce((a, b) => a + b, 0));
             console.log(`[FBI Crime] ✅ Annual property crime rate (fallback): ${annualRate} per 100k`);
 
-            setField(fields, '89_property_crime_index', annualRate.toString(), FBI_CRIME_SOURCE, 'Medium');
+            setField(fields, '89_property_crime_index', `${annualRate} (per 100,000)`, FBI_CRIME_SOURCE, 'Medium');
           }
         }
       }

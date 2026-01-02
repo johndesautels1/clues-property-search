@@ -296,6 +296,68 @@ export function calculateCapRate(data: PropertyData): CalculationResult | null {
 }
 
 /**
+ * Field 93: Price to Rent Ratio
+ * Formula: listing_price / (monthly_rent * 12)
+ */
+export function calculatePriceToRentRatio(data: PropertyData): CalculationResult | null {
+  if (!data.field_10_listing_price || !data.field_98_rental_estimate_monthly || data.field_98_rental_estimate_monthly === 0) {
+    return null;
+  }
+
+  const annualRent = data.field_98_rental_estimate_monthly * 12;
+  const ratio = data.field_10_listing_price / annualRent;
+  const value = Math.round(ratio * 100) / 100;
+
+  return {
+    value,
+    source: 'Backend Calculation',
+    confidence: 'High',
+    calculation_method: 'listing_price / (monthly_rent * 12)'
+  };
+}
+
+/**
+ * Field 94: Price vs Median Percent
+ * Formula: ((listing_price - median_price) / median_price) * 100
+ */
+export function calculatePriceVsMedian(data: PropertyData): CalculationResult | null {
+  if (!data.field_10_listing_price || !data.field_91_median_home_price || data.field_91_median_home_price === 0) {
+    return null;
+  }
+
+  const percentDiff = ((data.field_10_listing_price - data.field_91_median_home_price) / data.field_91_median_home_price) * 100;
+  const value = Math.round(percentDiff * 100) / 100;
+
+  return {
+    value,
+    source: 'Backend Calculation',
+    confidence: 'High',
+    calculation_method: '((listing_price - median_price) / median_price) * 100'
+  };
+}
+
+/**
+ * Field 99: Rental Yield Estimate (%)
+ * Formula: (annual_rent / listing_price) * 100
+ */
+export function calculateRentalYield(data: PropertyData): CalculationResult | null {
+  if (!data.field_98_rental_estimate_monthly || !data.field_10_listing_price || data.field_10_listing_price === 0) {
+    return null;
+  }
+
+  const annualRent = data.field_98_rental_estimate_monthly * 12;
+  const yield_pct = (annualRent / data.field_10_listing_price) * 100;
+  const value = Math.round(yield_pct * 100) / 100;
+
+  return {
+    value,
+    source: 'Backend Calculation',
+    confidence: 'High',
+    calculation_method: '(annual_rent / listing_price) * 100'
+  };
+}
+
+/**
  * Calculate all derived fields at once
  */
 export function calculateAllDerivedFields(data: PropertyData): Record<string, CalculationResult | null> {
