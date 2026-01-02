@@ -69,7 +69,8 @@ interface DataFieldProps {
   format?: 'currency' | 'number' | 'percent' | 'date' | 'text';
   // LLM metadata for color coding (ADMIN ONLY)
   confidence?: string;
-  llmSources?: string[];
+  sources?: string[]; // Primary sources (MLS, Google, APIs, etc.)
+  llmSources?: string[]; // LLM-specific sources
   hasConflict?: boolean;
   conflictValues?: Array<{ source: string; value: any }>;
   fieldKey?: string; // Field key for retry API calls
@@ -83,7 +84,7 @@ interface DataFieldProps {
   singleSourceWarning?: boolean;
 }
 
-const DataField = ({ label, value, icon, format = 'text', confidence, llmSources, hasConflict, conflictValues, fieldKey, onRetry, isRetrying, isAdmin = false, validationStatus, validationMessage, singleSourceWarning }: DataFieldProps) => {
+const DataField = ({ label, value, icon, format = 'text', confidence, sources, llmSources, hasConflict, conflictValues, fieldKey, onRetry, isRetrying, isAdmin = false, validationStatus, validationMessage, singleSourceWarning }: DataFieldProps) => {
   const [showRetry, setShowRetry] = useState(false);
 
   // Don't render if no value AND not explicitly showing missing data
@@ -219,16 +220,20 @@ const DataField = ({ label, value, icon, format = 'text', confidence, llmSources
             {isMissing ? <span className="text-gray-500 italic">Not available</span> : formattedValue}
           </p>
           {/* SOURCE INFO - ADMIN ONLY */}
-          {isAdmin && llmSources && llmSources.length > 0 && (
+          {isAdmin && (sources || llmSources) && ((sources && sources.length > 0) || (llmSources && llmSources.length > 0)) && (
             <div className="mt-1 flex items-center gap-2">
               <span className="text-xs text-gray-500">
-                Source: {llmSources.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')}
+                Source: {
+                  llmSources && llmSources.length > 0
+                    ? llmSources.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')
+                    : sources ? sources.join(', ') : 'Unknown'
+                }
               </span>
               {/* Calculated Field Badge */}
-              {isCalculatedField({ sources: llmSources }) && (
+              {isCalculatedField({ sources: llmSources || sources || [] }) && (
                 <span className="px-2 py-0.5 bg-quantum-cyan/20 text-quantum-cyan text-[10px] font-semibold rounded-full flex items-center gap-1">
                   <Zap className="w-3 h-3" />
-                  {getCalculationBadge({ sources: llmSources })}
+                  {getCalculationBadge({ sources: llmSources || sources || [] })}
                 </span>
               )}
             </div>
@@ -289,7 +294,8 @@ const formatValue = (value: any, format: string): string => {
 interface DataFieldInput<T> {
   value: T | null;
   confidence?: string;
-  llmSources?: string[];
+  sources?: string[]; // Primary sources (MLS, Google, APIs, etc.)
+  llmSources?: string[]; // LLM-specific sources
   hasConflict?: boolean;
   conflictValues?: Array<{ source: string; value: any }>;
   validationStatus?: 'passed' | 'failed' | 'warning' | 'valid' | 'single_source_warning';
@@ -330,6 +336,7 @@ const renderDataField = (
       format={format}
       icon={icon}
       confidence={field.confidence}
+      sources={field.sources}
       llmSources={field.llmSources}
       hasConflict={field.hasConflict}
       conflictValues={field.conflictValues}
@@ -361,6 +368,7 @@ const renderMultiSelectField = (
       value={field.value}
       fieldKey={fieldKey}
       confidence={field.confidence}
+      sources={field.sources}
       llmSources={field.llmSources}
       hasConflict={field.hasConflict}
       isAdmin={globalIsAdmin}

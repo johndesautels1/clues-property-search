@@ -13,7 +13,8 @@ interface MultiSelectFieldProps {
   fieldKey?: string;
   // Admin metadata
   confidence?: string;
-  llmSources?: string[];
+  sources?: string[]; // Primary sources (MLS, Google, APIs, etc.)
+  llmSources?: string[]; // LLM-specific sources
   hasConflict?: boolean;
   isAdmin?: boolean;
 }
@@ -23,6 +24,7 @@ export const MultiSelectField = ({
   value,
   fieldKey,
   confidence,
+  sources,
   llmSources,
   hasConflict,
   isAdmin = false,
@@ -73,18 +75,20 @@ export const MultiSelectField = ({
   let sourceBadgeText = '';
 
   if (isAdmin) {
+    const primarySource = (llmSources && llmSources.length > 0) ? llmSources[0] : (sources && sources.length > 0) ? sources[0] : '';
+
     if (confidence === 'High') {
       sourceBadgeColor = 'text-emerald-400';
-      sourceBadgeText = llmSources && llmSources.length > 0 ? llmSources[0] : 'High Confidence';
+      sourceBadgeText = primarySource || 'High Confidence';
     } else if (confidence === 'Medium') {
       sourceBadgeColor = 'text-yellow-400';
       sourceBadgeText = 'Medium Confidence';
     } else if (hasConflict) {
       sourceBadgeColor = 'text-orange-400';
       sourceBadgeText = 'Conflict Detected';
-    } else if (llmSources && llmSources.length > 0) {
+    } else if (primarySource) {
       sourceBadgeColor = 'text-blue-400';
-      sourceBadgeText = llmSources[0];
+      sourceBadgeText = primarySource;
     }
   }
 

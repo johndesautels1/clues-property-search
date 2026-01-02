@@ -256,11 +256,22 @@ export async function callWalkScore(lat: number, lon: number, address: string): 
     setField(fields, '74_walk_score', data.walkscore, 'WalkScore');
     setField(fields, '80_walkability_description', data.description, 'WalkScore');
 
+    // Fields 75 & 76: Transit and Bike Scores - Debug logging
+    console.log('[WalkScore] Transit data:', JSON.stringify(data.transit));
+    console.log('[WalkScore] Bike data:', JSON.stringify(data.bike));
+
     if (data.transit?.score) {
       setField(fields, '75_transit_score', data.transit.score, 'WalkScore');
+      console.log('[WalkScore] ✅ Field 75 set to:', data.transit.score);
+    } else {
+      console.warn('[WalkScore] ⚠️ Field 75: No transit score in API response');
     }
+
     if (data.bike?.score) {
       setField(fields, '76_bike_score', data.bike.score, 'WalkScore');
+      console.log('[WalkScore] ✅ Field 76 set to:', data.bike.score);
+    } else {
+      console.warn('[WalkScore] ⚠️ Field 76: No bike score in API response');
     }
 
     return { success: true, source: 'WalkScore', fields };
@@ -321,13 +332,17 @@ export async function callAirNow(lat: number, lon: number): Promise<ApiResult> {
 
   try {
     const url = `https://www.airnowapi.org/aq/observation/latLong/current/?format=application/json&latitude=${lat}&longitude=${lon}&distance=25&API_KEY=${apiKey}`;
+    console.log('[AirNow] Fetching air quality for:', { lat, lon });
+
     const fetchResult = await safeFetch<any[]>(url, undefined, 'AirNow');
 
     if (!fetchResult.success || !fetchResult.data) {
+      console.warn('[AirNow] ⚠️ Fetch failed:', fetchResult.error);
       return { success: false, source: 'AirNow', fields, error: fetchResult.error || 'Fetch failed' };
     }
 
     const data = fetchResult.data;
+    console.log('[AirNow] API response:', JSON.stringify(data).substring(0, 200));
 
     if (Array.isArray(data) && data.length > 0 && data[0]) {
       const aqi = data[0].AQI;
@@ -335,6 +350,9 @@ export async function callAirNow(lat: number, lon: number): Promise<ApiResult> {
       // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Environment & Risk (117-130)
       setField(fields, '117_air_quality_index', aqi, 'AirNow');
       setField(fields, '118_air_quality_grade', category, 'AirNow');
+      console.log('[AirNow] ✅ Fields set - AQI:', aqi, 'Grade:', category);
+    } else {
+      console.warn('[AirNow] ⚠️ No data in response or empty array');
     }
 
     return { success: Object.keys(fields).length > 0, source: 'AirNow', fields };

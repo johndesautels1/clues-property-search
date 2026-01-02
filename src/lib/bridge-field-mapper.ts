@@ -451,6 +451,9 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // Map utility provider fields from Bridge MLS (previously in extended data only)
   if (property.Electric) {
     addField('104_electric_provider', property.Electric);
+    console.log('[Bridge Mapper] Field 104 (Electric):', property.Electric);
+  } else {
+    console.warn('[Bridge Mapper] ⚠️ Field 104: property.Electric is missing');
   }
 
   if (property.Water) {
@@ -470,8 +473,12 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // ================================================================
   // GROUP 16: View & Location (Fields 131-138)
   // ================================================================
+  // Field 131: View Type - Debug logging
   if (property.View && Array.isArray(property.View)) {
     addField('131_view_type', property.View.join(', '));
+    console.log('[Bridge Mapper] Field 131 (View):', property.View);
+  } else {
+    console.warn('[Bridge Mapper] ⚠️ Field 131: property.View is missing or not an array');
   }
 
   // Lot Features - combine LotFeatures, Topography, and Vegetation
@@ -641,8 +648,23 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // GROUP 20: Legal & Compliance (Fields 149-154)
   // ================================================================
   addField('149_subdivision_name', property.SubdivisionName);
-  addField('150_legal_description', property.LegalDescription);
-  addField('151_homestead_yn', property.HomesteadYN);
+
+  // Field 150: Legal Description - Debug logging
+  if (property.LegalDescription) {
+    addField('150_legal_description', property.LegalDescription);
+    console.log('[Bridge Mapper] Field 150 (LegalDescription):', property.LegalDescription?.substring(0, 100) + '...');
+  } else {
+    console.warn('[Bridge Mapper] ⚠️ Field 150: property.LegalDescription is missing');
+  }
+
+  // Field 151: Homestead Exemption - Debug logging
+  if (property.HomesteadYN !== undefined) {
+    addField('151_homestead_yn', property.HomesteadYN);
+    console.log('[Bridge Mapper] Field 151 (HomesteadYN):', property.HomesteadYN);
+  } else {
+    console.warn('[Bridge Mapper] ⚠️ Field 151: property.HomesteadYN is missing');
+  }
+
   addField('152_cdd_yn', property.CDDYN);
   addField('153_annual_cdd_fee', property.CDDAnnualFee);
   addField('154_front_exposure', property.DirectionFaces);
