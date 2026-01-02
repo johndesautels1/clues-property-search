@@ -4946,6 +4946,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       field_143_assigned_parking: getFieldValue('143_assigned_parking')
     };
 
+    // DEBUG: Log inputs for Field 11 calculation
+    console.log('[Field 11 DEBUG] Input values for price_per_sqft calculation:');
+    console.log(`  - Field 10 (listing_price): ${propertyData.field_10_listing_price}`);
+    console.log(`  - Field 21 (living_sqft): ${propertyData.field_21_living_sqft}`);
+
     // Run all backend calculations
     const calculatedFields = calculateAllDerivedFields(propertyData);
 

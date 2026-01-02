@@ -49,11 +49,19 @@ export interface CalculationResult {
  * Formula: listing_price / living_sqft
  */
 export function calculatePricePerSqft(data: PropertyData): CalculationResult | null {
+  console.log('[calculatePricePerSqft] Inputs:', {
+    listing_price: data.field_10_listing_price,
+    living_sqft: data.field_21_living_sqft
+  });
+
   if (!data.field_10_listing_price || !data.field_21_living_sqft || data.field_21_living_sqft === 0) {
+    console.log('[calculatePricePerSqft] ❌ FAILED - Missing or invalid inputs');
     return null;
   }
 
   const value = Math.round((data.field_10_listing_price / data.field_21_living_sqft) * 100) / 100;
+
+  console.log('[calculatePricePerSqft] ✅ SUCCESS - Calculated:', value);
 
   return {
     value,
