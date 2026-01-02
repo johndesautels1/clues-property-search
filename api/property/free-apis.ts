@@ -1706,19 +1706,19 @@ export async function callRedfinProperty(address: string): Promise<ApiResult> {
     const walkScoreResult = await safeFetch<any>(walkScoreUrl, { headers }, 'Redfin-WalkScore');
 
     if (walkScoreResult.success && walkScoreResult.data) {
-      // Field 61: Walk Score
+      // Field 74: Walk Score (FIXED: was incorrectly 61)
       if (walkScoreResult.data.walkScore?.value) {
-        setField(fields, '61_walk_score', walkScoreResult.data.walkScore.value, 'Redfin', 'High');
+        setField(fields, '74_walk_score', walkScoreResult.data.walkScore.value, 'Redfin', 'High');
       }
 
-      // Field 62: Transit Score
+      // Field 75: Transit Score (FIXED: was incorrectly 62)
       if (walkScoreResult.data.transitScore?.value) {
-        setField(fields, '62_transit_score', walkScoreResult.data.transitScore.value, 'Redfin', 'High');
+        setField(fields, '75_transit_score', walkScoreResult.data.transitScore.value, 'Redfin', 'High');
       }
 
-      // Field 63: Bike Score
+      // Field 76: Bike Score (FIXED: was incorrectly 63)
       if (walkScoreResult.data.bikeScore?.value) {
-        setField(fields, '63_bike_score', walkScoreResult.data.bikeScore.value, 'Redfin', 'High');
+        setField(fields, '76_bike_score', walkScoreResult.data.bikeScore.value, 'Redfin', 'High');
       }
     }
 

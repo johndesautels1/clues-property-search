@@ -1303,19 +1303,34 @@ async function getFloodZone(lat: number, lon: number): Promise<Record<string, an
 
 async function getAirQuality(lat: number, lon: number): Promise<Record<string, any>> {
   const apiKey = process.env.AIRNOW_API_KEY;
-  if (!apiKey) return {};
+  if (!apiKey) {
+    console.log('[AirNow] API key not configured');
+    return {};
+  }
 
   try {
     const url = `https://www.airnowapi.org/aq/observation/latLong/current/?format=application/json&latitude=${lat}&longitude=${lon}&distance=25&API_KEY=${apiKey}`;
+    console.log('[AirNow] Fetching air quality for lat:', lat, 'lon:', lon);
     const response = await fetch(url);
     const data = await response.json();
-    // UPDATED: 2025-11-30 - Corrected field numbers to match fields-schema.ts
+    console.log('[AirNow] API response:', JSON.stringify(data).substring(0, 200));
+
+    // FIXED: Split AQI and Grade into separate fields (Field 117 and 118)
     if (data?.[0]) {
+      const aqi = data[0].AQI;
+      const grade = data[0].Category?.Name || '';
+      console.log('[AirNow] ✅ Setting Field 117 (AQI):', aqi, 'and Field 118 (Grade):', grade);
+
       return {
-        '117_air_quality_index': { value: `${data[0].AQI} - ${data[0].Category.Name}`, source: 'AirNow', confidence: 'High' }
+        '117_air_quality_index': { value: aqi, source: 'AirNow', confidence: 'High' },
+        '118_air_quality_grade': { value: grade, source: 'AirNow', confidence: 'High' }
       };
+    } else {
+      console.warn('[AirNow] ⚠️ No data in response or empty array');
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error('[AirNow] Error:', e);
+  }
   return {};
 }
 
