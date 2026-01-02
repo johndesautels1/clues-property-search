@@ -1918,21 +1918,35 @@ export default function PropertyDetail() {
                     const compData = fullProperty.financial.comparableSalesLast3;
                     if (!compData || !compData.value) return null;
 
-                    // Try to parse as JSON array
+                    // Extract comparable sales array from various formats
                     let comps: any[] = [];
                     try {
-                      if (typeof compData.value === 'string') {
-                        comps = JSON.parse(compData.value);
-                      } else if (Array.isArray(compData.value)) {
-                        comps = compData.value;
+                      const val = compData.value;
+                      if (typeof val === 'string') {
+                        // Try to parse JSON string
+                        const parsed = JSON.parse(val);
+                        comps = Array.isArray(parsed) ? parsed : (parsed.comps || parsed.comparables || parsed.comparable_sales || []);
+                      } else if (Array.isArray(val)) {
+                        comps = val;
+                      } else if (typeof val === 'object' && val !== null) {
+                        // Handle nested object structures like {comps: [...]} or {value: [...]}
+                        comps = val.comps || val.comparables || val.comparable_sales || val.value || [];
+                        if (!Array.isArray(comps)) comps = [];
                       }
                     } catch (e) {
-                      // If not JSON, fall back to regular text display
-                      return renderDataField("Comparable Sales", compData, "text", undefined, "103_comparable_sales");
+                      // If not valid JSON, check if it's already a text description
+                      if (typeof compData.value === 'string' && compData.value.length > 0) {
+                        return renderDataField("Comparable Sales", compData, "text", undefined, "103_comparable_sales");
+                      }
+                      return null;
                     }
 
                     if (!Array.isArray(comps) || comps.length === 0) {
-                      return renderDataField("Comparable Sales", compData, "text", undefined, "103_comparable_sales");
+                      // If we have a value but couldn't parse it as comps, show as text
+                      if (compData.value && typeof compData.value === 'string') {
+                        return renderDataField("Comparable Sales", compData, "text", undefined, "103_comparable_sales");
+                      }
+                      return null;
                     }
 
                     return (

@@ -133,7 +133,8 @@ export interface BridgeProperty {
 
   // Structure & Systems
   RoofType?: string[];
-  Roof?: string;
+  Roof?: string | string[];  // Can be string or array
+  RoofMaterial?: string[];   // Alternative RESO field name
   RoofYear?: number;
   YearRoofInstalled?: number;
   PermitRoof?: string;
@@ -142,8 +143,10 @@ export interface BridgeProperty {
   ExteriorFeatures?: string[];
   ConstructionMaterials?: string[];
   ExteriorConstruction?: string[];  // Stellar MLS field name for exterior materials
+  Exterior?: string[];  // Alternative field name
   FoundationType?: string[];
   FoundationDetails?: string;
+  Foundation?: string | string[];  // Alternative field name
   Heating?: string[];
   Cooling?: string[];
   CoolingYN?: boolean;

@@ -218,8 +218,7 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   addField('13_last_sale_date', property.CloseDate);
   addField('14_last_sale_price', property.ClosePrice);
 
-  // Field 15: Assessed Value - try multiple field names
-  console.log('[Bridge Mapper] TaxAssessedValue:', property.TaxAssessedValue, 'TaxAnnualAmount:', property.TaxAnnualAmount);
+  // Field 15: Assessed Value
   if (property.TaxAssessedValue) {
     addField('15_assessed_value', property.TaxAssessedValue);
   }
@@ -238,20 +237,12 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   addField('25_year_built', property.YearBuilt);
 
   // Field 26: Property Style (ArchitecturalStyle from MLS, not PropertyType)
-  // User clarification: This should be architectural style like "Ranch", "Mediterranean", "Colonial"
   if (property.ArchitecturalStyle && Array.isArray(property.ArchitecturalStyle) && property.ArchitecturalStyle.length > 0) {
     addField('26_property_type', property.ArchitecturalStyle.join(', '));
-    console.log('[Bridge Mapper] Field 26 (ArchitecturalStyle):', property.ArchitecturalStyle);
   } else if (property.PropertySubType) {
-    // Fallback to PropertySubType if no ArchitecturalStyle
     addField('26_property_type', property.PropertySubType);
-    console.log('[Bridge Mapper] Field 26 (PropertySubType fallback):', property.PropertySubType);
   } else if (property.PropertyType) {
-    // Last resort fallback to PropertyType
     addField('26_property_type', property.PropertyType);
-    console.log('[Bridge Mapper] Field 26 (PropertyType fallback):', property.PropertyType);
-  } else {
-    console.warn('[Bridge Mapper] ⚠️ Field 26: ArchitecturalStyle, PropertySubType and PropertyType are all missing!');
   }
 
   // Stories - try explicit count, then extract from ArchitecturalStyle, then use Levels
@@ -296,13 +287,9 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   addField('36_tax_year', property.TaxYear);
 
   // Field 37: Tax Rate - Calculate from taxes and assessed value
-  console.log('[Bridge Mapper] Tax fields - TaxAnnualAmount:', property.TaxAnnualAmount, 'TaxAssessedValue:', property.TaxAssessedValue);
   if (property.TaxAnnualAmount && property.TaxAssessedValue && property.TaxAssessedValue > 0) {
     const taxRate = (property.TaxAnnualAmount / property.TaxAssessedValue) * 100;
-    addField('37_property_tax_rate', Math.round(taxRate * 100) / 100); // Round to 2 decimals
-    console.log('[Bridge Mapper] Field 37 (TaxRate) calculated:', taxRate);
-  } else {
-    console.warn('[Bridge Mapper] ⚠️ Field 37: Cannot calculate tax rate - missing TaxAnnualAmount or TaxAssessedValue');
+    addField('37_property_tax_rate', Math.round(taxRate * 100) / 100);
   }
 
   // Field 38: Tax Exemptions - Convert HomesteadYN to text exemption list
@@ -313,15 +300,12 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // ================================================================
   // GROUP 5: Structure & Systems (Fields 39-48)
   // ================================================================
-  console.log('[Bridge Mapper] Roof fields - RoofType:', property.RoofType, 'Roof:', property.Roof);
-  if (property.RoofType && Array.isArray(property.RoofType) && property.RoofType.length > 0) {
-    addField('39_roof_type', property.RoofType.join(', ')); // Join all roof types
-    console.log('[Bridge Mapper] Field 39 (RoofType):', property.RoofType);
-  } else if (property.Roof) {
-    addField('39_roof_type', property.Roof);
-    console.log('[Bridge Mapper] Field 39 (Roof fallback):', property.Roof);
-  } else {
-    console.warn('[Bridge Mapper] ⚠️ Field 39: No roof type data found');
+
+  // Field 39: Roof Type - try multiple field name variations
+  const roofValue = property.RoofType || property.RoofMaterial || property.Roof;
+  if (roofValue) {
+    const roofStr = Array.isArray(roofValue) ? roofValue.join(', ') : String(roofValue);
+    addField('39_roof_type', roofStr);
   }
 
   // Field 40: Calculate roof age from year
@@ -336,30 +320,21 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
     addField('40_roof_age_est', `Recent permit: ${property.PermitRoof}`, 'Medium');
   }
 
-  // Field 41: Exterior Material - Stellar MLS uses "ExteriorConstruction" field
-  if (property.ExteriorConstruction && Array.isArray(property.ExteriorConstruction)) {
-    addField('41_exterior_material', property.ExteriorConstruction.join(', '));
-    console.log('[Bridge Mapper] Field 41 from ExteriorConstruction:', property.ExteriorConstruction);
-  } else if (property.ConstructionMaterials && Array.isArray(property.ConstructionMaterials)) {
-    addField('41_exterior_material', property.ConstructionMaterials.join(', '));
-    console.log('[Bridge Mapper] Field 41 from ConstructionMaterials fallback:', property.ConstructionMaterials);
-  } else if (property.ExteriorFeatures && Array.isArray(property.ExteriorFeatures)) {
+  // Field 41: Exterior Material - try multiple field name variations
+  const exteriorValue = property.ExteriorConstruction || property.ConstructionMaterials || property.Exterior;
+  if (exteriorValue && Array.isArray(exteriorValue) && exteriorValue.length > 0) {
+    addField('41_exterior_material', exteriorValue.join(', '));
+  } else if (property.ExteriorFeatures && Array.isArray(property.ExteriorFeatures) && property.ExteriorFeatures.length > 0) {
     addField('41_exterior_material', property.ExteriorFeatures[0]);
-    console.log('[Bridge Mapper] Field 41 from ExteriorFeatures fallback:', property.ExteriorFeatures[0]);
-  } else {
-    console.warn('[Bridge Mapper] ⚠️ Field 41: No exterior material data found');
   }
 
-  // Field 42: Foundation
-  console.log('[Bridge Mapper] Foundation fields - FoundationType:', property.FoundationType, 'FoundationDetails:', property.FoundationDetails);
-  if (property.FoundationType && Array.isArray(property.FoundationType) && property.FoundationType.length > 0) {
-    addField('42_foundation', property.FoundationType.join(', '));
-    console.log('[Bridge Mapper] Field 42 (FoundationType):', property.FoundationType);
+  // Field 42: Foundation - try multiple field name variations
+  const foundationValue = property.FoundationType || property.Foundation;
+  if (foundationValue) {
+    const foundationStr = Array.isArray(foundationValue) ? foundationValue.join(', ') : String(foundationValue);
+    addField('42_foundation', foundationStr);
   } else if (property.FoundationDetails) {
     addField('42_foundation', property.FoundationDetails);
-    console.log('[Bridge Mapper] Field 42 (FoundationDetails fallback):', property.FoundationDetails);
-  } else {
-    console.warn('[Bridge Mapper] ⚠️ Field 42: No foundation data found');
   }
 
   addField('43_water_heater_type', property.WaterHeaterType);
@@ -399,9 +374,6 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
 
   if (!interiorCondition && property.PublicRemarks) {
     interiorCondition = parseInteriorConditionFromRemarks(property.PublicRemarks);
-    if (interiorCondition) {
-      console.log('[Bridge Mapper] Field 48: Parsed from PublicRemarks:', interiorCondition);
-    }
   }
 
   if (interiorCondition) {
@@ -430,7 +402,6 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
     });
     if (kitchenFeats.length > 0) {
       addField('50_kitchen_features', kitchenFeats.join(', '));
-      console.log('[Bridge Mapper] Field 50 (KitchenFeatures):', kitchenFeats);
     }
   }
 
@@ -449,7 +420,6 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // Field 55: Pool (all pool features as multiselect)
   if (property.PoolFeatures && Array.isArray(property.PoolFeatures) && property.PoolFeatures.length > 0) {
     addField('55_pool_type', property.PoolFeatures.join(', '));
-    console.log('[Bridge Mapper] Field 55 (PoolFeatures):', property.PoolFeatures);
   }
 
   if (property.PatioAndPorchFeatures && Array.isArray(property.PatioAndPorchFeatures)) {
@@ -478,12 +448,9 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
       return lower.includes('flood') || lower.includes('fema');
     });
 
-    if (floodFeatures.length > 0) {
-      console.log('[Bridge Mapper] Flood data extracted from LotFeatures for Field 119:', floodFeatures);
-      // Store for Field 119 mapping (will be handled in GROUP 15: Environment & Risk section)
-      if (!property.FloodZone && floodFeatures.length > 0) {
-        property.FloodZone = floodFeatures.join(', ');
-      }
+    // Use flood features for Field 119 if FloodZone not set
+    if (floodFeatures.length > 0 && !property.FloodZone) {
+      property.FloodZone = floodFeatures.join(', ');
     }
   }
 
@@ -598,15 +565,10 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // Stellar MLS uses "FinancingAvailable" or "Financing" field
   if (property.FinancingAvailable && Array.isArray(property.FinancingAvailable)) {
     addField('102_financing_terms', property.FinancingAvailable.join(', '));
-    console.log('[Bridge Mapper] Field 102 from FinancingAvailable:', property.FinancingAvailable);
   } else if (property.Financing && Array.isArray(property.Financing)) {
     addField('102_financing_terms', property.Financing.join(', '));
-    console.log('[Bridge Mapper] Field 102 from Financing:', property.Financing);
   } else if (property.FinancingProposed && Array.isArray(property.FinancingProposed)) {
     addField('102_financing_terms', property.FinancingProposed.join(', '));
-    console.log('[Bridge Mapper] Field 102 from FinancingProposed:', property.FinancingProposed);
-  } else {
-    console.warn('[Bridge Mapper] ⚠️ Field 102: No financing data found (checked FinancingAvailable, Financing, FinancingProposed)');
   }
 
   // ================================================================
@@ -628,12 +590,9 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // ================================================================
   // GROUP 14: Utilities & Connectivity (Fields 104-116)
   // ================================================================
-  // Map utility provider fields from Bridge MLS (previously in extended data only)
+  // Map utility provider fields from Bridge MLS
   if (property.Electric) {
     addField('104_electric_provider', property.Electric);
-    console.log('[Bridge Mapper] Field 104 (Electric):', property.Electric);
-  } else {
-    console.warn('[Bridge Mapper] ⚠️ Field 104: property.Electric is missing');
   }
 
   if (property.Water) {
@@ -653,12 +612,9 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // ================================================================
   // GROUP 16: View & Location (Fields 131-138)
   // ================================================================
-  // Field 131: View Type - Debug logging
+  // Field 131: View Type
   if (property.View && Array.isArray(property.View)) {
     addField('131_view_type', property.View.join(', '));
-    console.log('[Bridge Mapper] Field 131 (View):', property.View);
-  } else {
-    console.warn('[Bridge Mapper] ⚠️ Field 131: property.View is missing or not an array');
   }
 
   // Lot Features - combine LotFeatures, Topography, and Vegetation
@@ -743,13 +699,9 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
     if (hasElevator) {
       const propType = (property.PropertyType || property.PropertySubType || '').toLowerCase();
       const isCondo = propType.includes('condo') || propType.includes('apartment') || propType.includes('co-op');
-
+      // SFH/Townhouse with elevator = accessibility or luxury feature
       if (!isCondo) {
-        // SFH/Townhouse with elevator = accessibility or luxury feature
         accessibilityFeatures.push('Elevator');
-        console.log('[Bridge Mapper] Field 135: Elevator detected in SFH/Townhouse - added to accessibility');
-      } else {
-        console.log('[Bridge Mapper] Field 135: Elevator in Condo - standard feature, not adding');
       }
     }
   }
@@ -852,21 +804,11 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // GROUP 20: Legal & Compliance (Fields 149-154)
   // ================================================================
   addField('149_subdivision_name', property.SubdivisionName);
+  addField('150_legal_description', property.LegalDescription);
 
-  // Field 150: Legal Description - Debug logging
-  if (property.LegalDescription) {
-    addField('150_legal_description', property.LegalDescription);
-    console.log('[Bridge Mapper] Field 150 (LegalDescription):', property.LegalDescription?.substring(0, 100) + '...');
-  } else {
-    console.warn('[Bridge Mapper] ⚠️ Field 150: property.LegalDescription is missing');
-  }
-
-  // Field 151: Homestead Exemption - Debug logging
+  // Field 151: Homestead Exemption
   if (property.HomesteadYN !== undefined) {
     addField('151_homestead_yn', property.HomesteadYN);
-    console.log('[Bridge Mapper] Field 151 (HomesteadYN):', property.HomesteadYN);
-  } else {
-    console.warn('[Bridge Mapper] ⚠️ Field 151: property.HomesteadYN is missing');
   }
 
   addField('152_cdd_yn', property.CDDYN);
@@ -876,18 +818,32 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // ================================================================
   // GROUP 21: Waterfront (Fields 155-159)
   // ================================================================
-  addField('155_water_frontage_yn', property.WaterfrontYN);
+  // Field 155: Waterfront Y/N - also infer from WaterfrontFeatures
+  if (property.WaterfrontYN !== undefined) {
+    addField('155_water_frontage_yn', property.WaterfrontYN);
+  } else if (property.WaterfrontFeatures && Array.isArray(property.WaterfrontFeatures) && property.WaterfrontFeatures.length > 0) {
+    addField('155_water_frontage_yn', true, 'Medium');
+  }
 
-  // Waterfront Feet - use WaterfrontFeet first, fallback to CanalFrontage
+  // Field 156: Waterfront Feet
   if (property.WaterfrontFeet) {
     addField('156_waterfront_feet', property.WaterfrontFeet);
   } else if (property.CanalFrontage) {
     addField('156_waterfront_feet', property.CanalFrontage, 'Medium');
   }
 
+  // Field 157: Water Access Y/N
   addField('157_water_access_yn', property.WaterAccessYN);
+
+  // Field 158: Water View Y/N
   addField('158_water_view_yn', property.WaterViewYN);
-  addField('159_water_body_name', property.WaterBodyName);
+
+  // Field 159: Water Body Name - extract from WaterfrontFeatures if not set
+  if (property.WaterBodyName) {
+    addField('159_water_body_name', property.WaterBodyName);
+  } else if (property.WaterfrontFeatures && Array.isArray(property.WaterfrontFeatures) && property.WaterfrontFeatures.length > 0) {
+    addField('159_water_body_name', property.WaterfrontFeatures.join(', '), 'Medium');
+  }
 
   // ================================================================
   // GROUP 22: Leasing (Fields 160-165)
@@ -916,7 +872,6 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // Add AdditionalRooms (Den, In-Law Suite, Office, etc.)
   if (property.AdditionalRooms && Array.isArray(property.AdditionalRooms)) {
     allInteriorFeatures.push(...property.AdditionalRooms);
-    console.log('[Bridge Mapper] Field 167: Added AdditionalRooms:', property.AdditionalRooms);
   }
 
   if (allInteriorFeatures.length > 0) {

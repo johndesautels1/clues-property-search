@@ -4903,6 +4903,17 @@ function mergeResults(results: any[]): any {
         }
       }
 
+      // ✅ CROSS-FIELD VALIDATION: If MLS says no HOA, reject LLM HOA fees
+      if (fieldKey === '31_hoa_fee_annual' && field.value) {
+        const hoaYnField = merged.fields['30_hoa_yn'];
+        // If MLS/Tier 1 explicitly says NO HOA, reject any LLM HOA fee
+        if (hoaYnField && hoaYnField.value === false &&
+            (hoaYnField.source.includes('MLS') || hoaYnField.source.includes('Stellar'))) {
+          console.warn(`❌ Field 31 rejected: MLS says no HOA (Field 30 = false), ignoring LLM fee $${field.value}`);
+          continue;
+        }
+      }
+
       // ✅ VALIDATE HOA FEE: Check for monthly/annual confusion
       if (fieldKey === '31_hoa_fee_annual' && field.value) {
         const validation = validateHOAFee(field.value, field);

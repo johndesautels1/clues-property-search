@@ -260,7 +260,30 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
 // TYPE COERCION FUNCTION - Validates and coerces LLM values
 // Ensures values match expected types from the 168-field schema
 // ============================================
+
+/**
+ * CRITICAL: Detect if a value is actually a field key that was hallucinated
+ * LLMs sometimes return our field keys as values (e.g., "98_rental_estimate" instead of a number)
+ * Pattern: digits followed by underscore followed by snake_case text
+ */
+function isHallucinatedFieldKey(value: any): boolean {
+  if (typeof value !== 'string') return false;
+  // Match patterns like "12_market_value_estimate", "98_rental_estimate", "33_hoa_includes"
+  const fieldKeyPattern = /^\d{1,3}_[a-z][a-z0-9_]+$/i;
+  if (fieldKeyPattern.test(value)) {
+    console.warn(`[RETRY-LLM] 🚫 HALLUCINATION DETECTED: "${value}" looks like a field key, not a value`);
+    return true;
+  }
+  return false;
+}
+
 function coerceValue(key: string, value: any): any {
+  // CRITICAL: Reject hallucinated field keys as values
+  if (isHallucinatedFieldKey(value)) {
+    console.warn(`[RETRY-LLM] 🚫 REJECTED: Field "${key}" had hallucinated value "${value}"`);
+    return null;
+  }
+
   const expectedType = FIELD_TYPE_MAP[key];
 
   // If no type mapping (unknown field), return as-is
