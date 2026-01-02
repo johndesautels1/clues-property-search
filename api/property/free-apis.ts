@@ -413,8 +413,9 @@ export async function callSchoolDigger(lat: number, lon: number): Promise<ApiRes
     }
 
     // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Assigned Schools (63-73)
+    // NOTE: School NAMES (65, 68, 71) and DISTANCES (67, 70, 73) come from Google Places API
+    // SchoolDigger ONLY provides RATINGS (66, 69, 72) to avoid overwriting real school data
     if (elementary) {
-      setField(fields, '65_elementary_school', elementary.schoolName, 'SchoolDigger');
       // Try multiple rating field paths (SchoolDigger API has inconsistent field names)
       const elemRating = elementary.rankHistory?.[0]?.rank ||
                          elementary.schoolDiggerRank ||
@@ -423,11 +424,9 @@ export async function callSchoolDigger(lat: number, lon: number): Promise<ApiRes
       if (elemRating) {
         setField(fields, '66_elementary_rating', elemRating, 'SchoolDigger');
       }
-      setField(fields, '67_elementary_distance_mi', elementary.distance, 'SchoolDigger');
     }
 
     if (middle) {
-      setField(fields, '68_middle_school', middle.schoolName, 'SchoolDigger');
       const midRating = middle.rankHistory?.[0]?.rank ||
                         middle.schoolDiggerRank ||
                         middle.rank ||
@@ -435,11 +434,9 @@ export async function callSchoolDigger(lat: number, lon: number): Promise<ApiRes
       if (midRating) {
         setField(fields, '69_middle_rating', midRating, 'SchoolDigger');
       }
-      setField(fields, '70_middle_distance_mi', middle.distance, 'SchoolDigger');
     }
 
     if (high) {
-      setField(fields, '71_high_school', high.schoolName, 'SchoolDigger');
       const highRating = high.rankHistory?.[0]?.rank ||
                          high.schoolDiggerRank ||
                          high.rank ||
@@ -447,7 +444,6 @@ export async function callSchoolDigger(lat: number, lon: number): Promise<ApiRes
       if (highRating) {
         setField(fields, '72_high_rating', highRating, 'SchoolDigger');
       }
-      setField(fields, '73_high_distance_mi', high.distance, 'SchoolDigger');
     }
 
     // FIX #13: School district with proper fallback - use captured district or explicit default

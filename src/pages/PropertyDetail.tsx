@@ -285,7 +285,34 @@ const formatValue = (value: any, format: string): string => {
       return new Date(value).toLocaleDateString();
     default:
       if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-      if (Array.isArray(value)) return value.join(', ');
+      if (Array.isArray(value)) {
+        // Handle arrays of objects (e.g., comparable sales)
+        return value.map(item => {
+          if (typeof item === 'object' && item !== null) {
+            // For comparable sales, format as "address: $price"
+            if (item.address && item.price) {
+              return `${item.address}: $${item.price.toLocaleString()}`;
+            }
+            // Generic object: try to JSON stringify or extract first string value
+            const firstStringValue = Object.values(item).find(v => typeof v === 'string');
+            if (firstStringValue) return firstStringValue;
+            try {
+              return JSON.stringify(item);
+            } catch {
+              return '[Complex Object]';
+            }
+          }
+          return String(item);
+        }).join('; ');
+      }
+      // Handle plain objects
+      if (typeof value === 'object' && value !== null) {
+        try {
+          return JSON.stringify(value);
+        } catch {
+          return '[Object]';
+        }
+      }
       return String(value);
   }
 };

@@ -82,6 +82,7 @@ export interface BridgeProperty {
   PropertyType?: string;
   PropertySubType?: string;
   PropertyCondition?: string;
+  ArchitecturalStyle?: string[];  // e.g., ["Ranch", "Mediterranean", "Colonial", "Contemporary"]
   Stories?: number;
   StoriesTotal?: number;
 
@@ -127,6 +128,7 @@ export interface BridgeProperty {
 
   // Financing
   Financing?: string[];  // e.g., ["Cash", "Conventional", "FHA", "VA"]
+  FinancingAvailable?: string[];  // Stellar MLS field name: "Financing Avail"
   FinancingProposed?: string[];
 
   // Structure & Systems
@@ -198,6 +200,7 @@ export interface BridgeProperty {
   WaterfrontFeet?: number;
   WaterAccessYN?: boolean;
   WaterViewYN?: boolean;
+  CanalFrontage?: number;  // Alternative field name for waterfront feet
 
   // Environmental
   FloodZone?: string;

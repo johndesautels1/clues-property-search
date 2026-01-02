@@ -39,13 +39,24 @@ function convertToAnnualHOA(fee: number, frequency?: string): number {
 
 /**
  * Parse interior condition from PublicRemarks text
- * Returns: 'Excellent' | 'Good' | 'Fair' | 'Needs Work' | 'Renovated' | undefined
+ * Returns: 'Excellent' | 'Good' | 'Average' | 'Fair' | 'Poor' | undefined
+ * Priority: Excellent > Good > Average > Fair > Poor
  */
 function parseInteriorConditionFromRemarks(remarks: string): string | undefined {
-  const lower = remarks.toLowerCase();
+  // Normalize the text
+  const text = remarks.toLowerCase();
 
-  // Check for 'Renovated' indicators (highest priority)
-  const renovatedPatterns = [
+  // Check for 'Excellent' indicators (highest priority after renovated)
+  const excellentPatterns = [
+    /pristine/i,
+    /immaculate/i,
+    /impeccable/i,
+    /flawless/i,
+    /mint condition/i,
+    /excellent/i,
+    /like new/i,
+    /showroom/i,
+    /meticulously maintained/i,
     /completely renovated/i,
     /fully renovated/i,
     /total renovation/i,
@@ -53,44 +64,62 @@ function parseInteriorConditionFromRemarks(remarks: string): string | undefined 
     /brand new interior/i,
     /recently renovated/i,
     /just renovated/i,
-    /new construction/i
-  ];
-  if (renovatedPatterns.some(pattern => pattern.test(remarks))) {
-    return 'Renovated';
-  }
-
-  // Check for 'Excellent' indicators
-  const excellentPatterns = [
-    /pristine condition/i,
-    /immaculate/i,
-    /impeccable/i,
-    /flawless/i,
-    /mint condition/i,
-    /excellent condition/i,
-    /like new/i,
-    /showroom/i,
-    /meticulously maintained/i
+    /new construction/i,
+    /newly built/i,
+    /top of the line/i,
+    /highest quality/i,
+    /luxury finishes/i,
+    /designer finishes/i,
+    /custom built/i,
+    /stunning/i,
+    /breathtaking/i
   ];
   if (excellentPatterns.some(pattern => pattern.test(remarks))) {
     return 'Excellent';
   }
 
-  // Check for 'Needs Work' indicators (check before Fair/Good to avoid false positives)
-  const needsWorkPatterns = [
+  // Check for 'Poor' indicators (check early to avoid false positives from "good" in "not good")
+  const poorPatterns = [
+    /poor condition/i,
+    /needs significant/i,
+    /major repairs needed/i,
+    /extensive work/i,
+    /tear down/i,
+    /uninhabitable/i,
+    /condemned/i,
+    /fire damage/i,
+    /flood damage/i,
+    /mold/i,
+    /structural issues/i,
+    /foundation problems/i,
+    /not livable/i
+  ];
+  if (poorPatterns.some(pattern => pattern.test(remarks))) {
+    return 'Poor';
+  }
+
+  // Check for 'Fair' indicators (below average but livable)
+  const fairPatterns = [
+    /fair condition/i,
     /needs work/i,
     /needs repair/i,
     /fixer.*upper/i,
     /handyman.*special/i,
     /as.*is/i,
-    /tlc/i,
+    /\btlc\b/i,
     /rehab/i,
     /distressed/i,
     /dated interior/i,
     /needs updating/i,
-    /cosmetic work needed/i
+    /cosmetic work needed/i,
+    /some updating/i,
+    /could use/i,
+    /investor special/i,
+    /bring your vision/i,
+    /make it your own/i
   ];
-  if (needsWorkPatterns.some(pattern => pattern.test(remarks))) {
-    return 'Needs Work';
+  if (fairPatterns.some(pattern => pattern.test(remarks))) {
+    return 'Fair';
   }
 
   // Check for 'Good' indicators
@@ -101,22 +130,34 @@ function parseInteriorConditionFromRemarks(remarks: string): string | undefined 
     /move.*in.*ready/i,
     /turn.*key/i,
     /great condition/i,
-    /nice condition/i
+    /nice condition/i,
+    /clean and bright/i,
+    /spacious/i,
+    /updated/i,
+    /modern/i,
+    /beautiful/i,
+    /charming/i,
+    /cozy/i,
+    /comfortable/i,
+    /bright and airy/i
   ];
   if (goodPatterns.some(pattern => pattern.test(remarks))) {
     return 'Good';
   }
 
-  // Check for 'Fair' indicators
-  const fairPatterns = [
-    /fair condition/i,
+  // Check for 'Average' indicators
+  const averagePatterns = [
     /average condition/i,
     /solid home/i,
     /functional/i,
-    /livable/i
+    /livable/i,
+    /typical/i,
+    /standard/i,
+    /adequate/i,
+    /satisfactory/i
   ];
-  if (fairPatterns.some(pattern => pattern.test(remarks))) {
-    return 'Fair';
+  if (averagePatterns.some(pattern => pattern.test(remarks))) {
+    return 'Average';
   }
 
   // If no keywords found, return undefined (let other sources determine)
@@ -176,7 +217,12 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
 
   addField('13_last_sale_date', property.CloseDate);
   addField('14_last_sale_price', property.ClosePrice);
-  addField('15_assessed_value', property.TaxAssessedValue);
+
+  // Field 15: Assessed Value - try multiple field names
+  console.log('[Bridge Mapper] TaxAssessedValue:', property.TaxAssessedValue, 'TaxAnnualAmount:', property.TaxAnnualAmount);
+  if (property.TaxAssessedValue) {
+    addField('15_assessed_value', property.TaxAssessedValue);
+  }
 
   // ================================================================
   // GROUP 3: Property Basics (Fields 17-29)
@@ -191,15 +237,21 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   addField('24_lot_size_acres', property.LotSizeAcres);
   addField('25_year_built', property.YearBuilt);
 
-  // Field 26: Property Type - Debug logging to diagnose mapping issues
-  if (property.PropertyType) {
-    addField('26_property_type', property.PropertyType);
-    console.log('[Bridge Mapper] Field 26 (PropertyType):', property.PropertyType);
+  // Field 26: Property Style (ArchitecturalStyle from MLS, not PropertyType)
+  // User clarification: This should be architectural style like "Ranch", "Mediterranean", "Colonial"
+  if (property.ArchitecturalStyle && Array.isArray(property.ArchitecturalStyle) && property.ArchitecturalStyle.length > 0) {
+    addField('26_property_type', property.ArchitecturalStyle.join(', '));
+    console.log('[Bridge Mapper] Field 26 (ArchitecturalStyle):', property.ArchitecturalStyle);
   } else if (property.PropertySubType) {
+    // Fallback to PropertySubType if no ArchitecturalStyle
     addField('26_property_type', property.PropertySubType);
     console.log('[Bridge Mapper] Field 26 (PropertySubType fallback):', property.PropertySubType);
+  } else if (property.PropertyType) {
+    // Last resort fallback to PropertyType
+    addField('26_property_type', property.PropertyType);
+    console.log('[Bridge Mapper] Field 26 (PropertyType fallback):', property.PropertyType);
   } else {
-    console.warn('[Bridge Mapper] ⚠️ Field 26: Both PropertyType and PropertySubType are missing!');
+    console.warn('[Bridge Mapper] ⚠️ Field 26: ArchitecturalStyle, PropertySubType and PropertyType are all missing!');
   }
 
   // Stories - try explicit count, then extract from ArchitecturalStyle, then use Levels
@@ -244,9 +296,13 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   addField('36_tax_year', property.TaxYear);
 
   // Field 37: Tax Rate - Calculate from taxes and assessed value
+  console.log('[Bridge Mapper] Tax fields - TaxAnnualAmount:', property.TaxAnnualAmount, 'TaxAssessedValue:', property.TaxAssessedValue);
   if (property.TaxAnnualAmount && property.TaxAssessedValue && property.TaxAssessedValue > 0) {
     const taxRate = (property.TaxAnnualAmount / property.TaxAssessedValue) * 100;
     addField('37_property_tax_rate', Math.round(taxRate * 100) / 100); // Round to 2 decimals
+    console.log('[Bridge Mapper] Field 37 (TaxRate) calculated:', taxRate);
+  } else {
+    console.warn('[Bridge Mapper] ⚠️ Field 37: Cannot calculate tax rate - missing TaxAnnualAmount or TaxAssessedValue');
   }
 
   // Field 38: Tax Exemptions - Convert HomesteadYN to text exemption list
@@ -257,10 +313,15 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // ================================================================
   // GROUP 5: Structure & Systems (Fields 39-48)
   // ================================================================
-  if (property.RoofType && Array.isArray(property.RoofType)) {
-    addField('39_roof_type', property.RoofType[0]); // Take first roof type
+  console.log('[Bridge Mapper] Roof fields - RoofType:', property.RoofType, 'Roof:', property.Roof);
+  if (property.RoofType && Array.isArray(property.RoofType) && property.RoofType.length > 0) {
+    addField('39_roof_type', property.RoofType.join(', ')); // Join all roof types
+    console.log('[Bridge Mapper] Field 39 (RoofType):', property.RoofType);
   } else if (property.Roof) {
     addField('39_roof_type', property.Roof);
+    console.log('[Bridge Mapper] Field 39 (Roof fallback):', property.Roof);
+  } else {
+    console.warn('[Bridge Mapper] ⚠️ Field 39: No roof type data found');
   }
 
   // Field 40: Calculate roof age from year
@@ -289,10 +350,16 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
     console.warn('[Bridge Mapper] ⚠️ Field 41: No exterior material data found');
   }
 
-  if (property.FoundationType && Array.isArray(property.FoundationType)) {
-    addField('42_foundation', property.FoundationType[0]);
+  // Field 42: Foundation
+  console.log('[Bridge Mapper] Foundation fields - FoundationType:', property.FoundationType, 'FoundationDetails:', property.FoundationDetails);
+  if (property.FoundationType && Array.isArray(property.FoundationType) && property.FoundationType.length > 0) {
+    addField('42_foundation', property.FoundationType.join(', '));
+    console.log('[Bridge Mapper] Field 42 (FoundationType):', property.FoundationType);
   } else if (property.FoundationDetails) {
     addField('42_foundation', property.FoundationDetails);
+    console.log('[Bridge Mapper] Field 42 (FoundationDetails fallback):', property.FoundationDetails);
+  } else {
+    console.warn('[Bridge Mapper] ⚠️ Field 42: No foundation data found');
   }
 
   addField('43_water_heater_type', property.WaterHeaterType);
@@ -372,8 +439,10 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // ================================================================
   addField('54_pool_yn', property.PoolPrivateYN);
 
-  if (property.PoolFeatures && Array.isArray(property.PoolFeatures)) {
-    addField('55_pool_type', property.PoolFeatures[0]);
+  // Field 55: Pool (all pool features as multiselect)
+  if (property.PoolFeatures && Array.isArray(property.PoolFeatures) && property.PoolFeatures.length > 0) {
+    addField('55_pool_type', property.PoolFeatures.join(', '));
+    console.log('[Bridge Mapper] Field 55 (PoolFeatures):', property.PoolFeatures);
   }
 
   if (property.PatioAndPorchFeatures && Array.isArray(property.PatioAndPorchFeatures)) {
@@ -519,10 +588,18 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // Individual listing DOM is stored as raw fields (not in 168-schema)
 
   // Field 102: Financing Terms - Available financing options from MLS
-  if (property.Financing && Array.isArray(property.Financing)) {
+  // Stellar MLS uses "FinancingAvailable" or "Financing" field
+  if (property.FinancingAvailable && Array.isArray(property.FinancingAvailable)) {
+    addField('102_financing_terms', property.FinancingAvailable.join(', '));
+    console.log('[Bridge Mapper] Field 102 from FinancingAvailable:', property.FinancingAvailable);
+  } else if (property.Financing && Array.isArray(property.Financing)) {
     addField('102_financing_terms', property.Financing.join(', '));
+    console.log('[Bridge Mapper] Field 102 from Financing:', property.Financing);
   } else if (property.FinancingProposed && Array.isArray(property.FinancingProposed)) {
     addField('102_financing_terms', property.FinancingProposed.join(', '));
+    console.log('[Bridge Mapper] Field 102 from FinancingProposed:', property.FinancingProposed);
+  } else {
+    console.warn('[Bridge Mapper] ⚠️ Field 102: No financing data found (checked FinancingAvailable, Financing, FinancingProposed)');
   }
 
   // ================================================================

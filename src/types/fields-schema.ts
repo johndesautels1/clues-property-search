@@ -98,7 +98,7 @@ export const ALL_FIELDS: readonly FieldDefinition[] = [
   { num: 45, key: 'hvac_type',          label: 'HVAC Type',          group: 'Structure & Systems', type: 'text',   required: false },
   { num: 46, key: 'hvac_age',           label: 'HVAC Age',           group: 'Structure & Systems', type: 'text',   required: false },
   { num: 47, key: 'laundry_type',       label: 'Laundry Type',       group: 'Structure & Systems', type: 'text',   required: false },
-  { num: 48, key: 'interior_condition', label: 'Interior Condition', group: 'Structure & Systems', type: 'select', required: false, options: ['Excellent', 'Good', 'Fair', 'Needs Work', 'Renovated'] },
+  { num: 48, key: 'interior_condition', label: 'Interior Condition', group: 'Structure & Systems', type: 'select', required: false, options: ['Excellent', 'Good', 'Average', 'Fair', 'Poor'] },
 
   // ================================================================
   // GROUP 6: Interior Features (Fields 49-53)

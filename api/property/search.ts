@@ -2089,6 +2089,7 @@ async function enrichWithFreeAPIs(
   const schoolDiggerData = schoolDiggerResult.fields || {};
 
   // FALLBACK: GreatSchools API if SchoolDigger missing ratings (Fields 66, 69, 72)
+  // NOTE: School names come from Google Places (schoolDistances), not SchoolDigger
   let greatSchoolsData: Record<string, any> = {};
   const missingElemRating = !schoolDiggerData['66_elementary_rating'];
   const missingMidRating = !schoolDiggerData['69_middle_rating'];
@@ -2096,11 +2097,14 @@ async function enrichWithFreeAPIs(
 
   if (missingElemRating || missingMidRating || missingHighRating) {
     console.log(`[GreatSchools Fallback] SchoolDigger missing ratings - attempting GreatSchools API`);
+    // Get school names from Google Places (schoolDistances), not SchoolDigger
     const schoolNames = {
-      elem: missingElemRating && typeof schoolDiggerData['65_elementary_school']?.value === 'string' ? schoolDiggerData['65_elementary_school'].value : undefined,
-      middle: missingMidRating && typeof schoolDiggerData['68_middle_school']?.value === 'string' ? schoolDiggerData['68_middle_school'].value : undefined,
-      high: missingHighRating && typeof schoolDiggerData['71_high_school']?.value === 'string' ? schoolDiggerData['71_high_school'].value : undefined
+      elem: missingElemRating && typeof schoolDistances['65_elementary_school']?.value === 'string' ? schoolDistances['65_elementary_school'].value : undefined,
+      middle: missingMidRating && typeof schoolDistances['68_middle_school']?.value === 'string' ? schoolDistances['68_middle_school'].value : undefined,
+      high: missingHighRating && typeof schoolDistances['71_high_school']?.value === 'string' ? schoolDistances['71_high_school'].value : undefined
     };
+
+    console.log('[GreatSchools Fallback] School names from Google Places:', schoolNames);
 
     if (schoolNames.elem || schoolNames.middle || schoolNames.high) {
       const greatSchoolsResult = await callGreatSchools(geo.lat, geo.lon, schoolNames);
@@ -2209,7 +2213,14 @@ Known context (for disambiguation only):
 Goal: Extract ONLY explicitly stated values from major listing portals (Redfin, Zillow, Realtor.com, Trulia, Homes.com).
 
 Target fields:
-10_listing_price, 12_market_value_estimate, 16_redfin_estimate, 17_bedrooms, 18_full_bathrooms, 19_half_bathrooms, 21_living_sqft, 26_property_type, 28_garage_spaces, 30_hoa_yn, 31_hoa_fee_annual, 32_hoa_name, 33_hoa_includes, 44_garage_type, 54_pool_yn, 55_pool_type, 59_recent_renovations, 98_rental_estimate_monthly, 102_financing_terms, 103_comparable_sales
+10_listing_price, 12_market_value_estimate, 16_redfin_estimate, 17_bedrooms, 18_full_bathrooms, 19_half_bathrooms, 21_living_sqft, 26_property_type, 28_garage_spaces, 30_hoa_yn, 31_hoa_fee_annual, 32_hoa_name, 33_hoa_includes, 44_garage_type, 54_pool_yn, 55_pool_type, 59_recent_renovations, 91_median_home_price_neighborhood, 92_price_per_sqft_recent_avg, 93_price_to_rent_ratio, 94_price_vs_median_percent, 95_days_on_market_avg, 98_rental_estimate_monthly, 102_financing_terms, 103_comparable_sales
+
+Field definitions for 91-95:
+- 91_median_home_price_neighborhood: Median sold price in this neighborhood/zip (from Redfin/Zillow market data)
+- 92_price_per_sqft_recent_avg: Average $/sqft for recent sales in area
+- 93_price_to_rent_ratio: Calculate as listing_price / (rental_estimate * 12) if both available
+- 94_price_vs_median_percent: How this property compares to median (e.g., +15% or -10%)
+- 95_days_on_market_avg: Average DOM for area from Redfin/Zillow market stats
 
 Rules:
 - Use ONLY these portals: Redfin, Zillow, Realtor.com, Trulia, Homes.com
