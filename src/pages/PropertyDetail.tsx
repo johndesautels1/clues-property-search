@@ -1921,7 +1921,7 @@ export default function PropertyDetail() {
                     // Extract comparable sales array from various formats
                     let comps: any[] = [];
                     try {
-                      const val = compData.value;
+                      const val: any = compData.value;
                       if (typeof val === 'string') {
                         // Try to parse JSON string
                         const parsed = JSON.parse(val);
@@ -1930,7 +1930,8 @@ export default function PropertyDetail() {
                         comps = val;
                       } else if (typeof val === 'object' && val !== null) {
                         // Handle nested object structures like {comps: [...]} or {value: [...]}
-                        comps = val.comps || val.comparables || val.comparable_sales || val.value || [];
+                        const objVal = val as Record<string, any>;
+                        comps = objVal.comps || objVal.comparables || objVal.comparable_sales || objVal.value || [];
                         if (!Array.isArray(comps)) comps = [];
                       }
                     } catch (e) {
