@@ -120,10 +120,10 @@
 
 | # | Field Name | Status | Data Source | Notes |
 |---|------------|--------|-------------|-------|
-| 59 | Recent Renovations | ✅ | Stellar MLS | Working |
-| 60 | Permit History (Roof) | ⚠️ | Permit scraper | May not populate |
-| 61 | Permit History (HVAC) | ⚠️ | Permit scraper | May not populate |
-| 62 | Permit History (Other) | ⚠️ | Permit scraper | May not populate |
+| 59 | Recent Renovations | ✅ | Permit scraper | **FIXED** - Field number corrected |
+| 60 | Permit History (Roof) | ✅ | Permit scraper | **FIXED** - Field number corrected (was 53) |
+| 61 | Permit History (HVAC) | ✅ | Permit scraper | **FIXED** - Field number corrected (was 54) |
+| 62 | Permit History (Other) | ✅ | Permit scraper | **FIXED** - Field number corrected (was 55) |
 
 ---
 
@@ -208,18 +208,18 @@
 | # | Field Name | Status | Data Source | Notes |
 |---|------------|--------|-------------|-------|
 | 104 | Electric Provider | ✅ | Perplexity | **FIXED** - Removed MLS-only restriction |
-| 105 | Avg Electric Bill | ❌ | Perplexity | **NEEDS:** Micro-prompt |
+| 105 | Avg Electric Bill | ✅ | Perplexity | **FIXED** - Tampa Bay utility micro-prompt |
 | 106 | Water Provider | ✅ | Stellar MLS, Perplexity | Working |
-| 107 | Avg Water Bill | ❌ | Perplexity | **NEEDS:** Micro-prompt |
+| 107 | Avg Water Bill | ✅ | Perplexity | **FIXED** - Tampa Bay utility micro-prompt |
 | 108 | Sewer Provider | ✅ | Stellar MLS, Perplexity | Working |
 | 109 | Natural Gas | ✅ | Stellar MLS, Perplexity | Working |
 | 110 | Trash Provider | ✅ | Stellar MLS, LLMs | Working |
 | 111 | Internet Providers (Top 3) | ✅ | LLMs | Working |
-| 112 | Max Internet Speed | ❌ | Perplexity | **NEEDS:** Micro-prompt |
-| 113 | Fiber Available (Y/N) | ❌ | Perplexity | **NEEDS:** Micro-prompt |
+| 112 | Max Internet Speed | ✅ | Perplexity | **FIXED** - Connectivity micro-prompt |
+| 113 | Fiber Available (Y/N) | ✅ | Perplexity | **FIXED** - Connectivity micro-prompt |
 | 114 | Cable TV Provider | ✅ | LLMs | Working |
-| 115 | Cell Coverage Quality | ❌ | Perplexity | **NEEDS:** Micro-prompt |
-| 116 | Emergency Services Distance | ❌ | **NEEDS:** Google Places API implementation |
+| 115 | Cell Coverage Quality | ✅ | Perplexity | **FIXED** - Connectivity micro-prompt |
+| 116 | Emergency Services Distance | ✅ | Google Places | **FIXED** - Fire/Police/Hospital avg distance |
 
 ---
 
@@ -305,25 +305,34 @@
 ## Summary Statistics
 
 **Total Fields:** 168
-**✅ Working:** 155 (92%)
-**⚠️ Partial:** 4 (2%)
-**❌ Needs Work:** 9 (5%)
+**✅ Working:** 164 (98%)
+**⚠️ Partial:** 3 (2%)
+**❌ Needs Work:** 1 (<1%)
 
 ### Fields Needing Work:
-1. **Field 16**: Redfin Estimate - API disabled, needs LLM fallback
-2. **Field 105**: Avg Electric Bill - Needs Perplexity micro-prompt
-3. **Field 107**: Avg Water Bill - Needs Perplexity micro-prompt
-4. **Field 112**: Max Internet Speed - Needs Perplexity micro-prompt
-5. **Field 113**: Fiber Available - Needs Perplexity micro-prompt
-6. **Field 115**: Cell Coverage Quality - Needs Perplexity micro-prompt
-7. **Field 116**: Emergency Services Distance - Needs Google Places API implementation
-8. **Fields 60-62**: Permit History - Inconsistent data from permit scrapers
-9. **Fields 12 & 16**: Potential duplication - Needs analysis
+1. **Field 16**: Redfin Estimate - API disabled (keeping Field 12 as LLM estimate)
+2. **Fields 12 & 16**: Keeping separate - Field 12 for LLM estimate, Field 16 for Redfin when available
+
+### Partial (Data Dependent):
+1. **Fields 60-62**: Permit History - Works when county permit portal is accessible
 
 ---
 
-## Recent Fixes (2026-01-02 Session)
+## Recent Fixes (2026-01-02 Session - Opus)
 
+**Session 2 (Opus 4.5):**
+7. ✅ **Field 116** - Emergency Services Distance (Google Places API)
+8. ✅ **Field 105** - Avg Electric Bill (Perplexity Tampa Bay micro-prompt)
+9. ✅ **Field 107** - Avg Water Bill (Perplexity Tampa Bay micro-prompt)
+10. ✅ **Field 112** - Max Internet Speed (Perplexity connectivity prompt)
+11. ✅ **Field 113** - Fiber Available (Perplexity connectivity prompt)
+12. ✅ **Field 115** - Cell Coverage Quality (Perplexity connectivity prompt)
+13. ✅ **Fields 60-62** - Permit History field number fix (was 53-55, now 60-62)
+14. ✅ **Field 40** - Roof Age Est field number fix (was 37)
+15. ✅ **Field 46** - HVAC Age field number fix (was 41)
+16. ✅ **Field 59** - Recent Renovations field number fix (was 52)
+
+**Session 1 (Sonnet 4.5):**
 1. ✅ **Field 11** - Price Per Sq Ft calculation
 2. ✅ **Fields 75-76** - Transit/Bike scores field number correction
 3. ✅ **Field 118** - Air Quality Grade separate from AQI
