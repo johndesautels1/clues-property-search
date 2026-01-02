@@ -201,66 +201,6 @@ export function calculateFireplaceCount(data: PropertyData, mlsFireplaceCount?: 
 }
 
 /**
- * Field 93: Price to Rent Ratio
- * Formula: listing_price / (rental_estimate * 12)
- */
-export function calculatePriceToRentRatio(data: PropertyData): CalculationResult | null {
-  if (!data.field_10_listing_price || !data.field_98_rental_estimate_monthly || data.field_98_rental_estimate_monthly === 0) {
-    return null;
-  }
-
-  const value = Math.round((data.field_10_listing_price / (data.field_98_rental_estimate_monthly * 12)) * 100) / 100;
-
-  return {
-    value,
-    source: 'Backend Calculation',
-    confidence: 'Medium',
-    calculation_method: 'listing_price / (monthly_rent * 12)',
-    missing_inputs: !data.field_98_rental_estimate_monthly ? ['rental_estimate'] : []
-  };
-}
-
-/**
- * Field 94: Price vs Median %
- * Formula: ((listing_price - median_price) / median_price) * 100
- */
-export function calculatePriceVsMedian(data: PropertyData): CalculationResult | null {
-  if (!data.field_10_listing_price || !data.field_91_median_home_price || data.field_91_median_home_price === 0) {
-    return null;
-  }
-
-  const value = Math.round((((data.field_10_listing_price - data.field_91_median_home_price) / data.field_91_median_home_price) * 100) * 100) / 100;
-
-  return {
-    value,
-    source: 'Backend Calculation',
-    confidence: 'Medium',
-    calculation_method: '((listing_price - median) / median) * 100',
-    missing_inputs: !data.field_91_median_home_price ? ['median_home_price'] : []
-  };
-}
-
-/**
- * Field 99: Rental Yield (Est)
- * Formula: (rental_estimate * 12) / listing_price * 100
- */
-export function calculateRentalYield(data: PropertyData): CalculationResult | null {
-  if (!data.field_10_listing_price || !data.field_98_rental_estimate_monthly || data.field_10_listing_price === 0) {
-    return null;
-  }
-
-  const value = Math.round(((data.field_98_rental_estimate_monthly * 12) / data.field_10_listing_price * 100) * 100) / 100;
-
-  return {
-    value,
-    source: 'Backend Calculation',
-    confidence: 'Medium',
-    calculation_method: '(monthly_rent * 12) / listing_price * 100',
-    missing_inputs: !data.field_98_rental_estimate_monthly ? ['rental_estimate'] : []
-  };
-}
-
-/**
  * Field 101: Cap Rate (Est)
  * Formula: ((annual_rent - expenses) / listing_price) * 100
  * Expenses = annual_taxes + insurance + hoa_fee + (0.01 * listing_price) [maintenance estimate]

@@ -39,9 +39,9 @@ function convertToAnnualHOA(fee: number, frequency?: string): number {
 
 /**
  * Parse interior condition from PublicRemarks text
- * Returns: 'Excellent' | 'Good' | 'Fair' | 'Needs Work' | 'Renovated' | null
+ * Returns: 'Excellent' | 'Good' | 'Fair' | 'Needs Work' | 'Renovated' | undefined
  */
-function parseInteriorConditionFromRemarks(remarks: string): string | null {
+function parseInteriorConditionFromRemarks(remarks: string): string | undefined {
   const lower = remarks.toLowerCase();
 
   // Check for 'Renovated' indicators (highest priority)
@@ -119,8 +119,8 @@ function parseInteriorConditionFromRemarks(remarks: string): string | null {
     return 'Fair';
   }
 
-  // If no keywords found, return null (let other sources determine)
-  return null;
+  // If no keywords found, return undefined (let other sources determine)
+  return undefined;
 }
 
 /**
