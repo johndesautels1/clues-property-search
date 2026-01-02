@@ -494,6 +494,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
           const nullValues = lostFields.filter(f => f.reason === 'Null/undefined value');
           if (noMapping.length > 0) {
             console.log(`  ❌ ${noMapping.length} fields with no formKey mapping:`, noMapping.map(f => f.apiKey));
+            console.log(`  📋 DETAILED LIST:`, noMapping);
           }
           if (nullValues.length > 0) {
             console.log(`  ⚠️  ${nullValues.length} fields with null/undefined values:`, nullValues.map(f => f.apiKey));
