@@ -488,7 +488,15 @@ function coerceValue(key: string, value: any): any {
 // This function filters LLM responses to remove any nulls
 // ============================================
 // Filter Grok's fields to prevent hallucinations on Stellar MLS and Perplexity territory
-function filterGrokRestrictedFields(parsed: any): Record<string, any> {
+// DEPRECATED 2026-01-02: Removed pre-filtering - arbitration pipeline handles tier precedence
+// function filterGrokRestrictedFields(parsed: any): Record<string, any> {
+//   // This function previously blocked Grok from populating certain fields
+//   // Problem: It blocked fields even when they were NULL from higher tiers
+//   // Solution: Let arbitration pipeline handle tier precedence naturally
+//   // Grok (Tier 5) can now fill gaps but cannot overwrite higher-tier data
+// }
+
+function filterGrokRestrictedFields_DEPRECATED(parsed: any): Record<string, any> {
   const dataToProcess = parsed.fields || parsed;
   const allowed: Record<string, any> = {};
   let blockedCount = 0;
@@ -502,7 +510,7 @@ function filterGrokRestrictedFields(parsed: any): Record<string, any> {
     }
 
     // Check if field is in restricted list
-    if (GROK_RESTRICTED_FIELDS.has(key)) {
+    if (GROK_RESTRICTED_FIELDS_DEPRECATED.has(key)) {
       blockedCount++;
       blockedFields.push(key);
       continue; // Block this field
@@ -3865,7 +3873,8 @@ const STELLAR_MLS_AUTHORITATIVE_FIELDS = new Set([
   '166_community_features', '167_interior_features', '168_exterior_features',
 ]);
 
-const GROK_RESTRICTED_FIELDS = new Set([
+// DEPRECATED 2026-01-02: Pre-filtering removed - arbitration handles tier precedence
+const GROK_RESTRICTED_FIELDS_DEPRECATED = new Set([
   // Stellar MLS core listing data (Stellar is authoritative)
   '2_mls_primary', '3_mls_secondary', '4_listing_status', '5_listing_date',
   '10_listing_price', '13_last_sale_date', '14_last_sale_price',
@@ -3951,11 +3960,10 @@ Search Zillow, Redfin, Realtor.com, county records, and other public sources. Re
         try {
           const parsed = JSON.parse(jsonMatch[0]);
 
-          // 🛡️ GROK RESTRICTION: Remove fields reserved for Stellar MLS and Perplexity
-          const restrictedFields = filterGrokRestrictedFields(parsed);
-
           // 🛡️ NULL BLOCKING: Filter all null values before returning
-          const filteredFields = filterNullValues(restrictedFields, 'Grok');
+          // NOTE: Tier-based restrictions removed - arbitration pipeline handles tier precedence naturally
+          // Grok (Tier 5) can now fill gaps left by higher tiers, but cannot overwrite them
+          const filteredFields = filterNullValues(parsed, 'Grok');
           return { fields: filteredFields, llm: 'Grok' };
         } catch (parseError) {
           console.error('❌ Grok JSON.parse error:', parseError);
