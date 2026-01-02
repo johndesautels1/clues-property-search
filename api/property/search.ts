@@ -2361,24 +2361,306 @@ Property address: "${address}"
 
 Known context (for disambiguation only):
 - City: ${context.city || 'Unknown'}
+- State: ${context.state || 'FL'}
+- ZIP: ${context.zip || 'Unknown'}
 
-Goal: Extract ONLY explicitly stated utility providers and ISP data.
+Goal: Extract utility providers, average bills, and connectivity data.
 
-Target fields:
-104_electric_provider, 105_avg_electric_bill, 106_water_provider, 107_avg_water_bill, 108_sewer_provider, 109_natural_gas, 110_trash_provider, 111_internet_providers_top3, 112_max_internet_speed, 113_fiber_available, 114_cable_tv_provider, 115_cell_coverage_quality, 116_emergency_services_distance
+Target fields with SPECIFIC instructions:
+
+1. **105_avg_electric_bill** - Search for:
+   - "${context.city || 'Florida'} average electric bill residential"
+   - Official utility company (Duke Energy, TECO, FPL) average bill data
+   - Use Florida avg of ~$150/month if local data unavailable
+   - Format: "$XXX" (monthly amount)
+
+2. **107_avg_water_bill** - Search for:
+   - "${context.city || 'Florida'} water utility average bill"
+   - Local water utility residential rates
+   - Use Florida avg of ~$35-50/month if local data unavailable
+   - Format: "$XX" (monthly amount)
+
+3. **112_max_internet_speed** - Search for:
+   - "${address} internet availability BroadbandNow"
+   - Check Xfinity, Spectrum, AT&T, Frontier availability
+   - Format: "XXX Mbps" or "X Gbps"
+
+4. **113_fiber_available** - Search for:
+   - "${address} fiber internet availability"
+   - Check AT&T Fiber, Verizon Fios, Google Fiber availability
+   - Format: "Yes", "No", or null
+
+5. **115_cell_coverage_quality** - Search for:
+   - "${address} cell phone coverage"
+   - Check Verizon, AT&T, T-Mobile coverage maps
+   - Format: "Excellent" (5G), "Good" (strong 4G), "Fair", "Poor"
+
+Other fields (104, 106, 108-111, 114):
+104_electric_provider, 106_water_provider, 108_sewer_provider, 109_natural_gas, 110_trash_provider, 111_internet_providers_top3, 114_cable_tv_provider
 
 Rules:
-- Utilities: Use ONLY official utility websites, local gov pages
-- Internet: Use BroadbandNow.com, FCC broadband maps, ISP pages
-- Never estimate speeds from coverage maps without explicit text
+- For utility bills: Return ACTUAL numbers, not "varies" or "depends"
+- For internet: Use BroadbandNow.com, FCC broadband maps, ISP websites
+- Use Florida state averages as fallback when local data unavailable
 - Output JSON ONLY
 
-Search patterns:
-"${context.city} electric utility", "${address} BroadbandNow", "${address} fiber internet"
-
-JSON format: { "111_internet_providers_top3": { "value": ["Spectrum", "Frontier"], "source": "BroadbandNow", "source_url": "https://..." }, ... }`;
+JSON format: { "105_avg_electric_bill": { "value": "$145", "source": "Duke Energy", "source_url": "https://..." }, "112_max_internet_speed": { "value": "1 Gbps", "source": "BroadbandNow" }, ... }`;
 
   return await callPerplexityHelper('Utilities', userPrompt);
+}
+
+/**
+ * DEDICATED MICRO-PROMPT: Field 105 - Average Electric Bill
+ * Uses Tampa Bay specific utility data with property attributes
+ */
+async function callPerplexityElectricBill(address: string, context: any = {}): Promise<Record<string, any>> {
+  const apiKey = process.env.PERPLEXITY_API_KEY;
+  if (!apiKey) {
+    console.log('❌ [Field 105] PERPLEXITY_API_KEY not set');
+    return {};
+  }
+
+  const sqft = context.sqft || context.living_sqft || 'Unknown';
+  const floors = context.floors || context.stories || 1;
+  const yearBuilt = context.yearBuilt || context.year_built || 'Unknown';
+  const hvacAge = context.hvacAge || 'Unknown';
+  const city = context.city || 'Tampa';
+  const state = context.state || 'FL';
+  const zip = context.zip || '';
+
+  const systemPrompt = `You are a strict, retrieval-only utility cost assistant for residential real estate in the Tampa Bay area.
+Your ONLY task is to estimate the average monthly electric bill for each property using:
+- The full street address, city, state, ZIP code
+- Property square footage and number of floors
+- Year built and, if provided, ages of HVAC and windows
+
+Rules:
+- Use only credible, quantitative sources: utility rate schedules (Tampa Electric, Duke Energy Florida), official/public rate aggregators, or statistically valid Tampa/Tampa Bay usage benchmarks in kWh and dollars.
+- Start from local average monthly kWh usage and cost per kWh for Tampa/Tampa Bay, then scale cautiously based on home size, floors, and obvious efficiency factors (newer HVAC/windows → slightly lower; very old systems → slightly higher).
+- Do NOT personalize for occupant behavior, number of residents, work-from-home, or pool unless these facts are explicitly given.
+- If there is not enough information to adjust safely away from the local average, return a value very close to the local typical bill instead of guessing a wide range.
+- Never invent sources, never fabricate utility programs or rates, and never extrapolate from unrelated cities or states.
+- If you cannot produce a defensible numeric estimate from Tampa/Tampa Bay specific data plus the provided attributes, return null for that property instead of guessing.
+
+Output contract (MUST follow exactly):
+Always return a JSON object with this shape:
+{
+  "properties": [
+    {
+      "input_id": "string",
+      "avg_electric_bill_monthly_usd": 0,
+      "status": "ok",
+      "notes": "string"
+    }
+  ]
+}
+
+Field rules:
+- input_id: Echo the property identifier passed in (do not change it).
+- avg_electric_bill_monthly_usd: Integer dollars (no cents) if a defensible estimate exists. Use Tampa/Tampa Bay based kWh and price data only.
+- status: "ok" if you can produce a defensible estimate. "not_available" if you cannot; in that case, set avg_electric_bill_monthly_usd to null.
+- notes: One short sentence on how you derived the estimate, mentioning the type of source.
+
+Do NOT add any extra keys or commentary outside this JSON.`;
+
+  const userPrompt = `You are given 1 residential property in the Tampa Bay area.
+Estimate the typical average monthly electric bill.
+
+Return a single JSON object using the exact schema specified above.
+
+Property:
+- input_id: "prop_1"
+- Address: ${address}
+- City: ${city}
+- State: ${state}
+- ZIP: ${zip}
+- Square footage: ${sqft}
+- Floors/Stories: ${floors}
+- Year built: ${yearBuilt}
+- HVAC age: ${hvacAge}
+
+Do not return any text outside the JSON object.`;
+
+  try {
+    console.log(`✅ [Field 105] Calling Perplexity for electric bill estimate...`);
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-sonar-small-128k-online',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.1,
+        max_tokens: 500
+      })
+    });
+
+    if (!response.ok) {
+      console.error(`❌ [Field 105] API error: ${response.status}`);
+      return {};
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+      console.log(`❌ [Field 105] No content in response`);
+      return {};
+    }
+
+    // Parse the response
+    const jsonStr = extractFirstJsonObject(content);
+    if (!jsonStr) {
+      console.log(`❌ [Field 105] No JSON found in response`);
+      return {};
+    }
+
+    const parsed = JSON.parse(jsonStr);
+    const prop = parsed.properties?.[0];
+
+    if (prop && prop.status === 'ok' && prop.avg_electric_bill_monthly_usd !== null) {
+      const billAmount = prop.avg_electric_bill_monthly_usd;
+      console.log(`✅ [Field 105] Electric bill estimate: $${billAmount}/month`);
+      return {
+        '105_avg_electric_bill': {
+          value: `$${billAmount}`,
+          source: 'Tampa Bay Utility Data',
+          confidence: 'Medium',
+          details: prop.notes || 'Estimated from local utility rates'
+        }
+      };
+    } else {
+      console.log(`❌ [Field 105] Could not estimate: ${prop?.notes || 'Unknown reason'}`);
+      return {};
+    }
+  } catch (error) {
+    console.error(`❌ [Field 105] Error:`, error);
+    return {};
+  }
+}
+
+/**
+ * DEDICATED MICRO-PROMPT: Field 107 - Average Water Bill
+ * Uses Tampa Bay specific utility data with property attributes
+ */
+async function callPerplexityWaterBill(address: string, context: any = {}): Promise<Record<string, any>> {
+  const apiKey = process.env.PERPLEXITY_API_KEY;
+  if (!apiKey) {
+    console.log('❌ [Field 107] PERPLEXITY_API_KEY not set');
+    return {};
+  }
+
+  const sqft = context.sqft || context.living_sqft || 'Unknown';
+  const bedrooms = context.bedrooms || 'Unknown';
+  const bathrooms = context.bathrooms || context.total_bathrooms || 'Unknown';
+  const city = context.city || 'Tampa';
+  const state = context.state || 'FL';
+  const zip = context.zip || '';
+  const hasPool = context.pool_yn || context.hasPool || false;
+
+  const systemPrompt = `You are a strict, retrieval-only utility cost assistant for residential real estate in the Tampa Bay area.
+Your ONLY task is to estimate the average monthly water bill for each property using:
+- The full street address, city, state, ZIP code
+- Property bedrooms and bathrooms (as proxy for water usage)
+- Whether property has a pool
+
+Rules:
+- Use only credible sources: Tampa Bay Water, Hillsborough County Water, Pinellas County Utilities rate schedules.
+- Start from local average monthly water usage (gallons) and cost per 1,000 gallons for Tampa Bay area.
+- Scale based on home size and bathrooms. Pool adds approximately $15-25/month.
+- Florida average is approximately $35-50/month for typical single-family home.
+- If you cannot produce a defensible estimate, return null instead of guessing.
+
+Output contract (MUST follow exactly):
+{
+  "properties": [
+    {
+      "input_id": "string",
+      "avg_water_bill_monthly_usd": 0,
+      "status": "ok",
+      "notes": "string"
+    }
+  ]
+}`;
+
+  const userPrompt = `Estimate the typical average monthly water bill for this Tampa Bay property:
+
+- input_id: "prop_1"
+- Address: ${address}
+- City: ${city}
+- State: ${state}
+- ZIP: ${zip}
+- Bedrooms: ${bedrooms}
+- Bathrooms: ${bathrooms}
+- Has Pool: ${hasPool ? 'Yes' : 'No'}
+
+Return ONLY the JSON object, no other text.`;
+
+  try {
+    console.log(`✅ [Field 107] Calling Perplexity for water bill estimate...`);
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-sonar-small-128k-online',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.1,
+        max_tokens: 500
+      })
+    });
+
+    if (!response.ok) {
+      console.error(`❌ [Field 107] API error: ${response.status}`);
+      return {};
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+      console.log(`❌ [Field 107] No content in response`);
+      return {};
+    }
+
+    const jsonStr = extractFirstJsonObject(content);
+    if (!jsonStr) {
+      console.log(`❌ [Field 107] No JSON found in response`);
+      return {};
+    }
+
+    const parsed = JSON.parse(jsonStr);
+    const prop = parsed.properties?.[0];
+
+    if (prop && prop.status === 'ok' && prop.avg_water_bill_monthly_usd !== null) {
+      const billAmount = prop.avg_water_bill_monthly_usd;
+      console.log(`✅ [Field 107] Water bill estimate: $${billAmount}/month`);
+      return {
+        '107_avg_water_bill': {
+          value: `$${billAmount}`,
+          source: 'Tampa Bay Water Utility Data',
+          confidence: 'Medium',
+          details: prop.notes || 'Estimated from local utility rates'
+        }
+      };
+    } else {
+      console.log(`❌ [Field 107] Could not estimate: ${prop?.notes || 'Unknown reason'}`);
+      return {};
+    }
+  } catch (error) {
+    console.error(`❌ [Field 107] Error:`, error);
+    return {};
+  }
 }
 
 /**
@@ -4852,7 +5134,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const perplexityContext = {
           county: intermediateResult.fields['7_county']?.value || 'Unknown',
           city: addressString ? addressString.split(',')[1]?.trim() || 'Unknown' : 'Unknown',
-          parcelId: intermediateResult.fields['9_parcel_id']?.value || 'Unknown'
+          state: 'FL',
+          zip: intermediateResult.fields['8_zip_code']?.value || '',
+          parcelId: intermediateResult.fields['9_parcel_id']?.value || 'Unknown',
+          // Property attributes for utility bill estimation
+          sqft: intermediateResult.fields['21_living_sqft']?.value || 'Unknown',
+          living_sqft: intermediateResult.fields['21_living_sqft']?.value || 'Unknown',
+          stories: intermediateResult.fields['27_stories']?.value || 1,
+          floors: intermediateResult.fields['27_stories']?.value || 1,
+          yearBuilt: intermediateResult.fields['25_year_built']?.value || 'Unknown',
+          year_built: intermediateResult.fields['25_year_built']?.value || 'Unknown',
+          bedrooms: intermediateResult.fields['17_bedrooms']?.value || 'Unknown',
+          bathrooms: intermediateResult.fields['20_total_bathrooms']?.value || 'Unknown',
+          total_bathrooms: intermediateResult.fields['20_total_bathrooms']?.value || 'Unknown',
+          pool_yn: intermediateResult.fields['54_pool_yn']?.value || false,
+          hvacAge: intermediateResult.fields['46_hvac_age']?.value || 'Unknown'
         };
         console.log('[Perplexity Context]', perplexityContext);
 
@@ -4862,6 +5158,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           'perplexity-schools': 'Perplexity Schools',
           'perplexity-crime': 'Perplexity Crime',
           'perplexity-utilities': 'Perplexity Utilities',
+          'perplexity-electric': 'Perplexity Electric Bill',
+          'perplexity-water': 'Perplexity Water Bill',
           'grok': 'Grok',
           'claude-opus': 'Claude Opus',
           'gpt': 'GPT',
@@ -4870,12 +5168,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         };
 
         const llmCascade = [
-          // PERPLEXITY MICRO-PROMPTS (5 source-centric calls, 1,000-1,300 tokens each)
+          // PERPLEXITY MICRO-PROMPTS (7 source-centric calls)
           { id: 'perplexity-portals', fn: (addr: string) => callPerplexityPortals(addr, perplexityContext), enabled: engines.includes('perplexity') },
           { id: 'perplexity-county', fn: (addr: string) => callPerplexityCounty(addr, perplexityContext), enabled: engines.includes('perplexity') },
           { id: 'perplexity-schools', fn: (addr: string) => callPerplexitySchools(addr, perplexityContext), enabled: engines.includes('perplexity') },
           { id: 'perplexity-crime', fn: (addr: string) => callPerplexityWalkScoreCrime(addr, perplexityContext), enabled: engines.includes('perplexity') },
           { id: 'perplexity-utilities', fn: (addr: string) => callPerplexityUtilities(addr, perplexityContext), enabled: engines.includes('perplexity') },
+          { id: 'perplexity-electric', fn: (addr: string) => callPerplexityElectricBill(addr, perplexityContext), enabled: engines.includes('perplexity') },
+          { id: 'perplexity-water', fn: (addr: string) => callPerplexityWaterBill(addr, perplexityContext), enabled: engines.includes('perplexity') },
 
           // OTHER LLMs (Tier 4-5)
           { id: 'grok', fn: callGrok, enabled: engines.includes('grok') },
