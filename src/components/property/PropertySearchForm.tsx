@@ -194,6 +194,38 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
 
       // Handle LLM sources specially
       if (source.type === 'llm') {
+        // SPECIAL CASE: Perplexity has 5 micro-prompts - merge them into single card
+        if (source.id === 'perplexity') {
+          const perplexityResponses = llmResponses.filter((r: any) =>
+            r.llm?.startsWith('perplexity-')
+          );
+
+          if (perplexityResponses.length > 0) {
+            // Sum up fields from all 5 micro-prompts
+            const totalFields = perplexityResponses.reduce((sum: number, r: any) =>
+              sum + (r.fields_found || 0), 0
+            );
+
+            // Success if ANY micro-prompt succeeded
+            const anySuccess = perplexityResponses.some((r: any) => r.success);
+
+            // Collect errors from failed prompts
+            const errors = perplexityResponses
+              .filter((r: any) => !r.success && r.error)
+              .map((r: any) => r.error);
+
+            return {
+              ...source,
+              status: anySuccess ? 'complete' as const : 'error' as const,
+              fieldsFound: totalFields,
+              error: errors.length > 0 ? `${errors.length}/5 prompts failed` : undefined
+            };
+          }
+
+          return { ...source, status: 'skipped' as const, fieldsFound: 0 };
+        }
+
+        // All other LLMs (single call each)
         if (llmResponse) {
           return {
             ...source,
@@ -274,6 +306,21 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
                 .replace(/\./g, '')  // Remove dots
                 .replace(/\s+/g, ''); // Remove spaces
 
+              // SPECIAL CASE: Merge all Perplexity micro-prompts into single "perplexity" card
+              if (sourceName.toLowerCase().startsWith('perplexity')) {
+                const perplexitySource = DEFAULT_SOURCES.find(s => s.id === 'perplexity');
+                if (perplexitySource) {
+                  console.log(`    ✅ Matched "${sourceName}" to perplexity (micro-prompt) - ${count} fields`);
+                  // Add to existing Perplexity count
+                  setSourcesProgress(prev => prev.map(s =>
+                    s.id === 'perplexity'
+                      ? { ...s, fieldsFound: (s.fieldsFound || 0) + (count as number) }
+                      : s
+                  ));
+                  return; // Skip normal matching for Perplexity micro-prompts
+                }
+              }
+
               // Find matching source with flexible matching rules
               const matchingSource = DEFAULT_SOURCES.find(s => {
                 const normalizedId = s.id.replace(/-/g, '');
@@ -297,7 +344,6 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
                   'weather': ['weathercom', 'weather'],
                   'crime': ['fbicrime'],
                   'schooldigger': ['schooldigger'],
-                  'perplexity': ['perplexity'],
                   'grok': ['grok'],
                   'claude-opus': ['claudeopus', 'opus'],
                   'gpt': ['gpt', 'gpt4o'],
