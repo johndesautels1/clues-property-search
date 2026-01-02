@@ -4401,7 +4401,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             // CRITICAL LOGGING: Track Field 10 (listing_price) from Stellar MLS
             if (mlsFields['10_listing_price']) {
-              console.log(`🏠 [FIELD 10 DEBUG] Stellar MLS set Field 10 = $${mlsFields['10_listing_price'].value} (Source: ${mlsFields['10_listing_price'].source}, Confidence: ${mlsFields['10_listing_price'].confidence})`);
+              console.log(`🏠 [FIELD 10 DEBUG] Stellar MLS set Field 10 = $${mlsFields['10_listing_price']} (Source: ${STELLAR_MLS_SOURCE}, Confidence: High)`);
             } else {
               console.log(`⚠️ [FIELD 10 DEBUG] Stellar MLS did NOT return Field 10 (listing_price) - property may not be actively listed`);
             }
