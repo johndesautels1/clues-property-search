@@ -3867,8 +3867,9 @@ const STELLAR_MLS_AUTHORITATIVE_FIELDS = new Set([
   '93_price_to_rent_ratio', '94_price_vs_median_percent',
   '99_rental_yield_est', '101_cap_rate_est',
 
-  // Utility providers from Bridge MLS (Fields 104-109)
-  '104_electric_provider', '106_water_provider', '108_sewer_provider', '109_natural_gas',
+  // REMOVED: Utility providers (104, 106, 108, 109) - Bridge MLS often doesn't provide these
+  // These are now populated by Perplexity micro-prompts instead (Tier 4)
+  // '104_electric_provider', '106_water_provider', '108_sewer_provider', '109_natural_gas',
 
   // Enhanced Bridge MLS fields (Priority 3 & 4)
   '132_lot_features', // Enhanced with Topography and Vegetation
