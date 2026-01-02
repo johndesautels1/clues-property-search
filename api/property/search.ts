@@ -4382,32 +4382,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               console.log('  ✅ property_photos:', bridgeData.fields.property_photos);
             }
 
-            // Convert Bridge fields to arbitration format
-            const mlsFields: Record<string, FieldValue> = {};
+            // Convert Bridge fields to arbitration format - pass primitives to addFieldsFromSource
+            const mlsFields: Record<string, any> = {};
             for (const [key, fieldData] of Object.entries(bridgeData.fields)) {
               const field = fieldData as any;
-
-              // DEBUG: Log critical fields to understand Bridge response structure
-              if (key === '17_bedrooms' || key === '21_living_sqft' || key === '29_parking_total') {
-                console.log(`[BRIDGE DEBUG] Field ${key}:`, JSON.stringify(field, null, 2));
-              }
-
               // Extract actual value from nested Bridge MLS response format
               const actualValue = typeof field.value === 'object' && field.value !== null && 'value' in field.value
                 ? field.value.value
                 : field.value;
-
-              // DEBUG: Verify extraction worked
-              if (key === '17_bedrooms' || key === '21_living_sqft' || key === '29_parking_total') {
-                console.log(`[BRIDGE DEBUG] Field ${key} extracted value:`, actualValue);
-              }
-
-              mlsFields[key] = {
-                value: actualValue,
-                source: field.source || STELLAR_MLS_SOURCE,
-                confidence: field.confidence || 'High',
-                tier: 1
-              };
+              // addFieldsFromSource expects primitives, not wrapped FieldValue objects
+              mlsFields[key] = actualValue;
             }
 
             const mlsAdded = arbitrationPipeline.addFieldsFromSource(mlsFields, STELLAR_MLS_SOURCE);
@@ -4462,10 +4446,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Property Search: searchQuery is already full address (no change needed)
     // Manual tab MLS#: searchQuery is "MLS# TB1234567", need real address from field 1_full_address
     const intermediateResultForAddress = arbitrationPipeline.getResult();
-    const addressField = intermediateResultForAddress.fields['1_full_address'];
-    const realAddress = (typeof addressField?.value === 'string' ? addressField.value :
-                        typeof addressField?.value?.value === 'string' ? addressField.value.value :
-                        searchQuery);
+    const realAddress = intermediateResultForAddress.fields['1_full_address']?.value || searchQuery;
 
     if (realAddress !== searchQuery) {
       console.log('========================================');
@@ -4747,9 +4728,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log(`\nStep 2: LLM Cascade (${currentFieldCount}/138 fields filled)...`);
 
         // Extract context for Perplexity micro-prompts (for disambiguation)
-        const addressFieldValue = intermediateResult.fields['1_full_address']?.value;
-        const addressString = typeof addressFieldValue === 'string' ? addressFieldValue :
-                             typeof addressFieldValue?.value === 'string' ? addressFieldValue.value : '';
+        const addressString = intermediateResult.fields['1_full_address']?.value || '';
         const perplexityContext = {
           county: intermediateResult.fields['7_county']?.value || 'Unknown',
           city: addressString ? addressString.split(',')[1]?.trim() || 'Unknown' : 'Unknown',
@@ -5050,10 +5029,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Convert arbitration fields to frontend DataField format
     const convertedFields: Record<string, any> = {};
     for (const [key, field] of Object.entries(arbitrationResult.fields)) {
-      // Extract actual value - handle both simple values and nested {value, source, confidence} objects
-      let parsedValue = typeof field.value === 'object' && field.value !== null && 'value' in field.value
-        ? field.value.value
-        : field.value;
+      let parsedValue = field.value;
 
       // Parse dates if they look like date strings
       if (typeof parsedValue === 'string' && /^\d{4}-\d{2}-\d{2}/.test(parsedValue)) {
