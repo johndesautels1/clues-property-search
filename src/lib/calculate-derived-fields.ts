@@ -15,7 +15,7 @@ export interface PropertyData {
   field_31_hoa_fee_annual?: number;
   field_35_annual_taxes?: number;
   field_52_fireplace_yn?: string;
-  field_91_median_home_price?: number;
+  field_91_median_home_price_neighborhood?: number;
   field_97_insurance_annual?: number;
   field_98_rental_estimate_monthly?: number;
   field_140_carport_spaces?: number;
@@ -269,11 +269,11 @@ export function calculatePriceToRentRatio(data: PropertyData): CalculationResult
  * Formula: ((listing_price - median_price) / median_price) * 100
  */
 export function calculatePriceVsMedian(data: PropertyData): CalculationResult | null {
-  if (!data.field_10_listing_price || !data.field_91_median_home_price || data.field_91_median_home_price === 0) {
+  if (!data.field_10_listing_price || !data.field_91_median_home_price_neighborhood || data.field_91_median_home_price_neighborhood === 0) {
     return null;
   }
 
-  const percentDiff = ((data.field_10_listing_price - data.field_91_median_home_price) / data.field_91_median_home_price) * 100;
+  const percentDiff = ((data.field_10_listing_price - data.field_91_median_home_price_neighborhood) / data.field_91_median_home_price_neighborhood) * 100;
   const value = Math.round(percentDiff * 100) / 100;
 
   return {

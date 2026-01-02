@@ -1719,9 +1719,9 @@ async function getSchoolDistances(lat: number, lon: number): Promise<Record<stri
 
   // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Assigned Schools (63-73)
   const schoolTypes = [
-    { type: 'primary_school', field: '67_elementary_distance_mi', name: 'Elementary School' },
-    { type: 'secondary_school', field: '70_middle_distance_mi', name: 'Middle School' },
-    { type: 'school', keyword: 'high school', field: '73_high_distance_mi', name: 'High School' },
+    { type: 'primary_school', nameField: '65_elementary_school', distField: '67_elementary_distance_mi', name: 'Elementary School' },
+    { type: 'secondary_school', nameField: '68_middle_school', distField: '70_middle_distance_mi', name: 'Middle School' },
+    { type: 'school', keyword: 'high school', nameField: '71_high_school', distField: '73_high_distance_mi', name: 'High School' },
   ];
 
   for (const school of schoolTypes) {
@@ -1759,7 +1759,15 @@ async function getSchoolDistances(lat: number, lon: number): Promise<Record<stri
           const meters = distData.rows[0].elements[0].distance.value;
           const miles = (meters / 1609.34).toFixed(1);
 
-          fields[school.field] = {
+          // Set school name (Fields 65, 68, 71)
+          fields[school.nameField] = {
+            value: nearest.name,
+            source: 'Google Places',
+            confidence: 'High'
+          };
+
+          // Set school distance (Fields 67, 70, 73)
+          fields[school.distField] = {
             value: parseFloat(miles),
             source: 'Google Places',
             confidence: 'High',
@@ -4955,7 +4963,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       field_31_hoa_fee_annual: getFieldValue('31_hoa_fee_annual'),
       field_35_annual_taxes: getFieldValue('35_annual_taxes'),
       field_52_fireplace_yn: getFieldValue('52_fireplace_yn'),
-      field_91_median_home_price: getFieldValue('91_median_home_price'),
+      field_91_median_home_price_neighborhood: getFieldValue('91_median_home_price_neighborhood'),
       field_97_insurance_annual: getFieldValue('97_insurance_annual'),
       field_98_rental_estimate_monthly: getFieldValue('98_rental_estimate_monthly'),
       field_140_carport_spaces: getFieldValue('140_carport_spaces'),
