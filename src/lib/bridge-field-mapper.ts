@@ -38,6 +38,92 @@ function convertToAnnualHOA(fee: number, frequency?: string): number {
 }
 
 /**
+ * Parse interior condition from PublicRemarks text
+ * Returns: 'Excellent' | 'Good' | 'Fair' | 'Needs Work' | 'Renovated' | null
+ */
+function parseInteriorConditionFromRemarks(remarks: string): string | null {
+  const lower = remarks.toLowerCase();
+
+  // Check for 'Renovated' indicators (highest priority)
+  const renovatedPatterns = [
+    /completely renovated/i,
+    /fully renovated/i,
+    /total renovation/i,
+    /gut renovated/i,
+    /brand new interior/i,
+    /recently renovated/i,
+    /just renovated/i,
+    /new construction/i
+  ];
+  if (renovatedPatterns.some(pattern => pattern.test(remarks))) {
+    return 'Renovated';
+  }
+
+  // Check for 'Excellent' indicators
+  const excellentPatterns = [
+    /pristine condition/i,
+    /immaculate/i,
+    /impeccable/i,
+    /flawless/i,
+    /mint condition/i,
+    /excellent condition/i,
+    /like new/i,
+    /showroom/i,
+    /meticulously maintained/i
+  ];
+  if (excellentPatterns.some(pattern => pattern.test(remarks))) {
+    return 'Excellent';
+  }
+
+  // Check for 'Needs Work' indicators (check before Fair/Good to avoid false positives)
+  const needsWorkPatterns = [
+    /needs work/i,
+    /needs repair/i,
+    /fixer.*upper/i,
+    /handyman.*special/i,
+    /as.*is/i,
+    /tlc/i,
+    /rehab/i,
+    /distressed/i,
+    /dated interior/i,
+    /needs updating/i,
+    /cosmetic work needed/i
+  ];
+  if (needsWorkPatterns.some(pattern => pattern.test(remarks))) {
+    return 'Needs Work';
+  }
+
+  // Check for 'Good' indicators
+  const goodPatterns = [
+    /good condition/i,
+    /well maintained/i,
+    /well kept/i,
+    /move.*in.*ready/i,
+    /turn.*key/i,
+    /great condition/i,
+    /nice condition/i
+  ];
+  if (goodPatterns.some(pattern => pattern.test(remarks))) {
+    return 'Good';
+  }
+
+  // Check for 'Fair' indicators
+  const fairPatterns = [
+    /fair condition/i,
+    /average condition/i,
+    /solid home/i,
+    /functional/i,
+    /livable/i
+  ];
+  if (fairPatterns.some(pattern => pattern.test(remarks))) {
+    return 'Fair';
+  }
+
+  // If no keywords found, return null (let other sources determine)
+  return null;
+}
+
+/**
  * Map Bridge Interactive RESO property to CLUES schema
  */
 export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPropertyData {
@@ -243,7 +329,19 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
     addField('47_laundry_type', property.LaundryFeatures.join(', '));
   }
 
-  addField('48_interior_condition', property.PropertyCondition);
+  // Field 48: Interior Condition - Parse from PropertyCondition field or PublicRemarks
+  let interiorCondition = property.PropertyCondition;
+
+  if (!interiorCondition && property.PublicRemarks) {
+    interiorCondition = parseInteriorConditionFromRemarks(property.PublicRemarks);
+    if (interiorCondition) {
+      console.log('[Bridge Mapper] Field 48: Parsed from PublicRemarks:', interiorCondition);
+    }
+  }
+
+  if (interiorCondition) {
+    addField('48_interior_condition', interiorCondition, 'Medium');
+  }
 
   // ================================================================
   // GROUP 6: Interior Features (Fields 49-53)

@@ -1886,7 +1886,57 @@ export default function PropertyDetail() {
                   {renderDataField("Vacancy Rate (Neighborhood)", fullProperty.financial.vacancyRateNeighborhood, "percent", undefined, "100_vacancy_rate_neighborhood")}
                   {renderDataField("Cap Rate (Est)", fullProperty.financial.capRateEst, "percent", undefined, "101_cap_rate_est")}
                   {renderDataField("Financing Terms", fullProperty.financial.financingTerms, "text", undefined, "102_financing_terms")}
-                  {renderDataField("Comparable Sales", fullProperty.financial.comparableSalesLast3, "text", undefined, "103_comparable_sales")}
+                  {/* Field 103: Comparable Sales - Custom rendering for structured data */}
+                  {(() => {
+                    const compData = fullProperty.financial.comparableSalesLast3;
+                    if (!compData || !compData.value) return null;
+
+                    // Try to parse as JSON array
+                    let comps: any[] = [];
+                    try {
+                      if (typeof compData.value === 'string') {
+                        comps = JSON.parse(compData.value);
+                      } else if (Array.isArray(compData.value)) {
+                        comps = compData.value;
+                      }
+                    } catch (e) {
+                      // If not JSON, fall back to regular text display
+                      return renderDataField("Comparable Sales", compData, "text", undefined, "103_comparable_sales");
+                    }
+
+                    if (!Array.isArray(comps) || comps.length === 0) {
+                      return renderDataField("Comparable Sales", compData, "text", undefined, "103_comparable_sales");
+                    }
+
+                    return (
+                      <div className="py-3">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm text-gray-400">Comparable Sales</span>
+                          {globalIsAdmin && compData.sources && compData.sources.length > 0 && (
+                            <span className="text-xs text-gray-500">Source: {compData.sources.join(', ')}</span>
+                          )}
+                        </div>
+                        <div className="grid gap-3">
+                          {comps.slice(0, 3).map((comp: any, idx: number) => (
+                            <div key={idx} className="bg-white/5 border border-white/10 rounded-lg p-3">
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="text-sm font-medium text-white">{comp.address || 'Unknown Address'}</div>
+                                <div className="text-sm font-semibold text-quantum-green">
+                                  {comp.price ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(comp.price) : 'N/A'}
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-4 gap-2 text-xs text-gray-400">
+                                <div><span className="text-gray-500">Sqft:</span> {comp.sqft?.toLocaleString() || 'N/A'}</div>
+                                <div><span className="text-gray-500">Beds:</span> {comp.beds || 'N/A'}</div>
+                                <div><span className="text-gray-500">Baths:</span> {comp.baths || 'N/A'}</div>
+                                <div><span className="text-gray-500">Sold:</span> {comp.sold_date || 'N/A'}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </Section>

@@ -2901,7 +2901,7 @@ PRIORITY FIELDS TO SEARCH FOR (use EXACT field keys):
 - 100_vacancy_rate_neighborhood - Search "[ZIP] vacancy rate" on HUD.gov or census.gov
 - 95_days_on_market_avg - Search "[Neighborhood] average days on market" on Redfin or Realtor.com
 - 96_inventory_surplus - Search market reports for neighborhood inventory levels
-- 103_comparable_sales - Search Zillow/Redfin for 3-5 recent sales within 0.5 miles, similar sqft/beds
+- 103_comparable_sales - Search Zillow/Redfin for 3 recent sales within 0.5 miles, similar sqft/beds. Return as JSON array: [{"address": "123 Main St", "price": 500000, "sqft": 2000, "beds": 3, "baths": 2, "sold_date": "2024-01-15"}, ...] (exactly 3 comparables)
 - 135_accessibility_modifications - Search listing for wheelchair ramps, widened doors, etc.
 
 ${FIELD_GROUPS}
