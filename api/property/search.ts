@@ -4386,10 +4386,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const mlsFields: Record<string, FieldValue> = {};
             for (const [key, fieldData] of Object.entries(bridgeData.fields)) {
               const field = fieldData as any;
+
+              // DEBUG: Log critical fields to understand Bridge response structure
+              if (key === '17_bedrooms' || key === '21_living_sqft' || key === '29_parking_total') {
+                console.log(`[BRIDGE DEBUG] Field ${key}:`, JSON.stringify(field, null, 2));
+              }
+
               // Extract actual value from nested Bridge MLS response format
               const actualValue = typeof field.value === 'object' && field.value !== null && 'value' in field.value
                 ? field.value.value
                 : field.value;
+
+              // DEBUG: Verify extraction worked
+              if (key === '17_bedrooms' || key === '21_living_sqft' || key === '29_parking_total') {
+                console.log(`[BRIDGE DEBUG] Field ${key} extracted value:`, actualValue);
+              }
+
               mlsFields[key] = {
                 value: actualValue,
                 source: field.source || STELLAR_MLS_SOURCE,
