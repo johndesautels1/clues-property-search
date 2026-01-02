@@ -118,6 +118,7 @@ Return ONLY valid JSON. No markdown, no explanation outside JSON.`;
 
 /**
  * Claude Sonnet 4.5 - Historical patterns + economic modeling
+ * UPDATED: Includes web_search tool per CLAUDE_MASTER_RULES Section 6.0
  */
 async function callClaudeForecast(
   address: string,
@@ -132,14 +133,23 @@ async function callClaudeForecast(
 
   const client = new Anthropic({ apiKey });
 
-  const prompt = buildForecastPrompt(address, price, neighborhood, propertyType);
+  const prompt = buildForecastPrompt(address, price, neighborhood, propertyType) + `
+
+CRITICAL: You have web search available. USE IT to verify market trends, comparable sales data, and economic indicators. DO NOT GUESS - search for real data.`;
 
   const response = await client.messages.create({
     model: 'claude-sonnet-4-5-20250929',
     max_tokens: 2000,
     temperature: 0.5,
+    betas: ['web-search-2025-03-05'],
+    tools: [
+      {
+        type: 'web_search_20250305',
+        name: 'web_search',
+      }
+    ],
     messages: [{ role: 'user', content: prompt }],
-  });
+  } as any);
 
   const textContent = response.content.find(block => block.type === 'text');
   if (!textContent || textContent.type !== 'text') {
@@ -168,6 +178,7 @@ async function callClaudeForecast(
 
 /**
  * Claude Opus 4.5 - Deep reasoning + complex market modeling
+ * UPDATED: Includes web_search tool per CLAUDE_MASTER_RULES Section 6.0
  */
 async function callClaudeOpusForecast(
   address: string,
@@ -182,14 +193,23 @@ async function callClaudeOpusForecast(
 
   const client = new Anthropic({ apiKey });
 
-  const prompt = buildForecastPrompt(address, price, neighborhood, propertyType);
+  const prompt = buildForecastPrompt(address, price, neighborhood, propertyType) + `
+
+CRITICAL: You have web search available. USE IT to verify market trends, comparable sales data, and economic indicators. DO NOT GUESS - search for real data.`;
 
   const response = await client.messages.create({
     model: 'claude-opus-4-5-20251101',
     max_tokens: 2000,
     temperature: 0.5,
+    betas: ['web-search-2025-03-05'],
+    tools: [
+      {
+        type: 'web_search_20250305',
+        name: 'web_search',
+      }
+    ],
     messages: [{ role: 'user', content: prompt }],
-  });
+  } as any);
 
   const textContent = response.content.find(block => block.type === 'text');
   if (!textContent || textContent.type !== 'text') {

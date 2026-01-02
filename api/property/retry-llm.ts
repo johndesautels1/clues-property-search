@@ -518,14 +518,17 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
   }
 }
 
+// UPDATED: Includes web_search tool per CLAUDE_MASTER_RULES Section 6.0
 async function callClaudeOpus(address: string): Promise<{ fields: Record<string, any>; error?: string }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   console.log('[CLAUDE OPUS] API key present:', !!apiKey, 'length:', apiKey?.length || 0);
   if (!apiKey) return { error: 'API key not set', fields: {} };
 
-  const prompt = `You are a real estate data assistant. Based on your knowledge, provide property data estimates for this address: ${address}
+  const prompt = `You are a real estate data assistant. You have WEB SEARCH available - USE IT for all factual data.
 
-Return a JSON object with any of these fields you can reasonably estimate based on the location, city, neighborhood patterns, and typical property characteristics for the area:
+CRITICAL: DO NOT GUESS OR ESTIMATE. Search the web for actual data for: ${address}
+
+Return a JSON object with VERIFIED data only:
 
 {
   "property_type": "Single Family | Condo | Townhouse | Multi-Family",
@@ -534,18 +537,18 @@ Return a JSON object with any of these fields you can reasonably estimate based 
   "county": "county name",
   "neighborhood": "neighborhood name if known",
   "zip_code": "ZIP code",
-  "median_home_price_neighborhood": estimated median home price for the area,
-  "avg_days_on_market": typical days on market for the area,
-  "school_district": "school district name",
-  "flood_risk_level": "Low | Moderate | High",
+  "median_home_price_neighborhood": SEARCH for current median price,
+  "avg_days_on_market": SEARCH for current DOM stats,
+  "school_district": SEARCH for assigned school district,
+  "flood_risk_level": SEARCH FEMA flood zone data,
   "hurricane_risk": "Low | Moderate | High",
   "walkability_description": "description of walkability",
-  "rental_estimate_monthly": estimated monthly rent for similar properties,
+  "rental_estimate_monthly": SEARCH Rentometer/Zillow for rental estimates,
   "insurance_estimate_annual": estimated annual insurance,
-  "property_tax_rate_percent": typical tax rate for the area
+  "property_tax_rate_percent": SEARCH county property appraiser for tax rate
 }
 
-Only include fields you have reasonable confidence about based on the location. Return ONLY the JSON object, no explanation.`;
+USE WEB SEARCH for every factual field. Return null if you cannot find verified data. Return ONLY the JSON object.`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -554,10 +557,17 @@ Only include fields you have reasonable confidence about based on the location. 
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'web-search-2025-03-05',
       },
       body: JSON.stringify({
         model: 'claude-opus-4-5-20251101',
         max_tokens: 4000,
+        tools: [
+          {
+            type: 'web_search_20250305',
+            name: 'web_search',
+          }
+        ],
         messages: [{ role: 'user', content: prompt }],
       }),
     });
@@ -677,14 +687,17 @@ Only include fields you have reasonable confidence about. Return ONLY the JSON o
   }
 }
 
+// UPDATED: Includes web_search tool per CLAUDE_MASTER_RULES Section 6.0
 async function callClaudeSonnet(address: string): Promise<{ fields: Record<string, any>; error?: string }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   console.log('[CLAUDE SONNET] API key present:', !!apiKey, 'length:', apiKey?.length || 0);
   if (!apiKey) return { error: 'API key not set', fields: {} };
 
-  const prompt = `You are a real estate data assistant. Based on your knowledge, provide property data estimates for this address: ${address}
+  const prompt = `You are a real estate data assistant. You have WEB SEARCH available - USE IT for all factual data.
 
-Return a JSON object with any of these fields you can reasonably estimate based on the location, city, neighborhood patterns, and typical property characteristics for the area:
+CRITICAL: DO NOT GUESS OR ESTIMATE. Search the web for actual data for: ${address}
+
+Return a JSON object with VERIFIED data only:
 
 {
   "property_type": "Single Family | Condo | Townhouse | Multi-Family",
@@ -693,18 +706,18 @@ Return a JSON object with any of these fields you can reasonably estimate based 
   "county": "county name",
   "neighborhood": "neighborhood name if known",
   "zip_code": "ZIP code",
-  "median_home_price_neighborhood": estimated median home price for the area,
-  "avg_days_on_market": typical days on market for the area,
-  "school_district": "school district name",
-  "flood_risk_level": "Low | Moderate | High",
+  "median_home_price_neighborhood": SEARCH for current median price,
+  "avg_days_on_market": SEARCH for current DOM stats,
+  "school_district": SEARCH for assigned school district,
+  "flood_risk_level": SEARCH FEMA flood zone data,
   "hurricane_risk": "Low | Moderate | High",
   "walkability_description": "description of walkability",
-  "rental_estimate_monthly": estimated monthly rent for similar properties,
+  "rental_estimate_monthly": SEARCH for rental estimates,
   "insurance_estimate_annual": estimated annual insurance,
-  "property_tax_rate_percent": typical tax rate for the area
+  "property_tax_rate_percent": SEARCH county property appraiser for tax rate
 }
 
-Only include fields you have reasonable confidence about based on the location. Return ONLY the JSON object, no explanation.`;
+USE WEB SEARCH for every factual field. Return null if you cannot find verified data. Return ONLY the JSON object.`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -713,10 +726,17 @@ Only include fields you have reasonable confidence about based on the location. 
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'web-search-2025-03-05',
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5-20250929',
         max_tokens: 4000,
+        tools: [
+          {
+            type: 'web_search_20250305',
+            name: 'web_search',
+          }
+        ],
         messages: [{ role: 'user', content: prompt }],
       }),
     });

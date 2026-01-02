@@ -4090,6 +4090,7 @@ ${JSON_RESPONSE_FORMAT}`;
 const SYSTEM_PROMPT = PROMPT_CLAUDE_OPUS;
 
 // Claude Opus API call - MOST RELIABLE per audit
+// UPDATED: Includes web_search tool per CLAUDE_MASTER_RULES Section 6.0
 async function callClaudeOpus(address: string): Promise<any> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return { error: 'ANTHROPIC_API_KEY not set', fields: {} };
@@ -4101,17 +4102,28 @@ async function callClaudeOpus(address: string): Promise<any> {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'web-search-2025-03-05',
       },
       body: JSON.stringify({
         model: 'claude-opus-4-5-20251101',
-        max_tokens: 16000, // Increased from 8000 to handle 168 fields
+        max_tokens: 16000,
         system: PROMPT_CLAUDE_OPUS,
+        tools: [
+          {
+            type: 'web_search_20250305',
+            name: 'web_search',
+          }
+        ],
         messages: [
           {
             role: 'user',
             content: `Extract all 168 property data fields for this address: ${address}
 
-Use your training knowledge to provide geographic, regional, and structural data. Return null for fields requiring live data.`,
+CRITICAL: You have web search available. USE IT for every factual claim.
+DO NOT GUESS or ESTIMATE. Search for actual data.
+If you cannot find verified data, return null for that field.
+
+Fields requiring web search: school names/ratings, crime data, median prices, utility providers, market statistics.`,
           },
         ],
       }),
@@ -4140,6 +4152,7 @@ Use your training knowledge to provide geographic, regional, and structural data
 }
 
 // Claude Sonnet API call - 4th in reliability per audit
+// UPDATED: Includes web_search tool per CLAUDE_MASTER_RULES Section 6.0
 async function callClaudeSonnet(address: string): Promise<any> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return { error: 'ANTHROPIC_API_KEY not set', fields: {} };
@@ -4151,17 +4164,26 @@ async function callClaudeSonnet(address: string): Promise<any> {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'web-search-2025-03-05',
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5-20250929',
-        max_tokens: 16000, // Increased from 8000 to handle 168 fields
+        max_tokens: 16000,
         system: PROMPT_CLAUDE_SONNET,
+        tools: [
+          {
+            type: 'web_search_20250305',
+            name: 'web_search',
+          }
+        ],
         messages: [
           {
             role: 'user',
             content: `Extract property data fields for: ${address}
 
-Quick extraction from training knowledge. Return null for property-specific data.`,
+CRITICAL: You have web search available. USE IT for factual data.
+Search for: school names/ratings, crime stats, median prices, utilities.
+DO NOT GUESS. Return null if data cannot be verified.`,
           },
         ],
       }),
