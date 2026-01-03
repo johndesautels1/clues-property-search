@@ -27,37 +27,10 @@ import { ProgressiveAnalysisPanel } from '@/components/ProgressiveAnalysisPanel'
 import { calculateSmartScore } from '@/lib/smart-score-calculator';
 import { SMARTScoreDisplay } from '@/components/SMARTScoreDisplay';
 import SMARTScoreDiagnostic from '@/components/SMARTScoreDiagnostic';
+import { useWeightStore, getCurrentWeights, getWeightsSource } from '@/store/weightStore';
 
 // View modes for comparison
 type CompareViewMode = 'table' | 'visual' | 'diagnostic';
-
-// Industry-standard section weights for Florida coastal market
-// 23 sections (A-W) - weights normalized at runtime
-const INDUSTRY_WEIGHTS = {
-  'A': 1.94,   // Address & Identity
-  'B': 17.96,  // Pricing & Value
-  'C': 14.76,  // Property Basics
-  'D': 9.71,   // HOA & Taxes
-  'E': 6.80,   // Structure & Systems
-  'F': 0.97,   // Interior Features
-  'G': 1.94,   // Exterior Features
-  'H': 0.49,   // Permits & Renovations
-  'I': 11.94,  // Schools
-  'J': 4.85,   // Location Scores
-  'K': 1.94,   // Distances & Amenities
-  'L': 3.88,   // Safety & Crime
-  'M': 7.77,   // Market & Investment
-  'N': 0.49,   // Utilities
-  'O': 8.74,   // Environment & Risk
-  'P': 0.0,    // Additional Features
-  'Q': 0.0,    // Parking
-  'R': 0.0,    // Building
-  'S': 0.0,    // Legal
-  'T': 5.83,   // Waterfront
-  'U': 0.0,    // Leasing
-  'V': 0.0,    // Features
-  'W': 6.0,    // Market Performance (NEW - fields 169-181)
-};
 
 // Helper to extract value from DataField
 function getFieldValue<T>(field: any): T | null {
@@ -1000,7 +973,7 @@ export default function Compare() {
       if (!fullProp) return null;
 
       try {
-        return calculateSmartScore(fullProp, INDUSTRY_WEIGHTS, 'industry-standard');
+        return calculateSmartScore(fullProp, getCurrentWeights(), getWeightsSource());
       } catch (error) {
         console.error('Error calculating SMART Score:', error);
         return null;
@@ -1018,7 +991,7 @@ export default function Compare() {
     const fullProp = fullProperties.get(propertyId);
     if (fullProp) {
       try {
-        const score = calculateSmartScore(fullProp, INDUSTRY_WEIGHTS, 'industry-standard');
+        const score = calculateSmartScore(fullProp, getCurrentWeights(), getWeightsSource());
         return score.finalScore;
       } catch (error) {
         console.error('Error calculating SMART Score for', propertyId, error);
