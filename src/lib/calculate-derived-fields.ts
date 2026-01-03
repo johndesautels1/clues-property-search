@@ -506,7 +506,8 @@ export function calculateWaterBill(data: PropertyData): CalculationResult | null
 export function calculatePoolType(data: PropertyData): CalculationResult | null {
   const poolYn = data.field_54_pool_yn;
 
-  if (poolYn === 'No' || poolYn === 'false' || poolYn === false) {
+  // Check for "No" or "false" as strings (boolean false would be stringified by the time it gets here)
+  if (poolYn === 'No' || poolYn === 'false' || String(poolYn).toLowerCase() === 'false') {
     return {
       value: 'N/A',
       source: 'Backend Logic',
