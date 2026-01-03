@@ -4004,27 +4004,33 @@ Return ONLY the audited LLM fields (not the full schema):
 }`;
 
 // ============================================
-// CLAUDE SONNET PROMPT - NO WEB - Fast, efficient
+// CLAUDE SONNET PROMPT - WITH WEB SEARCH - Fast, accurate
 // ============================================
-const PROMPT_CLAUDE_SONNET = `You are Claude Sonnet, a fast and efficient property data extractor. No web access.
+const PROMPT_CLAUDE_SONNET = `You are Claude Sonnet, a property data extraction specialist with web search capability.
 
-TASK: Extract property fields from training knowledge. Be quick but accurate.
+TASK: Extract property data fields. Use web search to find accurate, current information.
 
 ${FIELD_GROUPS}
 
-QUICK EXTRACTION RULES:
-1. Geographic data (county, region): Usually can provide
-2. Utility providers: Often know major providers by state/region
-3. School districts: Know structure, not specific assignments
-4. Tax rates: Know typical ranges by state
-5. Property-specific data (prices, MLS, owners): Return null
+SEARCH STRATEGY:
+1. Search Zillow, Redfin, Realtor.com for listing data (price, beds, baths, sqft)
+2. Search County Property Appraiser for tax/assessment data
+3. Search for school district assignments
+4. Search for utility providers in the area
+5. Search for neighborhood crime statistics
 
-CONFIDENCE GUIDE:
-- High: Geographic facts, major utility providers
-- Medium: Regional estimates, typical ranges
-- Unverified: Anything property-specific
+MANDATORY FIELDS TO SEARCH FOR:
+- 10_listing_price: Current listing price from Zillow/Redfin
+- 17_bedrooms, 18_full_bathrooms, 21_living_sqft: Property specs
+- 35_annual_taxes: From County records
+- 25_year_built: Construction year
 
-Keep responses focused. Don't over-explain.
+CONFIDENCE LEVELS:
+- High: Data from official sources (County, MLS)
+- Medium: Data from real estate portals (Zillow, Redfin)
+- Low: Estimates or regional averages
+
+Return JSON with field data. Include source URLs when available.
 
 ${JSON_RESPONSE_FORMAT}`;
 
@@ -4171,30 +4177,54 @@ async function callClaudeSonnet(address: string): Promise<any> {
         messages: [
           {
             role: 'user',
-            content: `Extract property data fields for: ${address}
+            content: `Property address: ${address}
 
-You have web search available. Use it when helpful for factual data like school names, crime stats, median prices, utilities.
-Return your best data. Use null only for fields you truly cannot find.`,
+SEARCH and extract these fields:
+- 10_listing_price (search Zillow/Redfin for current price)
+- 17_bedrooms, 18_full_bathrooms, 21_living_sqft (property specs)
+- 25_year_built, 35_annual_taxes (county records)
+- 7_county, 8_zip_code (geographic)
+
+Return JSON with numbered field keys like "10_listing_price": {"value": 450000, "source": "Zillow"}`,
           },
         ],
       }),
     });
 
     const data = await response.json();
-    if (data.content && data.content[0]?.text) {
-      const text = data.content[0].text;
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        try {
-          const parsed = JSON.parse(jsonMatch[0]);
-          // 🛡️ NULL BLOCKING: Filter all null values before returning
-          const filteredFields = filterNullValues(parsed, 'Claude Sonnet');
-          return { fields: filteredFields, llm: 'Claude Sonnet' };
-        } catch (parseError) {
-          console.error('❌ Claude Sonnet JSON.parse error:', parseError);
-          return { error: `JSON parse error: ${String(parseError)}`, fields: {}, llm: 'Claude Sonnet' };
+
+    // Log response structure for debugging
+    console.log('[Claude Sonnet] Response status:', response.status);
+    console.log('[Claude Sonnet] Content blocks:', data.content?.length || 0);
+
+    // Handle web_search responses - may have multiple content blocks
+    if (data.content && Array.isArray(data.content)) {
+      // Find the text block (may be after tool_use blocks)
+      const textBlock = data.content.find((block: any) => block.type === 'text');
+      if (textBlock?.text) {
+        const text = textBlock.text;
+        console.log('[Claude Sonnet] Text length:', text.length);
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            const parsed = JSON.parse(jsonMatch[0]);
+            // 🛡️ NULL BLOCKING: Filter all null values before returning
+            const filteredFields = filterNullValues(parsed, 'Claude Sonnet');
+            console.log('[Claude Sonnet] Fields extracted:', Object.keys(filteredFields).length);
+            return { fields: filteredFields, llm: 'Claude Sonnet' };
+          } catch (parseError) {
+            console.error('❌ Claude Sonnet JSON.parse error:', parseError);
+            return { error: `JSON parse error: ${String(parseError)}`, fields: {}, llm: 'Claude Sonnet' };
+          }
+        } else {
+          console.log('[Claude Sonnet] No JSON found in response text');
         }
+      } else {
+        console.log('[Claude Sonnet] No text block found. Block types:', data.content.map((b: any) => b.type));
       }
+    } else if (data.error) {
+      console.error('[Claude Sonnet] API Error:', data.error);
+      return { error: data.error.message || JSON.stringify(data.error), fields: {}, llm: 'Claude Sonnet' };
     }
     return { error: 'Failed to parse Claude Sonnet response', fields: {}, llm: 'Claude Sonnet' };
   } catch (error) {
@@ -4299,7 +4329,7 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
     console.log(`[GPT] Using ${isOrchestratorMode ? 'ORCHESTRATOR' : 'LEGACY'} mode`);
 
     const requestBody = {
-      model: 'gpt-5.2-2025-12-11', // PINNED SNAPSHOT (GPT recommendation: prevent behavior drift)
+      model: 'gpt-5.2-2025-12-11', // GPT-5.2 December 2025 release
       max_completion_tokens: 128000, // GPT-5.2 supports up to 128k output tokens
       messages: [
         { role: 'system', content: systemPrompt },
@@ -4311,7 +4341,9 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
     console.log(`[GPT] REQUEST: model=${requestBody.model}, max_completion_tokens=${requestBody.max_completion_tokens}`);
     console.log(`[GPT] System prompt length: ${systemPrompt.length} chars`);
     console.log(`[GPT] User prompt length: ${userPrompt.length} chars`);
+    console.log(`[GPT] 🚀 Sending fetch to OpenAI...`);
 
+    const fetchStart = Date.now();
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -4320,8 +4352,10 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
       },
       body: JSON.stringify(requestBody),
     });
+    const fetchDuration = Date.now() - fetchStart;
 
     // LOG RAW RESPONSE STATUS
+    console.log(`[GPT] ✅ Fetch completed in ${fetchDuration}ms`);
     console.log(`[GPT] RESPONSE: status=${response.status} ${response.statusText}`);
     console.log(`[GPT] Headers:`, JSON.stringify(Object.fromEntries(response.headers.entries())));
 
@@ -4375,8 +4409,11 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
         }
       }
     }
+    console.log('[GPT] ⚠️ No valid response content found');
     return { error: 'Failed to parse GPT response', fields: {}, llm: 'GPT' };
   } catch (error) {
+    console.error('[GPT] ❌ EXCEPTION:', error);
+    console.error('[GPT] Stack:', (error as Error).stack);
     return { error: String(error), fields: {}, llm: 'GPT' };
   }
 }

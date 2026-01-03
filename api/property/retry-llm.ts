@@ -732,40 +732,49 @@ Return your best data. Use null only for fields you truly cannot find. Return ON
 
     const data = await response.json();
     console.log('[CLAUDE SONNET] Status:', response.status);
+    console.log('[CLAUDE SONNET] Content blocks:', data.content?.length || 0);
 
-    if (data.content?.[0]?.text) {
-      const text = data.content[0].text;
-      console.log('[CLAUDE SONNET] Text:', text.slice(0, 300));
+    // Handle web_search responses - may have multiple content blocks
+    if (data.content && Array.isArray(data.content)) {
+      // Find the text block (may be after tool_use blocks)
+      const textBlock = data.content.find((block: any) => block.type === 'text');
+      if (textBlock?.text) {
+        const text = textBlock.text;
+        console.log('[CLAUDE SONNET] Text:', text.slice(0, 300));
 
-      // Use unified JSON extraction (no double-parsing)
-      const parseResult = extractAndParseJSON(text);
-      console.log('[CLAUDE SONNET] Parse result:', parseResult.success ? `${Object.keys(parseResult.data || {}).length} keys` : parseResult.error);
+        // Use unified JSON extraction (no double-parsing)
+        const parseResult = extractAndParseJSON(text);
+        console.log('[CLAUDE SONNET] Parse result:', parseResult.success ? `${Object.keys(parseResult.data || {}).length} keys` : parseResult.error);
 
-      if (parseResult.success && parseResult.data) {
-        const parsed = parseResult.data;
-        const fields: Record<string, any> = {};
-        // Handle both parsed.fields (wrapped) and parsed directly
-        for (const [key, value] of Object.entries(parsed.fields || parsed)) {
-          const strVal = String(value).toLowerCase().trim();
-          const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'unknown' || strVal === 'not available' || strVal === 'none';
-          if (!isBadValue) {
-            const rawValue = (value as any)?.value !== undefined ? (value as any).value : value;
-            // TYPE COERCION: Validate and coerce value to expected type
-            const coerced = coerceValue(key, rawValue);
-            if (coerced !== null) {
-              fields[key] = {
-                value: coerced,
-                source: 'Claude Sonnet',
-                confidence: 'Low'
-              };
+        if (parseResult.success && parseResult.data) {
+          const parsed = parseResult.data;
+          const fields: Record<string, any> = {};
+          // Handle both parsed.fields (wrapped) and parsed directly
+          for (const [key, value] of Object.entries(parsed.fields || parsed)) {
+            const strVal = String(value).toLowerCase().trim();
+            const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'unknown' || strVal === 'not available' || strVal === 'none';
+            if (!isBadValue) {
+              const rawValue = (value as any)?.value !== undefined ? (value as any).value : value;
+              // TYPE COERCION: Validate and coerce value to expected type
+              const coerced = coerceValue(key, rawValue);
+              if (coerced !== null) {
+                fields[key] = {
+                  value: coerced,
+                  source: 'Claude Sonnet',
+                  confidence: 'Low'
+                };
+              }
             }
           }
+          console.log('[CLAUDE SONNET] Fields found:', Object.keys(fields).length);
+          return { fields };
+        } else {
+          console.log('[CLAUDE SONNET] JSON extraction failed:', parseResult.error);
+          return { error: `JSON extraction failed: ${parseResult.error}`, fields: {} };
         }
-        console.log('[CLAUDE SONNET] Fields found:', Object.keys(fields).length);
-        return { fields };
       } else {
-        console.log('[CLAUDE SONNET] JSON extraction failed:', parseResult.error);
-        return { error: `JSON extraction failed: ${parseResult.error}`, fields: {} };
+        console.log('[CLAUDE SONNET] No text block found. Block types:', data.content.map((b: any) => b.type));
+        return { error: 'No text block in response', fields: {} };
       }
     } else if (data.error) {
       console.log('[CLAUDE SONNET] API Error:', JSON.stringify(data.error));

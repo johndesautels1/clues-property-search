@@ -8,11 +8,28 @@
 import { z } from 'zod';
 
 // ============================================================================
+// HELPER: Coerce currency strings to numbers
+// Handles "$450,000", "450000", "450,000.00" etc.
+// ============================================================================
+const currencyNumber = z.preprocess(
+  (val) => {
+    if (typeof val === 'number') return val;
+    if (typeof val === 'string') {
+      const cleaned = val.replace(/[$,€£\s]/g, '').trim();
+      const num = parseFloat(cleaned);
+      return isNaN(num) ? null : num;
+    }
+    return null;
+  },
+  z.number().nullable()
+);
+
+// ============================================================================
 // BATCH 1: PUBLIC RECORDS (County Data)
 // ============================================================================
 
 export const Batch1Schema = z.object({
-  '37_tax_rate': z.number().min(0.1).max(5.0).nullable()
+  '37_tax_rate': currencyNumber.pipe(z.number().min(0.1).max(5.0).nullable())
     .describe('Property tax rate as percentage (e.g., 1.85 for 1.85%)'),
 
   '38_exemptions': z.string().nullable()
@@ -33,7 +50,7 @@ export const Batch1Schema = z.object({
   '152_cdd_exists': z.enum(['Yes', 'No']).nullable()
     .describe('Whether CDD (Community Development District) fees exist'),
 
-  '153_cdd_fee': z.number().min(0).max(50000).nullable()
+  '153_cdd_fee': currencyNumber.pipe(z.number().min(0).max(50000).nullable())
     .describe('Annual CDD fee amount in dollars')
 });
 
@@ -44,16 +61,16 @@ export type Batch1Result = z.infer<typeof Batch1Schema>;
 // ============================================================================
 
 export const Batch2Schema = z.object({
-  '75_transit_score': z.number().min(0).max(100).nullable()
+  '75_transit_score': currencyNumber.pipe(z.number().min(0).max(100).nullable())
     .describe('WalkScore Transit Score (0-100)'),
 
-  '76_bike_score': z.number().min(0).max(100).nullable()
+  '76_bike_score': currencyNumber.pipe(z.number().min(0).max(100).nullable())
     .describe('WalkScore Bike Score (0-100)'),
 
-  '91_median_price_zip': z.number().min(10000).max(10000000).nullable()
+  '91_median_price_zip': currencyNumber.pipe(z.number().min(10000).max(10000000).nullable())
     .describe('Median home sale price for ZIP code'),
 
-  '95_days_on_market_avg': z.number().min(0).max(365).nullable()
+  '95_days_on_market_avg': currencyNumber.pipe(z.number().min(0).max(365).nullable())
     .describe('Average days on market for ZIP code'),
 
   '116_emergency_dist': z.string().nullable()
@@ -70,19 +87,19 @@ export type Batch2Result = z.infer<typeof Batch2Schema>;
 // ============================================================================
 
 export const Batch3Schema = z.object({
-  '12_market_value': z.number().min(10000).max(50000000).nullable()
+  '12_market_value': currencyNumber.pipe(z.number().min(10000).max(50000000).nullable())
     .describe('Average of Zestimate and Redfin Estimate (or single value if only one available)'),
 
-  '16_redfin_estimate': z.number().min(10000).max(50000000).nullable()
+  '16_redfin_estimate': currencyNumber.pipe(z.number().min(10000).max(50000000).nullable())
     .describe('Exact Redfin Estimate value'),
 
-  '31_hoa_fee_annual': z.number().min(0).max(50000).nullable()
+  '31_hoa_fee_annual': currencyNumber.pipe(z.number().min(0).max(50000).nullable())
     .describe('Annual HOA fee in dollars'),
 
   '33_hoa_includes': z.string().nullable()
     .describe('Comma-separated list of what HOA covers'),
 
-  '98_rental_estimate': z.number().min(100).max(50000).nullable()
+  '98_rental_estimate': currencyNumber.pipe(z.number().min(100).max(50000).nullable())
     .describe('Monthly rental estimate'),
 
   '131_view_type': z.string().nullable()
