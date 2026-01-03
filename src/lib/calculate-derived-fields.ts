@@ -45,21 +45,43 @@ export interface CalculationResult {
 }
 
 /**
+ * Helper: Parse numeric value from string or number
+ * Handles formats like: 1250000, "1250000", "$1,250,000", "1,250,000.00"
+ */
+function parseNumericValue(value: any): number {
+  if (typeof value === 'number') {
+    return value;
+  }
+  if (value === null || value === undefined || value === '') {
+    return NaN;
+  }
+  // Remove all non-numeric characters except decimal point and minus sign
+  const cleaned = String(value).replace(/[^0-9.-]/g, '');
+  return parseFloat(cleaned);
+}
+
+/**
  * Field 11: Price Per Square Foot
  * Formula: listing_price / living_sqft
  */
 export function calculatePricePerSqft(data: PropertyData): CalculationResult | null {
+  // Parse inputs - handle both numbers and strings (e.g., "1250000" or "$1,250,000")
+  const listingPrice = parseNumericValue(data.field_10_listing_price);
+  const livingSqft = parseNumericValue(data.field_21_living_sqft);
+
   console.log('[calculatePricePerSqft] Inputs:', {
-    listing_price: data.field_10_listing_price,
-    living_sqft: data.field_21_living_sqft
+    raw_listing_price: data.field_10_listing_price,
+    raw_living_sqft: data.field_21_living_sqft,
+    parsed_listing_price: listingPrice,
+    parsed_living_sqft: livingSqft
   });
 
-  if (!data.field_10_listing_price || !data.field_21_living_sqft || data.field_21_living_sqft === 0) {
+  if (isNaN(listingPrice) || isNaN(livingSqft) || livingSqft === 0) {
     console.log('[calculatePricePerSqft] ❌ FAILED - Missing or invalid inputs');
     return null;
   }
 
-  const value = Math.round((data.field_10_listing_price / data.field_21_living_sqft) * 100) / 100;
+  const value = Math.round((listingPrice / livingSqft) * 100) / 100;
 
   console.log('[calculatePricePerSqft] ✅ SUCCESS - Calculated:', value);
 
@@ -76,12 +98,16 @@ export function calculatePricePerSqft(data: PropertyData): CalculationResult | n
  * Formula: full_bathrooms + (half_bathrooms * 0.5)
  */
 export function calculateTotalBathrooms(data: PropertyData): CalculationResult | null {
-  if (data.field_18_full_bathrooms === undefined && data.field_19_half_bathrooms === undefined) {
+  const fullRaw = parseNumericValue(data.field_18_full_bathrooms);
+  const halfRaw = parseNumericValue(data.field_19_half_bathrooms);
+
+  // If both are NaN, we have no data
+  if (isNaN(fullRaw) && isNaN(halfRaw)) {
     return null;
   }
 
-  const full = data.field_18_full_bathrooms || 0;
-  const half = data.field_19_half_bathrooms || 0;
+  const full = isNaN(fullRaw) ? 0 : fullRaw;
+  const half = isNaN(halfRaw) ? 0 : halfRaw;
   const value = full + (half * 0.5);
 
   return {
@@ -97,9 +123,13 @@ export function calculateTotalBathrooms(data: PropertyData): CalculationResult |
  * Formula: garage_spaces + carport_spaces + assigned_parking
  */
 export function calculateParkingTotal(data: PropertyData): CalculationResult | null {
-  const garage = data.field_28_garage_spaces || 0;
-  const carport = data.field_140_carport_spaces || 0;
-  const assigned = data.field_143_assigned_parking || 0;
+  const garageRaw = parseNumericValue(data.field_28_garage_spaces);
+  const carportRaw = parseNumericValue(data.field_140_carport_spaces);
+  const assignedRaw = parseNumericValue(data.field_143_assigned_parking);
+
+  const garage = isNaN(garageRaw) ? 0 : garageRaw;
+  const carport = isNaN(carportRaw) ? 0 : carportRaw;
+  const assigned = isNaN(assignedRaw) ? 0 : assignedRaw;
 
   if (garage === 0 && carport === 0 && assigned === 0) {
     return null;
@@ -120,11 +150,14 @@ export function calculateParkingTotal(data: PropertyData): CalculationResult | n
  * Formula: (annual_taxes / assessed_value) * 100
  */
 export function calculatePropertyTaxRate(data: PropertyData): CalculationResult | null {
-  if (!data.field_35_annual_taxes || !data.field_15_assessed_value || data.field_15_assessed_value === 0) {
+  const annualTaxes = parseNumericValue(data.field_35_annual_taxes);
+  const assessedValue = parseNumericValue(data.field_15_assessed_value);
+
+  if (isNaN(annualTaxes) || isNaN(assessedValue) || assessedValue === 0) {
     return null;
   }
 
-  const value = Math.round(((data.field_35_annual_taxes / data.field_15_assessed_value) * 100) * 100) / 100;
+  const value = Math.round(((annualTaxes / assessedValue) * 100) * 100) / 100;
 
   return {
     value,
@@ -139,15 +172,17 @@ export function calculatePropertyTaxRate(data: PropertyData): CalculationResult 
  * Formula: current_year - roof_install_year
  */
 export function calculateRoofAge(data: PropertyData): CalculationResult | null {
-  if (!data.permit_roof_year) {
+  const roofYear = parseNumericValue(data.permit_roof_year);
+
+  if (isNaN(roofYear)) {
     return null;
   }
 
   const currentYear = new Date().getFullYear();
-  const age = currentYear - data.permit_roof_year;
+  const age = currentYear - roofYear;
 
   return {
-    value: `${age} years (installed ${data.permit_roof_year})`,
+    value: `${age} years (installed ${roofYear})`,
     source: 'Backend Calculation (from permits)',
     confidence: 'High',
     calculation_method: `${currentYear} - permit_year`
@@ -159,15 +194,17 @@ export function calculateRoofAge(data: PropertyData): CalculationResult | null {
  * Formula: current_year - hvac_install_year
  */
 export function calculateHVACAge(data: PropertyData): CalculationResult | null {
-  if (!data.permit_hvac_year) {
+  const hvacYear = parseNumericValue(data.permit_hvac_year);
+
+  if (isNaN(hvacYear)) {
     return null;
   }
 
   const currentYear = new Date().getFullYear();
-  const age = currentYear - data.permit_hvac_year;
+  const age = currentYear - hvacYear;
 
   return {
-    value: `${age} years (installed ${data.permit_hvac_year})`,
+    value: `${age} years (installed ${hvacYear})`,
     source: 'Backend Calculation (from permits)',
     confidence: 'High',
     calculation_method: `${currentYear} - permit_year`
@@ -214,22 +251,29 @@ export function calculateFireplaceCount(data: PropertyData, mlsFireplaceCount?: 
  * Expenses = annual_taxes + insurance + hoa_fee + (0.01 * listing_price) [maintenance estimate]
  */
 export function calculateCapRate(data: PropertyData): CalculationResult | null {
-  if (!data.field_10_listing_price || !data.field_98_rental_estimate_monthly || data.field_10_listing_price === 0) {
+  const listingPrice = parseNumericValue(data.field_10_listing_price);
+  const rentalMonthly = parseNumericValue(data.field_98_rental_estimate_monthly);
+
+  if (isNaN(listingPrice) || isNaN(rentalMonthly) || listingPrice === 0) {
     return null;
   }
 
-  const annualRent = data.field_98_rental_estimate_monthly * 12;
+  const annualRent = rentalMonthly * 12;
 
-  // Calculate expenses
-  const taxes = data.field_35_annual_taxes || 0;
-  const insurance = data.field_97_insurance_annual || 0;
-  const hoa = data.field_31_hoa_fee_annual || 0;
-  const maintenanceEstimate = data.field_10_listing_price * 0.01; // 1% of property value
+  // Calculate expenses - use 0 if not available
+  const taxesRaw = parseNumericValue(data.field_35_annual_taxes);
+  const insuranceRaw = parseNumericValue(data.field_97_insurance_annual);
+  const hoaRaw = parseNumericValue(data.field_31_hoa_fee_annual);
+
+  const taxes = isNaN(taxesRaw) ? 0 : taxesRaw;
+  const insurance = isNaN(insuranceRaw) ? 0 : insuranceRaw;
+  const hoa = isNaN(hoaRaw) ? 0 : hoaRaw;
+  const maintenanceEstimate = listingPrice * 0.01; // 1% of property value
 
   const totalExpenses = taxes + insurance + hoa + maintenanceEstimate;
   const noi = annualRent - totalExpenses; // Net Operating Income
 
-  const value = Math.round((noi / data.field_10_listing_price * 100) * 100) / 100;
+  const value = Math.round((noi / listingPrice * 100) * 100) / 100;
 
   return {
     value,
@@ -237,8 +281,8 @@ export function calculateCapRate(data: PropertyData): CalculationResult | null {
     confidence: 'Medium',
     calculation_method: '((annual_rent - expenses) / listing_price) * 100',
     missing_inputs: [
-      ...(!data.field_35_annual_taxes ? ['annual_taxes'] : []),
-      ...(!data.field_97_insurance_annual ? ['insurance_estimate'] : [])
+      ...(isNaN(taxesRaw) ? ['annual_taxes'] : []),
+      ...(isNaN(insuranceRaw) ? ['insurance_estimate'] : [])
     ]
   };
 }
@@ -248,12 +292,15 @@ export function calculateCapRate(data: PropertyData): CalculationResult | null {
  * Formula: listing_price / (monthly_rent * 12)
  */
 export function calculatePriceToRentRatio(data: PropertyData): CalculationResult | null {
-  if (!data.field_10_listing_price || !data.field_98_rental_estimate_monthly || data.field_98_rental_estimate_monthly === 0) {
+  const listingPrice = parseNumericValue(data.field_10_listing_price);
+  const rentalMonthly = parseNumericValue(data.field_98_rental_estimate_monthly);
+
+  if (isNaN(listingPrice) || isNaN(rentalMonthly) || rentalMonthly === 0) {
     return null;
   }
 
-  const annualRent = data.field_98_rental_estimate_monthly * 12;
-  const ratio = data.field_10_listing_price / annualRent;
+  const annualRent = rentalMonthly * 12;
+  const ratio = listingPrice / annualRent;
   const value = Math.round(ratio * 100) / 100;
 
   return {
@@ -269,11 +316,14 @@ export function calculatePriceToRentRatio(data: PropertyData): CalculationResult
  * Formula: ((listing_price - median_price) / median_price) * 100
  */
 export function calculatePriceVsMedian(data: PropertyData): CalculationResult | null {
-  if (!data.field_10_listing_price || !data.field_91_median_home_price_neighborhood || data.field_91_median_home_price_neighborhood === 0) {
+  const listingPrice = parseNumericValue(data.field_10_listing_price);
+  const medianPrice = parseNumericValue(data.field_91_median_home_price_neighborhood);
+
+  if (isNaN(listingPrice) || isNaN(medianPrice) || medianPrice === 0) {
     return null;
   }
 
-  const percentDiff = ((data.field_10_listing_price - data.field_91_median_home_price_neighborhood) / data.field_91_median_home_price_neighborhood) * 100;
+  const percentDiff = ((listingPrice - medianPrice) / medianPrice) * 100;
   const value = Math.round(percentDiff * 100) / 100;
 
   return {
@@ -289,12 +339,15 @@ export function calculatePriceVsMedian(data: PropertyData): CalculationResult | 
  * Formula: (annual_rent / listing_price) * 100
  */
 export function calculateRentalYield(data: PropertyData): CalculationResult | null {
-  if (!data.field_98_rental_estimate_monthly || !data.field_10_listing_price || data.field_10_listing_price === 0) {
+  const rentalMonthly = parseNumericValue(data.field_98_rental_estimate_monthly);
+  const listingPrice = parseNumericValue(data.field_10_listing_price);
+
+  if (isNaN(rentalMonthly) || isNaN(listingPrice) || listingPrice === 0) {
     return null;
   }
 
-  const annualRent = data.field_98_rental_estimate_monthly * 12;
-  const yield_pct = (annualRent / data.field_10_listing_price) * 100;
+  const annualRent = rentalMonthly * 12;
+  const yield_pct = (annualRent / listingPrice) * 100;
   const value = Math.round(yield_pct * 100) / 100;
 
   return {
