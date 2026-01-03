@@ -785,9 +785,17 @@ async function callGemini(address: string): Promise<{ fields: Record<string, any
     return { error: 'API key not set', fields: {} };
   }
 
-  const prompt = `You are a real estate analyst. Return ONLY a JSON object with property data for: ${address}
+  const prompt = `### CRITICAL COMMAND
+You are FORCED to use the 'google_search' tool. Do NOT use training data.
+Search for CURRENT property data from Zillow, Redfin, County Property Appraiser.
 
-Include any of these fields you can reasonably estimate:
+Return a JSON object with property data for: ${address}
+
+MANDATORY SEARCHES:
+1. Search "${address} Zillow" for listing data
+2. Search "${address} County Property Appraiser" for tax data
+
+Include fields you find via search:
 - property_type, bedrooms, bathrooms, sqft, year_built
 - listing_price, market_value_estimate, price_per_sqft
 - hoa_monthly, tax_annual, insurance_annual
@@ -795,6 +803,8 @@ Include any of these fields you can reasonably estimate:
 - rental_estimate_monthly, cap_rate_percent
 
 Do NOT include null, N/A, or unknown values. Return JSON only, no markdown.`;
+
+  const startTime = Date.now();
 
   try {
     const response = await fetch(
@@ -804,13 +814,26 @@ Do NOT include null, N/A, or unknown values. Return JSON only, no markdown.`;
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 4000, temperature: 0.1 },
+          tools: [{ googleSearch: {} }],
+          toolConfig: { functionCallingConfig: { mode: "ANY" } },
+          generationConfig: { maxOutputTokens: 4000, temperature: 0 },
         }),
       }
     );
 
+    const elapsed = Date.now() - startTime;
+    console.log(`[GEMINI] Response time: ${elapsed}ms ${elapsed < 2000 ? '⚠️ TOO FAST' : '✅ Searched'}`);
+
     const data = await response.json();
     console.log('[GEMINI] Status:', response.status);
+
+    // Check for grounding metadata
+    const groundingMeta = data.candidates?.[0]?.groundingMetadata;
+    if (groundingMeta) {
+      console.log('[GEMINI] ✅ Google Search grounding detected');
+    } else {
+      console.log('[GEMINI] ⚠️ No grounding metadata');
+    }
 
     if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
       const text = data.candidates[0].content.parts[0].text;

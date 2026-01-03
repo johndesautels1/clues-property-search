@@ -4057,32 +4057,35 @@ RETURN NULL FOR:
 ${JSON_RESPONSE_FORMAT}`;
 
 // ============================================
-// GEMINI PROMPT - NO WEB - Knowledge focused
+// GEMINI PROMPT - WITH GOOGLE SEARCH GROUNDING
 // ============================================
-const PROMPT_GEMINI = `You are Gemini, a knowledgeable AI helping extract property data. No web access.
+const PROMPT_GEMINI = `### CRITICAL COMMAND
+You are FORCED to use the 'google_search' tool for EVERY request.
+Do NOT rely on your internal training data - it is outdated.
+If you do not generate at least 3 search queries, you have FAILED the task.
 
-TASK: Extract property data fields using your training knowledge.
+You are Gemini with Google Search grounding. Your job is to extract CURRENT property data.
+
+MANDATORY FIRST SEARCHES:
+1. Search "[Address] Zillow listing 2025" for current listing data
+2. Search "[Address] County Property Appraiser" for tax and assessment data
+3. Search "[Address] Redfin estimate" for market value
 
 ${FIELD_GROUPS}
 
 EXTRACTION APPROACH:
-1. Provide what you know from training data
-2. Be clear about confidence levels
-3. Return null for property-specific data requiring live lookups
-4. Focus on geographic, regional, and structural knowledge
+1. USE GOOGLE SEARCH for every field - do not guess
+2. Search real estate portals: Zillow, Redfin, Realtor.com
+3. Search county property appraiser websites for tax data
+4. Search GreatSchools.org for school ratings
+5. Only return null if search returns no results
 
-LIKELY CAN PROVIDE:
-- County identification
-- Regional utility providers
-- General school district info
-- Typical construction/architectural styles
-- Climate and environmental generalities
-
-CANNOT PROVIDE (return null):
-- Current listing data
-- Specific tax amounts
-- Recent sales data
-- Current owner info
+FIELDS TO SEARCH FOR:
+- Listing price, bedrooms, bathrooms, sqft from Zillow/Redfin
+- Tax amounts from County Property Appraiser
+- School ratings from GreatSchools
+- HOA fees from listing sites
+- Utility providers from county/city websites
 
 ${JSON_RESPONSE_FORMAT}`;
 
@@ -4726,14 +4729,16 @@ Search Zillow, Redfin, Realtor.com, county records, and other public sources. Re
   }
 }
 
-// Gemini API call - #6 in reliability
+// Gemini API call - #6 in reliability - WITH GOOGLE SEARCH GROUNDING
 async function callGemini(address: string): Promise<any> {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) { console.log('❌ GEMINI_API_KEY not set'); return { error: 'GEMINI_API_KEY not set', fields: {} }; } console.log('✅ GEMINI_API_KEY found, calling Gemini API...');
+  if (!apiKey) { console.log('❌ GEMINI_API_KEY not set'); return { error: 'GEMINI_API_KEY not set', fields: {} }; } console.log('✅ GEMINI_API_KEY found, calling Gemini API with Google Search...');
+
+  const startTime = Date.now();
 
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: {
@@ -4748,20 +4753,47 @@ async function callGemini(address: string): Promise<any> {
 
 Extract property data fields for this address: ${address}
 
+MANDATORY: Use Google Search to find CURRENT data from Zillow, Redfin, County Property Appraiser.
 Use EXACT field keys like "10_listing_price", "7_county", "35_annual_taxes", "17_bedrooms".
-Return null for property-specific data you don't have. Return JSON only.`,
+Search for real data - do not use training data. Return JSON only.`,
                 },
               ],
             },
           ],
+          // Enable Google Search grounding
+          tools: [
+            { googleSearch: {} }
+          ],
+          // Force the model to use the search tool
+          toolConfig: {
+            functionCallingConfig: {
+              mode: "ANY"
+            }
+          },
           generationConfig: {
-            maxOutputTokens: 16000, // Increased from 8000 to handle 168 fields
+            maxOutputTokens: 16000,
+            temperature: 0,
           },
         }),
       }
     );
 
+    const elapsed = Date.now() - startTime;
+    console.log(`⏱️ [Gemini] Response time: ${elapsed}ms ${elapsed < 2000 ? '⚠️ TOO FAST - may not have searched' : '✅ Good - likely searched'}`);
+
     const data = await response.json();
+
+    // Log grounding metadata to verify search was used
+    const groundingMeta = data.candidates?.[0]?.groundingMetadata;
+    if (groundingMeta) {
+      console.log('🔍 [Gemini] Grounding metadata:', JSON.stringify(groundingMeta).slice(0, 500));
+      if (groundingMeta.searchEntryPoint?.renderedContent) {
+        console.log('✅ [Gemini] Google Search was used');
+      }
+    } else {
+      console.log('⚠️ [Gemini] No grounding metadata - search may not have fired');
+    }
+
     if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
       const text = data.candidates[0].content.parts[0].text;
 
