@@ -4353,7 +4353,7 @@ async function callClaudeSonnet(address: string): Promise<any> {
         'anthropic-beta': 'web-search-2025-03-05',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-5-20250929',
         max_tokens: 16000,
         system: PROMPT_CLAUDE_SONNET,
         tools: [
