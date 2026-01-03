@@ -875,11 +875,11 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
               <div className="flex flex-wrap gap-2 ml-6">
                 {[
                   { id: 'perplexity', name: '1. Perplexity', color: 'cyan' },
-                  { id: 'grok', name: '2. Grok', color: 'blue' },
-                  { id: 'claude-opus', name: '3. Claude Opus', color: 'orange' },
-                  { id: 'gpt', name: '4. GPT-4', color: 'green' },
-                  { id: 'claude-sonnet', name: '5. Claude Sonnet', color: 'pink' },
-                  { id: 'gemini', name: '6. Gemini', color: 'purple' },
+                  { id: 'claude-sonnet', name: '2. Claude Sonnet', color: 'pink' },
+                  { id: 'gpt', name: '3. GPT-4', color: 'green' },
+                  { id: 'claude-opus', name: '4. Claude Opus', color: 'orange' },
+                  { id: 'gemini', name: '5. Gemini', color: 'purple' },
+                  { id: 'grok', name: '6. Grok', color: 'blue' },
                 ].map(engine => (
                   <button
                     key={engine.id}
