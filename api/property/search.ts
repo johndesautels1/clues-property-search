@@ -5977,7 +5977,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                 for (const [key, value] of Object.entries(llmFields)) {
                   const fieldData = value as any;
-                  const fieldValue = fieldData?.value !== undefined ? fieldData.value : value;
+                  let fieldValue = fieldData?.value !== undefined ? fieldData.value : value;
 
                   // Skip null/empty responses
                   if (fieldValue === null || fieldValue === undefined || fieldValue === '' || fieldValue === 'Not available') {
@@ -5990,6 +5990,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     console.log(`⚠️ [${llm.id}] Invalid field key (not in schema): "${key}"`);
                     invalidKeys++;
                     continue;
+                  }
+
+                  // Convert arrays/objects to readable JSON strings for display (e.g., Field 103 comparable_sales)
+                  if (Array.isArray(fieldValue)) {
+                    // For arrays of objects (like comps), format as readable list
+                    if (fieldValue.length > 0 && typeof fieldValue[0] === 'object') {
+                      fieldValue = fieldValue.map((item: any, i: number) => {
+                        if (item.address && item.price) {
+                          return `${i + 1}. ${item.address} - $${item.price?.toLocaleString() || item.price}`;
+                        }
+                        return JSON.stringify(item);
+                      }).join('; ');
+                    } else {
+                      fieldValue = fieldValue.join(', ');
+                    }
+                  } else if (typeof fieldValue === 'object' && fieldValue !== null) {
+                    fieldValue = JSON.stringify(fieldValue);
                   }
 
                   // Assign tier based on LLM: Perplexity = 4, others = 5

@@ -28,6 +28,7 @@ export interface TierConfig {
 
 export const DATA_TIERS: Record<string, TierConfig> = {
   'stellar-mls': { tier: 1, name: 'Stellar MLS', description: 'Primary MLS data source', reliability: 100 },
+  'backend-calculation': { tier: 1, name: 'Backend Calculation', description: 'Math-derived fields (price/sqft, tax rate, etc.)', reliability: 100 },
   'google-geocode': { tier: 2, name: 'Google Geocode', description: 'Address geocoding', reliability: 95 },
   'google-places': { tier: 2, name: 'Google Places', description: 'Nearby amenities', reliability: 95 },
   'google-distance': { tier: 2, name: 'Google Distance Matrix', description: 'Commute times', reliability: 95 },
