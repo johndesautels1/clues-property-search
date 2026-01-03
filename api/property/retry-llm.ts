@@ -518,17 +518,15 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
   }
 }
 
-// UPDATED: Includes web_search tool per CLAUDE_MASTER_RULES Section 6.0
+// NOTE: web_search NOT supported on Opus - removed per Anthropic docs
 async function callClaudeOpus(address: string): Promise<{ fields: Record<string, any>; error?: string }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   console.log('[CLAUDE OPUS] API key present:', !!apiKey, 'length:', apiKey?.length || 0);
   if (!apiKey) return { error: 'API key not set', fields: {} };
 
-  const prompt = `You are a real estate data assistant. You have WEB SEARCH available - USE IT for all factual data.
+  const prompt = `You are a real estate data assistant.
 
-CRITICAL: DO NOT GUESS OR ESTIMATE. Search the web for actual data for: ${address}
-
-Return a JSON object with VERIFIED data only:
+Return a JSON object with data for: ${address}
 
 {
   "property_type": "Single Family | Condo | Townhouse | Multi-Family",
@@ -537,18 +535,18 @@ Return a JSON object with VERIFIED data only:
   "county": "county name",
   "neighborhood": "neighborhood name if known",
   "zip_code": "ZIP code",
-  "median_home_price_neighborhood": SEARCH for current median price,
-  "avg_days_on_market": SEARCH for current DOM stats,
-  "school_district": SEARCH for assigned school district,
-  "flood_risk_level": SEARCH FEMA flood zone data,
+  "median_home_price_neighborhood": median price if known,
+  "avg_days_on_market": DOM stats if known,
+  "school_district": assigned school district,
+  "flood_risk_level": FEMA flood zone,
   "hurricane_risk": "Low | Moderate | High",
   "walkability_description": "description of walkability",
-  "rental_estimate_monthly": SEARCH Rentometer/Zillow for rental estimates,
+  "rental_estimate_monthly": rental estimate,
   "insurance_estimate_annual": estimated annual insurance,
-  "property_tax_rate_percent": SEARCH county property appraiser for tax rate
+  "property_tax_rate_percent": tax rate
 }
 
-USE WEB SEARCH for every factual field. Return null if you cannot find verified data. Return ONLY the JSON object.`;
+Return null if you cannot find data. Return ONLY the JSON object.`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -557,17 +555,10 @@ USE WEB SEARCH for every factual field. Return null if you cannot find verified 
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'web-search-2025-03-05',
       },
       body: JSON.stringify({
         model: 'claude-opus-4-5-20251101',
         max_tokens: 4000,
-        tools: [
-          {
-            type: 'web_search_20250305',
-            name: 'web_search',
-          }
-        ],
         messages: [{ role: 'user', content: prompt }],
       }),
     });

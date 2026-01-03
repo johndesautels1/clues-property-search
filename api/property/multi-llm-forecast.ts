@@ -178,7 +178,7 @@ CRITICAL: You have web search available. USE IT to verify market trends, compara
 
 /**
  * Claude Opus 4.5 - Deep reasoning + complex market modeling
- * UPDATED: Includes web_search tool per CLAUDE_MASTER_RULES Section 6.0
+ * NOTE: web_search NOT supported on Opus - removed per Anthropic docs
  */
 async function callClaudeOpusForecast(
   address: string,
@@ -193,23 +193,14 @@ async function callClaudeOpusForecast(
 
   const client = new Anthropic({ apiKey });
 
-  const prompt = buildForecastPrompt(address, price, neighborhood, propertyType) + `
-
-CRITICAL: You have web search available. USE IT to verify market trends, comparable sales data, and economic indicators. DO NOT GUESS - search for real data.`;
+  const prompt = buildForecastPrompt(address, price, neighborhood, propertyType);
 
   const response = await client.messages.create({
     model: 'claude-opus-4-5-20251101',
     max_tokens: 2000,
     temperature: 0.5,
-    betas: ['web-search-2025-03-05'],
-    tools: [
-      {
-        type: 'web_search_20250305',
-        name: 'web_search',
-      }
-    ],
     messages: [{ role: 'user', content: prompt }],
-  } as any);
+  });
 
   const textContent = response.content.find(block => block.type === 'text');
   if (!textContent || textContent.type !== 'text') {

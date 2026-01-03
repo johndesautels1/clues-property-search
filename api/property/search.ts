@@ -4090,7 +4090,7 @@ ${JSON_RESPONSE_FORMAT}`;
 const SYSTEM_PROMPT = PROMPT_CLAUDE_OPUS;
 
 // Claude Opus API call - MOST RELIABLE per audit
-// UPDATED: Includes web_search tool per CLAUDE_MASTER_RULES Section 6.0
+// NOTE: web_search NOT supported on Opus - removed per Anthropic docs
 async function callClaudeOpus(address: string): Promise<any> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return { error: 'ANTHROPIC_API_KEY not set', fields: {} };
@@ -4102,28 +4102,17 @@ async function callClaudeOpus(address: string): Promise<any> {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'web-search-2025-03-05',
       },
       body: JSON.stringify({
         model: 'claude-opus-4-5-20251101',
         max_tokens: 16000,
         system: PROMPT_CLAUDE_OPUS,
-        tools: [
-          {
-            type: 'web_search_20250305',
-            name: 'web_search',
-          }
-        ],
         messages: [
           {
             role: 'user',
             content: `Extract all 168 property data fields for this address: ${address}
 
-CRITICAL: You have web search available. USE IT for every factual claim.
-DO NOT GUESS or ESTIMATE. Search for actual data.
-If you cannot find verified data, return null for that field.
-
-Fields requiring web search: school names/ratings, crime data, median prices, utility providers, market statistics.`,
+Return verified data only. If you cannot find data, return null for that field.`,
           },
         ],
       }),
@@ -5038,7 +5027,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     city: validationCity,  // Optional: City for Stellar MLS validation (prevents wrong property match)
     state: validationState,  // Optional: State for Stellar MLS validation
     zipCode: validationZip,  // Optional: Zip for Stellar MLS validation
-    engines = [...LLM_CASCADE_ORDER],  // All 6 LLMs enabled: Perplexity → Grok → Claude Opus → GPT → Claude Sonnet → Gemini
+    engines = [...LLM_CASCADE_ORDER],  // All 6 LLMs enabled: Perplexity → Sonnet → GPT → Opus → Gemini → Grok
     skipLLMs = false,
     useCascade = true, // Enable cascade mode by default
     existingFields = {},  // Previously accumulated fields from prior LLM calls
