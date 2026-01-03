@@ -5660,6 +5660,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           // Property attributes for utility bill estimation
           sqft: intermediateResult.fields['21_living_sqft']?.value || 'Unknown',
           living_sqft: intermediateResult.fields['21_living_sqft']?.value || 'Unknown',
+          lot_size_sqft: intermediateResult.fields['23_lot_size_sqft']?.value || 0,
+          property_type: intermediateResult.fields['26_property_type']?.value || 'Unknown',
           stories: intermediateResult.fields['27_stories']?.value || 1,
           floors: intermediateResult.fields['27_stories']?.value || 1,
           yearBuilt: intermediateResult.fields['25_year_built']?.value || 'Unknown',
@@ -5667,6 +5669,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           bedrooms: intermediateResult.fields['17_bedrooms']?.value || 'Unknown',
           bathrooms: intermediateResult.fields['20_total_bathrooms']?.value || 'Unknown',
           total_bathrooms: intermediateResult.fields['20_total_bathrooms']?.value || 'Unknown',
+          hoa_includes: intermediateResult.fields['33_hoa_includes']?.value || '',
           pool_yn: intermediateResult.fields['54_pool_yn']?.value || false,
           hvacAge: intermediateResult.fields['46_hvac_age']?.value || 'Unknown'
         };
@@ -5855,10 +5858,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       field_18_full_bathrooms: getFieldValue('18_full_bathrooms'),
       field_19_half_bathrooms: getFieldValue('19_half_bathrooms'),
       field_21_living_sqft: getFieldValue('21_living_sqft'),
+      field_23_lot_size_sqft: getFieldValue('23_lot_size_sqft'),
+      field_26_property_type: getFieldValue('26_property_type'),
       field_28_garage_spaces: getFieldValue('28_garage_spaces'),
       field_31_hoa_fee_annual: getFieldValue('31_hoa_fee_annual'),
+      field_33_hoa_includes: getFieldValue('33_hoa_includes'),
       field_35_annual_taxes: getFieldValue('35_annual_taxes'),
       field_52_fireplace_yn: getFieldValue('52_fireplace_yn'),
+      field_54_pool_yn: getFieldValue('54_pool_yn'),
       field_91_median_home_price_neighborhood: getFieldValue('91_median_home_price_neighborhood'),
       field_97_insurance_annual: getFieldValue('97_insurance_annual'),
       field_98_rental_estimate_monthly: getFieldValue('98_rental_estimate_monthly'),

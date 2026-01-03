@@ -11,10 +11,14 @@ export interface PropertyData {
   field_18_full_bathrooms?: number;
   field_19_half_bathrooms?: number;
   field_21_living_sqft?: number;
+  field_23_lot_size_sqft?: number;
+  field_26_property_type?: string;
   field_28_garage_spaces?: number;
   field_31_hoa_fee_annual?: number;
+  field_33_hoa_includes?: string;
   field_35_annual_taxes?: number;
   field_52_fireplace_yn?: string;
+  field_54_pool_yn?: string;
   field_91_median_home_price_neighborhood?: number;
   field_97_insurance_annual?: number;
   field_98_rental_estimate_monthly?: number;
@@ -359,6 +363,143 @@ export function calculateRentalYield(data: PropertyData): CalculationResult | nu
 }
 
 /**
+ * Field 107: Average Water Bill (Monthly)
+ * Formula based on Tampa Bay area water rates (City of Tampa rates, Oct 2025)
+ *
+ * Indoor usage: 60 gallons/person/day * 30.4 days
+ * Outdoor usage (single-family only): Based on UF irrigation formula
+ * Rates: Tiered pricing per CCF (100 cubic feet = 748 gallons)
+ */
+export function calculateWaterBill(data: PropertyData): CalculationResult | null {
+  const livingSqft = parseNumericValue(data.field_21_living_sqft);
+  const lotSizeSqft = parseNumericValue(data.field_23_lot_size_sqft);
+  const propertyType = data.field_26_property_type || '';
+  const hoaIncludes = data.field_33_hoa_includes || '';
+  const poolYn = data.field_54_pool_yn || '';
+
+  console.log('[calculateWaterBill] Inputs:', {
+    living_sqft: livingSqft,
+    lot_size_sqft: lotSizeSqft,
+    property_type: propertyType,
+    hoa_includes: hoaIncludes,
+    pool_yn: poolYn
+  });
+
+  // Check if water is included in HOA
+  if (hoaIncludes.toLowerCase().includes('water')) {
+    console.log('[calculateWaterBill] ✅ Water included in HOA');
+    return {
+      value: '$0 (Included in HOA)',
+      source: 'Backend Calculation',
+      confidence: 'High',
+      calculation_method: 'HOA includes water'
+    };
+  }
+
+  // Need at least living_sqft to estimate occupants
+  if (isNaN(livingSqft) || livingSqft <= 0) {
+    console.log('[calculateWaterBill] ❌ FAILED - Missing living_sqft');
+    return null;
+  }
+
+  // Determine if condo/townhouse (no irrigation) or single-family (has irrigation)
+  const propertyTypeLower = propertyType.toLowerCase();
+  const isCondoOrTownhouse = propertyTypeLower.includes('condo') ||
+                              propertyTypeLower.includes('townhouse') ||
+                              propertyTypeLower.includes('multi');
+
+  // Estimate number of occupants based on home size (heuristic: sqft / 800)
+  const numOccupants = Math.max(1, Math.round(livingSqft / 800));
+
+  // Indoor usage: 60 gallons/person/day * 30.4 days/month
+  const indoorGallons = numOccupants * 60 * 30.4;
+
+  // Outdoor usage (single-family with yard only)
+  let outdoorGallons = 0;
+  if (!isCondoOrTownhouse && !isNaN(lotSizeSqft) && lotSizeSqft > 0) {
+    // Yard size estimate: lot size minus building footprint (assume 1 story = living sqft)
+    const estimatedYardSqft = Math.max(0, lotSizeSqft - (livingSqft * 0.4));
+
+    if (estimatedYardSqft > 0) {
+      // UF irrigation formula: gallons = 0.62337 * sqft * depth_inches / efficiency
+      // depth_per_cycle = 0.5 inches, efficiency = 0.5, cycles_per_month = 4
+      const gallonsPerCycle = 0.62337 * estimatedYardSqft * 0.5 / 0.5;
+      outdoorGallons = gallonsPerCycle * 4;
+    }
+  }
+
+  const totalGallons = indoorGallons + outdoorGallons;
+  const ccf = totalGallons / 748; // Convert gallons to CCF (100 cubic feet)
+
+  // Tampa rate structure (inside city, 5/8" meter)
+  // Base charges: $8 water + $8 wastewater = $16
+  const baseCharge = 16;
+
+  // Water usage tiers (single-family, inside city)
+  const tiers = [
+    { limit: 5, rate: 3.55 },
+    { limit: 8, rate: 4.14 },
+    { limit: 13, rate: 6.96 },
+    { limit: 20, rate: 9.28 },
+    { limit: Infinity, rate: 10.71 }
+  ];
+
+  // Condo tiers are per-unit, but we assume 1 unit
+  const condoTiers = [
+    { limit: 2, rate: 3.55 },
+    { limit: 4, rate: 4.14 },
+    { limit: 6, rate: 6.96 },
+    { limit: 9, rate: 9.28 },
+    { limit: Infinity, rate: 10.71 }
+  ];
+
+  const activeTiers = isCondoOrTownhouse ? condoTiers : tiers;
+
+  // Calculate tiered water cost
+  let waterCost = 0;
+  let remainingCcf = ccf;
+  let prevLimit = 0;
+
+  for (const tier of activeTiers) {
+    const tierCcf = Math.min(remainingCcf, Math.max(0, tier.limit - prevLimit));
+    waterCost += tierCcf * tier.rate;
+    remainingCcf -= tierCcf;
+    prevLimit = tier.limit;
+    if (remainingCcf <= 0) break;
+  }
+
+  // Wastewater: flat rate per CCF
+  const wastewaterRate = 5.79;
+  const wastewaterCost = ccf * wastewaterRate;
+
+  // Pool adds approximately $15-25/month
+  let poolSurcharge = 0;
+  if (poolYn.toLowerCase() === 'yes' || poolYn.toLowerCase() === 'true') {
+    poolSurcharge = 20;
+  }
+
+  const totalBill = Math.round(baseCharge + waterCost + wastewaterCost + poolSurcharge);
+
+  console.log('[calculateWaterBill] ✅ SUCCESS:', {
+    occupants: numOccupants,
+    indoor_gallons: Math.round(indoorGallons),
+    outdoor_gallons: Math.round(outdoorGallons),
+    total_ccf: ccf.toFixed(2),
+    water_cost: waterCost.toFixed(2),
+    wastewater_cost: wastewaterCost.toFixed(2),
+    pool_surcharge: poolSurcharge,
+    total_bill: totalBill
+  });
+
+  return {
+    value: `$${totalBill}`,
+    source: 'Backend Calculation (Tampa Rates)',
+    confidence: 'Medium',
+    calculation_method: `${numOccupants} occupants, ${Math.round(totalGallons)} gal/mo, ${ccf.toFixed(1)} CCF, Tampa tiered rates`
+  };
+}
+
+/**
  * Calculate all derived fields at once
  */
 export function calculateAllDerivedFields(data: PropertyData): Record<string, CalculationResult | null> {
@@ -373,7 +514,8 @@ export function calculateAllDerivedFields(data: PropertyData): Record<string, Ca
     '93_price_to_rent_ratio': calculatePriceToRentRatio(data),
     '94_price_vs_median_percent': calculatePriceVsMedian(data),
     '99_rental_yield_est': calculateRentalYield(data),
-    '101_cap_rate_est': calculateCapRate(data)
+    '101_cap_rate_est': calculateCapRate(data),
+    '107_avg_water_bill': calculateWaterBill(data)
   };
 }
 
