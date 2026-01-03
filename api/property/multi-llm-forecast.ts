@@ -135,7 +135,7 @@ async function callClaudeForecast(
 
   const prompt = buildForecastPrompt(address, price, neighborhood, propertyType) + `
 
-CRITICAL: You have web search available. USE IT to verify market trends, comparable sales data, and economic indicators. DO NOT GUESS - search for real data.`;
+You have web search available. Use it when helpful to verify market trends, comparable sales, and economic indicators.`;
 
   const response = await client.messages.create({
     model: 'claude-sonnet-4-5-20250929',

@@ -150,10 +150,27 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
 
   // Map API field keys to form field keys
   const mapApiFieldToFormKey = (apiKey: string): string | null => {
-    // API returns keys like "1_full_address", we need "addressIdentity.fullAddress"
-    const fieldNumber = parseInt(apiKey.split('_')[0]);
-    const fieldDef = FIELD_DEFINITIONS.find(f => f.id === fieldNumber);
-    return fieldDef?.key || null;
+    // API returns keys like "1_full_address" or just "full_address"
+    // Try parsing number prefix first
+    const parts = apiKey.split('_');
+    const fieldNumber = parseInt(parts[0]);
+
+    if (!isNaN(fieldNumber)) {
+      // Found number prefix like "1_full_address"
+      const fieldDef = FIELD_DEFINITIONS.find(f => f.id === fieldNumber);
+      if (fieldDef) return fieldDef.key;
+    }
+
+    // Fallback: try to match by key name directly (without number prefix)
+    // Handle both "full_address" and "1_full_address" formats
+    const keyWithoutNumber = isNaN(fieldNumber) ? apiKey : parts.slice(1).join('_');
+    const fieldByKey = FIELD_DEFINITIONS.find(f =>
+      f.key === keyWithoutNumber ||
+      f.key === apiKey ||
+      f.key.toLowerCase() === keyWithoutNumber.toLowerCase()
+    );
+
+    return fieldByKey?.key || null;
   };
 
   // Update source progress helper

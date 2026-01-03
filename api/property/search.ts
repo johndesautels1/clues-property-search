@@ -4170,9 +4170,8 @@ async function callClaudeSonnet(address: string): Promise<any> {
             role: 'user',
             content: `Extract property data fields for: ${address}
 
-CRITICAL: You have web search available. USE IT for factual data.
-Search for: school names/ratings, crime stats, median prices, utilities.
-DO NOT GUESS. Return null if data cannot be verified.`,
+You have web search available. Use it when helpful for factual data like school names, crime stats, median prices, utilities.
+Return your best data. Use null only for fields you truly cannot find.`,
           },
         ],
       }),

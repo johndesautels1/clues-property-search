@@ -684,11 +684,9 @@ async function callClaudeSonnet(address: string): Promise<{ fields: Record<strin
   console.log('[CLAUDE SONNET] API key present:', !!apiKey, 'length:', apiKey?.length || 0);
   if (!apiKey) return { error: 'API key not set', fields: {} };
 
-  const prompt = `You are a real estate data assistant. You have WEB SEARCH available - USE IT for all factual data.
+  const prompt = `You are a real estate data assistant. You have web search available - use it when helpful.
 
-CRITICAL: DO NOT GUESS OR ESTIMATE. Search the web for actual data for: ${address}
-
-Return a JSON object with VERIFIED data only:
+Return a JSON object with property data for: ${address}
 
 {
   "property_type": "Single Family | Condo | Townhouse | Multi-Family",
@@ -697,18 +695,18 @@ Return a JSON object with VERIFIED data only:
   "county": "county name",
   "neighborhood": "neighborhood name if known",
   "zip_code": "ZIP code",
-  "median_home_price_neighborhood": SEARCH for current median price,
-  "avg_days_on_market": SEARCH for current DOM stats,
-  "school_district": SEARCH for assigned school district,
-  "flood_risk_level": SEARCH FEMA flood zone data,
+  "median_home_price_neighborhood": median price for neighborhood,
+  "avg_days_on_market": average DOM,
+  "school_district": assigned school district,
+  "flood_risk_level": FEMA flood zone,
   "hurricane_risk": "Low | Moderate | High",
   "walkability_description": "description of walkability",
-  "rental_estimate_monthly": SEARCH for rental estimates,
+  "rental_estimate_monthly": rental estimate,
   "insurance_estimate_annual": estimated annual insurance,
-  "property_tax_rate_percent": SEARCH county property appraiser for tax rate
+  "property_tax_rate_percent": tax rate
 }
 
-USE WEB SEARCH for every factual field. Return null if you cannot find verified data. Return ONLY the JSON object.`;
+Return your best data. Use null only for fields you truly cannot find. Return ONLY the JSON object.`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
