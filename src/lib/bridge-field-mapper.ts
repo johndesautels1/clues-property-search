@@ -230,9 +230,10 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   addField('18_full_bathrooms', property.BathroomsFull);
   addField('19_half_bathrooms', property.BathroomsHalf);
   addField('20_total_bathrooms', property.BathroomsTotalInteger);
-  addField('21_living_sqft', property.LivingArea);
-  addField('22_total_sqft_under_roof', property.BuildingAreaTotal);
-  addField('23_lot_size_sqft', property.LotSizeSquareFeet);
+  // Round to whole number - sqft should never have decimals
+  addField('21_living_sqft', property.LivingArea ? Math.round(property.LivingArea) : undefined);
+  addField('22_total_sqft_under_roof', property.BuildingAreaTotal ? Math.round(property.BuildingAreaTotal) : undefined);
+  addField('23_lot_size_sqft', property.LotSizeSquareFeet ? Math.round(property.LotSizeSquareFeet) : undefined);
   addField('24_lot_size_acres', property.LotSizeAcres);
   addField('25_year_built', property.YearBuilt);
 
@@ -293,8 +294,11 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   }
 
   // Field 38: Tax Exemptions - Convert HomesteadYN to text exemption list
-  if (property.HomesteadYN) {
+  // If HomesteadYN is true → "Homestead", if false → "None", if undefined → don't add
+  if (property.HomesteadYN === true) {
     addField('38_tax_exemptions', 'Homestead');
+  } else if (property.HomesteadYN === false) {
+    addField('38_tax_exemptions', 'None');
   }
 
   // ================================================================

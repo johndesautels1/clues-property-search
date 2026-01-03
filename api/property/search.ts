@@ -54,6 +54,85 @@ import { TIER_35_FIELD_IDS } from '../../src/services/valuation/geminiConfig.js'
 
 
 // ============================================
+// FIELD 91: MEDIAN HOME PRICE FROM BRIDGE API COMPARABLE SALES
+// Queries Bridge API for sold properties in same ZIP code (last 6 months)
+// Returns median ClosePrice for reliable neighborhood pricing data
+// ============================================
+async function getMedianPriceFromBridgeComps(
+  zipCode: string,
+  propertyType: string | undefined,
+  hostHeader: string | undefined
+): Promise<{ median: number | null; count: number; source: string }> {
+  if (!zipCode) {
+    console.log('[Field 91] ⚠️ No ZIP code provided, skipping Bridge comps query');
+    return { median: null, count: 0, source: '' };
+  }
+
+  try {
+    console.log(`[Field 91] 🔍 Querying Bridge API for sold comps in ZIP ${zipCode}...`);
+
+    // Calculate date 6 months ago for filtering recent sales
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const minCloseDate = sixMonthsAgo.toISOString().split('T')[0];
+
+    // Query Bridge API for sold properties in same ZIP
+    const baseUrl = hostHeader?.includes('localhost') ? 'http://localhost:3000' : `https://${hostHeader}`;
+    const response = await fetch(`${baseUrl}/api/property/bridge-mls`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        zipCode: zipCode,
+        status: 'Closed', // Only sold properties
+        minCloseDate: minCloseDate, // Last 6 months
+        top: 50, // Get up to 50 comps
+      })
+    });
+
+    if (!response.ok) {
+      console.log(`[Field 91] ⚠️ Bridge API comps query failed: ${response.status}`);
+      return { median: null, count: 0, source: '' };
+    }
+
+    const data = await response.json();
+
+    if (!data.success || !data.comparables || data.comparables.length === 0) {
+      console.log('[Field 91] ⚠️ No comparable sales found in Bridge API');
+      return { median: null, count: 0, source: '' };
+    }
+
+    // Extract ClosePrice values from comparables
+    const closePrices: number[] = data.comparables
+      .map((comp: any) => comp.ClosePrice || comp.closePrice)
+      .filter((price: any) => typeof price === 'number' && price > 0)
+      .sort((a: number, b: number) => a - b);
+
+    if (closePrices.length === 0) {
+      console.log('[Field 91] ⚠️ No valid ClosePrice values in comps');
+      return { median: null, count: 0, source: '' };
+    }
+
+    // Calculate median
+    const mid = Math.floor(closePrices.length / 2);
+    const median = closePrices.length % 2 === 0
+      ? Math.round((closePrices[mid - 1] + closePrices[mid]) / 2)
+      : closePrices[mid];
+
+    console.log(`[Field 91] ✅ Calculated median from ${closePrices.length} sales: $${median.toLocaleString()}`);
+
+    return {
+      median,
+      count: closePrices.length,
+      source: `Stellar MLS (${closePrices.length} sales in ZIP ${zipCode}, last 6 months)`
+    };
+  } catch (error) {
+    console.log('[Field 91] ❌ Bridge comps query error:', error instanceof Error ? error.message : String(error));
+    return { median: null, count: 0, source: '' };
+  }
+}
+
+
+// ============================================
 // SEMANTIC VALUE COMPARISON
 // Returns true if values are semantically equal (not a real conflict)
 // ============================================
@@ -5342,6 +5421,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('========================================');
       console.log('');
     }
+
+    // ========================================
+    // FIELD 91: MEDIAN HOME PRICE FROM BRIDGE COMPS (Tier 1 Priority)
+    // TODO: Requires dedicated /api/property/bridge-comps endpoint
+    // Currently disabled - Perplexity provides Field 91 as fallback (Tier 4)
+    // Will be implemented with Pull Comps feature
+    // ========================================
+    // DISABLED: bridge-mls doesn't support comps query parameters yet
+    // if (mlsZip && !skipApis) {
+    //   console.log('========================================');
+    //   console.log('FIELD 91: MEDIAN HOME PRICE FROM BRIDGE COMPS');
+    //   console.log('========================================');
+    //
+    //   const propertyTypeField = arbitrationPipeline.getResult().fields['26_property_type']?.value;
+    //   const medianResult = await getMedianPriceFromBridgeComps(mlsZip, propertyTypeField, req.headers.host);
+    //
+    //   if (medianResult.median !== null) {
+    //     arbitrationPipeline.addFieldsFromSource(
+    //       { '91_median_home_price_neighborhood': medianResult.median },
+    //       medianResult.source
+    //     );
+    //     console.log(`✅ Field 91 set from Bridge comps: $${medianResult.median.toLocaleString()}`);
+    //   } else {
+    //     console.log('⚠️ Field 91 will fall back to Perplexity (Tier 4) if available');
+    //   }
+    //   console.log('========================================');
+    //   console.log('');
+    // }
 
     // ========================================
     // CRITICAL: Extract real address for TIER 2-5
