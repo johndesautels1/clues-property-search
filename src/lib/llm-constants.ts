@@ -10,11 +10,11 @@
 // 3. Backup LLMs (last resort)
 export const LLM_CASCADE_ORDER = [
   'perplexity',      // Tier 4 - Web search (HIGHEST LLM PRIORITY)
-  'claude-sonnet',   // Tier 5 - Web-search enabled (HIGHEST Tier 5 - reliability 80)
   'gpt',             // Tier 5 - Knowledge - Comprehensive data
   'claude-opus',     // Tier 5 - Knowledge - Deep reasoning (no web-search)
   'gemini',          // Tier 5 - Knowledge - Google LLM
-  'grok',            // Tier 5 - Real-time data (last)
+  'grok',            // Tier 5 - Real-time data
+  'claude-sonnet',   // Tier 5 - LAST - fills in MISSING fields only
 ] as const;
 
 export type LLMEngine = typeof LLM_CASCADE_ORDER[number];

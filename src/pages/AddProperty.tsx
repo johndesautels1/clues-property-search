@@ -277,8 +277,8 @@ export default function AddProperty() {
       const getEngines = () => {
         if (selectedEngine === 'Auto') {
           // ALL 6 LLMs in CASCADE ORDER (MUST MATCH api/property/llm-constants.ts line 14)
-          // Perplexity → Sonnet → GPT → Opus → Gemini → Grok
-          return ['perplexity', 'claude-sonnet', 'gpt', 'claude-opus', 'gemini', 'grok'];
+          // Perplexity → GPT → Opus → Gemini → Grok → Sonnet (Sonnet LAST - fills missing fields)
+          return ['perplexity', 'gpt', 'claude-opus', 'gemini', 'grok', 'claude-sonnet'];
         }
         return [selectedEngine];
       };

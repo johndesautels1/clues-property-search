@@ -146,7 +146,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         city: city, // CRITICAL: Pass city for validation
         state: state, // CRITICAL: Pass state for validation
         zipCode: zipCode, // CRITICAL: Pass zip for validation
-        engines: engines || ['perplexity', 'claude-sonnet', 'gpt', 'claude-opus', 'gemini', 'grok'], // Default to all 6 LLMs (Sonnet first for web_search)
+        engines: engines || ['perplexity', 'gpt', 'claude-opus', 'gemini', 'grok', 'claude-sonnet'], // Default to all 6 LLMs (Sonnet LAST - fills missing fields)
         skipLLMs: false,
         skipMLS: true, // CRITICAL: Skip TIER 1 (Stellar MLS) - already fetched in STEP 1
         skipApis: false // Run TIER 2-3 (Google APIs, WalkScore, SchoolDigger, FEMA, etc.)

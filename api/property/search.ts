@@ -4240,31 +4240,36 @@ Return ONLY the audited LLM fields (not the full schema):
 // ============================================
 // CLAUDE SONNET PROMPT - WITH WEB SEARCH - Fast, accurate
 // ============================================
-const PROMPT_CLAUDE_SONNET = `You are Claude Sonnet, a property data extraction specialist with web search capability.
+const PROMPT_CLAUDE_SONNET = `You are Claude Sonnet, a property data specialist. You fire LAST in the LLM cascade.
 
-TASK: Extract property data fields. Use web search to find accurate, current information.
+CRITICAL: DO NOT search for fields already provided by MLS or other LLMs:
+- DO NOT search for: listing_price, bedrooms, bathrooms, sqft, year_built, taxes, lot_size
+- DO NOT search for: address, city, state, zip, county, parcel_id, legal_description
+- DO NOT search for: HOA fees, pool, garage, stories, property_type, listing_status
+- These are ALREADY provided by Stellar MLS (Tier 1)
 
-${FIELD_GROUPS}
+YOUR TASK: Use web search to find ONLY these commonly-missing fields:
 
-SEARCH STRATEGY:
-1. Search Zillow, Redfin, Realtor.com for listing data (price, beds, baths, sqft)
-2. Search County Property Appraiser for tax/assessment data
-3. Search for school district assignments
-4. Search for utility providers in the area
-5. Search for neighborhood crime statistics
+UTILITY/SERVICE FIELDS (search "[city] utility providers"):
+- 98_electric_provider: Local electric company name
+- 99_gas_provider: Gas company name (or "No natural gas service")
+- 100_water_provider: Water utility name
+- 101_sewer_provider: Sewer service provider
+- 102_trash_provider: Garbage collection provider
 
-MANDATORY FIELDS TO SEARCH FOR:
-- 10_listing_price: Current listing price from Zillow/Redfin
-- 17_bedrooms, 18_full_bathrooms, 21_living_sqft: Property specs
-- 35_annual_taxes: From County records
-- 25_year_built: Construction year
+CONNECTIVITY FIELDS (search "[address] internet providers" or "[city] fiber internet"):
+- 112_max_internet_speed: Max available Mbps from any ISP
+- 113_fiber_available: Yes/No if fiber is available at address
 
-CONFIDENCE LEVELS:
-- High: Data from official sources (County, MLS)
-- Medium: Data from real estate portals (Zillow, Redfin)
-- Low: Estimates or regional averages
+INSURANCE/RISK FIELDS (search "[county] flood zone" or "[city] insurance rates"):
+- 106_estimated_insurance: Annual homeowners insurance estimate
+- 87_flood_zone: FEMA flood zone designation
+- 88_flood_insurance_required: Yes/No
 
-Return JSON with field data. Include source URLs when available.
+NEIGHBORHOOD DATA (search "[neighborhood name] demographics"):
+- 66_neighborhood_type: Urban/Suburban/Rural classification
+- 68_crime_rate: Area crime statistics
+- 69_registered_sex_offenders_nearby: Yes/No within 1 mile
 
 ${JSON_RESPONSE_FORMAT}`;
 
@@ -6035,7 +6040,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         } else {
           console.log('[TIER 4] ⚠️  No LLMs enabled');
           console.log('[TIER 4] engines parameter:', engines);
-          console.log('[TIER 4] valid engines:', ['perplexity', 'claude-sonnet', 'gpt', 'claude-opus', 'gemini', 'grok']);
+          console.log('[TIER 4] valid engines:', ['perplexity', 'gpt', 'claude-opus', 'gemini', 'grok', 'claude-sonnet']);
           console.log('[TIER 4] Enabled LLMs: 0 - skipping LLM cascade');
         }
       }
@@ -6302,7 +6307,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       single_source_warnings: arbitrationResult.singleSourceWarnings,
       llm_responses: llmResponses,
       strategy: 'arbitration_pipeline',
-      cascade_order: ['perplexity-portals', 'perplexity-county', 'perplexity-schools', 'perplexity-crime', 'perplexity-utilities', 'claude-sonnet', 'gpt', 'claude-opus', 'gemini', 'grok']
+      cascade_order: ['perplexity-portals', 'perplexity-county', 'perplexity-schools', 'perplexity-crime', 'perplexity-utilities', 'gpt', 'claude-opus', 'gemini', 'grok', 'claude-sonnet']
     });
   } catch (error) {
     console.error('=== SEARCH ERROR ===');
