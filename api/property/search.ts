@@ -2887,8 +2887,46 @@ Return only the JSON object, no extra text.`;
         }
       };
     } else {
-      console.log(`❌ [Field 112] Not available: ${parsed.notes || 'Unknown reason'}`);
-      return {};
+      // CITY-LEVEL FALLBACK: If address-specific data not found, use city defaults
+      console.log(`⚠️ [Field 112] Address-specific not found, using city-level fallback for ${city}, ${state}`);
+
+      // Tampa Bay area city-level defaults based on typical ISP coverage
+      const cityDefaults: Record<string, number> = {
+        'tampa': 1000,
+        'st. petersburg': 1000,
+        'clearwater': 1000,
+        'treasure island': 500,
+        'st pete beach': 500,
+        'madeira beach': 500,
+        'seminole': 1000,
+        'largo': 1000,
+        'pinellas park': 1000,
+        'dunedin': 1000,
+        'palm harbor': 1000,
+        'tarpon springs': 500,
+        'brandon': 1000,
+        'riverview': 1000,
+        'valrico': 1000,
+        'plant city': 500,
+        'lakeland': 1000,
+        'winter haven': 500,
+        'sarasota': 1000,
+        'bradenton': 1000
+      };
+
+      const cityLower = city.toLowerCase();
+      const defaultSpeed = cityDefaults[cityLower] || 500; // Default to 500 Mbps for unknown cities
+      const speedStr = defaultSpeed >= 1000 ? `${defaultSpeed / 1000} Gbps` : `${defaultSpeed} Mbps`;
+
+      console.log(`✅ [Field 112] City fallback: ${speedStr} for ${city}`);
+      return {
+        '112_max_internet_speed': {
+          value: `Up to ${speedStr} (${city} area)`,
+          source: 'City-Level Estimate',
+          confidence: 'Low',
+          details: `Based on typical ISP coverage in ${city}, ${state}`
+        }
+      };
     }
   } catch (error) {
     console.error(`❌ [Field 112] Error:`, error);
@@ -4315,7 +4353,7 @@ async function callClaudeSonnet(address: string): Promise<any> {
         'anthropic-beta': 'web-search-2025-03-05',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5-20250929',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 16000,
         system: PROMPT_CLAUDE_SONNET,
         tools: [
