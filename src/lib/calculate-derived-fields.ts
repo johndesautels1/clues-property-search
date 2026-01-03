@@ -500,6 +500,25 @@ export function calculateWaterBill(data: PropertyData): CalculationResult | null
 }
 
 /**
+ * Field 55: Pool Type
+ * Logic: If pool_yn = "No", return "N/A"
+ */
+export function calculatePoolType(data: PropertyData): CalculationResult | null {
+  const poolYn = data.field_54_pool_yn;
+
+  if (poolYn === 'No' || poolYn === 'false' || poolYn === false) {
+    return {
+      value: 'N/A',
+      source: 'Backend Logic',
+      confidence: 'High',
+      calculation_method: 'pool_yn = No'
+    };
+  }
+
+  return null; // Don't set if pool exists (let MLS/LLM provide type)
+}
+
+/**
  * Calculate all derived fields at once
  */
 export function calculateAllDerivedFields(data: PropertyData): Record<string, CalculationResult | null> {
@@ -511,6 +530,7 @@ export function calculateAllDerivedFields(data: PropertyData): Record<string, Ca
     '40_roof_age_est': calculateRoofAge(data),
     '46_hvac_age': calculateHVACAge(data),
     '53_fireplace_count': calculateFireplaceCount(data),
+    '55_pool_type': calculatePoolType(data),
     '93_price_to_rent_ratio': calculatePriceToRentRatio(data),
     '94_price_vs_median_percent': calculatePriceVsMedian(data),
     '99_rental_yield_est': calculateRentalYield(data),

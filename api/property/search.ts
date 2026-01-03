@@ -4250,6 +4250,15 @@ CRITICAL: DO NOT search for fields already provided by MLS or other LLMs:
 
 YOUR TASK: Use web search to find ONLY these commonly-missing fields:
 
+COUNTY/TAX FIELDS (search "[county] property appraiser [address]"):
+- 12_market_value_estimate: Estimated market value from Zillow/Redfin
+- 15_assessed_value: Assessed value from county property appraiser
+- 91_median_home_price_neighborhood: Median home price in the neighborhood/ZIP
+- 92_price_per_sqft_recent_avg: Average $/sqft for recent sales in area
+- 151_homestead_yn: Yes/No if property has homestead exemption
+- 152_cdd_yn: Yes/No if property is in a Community Development District
+- 122_wildfire_risk: Low/Medium/High wildfire risk
+
 UTILITY/SERVICE FIELDS (search "[city] utility providers"):
 - 98_electric_provider: Local electric company name
 - 99_gas_provider: Gas company name (or "No natural gas service")
@@ -4257,19 +4266,23 @@ UTILITY/SERVICE FIELDS (search "[city] utility providers"):
 - 101_sewer_provider: Sewer service provider
 - 102_trash_provider: Garbage collection provider
 
-CONNECTIVITY FIELDS (search "[address] internet providers" or "[city] fiber internet"):
+CONNECTIVITY FIELDS (search "[address] internet providers"):
 - 112_max_internet_speed: Max available Mbps from any ISP
 - 113_fiber_available: Yes/No if fiber is available at address
 
-INSURANCE/RISK FIELDS (search "[county] flood zone" or "[city] insurance rates"):
+HOA/LEASING FIELDS (search "[HOA name]" or listing description):
+- 131_view_type: View description (Golf, Water, City, etc.)
+- 136_pet_policy: Pet restrictions description
+- 137_age_restrictions: Age restrictions (55+, None, etc.)
+- 138_special_assessments: Any special assessments
+- 161_minimum_lease_period: Minimum lease period if rental allowed
+- 162_lease_restrictions_yn: Yes/No lease restrictions
+- 166_community_features: Community amenities (Pool, Clubhouse, etc.)
+
+INSURANCE/RISK FIELDS (search "[county] flood zone"):
 - 106_estimated_insurance: Annual homeowners insurance estimate
 - 87_flood_zone: FEMA flood zone designation
 - 88_flood_insurance_required: Yes/No
-
-NEIGHBORHOOD DATA (search "[neighborhood name] demographics"):
-- 66_neighborhood_type: Urban/Suburban/Rural classification
-- 68_crime_rate: Area crime statistics
-- 69_registered_sex_offenders_nearby: Yes/No within 1 mile
 
 ${JSON_RESPONSE_FORMAT}`;
 
@@ -6083,6 +6096,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return interimResult.fields[fieldKey]?.value;
     };
 
+    // Helper: Extract year from permit text like "Roof replacement permit issued 2018"
+    const extractYearFromPermit = (permitText: any): number | undefined => {
+      if (!permitText) return undefined;
+      const match = String(permitText).match(/\b(19|20)\d{2}\b/);
+      return match ? parseInt(match[0]) : undefined;
+    };
+
     // Build PropertyData object from current field values
     const propertyData: PropertyData = {
       field_10_listing_price: getFieldValue('10_listing_price'),
@@ -6102,7 +6122,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       field_97_insurance_annual: getFieldValue('97_insurance_annual'),
       field_98_rental_estimate_monthly: getFieldValue('98_rental_estimate_monthly'),
       field_140_carport_spaces: getFieldValue('140_carport_spaces'),
-      field_143_assigned_parking: getFieldValue('143_assigned_parking')
+      field_143_assigned_parking: getFieldValue('143_assigned_parking'),
+      // Extract permit years from text fields (Field 60 = Roof, Field 61 = HVAC)
+      permit_roof_year: extractYearFromPermit(getFieldValue('60_permit_history_roof')),
+      permit_hvac_year: extractYearFromPermit(getFieldValue('61_permit_history_hvac'))
     };
 
     // DEBUG: Log inputs for Field 11 calculation
@@ -6137,6 +6160,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log(`✅ Added ${calculationsAdded} calculated fields to arbitration pipeline (Tier 1)`);
     } else {
       console.log('⚠️  No calculations performed - missing required input fields');
+    }
+
+    // ========================================
+    // SMART DEFAULTS: N/A for Single-Family and Conditional Fields
+    // ========================================
+    const smartDefaults: Record<string, any> = {};
+    const propertyType = getFieldValue('26_property_type') || '';
+    const isSingleFamily = propertyType.toLowerCase().includes('single') ||
+                           propertyType.toLowerCase().includes('detached') ||
+                           propertyType.toLowerCase().includes('house');
+    const isWaterfront = getFieldValue('155_water_frontage_yn') === 'Yes' ||
+                         getFieldValue('155_water_frontage_yn') === true;
+
+    // Fields N/A for single-family homes (not condos/apartments)
+    if (isSingleFamily) {
+      if (!getFieldValue('144_floor_number')) smartDefaults['144_floor_number'] = 'N/A (Single Family)';
+      if (!getFieldValue('147_building_elevator_yn')) smartDefaults['147_building_elevator_yn'] = 'N/A';
+      if (!getFieldValue('148_floors_in_unit')) smartDefaults['148_floors_in_unit'] = 'N/A (Single Family)';
+    }
+
+    // Water fields - N/A if not waterfront
+    if (!isWaterfront) {
+      if (!getFieldValue('156_waterfront_feet')) smartDefaults['156_waterfront_feet'] = 'N/A';
+      if (!getFieldValue('159_water_body_name')) smartDefaults['159_water_body_name'] = 'N/A';
+    }
+
+    // Water Access/View - Default to No if not specified and not waterfront
+    if (!isWaterfront) {
+      if (!getFieldValue('157_water_access_yn')) smartDefaults['157_water_access_yn'] = 'No';
+      if (!getFieldValue('158_water_view_yn')) smartDefaults['158_water_view_yn'] = 'No';
+    }
+
+    if (Object.keys(smartDefaults).length > 0) {
+      arbitrationPipeline.addFieldsFromSource(smartDefaults, 'Backend Logic');
+      console.log(`✅ Added ${Object.keys(smartDefaults).length} smart defaults (N/A fields)`);
     }
 
     console.log('========================================');
