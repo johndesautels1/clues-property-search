@@ -68,6 +68,7 @@ export interface BridgeProperty {
   OriginalListPrice?: number;
   PreviousListPrice?: number;
   ClosePrice?: number;
+  ListPricePerSquareFoot?: number;  // MLS-calculated price per sqft (LP/SqFt)
 
   // Property Details
   BedroomsTotal?: number;
@@ -217,6 +218,27 @@ export interface BridgeProperty {
   LeaseRestrictionsYN?: boolean;
   PetSizeLimit?: string;
   MaxPetWeight?: number;
+  PetRestrictions?: string;  // Full pet restrictions text from MLS
+
+  // Age & Senior Community
+  HousingForOlderPersonsYN?: boolean;  // 55+ community (Housing for Older Per)
+  SeniorCommunityYN?: boolean;  // Alternative field name
+
+  // Spa/Hot Tub
+  SpaYN?: boolean;
+  SpaFeatures?: string[];
+
+  // Dock
+  DockYN?: boolean;
+  DockType?: string[];
+  DockDescription?: string;
+
+  // Furnished
+  FurnishedYN?: boolean;
+  Furnishings?: string;
+
+  // Window Features
+  WindowFeatures?: string[];
 
   // Additional
   Remarks?: string;

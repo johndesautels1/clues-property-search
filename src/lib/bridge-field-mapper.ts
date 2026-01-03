@@ -211,9 +211,13 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // ================================================================
   addField('10_listing_price', property.ListPrice);
 
-  // Field 11: Price per sqft - ALWAYS calculated by backend from Fields 10 & 21 (not set here)
-  // See: src/lib/calculate-derived-fields.ts -> calculatePricePerSqft()
-  // This ensures it uses the arbitrated final values of Fields 10 and 21, not just raw Bridge data
+  // Field 11: Price per sqft - Use MLS-provided value (LP/SqFt) if available
+  // MLS provides this as ListPricePerSquareFoot - it's authoritative!
+  // Only fall back to backend calculation if MLS doesn't provide it
+  if (property.ListPricePerSquareFoot) {
+    addField('11_price_per_sqft', Math.round(property.ListPricePerSquareFoot * 100) / 100);
+  }
+  // Note: Backend will calculate if this is still missing after all sources
 
   addField('13_last_sale_date', property.CloseDate);
   addField('14_last_sale_price', property.ClosePrice);
@@ -421,9 +425,20 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // ================================================================
   addField('54_pool_yn', property.PoolPrivateYN);
 
-  // Field 55: Pool (all pool features as multiselect)
+  // Field 55: Pool Type - Combine pool features with spa features
+  const poolAndSpaFeatures: string[] = [];
   if (property.PoolFeatures && Array.isArray(property.PoolFeatures) && property.PoolFeatures.length > 0) {
-    addField('55_pool_type', property.PoolFeatures.join(', '));
+    poolAndSpaFeatures.push(...property.PoolFeatures);
+  }
+  // Add Spa/Hot Tub info to pool features (MLS reports these together in amenities)
+  if (property.SpaYN === true) {
+    poolAndSpaFeatures.push('Spa/Hot Tub');
+    if (property.SpaFeatures && Array.isArray(property.SpaFeatures)) {
+      poolAndSpaFeatures.push(...property.SpaFeatures.map(f => `Spa: ${f}`));
+    }
+  }
+  if (poolAndSpaFeatures.length > 0) {
+    addField('55_pool_type', poolAndSpaFeatures.join(', '));
   }
 
   if (property.PatioAndPorchFeatures && Array.isArray(property.PatioAndPorchFeatures)) {
@@ -777,9 +792,23 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
     });
   }
 
-  // Pet policy
+  // Pet policy - combine PetsAllowed array with full PetRestrictions text
+  const petPolicyParts: string[] = [];
   if (property.PetsAllowed && Array.isArray(property.PetsAllowed)) {
-    addField('136_pet_policy', property.PetsAllowed.join(', '));
+    petPolicyParts.push(property.PetsAllowed.join(', '));
+  }
+  if (property.PetRestrictions) {
+    petPolicyParts.push(property.PetRestrictions);
+  }
+  if (petPolicyParts.length > 0) {
+    addField('136_pet_policy', petPolicyParts.join(' - '));
+  }
+
+  // Field 137: Age Restrictions - Map from HousingForOlderPersonsYN
+  if (property.HousingForOlderPersonsYN !== undefined) {
+    addField('137_age_restrictions', property.HousingForOlderPersonsYN ? '55+ Community' : 'None');
+  } else if (property.SeniorCommunityYN !== undefined) {
+    addField('137_age_restrictions', property.SeniorCommunityYN ? '55+ Community' : 'None');
   }
 
   // ================================================================
@@ -822,10 +851,13 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // ================================================================
   // GROUP 21: Waterfront (Fields 155-159)
   // ================================================================
-  // Field 155: Waterfront Y/N - also infer from WaterfrontFeatures
+  // Field 155: Waterfront Y/N - also infer from WaterfrontFeatures or DockYN
   if (property.WaterfrontYN !== undefined) {
     addField('155_water_frontage_yn', property.WaterfrontYN);
   } else if (property.WaterfrontFeatures && Array.isArray(property.WaterfrontFeatures) && property.WaterfrontFeatures.length > 0) {
+    addField('155_water_frontage_yn', true, 'Medium');
+  } else if (property.DockYN === true) {
+    // If has dock, it's waterfront
     addField('155_water_frontage_yn', true, 'Medium');
   }
 
@@ -836,17 +868,36 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
     addField('156_waterfront_feet', property.CanalFrontage, 'Medium');
   }
 
-  // Field 157: Water Access Y/N
-  addField('157_water_access_yn', property.WaterAccessYN);
+  // Field 157: Water Access Y/N - also true if has dock
+  if (property.WaterAccessYN !== undefined) {
+    addField('157_water_access_yn', property.WaterAccessYN);
+  } else if (property.DockYN === true) {
+    addField('157_water_access_yn', true, 'Medium');
+  }
 
   // Field 158: Water View Y/N
   addField('158_water_view_yn', property.WaterViewYN);
 
-  // Field 159: Water Body Name - extract from WaterfrontFeatures if not set
+  // Field 159: Water Body Name - Include dock info if available
+  const waterBodyParts: string[] = [];
   if (property.WaterBodyName) {
-    addField('159_water_body_name', property.WaterBodyName);
+    waterBodyParts.push(property.WaterBodyName);
   } else if (property.WaterfrontFeatures && Array.isArray(property.WaterfrontFeatures) && property.WaterfrontFeatures.length > 0) {
-    addField('159_water_body_name', property.WaterfrontFeatures.join(', '), 'Medium');
+    waterBodyParts.push(property.WaterfrontFeatures.join(', '));
+  }
+  // Add Dock info to water body description
+  if (property.DockYN === true) {
+    const dockInfo: string[] = ['Dock'];
+    if (property.DockType && Array.isArray(property.DockType)) {
+      dockInfo.push(...property.DockType);
+    }
+    if (property.DockDescription) {
+      dockInfo.push(property.DockDescription);
+    }
+    waterBodyParts.push(`(${dockInfo.join(': ')})`);
+  }
+  if (waterBodyParts.length > 0) {
+    addField('159_water_body_name', waterBodyParts.join(' '), waterBodyParts.length > 1 ? 'High' : 'Medium');
   }
 
   // ================================================================
