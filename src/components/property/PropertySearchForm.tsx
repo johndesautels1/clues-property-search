@@ -60,7 +60,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
   const [addressInput, setAddressInput] = useState('');
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [selectedEngines, setSelectedEngines] = useState(['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini']);
+  const [selectedEngines, setSelectedEngines] = useState(['perplexity', 'claude-sonnet', 'gpt', 'claude-opus', 'gemini', 'grok']);
   const [skipLLMs, setSkipLLMs] = useState(false);
   const [searchResults, setSearchResults] = useState<any>(null);
   const [sourcesProgress, setSourcesProgress] = useState<SourceProgress[]>(DEFAULT_SOURCES);

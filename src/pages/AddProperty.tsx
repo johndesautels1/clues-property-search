@@ -277,8 +277,8 @@ export default function AddProperty() {
       const getEngines = () => {
         if (selectedEngine === 'Auto') {
           // ALL 6 LLMs in CASCADE ORDER (MUST MATCH api/property/llm-constants.ts line 14)
-          // Perplexity → Grok → Claude Opus → GPT → Claude Sonnet → Gemini
-          return ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini'];
+          // Perplexity → Sonnet → GPT → Opus → Gemini → Grok
+          return ['perplexity', 'claude-sonnet', 'gpt', 'claude-opus', 'gemini', 'grok'];
         }
         return [selectedEngine];
       };
@@ -1914,7 +1914,7 @@ export default function AddProperty() {
                 AI Engine <span className="text-quantum-cyan text-xs">(Reliability Order)</span>
               </label>
               <p className="text-xs text-gray-500 mb-3">
-                Cascade: Perplexity → Grok → Claude Opus → GPT → Claude Sonnet → Gemini
+                Cascade: Perplexity → Sonnet → GPT → Opus → Gemini → Grok
               </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {LLM_ENGINES.map((engine) => (
@@ -1979,7 +1979,7 @@ export default function AddProperty() {
                 AI Engine <span className="text-quantum-cyan text-xs">(Reliability Order)</span>
               </label>
               <p className="text-xs text-gray-500 mb-3">
-                Cascade: Perplexity → Grok → Claude Opus → GPT → Claude Sonnet → Gemini
+                Cascade: Perplexity → Sonnet → GPT → Opus → Gemini → Grok
               </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {LLM_ENGINES.map((engine) => (
@@ -2042,7 +2042,7 @@ Beautiful 3BR/2BA beach house at 290 41st Ave, St Pete Beach, FL 33706. Built in
                 AI Engine <span className="text-quantum-cyan text-xs">(Reliability Order)</span>
               </label>
               <p className="text-xs text-gray-500 mb-3">
-                Cascade: Perplexity → Grok → Claude Opus → GPT → Claude Sonnet → Gemini
+                Cascade: Perplexity → Sonnet → GPT → Opus → Gemini → Grok
               </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {LLM_ENGINES.map((engine) => (

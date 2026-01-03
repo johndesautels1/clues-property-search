@@ -7,7 +7,7 @@
  *   Tier 1: Stellar MLS (Primary source - when eKey obtained)
  *   Tier 2: Google APIs (Geocode, Places, Distance Matrix)
  *   Tier 3: Paid/Free APIs (WalkScore, SchoolDigger, FEMA, AirNow, HowLoud, Weather, FBI Crime)
- *   Tier 4: LLM Cascade (Perplexity, Grok, Claude Opus, GPT, Claude Sonnet, Gemini)
+ *   Tier 4: LLM Cascade (Perplexity → Sonnet → GPT → Opus → Gemini → Grok)
  * 
  * Key Principles:
  *   - Higher tier data NEVER gets overwritten by lower tier

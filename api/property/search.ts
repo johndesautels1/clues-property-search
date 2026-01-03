@@ -5,7 +5,7 @@
  * Tier 1: Stellar MLS (when eKey obtained - future)
  * Tier 2: Google APIs (Geocode, Places)
  * Tier 3: Paid/Free APIs (WalkScore, SchoolDigger, AirNow, HowLoud, Weather, Crime, FEMA, Census)
- * Tier 4: LLMs (Perplexity, Grok, Claude Opus, GPT, Claude Sonnet, Gemini)
+ * Tier 4: LLMs (Perplexity → Sonnet → GPT → Opus → Gemini → Grok)
  *
  * ADDED (2025-12-05):
  * - U.S. Census API (Vacancy Rate - Field 100) - Tier 3
@@ -5018,8 +5018,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // CASCADE STRATEGY: Try all 6 LLMs in RELIABILITY order
-  // Order: Perplexity → Grok → Claude Opus → GPT → Claude Sonnet → Gemini
-  // Web-search LLMs first (verify real data), then knowledge-based LLMs
+  // Order: Perplexity → Sonnet → GPT → Opus → Gemini → Grok
+  // Sonnet has web_search (highest Tier 5), then knowledge-based LLMs
   const {
     address: rawAddress,
     url: rawUrl,
@@ -5590,7 +5590,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           );
 
           // Process results SEQUENTIALLY to avoid race conditions
-          // Results are processed in order: perplexity → grok → claude-opus → gpt → claude-sonnet → gemini
+          // Results are processed in order: perplexity → sonnet → gpt → opus → gemini → grok
           console.log(`\n=== Processing ${llmResults.length} LLM results in sequence ===`);
 
           for (let idx = 0; idx < llmResults.length; idx++) {
@@ -5683,7 +5683,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         } else {
           console.log('[TIER 4] ⚠️  No LLMs enabled');
           console.log('[TIER 4] engines parameter:', engines);
-          console.log('[TIER 4] valid engines:', ['perplexity', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini']);
+          console.log('[TIER 4] valid engines:', ['perplexity', 'claude-sonnet', 'gpt', 'claude-opus', 'gemini', 'grok']);
           console.log('[TIER 4] Enabled LLMs: 0 - skipping LLM cascade');
         }
       }
@@ -5946,7 +5946,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       single_source_warnings: arbitrationResult.singleSourceWarnings,
       llm_responses: llmResponses,
       strategy: 'arbitration_pipeline',
-      cascade_order: ['perplexity-portals', 'perplexity-county', 'perplexity-schools', 'perplexity-crime', 'perplexity-utilities', 'grok', 'claude-opus', 'gpt', 'claude-sonnet', 'gemini']
+      cascade_order: ['perplexity-portals', 'perplexity-county', 'perplexity-schools', 'perplexity-crime', 'perplexity-utilities', 'claude-sonnet', 'gpt', 'claude-opus', 'gemini', 'grok']
     });
   } catch (error) {
     console.error('=== SEARCH ERROR ===');
