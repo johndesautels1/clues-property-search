@@ -440,11 +440,23 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
 
         for (const [apiKey, fieldData] of Object.entries(data.fields)) {
           const field = fieldData as any;
+
+          // Skip internal tracking fields (not real data)
+          if (apiKey.startsWith('__') && apiKey.endsWith('__')) continue;
+          if (apiKey.startsWith('_extended')) continue;
+
           const formKey = mapApiFieldToFormKey(apiKey);
 
-          // Track lost fields
+          // Track lost fields (but not internal/metadata fields)
           if (!formKey) {
-            lostFields.push({apiKey, reason: 'No formKey mapping', value: field.value});
+            // Skip known extra MLS fields that aren't in our 168-field schema
+            const knownExtraFields = [
+              'latitude', 'longitude', 'property_description', 'virtual_tour_url',
+              'property_photo_url', 'property_photos', 'DaysOnMarket', 'CumulativeDaysOnMarket'
+            ];
+            if (!knownExtraFields.includes(apiKey)) {
+              lostFields.push({apiKey, reason: 'No formKey mapping', value: field.value});
+            }
           } else if (field.value === null || field.value === undefined) {
             lostFields.push({apiKey, reason: 'Null/undefined value', value: field.value});
           }
