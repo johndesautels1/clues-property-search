@@ -3,7 +3,7 @@
  *
  * This module contains the mathematical scoring algorithms and validation logic
  * that forces Claude Desktop to perform honest calculations with proofs across
- * all 168 fields when comparing properties.
+ * all 181 fields when comparing properties.
  *
  * CRITICAL: No hallucinations allowed - every score must have mathematical proof.
  */
@@ -16,7 +16,7 @@ import type { OliviaEnhancedPropertyInput } from '@/types/olivia-enhanced';
 
 /**
  * 4-LEVEL PROGRESSIVE ANALYSIS SYSTEM
- * Splits 168 fields into 3 sequential analysis passes + 1 final aggregation
+ * Splits 181 fields into 3 sequential analysis passes + 1 final aggregation
  * Each level processes ~56 fields to stay within Claude Opus 32K token limit
  */
 
@@ -573,6 +573,7 @@ export const SECTION_WEIGHTS: Record<string, number> = {
   'Waterfront': 5,
   'Leasing': 6,
   'Features': 4,
+  'Market Performance': 6,  // NEW Section W - fields 169-181
 };
 
 // ============================================================================
@@ -592,7 +593,7 @@ export function buildMathematicalAnalysisPrompt(
   return `
 # OLIVIA EXECUTIVE PROPERTY ANALYSIS - MATHEMATICAL PROOF REQUIRED
 
-You are Olivia, CLUES™ Chief Property Intelligence Officer. You are analyzing 3 competing properties across ALL 168 data fields.
+You are Olivia, CLUES™ Chief Property Intelligence Officer. You are analyzing 3 competing properties across ALL 181 data fields.
 
 ## CRITICAL RULES - NO EXCEPTIONS:
 
@@ -966,11 +967,11 @@ ${properties.map((p, i) => `
 
 ## YOUR TASK:
 
-1. Analyze ALL 168 fields across all 3 properties
+1. Analyze ALL 181 fields across all 3 properties
 2. Calculate mathematical scores for each field using the appropriate methodology
 3. Show your calculation work for every score
 4. Weight each field by importance (1-10 scale provided)
-5. Aggregate scores by section (22 sections)
+5. Aggregate scores by section (23 sections)
 6. Calculate overall investment grades (A+ to F)
 7. Declare an honest winner with mathematical proof
 8. Provide buyer-specific recommendations (investor, family, retiree, vacation, first-time)
@@ -983,7 +984,7 @@ ${properties.map((p, i) => `
 - SHOW CALCULATIONS - Every score needs a formula
 - BE HONEST - If it's close, say so. If one wins by 20 points, say that too.
 - USE WEIGHTS - Critical fields (weight 10) matter 10x more than minor ones (weight 1)
-- PROVE WINNER - Winner must have highest weighted aggregate score across all 168 fields
+- PROVE WINNER - Winner must have highest weighted aggregate score across all 181 fields
 
 Begin your mathematical analysis now. Return valid JSON only.
 `;
@@ -1334,7 +1335,7 @@ You are Olivia, CLUES™ Chief Property Intelligence Officer.
 
 **THIS IS THE FINAL AGGREGATION LEVEL**
 
-You have received detailed mathematical analysis for ALL 168 fields across 3 properties.
+You have received detailed mathematical analysis for ALL 181 fields across 3 properties.
 
 ## YOUR INPUT DATA:
 
@@ -1355,7 +1356,7 @@ ${properties.map((p, i) => `
 
 ## FIELD ANALYSIS SUMMARY:
 
-I have analyzed ALL 168 fields with complete mathematical proofs.
+I have analyzed ALL 181 fields with complete mathematical proofs.
 
 **Property 1 Average:** ${calculatePropertyAverage(1)}/100 across ${allFieldComparisons.length} fields
 **Property 2 Average:** ${calculatePropertyAverage(2)}/100 across ${allFieldComparisons.length} fields
@@ -1369,12 +1370,12 @@ Using the complete field analysis above, calculate:
 
 1. **22 Section Scores** - Aggregate field scores by section with weighted averages
 2. **Overall Investment Grades** - A+ to F for each property
-3. **Winner Declaration** - Determine mathematical winner across all 168 fields
+3. **Winner Declaration** - Determine mathematical winner across all 181 fields
 4. **Buyer-Specific Recommendations** - Investor, Family, Retiree, Vacation, First-Time
 5. **Key Findings** - 8-12 findings with mathematical proof
 6. **Executive Summary** - Final recommendation with confidence level
 
-## SECTION GROUPS (22 sections):
+## SECTION GROUPS (23 sections):
 
 1. Address & Identity (Fields 1-9)
 2. Pricing & Value (Fields 10-16)
@@ -1604,7 +1605,7 @@ Using the complete field analysis above, calculate:
 
 ## CRITICAL REQUIREMENTS:
 
-1. **sectionAnalysis** - ALL 22 sections with complete structure (sectionId, sectionNumber, grade, score, confidence, keyFindings, strengths, concerns, visualData, fieldsAnalyzed, fieldCount, fieldsWithData, completeness)
+1. **sectionAnalysis** - ALL 23 sections with complete structure (sectionId, sectionNumber, grade, score, confidence, keyFindings, strengths, concerns, visualData, fieldsAnalyzed, fieldCount, fieldsWithData, completeness)
 2. **investmentGrade** - Single aggregate grade (NOT per-property), with component scores
 3. **propertyRankings** - Rank all 3 properties (1st, 2nd, 3rd) with pros/cons
 4. **keyFindings** - 6-8 findings with category, title, description, impact, field numbers
@@ -1646,7 +1647,7 @@ export function validateOliviaResponse(response: any): ValidationResult {
   if (!response.fieldComparisons || !Array.isArray(response.fieldComparisons)) {
     errors.push('Missing or invalid fieldComparisons array');
   } else {
-    // Should have all 168 fields
+    // Should have all 181 fields
     if (response.fieldComparisons.length < 168) {
       warnings.push(`Only ${response.fieldComparisons.length} fields analyzed, expected 168`);
     }

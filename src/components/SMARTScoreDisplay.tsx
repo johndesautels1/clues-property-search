@@ -1,6 +1,6 @@
 /**
  * SMART Score Display Component
- * Comprehensive visualization of property quality scores with 22-section breakdown
+ * Comprehensive visualization of property quality scores with 23-section breakdown
  *
  * Features:
  * - Final SMART Score with color gradient (0-100)
@@ -36,7 +36,7 @@ import type { ConfidenceLevel } from '@/types/property';
 
 interface SMARTScoreDisplayProps {
   smartScore: number;                    // Final score 0-100
-  sectionBreakdown: SectionScore[];      // All 22 sections
+  sectionBreakdown: SectionScore[];      // All 23 sections
   dataCompleteness: number;              // Percentage 0-100
   confidenceLevel: ConfidenceLevel;      // Overall confidence
   compact?: boolean;                     // Enable compact view for narrow cards
@@ -69,6 +69,7 @@ const SECTION_ICONS: Record<string, any> = {
   'T': Waves,            // Waterfront
   'U': FileText,         // Leasing
   'V': Users,            // Features
+  'W': BarChart3,        // Market Performance
 };
 
 // ================================================================
@@ -560,7 +561,7 @@ export function SMARTScoreDisplay({
       </div>
 
       {/* ============================================================
-          DETAILED SECTION BREAKDOWN (22 Sections)
+          DETAILED SECTION BREAKDOWN (23 Sections)
       ============================================================ */}
       <div className={compact ? "glass-card p-3 border border-white/10 rounded-xl" : "glass-card p-6 border border-white/10 rounded-2xl"}>
         {!compact && (

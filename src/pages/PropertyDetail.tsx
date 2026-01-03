@@ -1,6 +1,6 @@
 /**
  * CLUES Property Dashboard - Comprehensive Property Detail Page
- * Displays all 168 fields organized by category with data quality indicators
+ * Displays all 181 fields organized by category with data quality indicators
  * Uses schema from src/types/fields-schema.ts as single source of truth
  */
 
@@ -1272,7 +1272,7 @@ export default function PropertyDetail() {
               {fullProperty?.address.listingStatus.value || property.listingStatus}
             </span>
             <span className="text-sm text-gray-400">
-              {Math.min(100, property.dataCompleteness)}% Data Complete ({Math.round(Math.min(100, property.dataCompleteness) * 1.68)}/168 fields)
+              {Math.min(100, property.dataCompleteness)}% Data Complete ({Math.round(Math.min(100, property.dataCompleteness) * 1.68)}/181 fields)
             </span>
 
             {/* Front Exposure Badge */}

@@ -4,7 +4,7 @@
  *
  * This file defines all data structures for:
  * - 168-field property analysis
- * - 22-section executive appraisal report
+ * - 23-section executive appraisal report
  * - Multi-LLM market forecasting
  * - HeyGen avatar integration
  * - Interactive Q&A system
@@ -452,7 +452,7 @@ export interface OliviaEnhancedAnalysisResult {
   // Key findings (6-8 top insights)
   keyFindings: KeyFinding[];
 
-  // Section-by-section analysis (22 sections)
+  // Section-by-section analysis (23 sections)
   sectionAnalysis: SectionAnalysis[];
 
   // Property rankings
@@ -534,7 +534,8 @@ export type SectionId =
   | 'legal'
   | 'waterfront'
   | 'leasing'
-  | 'community_features';
+  | 'community_features'
+  | 'market_performance';
 
 export const SECTION_METADATA: Record<SectionId, { name: string; fields: number[]; icon: string }> = {
   address_identity: { name: 'Address & Identity', fields: [1, 2, 3, 4, 5, 6, 7, 8, 9], icon: 'MapPin' },
@@ -559,4 +560,5 @@ export const SECTION_METADATA: Record<SectionId, { name: string; fields: number[
   waterfront: { name: 'Waterfront', fields: [155, 156, 157, 158, 159], icon: 'Waves' },
   leasing: { name: 'Leasing & Rentals', fields: [160, 161, 162, 163, 164, 165], icon: 'FileText' },
   community_features: { name: 'Community & Features', fields: [166, 167, 168], icon: 'Users' },
+  market_performance: { name: 'Market Performance', fields: [169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181], icon: 'BarChart3' },
 };

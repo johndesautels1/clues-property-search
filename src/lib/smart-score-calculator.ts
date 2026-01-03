@@ -52,7 +52,7 @@ export interface SmartScoreResult {
 }
 
 // ================================================================
-// SCOREABLE FIELDS (138 out of 168)
+// SCOREABLE FIELDS (151 out of 181)
 // ================================================================
 
 export const SCOREABLE_FIELDS = [
@@ -120,7 +120,10 @@ export const SCOREABLE_FIELDS = [
   160, 161, 162, 165,
 
   // Section V: Features (3 scoreable)
-  166, 167, 168
+  166, 167, 168,
+
+  // Section W: Market Performance (13 scoreable) - NEW
+  169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181
 ];
 
 // ================================================================

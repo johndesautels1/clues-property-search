@@ -1,6 +1,6 @@
 /**
  * CLUES Property Dashboard - Advanced Comparison Analytics Page
- * Full 168-field comparison with property dropdown selectors
+ * Full 181-field comparison with property dropdown selectors
  * Plus 32 hi-tech visual chart comparisons
  * Plus Olivia AI Analysis
  */
@@ -32,7 +32,7 @@ import SMARTScoreDiagnostic from '@/components/SMARTScoreDiagnostic';
 type CompareViewMode = 'table' | 'visual' | 'diagnostic';
 
 // Industry-standard section weights for Florida coastal market
-// Normalized to sum to exactly 100.00%
+// 23 sections (A-W) - weights normalized at runtime
 const INDUSTRY_WEIGHTS = {
   'A': 1.94,   // Address & Identity
   'B': 17.96,  // Pricing & Value
@@ -56,6 +56,7 @@ const INDUSTRY_WEIGHTS = {
   'T': 5.83,   // Waterfront
   'U': 0.0,    // Leasing
   'V': 0.0,    // Features
+  'W': 6.0,    // Market Performance (NEW - fields 169-181)
 };
 
 // Helper to extract value from DataField
@@ -318,7 +319,7 @@ const fieldCategories = [
   { id: 'legal', label: 'Legal & Compliance', icon: Scale },
 ];
 
-// Field definitions for comparison (mapped to 168-field schema with CORRECT Property interface paths)
+// Field definitions for comparison (mapped to 181-field schema with CORRECT Property interface paths)
 const comparisonFields: Record<string, Array<{
   key: string;
   label: string;
@@ -961,7 +962,7 @@ export default function Compare() {
   const [oliviaLoading, setOliviaLoading] = useState(false);
   const [oliviaError, setOliviaError] = useState<string | null>(null);
 
-  // Olivia Enhanced (168-field analysis)
+  // Olivia Enhanced (181-field analysis)
   const [useEnhancedOlivia, setUseEnhancedOlivia] = useState(true); // Toggle: true = new UI, false = old UI
   const [oliviaEnhancedResult, setOliviaEnhancedResult] = useState<OliviaEnhancedAnalysisResult | null>(null);
 
@@ -1697,7 +1698,7 @@ export default function Compare() {
             <div>
               <p className="text-sm text-white font-medium">Limited Data Available</p>
               <p className="text-xs text-gray-400 mt-1">
-                Some properties only have basic card data. Full 168-field comparison requires complete property data.
+                Some properties only have basic card data. Full 181-field comparison requires complete property data.
                 View individual property details to see all available fields.
               </p>
             </div>

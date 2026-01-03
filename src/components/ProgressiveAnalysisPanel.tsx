@@ -657,7 +657,7 @@ export function ProgressiveAnalysisPanel({ properties, onComplete }: Progressive
             </div>
             <div className="text-sm text-purple-700 dark:text-purple-300 space-y-2">
               <div>✓ All 168 fields analyzed across 3 properties</div>
-              <div>✓ 22 section scores calculated</div>
+              <div>✓ 23 section scores calculated</div>
               <div>✓ Investment grades assigned</div>
               <div>✓ Top recommendation: {finalResults.verbalAnalysis?.topRecommendation?.propertyId || 'See full results'}</div>
               <div>✓ Overall Quality: {overallQuality?.toFixed(0)}%</div>

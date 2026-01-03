@@ -2259,6 +2259,246 @@ export function normalizeExteriorFeatures(value: any): NormalizationResult {
 }
 
 // =============================================================================
+// SECTION W: MARKET PERFORMANCE (Fields 169-181) - NEW
+// Weight: 6% in industry standard - Real-time market metrics
+// Buyer-centric scoring: Buyer's market conditions = better scores
+// =============================================================================
+
+/**
+ * Fields 169-173: Portal Views (Zillow, Redfin, Homes.com, Realtor.com, Total)
+ * Higher views = more market validation/desirability
+ * HIGHER_BETTER - relative comparison between 3 properties
+ */
+export function normalizePortalViews(value: any): NormalizationResult {
+  if (value === null || value === undefined) {
+    return { score: 50, confidence: 'Low', reason: 'No view count data' };
+  }
+
+  const views = typeof value === 'number' ? value : parseInt(String(value), 10);
+
+  if (isNaN(views) || views < 0) {
+    return { score: 50, confidence: 'Low', reason: 'Invalid view count' };
+  }
+
+  // Scoring based on typical listing view counts
+  if (views >= 5000) return { score: 100, confidence: 'High', reason: 'Exceptionally high views - viral listing' };
+  if (views >= 2000) return { score: 90, confidence: 'High', reason: 'Very high views - strong interest' };
+  if (views >= 1000) return { score: 80, confidence: 'High', reason: 'High views - good interest' };
+  if (views >= 500) return { score: 70, confidence: 'High', reason: 'Moderate-high views' };
+  if (views >= 200) return { score: 60, confidence: 'Medium', reason: 'Moderate views' };
+  if (views >= 50) return { score: 50, confidence: 'Medium', reason: 'Low-moderate views' };
+  if (views >= 10) return { score: 35, confidence: 'Medium', reason: 'Low views' };
+
+  return { score: 25, confidence: 'Medium', reason: 'Very low views' };
+}
+
+/**
+ * Field 174: Saves/Favorites
+ * More saves = higher desirability
+ * HIGHER_BETTER
+ */
+export function normalizeSavesFavorites(value: any): NormalizationResult {
+  if (value === null || value === undefined) {
+    return { score: 50, confidence: 'Low', reason: 'No saves/favorites data' };
+  }
+
+  const saves = typeof value === 'number' ? value : parseInt(String(value), 10);
+
+  if (isNaN(saves) || saves < 0) {
+    return { score: 50, confidence: 'Low', reason: 'Invalid saves count' };
+  }
+
+  if (saves >= 200) return { score: 100, confidence: 'High', reason: 'Exceptionally high saves - very desirable' };
+  if (saves >= 100) return { score: 90, confidence: 'High', reason: 'Very high saves' };
+  if (saves >= 50) return { score: 80, confidence: 'High', reason: 'High saves' };
+  if (saves >= 25) return { score: 70, confidence: 'High', reason: 'Good saves' };
+  if (saves >= 10) return { score: 55, confidence: 'Medium', reason: 'Moderate saves' };
+  if (saves >= 5) return { score: 40, confidence: 'Medium', reason: 'Few saves' };
+
+  return { score: 30, confidence: 'Medium', reason: 'Very few saves' };
+}
+
+/**
+ * Field 175: Market Type
+ * BUYER-CENTRIC: Buyer's market = better for buyers (higher score)
+ * ENUM_RANK: Buyer's Market > Balanced > Seller's Market
+ */
+export function normalizeMarketType(value: any): NormalizationResult {
+  if (!value || typeof value !== 'string') {
+    return { score: 50, confidence: 'Low', reason: 'No market type data' };
+  }
+
+  const marketType = value.toLowerCase().trim();
+
+  if (marketType.includes('buyer')) {
+    return { score: 100, confidence: 'High', reason: "Buyer's market - favorable for buyers" };
+  }
+  if (marketType.includes('balanced')) {
+    return { score: 50, confidence: 'High', reason: 'Balanced market - neutral' };
+  }
+  if (marketType.includes('seller')) {
+    return { score: 25, confidence: 'High', reason: "Seller's market - competitive for buyers" };
+  }
+
+  return { score: 50, confidence: 'Low', reason: 'Market type not recognized' };
+}
+
+/**
+ * Field 176: Avg Sale-to-List Percent
+ * BUYER-CENTRIC: Below 100% = buyer leverage (higher score)
+ * LOWER_BETTER (for buyer perspective)
+ */
+export function normalizeAvgSaleToListPercent(value: any): NormalizationResult {
+  if (value === null || value === undefined) {
+    return { score: 50, confidence: 'Low', reason: 'No sale-to-list data' };
+  }
+
+  const percent = typeof value === 'number' ? value : parseFloat(String(value).replace('%', ''));
+
+  if (isNaN(percent)) {
+    return { score: 50, confidence: 'Low', reason: 'Invalid sale-to-list value' };
+  }
+
+  // Buyer perspective: lower = better (more negotiating room)
+  if (percent <= 95) return { score: 100, confidence: 'High', reason: 'Great buyer leverage (95% or less)' };
+  if (percent <= 97) return { score: 85, confidence: 'High', reason: 'Good buyer leverage' };
+  if (percent <= 100) return { score: 70, confidence: 'High', reason: 'Balanced market' };
+  if (percent <= 102) return { score: 50, confidence: 'High', reason: 'Slight seller advantage' };
+  if (percent <= 105) return { score: 30, confidence: 'High', reason: "Seller's market" };
+
+  return { score: 15, confidence: 'High', reason: "Extreme seller's market (105%+)" };
+}
+
+/**
+ * Field 177: Avg Days to Pending
+ * BUYER-CENTRIC: More days = less urgency/competition for buyer
+ * HIGHER_BETTER (for buyer perspective - more time to decide)
+ */
+export function normalizeAvgDaysToPending(value: any): NormalizationResult {
+  if (value === null || value === undefined) {
+    return { score: 50, confidence: 'Low', reason: 'No days to pending data' };
+  }
+
+  const days = typeof value === 'number' ? value : parseInt(String(value), 10);
+
+  if (isNaN(days) || days < 0) {
+    return { score: 50, confidence: 'Low', reason: 'Invalid days value' };
+  }
+
+  // Buyer perspective: more days = less pressure
+  if (days >= 60) return { score: 100, confidence: 'High', reason: 'Slow market - plenty of time' };
+  if (days >= 45) return { score: 85, confidence: 'High', reason: 'Moderate pace - good time' };
+  if (days >= 30) return { score: 70, confidence: 'High', reason: 'Normal market pace' };
+  if (days >= 21) return { score: 55, confidence: 'High', reason: 'Faster market' };
+  if (days >= 14) return { score: 40, confidence: 'High', reason: 'Hot market - act quickly' };
+  if (days >= 7) return { score: 25, confidence: 'High', reason: 'Very hot market' };
+
+  return { score: 15, confidence: 'High', reason: 'Extremely competitive (<7 days)' };
+}
+
+/**
+ * Field 178: Multiple Offers Likelihood
+ * BUYER-CENTRIC: Unlikely = better (no bidding wars)
+ * ENUM_RANK: Unlikely > Sometimes > Likely
+ */
+export function normalizeMultipleOffersLikelihood(value: any): NormalizationResult {
+  if (!value || typeof value !== 'string') {
+    return { score: 50, confidence: 'Low', reason: 'No multiple offers data' };
+  }
+
+  const likelihood = value.toLowerCase().trim();
+
+  if (likelihood.includes('unlikely') || likelihood.includes('rare') || likelihood.includes('no')) {
+    return { score: 100, confidence: 'High', reason: 'Multiple offers unlikely - no bidding wars' };
+  }
+  if (likelihood.includes('sometimes') || likelihood.includes('occasional') || likelihood.includes('possible')) {
+    return { score: 60, confidence: 'High', reason: 'Multiple offers sometimes occur' };
+  }
+  if (likelihood.includes('likely') || likelihood.includes('common') || likelihood.includes('yes') || likelihood.includes('frequent')) {
+    return { score: 20, confidence: 'High', reason: 'Multiple offers likely - competitive' };
+  }
+
+  return { score: 50, confidence: 'Low', reason: 'Multiple offers likelihood not recognized' };
+}
+
+/**
+ * Field 179: Appreciation Percent
+ * HIGHER_BETTER - Property value growth
+ */
+export function normalizeAppreciationPercent(value: any): NormalizationResult {
+  if (value === null || value === undefined) {
+    return { score: 50, confidence: 'Low', reason: 'No appreciation data' };
+  }
+
+  const appreciation = typeof value === 'number' ? value : parseFloat(String(value).replace('%', ''));
+
+  if (isNaN(appreciation)) {
+    return { score: 50, confidence: 'Low', reason: 'Invalid appreciation value' };
+  }
+
+  // Higher appreciation = better investment
+  if (appreciation >= 20) return { score: 100, confidence: 'High', reason: 'Exceptional appreciation (20%+)' };
+  if (appreciation >= 10) return { score: 90, confidence: 'High', reason: 'Strong appreciation' };
+  if (appreciation >= 5) return { score: 75, confidence: 'High', reason: 'Good appreciation' };
+  if (appreciation >= 2) return { score: 60, confidence: 'High', reason: 'Moderate appreciation' };
+  if (appreciation >= 0) return { score: 50, confidence: 'High', reason: 'Flat/minimal appreciation' };
+  if (appreciation >= -5) return { score: 35, confidence: 'High', reason: 'Slight depreciation' };
+
+  return { score: 20, confidence: 'High', reason: 'Significant depreciation' };
+}
+
+/**
+ * Field 180: Price Trend
+ * BUYER-CENTRIC: Falling/Stable = better for buyers
+ * ENUM_RANK: Falling > Stable > Rising
+ */
+export function normalizePriceTrend(value: any): NormalizationResult {
+  if (!value || typeof value !== 'string') {
+    return { score: 50, confidence: 'Low', reason: 'No price trend data' };
+  }
+
+  const trend = value.toLowerCase().trim();
+
+  if (trend.includes('falling') || trend.includes('declining') || trend.includes('down')) {
+    return { score: 100, confidence: 'High', reason: 'Prices falling - good for buyers' };
+  }
+  if (trend.includes('stable') || trend.includes('flat') || trend.includes('steady')) {
+    return { score: 80, confidence: 'High', reason: 'Stable prices - predictable' };
+  }
+  if (trend.includes('rising') || trend.includes('increasing') || trend.includes('up')) {
+    return { score: 40, confidence: 'High', reason: 'Rising prices - act soon' };
+  }
+
+  return { score: 50, confidence: 'Low', reason: 'Price trend not recognized' };
+}
+
+/**
+ * Field 181: Rent Zestimate
+ * HIGHER_BETTER - Higher rent potential = better investment
+ */
+export function normalizeRentZestimate(value: any): NormalizationResult {
+  if (value === null || value === undefined) {
+    return { score: 50, confidence: 'Low', reason: 'No rent estimate data' };
+  }
+
+  const rent = typeof value === 'number' ? value : parseFloat(String(value).replace(/[$,]/g, ''));
+
+  if (isNaN(rent) || rent < 0) {
+    return { score: 50, confidence: 'Low', reason: 'Invalid rent value' };
+  }
+
+  // Higher rent = better investment potential (Florida market)
+  if (rent >= 5000) return { score: 100, confidence: 'High', reason: 'Exceptional rent potential ($5k+/mo)' };
+  if (rent >= 3500) return { score: 90, confidence: 'High', reason: 'Very high rent potential' };
+  if (rent >= 2500) return { score: 80, confidence: 'High', reason: 'High rent potential' };
+  if (rent >= 2000) return { score: 70, confidence: 'High', reason: 'Good rent potential' };
+  if (rent >= 1500) return { score: 55, confidence: 'High', reason: 'Moderate rent potential' };
+  if (rent >= 1000) return { score: 40, confidence: 'Medium', reason: 'Lower rent potential' };
+
+  return { score: 30, confidence: 'Medium', reason: 'Low rent potential' };
+}
+
+// =============================================================================
 // MASTER EXPORT: All Normalization Functions by Field Number
 // =============================================================================
 
@@ -2354,12 +2594,27 @@ export const FIELD_NORMALIZERS: Record<number, NormalizationFunction> = {
   166: normalizeCommunityFeatures,
   167: normalizeInteriorFeatures,
   168: normalizeExteriorFeatures,
+
+  // Section W: Market Performance (NEW - fields 169-181)
+  169: normalizePortalViews,         // Zillow Views
+  170: normalizePortalViews,         // Redfin Views
+  171: normalizePortalViews,         // Homes.com Views
+  172: normalizePortalViews,         // Realtor.com Views
+  173: normalizePortalViews,         // Total Views
+  174: normalizeSavesFavorites,      // Saves/Favorites
+  175: normalizeMarketType,          // Market Type
+  176: normalizeAvgSaleToListPercent,// Avg Sale-to-List %
+  177: normalizeAvgDaysToPending,    // Avg Days to Pending
+  178: normalizeMultipleOffersLikelihood, // Multiple Offers
+  179: normalizeAppreciationPercent, // Appreciation %
+  180: normalizePriceTrend,          // Price Trend
+  181: normalizeRentZestimate,       // Rent Zestimate
 };
 
 /**
  * Normalize a field value to a 0-100 score
  *
- * @param fieldNumber - The field number (1-168)
+ * @param fieldNumber - The field number (1-181)
  * @param value - The raw field value
  * @returns NormalizationResult with score, confidence, and reason
  */

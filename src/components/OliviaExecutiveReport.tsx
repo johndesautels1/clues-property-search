@@ -6,7 +6,7 @@
  * - HeyGen avatar video (Olivia speaks)
  * - Executive Summary
  * - Key Findings
- * - 22 Section-by-Section Analysis
+ * - 23 Section-by-Section Analysis
  * - Multi-LLM Market Forecast
  * - Decision Tree Recommendations
  * - Interactive Q&A
@@ -34,7 +34,7 @@ interface OliviaExecutiveReportProps {
   onClose: () => void;
 }
 
-// Section icons mapping
+// Section icons mapping (23 sections A-W)
 const SECTION_ICONS: Record<string, any> = {
   'Address & Identity': MapPin,
   'Pricing & Value': DollarSign,
@@ -58,6 +58,7 @@ const SECTION_ICONS: Record<string, any> = {
   'Waterfront': Waves,
   'Leasing & Rentals': FileText,
   'Community & Features': Users,
+  'Market Performance': TrendingUp,  // Section W - fields 169-181
 };
 
 export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExecutiveReportProps) {
@@ -484,7 +485,7 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
           </div>
 
           {/* ============================================================
-              SECTION-BY-SECTION ANALYSIS (22 Sections)
+              SECTION-BY-SECTION ANALYSIS (23 Sections)
           ============================================================ */}
           <div className="glass-card p-6 border border-white/10 rounded-2xl mb-6">
             <div className="flex items-center justify-between mb-4">

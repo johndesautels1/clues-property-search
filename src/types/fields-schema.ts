@@ -54,7 +54,14 @@ export const ALL_FIELDS: readonly FieldDefinition[] = [
   { num: 13, key: 'last_sale_date',        label: 'Last Sale Date',        group: 'Pricing & Value', type: 'date',     required: false },
   { num: 14, key: 'last_sale_price',       label: 'Last Sale Price',       group: 'Pricing & Value', type: 'currency', required: false },
   { num: 15, key: 'assessed_value',        label: 'Assessed Value',        group: 'Pricing & Value', type: 'currency', required: false },
-  { num: 16, key: 'redfin_estimate',       label: 'Redfin Estimate',       group: 'Pricing & Value', type: 'currency', required: false },
+  { num: 16, key: 'avms',                  label: 'AVMs (Average)',        group: 'Pricing & Value', type: 'currency', required: false },
+  // Sub-fields for Field 16 AVMs (stored separately, no new field numbers):
+  // 16a: field_16a_zestimate - Zillow Zestimate
+  // 16b: field_16b_redfin_estimate - Redfin Estimate
+  // 16c: field_16c_first_american_avm - First American AVM (Homes.com)
+  // 16d: field_16d_quantarium_avm - Quantarium AVM (Homes.com)
+  // 16e: field_16e_ice_avm - ICE AVM (Homes.com)
+  // 16f: field_16f_collateral_analytics_avm - Collateral Analytics (Homes.com)
 
   // ================================================================
   // GROUP 3: Property Basics (Fields 17-29)
@@ -107,7 +114,10 @@ export const ALL_FIELDS: readonly FieldDefinition[] = [
   { num: 50, key: 'kitchen_features',    label: 'Kitchen Features',    group: 'Interior Features', type: 'text',        required: false },
   { num: 51, key: 'appliances_included', label: 'Appliances Included', group: 'Interior Features', type: 'multiselect', required: false, options: ['Refrigerator', 'Dishwasher', 'Range/Oven', 'Microwave', 'Washer', 'Dryer', 'Disposal'] },
   { num: 52, key: 'fireplace_yn',        label: 'Fireplace',           group: 'Interior Features', type: 'boolean',     required: false },
-  { num: 53, key: 'fireplace_count',     label: 'Fireplace Count',     group: 'Interior Features', type: 'number',      required: false },
+  { num: 53, key: 'primary_br_location', label: 'Primary BR Location', group: 'Interior Features', type: 'select',      required: false, options: ['Main Floor', 'Upper Floor', 'Lower Floor', 'Split'] },
+  // Sub-fields for Field 50 Kitchen Features (stored separately, no new field numbers):
+  // 50a: field_50a_pantry - Pantry (Y/N from InteriorFeatures)
+  // 50b: field_50b_walk_in_closet - Walk-in Closet (Y/N from InteriorFeatures)
 
   // ================================================================
   // GROUP 7: Exterior Features (Fields 54-58)
@@ -288,6 +298,24 @@ export const ALL_FIELDS: readonly FieldDefinition[] = [
   { num: 166, key: 'community_features',    label: 'Community Features',    group: 'Community & Features', type: 'multiselect', required: false, options: ['Pool', 'Clubhouse', 'Tennis Courts', 'Golf', 'Fitness Center', 'Gated', 'Sidewalks', 'Playground', 'Dog Park', 'Marina', 'Beach Access'] },
   { num: 167, key: 'interior_features',     label: 'Interior Features',     group: 'Community & Features', type: 'multiselect', required: false, options: ['Cathedral Ceiling(s)', 'Walk-In Closet(s)', 'Primary Bedroom Main Floor', 'Open Floor Plan', 'Crown Molding', 'Skylight(s)', 'Wet Bar', 'Built-in Features'] },
   { num: 168, key: 'exterior_features',     label: 'Exterior Features',     group: 'Community & Features', type: 'multiselect', required: false, options: ['Balcony', 'Outdoor Shower', 'Sidewalk', 'Sliding Doors', 'Hurricane Shutters', 'Sprinkler System', 'Outdoor Kitchen', 'Private Dock'] },
+
+  // ================================================================
+  // GROUP 23: Market Performance (Fields 169-181) - Section W
+  // Real-time market metrics from portal data and Redfin analytics
+  // ================================================================
+  { num: 169, key: 'zillow_views',                label: 'Zillow Views',              group: 'Market Performance', type: 'number',     required: false },
+  { num: 170, key: 'redfin_views',                label: 'Redfin Views',              group: 'Market Performance', type: 'number',     required: false },
+  { num: 171, key: 'homes_views',                 label: 'Homes.com Views',           group: 'Market Performance', type: 'number',     required: false },
+  { num: 172, key: 'realtor_views',               label: 'Realtor.com Views',         group: 'Market Performance', type: 'number',     required: false },
+  { num: 173, key: 'total_views',                 label: 'Total Views',               group: 'Market Performance', type: 'number',     required: false, calculated: true },
+  { num: 174, key: 'saves_favorites',             label: 'Saves/Favorites',           group: 'Market Performance', type: 'number',     required: false },
+  { num: 175, key: 'market_type',                 label: 'Market Type',               group: 'Market Performance', type: 'select',     required: false, options: ["Buyer's Market", "Balanced Market", "Seller's Market"] },
+  { num: 176, key: 'avg_sale_to_list_percent',    label: 'Avg Sale-to-List %',        group: 'Market Performance', type: 'percentage', required: false },
+  { num: 177, key: 'avg_days_to_pending',         label: 'Avg Days to Pending',       group: 'Market Performance', type: 'number',     required: false },
+  { num: 178, key: 'multiple_offers_likelihood',  label: 'Multiple Offers',           group: 'Market Performance', type: 'select',     required: false, options: ['Unlikely', 'Sometimes', 'Likely'] },
+  { num: 179, key: 'appreciation_percent',        label: 'Appreciation %',            group: 'Market Performance', type: 'percentage', required: false, calculated: true },
+  { num: 180, key: 'price_trend',                 label: 'Price Trend',               group: 'Market Performance', type: 'select',     required: false, options: ['Falling', 'Stable', 'Rising'] },
+  { num: 181, key: 'rent_zestimate',              label: 'Rent Zestimate',            group: 'Market Performance', type: 'currency',   required: false },
 ] as const;
 
 // ================================================================
@@ -396,6 +424,9 @@ export const DATA_SOURCES = [
   'Zumper',
   'Census',
   'Redfin',
+  'Zillow',
+  'Homes.com',
+  'Realtor.com',
   'Perplexity',
   'Grok',
   'Claude Opus',
@@ -473,6 +504,8 @@ export const UI_FIELD_GROUPS = [
   { id: 'T', name: 'Waterfront', fields: [155, 156, 157, 158, 159], color: 'sky' },
   { id: 'U', name: 'Leasing', fields: [160, 161, 162, 163, 164, 165], color: 'amber' },
   { id: 'V', name: 'Features', fields: [166, 167, 168], color: 'emerald' },
+  // NEW: Section W - Market Performance (169-181)
+  { id: 'W', name: 'Market Performance', fields: [169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181], color: 'rose' },
 ];
 
 // Source-based color coding for data reliability

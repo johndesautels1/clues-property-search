@@ -1,0 +1,786 @@
+Search for Property
+Enter address to auto-populate or fill in all 110 fields manually
+
+Logged in as:
+Admin
+John Broker
+(Source fields visible)
+AI-Powered Property Search
+Enter property address...
+Search
+Free Data Only (Fast)
+Realtor.com + FEMA + WalkScore only - no AI costs
+
+
+AI Engines to Fill Gaps (costs $):
+Grok
+Perplexity
+Claude Opus
+GPT-5.1
+Claude Sonnet
+Gemini
+n
+🔍 Real data from Realtor.com + free APIs, then AI fills remaining gaps
+
+All 110 Property Fields
+Expand All
+|
+Collapse All
+
+A
+Address & Identity
+0/6 fields
+#
+Field
+Data Source (Admin Only)
+#1
+Full Address*
+123 Main St, City, FL 33701
+Source
+
+Manual Entry
+#2
+MLS # (Primary)
+TB8437491
+Source
+
+Manual Entry
+#3
+MLS # (Secondary)
+Source
+
+Manual Entry
+#4
+Listing Status
+
+Select...
+Source
+
+Manual Entry
+#5
+Listing Date
+
+mm/dd/yyyy
+Source
+
+Manual Entry
+#6
+Parcel ID
+Source
+
+Manual Entry
+
+B
+Pricing
+0/5 fields
+#
+Field
+Data Source (Admin Only)
+#7
+Listing Price
+$
+Source
+
+Manual Entry
+#8
+Price per Sq Ft
+$
+Source
+
+Manual Entry
+#9
+Market Value Estimate
+$
+Source
+
+Manual Entry
+#10
+Last Sale Date
+
+mm/dd/yyyy
+Source
+
+Manual Entry
+#11
+Last Sale Price
+$
+Source
+
+Manual Entry
+
+C
+Property Basics
+0/13 fields
+#
+Field
+Data Source (Admin Only)
+#12
+Bedrooms*
+Source
+
+Manual Entry
+#13
+Full Bathrooms*
+Source
+
+Manual Entry
+#14
+Half Bathrooms*
+Source
+
+Manual Entry
+#15
+Total Bathrooms
+Source
+
+Manual Entry
+#16
+Living Sq Ft*
+Source
+
+Manual Entry
+#17
+Total Sq Ft Under Roof
+Source
+
+Manual Entry
+#18
+Lot Size (Sq Ft)
+Source
+
+Manual Entry
+#19
+Lot Size (Acres)
+Source
+
+Manual Entry
+#20
+Year Built*
+Source
+
+Manual Entry
+#21
+Property Type*
+
+Select...
+Source
+
+Manual Entry
+#22
+Stories
+Source
+
+Manual Entry
+#23
+Garage Spaces
+Source
+
+Manual Entry
+#24
+Parking Description
+2 car garage + driveway
+Source
+
+Manual Entry
+
+D
+HOA & Ownership
+0/4 fields
+#
+Field
+Data Source (Admin Only)
+#25
+HOA?*
+
+Yes
+
+No
+Source
+
+Manual Entry
+#26
+HOA Fee (Annual)
+$
+Source
+
+Manual Entry
+#27
+Ownership Type
+
+Select...
+Source
+
+Manual Entry
+#28
+County
+Source
+
+Manual Entry
+
+E
+Taxes & Assessments
+0/7 fields
+#
+Field
+Data Source (Admin Only)
+#29
+Annual Property Taxes
+$
+Source
+
+Manual Entry
+#30
+Tax Year
+Source
+
+Manual Entry
+#31
+Assessed Value
+$
+Source
+
+Manual Entry
+#32
+Tax Exemptions
+Homestead exemption
+Source
+
+Manual Entry
+#33
+Property Tax Rate
+%
+Source
+
+Manual Entry
+#34
+Recent Tax History
+Source
+
+Manual Entry
+#35
+Special Assessments
+None
+Source
+
+Manual Entry
+
+F
+Structure & Systems
+0/6 fields
+#
+Field
+Data Source (Admin Only)
+#36
+Roof Type
+
+Select...
+Source
+
+Manual Entry
+#37
+Roof Age (Est.)
+~10 years (2014 permit)
+Source
+
+Manual Entry
+#38
+Exterior Material
+
+Select...
+Source
+
+Manual Entry
+#39
+Foundation
+
+Select...
+Source
+
+Manual Entry
+#40
+HVAC Type
+Central Air/Heat
+Source
+
+Manual Entry
+#41
+HVAC Age (Est.)
+Source
+
+Manual Entry
+
+G
+Interior Features
+0/5 fields
+#
+Field
+Data Source (Admin Only)
+#42
+Flooring Type
+Tile, Laminate, Carpet
+Source
+
+Manual Entry
+#43
+Kitchen Features
+Granite counters, SS appliances
+Source
+
+Manual Entry
+#44
+Appliances Included
+Refrigerator
+Dishwasher
+Range/Oven
+Microwave
+Washer
+Dryer
+Disposal
+Source
+
+Manual Entry
+#45
+Fireplace?
+
+Yes
+
+No
+Source
+
+Manual Entry
+#46
+Interior Condition
+
+Select...
+Source
+
+Manual Entry
+
+H
+Exterior Features
+0/5 fields
+#
+Field
+Data Source (Admin Only)
+#47
+Pool?
+
+Yes
+
+No
+Source
+
+Manual Entry
+#48
+Pool Type
+
+Select...
+Source
+
+Manual Entry
+#49
+Deck/Patio
+Screened lanai, covered patio
+Source
+
+Manual Entry
+#50
+Fence
+Privacy fence, chain link
+Source
+
+Manual Entry
+#51
+Landscaping
+Source
+
+Manual Entry
+
+I
+Permits & Renovations
+0/4 fields
+#
+Field
+Data Source (Admin Only)
+#52
+Recent Renovations
+Source
+
+Manual Entry
+#53
+Permit History - Roof
+Source
+
+Manual Entry
+#54
+Permit History - HVAC
+Source
+
+Manual Entry
+#55
+Permit History - Other
+Source
+
+Manual Entry
+
+J
+Schools
+0/9 fields
+#
+Field
+Data Source (Admin Only)
+#56
+Assigned Elementary
+Source
+
+Manual Entry
+#57
+Elementary Rating
+8/10
+Source
+
+Manual Entry
+#58
+Elementary Distance (mi)
+Source
+
+Manual Entry
+#59
+Assigned Middle
+Source
+
+Manual Entry
+#60
+Middle Rating
+Source
+
+Manual Entry
+#61
+Middle Distance (mi)
+Source
+
+Manual Entry
+#62
+Assigned High
+Source
+
+Manual Entry
+#63
+High Rating
+Source
+
+Manual Entry
+#64
+High Distance (mi)
+Source
+
+Manual Entry
+
+K
+Location Scores
+0/8 fields
+#
+Field
+Data Source (Admin Only)
+#65
+Walk Score
+Source
+
+Manual Entry
+#66
+Transit Score
+Source
+
+Manual Entry
+#67
+Bike Score
+Source
+
+Manual Entry
+#68
+Noise Level
+
+Select...
+Source
+
+Manual Entry
+#69
+Traffic Level
+
+Select...
+Source
+
+Manual Entry
+#70
+Walkability Description
+Source
+
+Manual Entry
+#71
+Commute to City Center
+~25 min to Tampa
+Source
+
+Manual Entry
+#72
+Public Transit Access
+Source
+
+Manual Entry
+
+L
+Distances & Amenities
+0/5 fields
+#
+Field
+Data Source (Admin Only)
+#73
+Distance to Grocery (mi)
+Source
+
+Manual Entry
+#74
+Distance to Hospital (mi)
+Source
+
+Manual Entry
+#75
+Distance to Airport (mi)
+Source
+
+Manual Entry
+#76
+Distance to Park (mi)
+Source
+
+Manual Entry
+#77
+Distance to Beach (mi)
+Source
+
+Manual Entry
+
+M
+Safety & Crime
+0/3 fields
+#
+Field
+Data Source (Admin Only)
+#78
+Violent Crime Index
+Source
+
+Manual Entry
+#79
+Property Crime Index
+Source
+
+Manual Entry
+#80
+Neighborhood Safety Rating
+Source
+
+Manual Entry
+
+N
+Market & Investment
+0/11 fields
+#
+Field
+Data Source (Admin Only)
+#81
+Median Home Price (Area)
+$
+Source
+
+Manual Entry
+#82
+Avg $/SqFt (Recent Sales)
+$
+Source
+
+Manual Entry
+#83
+Avg Days on Market (Area)
+Source
+
+Manual Entry
+#84
+Inventory Surplus
+Source
+
+Manual Entry
+#85
+Rental Estimate (Monthly)
+$
+Source
+
+Manual Entry
+#86
+Rental Yield Est. (%)
+%
+Source
+
+Manual Entry
+#87
+Vacancy Rate (Area %)
+%
+Source
+
+Manual Entry
+#88
+Cap Rate Est. (%)
+%
+Source
+
+Manual Entry
+#89
+Insurance Est. (Annual)
+$
+Source
+
+Manual Entry
+#90
+Financing Terms
+Source
+
+Manual Entry
+#91
+Comparable Sales
+Source
+
+Manual Entry
+
+O
+Utilities
+0/7 fields
+#
+Field
+Data Source (Admin Only)
+#92
+Electric Provider
+Source
+
+Manual Entry
+#93
+Water Provider
+Source
+
+Manual Entry
+#94
+Sewer Provider
+Source
+
+Manual Entry
+#95
+Natural Gas
+Available / Not Available
+Source
+
+Manual Entry
+#96
+Internet Providers
+Spectrum
+AT&T
+Frontier
+Xfinity
+T-Mobile Home
+Starlink
+Source
+
+Manual Entry
+#97
+Max Internet Speed
+1 Gbps fiber
+Source
+
+Manual Entry
+#98
+Cable TV Provider
+Source
+
+Manual Entry
+
+P
+Environment & Risk
+0/6 fields
+#
+Field
+Data Source (Admin Only)
+#99
+Air Quality Index
+Source
+
+Manual Entry
+#100
+FEMA Flood Zone
+
+Select...
+Source
+
+Manual Entry
+#101
+Flood Risk Level
+
+Select...
+Source
+
+Manual Entry
+#102
+Climate Risk Summary
+Source
+
+Manual Entry
+#103
+Noise Level (dB Est.)
+Source
+
+Manual Entry
+#104
+Solar Potential
+
+Select...
+Source
+
+Manual Entry
+
+Q
+Additional Features
+0/6 fields
+#
+Field
+Data Source (Admin Only)
+#105
+EV Charging
+Installed / Not installed
+Source
+
+Manual Entry
+#106
+Smart Home Features
+Source
+
+Manual Entry
+#107
+Accessibility Modifications
+Source
+
+Manual Entry
+#108
+Pet Policy
+Pets allowed
+Source
+
+Manual Entry
+#109
+Age Restrictions
+None / 55+
+Source
+
+Manual Entry
+#110
+Notes & Confidence Summary
+Source
+
+Manual Entry
+0 / 110 fields completed
