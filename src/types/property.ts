@@ -1,7 +1,8 @@
 /**
  * CLUES Property Dashboard - Type Definitions
- * Complete 168-field property schema with confidence tracking
+ * Complete 181-field property schema with confidence tracking
  * Updated: 2025-11-30 - Added 30 Stellar MLS fields (139-168)
+ * Updated: 2025-01-05 - Added 13 Market Performance fields (169-181)
  */
 
 // Confidence levels for data quality
@@ -271,7 +272,29 @@ export interface StellarMLSData {
   features: StellarMLSFeaturesData;
 }
 
-// Complete Property with all 168 fields
+// ================================================================
+// Market Performance Data (Fields 169-181) - Added 2025-01-05
+// ================================================================
+
+// Market Performance - Views & Engagement (169-174) per fields-schema.ts
+// Market Performance - Market Analysis (175-181) per fields-schema.ts
+export interface MarketPerformanceData {
+  zillowViews: DataField<number>;           // #169 zillow_views
+  redfinViews: DataField<number>;           // #170 redfin_views
+  homesViews: DataField<number>;            // #171 homes_views
+  realtorViews: DataField<number>;          // #172 realtor_views
+  totalViews: DataField<number>;            // #173 total_views
+  savesFavorites: DataField<number>;        // #174 saves_favorites
+  marketType: DataField<string>;            // #175 market_type (buyer's/seller's/balanced)
+  avgSaleToListPercent: DataField<number>;  // #176 avg_sale_to_list_percent
+  avgDaysToPending: DataField<number>;      // #177 avg_days_to_pending
+  multipleOffersLikelihood: DataField<string>; // #178 multiple_offers_likelihood
+  appreciationPercent: DataField<number>;   // #179 appreciation_percent
+  priceTrend: DataField<string>;            // #180 price_trend (increasing/decreasing/stable)
+  rentZestimate: DataField<number>;         // #181 rent_zestimate
+}
+
+// Complete Property with all 181 fields
 export interface Property {
   id: string;
   createdAt: string;
@@ -284,6 +307,8 @@ export interface Property {
   utilities: UtilitiesData;
   // NEW: Stellar MLS fields (139-168) - Added 2025-11-30
   stellarMLS?: StellarMLSData;
+  // NEW: Market Performance fields (169-181) - Added 2025-01-05
+  marketPerformance?: MarketPerformanceData;
 
   // Computed scores
   smartScore?: number;

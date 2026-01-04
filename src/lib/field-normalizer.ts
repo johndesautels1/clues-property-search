@@ -21,7 +21,7 @@ export interface FlatFieldData {
   validationMessage?: string;
 }
 
-type GroupName = 'address' | 'details' | 'structural' | 'location' | 'financial' | 'utilities' | 'stellarMLS.parking' | 'stellarMLS.building' | 'stellarMLS.legal' | 'stellarMLS.waterfront' | 'stellarMLS.leasing' | 'stellarMLS.features';
+type GroupName = 'address' | 'details' | 'structural' | 'location' | 'financial' | 'utilities' | 'stellarMLS.parking' | 'stellarMLS.building' | 'stellarMLS.legal' | 'stellarMLS.waterfront' | 'stellarMLS.leasing' | 'stellarMLS.features' | 'marketPerformance';
 
 interface FieldPathMapping {
   fieldNumber: number | string; // string for subfields like '16a', '16b', etc.
@@ -54,9 +54,10 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
   { fieldNumber: 10, apiKey: '10_listing_price', group: 'address', propName: 'listingPrice', type: 'number', validation: (v) => v > 0 && v < 1000000000 },
   { fieldNumber: 11, apiKey: '11_price_per_sqft', group: 'address', propName: 'pricePerSqft', type: 'number', validation: (v) => v > 0 && v < 50000 },
 
-  // ========== PHOTOS (Fields 169-170) - Stellar MLS Media ==========
-  { fieldNumber: 169, apiKey: 'property_photo_url', group: 'address', propName: 'primaryPhotoUrl', type: 'string' },
-  { fieldNumber: 170, apiKey: 'property_photos', group: 'address', propName: 'photoGallery', type: 'array' },
+  // ========== PHOTOS - Stellar MLS Media (non-numbered, stored in address group) ==========
+  // Photos do NOT have field numbers - they are stored directly in address.primaryPhotoUrl and address.photoGallery
+  { fieldNumber: 'photo_primary', apiKey: 'property_photo_url', group: 'address', propName: 'primaryPhotoUrl', type: 'string' },
+  { fieldNumber: 'photo_gallery', apiKey: 'property_photos', group: 'address', propName: 'photoGallery', type: 'array' },
   { fieldNumber: 12, apiKey: '12_market_value_estimate', group: 'details', propName: 'marketValueEstimate', type: 'number', validation: (v) => v > 0 && v < 1000000000 },
   { fieldNumber: 13, apiKey: '13_last_sale_date', group: 'details', propName: 'lastSaleDate', type: 'date' },
   { fieldNumber: 14, apiKey: '14_last_sale_price', group: 'details', propName: 'lastSalePrice', type: 'number', validation: (v) => v > 0 && v < 1000000000 },
@@ -262,6 +263,21 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
   { fieldNumber: 166, apiKey: '166_community_features', group: 'stellarMLS.features', propName: 'communityFeatures', type: 'array' },
   { fieldNumber: 167, apiKey: '167_interior_features', group: 'stellarMLS.features', propName: 'interiorFeatures', type: 'array' },
   { fieldNumber: 168, apiKey: '168_exterior_features', group: 'stellarMLS.features', propName: 'exteriorFeatures', type: 'array' },
+
+  // ========== GROUP 23: Market Performance (Fields 169-181) - Section W ==========
+  { fieldNumber: 169, apiKey: '169_zillow_views', group: 'marketPerformance', propName: 'zillowViews', type: 'number', validation: (v) => v >= 0 },
+  { fieldNumber: 170, apiKey: '170_redfin_views', group: 'marketPerformance', propName: 'redfinViews', type: 'number', validation: (v) => v >= 0 },
+  { fieldNumber: 171, apiKey: '171_homes_views', group: 'marketPerformance', propName: 'homesViews', type: 'number', validation: (v) => v >= 0 },
+  { fieldNumber: 172, apiKey: '172_realtor_views', group: 'marketPerformance', propName: 'realtorViews', type: 'number', validation: (v) => v >= 0 },
+  { fieldNumber: 173, apiKey: '173_total_views', group: 'marketPerformance', propName: 'totalViews', type: 'number', validation: (v) => v >= 0 },
+  { fieldNumber: 174, apiKey: '174_saves_favorites', group: 'marketPerformance', propName: 'savesFavorites', type: 'number', validation: (v) => v >= 0 },
+  { fieldNumber: 175, apiKey: '175_market_type', group: 'marketPerformance', propName: 'marketType', type: 'string' },
+  { fieldNumber: 176, apiKey: '176_avg_sale_to_list_percent', group: 'marketPerformance', propName: 'avgSaleToListPercent', type: 'number', validation: (v) => v >= 0 && v <= 200 },
+  { fieldNumber: 177, apiKey: '177_avg_days_to_pending', group: 'marketPerformance', propName: 'avgDaysToPending', type: 'number', validation: (v) => v >= 0 && v <= 365 },
+  { fieldNumber: 178, apiKey: '178_multiple_offers_likelihood', group: 'marketPerformance', propName: 'multipleOffersLikelihood', type: 'string' },
+  { fieldNumber: 179, apiKey: '179_appreciation_percent', group: 'marketPerformance', propName: 'appreciationPercent', type: 'number', validation: (v) => v >= -100 && v <= 500 },
+  { fieldNumber: 180, apiKey: '180_price_trend', group: 'marketPerformance', propName: 'priceTrend', type: 'string' },
+  { fieldNumber: 181, apiKey: '181_rent_zestimate', group: 'marketPerformance', propName: 'rentZestimate', type: 'number', validation: (v) => v >= 0 && v < 100000 },
 ];
 
 const apiKeyToMappingMap = new Map<string, FieldPathMapping>();
@@ -755,6 +771,22 @@ export function normalizeToProperty(
         exteriorFeatures: emptyDataField(),
       },
     },
+    // NEW: Market Performance fields (169-181) - Section W
+    marketPerformance: {
+      zillowViews: emptyDataField(),
+      redfinViews: emptyDataField(),
+      homesViews: emptyDataField(),
+      realtorViews: emptyDataField(),
+      totalViews: emptyDataField(),
+      savesFavorites: emptyDataField(),
+      marketType: emptyDataField(),
+      avgSaleToListPercent: emptyDataField(),
+      avgDaysToPending: emptyDataField(),
+      multipleOffersLikelihood: emptyDataField(),
+      appreciationPercent: emptyDataField(),
+      priceTrend: emptyDataField(),
+      rentZestimate: emptyDataField(),
+    },
   };
 
   let fieldsPopulated = 0;
@@ -873,7 +905,7 @@ export function normalizeToProperty(
     }
   }
 
-  property.dataCompleteness = Math.round((fieldsPopulated / 168) * 100);
+  property.dataCompleteness = Math.round((fieldsPopulated / 181) * 100);
   // smartScore is calculated via 2-tier system during comparison, not here
 
   // 🔥 AUTOMATIC FIELD CALCULATIONS - Run after all API data is normalized
