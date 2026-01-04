@@ -23,7 +23,40 @@ import {
   safeParseBatch3
 } from "./geminiZodSchemas.js";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+// Validate API key exists
+if (!process.env.GEMINI_API_KEY) {
+  console.error('[Tier 4 Gemini] GEMINI_API_KEY environment variable is not set');
+}
+
+/**
+ * Garbage value detection patterns - match schema descriptions that leak into responses
+ */
+const GARBAGE_PATTERNS = [
+  /^///,              // Starts with // (schema comments)
+  /Required.?$/i,      // Ends with "Required"
+  /^null$/i,            // Literal "null" string
+  /^s*$/,              // Empty/whitespace only
+  /^N/A$/i,            // N/A placeholder
+  /^undefined$/i,       // Literal "undefined" string
+  /^string$/i,          // Type name leaked
+  /^number$/i,          // Type name leaked
+  /^boolean$/i,         // Type name leaked
+  /^[object/i,         // Object toString leaked
+];
+
+function isGarbageValue(value: unknown): boolean {
+  if (value === null || value === undefined) return false;
+  if (typeof value !== 'string') return false;
+  return GARBAGE_PATTERNS.some(pattern => pattern.test(value.trim()));
+}
+
+function filterGarbageValues(data: Record<string, any>): Record<string, any> {
+  return Object.fromEntries(
+    Object.entries(data).filter(([_, v]) => !isGarbageValue(v))
+  );
+}
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 /**
  * Configuration for Gemini 2.0 Flash generation
@@ -173,22 +206,34 @@ CRITICAL: Use the search operators above to find authoritative sources. Extract 
     const response = result.response.text();
     console.log(`[Tier 4 Gemini DEBUG] ${batchName} raw response:`, response);
 
-    const parsedData = JSON.parse(response);
+    let parsedData: Record<string, any>;
+    try {
+      parsedData = JSON.parse(response);
+    } catch (parseError) {
+      console.error(`[Tier 4 Gemini] ${batchName} JSON parse error:`, parseError);
+      return {};
+    }
     console.log(`[Tier 4 Gemini DEBUG] ${batchName} parsed data:`, JSON.stringify(parsedData, null, 2));
 
-    // Count non-null fields
-    const nonNullCount = Object.values(parsedData).filter(v => v !== null).length;
-    console.log(`[Tier 4 Gemini DEBUG] ${batchName} returned ${nonNullCount} non-null fields`);
+    // Filter out garbage values BEFORE counting
+    const cleanedData = filterGarbageValues(parsedData);
+    const garbageCount = Object.keys(parsedData).length - Object.keys(cleanedData).length;
+    if (garbageCount > 0) {
+      console.warn(`[Tier 4 Gemini] ${batchName} filtered out ${garbageCount} garbage values`);
+    }
+
+    // Count non-null fields after filtering
+    const nonNullCount = Object.values(cleanedData).filter(v => v !== null).length;
+    console.log(`[Tier 4 Gemini DEBUG] ${batchName} returned ${nonNullCount} non-null fields (after garbage filter)`);
 
     // Validate with Zod
-    const validation = validator(parsedData);
+    const validation = validator(cleanedData);
 
     if (!validation.success) {
       console.warn(`[Tier 4 Gemini] ${batchName} validation warnings:`, validation.error.issues);
-      // Return data anyway - Zod just logs issues but doesn't block
     }
 
-    return parsedData;
+    return cleanedData;
 
   } catch (error) {
     const duration = Date.now() - startTime;
@@ -219,11 +264,18 @@ function mapGeminiResultToFields(geminiResult: Record<string, any>): Record<numb
     if (!isNaN(fieldId) && TIER_35_FIELD_IDS.includes(fieldId)) {
       const value = geminiResult[key];
 
+      // Skip garbage values in final mapping as well
+      if (isGarbageValue(value)) {
+        console.warn(`[Tier 4 Gemini] Skipping garbage value for field ${fieldId}: ${value}`);
+        return;
+      }
+
       finalFields[fieldId] = {
         value: value,
         source: value !== null ? 'Gemini 2.0 Search' : null,
         tier: 4,
-        confidence: value !== null ? 'High' : 'Low',
+        // Use Medium confidence for Gemini (not High) per arbitration rules
+        confidence: value !== null ? 'Medium' : 'Low',
         timestamp: new Date().toISOString(),
         metadata: {
           extractionMethod: 'google_search_grounding',

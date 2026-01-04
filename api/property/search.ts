@@ -2849,7 +2849,7 @@ Return only the JSON object, no extra text.`;
       const hasFiber = tampaBayFiberCities.some(c => city.toLowerCase().includes(c));
       return {
         '113_fiber_available': {
-          value: hasFiber ? 'Yes' : 'Yes',
+          value: hasFiber ? 'Yes' : 'No',
           source: 'City-Level Estimate',
           confidence: 'Low',
           details: `AT&T Fiber serves most of ${city} area`
@@ -3767,7 +3767,7 @@ WHAT YOU CANNOT PROVIDE (require live data):
 - Current owner names, recent sale dates/prices
 - Live walk scores, current crime statistics
 
-For fields requiring live data, return: { "value": null, "source": "Requires live data", "confidence": "Unverified" }
+For fields requiring live data, OMIT them entirely from your response - DO NOT include them with null values
 
 Be HONEST about uncertainty. It's better to return null than to guess.
 
@@ -4089,11 +4089,11 @@ COUNTY/TAX FIELDS (search "[county] property appraiser [address]"):
 - 122_wildfire_risk: Low/Medium/High wildfire risk
 
 UTILITY/SERVICE FIELDS (search "[city] utility providers"):
-- 98_electric_provider: Local electric company name
-- 99_gas_provider: Gas company name (or "No natural gas service")
-- 100_water_provider: Water utility name
-- 101_sewer_provider: Sewer service provider
-- 102_trash_provider: Garbage collection provider
+- 104_electric_provider: Local electric company name
+- 109_natural_gas: Gas company name (or "No natural gas service")
+- 106_water_provider: Water utility name
+- 108_sewer_provider: Sewer service provider
+- 110_trash_provider: Garbage collection provider
 
 CONNECTIVITY FIELDS (search "[address] internet providers"):
 - 112_max_internet_speed: Max available Mbps from any ISP
@@ -5326,7 +5326,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         Object.keys(geminiResults).forEach(fieldIdStr => {
           const fieldId = parseInt(fieldIdStr);
           const geminiField = geminiResults[fieldId as keyof typeof geminiResults];
-          const fieldKey = `${fieldId}_`;
+          const fieldKey = FIELD_ID_TO_KEY[fieldId] || `${fieldId}_unknown`;
           const existingField = tier35Check.fields[fieldKey];
 
           // Skip if Gemini didn't find data
@@ -5982,7 +5982,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       single_source_warnings: arbitrationResult.singleSourceWarnings,
       llm_responses: llmResponses,
       strategy: 'arbitration_pipeline',
-      cascade_order: ['perplexity-portals', 'perplexity-county', 'perplexity-schools', 'perplexity-crime', 'perplexity-utilities', 'gpt', 'claude-opus', 'gemini', 'grok', 'claude-sonnet']
+      cascade_order: ['perplexity-portals', 'perplexity-county', 'perplexity-schools', 'perplexity-crime', 'perplexity-utilities', 'perplexity-electric', 'perplexity-water', 'perplexity-internet-speed', 'perplexity-fiber', 'perplexity-cell', 'gpt', 'claude-opus', 'gemini', 'grok', 'claude-sonnet']
     });
   } catch (error) {
     console.error('=== SEARCH ERROR ===');

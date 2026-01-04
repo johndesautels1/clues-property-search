@@ -425,7 +425,8 @@ export function applyLLMQuorumVoting(
   const quorumFields: Array<{ field: string; value: any; sources: string[]; quorumCount: number }> = [];
   
   for (const [key, field] of Object.entries(fields)) {
-    if (field.tier !== 4 || !field.conflictValues || field.conflictValues.length === 0) {
+    // Include both tier 4 and tier 5 LLMs in quorum voting
+    if (field.tier < 4 || !field.conflictValues || field.conflictValues.length === 0) {
       continue;
     }
     
