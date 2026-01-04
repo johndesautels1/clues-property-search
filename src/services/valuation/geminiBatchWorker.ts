@@ -32,16 +32,16 @@ if (!process.env.GEMINI_API_KEY) {
  * Garbage value detection patterns - match schema descriptions that leak into responses
  */
 const GARBAGE_PATTERNS = [
-  /^///,              // Starts with // (schema comments)
-  /Required.?$/i,      // Ends with "Required"
+  /^\/\//,             // Starts with // (schema comments)
+  /Required.?$/i,       // Ends with "Required"
   /^null$/i,            // Literal "null" string
-  /^s*$/,              // Empty/whitespace only
-  /^N/A$/i,            // N/A placeholder
+  /^\s*$/,              // Empty/whitespace only
+  /^N\/A$/i,            // N/A placeholder
   /^undefined$/i,       // Literal "undefined" string
   /^string$/i,          // Type name leaked
   /^number$/i,          // Type name leaked
   /^boolean$/i,         // Type name leaked
-  /^[object/i,         // Object toString leaked
+  /^\[object/i,        // Object toString leaked
 ];
 
 function isGarbageValue(value: unknown): boolean {

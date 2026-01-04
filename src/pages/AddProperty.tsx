@@ -915,6 +915,13 @@ export default function AddProperty() {
         medianHomePriceNeighborhood: createDataField(row['91_median_home_price_neighborhood'] ? parseFloat(row['91_median_home_price_neighborhood'].toString().replace(/[^0-9.]/g, '')) : null),
         pricePerSqftRecentAvg: createDataField(row['92_price_per_sqft_recent_avg'] ? parseFloat(row['92_price_per_sqft_recent_avg'].toString().replace(/[^0-9.]/g, '')) : null),
         avms: createDataField(row['16_avms'] ? parseFloat(row['16_avms'].toString().replace(/[^0-9.]/g, '')) : null),
+        // AVM Subfields (16a-16f)
+        zestimate: createDataField(row['16a_zestimate'] ? parseFloat(row['16a_zestimate'].toString().replace(/[^0-9.]/g, '')) : null),
+        redfinEstimate: createDataField(row['16b_redfin_estimate'] ? parseFloat(row['16b_redfin_estimate'].toString().replace(/[^0-9.]/g, '')) : null),
+        firstAmericanAvm: createDataField(row['16c_first_american_avm'] ? parseFloat(row['16c_first_american_avm'].toString().replace(/[^0-9.]/g, '')) : null),
+        quantariumAvm: createDataField(row['16d_quantarium_avm'] ? parseFloat(row['16d_quantarium_avm'].toString().replace(/[^0-9.]/g, '')) : null),
+        iceAvm: createDataField(row['16e_ice_avm'] ? parseFloat(row['16e_ice_avm'].toString().replace(/[^0-9.]/g, '')) : null),
+        collateralAnalyticsAvm: createDataField(row['16f_collateral_analytics_avm'] ? parseFloat(row['16f_collateral_analytics_avm'].toString().replace(/[^0-9.]/g, '')) : null),
         priceToRentRatio: createDataField(row['93_price_to_rent_ratio'] ? parseFloat(row['93_price_to_rent_ratio']) : null),
         priceVsMedianPercent: createDataField(row['94_price_vs_median_percent'] ? parseFloat(row['94_price_vs_median_percent']) : null),
         daysOnMarketAvg: createDataField(row['95_days_on_market_avg'] ? parseFloat(row['95_days_on_market_avg']) : null),

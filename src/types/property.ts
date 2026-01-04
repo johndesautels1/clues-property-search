@@ -143,6 +143,13 @@ export interface FinancialData {
   medianHomePriceNeighborhood: DataField<number>; // #91 median_home_price_neighborhood
   pricePerSqftRecentAvg: DataField<number>; // #92 price_per_sqft_recent_avg
   avms: DataField<number>;     // #16 redfin_estimate
+  // AVM Subfields (16a-16f) - Individual AVM Sources
+  zestimate: DataField<number>;               // #16a Zillow Zestimate
+  redfinEstimate: DataField<number>;          // #16b Redfin Estimate
+  firstAmericanAvm: DataField<number>;        // #16c First American AVM (Homes.com)
+  quantariumAvm: DataField<number>;           // #16d Quantarium AVM (Homes.com)
+  iceAvm: DataField<number>;                  // #16e ICE AVM (Homes.com)
+  collateralAnalyticsAvm: DataField<number>;  // #16f Collateral Analytics (Homes.com)
   priceToRentRatio: DataField<number>;   // #93 price_to_rent_ratio
   priceVsMedianPercent: DataField<number>; // #94 price_vs_median_percent
   daysOnMarketAvg: DataField<number>;    // #95 days_on_market_avg

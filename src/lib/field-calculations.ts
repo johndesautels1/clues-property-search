@@ -135,6 +135,31 @@ export function calculateDerivedFinancialFields(property: FullProperty): Partial
     };
   }
 
+  // Field 16: Average AVM - Calculate from individual AVM subfields (16a-16f)
+  const avmSources = [
+    { name: 'Zillow Zestimate', value: property.financial?.zestimate?.value },
+    { name: 'Redfin Estimate', value: property.financial?.redfinEstimate?.value },
+    { name: 'First American', value: property.financial?.firstAmericanAvm?.value },
+    { name: 'Quantarium', value: property.financial?.quantariumAvm?.value },
+    { name: 'ICE', value: property.financial?.iceAvm?.value },
+    { name: 'Collateral Analytics', value: property.financial?.collateralAnalyticsAvm?.value },
+  ].filter(s => s.value !== null && s.value !== undefined && typeof s.value === 'number' && s.value > 0);
+
+  if (avmSources.length > 0 && !property.financial?.avms?.value) {
+    const sum = avmSources.reduce((a, b) => a + (b.value as number), 0);
+    const avgAvm = Math.round(sum / avmSources.length);
+    const sourceNames = avmSources.map(s => s.name).join(', ');
+
+    derived.financial.avms = {
+      value: avgAvm,
+      confidence: avmSources.length >= 3 ? 'High' : 'Medium',
+      notes: `Auto-calculated: Average of ${avmSources.length} AVM sources (${sourceNames}). Individual values: ${avmSources.map(s => `${s.name}: ${(s.value as number).toLocaleString()}`).join(', ')}`,
+      sources: ['Auto-Calculated'],
+      llmSources: ['Auto-Calculated'],
+      validationStatus: 'valid'
+    };
+  }
+
   return derived;
 }
 

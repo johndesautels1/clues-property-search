@@ -24,7 +24,7 @@ export interface FlatFieldData {
 type GroupName = 'address' | 'details' | 'structural' | 'location' | 'financial' | 'utilities' | 'stellarMLS.parking' | 'stellarMLS.building' | 'stellarMLS.legal' | 'stellarMLS.waterfront' | 'stellarMLS.leasing' | 'stellarMLS.features';
 
 interface FieldPathMapping {
-  fieldNumber: number;
+  fieldNumber: number | string; // string for subfields like '16a', '16b', etc.
   apiKey: string;
   group: GroupName;
   propName: string;
@@ -62,6 +62,14 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
   { fieldNumber: 14, apiKey: '14_last_sale_price', group: 'details', propName: 'lastSalePrice', type: 'number', validation: (v) => v > 0 && v < 1000000000 },
   { fieldNumber: 15, apiKey: '15_assessed_value', group: 'details', propName: 'assessedValue', type: 'number', validation: (v) => v > 0 && v < 1000000000 },
   { fieldNumber: 16, apiKey: '16_avms', group: 'financial', propName: 'avms', type: 'number', validation: (v) => v >= 0 && v < 1000000000 },
+
+  // ========== AVM Subfields (16a-16f) - Individual AVM Sources ==========
+  { fieldNumber: '16a', apiKey: '16a_zestimate', group: 'financial', propName: 'zestimate', type: 'number', validation: (v) => v >= 0 && v < 1000000000 },
+  { fieldNumber: '16b', apiKey: '16b_redfin_estimate', group: 'financial', propName: 'redfinEstimate', type: 'number', validation: (v) => v >= 0 && v < 1000000000 },
+  { fieldNumber: '16c', apiKey: '16c_first_american_avm', group: 'financial', propName: 'firstAmericanAvm', type: 'number', validation: (v) => v >= 0 && v < 1000000000 },
+  { fieldNumber: '16d', apiKey: '16d_quantarium_avm', group: 'financial', propName: 'quantariumAvm', type: 'number', validation: (v) => v >= 0 && v < 1000000000 },
+  { fieldNumber: '16e', apiKey: '16e_ice_avm', group: 'financial', propName: 'iceAvm', type: 'number', validation: (v) => v >= 0 && v < 1000000000 },
+  { fieldNumber: '16f', apiKey: '16f_collateral_analytics_avm', group: 'financial', propName: 'collateralAnalyticsAvm', type: 'number', validation: (v) => v >= 0 && v < 1000000000 },
 
   // ========== GROUP 3: Property Basics (Fields 17-29) ==========
   { fieldNumber: 17, apiKey: '17_bedrooms', group: 'details', propName: 'bedrooms', type: 'number', validation: (v) => v >= 0 && v <= 50 },
@@ -261,7 +269,7 @@ FIELD_TO_PROPERTY_MAP.forEach(mapping => {
   apiKeyToMappingMap.set(mapping.apiKey, mapping);
 });
 
-const fieldNumberToMappingMap = new Map<number, FieldPathMapping>();
+const fieldNumberToMappingMap = new Map<number | string, FieldPathMapping>();
 FIELD_TO_PROPERTY_MAP.forEach(mapping => {
   fieldNumberToMappingMap.set(mapping.fieldNumber, mapping);
 });
@@ -645,6 +653,13 @@ export function normalizeToProperty(
       medianHomePriceNeighborhood: emptyDataField(),
       pricePerSqftRecentAvg: emptyDataField(),
       avms: emptyDataField(),
+      // AVM Subfields (16a-16f)
+      zestimate: emptyDataField(),
+      redfinEstimate: emptyDataField(),
+      firstAmericanAvm: emptyDataField(),
+      quantariumAvm: emptyDataField(),
+      iceAvm: emptyDataField(),
+      collateralAnalyticsAvm: emptyDataField(),
       priceToRentRatio: emptyDataField(),
       priceVsMedianPercent: emptyDataField(),
       daysOnMarketAvg: emptyDataField(),
@@ -964,7 +979,7 @@ export const DATA_QUALITY_RANGES = [
  */
 export function getFieldsInRange(minField: number, maxField: number): FieldPathMapping[] {
   return FIELD_TO_PROPERTY_MAP.filter(
-    mapping => mapping.fieldNumber >= minField && mapping.fieldNumber <= maxField
+    mapping => typeof mapping.fieldNumber === 'number' && mapping.fieldNumber >= minField && mapping.fieldNumber <= maxField
   );
 }
 
