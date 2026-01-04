@@ -6383,6 +6383,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       Object.values(arbitrationResult.fields).map(f => f.source)
     ));
 
+    console.log('=== ABOUT TO SEND RESPONSE ===');
+    console.log('Fields count:', Object.keys(convertedFields).length);
+    console.log('Conflicts:', arbitrationResult.conflicts?.length || 0);
+    console.log('LLM responses:', llmResponses?.length || 0);
+
     return res.status(200).json({
       success: true,
       address: realAddress,
