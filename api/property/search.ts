@@ -4417,7 +4417,11 @@ async function callGPT(
   }
 ): Promise<any> {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return { error: 'OPENAI_API_KEY not set', fields: {} };
+  if (!apiKey) {
+    console.log('❌ [GPT] OPENAI_API_KEY not set');
+    return { error: 'OPENAI_API_KEY not set', fields: {} };
+  }
+  console.log('✅ [GPT] OPENAI_API_KEY found, calling GPT API...');
 
   try {
     // Determine which prompt mode to use
@@ -4968,7 +4972,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     city: validationCity,  // Optional: City for Stellar MLS validation (prevents wrong property match)
     state: validationState,  // Optional: State for Stellar MLS validation
     zipCode: validationZip,  // Optional: Zip for Stellar MLS validation
-    engines = [...LLM_CASCADE_ORDER],  // All 6 LLMs enabled: Perplexity → Sonnet → GPT → Opus → Gemini → Grok
+    engines = [...LLM_CASCADE_ORDER],  // All 6 LLMs: Perplexity → Grok → GPT → Opus → Gemini → Sonnet
     skipLLMs = false,
     useCascade = true, // Enable cascade mode by default
     existingFields = {},  // Previously accumulated fields from prior LLM calls
