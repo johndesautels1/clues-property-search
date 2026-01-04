@@ -4645,7 +4645,7 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
     // LOG RAW RESPONSE STATUS
     console.log(`[GPT] ✅ Fetch completed in ${fetchDuration}ms`);
     console.log(`[GPT] RESPONSE: status=${response.status} ${response.statusText}`);
-    console.log(`[GPT] Headers:`, JSON.stringify(Object.fromEntries(response.headers.entries())));
+    // Headers logging skipped - entries() not available in all Node versions
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -4771,7 +4771,7 @@ async function callGPT_LLMFieldAuditor(
 
     // LOG RAW RESPONSE STATUS
     console.log(`[GPT LLM Auditor] RESPONSE: status=${response.status} ${response.statusText}`);
-    console.log(`[GPT LLM Auditor] Headers:`, JSON.stringify(Object.fromEntries(response.headers.entries())));
+    // Headers logging skipped - entries() not available in all Node versions
 
     if (!response.ok) {
       const errorText = await response.text();
