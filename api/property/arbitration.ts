@@ -455,12 +455,8 @@ export function applyLLMQuorumVoting(
     let maxCount = 0;
     let winningEntry: { count: number; sources: string[]; value: any } | null = null;
     
-    for (const entry of valueCounts.values()) {
-      if (entry.count > maxCount) {
-        maxCount = entry.count;
-        winningEntry = entry;
-      }
-    }
+    Array.from(valueCounts.values()).forEach(entry => {
+      if (entry.count > maxCount) { maxCount = entry.count; winningEntry = entry; } });
     
     if (winningEntry && maxCount >= minQuorum) {
       fields[key] = {
