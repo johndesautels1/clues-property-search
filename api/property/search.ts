@@ -4901,12 +4901,13 @@ Search for real data - do not use training data. Return JSON only.`,
         try {
           const parsed = JSON.parse(jsonStr);
           console.log('🔍 Gemini parsed structure keys:', Object.keys(parsed));
-          if (parsed.fields) {
-            console.log('🔍 Gemini parsed.fields keys (first 10):', Object.keys(parsed.fields).slice(0, 10));
-          }
-          // 🛡️ NULL BLOCKING: Filter all null values before returning
-          const filteredFields = filterNullValues(parsed, 'Gemini');
-          console.log('🔍 Gemini filteredFields keys (first 10):', Object.keys(filteredFields).slice(0, 10));
+          // FIX: Extract fields - handle nested { fields: {...} } format
+          // Gemini returns { fields: {...}, sources_searched: [...] } - we only want the fields
+          const fieldsToFilter = parsed.fields || parsed;
+          console.log('Gemini fieldsToFilter count:', Object.keys(fieldsToFilter).length);
+          // NULL BLOCKING: Filter all null values before returning
+          const filteredFields = filterNullValues(fieldsToFilter, 'Gemini');
+          console.log('Gemini filteredFields count:', Object.keys(filteredFields).length);
           return { fields: filteredFields, llm: 'Gemini' };
         } catch (parseError) {
           console.error('❌ Gemini JSON.parse error:', parseError);
