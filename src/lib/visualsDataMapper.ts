@@ -117,7 +117,7 @@ export interface ChartProperty {
   kitchenFeatures: string;
   appliancesIncluded: string[];
   fireplaceYn: boolean;
-  fireplaceCount: number;
+  primaryBrLocation: string;
 
   // Exterior Features
   poolYn: boolean;
@@ -325,7 +325,7 @@ export function mapPropertyToChart(property: Property): ChartProperty {
     kitchenFeatures: getVal(structural?.kitchenFeatures, ''),
     appliancesIncluded: getVal(structural?.appliancesIncluded, []),
     fireplaceYn: getVal(structural?.fireplaceYn, false),
-    fireplaceCount: getVal(structural?.fireplaceCount, 0),
+    primaryBrLocation: (structural?.primaryBrLocation?.value as string) || "Unknown",
 
     // Exterior Features
     poolYn: getVal(structural?.poolYn, false),

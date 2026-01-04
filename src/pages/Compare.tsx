@@ -111,6 +111,7 @@ function mapToAnalyticsProperty(cardProp: PropertyCard, fullProp?: Property): An
     // Valuation
     listPrice: price,
     marketEstimate: marketEstimate || price * 0.95,
+    redfinEstimate: fullProp ? getFieldValue<number>(fullProp.financial?.redfinEstimate) || price * 0.93 : price * 0.93,
     avms: fullProp ? getFieldValue<number>(fullProp.financial?.avms) || price * 0.92 : price * 0.92,
     assessedValue: assessedValue || price * 0.7,
 

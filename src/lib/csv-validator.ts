@@ -62,12 +62,12 @@ FIELD_TO_PROPERTY_MAP.forEach(mapping => {
   const schemaField = ALL_FIELDS.find(f => f.num === mapping.fieldNumber);
 
   VALIDATION_RULES.set(mapping.apiKey, {
-    fieldNumber: mapping.fieldNumber,
+    fieldNumber: typeof mapping.fieldNumber === "number" ? mapping.fieldNumber : parseInt(mapping.fieldNumber) || 0,
     apiKey: mapping.apiKey,
     type: mapping.type,
     required: schemaField?.required || false,
     validation: mapping.validation,
-    rangeDescription: getRangeDescription(mapping.fieldNumber, mapping.validation),
+    rangeDescription: getRangeDescription(typeof mapping.fieldNumber === "number" ? mapping.fieldNumber : 0, mapping.validation),
   });
 });
 

@@ -120,7 +120,6 @@ export function extractPropertyData(property: Property): OliviaEnhancedPropertyI
     kitchen_features: getValue<string>(property.structural?.kitchenFeatures),
     appliances_included: getValue<string[]>(property.structural?.appliancesIncluded),
     fireplace_yn: getValue<boolean>(property.structural?.fireplaceYn),
-    fireplace_count: getValue<number>(property.structural?.fireplaceCount),
 
     // ========================================================================
     // GROUP 7: Exterior Features (Fields 54-58)

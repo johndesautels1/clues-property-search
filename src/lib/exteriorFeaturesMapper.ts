@@ -326,7 +326,7 @@ function createEmptyProperty(index: number): ChartProperty {
     kitchenFeatures: '',
     appliancesIncluded: [],
     fireplaceYn: false,
-    fireplaceCount: 0,
+    primaryBrLocation: "Unknown",
     poolYn: false,
     poolType: '',
     deckPatio: '',

@@ -89,7 +89,7 @@ export interface StructuralDetails {
   appliancesIncluded: DataField<string[]>; // #51 appliances_included
   laundryType: DataField<string>;        // #47 laundry_type
   fireplaceYn: DataField<boolean>;       // #52 fireplace_yn
-  primaryBrLocation: DataField<number>;     // #53 fireplace_count
+  primaryBrLocation: DataField<string>;     // #53 primary_br_location (primary bedroom location)
   poolYn: DataField<boolean>;            // #54 pool_yn
   poolType: DataField<string>;           // #55 pool_type
   deckPatio: DataField<string>;          // #56 deck_patio

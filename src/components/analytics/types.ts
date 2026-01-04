@@ -19,6 +19,7 @@ export interface Property {
   listPrice: number;
   marketEstimate: number;
   redfinEstimate: number;
+  avms: number;
   assessedValue: number;
 
   // Financial (Charts 2, 3a-c, 4, 15, 16, 18, 19, 29)
@@ -192,6 +193,7 @@ export const EXAMPLE_PROPERTY: Property = {
   listPrice: 3750000,
   marketEstimate: 3333254,
   redfinEstimate: 3200000,
+  avms: 3200000,
   assessedValue: 2100000,
   
   appreciation5yr: 102.7,

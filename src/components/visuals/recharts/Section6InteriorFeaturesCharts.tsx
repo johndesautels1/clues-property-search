@@ -88,9 +88,7 @@ function getInteriorScore(home: Home): number {
   let fireplaceValue = 0;
   if (home.fireplaceYn) {
     fireplaceValue = 5;
-    if (home.primaryBrLocation > 1) {
-      fireplaceValue += 2 * (home.primaryBrLocation - 1);
-    }
+    // primaryBrLocation is bedroom location (string), not fireplace count
   }
   // Total composite raw score
   return floorValue + kitchenValue + appliancesValue + fireplaceValue;

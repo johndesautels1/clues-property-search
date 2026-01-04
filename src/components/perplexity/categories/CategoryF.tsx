@@ -61,7 +61,6 @@ function InteriorFeaturesGrid({ properties, onPropertyClick }: CategoryFProps) {
       id: p.id,
       address: address.slice(0, 14),
       fireplace: getVal(p.structural?.fireplaceYn) || false,
-      fireplaceCount: getVal(p.structural?.fireplaceCount) || 0,
       cathedral: hasFeature('cathedral'),
       walkIn: hasFeature('walk-in') || hasFeature('walkin'),
       openFloor: hasFeature('open floor'),
@@ -109,7 +108,7 @@ function InteriorFeaturesGrid({ properties, onPropertyClick }: CategoryFProps) {
               {/* Checkboxes row - full width with generous spacing */}
               <div className="flex justify-between px-2 mb-2">
                 {[
-                  { has: row.fireplace, extra: row.fireplaceCount > 1 ? `(${row.fireplaceCount})` : '' },
+                  { has: row.fireplace, extra: '' },
                   { has: row.cathedral },
                   { has: row.walkIn },
                   { has: row.openFloor },

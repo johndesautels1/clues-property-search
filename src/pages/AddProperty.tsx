@@ -860,7 +860,7 @@ export default function AddProperty() {
         appliancesIncluded: createDataField(row['51_appliances_included'] ? row['51_appliances_included'].split(',').map((s: string) => s.trim()) : []),
         laundryType: createDataField(row['47_laundry_type'] || ''),
         fireplaceYn: createDataField(parseBoolean(row['52_fireplace_yn'])),
-        primaryBrLocation: createDataField(row['53_primary_br_location'] ? parseInt(row['53_primary_br_location']) : null),
+        primaryBrLocation: createDataField(row['53_primary_br_location'] || ''),
         poolYn: createDataField(parseBoolean(row['54_pool_yn'])),
         poolType: createDataField(row['55_pool_type'] || ''),
         deckPatio: createDataField(row['56_deck_patio'] || ''),
