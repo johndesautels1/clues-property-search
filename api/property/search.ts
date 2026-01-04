@@ -4417,11 +4417,7 @@ async function callGPT(
   }
 ): Promise<any> {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    console.log('❌ [GPT] OPENAI_API_KEY not set');
-    return { error: 'OPENAI_API_KEY not set', fields: {} };
-  }
-  console.log('✅ [GPT] OPENAI_API_KEY found, calling GPT API...');
+  if (!apiKey) return { error: 'OPENAI_API_KEY not set', fields: {} };
 
   try {
     // Determine which prompt mode to use
@@ -4451,12 +4447,6 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
       ],
     };
 
-    // LOG RAW REQUEST
-    console.log(`[GPT] REQUEST: model=${requestBody.model}, max_completion_tokens=${requestBody.max_completion_tokens}`);
-    console.log(`[GPT] System prompt length: ${systemPrompt.length} chars`);
-    console.log(`[GPT] User prompt length: ${userPrompt.length} chars`);
-    console.log(`[GPT] 🚀 Sending fetch to OpenAI...`);
-
     const fetchStart = Date.now();
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -4468,11 +4458,6 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
     });
     const fetchDuration = Date.now() - fetchStart;
 
-    // LOG RAW RESPONSE STATUS
-    console.log(`[GPT] ✅ Fetch completed in ${fetchDuration}ms`);
-    console.log(`[GPT] RESPONSE: status=${response.status} ${response.statusText}`);
-    // Headers logging skipped - entries() not available in all Node versions
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`[GPT] API ERROR BODY:`, errorText);
@@ -4481,16 +4466,8 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
 
     const data = await response.json();
 
-    // LOG RAW RESPONSE DATA
-    console.log(`[GPT] Response model:`, data.model);
-    console.log(`[GPT] Response usage:`, JSON.stringify(data.usage));
-    console.log(`[GPT] Finish reason:`, data.choices?.[0]?.finish_reason);
-
     if (data.choices && data.choices[0]?.message?.content) {
       const text = data.choices[0].message.content;
-      console.log(`[GPT] Content length: ${text.length} chars`);
-      console.log(`[GPT] Content first 300 chars:`, text.substring(0, 300));
-      console.log(`[GPT] Content last 300 chars:`, text.substring(text.length - 300));
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         try {
@@ -4523,11 +4500,8 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
         }
       }
     }
-    console.log('[GPT] ⚠️ No valid response content found');
     return { error: 'Failed to parse GPT response', fields: {}, llm: 'GPT' };
   } catch (error) {
-    console.error('[GPT] ❌ EXCEPTION:', error);
-    console.error('[GPT] Stack:', (error as Error).stack);
     return { error: String(error), fields: {}, llm: 'GPT' };
   }
 }
@@ -5539,12 +5513,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           { id: 'perplexity-fiber', fn: (addr: string) => callPerplexityFiberAvailable(addr, perplexityContext), enabled: engines.includes('perplexity') },
           { id: 'perplexity-cell', fn: (addr: string) => callPerplexityCellCoverage(addr, perplexityContext), enabled: engines.includes('perplexity') },
 
-          // OTHER LLMs (Tier 4-5)
+          // OTHER LLMs (Tier 5) - Order matches LLM_CASCADE_ORDER
           { id: 'grok', fn: callGrok, enabled: engines.includes('grok') },
-          { id: 'claude-opus', fn: callClaudeOpus, enabled: engines.includes('claude-opus') },
           { id: 'gpt', fn: callGPT, enabled: engines.includes('gpt') },
-          { id: 'claude-sonnet', fn: callClaudeSonnet, enabled: engines.includes('claude-sonnet') },
+          { id: 'claude-opus', fn: callClaudeOpus, enabled: engines.includes('claude-opus') },
           { id: 'gemini', fn: callGemini, enabled: engines.includes('gemini') },
+          { id: 'claude-sonnet', fn: callClaudeSonnet, enabled: engines.includes('claude-sonnet') },
         ];
 
         // Filter to enabled LLMs only
@@ -5565,7 +5539,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           );
 
           // Process results SEQUENTIALLY to avoid race conditions
-          // Results are processed in order: perplexity → sonnet → gpt → opus → gemini → grok
+          // Results are processed in order: perplexity → grok → gpt → opus → gemini → sonnet
           console.log(`\n=== Processing ${llmResults.length} LLM results in sequence ===`);
 
           for (let idx = 0; idx < llmResults.length; idx++) {
