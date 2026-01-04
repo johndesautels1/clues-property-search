@@ -11,7 +11,7 @@ import { STELLAR_MLS_SOURCE } from './source-constants.js';
 
 // Vercel serverless config
 export const config = {
-  maxDuration: 180, // 3 minutes - must exceed STELLAR_MLS_TIMEOUT (90s) in search.ts to prevent premature kills
+  maxDuration: 30, // 30 seconds - matches STELLAR_MLS_TIMEOUT in search.ts (Bridge typically responds in <10s)
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
