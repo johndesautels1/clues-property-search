@@ -90,7 +90,7 @@ export const Batch3Schema = z.object({
   '12_market_value': currencyNumber.pipe(z.number().min(10000).max(50000000).nullable())
     .describe('Average of Zestimate and Redfin Estimate (or single value if only one available)'),
 
-  '16_redfin_estimate': currencyNumber.pipe(z.number().min(10000).max(50000000).nullable())
+  '16_avms': currencyNumber.pipe(z.number().min(10000).max(50000000).nullable())
     .describe('Exact Redfin Estimate value'),
 
   '31_hoa_fee_annual': currencyNumber.pipe(z.number().min(0).max(50000).nullable())

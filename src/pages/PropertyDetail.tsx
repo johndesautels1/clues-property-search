@@ -691,7 +691,7 @@ export default function PropertyDetail() {
             '13_last_sale_date': ['details', 'lastSaleDate'],
             '14_last_sale_price': ['details', 'lastSalePrice'],
             '15_assessed_value': ['details', 'assessedValue'],
-            '16_redfin_estimate': ['financial', 'redfinEstimate'],
+            '16_avms': ['financial', 'avms'],
             // GROUP 3: Property Basics (17-29)
             '17_bedrooms': ['details', 'bedrooms'],
             '18_full_bathrooms': ['details', 'fullBathrooms'],
@@ -732,7 +732,7 @@ export default function PropertyDetail() {
             '50_kitchen_features': ['structural', 'kitchenFeatures'],
             '51_appliances_included': ['structural', 'appliancesIncluded'],
             '52_fireplace_yn': ['structural', 'fireplaceYn'],
-            '53_fireplace_count': ['structural', 'fireplaceCount'],
+            '53_primary_br_location': ['structural', 'primaryBrLocation'],
             // GROUP 7: Exterior Features (54-58)
             '54_pool_yn': ['structural', 'poolYn'],
             '55_pool_type': ['structural', 'poolType'],
@@ -1572,7 +1572,7 @@ export default function PropertyDetail() {
                 <div>
                   {renderDataField("Last Sale Price", fullProperty.details.lastSalePrice, 'currency', undefined, "14_last_sale_price")}
                   {renderDataField("Assessed Value", fullProperty.details.assessedValue, 'currency', undefined, "15_assessed_value")}
-                  {renderDataField("Redfin Estimate", fullProperty.financial.redfinEstimate, 'currency', undefined, "16_redfin_estimate")}
+                  {renderDataField("AVMs (Average)", fullProperty.financial.avms, 'currency', undefined, "16_avms")}
                 </div>
               </div>
 
@@ -1708,7 +1708,7 @@ export default function PropertyDetail() {
                 </div>
                 <div>
                   {renderDataField("Fireplace", fullProperty.structural.fireplaceYn, "text", undefined, "52_fireplace_yn")}
-                  {renderDataField("Fireplace Count", fullProperty.structural.fireplaceCount, "number", undefined, "53_fireplace_count")}
+                  {renderDataField("Primary BR Location", fullProperty.structural.primaryBrLocation, "number", undefined, "53_primary_br_location")}
                 </div>
               </div>
             </Section>

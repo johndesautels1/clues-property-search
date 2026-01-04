@@ -82,7 +82,7 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   '13_last_sale_date': 'date', 'last_sale_date': 'date',
   '14_last_sale_price': 'currency', 'last_sale_price': 'currency',
   '15_assessed_value': 'currency', 'assessed_value': 'currency',
-  '16_redfin_estimate': 'currency', 'redfin_estimate': 'currency',
+  '16_avms': 'currency', 'avms': 'currency',
 
   // ================================================================
   // GROUP 3: Property Basics (Fields 17-29)
@@ -135,7 +135,7 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   '50_kitchen_features': 'text', 'kitchen_features': 'text',
   '51_appliances_included': 'multiselect', 'appliances_included': 'multiselect',
   '52_fireplace_yn': 'boolean', 'fireplace_yn': 'boolean',
-  '53_fireplace_count': 'number', 'fireplace_count': 'number',
+  '53_primary_br_location': 'number', 'primary_br_location': 'select',
 
   // ================================================================
   // GROUP 7: Exterior Features (Fields 54-58)
@@ -581,7 +581,7 @@ interface FieldDateValidation {
 const TIME_SENSITIVE_FIELDS: Record<string, FieldDateValidation> = {
   // Market estimates (should be recent)
   '12_market_value_estimate': { maxAgeMonths: 6, requiresDate: false },
-  '16_redfin_estimate': { maxAgeMonths: 6, requiresDate: false },
+  '16_avms': { maxAgeMonths: 6, requiresDate: false },
 
   // Market data (should be current)
   '91_median_home_price_neighborhood': { maxAgeMonths: 6, requiresDate: true },
@@ -699,7 +699,7 @@ function convertFlatToNestedStructure(flatFields: Record<string, any>): any {
     '13_last_sale_date': ['details', 'lastSaleDate'],
     '14_last_sale_price': ['details', 'lastSalePrice'],
     '15_assessed_value': ['details', 'assessedValue'],
-    '16_redfin_estimate': ['financial', 'redfinEstimate'],
+    '16_avms': ['financial', 'avms'],
 
     // ================================================================
     // GROUP 3: Property Basics (Fields 17-29)
@@ -752,7 +752,7 @@ function convertFlatToNestedStructure(flatFields: Record<string, any>): any {
     '50_kitchen_features': ['structural', 'kitchenFeatures'],
     '51_appliances_included': ['structural', 'appliancesIncluded'],
     '52_fireplace_yn': ['structural', 'fireplaceYn'],
-    '53_fireplace_count': ['structural', 'fireplaceCount'],
+    '53_primary_br_location': ['structural', 'primaryBrLocation'],
 
     // ================================================================
     // GROUP 7: Exterior Features (Fields 54-58)
@@ -2121,7 +2121,7 @@ Known context (for disambiguation only):
 Goal: Extract ONLY explicitly stated values from major listing portals (Redfin, Zillow, Realtor.com, Trulia, Homes.com).
 
 Target fields:
-10_listing_price, 12_market_value_estimate, 16_redfin_estimate, 17_bedrooms, 18_full_bathrooms, 19_half_bathrooms, 21_living_sqft, 26_property_type, 28_garage_spaces, 30_hoa_yn, 31_hoa_fee_annual, 32_hoa_name, 33_hoa_includes, 44_garage_type, 54_pool_yn, 55_pool_type, 59_recent_renovations, 91_median_home_price_neighborhood, 92_price_per_sqft_recent_avg, 93_price_to_rent_ratio, 94_price_vs_median_percent, 95_days_on_market_avg, 98_rental_estimate_monthly, 102_financing_terms, 103_comparable_sales
+10_listing_price, 12_market_value_estimate, 16_avms, 17_bedrooms, 18_full_bathrooms, 19_half_bathrooms, 21_living_sqft, 26_property_type, 28_garage_spaces, 30_hoa_yn, 31_hoa_fee_annual, 32_hoa_name, 33_hoa_includes, 44_garage_type, 54_pool_yn, 55_pool_type, 59_recent_renovations, 91_median_home_price_neighborhood, 92_price_per_sqft_recent_avg, 93_price_to_rent_ratio, 94_price_vs_median_percent, 95_days_on_market_avg, 98_rental_estimate_monthly, 102_financing_terms, 103_comparable_sales
 
 Field definitions for 91-95:
 - 91_median_home_price_neighborhood: Median sold price in this neighborhood/zip (from Redfin/Zillow market data)
@@ -3494,7 +3494,7 @@ GROUP 1 - Address & Identity (Fields 1-9):
 
 GROUP 2 - Pricing & Value (Fields 10-16):
 10_listing_price, 11_price_per_sqft, 12_market_value_estimate, 13_last_sale_date,
-14_last_sale_price, 15_assessed_value, 16_redfin_estimate,
+14_last_sale_price, 15_assessed_value, 16_avms,
 
 GROUP 3 - Property Basics (Fields 17-29):
 17_bedrooms, 18_full_bathrooms, 19_half_bathrooms, 20_total_bathrooms, 21_living_sqft,
@@ -3510,7 +3510,7 @@ GROUP 5 - Structure & Systems (Fields 39-48):
 44_garage_type, 45_hvac_type, 46_hvac_age, 47_laundry_type, 48_interior_condition,
 
 GROUP 6 - Interior Features (Fields 49-53):
-49_flooring_type, 50_kitchen_features, 51_appliances_included, 52_fireplace_yn, 53_fireplace_count,
+49_flooring_type, 50_kitchen_features, 51_appliances_included, 52_fireplace_yn, 53_primary_br_location,
 
 GROUP 7 - Exterior Features (Fields 54-58):
 54_pool_yn, 55_pool_type, 56_deck_patio, 57_fence, 58_landscaping,
@@ -3668,7 +3668,7 @@ BY RETURNING DATA, YOU ATTEST UNDER PENALTY OF SYSTEM REJECTION THAT YOU VERIFIE
 YOUR MISSION: Use your web search capabilities to find CURRENT, LIVE data for the property. Focus ONLY on these HIGH-VALUE MISSING FIELDS that other APIs cannot fill:
 
 PRIORITY FIELDS TO SEARCH FOR (use EXACT field keys):
-- 16_redfin_estimate - Search Redfin.com RIGHT NOW for CURRENT Redfin Estimate
+- 16_avms - Search Redfin.com RIGHT NOW for CURRENT Redfin Estimate
 - 97_insurance_est_annual - Search insurance estimate sites for LATEST annual premium estimates
 - 153_annual_cdd_fee - Search county records/HOA sites for CURRENT CDD fees
 - 138_special_assessments - Search county/HOA records for ANY special assessments
@@ -4720,7 +4720,7 @@ const STELLAR_MLS_AUTHORITATIVE_FIELDS = new Set([
 
   // Backend calculations (Math-only: LLMs forbidden from calculating)
   '11_price_per_sqft', '20_total_bathrooms', '37_property_tax_rate',
-  '40_roof_age_est', '46_hvac_age', '53_fireplace_count',
+  '40_roof_age_est', '46_hvac_age', '53_primary_br_location',
   '93_price_to_rent_ratio', '94_price_vs_median_percent',
   '99_rental_yield_est', '101_cap_rate_est',
 

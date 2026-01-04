@@ -111,7 +111,7 @@ function mapToAnalyticsProperty(cardProp: PropertyCard, fullProp?: Property): An
     // Valuation
     listPrice: price,
     marketEstimate: marketEstimate || price * 0.95,
-    redfinEstimate: fullProp ? getFieldValue<number>(fullProp.financial?.redfinEstimate) || price * 0.92 : price * 0.92,
+    avms: fullProp ? getFieldValue<number>(fullProp.financial?.avms) || price * 0.92 : price * 0.92,
     assessedValue: assessedValue || price * 0.7,
 
     // Financial
@@ -324,7 +324,7 @@ const comparisonFields: Record<string, Array<{
     { key: 'pricePerSqft', label: 'Price Per Sq Ft', path: 'address.pricePerSqft.value', fieldNum: 11, format: 'currency', higherIsBetter: false },
     { key: 'marketValueEstimate', label: 'Market Value Estimate', path: 'details.marketValueEstimate.value', fieldNum: 12, format: 'currency', higherIsBetter: true },
     { key: 'assessedValue', label: 'Assessed Value', path: 'details.assessedValue.value', fieldNum: 15, format: 'currency', higherIsBetter: true },
-    { key: 'redfinEstimate', label: 'Redfin Estimate', path: 'financial.redfinEstimate.value', fieldNum: 16, format: 'currency', higherIsBetter: true },
+    { key: 'avms', label: 'AVMs (Average)', path: 'financial.avms.value', fieldNum: 16, format: 'currency', higherIsBetter: true },
     { key: 'lastSalePrice', label: 'Last Sale Price', path: 'details.lastSalePrice.value', fieldNum: 14, format: 'currency' },
     { key: 'lastSaleDate', label: 'Last Sale Date', path: 'details.lastSaleDate.value', fieldNum: 13, format: 'text' },
     { key: 'priceVsMedian', label: 'Price vs Median %', path: 'financial.priceVsMedianPercent.value', fieldNum: 94, format: 'percent', higherIsBetter: false },
@@ -382,7 +382,7 @@ const comparisonFields: Record<string, Array<{
     { key: 'kitchenFeatures', label: 'Kitchen Features', path: 'structural.kitchenFeatures.value', fieldNum: 50, format: 'text' },
     { key: 'appliancesIncluded', label: 'Appliances Included', path: 'structural.appliancesIncluded.value', fieldNum: 51, format: 'text' },
     { key: 'fireplaceYn', label: 'Fireplace', path: 'structural.fireplaceYn.value', fieldNum: 52, format: 'boolean' },
-    { key: 'fireplaceCount', label: 'Fireplace Count', path: 'structural.fireplaceCount.value', fieldNum: 53, format: 'number' },
+    { key: 'primaryBrLocation', label: 'Primary BR Location', path: 'structural.primaryBrLocation.value', fieldNum: 53, format: 'number' },
     { key: 'laundryType', label: 'Laundry Type', path: 'structural.laundryType.value', fieldNum: 47, format: 'text' },
     { key: 'interiorFeatures', label: 'Interior Features', path: 'stellarMLS.features.interiorFeatures.value', fieldNum: 167, format: 'text' },
     { key: 'smartHomeFeatures', label: 'Smart Home Features', path: 'utilities.smartHomeFeatures.value', fieldNum: 134, format: 'text' },

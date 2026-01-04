@@ -216,7 +216,7 @@ export function calculateHVACAge(data: PropertyData): CalculationResult | null {
 }
 
 /**
- * Field 53: Fireplace Count
+ * Field 53: Primary BR Location
  * Logic: If fireplace_yn = "Yes", count = 1 (unless MLS provides exact count)
  */
 export function calculateFireplaceCount(data: PropertyData, mlsFireplaceCount?: number): CalculationResult | null {
@@ -530,7 +530,7 @@ export function calculateAllDerivedFields(data: PropertyData): Record<string, Ca
     '37_property_tax_rate': calculatePropertyTaxRate(data),
     '40_roof_age_est': calculateRoofAge(data),
     '46_hvac_age': calculateHVACAge(data),
-    '53_fireplace_count': calculateFireplaceCount(data),
+    '53_primary_br_location': calculateFireplaceCount(data),
     '55_pool_type': calculatePoolType(data),
     '93_price_to_rent_ratio': calculatePriceToRentRatio(data),
     '94_price_vs_median_percent': calculatePriceVsMedian(data),

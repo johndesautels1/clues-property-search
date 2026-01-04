@@ -418,7 +418,7 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   }
 
   addField('52_fireplace_yn', property.FireplaceYN);
-  addField('53_fireplace_count', property.FireplacesTotal);
+  addField('53_primary_br_location', property.FireplacesTotal);
 
   // ================================================================
   // GROUP 7: Exterior Features (Fields 54-58)

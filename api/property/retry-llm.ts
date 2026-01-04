@@ -61,7 +61,7 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   '13_last_sale_date': 'date', 'last_sale_date': 'date',
   '14_last_sale_price': 'currency', 'last_sale_price': 'currency',
   '15_assessed_value': 'currency', 'assessed_value': 'currency',
-  '16_redfin_estimate': 'currency', 'redfin_estimate': 'currency',
+  '16_avms': 'currency', 'avms': 'currency',
 
   // GROUP 3: Property Basics (Fields 17-29)
   '17_bedrooms': 'number', 'bedrooms': 'number',
@@ -106,7 +106,7 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   '50_kitchen_features': 'text', 'kitchen_features': 'text',
   '51_appliances_included': 'multiselect', 'appliances_included': 'multiselect',
   '52_fireplace_yn': 'boolean', 'fireplace_yn': 'boolean',
-  '53_fireplace_count': 'number', 'fireplace_count': 'number',
+  '53_primary_br_location': 'number', 'primary_br_location': 'select',
 
   // GROUP 7: Exterior Features (Fields 54-58)
   '54_pool_yn': 'boolean', 'pool_yn': 'boolean',

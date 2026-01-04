@@ -48,7 +48,7 @@ export const FLAT_TO_NUMBERED_FIELD_MAP: Record<string, string> = {
   'last_sale_price': '14_last_sale_price',
   'sale_price': '14_last_sale_price',
   'assessed_value': '15_assessed_value',
-  'redfin_estimate': '16_redfin_estimate',
+  'redfin_estimate': '16_avms',
 
   // Property Basics (17-29)
   'bedrooms': '17_bedrooms',
@@ -126,7 +126,7 @@ export const FLAT_TO_NUMBERED_FIELD_MAP: Record<string, string> = {
   'fireplace_yn': '52_fireplace_yn',
   'fireplace': '52_fireplace_yn',
   'has_fireplace': '52_fireplace_yn',
-  'fireplace_count': '53_fireplace_count',
+  'fireplace_count': '53_primary_br_location',
 
   // Exterior (54-58)
   'pool_yn': '54_pool_yn',

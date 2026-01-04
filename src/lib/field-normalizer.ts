@@ -61,7 +61,7 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
   { fieldNumber: 13, apiKey: '13_last_sale_date', group: 'details', propName: 'lastSaleDate', type: 'date' },
   { fieldNumber: 14, apiKey: '14_last_sale_price', group: 'details', propName: 'lastSalePrice', type: 'number', validation: (v) => v > 0 && v < 1000000000 },
   { fieldNumber: 15, apiKey: '15_assessed_value', group: 'details', propName: 'assessedValue', type: 'number', validation: (v) => v > 0 && v < 1000000000 },
-  { fieldNumber: 16, apiKey: '16_redfin_estimate', group: 'financial', propName: 'redfinEstimate', type: 'number', validation: (v) => v >= 0 && v < 1000000000 },
+  { fieldNumber: 16, apiKey: '16_avms', group: 'financial', propName: 'avms', type: 'number', validation: (v) => v >= 0 && v < 1000000000 },
 
   // ========== GROUP 3: Property Basics (Fields 17-29) ==========
   { fieldNumber: 17, apiKey: '17_bedrooms', group: 'details', propName: 'bedrooms', type: 'number', validation: (v) => v >= 0 && v <= 50 },
@@ -106,7 +106,7 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
   { fieldNumber: 50, apiKey: '50_kitchen_features', group: 'structural', propName: 'kitchenFeatures', type: 'string' },
   { fieldNumber: 51, apiKey: '51_appliances_included', group: 'structural', propName: 'appliancesIncluded', type: 'array' },
   { fieldNumber: 52, apiKey: '52_fireplace_yn', group: 'structural', propName: 'fireplaceYn', type: 'boolean' },
-  { fieldNumber: 53, apiKey: '53_fireplace_count', group: 'structural', propName: 'fireplaceCount', type: 'number', validation: (v) => v >= 0 && v <= 20 },
+  { fieldNumber: 53, apiKey: '53_primary_br_location', group: 'structural', propName: 'primaryBrLocation', type: 'string' },
 
   // ========== GROUP 7: Exterior Features (Fields 54-58) ==========
   { fieldNumber: 54, apiKey: '54_pool_yn', group: 'structural', propName: 'poolYn', type: 'boolean' },
@@ -334,7 +334,7 @@ const PERPLEXITY_TO_NUMBERED_FIELDS: Record<string, string> = {
   'interior_features_kitchen_features': '50_kitchen_features',
   'interior_features_appliances_included': '51_appliances_included',
   'interior_features_fireplace': '52_fireplace_yn',
-  'interior_features_fireplace_count': '53_fireplace_count',
+  'interior_features_fireplace_count': '53_primary_br_location',
 
   // Exterior Features
   'exterior_features_pool': '54_pool_yn',
@@ -595,7 +595,7 @@ export function normalizeToProperty(
       appliancesIncluded: emptyDataField(),
       laundryType: emptyDataField(),
       fireplaceYn: emptyDataField(),
-      fireplaceCount: emptyDataField(),
+      primaryBrLocation: emptyDataField(),
       poolYn: emptyDataField(),
       poolType: emptyDataField(),
       deckPatio: emptyDataField(),
@@ -644,7 +644,7 @@ export function normalizeToProperty(
       recentTaxPaymentHistory: emptyDataField(),
       medianHomePriceNeighborhood: emptyDataField(),
       pricePerSqftRecentAvg: emptyDataField(),
-      redfinEstimate: emptyDataField(),
+      avms: emptyDataField(),
       priceToRentRatio: emptyDataField(),
       priceVsMedianPercent: emptyDataField(),
       daysOnMarketAvg: emptyDataField(),

@@ -23,7 +23,7 @@ function mapToSection6Homes(properties: ChartProperty[]) {
     kitchenFeatures: p.kitchenFeatures || '',        // Field 50
     appliancesIncluded: p.appliancesIncluded || [],  // Field 51
     fireplaceYn: p.fireplaceYn || false,             // Field 52
-    fireplaceCount: p.fireplaceCount || 0,           // Field 53
+    primaryBrLocation: p.primaryBrLocation || 'Unknown',           // Field 53
     // Field 167: Architectural Features
     interiorFeatures: p.interiorFeatures || [],      // Field 167
   }));

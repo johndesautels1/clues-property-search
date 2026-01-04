@@ -132,7 +132,7 @@ export const CmaSchema = z.object({
   '13_last_sale_date': dateField(),
   '14_last_sale_price': currencyField(0),
   '15_assessed_value': currencyField(0),
-  '16_redfin_estimate': currencyField(0),
+  '16_avms': currencyField(0),
 
   // ================================================================
   // GROUP 3: Property Basics (Fields 17-29)
@@ -185,7 +185,7 @@ export const CmaSchema = z.object({
   '50_kitchen_features': textField(),
   '51_appliances_included': multiselectField(['Refrigerator', 'Dishwasher', 'Range/Oven', 'Microwave', 'Washer', 'Dryer', 'Disposal']),
   '52_fireplace_yn': booleanField(),
-  '53_fireplace_count': numberField(0, 10),
+  '53_primary_br_location': numberField(0, 10),
 
   // ================================================================
   // GROUP 7: Exterior Features (Fields 54-58)

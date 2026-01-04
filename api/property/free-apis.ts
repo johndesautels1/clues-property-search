@@ -1647,7 +1647,7 @@ export async function callRedfinProperty(address: string): Promise<ApiResult> {
     if (addressInfo) {
       // Field 16: Redfin Estimate (AVM)
       if (addressInfo.avmInfo?.predictedValue) {
-        setField(fields, '16_redfin_estimate', Math.round(addressInfo.avmInfo.predictedValue), 'Redfin', 'High');
+        setField(fields, '16_avms', Math.round(addressInfo.avmInfo.predictedValue), 'Redfin', 'High');
       }
 
       // Field 14: Last Sale Price

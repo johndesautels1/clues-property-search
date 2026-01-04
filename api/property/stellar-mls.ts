@@ -210,7 +210,7 @@ export const STELLAR_MLS_FIELD_MAPPING: Record<string, string> = {
   'KitchenFeatures': '50_kitchen_features',
   'Appliances': '51_appliances_included',
   'FireplaceYN': '52_fireplace_yn',
-  'FireplacesTotal': '53_fireplace_count',
+  'FireplacesTotal': '53_primary_br_location',
 
   // Exterior Features (Fields 54-58)
   'PoolPrivateYN': '54_pool_yn',

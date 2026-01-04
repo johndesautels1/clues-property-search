@@ -211,10 +211,10 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'Fireplace': '52_fireplace_yn',
   'Fireplace Y/N': '52_fireplace_yn',
 
-  'Fireplace Count': '53_fireplace_count',
-  '# of Fireplaces': '53_fireplace_count',
-  'Fireplaces': '53_fireplace_count',
-  'Number of Fireplaces': '53_fireplace_count',
+  'Fireplace Count': '53_primary_br_location',
+  '# of Fireplaces': '53_primary_br_location',
+  'Fireplaces': '53_primary_br_location',
+  'Number of Fireplaces': '53_primary_br_location',
   // ================================================================
   // GROUP 7: EXTERIOR FEATURES (Fields 54-58)
   // ================================================================

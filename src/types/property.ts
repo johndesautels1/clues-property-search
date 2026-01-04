@@ -89,7 +89,7 @@ export interface StructuralDetails {
   appliancesIncluded: DataField<string[]>; // #51 appliances_included
   laundryType: DataField<string>;        // #47 laundry_type
   fireplaceYn: DataField<boolean>;       // #52 fireplace_yn
-  fireplaceCount: DataField<number>;     // #53 fireplace_count
+  primaryBrLocation: DataField<number>;     // #53 fireplace_count
   poolYn: DataField<boolean>;            // #54 pool_yn
   poolType: DataField<string>;           // #55 pool_type
   deckPatio: DataField<string>;          // #56 deck_patio
@@ -142,7 +142,7 @@ export interface FinancialData {
   recentTaxPaymentHistory: DataField<string>; // Custom field (not in schema)
   medianHomePriceNeighborhood: DataField<number>; // #91 median_home_price_neighborhood
   pricePerSqftRecentAvg: DataField<number>; // #92 price_per_sqft_recent_avg
-  redfinEstimate: DataField<number>;     // #16 redfin_estimate
+  avms: DataField<number>;     // #16 redfin_estimate
   priceToRentRatio: DataField<number>;   // #93 price_to_rent_ratio
   priceVsMedianPercent: DataField<number>; // #94 price_vs_median_percent
   daysOnMarketAvg: DataField<number>;    // #95 days_on_market_avg

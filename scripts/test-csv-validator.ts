@@ -261,13 +261,13 @@ test('Invalid stories (150) is BLOCKED', () => {
 
 // TEST 27: Redfin estimate
 test('Valid redfin estimate ($500K) passes', () => {
-  const result = validateFieldValue('16_redfin_estimate', 500000);
+  const result = validateFieldValue('16_avms', 500000);
   return result.valid === true && result.coercedValue === 500000;
 });
 
 // TEST 28: Redfin estimate invalid
 test('Invalid redfin estimate ($2 billion) is BLOCKED', () => {
-  const result = validateFieldValue('16_redfin_estimate', 2000000000);
+  const result = validateFieldValue('16_avms', 2000000000);
   return result.valid === false && result.error?.errorType === 'range';
 });
 
@@ -285,13 +285,13 @@ test('Invalid property tax rate (50%) is BLOCKED', () => {
 
 // TEST 31: Fireplace count valid
 test('Valid fireplace count (2) passes', () => {
-  const result = validateFieldValue('53_fireplace_count', 2);
+  const result = validateFieldValue('53_primary_br_location', 2);
   return result.valid === true && result.coercedValue === 2;
 });
 
 // TEST 32: Fireplace count invalid
 test('Invalid fireplace count (100) is BLOCKED', () => {
-  const result = validateFieldValue('53_fireplace_count', 100);
+  const result = validateFieldValue('53_primary_br_location', 100);
   return result.valid === false && result.error?.errorType === 'range';
 });
 

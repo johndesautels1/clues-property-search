@@ -15,7 +15,7 @@ interface Home {
   kitchenFeatures: string;       // Field 50
   appliancesIncluded: string[];  // Field 51
   fireplaceYn: boolean;          // Field 52
-  fireplaceCount: number;        // Field 53
+  primaryBrLocation: string;        // Field 53
   interiorFeatures: string[];    // Field 167 - Architectural Features
   color: string;
 }
@@ -88,8 +88,8 @@ function getInteriorScore(home: Home): number {
   let fireplaceValue = 0;
   if (home.fireplaceYn) {
     fireplaceValue = 5;
-    if (home.fireplaceCount > 1) {
-      fireplaceValue += 2 * (home.fireplaceCount - 1);
+    if (home.primaryBrLocation > 1) {
+      fireplaceValue += 2 * (home.primaryBrLocation - 1);
     }
   }
   // Total composite raw score

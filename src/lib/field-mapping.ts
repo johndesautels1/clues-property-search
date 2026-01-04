@@ -47,7 +47,7 @@ export const FIELD_MAPPINGS: FieldMapping[] = [
   { fieldNumber: 13, apiKey: '13_last_sale_date', frontendKey: 'pricingValue.lastSaleDate', csvHeader: 'Last Sale Date', label: 'Last Sale Date', group: 'Pricing & Value', type: 'date' },
   { fieldNumber: 14, apiKey: '14_last_sale_price', frontendKey: 'pricingValue.lastSalePrice', csvHeader: 'Last Sale Price', label: 'Last Sale Price', group: 'Pricing & Value', type: 'number' },
   { fieldNumber: 15, apiKey: '15_assessed_value', frontendKey: 'pricingValue.assessedValue', csvHeader: 'Assessed Value', label: 'Assessed Value', group: 'Pricing & Value', type: 'number' },
-  { fieldNumber: 16, apiKey: '16_redfin_estimate', frontendKey: 'pricingValue.redfinEstimate', csvHeader: 'Redfin Estimate', label: 'Redfin Estimate', group: 'Pricing & Value', type: 'number' },
+  { fieldNumber: 16, apiKey: '16_avms', frontendKey: 'pricingValue.avms', csvHeader: 'Redfin Estimate', label: 'Redfin Estimate', group: 'Pricing & Value', type: 'number' },
 
   // ================================================================
   // GROUP 3: Property Basics (Fields 17-29)
@@ -100,7 +100,7 @@ export const FIELD_MAPPINGS: FieldMapping[] = [
   { fieldNumber: 50, apiKey: '50_kitchen_features', frontendKey: 'interiorFeatures.kitchenFeatures', csvHeader: 'Kitchen Features', label: 'Kitchen Features', group: 'Interior Features', type: 'string' },
   { fieldNumber: 51, apiKey: '51_appliances_included', frontendKey: 'interiorFeatures.appliancesIncluded', csvHeader: 'Appliances Included', label: 'Appliances Included', group: 'Interior Features', type: 'array' },
   { fieldNumber: 52, apiKey: '52_fireplace_yn', frontendKey: 'interiorFeatures.fireplaceYn', csvHeader: 'Fireplace', label: 'Fireplace', group: 'Interior Features', type: 'boolean' },
-  { fieldNumber: 53, apiKey: '53_fireplace_count', frontendKey: 'interiorFeatures.fireplaceCount', csvHeader: 'Fireplace Count', label: 'Fireplace Count', group: 'Interior Features', type: 'number' },
+  { fieldNumber: 53, apiKey: '53_primary_br_location', frontendKey: 'interiorFeatures.primaryBrLocation', csvHeader: 'Fireplace Count', label: 'Fireplace Count', group: 'Interior Features', type: 'number' },
 
   // ================================================================
   // GROUP 7: Exterior Features (Fields 54-58)
