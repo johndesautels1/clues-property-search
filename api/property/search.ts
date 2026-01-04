@@ -356,7 +356,7 @@ function coerceValue(key: string, value: any): any {
 
   // If no type mapping (unknown field), return as-is
   if (!expectedType) {
-    console.log(`⚠️ UNKNOWN FIELD: ${key} not in 181-field schema - FILTERED OUT`);
+    // Skip unknown fields silently - they may be API response metadata
     return null;
   }
 
@@ -450,7 +450,7 @@ function filterNullValues(parsed: any, llmName: string): Record<string, any> {
 
   for (const [key, val] of Object.entries(dataToProcess)) {
     // Skip metadata fields
-    if (['llm', 'error', 'sources_searched', 'fields_found', 'fields_missing', 'note'].includes(key)) {
+    if (['llm', 'error', 'sources_searched', 'fields_found', 'fields_missing', 'note', 'status', 'message', 'success', 'citations'].includes(key)) {
       continue;
     }
 
