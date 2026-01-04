@@ -1403,13 +1403,42 @@ export default function Compare() {
           </div>
 
           {selectedProperties.length >= 2 && (
-            <button
-              onClick={() => setShowAllFields(!showAllFields)}
-              className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
-            >
-              <RefreshCw className={`w-4 h-4 ${showAllFields ? 'rotate-180' : ''} transition-transform`} />
-              {showAllFields ? 'Show Key Fields' : 'Show All Fields'}
-            </button>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => {
+                  console.group('[Compare] Field Availability Diagnostic');
+                  selectedIds.filter((id) => id !== null).forEach(id => {
+                    const fullProp = fullProperties.get(id);
+                    const cardProp = properties.find(p => p.id === id);
+                    console.group('Property: ' + (cardProp?.address || id));
+                    console.log('Full Property exists:', !!fullProp);
+                    if (fullProp) {
+                      ['address', 'details', 'structural', 'location', 'financial', 'utilities', 'stellarMLS'].forEach(group => {
+                        const groupData = (fullProp as any)[group];
+                        if (groupData) {
+                          const populated = Object.entries(groupData).filter(([_, v]: [string, any]) => v && v.value !== null && v.value !== undefined).map(([k]) => k);
+                          const nullFields = Object.entries(groupData).filter(([_, v]: [string, any]) => !v || v.value === null || v.value === undefined).map(([k]) => k);
+                          console.log(group + ': ' + populated.length + ' populated, ' + nullFields.length + ' null');
+                        }
+                      });
+                    }
+                    console.groupEnd();
+                  });
+                  console.groupEnd();
+                }}
+                className="flex items-center gap-2 text-sm text-orange-400 hover:text-orange-300 transition-colors"
+              >
+                <AlertTriangle className="w-4 h-4" />
+                Debug Fields
+              </button>
+              <button
+                onClick={() => setShowAllFields(!showAllFields)}
+                className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                <RefreshCw className={`w-4 h-4 ${showAllFields ? 'rotate-180' : ''} transition-transform`} />
+                {showAllFields ? 'Show Key Fields' : 'Show All Fields'}
+              </button>
+            </div>
           )}
         </div>
 
