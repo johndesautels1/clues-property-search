@@ -5543,13 +5543,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           console.log(`\n=== Processing ${llmResults.length} LLM results in sequence ===`);
 
           for (let idx = 0; idx < llmResults.length; idx++) {
-            const result = llmResults[idx];
-            const llm = enabledLlms[idx];
-            const processingOrder = idx + 1;
+            try {
+              const result = llmResults[idx];
+              const llm = enabledLlms[idx];
+              if (!llm) {
+                console.error(`[LLM Cascade] No LLM at index ${idx}`);
+                continue;
+              }
+              const processingOrder = idx + 1;
 
-            console.log(`[${processingOrder}/${llmResults.length}] Processing ${llm.id}...`);
+              console.log(`[${processingOrder}/${llmResults.length}] Processing ${llm.id}...`);
 
-            if (result.status === 'fulfilled') {
+              if (result.status === 'fulfilled') {
               const llmData = result.value;
 
               // Handle both formats: Perplexity returns fields directly, others return { fields: ... }
@@ -5644,6 +5649,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               });
             }
           }
+            } catch (loopError) {
+              console.error(`[LLM Cascade] Error at index ${idx}:`, loopError);
+              llmResponses.push({
+                llm: enabledLlms[idx]?.id || `unknown-${idx}`,
+                fields_found: 0,
+                new_unique_fields: 0,
+                success: false,
+                error: `Processing error: ${String(loopError)}`
+              });
+            }
 
           console.log(`=== LLM processing complete. Total fields: ${arbitrationPipeline.getFieldCount()} ===\n`);
         } else {
