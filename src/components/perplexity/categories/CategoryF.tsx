@@ -28,7 +28,7 @@ function getVal<T>(field: { value: T | null } | undefined): T | null {
  * - Field #167: interior_features (multiselect) - Cathedral Ceiling(s), Walk-In Closet(s),
  *   Primary Bedroom Main Floor, Open Floor Plan, Crown Molding, Skylight(s), Wet Bar, Built-in Features
  * - Field #52: fireplace_yn (boolean)
- * - Field #53: fireplace_count (number)
+ * - Field #53: primary_br_location (string) - Main Floor, Upper Floor, Lower Floor, Split
  */
 function InteriorFeaturesGrid({ properties, onPropertyClick }: CategoryFProps) {
   // Define true interior features with icons

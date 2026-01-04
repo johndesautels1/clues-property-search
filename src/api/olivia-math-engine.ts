@@ -811,7 +811,7 @@ ${properties.map((p, i) => `
 [50] Kitchen Features: ${p.kitchen_features || 'N/A'}
 [51] Appliances Included: ${Array.isArray(p.appliances_included) ? p.appliances_included.join(', ') : p.appliances_included || 'N/A'}
 [52] Fireplace: ${p.fireplace_yn ? 'Yes' : 'No'}
-[53] Fireplace Count: ${p.fireplace_count || 'N/A'}
+[53] Primary BR Location: ${p.primary_br_location || 'N/A'}
 
 **GROUP 7: Exterior Features** (WEIGHT 3-5)
 [54] Pool: ${p.pool_yn ? 'Yes' : 'No'}
@@ -1051,7 +1051,7 @@ function filterPropertyFields(property: OliviaEnhancedPropertyInput, startField:
     50: { key: 'kitchen_features', label: 'Kitchen Features' },
     51: { key: 'appliances_included', label: 'Appliances Included' },
     52: { key: 'fireplace_yn', label: 'Fireplace' },
-    53: { key: 'fireplace_count', label: 'Fireplace Count' },
+    53: { key: 'primary_br_location', label: 'Primary BR Location' },
     54: { key: 'pool_yn', label: 'Pool' },
     55: { key: 'pool_type', label: 'Pool Type' },
     56: { key: 'deck_patio', label: 'Deck/Patio' },

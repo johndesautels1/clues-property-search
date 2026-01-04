@@ -3256,7 +3256,7 @@ GROUP 5 - Structure & Systems (Fields 39-48):
 44. garage_type, 45. hvac_type, 46. hvac_age, 47. laundry_type, 48. interior_condition
 
 GROUP 6 - Interior Features (Fields 49-53):
-49. flooring_type, 50. kitchen_features, 51. appliances_included, 52. fireplace_yn, 53. fireplace_count
+49. flooring_type, 50. kitchen_features, 51. appliances_included, 52. fireplace_yn, 53. primary_br_location
 
 GROUP 7 - Exterior Features (Fields 54-58):
 54. pool_yn, 55. pool_type, 56. deck_patio, 57. fence, 58. landscaping
@@ -3361,7 +3361,7 @@ GROUP 5 - Structure & Systems (Fields 39-48) [P2]:
 
 GROUP 6 - Interior Features (Fields 49-53) [P2]:
 49. flooring_type (from listing), 50. kitchen_features (from listing),
-51. appliances_included (from listing), 52. fireplace_yn (from listing), 53. fireplace_count (from listing)
+51. appliances_included (from listing), 52. fireplace_yn (from listing), 53. primary_br_location (from listing)
 
 GROUP 7 - Exterior Features (Fields 54-58) [P2]:
 54. pool_yn (from listing/aerial) [P1], 55. pool_type (from listing),

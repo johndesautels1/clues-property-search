@@ -85,7 +85,7 @@ export interface OliviaEnhancedPropertyInput {
   kitchen_features?: string;
   appliances_included?: string[];
   fireplace_yn?: boolean;
-  fireplace_count?: number;
+  primary_br_location?: string;  // Field 53: Primary bedroom location
 
   // GROUP 7: Exterior Features (54-58)
   pool_yn?: boolean;

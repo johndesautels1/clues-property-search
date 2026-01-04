@@ -414,7 +414,7 @@ function formatPropertyForPrompt(p: OliviaEnhancedPropertyInput, index: number):
   addField(50, 'Kitchen Features', p.kitchen_features);
   addField(51, 'Appliances Included', p.appliances_included);
   addField(52, 'Fireplace', p.fireplace_yn ? 'Yes' : p.fireplace_yn === false ? 'No' : null);
-  addField(53, 'Fireplace Count', p.fireplace_count);
+  addField(53, 'Primary BR Location', p.primary_br_location);
 
   // ========================================================================
   // GROUP 7: Exterior Features (Fields 54-58)
