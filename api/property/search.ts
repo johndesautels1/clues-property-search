@@ -5648,7 +5648,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 error: String(result.reason)
               });
             }
-          }
             } catch (loopError) {
               console.error(`[LLM Cascade] Error at index ${idx}:`, loopError);
               llmResponses.push({
@@ -5659,6 +5658,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 error: `Processing error: ${String(loopError)}`
               });
             }
+          }
 
           console.log(`=== LLM processing complete. Total fields: ${arbitrationPipeline.getFieldCount()} ===\n`);
         } else {
