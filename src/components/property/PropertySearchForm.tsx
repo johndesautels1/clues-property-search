@@ -1,6 +1,6 @@
 /**
  * CLUES Property Dashboard - Property Search Form
- * 138-field form with real LLM-powered address search
+ * 181-field form with real LLM-powered address search
  * Sources visible to admin only
  */
 
@@ -308,7 +308,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
           // Update final field counts
           if (data.total_fields_found) {
             setLiveFieldsFound(data.total_fields_found);
-            setLiveCompletionPct(data.completion_percentage || Math.round((data.total_fields_found / 168) * 100));
+            setLiveCompletionPct(data.completion_percentage || Math.round((data.total_fields_found / 181) * 100));
           }
 
           // Track Perplexity total to apply in final state update (avoid race condition)
@@ -351,6 +351,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
                   'google-distance': ['googledistance', 'googledistancematrix'],
                   'walkscore': ['walkscore'],
                   'fema': ['fema', 'femanfhl', 'femaflood'],
+                  'fcc-broadband': ['fccbroadband', 'fcc', 'broadband'],
                   'airnow': ['airnow'],
                   'howloud': ['howloud'],
                   'weather': ['weathercom', 'weather'],
@@ -418,9 +419,9 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
       // Show appropriate message based on partial vs complete results
       if (data.partial) {
         setSearchError(`Partial results: ${data.error || 'Some sources failed'}. You can still view and edit the data received.`);
-        setSearchProgress(`Found ${data.total_fields_found || 0} of 168 fields (${data.completion_percentage || 0}%) - PARTIAL`);
+        setSearchProgress(`Found ${data.total_fields_found || 0} of 181 fields (${data.completion_percentage || 0}%) - PARTIAL`);
       } else {
-        setSearchProgress(`Found ${data.total_fields_found || 0} of 168 fields (${data.completion_percentage || 0}%)`);
+        setSearchProgress(`Found ${data.total_fields_found || 0} of 181 fields (${data.completion_percentage || 0}%)`);
       }
 
       // Map API response to form data (works for both partial and complete)
@@ -449,7 +450,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
 
           // Track lost fields (but not internal/metadata fields)
           if (!formKey) {
-            // Skip known extra MLS fields that aren't in our 168-field schema
+            // Skip known extra MLS fields that aren't in our 181-field schema
             const knownExtraFields = [
               'latitude', 'longitude', 'property_description', 'virtual_tour_url',
               'property_photo_url', 'property_photos', 'DaysOnMarket', 'CumulativeDaysOnMarket'
@@ -858,7 +859,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
                 <label className="text-sm text-white font-medium">Tier 2 & 3: Free APIs (Fast)</label>
               </div>
               <p className="text-xs text-gray-500 ml-6">
-                Google (Geocode, Places, Distance) + FEMA, WalkScore, SchoolDigger, AirNow, HowLoud, FBI Crime
+                Google (Geocode, Places, Distance) + FCC Broadband, FEMA, WalkScore, SchoolDigger, AirNow, HowLoud, FBI Crime
               </p>
             </div>
             <button
@@ -887,11 +888,11 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
               <div className="flex flex-wrap gap-2 ml-6">
                 {[
                   { id: 'perplexity', name: '1. Perplexity', color: 'cyan' },
-                  { id: 'claude-sonnet', name: '2. Claude Sonnet', color: 'pink' },
-                  { id: 'gpt', name: '3. GPT-4', color: 'green' },
-                  { id: 'claude-opus', name: '4. Claude Opus', color: 'orange' },
-                  { id: 'gemini', name: '5. Gemini', color: 'purple' },
-                  { id: 'grok', name: '6. Grok', color: 'blue' },
+                  { id: 'gpt', name: '2. GPT-4', color: 'green' },
+                  { id: 'claude-opus', name: '3. Claude Opus', color: 'orange' },
+                  { id: 'gemini', name: '4. Gemini', color: 'purple' },
+                  { id: 'grok', name: '5. Grok', color: 'blue' },
+                  { id: 'claude-sonnet', name: '6. Claude Sonnet', color: 'pink' },
                 ].map(engine => (
                   <button
                     key={engine.id}
@@ -1014,7 +1015,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
       {/* Expand/Collapse Controls */}
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-white">
-          All 168 Property Fields
+          All 181 Property Fields
         </h3>
         <div className="flex gap-2">
           <button
@@ -1118,7 +1119,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
           {Object.keys(formData).filter(k => {
             const val = formData[k]?.value;
             return val !== undefined && val !== '' && val !== null;
-          }).length} / 168 fields completed
+          }).length} / 181 fields completed
         </div>
         <button
           type="submit"

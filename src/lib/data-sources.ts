@@ -66,6 +66,16 @@ export const DATA_SOURCES: DataSource[] = [
     enabled: true,
     description: 'Property front photo fallback'
   },
+  {
+    id: 'fcc-broadband',
+    name: 'FCC Broadband',
+    type: 'free-api',
+    tier: 2,
+    icon: 'wifi',
+    color: 'cyan',
+    enabled: true,
+    description: 'Internet provider and speed data'
+  },
   // DISABLED: Redfin API autocomplete not working
   // {
   //   id: 'redfin',

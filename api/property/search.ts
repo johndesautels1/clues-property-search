@@ -207,7 +207,7 @@ function valuesAreSemanticallySame(val1: any, val2: any): boolean {
 }
 
 // ============================================
-// COMPLETE TYPE MAP - ALL 168 FIELDS from fields-schema.ts
+// COMPLETE TYPE MAP - ALL 181 FIELDS from fields-schema.ts
 // Maps EVERY field key to its expected type for validation and coercion
 // 336 total entries (168 numbered + 168 unnumbered key variants)
 // ============================================
@@ -468,6 +468,23 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   '166_community_features': 'multiselect', 'community_features': 'multiselect',
   '167_interior_features': 'multiselect', 'interior_features': 'multiselect',
   '168_exterior_features': 'multiselect', 'exterior_features': 'multiselect',
+
+  // ================================================================
+  // GROUP 23 (W): Market Performance (Fields 169-181) - NEW SECTION
+  // ================================================================
+  '169_zillow_views': 'number', 'zillow_views': 'number',
+  '170_redfin_views': 'number', 'redfin_views': 'number',
+  '171_homes_views': 'number', 'homes_views': 'number',
+  '172_realtor_views': 'number', 'realtor_views': 'number',
+  '173_total_views': 'number', 'total_views': 'number',
+  '174_saves_favorites': 'number', 'saves_favorites': 'number',
+  '175_market_type': 'select', 'market_type': 'select',
+  '176_avg_sale_to_list_percent': 'percentage', 'avg_sale_to_list_percent': 'percentage',
+  '177_avg_days_to_pending': 'number', 'avg_days_to_pending': 'number',
+  '178_multiple_offers_likelihood': 'select', 'multiple_offers_likelihood': 'select',
+  '179_appreciation_percent': 'percentage', 'appreciation_percent': 'percentage',
+  '180_price_trend': 'select', 'price_trend': 'select',
+  '181_rent_zestimate': 'currency', 'rent_zestimate': 'currency',
 };
 
 // Build a stable map from numeric field id -> primary numbered field key (e.g., 37 -> '37_property_tax_rate')
@@ -485,15 +502,15 @@ const FIELD_ID_TO_KEY: Record<number, string> = (() => {
 
 // ============================================
 // TYPE COERCION FUNCTION - Validates and coerces LLM values
-// Ensures values match expected types from the 168-field schema
+// Ensures values match expected types from the 181-field schema
 // ============================================
 function coerceValue(key: string, value: any): any {
   const expectedType = FIELD_TYPE_MAP[key];
 
   // If no type mapping (unknown field), return as-is
   if (!expectedType) {
-    console.log(`⚠️ UNKNOWN FIELD: ${key} not in 168-field schema`);
-    return value;
+    console.log(`⚠️ UNKNOWN FIELD: ${key} not in 181-field schema - FILTERED OUT`);
+    return null;
   }
 
   // TEXT, SELECT, MULTISELECT types - pass through as strings
@@ -3655,7 +3672,7 @@ SOURCE PRIORITY:
 // ============================================
 
 // CRITICAL: Exact field key format for reliable mapping
-// SOURCE OF TRUTH: src/types/fields-schema.ts - ALL 168 FIELDS
+// SOURCE OF TRUTH: src/types/fields-schema.ts - ALL 181 FIELDS
 const EXACT_FIELD_KEYS = `
 EXACT FIELD KEYS - You MUST use these EXACT keys (number_fieldname format):
 
@@ -4205,7 +4222,7 @@ INPUT_DATA (authoritative blobs for validation):
   "webChunksJson": ${JSON.stringify(params.webChunksJson, null, 2)}
 }
 
-LLM_FIELDS_TO_AUDIT (ONLY these fields, not the full 168-field schema):
+LLM_FIELDS_TO_AUDIT (ONLY these fields, not the full 181-field schema):
 ${JSON.stringify(params.llmOnlyFields, null, 2)}
 
 TASK:

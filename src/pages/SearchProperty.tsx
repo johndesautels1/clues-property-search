@@ -1,6 +1,6 @@
 /**
  * CLUES Property Dashboard - Search Property Page
- * Full 138-field property search/entry form
+ * Full 181-field property search/entry form
  * Sources visible to admin only
  */
 
@@ -130,7 +130,7 @@ export default function SearchProperty() {
 
   // Calculate data completeness percentage
   const calculateCompleteness = (formData: Record<string, { value: any; source: string }>) => {
-    const totalFields = 138;
+    const totalFields = 181;
     const filledFields = Object.values(formData).filter(f => {
       const val = f.value;
       return val !== undefined && val !== '' && val !== null &&
@@ -202,7 +202,7 @@ export default function SearchProperty() {
             Search for Property
           </h1>
           <p className="text-gray-400 mt-1">
-            Enter address to auto-populate or fill in all 168 fields manually
+            Enter address to auto-populate or fill in all 181 fields manually
           </p>
         </div>
       </div>

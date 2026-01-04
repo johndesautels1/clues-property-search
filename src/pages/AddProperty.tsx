@@ -385,7 +385,7 @@ export default function AddProperty() {
         daysOnMarket: 0,
       };
 
-      // Create full property object with all 168 fields if available
+      // Create full property object with all 181 fields if available
       const fullPropertyData = convertApiResponseToFullProperty(fields, scrapedProperty.id, fieldSources, conflicts);
 
       setSaveStatus('saving');
@@ -562,7 +562,7 @@ export default function AddProperty() {
         daysOnMarket: 0,
       };
 
-      // Create full property object with all 168 fields if available
+      // Create full property object with all 181 fields if available
       const fullPropertyData = convertApiResponseToFullProperty(fields, scrapedProperty.id, fieldSources, conflicts);
 
       setSaveStatus('saving');
@@ -610,8 +610,8 @@ export default function AddProperty() {
           bathrooms: safeParseNumber(getFieldValue(fields['20_total_bathrooms'])),
           sqft: safeParseNumber(getFieldValue(fields['21_living_sqft'])),
           yearBuilt: safeParseNumber(getFieldValue(fields['25_year_built'])) || new Date().getFullYear(),
-          smartScore: Math.round((Object.keys(fields).length / 168) * 100),
-          dataCompleteness: Math.round((Object.keys(fields).length / 168) * 100),
+          smartScore: Math.round((Object.keys(fields).length / 181) * 100),
+          dataCompleteness: Math.round((Object.keys(fields).length / 181) * 100),
           listingStatus: fields['4_listing_status']?.value || 'Active',
           daysOnMarket: 0,
         };
@@ -649,7 +649,7 @@ export default function AddProperty() {
       case 'searching':
         return 'Finding property listings...';
       case 'scraping':
-        return 'Extracting 168 fields with AI...';
+        return 'Extracting 181 fields with AI...';
       case 'enriching':
         return 'Enriching with Walk Score, Crime, Schools...';
       case 'complete':
@@ -792,7 +792,7 @@ export default function AddProperty() {
     return false;
   };
 
-  // Convert CSV row with 168 fields to full Property object
+  // Convert CSV row with 181 fields to full Property object
   // UPDATED: 2025-11-30 - Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH)
   const convertCsvToFullProperty = (row: any, propertyId: string): Property => {
     const now = new Date().toISOString();
@@ -1081,9 +1081,9 @@ export default function AddProperty() {
 
         // Count non-empty fields for data completeness
         const filledFieldsCount = Object.values(row).filter(v => v && v !== '').length;
-        const dataCompleteness = Math.round((filledFieldsCount / 168) * 100);
+        const dataCompleteness = Math.round((filledFieldsCount / 181) * 100);
 
-        // Create full property with all 168 fields from CSV
+        // Create full property with all 181 fields from CSV
         let fullProperty = convertCsvToFullProperty(row, propertyId);
 
         // ENRICHMENT: Always query MLS and Google APIs; use LLM cascade if enrichWithAI enabled
@@ -1384,7 +1384,7 @@ export default function AddProperty() {
         sqft: sqft,
         yearBuilt: yearBuilt,
         smartScore: undefined,
-        dataCompleteness: Math.round((Object.keys(pdfParsedFields).length / 168) * 100),
+        dataCompleteness: Math.round((Object.keys(pdfParsedFields).length / 181) * 100),
         listingStatus: listingStatus,
         daysOnMarket: daysOnMarket,
         cumulativeDaysOnMarket: cumulativeDaysOnMarket,
@@ -1463,7 +1463,7 @@ export default function AddProperty() {
         // Update property card with new data completeness
         const enrichedCard = {
           ...propertyCard,
-          dataCompleteness: Math.round((Object.keys(mergedFields).length / 168) * 100),
+          dataCompleteness: Math.round((Object.keys(mergedFields).length / 181) * 100),
         };
 
         // Update store with enriched data
@@ -1525,7 +1525,7 @@ export default function AddProperty() {
     // Merge environment fields (117-130)
     merged.utilities.floodZone = mergeField(merged.utilities.floodZone, '119_flood_zone');
 
-    // Could merge all 168 fields here, but for now just key ones
+    // Could merge all 181 fields here, but for now just key ones
     return merged;
   };
 
@@ -1689,7 +1689,7 @@ export default function AddProperty() {
                         <span className="text-white font-semibold">Enhance with AI (Optional)</span>
                       </div>
                       <p className="text-xs text-gray-400 mt-1">
-                        Cascade: 👑 Opus → GPT → Grok → Sonnet → Copilot → Gemini (stops at 100%)
+                        Cascade: Perplexity → GPT → Opus → Gemini → Grok → Sonnet (stops at 100%)
                       </p>
                     </div>
                   </label>
@@ -1744,7 +1744,7 @@ export default function AddProperty() {
               <FileText className="w-16 h-16 mx-auto mb-4 text-quantum-cyan" />
               <h3 className="text-lg font-semibold mb-2">Upload MLS PDF Sheet</h3>
               <p className="text-sm text-gray-400 mb-6">
-                Upload a Stellar MLS CustomerFull PDF to extract all 168 property fields automatically
+                Upload a Stellar MLS CustomerFull PDF to extract all 181 property fields automatically
               </p>
 
               <input
@@ -1867,7 +1867,7 @@ export default function AddProperty() {
                   className="input-glass"
                 />
                 <p className="text-xs text-gray-500 mt-2">
-                  Enter Stellar MLS number to fetch complete property data (168 fields)
+                  Enter Stellar MLS number to fetch complete property data (181 fields)
                 </p>
               </div>
             </div>
@@ -1914,7 +1914,7 @@ export default function AddProperty() {
                 AI Engine <span className="text-quantum-cyan text-xs">(Reliability Order)</span>
               </label>
               <p className="text-xs text-gray-500 mb-3">
-                Cascade: Perplexity → Sonnet → GPT → Opus → Gemini → Grok
+                Cascade: Perplexity → GPT → Opus → Gemini → Grok → Sonnet
               </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {LLM_ENGINES.map((engine) => (
@@ -1979,7 +1979,7 @@ export default function AddProperty() {
                 AI Engine <span className="text-quantum-cyan text-xs">(Reliability Order)</span>
               </label>
               <p className="text-xs text-gray-500 mb-3">
-                Cascade: Perplexity → Sonnet → GPT → Opus → Gemini → Grok
+                Cascade: Perplexity → GPT → Opus → Gemini → Grok → Sonnet
               </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {LLM_ENGINES.map((engine) => (
@@ -2033,7 +2033,7 @@ Beautiful 3BR/2BA beach house at 290 41st Ave, St Pete Beach, FL 33706. Built in
               />
             </div>
             <p className="text-xs text-gray-500">
-              AI will extract all 168 property fields from your description
+              AI will extract all 181 property fields from your description
             </p>
 
             {/* LLM Selection - Cascade Order per Reliability Audit */}
@@ -2042,7 +2042,7 @@ Beautiful 3BR/2BA beach house at 290 41st Ave, St Pete Beach, FL 33706. Built in
                 AI Engine <span className="text-quantum-cyan text-xs">(Reliability Order)</span>
               </label>
               <p className="text-xs text-gray-500 mb-3">
-                Cascade: Perplexity → Sonnet → GPT → Opus → Gemini → Grok
+                Cascade: Perplexity → GPT → Opus → Gemini → Grok → Sonnet
               </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {LLM_ENGINES.map((engine) => (
@@ -2158,8 +2158,8 @@ Beautiful 3BR/2BA beach house at 290 41st Ave, St Pete Beach, FL 33706. Built in
                       bathrooms: parseFieldNumber(fields['20_total_bathrooms']?.value),
                       sqft: parseFieldNumber(fields['21_living_sqft']?.value),
                       yearBuilt: parseFieldNumber(fields['25_year_built']?.value) || new Date().getFullYear(),
-                      smartScore: Math.round((Object.keys(fields).length / 168) * 100),
-                      dataCompleteness: Math.round((Object.keys(fields).length / 168) * 100),
+                      smartScore: Math.round((Object.keys(fields).length / 181) * 100),
+                      dataCompleteness: Math.round((Object.keys(fields).length / 181) * 100),
                       listingStatus: fields['4_listing_status']?.value || 'Active',
                       daysOnMarket: 0,
                     };
