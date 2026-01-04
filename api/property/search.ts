@@ -3378,15 +3378,7 @@ async function callPerplexityHelper(promptName: string, userPrompt: string): Pro
           console.log(`✅ [Perplexity ${promptName}] Parsed ${rawCount} raw fields`);
 
           // Use shared filterNullValues with type coercion
-          console.log(`🔎 [Perplexity ${promptName}] About to call filterNullValues...`);
-          let filteredFields: Record<string, any> = {};
-          try {
-            filteredFields = filterNullValues(parsed, `Perplexity ${promptName}`);
-          } catch (filterErr) {
-            console.error(`❌ [Perplexity ${promptName}] filterNullValues CRASHED:`, filterErr);
-            console.error(`❌ Stack:`, (filterErr as Error).stack);
-            return {};
-          }
+          const filteredFields = filterNullValues(parsed, `Perplexity ${promptName}`);
           const finalCount = Object.keys(filteredFields).length;
           console.log(`✅ [Perplexity ${promptName}] Returning ${finalCount} fields after filtering`);
 
