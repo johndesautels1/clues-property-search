@@ -42,14 +42,13 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
   ]);
 }
 
-import { scrapeFloridaCounty } from './florida-counties.js';
 import { LLM_CASCADE_ORDER } from './llm-constants.js';
 import { createArbitrationPipeline, type FieldValue, type ArbitrationResult } from './arbitration.js';
 import { sanitizeAddress, isValidAddress, safeFetch } from '../../src/lib/safe-json-parse.js';
 import { callCrimeGrade, callSchoolDigger, callGreatSchools, callFEMARiskIndex, callNOAAClimate, callNOAAStormEvents, callNOAASeaLevel, callUSGSElevation, callUSGSEarthquake, callEPAFRS, getRadonRisk, callGoogleStreetView, callGoogleSolarAPI, callHowLoud/*, callRedfinProperty*/ } from './free-apis.js';
 import { STELLAR_MLS_SOURCE, FBI_CRIME_SOURCE } from './source-constants.js';
 import { calculateAllDerivedFields, type PropertyData } from '../../src/lib/calculate-derived-fields.js';
-import { fetchAllMissingFields, needsTier35Extraction } from '../../src/services/valuation/geminiBatchWorker.js';
+import { fetchAllMissingFields } from '../../src/services/valuation/geminiBatchWorker.js';
 import { TIER_35_FIELD_IDS } from '../../src/services/valuation/geminiConfig.js';
 
 
@@ -5770,7 +5769,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         
         Object.keys(geminiResults).forEach(fieldIdStr => {
           const fieldId = parseInt(fieldIdStr);
-          const geminiField = geminiResults[fieldId];
+          const geminiField = geminiResults[fieldId as keyof typeof geminiResults];
           const fieldKey = `${fieldId}_`;
           const existingField = tier35Check.fields[fieldKey];
 
