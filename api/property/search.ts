@@ -3797,7 +3797,7 @@ EXTRACTION STRATEGY:
 4. ALWAYS distinguish between:
    - KNOWN: From training data with high confidence
    - ESTIMATED: Reasonable inference from similar properties
-   - UNKNOWN: Requires live data - return null
+   - UNKNOWN: Requires live data - OMIT the field
 
 DO NOT INVENT:
 - Specific prices, MLS numbers, parcel IDs
@@ -4434,7 +4434,7 @@ async function callGPT(
         })
       : `Extract all 168 property data fields for this address: ${address}
 
-Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listing_price", "7_county", "17_bedrooms"). Return null for fields requiring live data.`;
+Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listing_price", "7_county", "17_bedrooms"). Omit fields you cannot verify - do not return null values.`;
 
     console.log(`[GPT] Using ${isOrchestratorMode ? 'ORCHESTRATOR' : 'LEGACY'} mode`);
 
