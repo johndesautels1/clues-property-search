@@ -5344,7 +5344,7 @@ function mergeResults(results: any[]): any {
   // Dedupe sources
   merged.sources = Array.from(new Set(merged.sources));
   merged.total_fields_found = Object.keys(merged.fields).length;
-  merged.completion_percentage = Math.round((merged.total_fields_found / 168) * 100);
+  merged.completion_percentage = Math.round((merged.total_fields_found / 181) * 100);
 
   console.log(`🛡️ MERGE COMPLETE: ${merged.total_fields_found} fields accepted, ${totalNullsBlocked} nulls BLOCKED`);
 
@@ -6222,7 +6222,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ========================================
     const arbitrationResult = arbitrationPipeline.getResult();
     const totalFields = Object.keys(arbitrationResult.fields).length;
-    const completionPercentage = Math.round((totalFields / 168) * 100);
+    const completionPercentage = Math.round((totalFields / 181) * 100);
 
     // Build source breakdown from ALL sources that submitted data (not just winners)
     // This ensures progress tracker shows all sources that attempted to provide data
