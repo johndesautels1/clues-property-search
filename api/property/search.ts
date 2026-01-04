@@ -4370,7 +4370,12 @@ const SYSTEM_PROMPT = PROMPT_CLAUDE_OPUS;
 // NOTE: web_search NOT supported on Opus - removed per Anthropic docs
 async function callClaudeOpus(address: string): Promise<any> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return { error: 'ANTHROPIC_API_KEY not set', fields: {} };
+  if (!apiKey) {
+    console.log('❌ [Claude Opus] ANTHROPIC_API_KEY not set');
+    return { error: 'ANTHROPIC_API_KEY not set', fields: {} };
+  }
+  
+  console.log('✅ [Claude Opus] Calling API...');
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -4421,7 +4426,12 @@ Return verified data only. If you cannot find data, return null for that field.`
 // UPDATED: Includes web_search tool per CLAUDE_MASTER_RULES Section 6.0
 async function callClaudeSonnet(address: string): Promise<any> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return { error: 'ANTHROPIC_API_KEY not set', fields: {} };
+  if (!apiKey) {
+    console.log('❌ [Claude Sonnet] ANTHROPIC_API_KEY not set');
+    return { error: 'ANTHROPIC_API_KEY not set', fields: {} };
+  }
+  
+  console.log('✅ [Claude Sonnet] Calling API with web_search tool...');
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
