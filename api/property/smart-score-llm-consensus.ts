@@ -15,6 +15,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { GEMINI_OLIVIA_CMA_SYSTEM } from '../../src/config/gemini-prompts.js';
 
 // =============================================================================
 // TYPE DEFINITIONS
@@ -68,6 +69,7 @@ interface ConsensusResult {
   llmVotes: {
     perplexity: number[];
     claudeOpus: number[];
+    gemini: number[];
     tiebreaker?: {
       model: 'gpt-5.2' | 'grok';
       scores: number[];
@@ -76,6 +78,7 @@ interface ConsensusResult {
   fullResults: {
     perplexity: LLMResponse;
     claudeOpus: LLMResponse;
+    gemini: LLMResponse;
     tiebreaker?: LLMResponse;
   };
 }
@@ -432,6 +435,60 @@ async function callGrok(prompt: string): Promise<LLMResponse> {
   return JSON.parse(jsonStr);
 }
 
+// ============================================
+// GEMINI 3 PRO - OLIVIA CMA ANALYZER
+// ============================================
+
+/**
+ * Call Gemini API (third primary voter)
+ */
+async function callGemini(prompt: string): Promise<LLMResponse> {
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY not configured');
+  }
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-latest:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: {
+          parts: [{ text: GEMINI_OLIVIA_CMA_SYSTEM }]
+        },
+        contents: [{ parts: [{ text: prompt }] }],
+        tools: [{ google_search: {} }],
+        tool_config: { function_calling_config: { mode: 'ANY' } },
+        generation_config: {
+          temperature: 1.0,
+          response_mime_type: 'application/json',
+          thinking_level: 'high'
+        },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Gemini API error: ${response.status} ${error}`);
+  }
+
+  const data = await response.json();
+  const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!content) {
+    throw new Error('Gemini returned empty response');
+  }
+
+  // Parse JSON from response
+  const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || [null, content];
+  const jsonStr = jsonMatch[1] || content;
+
+  return JSON.parse(jsonStr);
+}
+
 // =============================================================================
 // CONSENSUS LOGIC
 // =============================================================================
@@ -451,12 +508,13 @@ async function calculateConsensus(
 ): Promise<ConsensusResult> {
   const prompt = buildPrompt(properties);
 
-  // STEP 1: Call Perplexity and Claude Opus simultaneously
-  console.log('[LLM Consensus] Calling Perplexity and Claude Opus...');
+  // STEP 1: Call Perplexity, Claude Opus, and Gemini simultaneously
+  console.log('[LLM Consensus] Calling Perplexity, Claude Opus, and Gemini...');
 
-  const [perplexityResult, claudeOpusResult] = await Promise.all([
+  const [perplexityResult, claudeOpusResult, geminiResult] = await Promise.all([
     callPerplexity(prompt),
     callClaudeOpus(prompt),
+    callGemini(prompt),
   ]);
 
   const perplexityScores = [
@@ -471,34 +529,82 @@ async function calculateConsensus(
     claudeOpusResult.property3.finalScore,
   ];
 
-  // STEP 2: Check if they agree on all 3 properties
+  const geminiScores = [
+    geminiResult.property1.finalScore,
+    geminiResult.property2.finalScore,
+    geminiResult.property3.finalScore,
+  ];
+
+  // STEP 2: Check if all 3 LLMs agree on all 3 properties (within tolerance)
   const allAgree =
     scoresAgree(perplexityScores[0], claudeOpusScores[0]) &&
+    scoresAgree(perplexityScores[0], geminiScores[0]) &&
     scoresAgree(perplexityScores[1], claudeOpusScores[1]) &&
-    scoresAgree(perplexityScores[2], claudeOpusScores[2]);
+    scoresAgree(perplexityScores[1], geminiScores[1]) &&
+    scoresAgree(perplexityScores[2], claudeOpusScores[2]) &&
+    scoresAgree(perplexityScores[2], geminiScores[2]);
 
   if (allAgree) {
-    // CONSENSUS: Average the two scores
-    console.log('[LLM Consensus] ✅ Perplexity and Claude Opus AGREE');
+    // CONSENSUS: Average all 3 scores
+    console.log('[LLM Consensus] ✅ Perplexity, Claude Opus, and Gemini AGREE');
 
     return {
-      property1Score: (perplexityScores[0] + claudeOpusScores[0]) / 2,
-      property2Score: (perplexityScores[1] + claudeOpusScores[1]) / 2,
-      property3Score: (perplexityScores[2] + claudeOpusScores[2]) / 2,
+      property1Score: (perplexityScores[0] + claudeOpusScores[0] + geminiScores[0]) / 3,
+      property2Score: (perplexityScores[1] + claudeOpusScores[1] + geminiScores[1]) / 3,
+      property3Score: (perplexityScores[2] + claudeOpusScores[2] + geminiScores[2]) / 3,
       consensusMethod: 'agreement',
       llmVotes: {
         perplexity: perplexityScores,
         claudeOpus: claudeOpusScores,
+        gemini: geminiScores,
       },
       fullResults: {
         perplexity: perplexityResult,
         claudeOpus: claudeOpusResult,
+        gemini: geminiResult,
       },
     };
   }
 
-  // STEP 3: Disagreement - Call tiebreaker
-  console.log('[LLM Consensus] ⚠️ DISAGREEMENT detected - calling tiebreaker...');
+  // STEP 3: Disagreement - Use median of 3 primary voters, call tiebreaker if needed
+  console.log('[LLM Consensus] ⚠️ DISAGREEMENT detected - using median voting...');
+
+  // For each property, find the median of the 3 scores (no tiebreaker needed with 3 voters)
+  const finalScores = [0, 1, 2].map((i) => {
+    const scores = [perplexityScores[i], claudeOpusScores[i], geminiScores[i]];
+    scores.sort((a, b) => a - b);
+    return scores[1]; // Median
+  });
+
+  // Check if median produces good consensus or if we need tiebreaker
+  const needsTiebreaker = [0, 1, 2].some((i) => {
+    const scores = [perplexityScores[i], claudeOpusScores[i], geminiScores[i]];
+    const range = Math.max(...scores) - Math.min(...scores);
+    return range > 20; // Large disagreement threshold
+  });
+
+  if (!needsTiebreaker) {
+    console.log('[LLM Consensus] ✅ Median consensus achieved');
+    return {
+      property1Score: finalScores[0],
+      property2Score: finalScores[1],
+      property3Score: finalScores[2],
+      consensusMethod: 'agreement',
+      llmVotes: {
+        perplexity: perplexityScores,
+        claudeOpus: claudeOpusScores,
+        gemini: geminiScores,
+      },
+      fullResults: {
+        perplexity: perplexityResult,
+        claudeOpus: claudeOpusResult,
+        gemini: geminiResult,
+      },
+    };
+  }
+
+  // STEP 4: Large disagreement - Call GPT-5.2 as 4th voter for weighted consensus
+  console.log('[LLM Consensus] ⚠️ Large disagreement - calling GPT-5.2 as 4th voter...');
 
   let tiebreakerResult: LLMResponse;
   let tiebreakerModel: 'gpt-5.2' | 'grok';
@@ -506,12 +612,12 @@ async function calculateConsensus(
   try {
     tiebreakerResult = await callGPT4(prompt);
     tiebreakerModel = 'gpt-5.2';
-    console.log('[LLM Consensus] Tiebreaker: GPT-5.2');
+    console.log('[LLM Consensus] 4th voter: GPT-5.2');
   } catch (error) {
     console.log('[LLM Consensus] GPT-5.2 failed, trying Grok...');
     tiebreakerResult = await callGrok(prompt);
     tiebreakerModel = 'grok';
-    console.log('[LLM Consensus] Tiebreaker: Grok');
+    console.log('[LLM Consensus] 4th voter: Grok');
   }
 
   const tiebreakerScores = [
@@ -520,22 +626,23 @@ async function calculateConsensus(
     tiebreakerResult.property3.finalScore,
   ];
 
-  // STEP 4: Use majority vote or weighted average
-  // For each property, find the median of the 3 scores
-  const finalScores = [0, 1, 2].map((i) => {
-    const scores = [perplexityScores[i], claudeOpusScores[i], tiebreakerScores[i]];
+  // STEP 5: Use median of all 4 voters
+  const finalScoresWithTiebreaker = [0, 1, 2].map((i) => {
+    const scores = [perplexityScores[i], claudeOpusScores[i], geminiScores[i], tiebreakerScores[i]];
     scores.sort((a, b) => a - b);
-    return scores[1]; // Median
+    // With 4 scores, median is average of middle two
+    return (scores[1] + scores[2]) / 2;
   });
 
   return {
-    property1Score: finalScores[0],
-    property2Score: finalScores[1],
-    property3Score: finalScores[2],
+    property1Score: finalScoresWithTiebreaker[0],
+    property2Score: finalScoresWithTiebreaker[1],
+    property3Score: finalScoresWithTiebreaker[2],
     consensusMethod: 'tiebreaker',
     llmVotes: {
       perplexity: perplexityScores,
       claudeOpus: claudeOpusScores,
+      gemini: geminiScores,
       tiebreaker: {
         model: tiebreakerModel,
         scores: tiebreakerScores,
@@ -544,6 +651,7 @@ async function calculateConsensus(
     fullResults: {
       perplexity: perplexityResult,
       claudeOpus: claudeOpusResult,
+      gemini: geminiResult,
       tiebreaker: tiebreakerResult,
     },
   };
