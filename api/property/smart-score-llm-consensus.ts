@@ -349,7 +349,7 @@ async function callGPT5(prompt: string): Promise<LLMResponse> {
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'gpt-5.2-pro-2025-12-11', // PINNED SNAPSHOT
+      model: 'gpt-5.2-pro',
       input: [
         { role: 'system', content: OLIVIA_SYSTEM_PROMPT },
         { role: 'user', content: prompt },

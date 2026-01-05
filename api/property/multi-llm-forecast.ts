@@ -551,7 +551,7 @@ async function callGPT5Forecast(
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'gpt-5.2-pro-2025-12-11', // PINNED SNAPSHOT
+      model: 'gpt-5.2-pro',
       input: [
         { role: 'system', content: GPT_OLIVIA_CMA_SYSTEM_PROMPT },
         { role: 'user', content: prompt },

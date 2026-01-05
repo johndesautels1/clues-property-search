@@ -860,7 +860,7 @@ Return ONLY the JSON object described in the system prompt.`;
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-5.2-pro-2025-12-11', // PINNED SNAPSHOT
+        model: 'gpt-5.2-pro',
         input: [
           { role: 'system', content: GPT_RETRY_SYSTEM_PROMPT },
           { role: 'user', content: userPrompt }

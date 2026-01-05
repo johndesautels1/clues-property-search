@@ -12,7 +12,7 @@
 |---|-----|----------|------------|------|-------------|
 | 1 | **Perplexity** | `sonar-deep-research` | ✅ Built-in | 4 | 90% |
 | 2 | **Gemini** | `gemini-3-pro-latest` | ✅ Google Search grounding | 4 | 85% |
-| 3 | **GPT** | `gpt-5.2-pro-2025-12-11` | ✅ Web evidence mode | 4 | 80% |
+| 3 | **GPT** | `gpt-5.2-pro` | ✅ Web evidence mode | 4 | 80% |
 | 4 | **Grok** | `grok-4-1-fast-reasoning` | ✅ X/Twitter data | 4 | 75% |
 | 5 | **Claude Sonnet** | `claude-sonnet-4-5-20250929` | ✅ Beta (web-search-2025-03-05) | 5 | 70% |
 | 6 | **Claude Opus** | `claude-opus-4-5-20251101` | ❌ No (pure reasoning) | 5 | 65% |
@@ -251,7 +251,7 @@ XAI_API_KEY=...                  # Grok (xAI) - NOT GROK_API_KEY!
 |----------|------|------|-------|
 | `callPerplexityForecast` | multi-llm-forecast.ts | 456 | sonar-deep-research |
 | `callGeminiForecast` | multi-llm-forecast.ts | 416 | gemini-3-pro-latest |
-| `callGPT5Forecast` | multi-llm-forecast.ts | 354 | gpt-5.2-pro-2025-12-11 |
+| `callGPT5Forecast` | multi-llm-forecast.ts | 354 | gpt-5.2-pro |
 | `callGrokForecast` | multi-llm-forecast.ts | 705 | grok-4-1-fast-reasoning |
 | `callClaudeForecast` | multi-llm-forecast.ts | 244 | claude-sonnet-4-5-20250929 |
 | `callClaudeOpusForecast` | multi-llm-forecast.ts | 304 | claude-opus-4-5-20251101 |

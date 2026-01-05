@@ -217,8 +217,10 @@ class PropertyScraper {
   private async scrapeWithGPT(prompt: string): Promise<PropertyScrapedData | null> {
     if (!this.gpt) throw new Error('GPT not configured');
 
+    // NOTE: gpt-5.2-pro may require the Responses API, not chat completions
+    // If this fails, refactor to use fetch('https://api.openai.com/v1/responses')
     const response = await this.gpt.chat.completions.create({
-      model: 'gpt-5.2-pro-2025-12-11',
+      model: 'gpt-5.2-pro',
       messages: [
         {
           role: 'system',

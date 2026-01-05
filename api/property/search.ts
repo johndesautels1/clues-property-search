@@ -4245,16 +4245,15 @@ async function callCopilot(address: string): Promise<any> {
   if (!apiKey) return { error: 'OPENAI_API_KEY not set', fields: {} };
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-5.2-pro-2025-12-11',
-        max_tokens: 16000,
-        messages: [
+        model: 'gpt-5.2-pro',
+        input: [
           { role: 'system', content: PROMPT_COPILOT },
           {
             role: 'user',
@@ -4263,12 +4262,17 @@ async function callCopilot(address: string): Promise<any> {
 Return structured JSON with proper field keys. Use null for unknown data.`,
           },
         ],
+        reasoning: { effort: 'high' },
+        tools: [{ type: 'web_search' }],
+        tool_choice: 'required',
+        include: ['web_search_call.action.sources'],
       }),
     });
 
     const data = await response.json();
-    if (data.choices && data.choices[0]?.message?.content) {
-      const text = data.choices[0].message.content;
+    // Handle /v1/responses format
+    const text = data.output_text || data.choices?.[0]?.message?.content;
+    if (text) {
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         try {
@@ -4321,16 +4325,19 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
     console.log(`[GPT] Using ${isOrchestratorMode ? 'ORCHESTRATOR' : 'LEGACY'} mode`);
 
     const requestBody = {
-      model: 'gpt-5.2-pro-2025-12-11', // GPT-5.2 December 2025 release
-      max_completion_tokens: 128000, // GPT-5.2 supports up to 128k output tokens
-      messages: [
+      model: 'gpt-5.2-pro',
+      input: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
+      reasoning: { effort: 'high' },
+      tools: [{ type: 'web_search' }],
+      tool_choice: 'required',
+      include: ['web_search_call.action.sources'],
     };
 
     const fetchStart = Date.now();
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -4348,8 +4355,9 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
 
     const data = await response.json();
 
-    if (data.choices && data.choices[0]?.message?.content) {
-      const text = data.choices[0].message.content;
+    // Handle /v1/responses format
+    const text = data.output_text || data.choices?.[0]?.message?.content;
+    if (text) {
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         try {
@@ -4428,21 +4436,24 @@ async function callGPT5FieldAuditor(
     console.log(`[GPT LLM Auditor] Auditing ${Object.keys(inputs.llmOnlyFields).length} LLM-populated fields`);
 
     const requestBody = {
-      model: 'gpt-5.2-pro-2025-12-11', // PINNED SNAPSHOT
-      max_completion_tokens: 128000, // GPT-5.2 supports up to 128k output
-      messages: [
+      model: 'gpt-5.2-pro',
+      input: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
+      reasoning: { effort: 'high' },
+      tools: [{ type: 'web_search' }],
+      tool_choice: 'required',
+      include: ['web_search_call.action.sources'],
       temperature: 0.1, // Low temperature for deterministic auditing
     };
 
     // LOG RAW REQUEST
-    console.log(`[GPT LLM Auditor] REQUEST: model=${requestBody.model}, max_completion_tokens=${requestBody.max_completion_tokens}`);
+    console.log(`[GPT LLM Auditor] REQUEST: model=${requestBody.model}`);
     console.log(`[GPT LLM Auditor] System prompt length: ${systemPrompt.length} chars`);
     console.log(`[GPT LLM Auditor] User prompt length: ${userPrompt.length} chars`);
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -4453,7 +4464,6 @@ async function callGPT5FieldAuditor(
 
     // LOG RAW RESPONSE STATUS
     console.log(`[GPT LLM Auditor] RESPONSE: status=${response.status} ${response.statusText}`);
-    // Headers logging skipped - entries() not available in all Node versions
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -4463,12 +4473,9 @@ async function callGPT5FieldAuditor(
 
     const data = await response.json();
 
-    // LOG RAW RESPONSE DATA
-    console.log(`[GPT LLM Auditor] Response model:`, data.model);
-    console.log(`[GPT LLM Auditor] Response usage:`, JSON.stringify(data.usage));
-    console.log(`[GPT LLM Auditor] Finish reason:`, data.choices?.[0]?.finish_reason);
-    if (data.choices && data.choices[0]?.message?.content) {
-      const text = data.choices[0].message.content;
+    // Handle /v1/responses format
+    const text = data.output_text || data.choices?.[0]?.message?.content;
+    if (text) {
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         try {
