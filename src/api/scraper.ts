@@ -218,7 +218,7 @@ class PropertyScraper {
     if (!this.gpt) throw new Error('GPT not configured');
 
     const response = await this.gpt.chat.completions.create({
-      model: 'gpt-4-turbo-preview',
+      model: 'gpt-5.2-pro-2025-12-11',
       messages: [
         {
           role: 'system',

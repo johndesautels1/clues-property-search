@@ -4169,36 +4169,22 @@ Return JSON with numbered field keys like "10_listing_price": {"value": 450000, 
   }
 }
 
-// GitHub Copilot API call - 5th in reliability per audit
+// Copilot API call - 5th in reliability per audit
 async function callCopilot(address: string): Promise<any> {
-  // Copilot uses Azure OpenAI or GitHub's API
-  const apiKey = process.env.GITHUB_COPILOT_API_KEY || process.env.AZURE_OPENAI_API_KEY;
-  const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
+  const apiKey = process.env.OPENAI_API_KEY;
 
-  if (!apiKey) return { error: 'COPILOT/AZURE API key not set', fields: {} };
+  if (!apiKey) return { error: 'OPENAI_API_KEY not set', fields: {} };
 
   try {
-    // If using Azure OpenAI endpoint
-    const url = endpoint
-      ? `${endpoint}/openai/deployments/gpt-4/chat/completions?api-version=2024-02-15-preview`
-      : 'https://api.githubcopilot.com/chat/completions'; // GitHub Copilot API
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    if (endpoint) {
-      headers['api-key'] = apiKey;
-    } else {
-      headers['Authorization'] = `Bearer ${apiKey}`;
-    }
-
-    const response = await fetch(url, {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
-      headers,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
       body: JSON.stringify({
-        model: 'gpt-4',
-        max_tokens: 16000, // Increased from 8000 to handle 168 fields
+        model: 'gpt-5.2-pro-2025-12-11',
+        max_tokens: 16000,
         messages: [
           { role: 'system', content: PROMPT_COPILOT },
           {
@@ -4266,7 +4252,7 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
     console.log(`[GPT] Using ${isOrchestratorMode ? 'ORCHESTRATOR' : 'LEGACY'} mode`);
 
     const requestBody = {
-      model: 'gpt-5.2-2025-12-11', // GPT-5.2 December 2025 release
+      model: 'gpt-5.2-pro-2025-12-11', // GPT-5.2 December 2025 release
       max_completion_tokens: 128000, // GPT-5.2 supports up to 128k output tokens
       messages: [
         { role: 'system', content: systemPrompt },
@@ -4373,7 +4359,7 @@ async function callGPT_LLMFieldAuditor(
     console.log(`[GPT LLM Auditor] Auditing ${Object.keys(inputs.llmOnlyFields).length} LLM-populated fields`);
 
     const requestBody = {
-      model: 'gpt-5.2-2025-12-11', // PINNED SNAPSHOT
+      model: 'gpt-5.2-pro-2025-12-11', // PINNED SNAPSHOT
       max_completion_tokens: 128000, // GPT-5.2 supports up to 128k output
       messages: [
         { role: 'system', content: systemPrompt },
