@@ -1,0 +1,77 @@
+{
+  "field_rules": {
+    "104_electric_provider": {
+      "type": "string",
+      "definition": "Primary electric utility serving the property address.",
+      "preferred_sources": [
+        "official utility service territory / address lookup",
+        "city utility page",
+        "county utility FAQ"
+      ],
+      "disallowed_sources": [
+        "random blogs",
+        "AI-generated directories"
+      ],
+      "how_to_decide": "If multiple utilities appear, pick the one explicitly stating service for the exact address/ZIP/city service area; otherwise return null.",
+      "min_sources_required": 1
+    },
+    "106_water_provider": {
+      "type": "string",
+      "definition": "Primary water utility serving the property address.",
+      "preferred_sources": [
+        "official utility service territory / address lookup",
+        "city utility page",
+        "county utility FAQ"
+      ],
+      "disallowed_sources": [
+        "random blogs",
+        "AI-generated directories"
+      ],
+      "how_to_decide": "If multiple utilities appear, pick the one explicitly stating service for the exact address/ZIP/city service area; otherwise return null.",
+      "min_sources_required": 1
+    },
+    "120_flood_risk_level": {
+      "type": "string",
+      "definition": "FEMA flood zone designation or flood risk category for the property.",
+      "preferred_sources": [
+        "FEMA Flood Map Service Center",
+        "county floodplain administrator",
+        "official flood zone lookup tool"
+      ],
+      "disallowed_sources": [
+        "real estate listing descriptions",
+        "non-official flood estimate sites"
+      ],
+      "how_to_decide": "Must match exact address or parcel. If only general area data, return null.",
+      "min_sources_required": 2
+    },
+    "124_hurricane_risk": {
+      "type": "string",
+      "definition": "Hurricane risk level or evacuation zone for the property location.",
+      "preferred_sources": [
+        "county emergency management",
+        "state hurricane evacuation zone maps",
+        "NOAA hurricane data"
+      ],
+      "disallowed_sources": [
+        "insurance marketing sites",
+        "generic risk calculators"
+      ],
+      "how_to_decide": "Use official evacuation zone if available; otherwise use historical hurricane frequency for county/region.",
+      "min_sources_required": 2
+    },
+    "35_annual_taxes": {
+      "type": "number",
+      "definition": "Most recent annual property tax amount (USD).",
+      "preferred_sources": [
+        "county property appraiser / tax collector record page"
+      ],
+      "disallowed_sources": [
+        "real estate listings",
+        "Zillow/Redfin estimates"
+      ],
+      "how_to_decide": "Must be address/parcel-specific. If only tax rate is found, return null (do not estimate).",
+      "min_sources_required": 1
+    }
+  }
+}

@@ -237,9 +237,100 @@ async function callClaudeOpus(prompt: string): Promise<LLMResponse> {
   return JSON.parse(jsonStr);
 }
 
+// ============================================
+// OLIVIA - CLUES Comparative Real Estate Analyst
+// ============================================
+const OLIVIA_SYSTEM_PROMPT = `You are Olivia, a CLUES Comparative Real Estate Analyst.
+
+MISSION
+Given a subject property and three comparable properties, plus precomputed scoring components from the app, produce:
+1) A field-by-field comparison for the requested comparison keys
+2) A ranked recommendation with clear tradeoffs
+3) A concise executive summary written for a client
+4) Optional market forecast (1y and 5y) that uses web search ONLY for macro context — never to overwrite property facts
+
+HARD RULES
+- Do NOT change property facts in the input. You may only interpret them.
+- If a field is missing or unverified, explicitly treat it as unknown.
+- If you use web search, use it only for market context and cite it in a separate "market_sources" section.
+- Your outputs must be deterministic, consistent, and JSON-only.
+
+OUTPUT JSON (no markdown)
+{
+  "ranking": [
+    { "property_id": "<subject|comp1|comp2|comp3>", "rank": <1-4>, "why": ["<bullet>", "..."] }
+  ],
+  "comparisons": {
+    "by_field": [
+      {
+        "field_key": "<string>",
+        "subject_value": <any>,
+        "comp_values": { "comp1": <any>, "comp2": <any>, "comp3": <any> },
+        "verdict": { "comp1": "better|same|worse|unknown", "comp2": "...", "comp3": "..." },
+        "threshold_or_logic": "<string>",
+        "confidence": "High|Medium|Low"
+      }
+    ],
+    "by_category": [
+      { "category": "<string>", "what_mattered": ["<bullet>", "..."], "risks": ["<bullet>", "..."] }
+    ]
+  },
+  "smart_score_summary": {
+    "inputs_used": ["<list the score components you received>"],
+    "interpretation": ["<bullet>", "..."],
+    "tie_break_if_needed": { "applied": <true|false>, "explanation": "<string>" }
+  },
+  "forecast": {
+    "enabled": <true|false>,
+    "appreciation1Yr_pct": <number|null>,
+    "appreciation5Yr_cum_pct": <number|null>,
+    "confidence_0_100": <number>,
+    "key_trends": ["<string>", "..."],
+    "reasoning": "<2-4 sentences>"
+  },
+  "executive_summary": {
+    "client_facing_summary": "<short paragraph>",
+    "top_3_recommendations": ["<bullet>", "..."],
+    "top_3_watchouts": ["<bullet>", "..."]
+  },
+  "market_sources": [
+    { "url": "<string>", "title": "<string>", "snippet": "<<=25 words>", "retrieved_at": "<ISO date>" }
+  ]
+}`;
+
+/**
+ * Olivia User Template - Formats input for CMA analysis
+ */
+const OLIVIA_USER_TEMPLATE = (params: {
+  subjectAndComps: unknown;
+  comparisonKeys: string[];
+  smartScoreComponents: unknown;
+  forecastEnabled: boolean;
+  city: string;
+  county: string;
+  state: string;
+}) => `INPUT_DATA (do not modify; interpret only):
+${JSON.stringify(params.subjectAndComps, null, 2)}
+
+COMPARISON_FIELD_KEYS (only evaluate these):
+${JSON.stringify(params.comparisonKeys, null, 2)}
+
+APP_SCORING (precomputed by our code; use in your interpretation):
+${JSON.stringify(params.smartScoreComponents, null, 2)}
+
+FORECAST_MODE:
+- enabled: ${params.forecastEnabled}
+- property_market_context: "${params.city}, ${params.county}, ${params.state}"
+
+Return ONLY the JSON described in the system prompt.`;
+
+// Legacy alias
+const GPT_SMART_SCORE_SYSTEM_PROMPT = OLIVIA_SYSTEM_PROMPT;
+
 /**
  * Call GPT-5.2 API (tiebreaker)
  */
+
 async function callGPT4(prompt: string): Promise<LLMResponse> {
   const apiKey = process.env.OPENAI_API_KEY;
 
@@ -247,39 +338,38 @@ async function callGPT4(prompt: string): Promise<LLMResponse> {
     throw new Error('OPENAI_API_KEY not configured');
   }
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  // Use OpenAI Responses API with web search for market context
+  const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'gpt-5.2-2025-12-11', // PINNED SNAPSHOT (prevent behavior drift)
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a Florida real estate SMART Score calculation engine. You MUST return valid JSON with exact mathematical calculations as specified.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
+      model: 'gpt-5.2-pro-2025-12-11', // PINNED SNAPSHOT
+      input: [
+        { role: 'system', content: OLIVIA_SYSTEM_PROMPT },
+        { role: 'user', content: prompt },
       ],
+      reasoning: { effort: 'high' },
+      tools: [{ type: 'web_search' }],
+      tool_choice: 'auto', // Optional for CMA - only use web for market context
+      include: ['web_search_call.action.sources'],
       temperature: 0.1,
-      max_completion_tokens: 32000, // Increased from 16000 for full score breakdown
     }),
   });
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`GPT-5.2 API error: ${response.status} ${error}`);
+    throw new Error(`GPT-5.2-pro API error: ${response.status} ${error}`);
   }
 
   const data = await response.json();
-  const content = data.choices[0]?.message?.content;
+  // Handle Responses API format (output_text) or Chat Completions format (choices)
+  const content = data.output_text || data.choices?.[0]?.message?.content;
 
   if (!content) {
-    throw new Error('GPT-5.2 returned empty response');
+    throw new Error('GPT-5.2-pro returned empty response');
   }
 
   return JSON.parse(content);

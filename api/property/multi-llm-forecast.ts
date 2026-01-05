@@ -62,6 +62,40 @@ export interface MarketForecast {
 }
 
 // ============================================================================
+// OLIVIA FORECAST SYSTEM PROMPT
+// ============================================================================
+const OLIVIA_FORECAST_SYSTEM_PROMPT = `You are Olivia, a CLUES Comparative Real Estate Analyst.
+
+MISSION
+Provide a market forecast for a specific property location. Use web search ONLY for macro market context — never to assert property-specific facts.
+
+HARD RULES
+- Do NOT change or assert property facts. Only forecast market trends.
+- If you use web search, use it only for market context and cite sources.
+- Your outputs must be deterministic, consistent, and JSON-only.
+
+OUTPUT JSON (no markdown)
+{
+  "forecast": {
+    "appreciation1Yr_pct": <number|null>,
+    "appreciation5Yr_cum_pct": <number|null>,
+    "confidence_0_100": <number>,
+    "key_trends": ["<string>", "..."],
+    "reasoning": "<2-4 sentences>"
+  },
+  "market_sources": [
+    { "url": "<string>", "title": "<string>", "snippet": "<<=25 words>", "retrieved_at": "<ISO date>" }
+  ]
+}
+
+FORECAST GUIDANCE
+- Be REALISTIC - avoid overly optimistic forecasts
+- If data is limited, lower confidence score (0-100)
+- Consider both appreciation AND depreciation scenarios
+- Base on current market DATA, not speculation
+- Focus on THIS SPECIFIC LOCATION`;
+
+// ============================================================================
 // FORECAST PROMPT TEMPLATE
 // ============================================================================
 
@@ -71,45 +105,17 @@ function buildForecastPrompt(
   neighborhood: string,
   propertyType: string = 'Single Family'
 ): string {
-  return `You are a real estate market analyst. Analyze the market forecast for this property:
-
-**PROPERTY:**
+  return `PROPERTY CONTEXT:
 - Address: ${address}
 - Current Price: $${currentPrice.toLocaleString()}
 - Neighborhood: ${neighborhood}
 - Property Type: ${propertyType}
 
-**YOUR TASK:**
-Provide a data-driven market forecast in JSON format:
+TASK:
+Provide a data-driven market forecast for this property location.
+Use web search to gather current market context for ${neighborhood} / ${address.split(',').slice(-2).join(',')} area.
 
-{
-  "appreciation1Yr": <number>,     // Expected % price change in 1 year (can be negative)
-  "appreciation5Yr": <number>,     // Expected % price change in 5 years (cumulative)
-  "confidence": <number>,          // 0-100 confidence in this forecast
-  "keyTrends": [<string>, ...],    // Top 3-5 market trends affecting this property
-  "reasoning": "<string>"          // 2-3 sentence explanation
-}
-
-**ANALYSIS FACTORS:**
-- Recent comparable sales trends
-- Local job market & economic indicators
-- School quality changes
-- New development/construction
-- Interest rate trends
-- Supply/demand dynamics
-- Neighborhood demographic shifts
-- Crime trends
-- Natural disaster risks
-- Transit/infrastructure projects
-
-**CRITICAL RULES:**
-1. Be REALISTIC - avoid overly optimistic forecasts
-2. If data is limited, lower confidence score
-3. Consider both appreciation AND depreciation scenarios
-4. Base on DATA, not speculation
-5. Focus on THIS SPECIFIC LOCATION
-
-Return ONLY valid JSON. No markdown, no explanation outside JSON.`;
+Return ONLY the JSON described in the system prompt.`;
 }
 
 // ============================================================================
@@ -228,7 +234,7 @@ async function callClaudeOpusForecast(
 }
 
 /**
- * GPT-5.2 - Market psychology + buyer behavior
+ * GPT-5.2-PRO (Olivia) - Market forecast with web search
  */
 async function callGPT4Forecast(
   address: string,
@@ -241,31 +247,51 @@ async function callGPT4Forecast(
     throw new Error('OPENAI_API_KEY not found in environment variables');
   }
 
-  const client = new OpenAI({ apiKey });
-
   const prompt = buildForecastPrompt(address, price, neighborhood, propertyType);
 
-  const response = await client.chat.completions.create({
-    model: 'gpt-5.2-2025-12-11', // PINNED SNAPSHOT (prevent behavior drift)
-    messages: [{ role: 'user', content: prompt }],
-    temperature: 0.5,
-    max_completion_tokens: 16000, // Increased from 2000 for full forecast output
+  // Use OpenAI Responses API with web search for market context
+  const response = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'gpt-5.2-pro-2025-12-11', // PINNED SNAPSHOT
+      input: [
+        { role: 'system', content: OLIVIA_FORECAST_SYSTEM_PROMPT },
+        { role: 'user', content: prompt },
+      ],
+      reasoning: { effort: 'high' },
+      tools: [{ type: 'web_search' }],
+      tool_choice: 'required', // Always use web search for forecasts
+      include: ['web_search_call.action.sources'],
+      temperature: 0.5,
+    }),
   });
 
-  const text = response.choices[0]?.message?.content;
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`GPT-5.2-pro forecast error: ${response.status} ${error}`);
+  }
+
+  const responseData = await response.json();
+  const text = responseData.output_text || responseData.choices?.[0]?.message?.content;
+
   if (!text) {
-    throw new Error('No content in GPT-5.2 response');
+    throw new Error('No content in GPT-5.2-pro response');
   }
 
   const data = JSON.parse(text);
+  const forecast = data.forecast || data;
 
   return {
-    source: 'GPT-5.2',
-    appreciation1Yr: data.appreciation1Yr,
-    appreciation5Yr: data.appreciation5Yr,
-    confidence: data.confidence,
-    keyTrends: data.keyTrends,
-    reasoning: data.reasoning,
+    source: 'GPT-5.2-pro (Olivia)',
+    appreciation1Yr: forecast.appreciation1Yr_pct ?? forecast.appreciation1Yr,
+    appreciation5Yr: forecast.appreciation5Yr_cum_pct ?? forecast.appreciation5Yr,
+    confidence: forecast.confidence_0_100 ?? forecast.confidence,
+    keyTrends: forecast.key_trends ?? forecast.keyTrends,
+    reasoning: forecast.reasoning,
   };
 }
 

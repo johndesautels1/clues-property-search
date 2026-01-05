@@ -48,6 +48,8 @@ import { sanitizeAddress, isValidAddress, safeFetch } from '../../src/lib/safe-j
 import { callCrimeGrade, callSchoolDigger, callGreatSchools, callFEMARiskIndex, callNOAAClimate, callNOAAStormEvents, callNOAASeaLevel, callUSGSElevation, callUSGSEarthquake, callEPAFRS, getRadonRisk, callGoogleStreetView, callGoogleSolarAPI, callHowLoud/*, callRedfinProperty*/ } from './free-apis.js';
 import { STELLAR_MLS_SOURCE, FBI_CRIME_SOURCE } from './source-constants.js';
 import { calculateAllDerivedFields, type PropertyData } from '../../src/lib/calculate-derived-fields.js';
+import missingFieldsList from '../../src/config/clues_missing_fields_list.json';
+import missingFieldsRules from '../../src/config/clues_missing_fields_rules.json';
 import { fetchAllMissingFields } from '../../src/services/valuation/geminiBatchWorker.js';
 import { TIER_35_FIELD_IDS } from '../../src/services/valuation/geminiConfig.js';
 
@@ -3796,297 +3798,203 @@ Be HONEST about uncertainty. It's better to return null than to guess.
 ${JSON_RESPONSE_FORMAT}`;
 
 // ============================================
-// GPT-5.2 PROMPT - NO WEB - Strong reasoning
+// GPT-5.2-PRO FIELD COMPLETER - Web-Evidence Mode
 // ============================================
-const PROMPT_GPT = `You are GPT-5.2, a real estate data extraction assistant. You do NOT have web access.
+const PROMPT_GPT_FIELD_COMPLETER = `You are CLUES Field Completer (Web-Evidence Mode).
 
-YOUR MISSION: Extract property data fields using your training knowledge (cutoff: early 2024).
+MISSION
+Populate ONLY the requested field keys in missing_field_keys for a single property address, using live web search.
+You must attach evidence for every non-null value.
 
-${FIELD_GROUPS}
+HARD RULES (EVIDENCE FIREWALL)
+1) DO NOT use training memory to assert property-specific facts.
+2) Every non-null value MUST be supported by web evidence you found in this run.
+3) If you cannot find strong evidence, set value = null (do NOT guess, do NOT estimate).
+4) Prefer authoritative sources in this order:
+   A) Government / county / municipality websites
+   B) Official utility providers / insurers / regulators
+   C) Major reputable data providers with clear methodology
+   D) Everything else (only if unavoidable; lower confidence)
+5) If sources conflict, do NOT "average." Choose the most authoritative source and record the conflict.
 
-EXTRACTION STRATEGY:
-1. START with geographic/regional knowledge you're confident about
-2. For Florida properties, you likely know:
-   - County boundaries and names
-   - Major utility providers (Duke Energy, TECO, Tampa Bay Water)
-   - School district structures
-   - General flood zone patterns (coastal vs inland)
-
-3. PROVIDE estimates only when you can explain your reasoning:
-   - "Based on Tampa Bay area averages..."
-   - "Typical for Pinellas County residential..."
-
-4. ALWAYS distinguish between:
-   - KNOWN: From training data with high confidence
-   - ESTIMATED: Reasonable inference from similar properties
-   - UNKNOWN: Requires live data - OMIT the field
-
-DO NOT INVENT:
-- Specific prices, MLS numbers, parcel IDs
-- Exact tax amounts or assessed values
-- Owner names or sale dates
-- Current listing status
-
-${JSON_RESPONSE_FORMAT}`;
-
-// ============================================
-// GPT-5.2 ORCHESTRATOR PROMPT - Evidence-Locked Data Merge
-// Used when GPT receives pre-fetched data blobs (stellarMls, county, APIs, web)
-// Designed by GPT-4 for strict evidence firewall and tier precedence
-// ============================================
-const PROMPT_GPT_ORCHESTRATOR = `YOU ARE: GPT-5.2, a strict CMA data merge + extraction engine.
-
-MISSION:
-Populate the 168-field CMA schema by using ONLY the provided INPUT_DATA blobs.
-Prefer null over guessing.
-
-ABSOLUTE RULE: NO OUTSIDE FACTS
-- Do NOT use training knowledge to assert property-specific facts.
-- Do NOT browse the web.
-- Only use values found in the provided input blobs OR computed via the SAFE COMPUTATIONS whitelist below.
-
-INPUT BLOBS (may be empty / partial):
-- stellarMlsJson (Tier 1, highest authority)
-- paidApisJson (Tier 2)
-- countyJson (Tier 3)
-- webChunksJson (Tier 4)
-- address string (Tier 5 only for literal parsing of what is explicitly present)
-
-${EXACT_FIELD_KEYS}
-
-${FIELD_CLARITY_RULES}
-
-OUTPUT SHAPE (MUST MATCH EXACTLY):
-For each field key:
-{ "value": X, "source": "...", "confidence": "High|Medium|Low|Unverified",
-  "evidence_type": "...", "source_tier": 1|2|3|4|5,
-  "computation_rule": "<string_or_null>", "inputs_used": ["<field_key>", ...] }
-
-EVIDENCE FIREWALL (NON-NEGOTIABLE):
-1) Every non-null field MUST come from one of:
-   A) Direct copy from an input blob (preferred), OR
-   B) SAFE COMPUTATION using ONLY non-null fields already obtained from input blobs.
-2) If a field is not present in any input blob and is not safely computable → set value=null.
-3) Never "infer" county, flood zone, utilities, school district, taxes, assessed value, HOA amounts, listing status, sale dates, parcel ID, etc.
-   - These MUST come from blobs, not memory.
-
-EVIDENCE TYPES:
-- "direct_from_input"  (copied from a blob)
-- "safe_computation"   (computed by whitelist rule)
-- "geographic_inference" (ONLY literal parse from address string if explicitly present; no county inference)
-- "not_found"          (value is null)
-
-TIER PRECEDENCE (CONFLICT RESOLUTION):
-- Tier 1: stellarMlsJson (NEVER override; copy exactly if present)
-- Tier 2: paidApisJson
-- Tier 3: countyJson
-- Tier 4: webChunksJson
-- Tier 5: address literal parsing only
-
-CONFLICT RULES:
-- If the same field exists in multiple tiers:
-  - Choose highest tier value.
-  - Record a conflicts[] entry if the values differ materially.
-- NEVER "correct" Tier 1 values even if other sources disagree.
-
-SAFE COMPUTATIONS (ONLY THESE — DO NOT ADD MORE):
-- 11_price_per_sqft = 10_listing_price ÷ 21_living_sqft
-- 20_total_bathrooms = 18_full_bathrooms + (19_half_bathrooms × 0.5)
-- 24_lot_size_acres = 23_lot_size_sqft ÷ 43560
-- 99_rental_yield = (98_rental_estimate_monthly × 12) ÷ 10_listing_price × 100
-- 101_cap_rate = ((98_rental_estimate_monthly × 12) - 35_annual_taxes) ÷ 10_listing_price × 100
-- Unit conversions (only when explicit inputs exist):
-  - acres_to_sqft = acres × 43560
-  - sqft_to_acres = sqft ÷ 43560
-
-FORBIDDEN:
-- Estimating missing inputs (no backfilling)
-- Any "typical/average" regional assumptions
-- Any new computations not listed above
-- Any language like: likely, possibly, approximately, about, around, typical, average
-
-CONFIDENCE RULES:
-- High: Tier 1 direct_from_input OR Tier 2 direct_from_input with clear specificity
-- Medium: Tier 3 direct_from_input OR safe_computation with strong inputs
-- Low: Tier 4 direct_from_input OR geographic_inference OR safe_computation with weaker inputs
-- Unverified: value is null
-
-POST-PROCESS VALIDATION:
-- If evidence_type="safe_computation": computation_rule MUST be set and inputs_used must list all required inputs.
-- If any required input is null → computed field MUST be null (not_found).
-- Ensure fields_found and fields_missing are accurate.
-- Return ONLY JSON. No prose.`;
-
-/**
- * GPT Orchestrator User Template
- * Formats input blobs for GPT-5.2 evidence-locked data merge
- */
-const GPT_ORCHESTRATOR_USER_TEMPLATE = (params: {
-  address: string;
-  stellarMlsJson: unknown;
-  countyJson: unknown;
-  paidApisJson: unknown;
-  webChunksJson: unknown;
-}) => `INPUT_DATA (authoritative blobs):
-{
-  "address": "${params.address}",
-
-  "stellarMlsJson": ${JSON.stringify(params.stellarMlsJson, null, 2)},
-
-  "countyJson": ${JSON.stringify(params.countyJson, null, 2)},
-
-  "paidApisJson": ${JSON.stringify(params.paidApisJson, null, 2)},
-
-  "webChunksJson": ${JSON.stringify(params.webChunksJson, null, 2)}
-}
-
-TASK:
-Populate ALL fields in EXACT_FIELD_KEYS using ONLY INPUT_DATA with tier precedence rules.
-If a field is missing in all blobs and not computable by SAFE COMPUTATIONS, set value=null.
-
-RETURN ONLY valid JSON in this exact wrapper:
+OUTPUT REQUIREMENTS
+Return ONLY valid JSON (no markdown, no prose) matching this shape:
 
 {
+  "address": "<string>",
   "fields": {
-    "<each_exact_key>": {
+    "<field_key>": {
       "value": <string|number|boolean|array|null>,
-      "source": "<one_of: Stellar MLS | Paid APIs | County | Web Chunks | Address Parse | Not found>",
       "confidence": "High|Medium|Low|Unverified",
-      "evidence_type": "direct_from_input|safe_computation|geographic_inference|not_found",
-      "source_tier": <1|2|3|4|5>,
-      "computation_rule": <string_or_null>,
-      "inputs_used": <array_of_field_keys_or_empty_array>
+      "evidence": [
+        {
+          "url": "<string>",
+          "title": "<string>",
+          "snippet": "<string, <= 25 words>",
+          "retrieved_at": "<ISO-8601 date>"
+        }
+      ],
+      "notes": "<short string or empty>",
+      "conflicts": [
+        {
+          "url": "<string>",
+          "value_seen": "<string>",
+          "why_rejected": "<string>"
+        }
+      ]
     }
   },
-  "sources_searched": ["stellarMlsJson","paidApisJson","countyJson","webChunksJson","address"],
   "fields_found": <integer>,
-  "fields_missing": [ "<field_keys_with_null_value>" ],
-  "conflicts": [
-    { "field": "<field_key>", "tier_values": [{ "tier": <n>, "value": <x> }, ...], "resolution": "<chosen_tier>" }
-  ],
-  "note": "Evidence-locked merge. No external knowledge or web. Tier precedence enforced."
-}`;
-
-// ============================================
-// GPT-5.2 LLM-ONLY AUDITOR - Validates only LLM-populated fields
-// Used to audit fields from Perplexity/Claude/GPT/Grok (Tier 4/5)
-// DOES NOT audit Stellar MLS, Google APIs, County, or other API sources (Tier 1-3)
-// ============================================
-const PROMPT_GPT_LLM_AUDITOR = `YOU ARE: GPT-5.2, LLM-Field-Only Auditor and Hallucination Detector.
-
-PURPOSE:
-Validate ONLY the fields that were populated by LLMs (Perplexity, Claude, GPT, Grok, Gemini).
-DO NOT audit fields from Stellar MLS, Google APIs, County, or other trusted API sources - those are already authoritative.
-
-CRITICAL SCOPE:
-You will receive ONLY the subset of fields that LLMs populated (~30-80 fields out of 168 total).
-API-populated fields are PRE-VALIDATED and must not be re-audited.
-
-NON-NEGOTIABLE RULES:
-1) NO OUTSIDE FACTS. Use only INPUT_DATA to validate LLM claims.
-2) For each LLM field, check:
-   a) Is the value supported by INPUT_DATA? If not → null it
-   b) If computed, are ALL inputs present and calculation correct?
-   c) If claiming a source not in INPUT_DATA → null it
-   d) Does it violate tier precedence? (e.g., used Tier 4 when Tier 3 had data)
-3) You are NOT validating API fields (Tier 1-3) - those are pre-validated and trusted.
-4) Focus on catching:
-   - Hallucinations (invented values like "typical for Pinellas County is $5000")
-   - Wrong computations (11_price_per_sqft = price × sqft instead of ÷)
-   - Tier violations (used webChunks when countyJson had same field)
-   - Forbidden inferences (estimated taxes, guessed HOA fees)
-   - Suspicious sources (claims "Zillow.com" but no Zillow data in INPUT_DATA)
-
-NULL REASONS (use exactly one for null fields):
-- "not_in_input_data" - Field not found in any INPUT_DATA blob
-- "requires_live_lookup" - Needs real-time API call (not available)
-- "conflicting_input_data" - Multiple sources disagree
-- "forbidden_inference" - LLM guessed/estimated without evidence
-- "computation_failed" - Missing required inputs for calculation
-
-SAFE COMPUTATIONS (ONLY THESE - recalculate if wrong):
-- 11_price_per_sqft = 10_listing_price ÷ 21_living_sqft
-- 20_total_bathrooms = 18_full_bathrooms + (19_half_bathrooms × 0.5)
-- 24_lot_size_acres = 23_lot_size_sqft ÷ 43560
-- 99_rental_yield = (98_rental_estimate_monthly × 12) ÷ 10_listing_price × 100
-- 101_cap_rate = ((98_rental_estimate_monthly × 12) - 35_annual_taxes) ÷ 10_listing_price × 100
-
-SOURCE NORMALIZATION (use ONLY these in output):
-- "Stellar MLS" (Tier 1)
-- "Paid APIs" (Tier 2)
-- "County" (Tier 3)
-- "Web Chunks" (Tier 4 - Perplexity micro-prompts)
-- "Address Parse" (Tier 5)
-- "Not found" (null values)
-
-TIER PRECEDENCE (enforce strictly):
-Tier 1 (Stellar MLS) > Tier 2 (Paid APIs) > Tier 3 (County) > Tier 4 (Web Chunks) > Tier 5 (Address Parse)
-If a lower-tier LLM populated a field when higher-tier had data → override with higher tier.
-
-CONFIDENCE ALIGNMENT:
-- Tier 1 direct: High
-- Tier 2 direct: High
-- Tier 3 direct: Medium
-- Tier 4 direct: Low
-- Tier 5 direct: Low
-- Computed: Medium (or Low if inputs are low-confidence)
-- Null: Unverified`;
-
-/**
- * GPT LLM-Only Auditor User Template
- * Provides INPUT_DATA and LLM-populated fields for validation
- */
-const GPT_LLM_AUDITOR_USER_TEMPLATE = (params: {
-  address: string;
-  stellarMlsJson: unknown;
-  countyJson: unknown;
-  paidApisJson: unknown;
-  webChunksJson: unknown;
-  llmOnlyFields: Record<string, any>;
-  apiPopulatedFieldKeys: string[];
-}) => `API_POPULATED_FIELDS (already validated, DO NOT audit these):
-${params.apiPopulatedFieldKeys.join(', ')}
-
-INPUT_DATA (authoritative blobs for validation):
-{
-  "address": "${params.address}",
-  "stellarMlsJson": ${JSON.stringify(params.stellarMlsJson, null, 2)},
-  "countyJson": ${JSON.stringify(params.countyJson, null, 2)},
-  "paidApisJson": ${JSON.stringify(params.paidApisJson, null, 2)},
-  "webChunksJson": ${JSON.stringify(params.webChunksJson, null, 2)}
+  "fields_missing": [ "<field_key>", ... ]
 }
 
-LLM_FIELDS_TO_AUDIT (ONLY these fields, not the full 181-field schema):
-${JSON.stringify(params.llmOnlyFields, null, 2)}
+CONFIDENCE RUBRIC
+- High: authoritative source explicitly matches address/city/ZIP and statement is unambiguous
+- Medium: authoritative source supports the claim but match is indirect (ZIP/service map) OR 2+ reputable sources agree
+- Low: weak/indirect support OR only non-authoritative sources available
+- Unverified: value=null`;
 
-TASK:
-Audit and correct ONLY the LLM-populated fields above using INPUT_DATA.
-Recalculate any computed fields. Null any hallucinations. Fix tier violations.
+// Legacy alias for backward compatibility
+const PROMPT_GPT = PROMPT_GPT_FIELD_COMPLETER;
 
-OUTPUT:
-Return ONLY the audited LLM fields (not the full schema):
+// ============================================
+// GPT-5.2-PRO FIELD COMPLETER USER TEMPLATE
+// ============================================
 
-{
-  "fields": {
-    "<llm_field_key>": {
-      "value": <corrected_or_null>,
-      "source": "<Stellar MLS|Paid APIs|County|Web Chunks|Address Parse|Not found>",
-      "confidence": "High|Medium|Low|Unverified",
-      "evidence_type": "direct_from_input|safe_computation|geographic_inference|not_found",
-      "source_tier": <1|2|3|4|5>,
-      "computation_rule": <string_or_null>,
-      "inputs_used": <array_of_field_keys_or_empty_array>,
-      "null_reason": <string_or_null>
+/**
+ * GPT Field Completer User Template
+ * Formats input for GPT-5.2-pro web-evidence field completion
+ */
+const GPT_FIELD_COMPLETER_USER_TEMPLATE = (params: {
+  address: string;
+  knownData: unknown;
+  missingFieldKeys?: string[];
+  fieldRules?: unknown;
+}) => `ADDRESS: ${params.address}
+
+KNOWN_DATA_BLOBS (may be partial; do not treat as authoritative unless explicitly from government/official sources):
+${JSON.stringify(params.knownData, null, 2)}
+
+MISSING_FIELD_KEYS (populate ONLY these):
+${JSON.stringify(params.missingFieldKeys || missingFieldsList.missing_field_keys, null, 2)}
+
+FIELD_RULES:
+${JSON.stringify(params.fieldRules || missingFieldsRules.field_rules, null, 2)}
+
+TASK
+Use web search to fill as many missing fields as possible with evidence.
+Return ONLY the JSON object described in the system prompt.`;
+
+// Legacy alias for backward compatibility
+const PROMPT_GPT_ORCHESTRATOR = PROMPT_GPT_FIELD_COMPLETER;
+const GPT_ORCHESTRATOR_USER_TEMPLATE = GPT_FIELD_COMPLETER_USER_TEMPLATE;
+
+// ============================================
+// DETERMINISTIC FIELD VALIDATOR (Replaces LLM Auditor)
+// ============================================
+
+interface FieldEvidence {
+  url: string;
+  title: string;
+  snippet: string;
+  retrieved_at: string;
+}
+
+interface ValidatedField {
+  value: any;
+  confidence: 'High' | 'Medium' | 'Low' | 'Unverified';
+  evidence: FieldEvidence[];
+  notes?: string;
+  conflicts?: Array<{ url: string; value_seen: string; why_rejected: string }>;
+}
+
+interface GPTFieldResponse {
+  address: string;
+  fields: Record<string, ValidatedField>;
+  fields_found: number;
+  fields_missing: string[];
+}
+
+/**
+ * Deterministic Field Validator
+ * Validates GPT field completion response without LLM auditing
+ * - Confirms output contains only allowed keys
+ * - Confirms every non-null field has ≥1 evidence URL
+ * - Requires 2 sources for high-risk fields (flood, hurricane)
+ * - Forces null + Unverified if evidence missing
+ */
+function validateFieldCompleterResponse(
+  response: GPTFieldResponse,
+  allowedKeys: string[] = missingFieldsList.missing_field_keys,
+  fieldRules: Record<string, any> = missingFieldsRules.field_rules
+): GPTFieldResponse {
+  const validated: GPTFieldResponse = {
+    address: response.address,
+    fields: {},
+    fields_found: 0,
+    fields_missing: []
+  };
+
+  // Process each field in the response
+  for (const [key, field] of Object.entries(response.fields || {})) {
+    // Rule 1: Only allow specified keys
+    if (!allowedKeys.includes(key)) {
+      console.log(`[Validator] Rejected field ${key}: not in allowed keys`);
+      continue;
     }
-  },
-  "fields_audited": <count_of_llm_fields_received>,
-  "fields_corrected": <count_of_changes_made>,
-  "fields_nulled": <count_of_hallucinations_removed>,
-  "conflicts": [
-    { "field": "<field_key>", "tier_values": [{ "tier": <n>, "value": <x> }], "resolution": "Tier <n>" }
-  ],
-  "note": "Audited LLM-populated fields only; API fields trusted and excluded from audit."
-}`;
+
+    // Rule 2: Check evidence requirements
+    const rules = fieldRules[key];
+    const minSources = rules?.min_sources_required || 1;
+    const evidenceCount = field.evidence?.length || 0;
+
+    if (field.value !== null && field.value !== undefined) {
+      // Rule 3: Force null if evidence missing
+      if (evidenceCount < minSources) {
+        console.log(`[Validator] Nullified field ${key}: requires ${minSources} sources, found ${evidenceCount}`);
+        validated.fields[key] = {
+          value: null,
+          confidence: 'Unverified',
+          evidence: [],
+          notes: `Insufficient evidence: requires ${minSources} source(s), found ${evidenceCount}`
+        };
+        validated.fields_missing.push(key);
+      } else {
+        // Valid field with evidence
+        validated.fields[key] = field;
+        validated.fields_found++;
+      }
+    } else {
+      // Null value - keep as is
+      validated.fields[key] = {
+        value: null,
+        confidence: 'Unverified',
+        evidence: [],
+        notes: field.notes || 'No evidence found'
+      };
+      validated.fields_missing.push(key);
+    }
+  }
+
+  // Add any missing keys that weren't in the response
+  for (const key of allowedKeys) {
+    if (!(key in validated.fields)) {
+      validated.fields[key] = {
+        value: null,
+        confidence: 'Unverified',
+        evidence: [],
+        notes: 'Field not returned by LLM'
+      };
+      validated.fields_missing.push(key);
+    }
+  }
+
+  return validated;
+}
+
+// Legacy aliases for backward compatibility (no longer used but kept to prevent breaks)
+const PROMPT_GPT_LLM_AUDITOR = PROMPT_GPT_FIELD_COMPLETER;
+const GPT_LLM_AUDITOR_USER_TEMPLATE = GPT_FIELD_COMPLETER_USER_TEMPLATE;
 
 // ============================================
 // CLAUDE SONNET PROMPT - WITH WEB SEARCH - Fast, accurate

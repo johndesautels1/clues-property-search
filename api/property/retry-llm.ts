@@ -19,6 +19,8 @@ import {
   sanitizeAddress,
   isValidAddress
 } from '../../src/lib/safe-json-parse.js';
+import missingFieldsList from '../../src/config/clues_missing_fields_list.json';
+import missingFieldsRules from '../../src/config/clues_missing_fields_rules.json';
 
 // Vercel serverless config
 export const config = {
@@ -611,6 +613,57 @@ Return null if you cannot find data. Return ONLY the JSON object.`;
   }
 }
 
+// ============================================
+// GPT-5.2-PRO FIELD COMPLETER - Web-Evidence Mode (Retry)
+// ============================================
+const GPT_RETRY_SYSTEM_PROMPT = `You are CLUES Field Completer (Web-Evidence Mode).
+
+MISSION
+Populate ONLY the requested field keys in missing_field_keys for a single property address, using live web search.
+You must attach evidence for every non-null value.
+
+HARD RULES (EVIDENCE FIREWALL)
+1) DO NOT use training memory to assert property-specific facts.
+2) Every non-null value MUST be supported by web evidence you found in this run.
+3) If you cannot find strong evidence, set value = null (do NOT guess, do NOT estimate).
+4) Prefer authoritative sources in this order:
+   A) Government / county / municipality websites
+   B) Official utility providers / insurers / regulators
+   C) Major reputable data providers with clear methodology
+   D) Everything else (only if unavoidable; lower confidence)
+5) If sources conflict, do NOT "average." Choose the most authoritative source and record the conflict.
+
+OUTPUT REQUIREMENTS
+Return ONLY valid JSON (no markdown, no prose) matching this shape:
+
+{
+  "address": "<string>",
+  "fields": {
+    "<field_key>": {
+      "value": <string|number|boolean|array|null>,
+      "confidence": "High|Medium|Low|Unverified",
+      "evidence": [
+        {
+          "url": "<string>",
+          "title": "<string>",
+          "snippet": "<string, <= 25 words>",
+          "retrieved_at": "<ISO-8601 date>"
+        }
+      ],
+      "notes": "<short string or empty>",
+      "conflicts": []
+    }
+  },
+  "fields_found": <integer>,
+  "fields_missing": [ "<field_key>", ... ]
+}
+
+CONFIDENCE RUBRIC
+- High: authoritative source explicitly matches address/city/ZIP and statement is unambiguous
+- Medium: authoritative source supports the claim but match is indirect (ZIP/service map) OR 2+ reputable sources agree
+- Low: weak/indirect support OR only non-authoritative sources available
+- Unverified: value=null`;
+
 async function callGPT(address: string): Promise<{ fields: Record<string, any>; error?: string }> {
   const apiKey = process.env.OPENAI_API_KEY;
   console.log('[GPT] API key present:', !!apiKey, 'length:', apiKey?.length || 0);
@@ -618,31 +671,46 @@ async function callGPT(address: string): Promise<{ fields: Record<string, any>; 
     return { error: 'API key not set', fields: {} };
   }
 
-  const prompt = `You are a real estate data assistant. Return a JSON object with property data estimates for: ${address}
+  const userPrompt = `ADDRESS: ${address}
 
-Include fields like: property_type, city, state, county, neighborhood, zip_code, median_home_price_neighborhood, school_district, flood_risk_level, hurricane_risk, rental_estimate_monthly, insurance_estimate_annual, property_tax_rate_percent
+MISSING_FIELD_KEYS (populate ONLY these):
+${JSON.stringify(missingFieldsList.missing_field_keys, null, 2)}
 
-Only include fields you have reasonable confidence about. Return ONLY the JSON object, no explanation.`;
+FIELD_RULES:
+${JSON.stringify(missingFieldsRules.field_rules, null, 2)}
+
+TASK
+Use web search to fill as many missing fields as possible with evidence.
+Return ONLY the JSON object described in the system prompt.`;
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Use OpenAI Responses API with web search tool
+    const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-5.2',
-        max_tokens: 4000,
-        messages: [{ role: 'user', content: prompt }],
+        model: 'gpt-5.2-pro-2025-12-11', // PINNED SNAPSHOT
+        input: [
+          { role: 'system', content: GPT_RETRY_SYSTEM_PROMPT },
+          { role: 'user', content: userPrompt }
+        ],
+        reasoning: { effort: 'high' },
+        tools: [{ type: 'web_search' }],
+        tool_choice: 'required',
+        include: ['web_search_call.action.sources'],
       }),
     });
 
     const data = await response.json();
     console.log('[GPT] Status:', response.status);
 
-    if (data.choices?.[0]?.message?.content) {
-      const text = data.choices[0].message.content;
+    // Handle Responses API format (output_text) or Chat Completions format (choices)
+    const text = data.output_text || data.choices?.[0]?.message?.content;
+
+    if (text) {
       console.log('[GPT] Response length:', text.length, 'chars');
 
       // Use unified JSON extraction
@@ -652,12 +720,27 @@ Only include fields you have reasonable confidence about. Return ONLY the JSON o
       if (parseResult.success && parseResult.data) {
         const parsed = parseResult.data;
         const fields: Record<string, any> = {};
-        for (const [key, value] of Object.entries(parsed)) {
-          if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
-            // TYPE COERCION: Validate and coerce value to expected type
-            const coerced = coerceValue(key, value);
-            if (coerced !== null) {
-              fields[key] = { value: coerced, source: 'GPT', confidence: 'Low' };
+
+        // Handle new evidence-based format
+        if (parsed.fields) {
+          for (const [key, fieldData] of Object.entries(parsed.fields as Record<string, any>)) {
+            if (fieldData?.value !== null && fieldData?.value !== undefined) {
+              fields[key] = {
+                value: fieldData.value,
+                source: 'GPT (Web Evidence)',
+                confidence: fieldData.confidence || 'Low',
+                evidence: fieldData.evidence || []
+              };
+            }
+          }
+        } else {
+          // Legacy format fallback
+          for (const [key, value] of Object.entries(parsed)) {
+            if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
+              const coerced = coerceValue(key, value);
+              if (coerced !== null) {
+                fields[key] = { value: coerced, source: 'GPT', confidence: 'Low' };
+              }
             }
           }
         }
