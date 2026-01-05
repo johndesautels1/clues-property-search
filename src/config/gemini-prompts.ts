@@ -6,7 +6,7 @@
  * 2. GEMINI_OLIVIA_CMA - For PhD-level comparative analysis of 4 properties
  */
 
-import geminiMissingFieldsList from './gemini_missing_fields_list.json';
+import cluesMissingFieldsList from './clues_missing_fields_list.json';
 
 // ============================================================================
 // PROMPT #1: CLUES FIELD COMPLETER (Google Search Grounded)
@@ -183,13 +183,13 @@ export const GEMINI_API_CONFIG = {
 // }
 
 // Export field list for use in other modules
-export { geminiMissingFieldsList };
+export { cluesMissingFieldsList };
 
 // ============================================================================
 // VALIDATION HELPER
 // ============================================================================
 
-const ALLOWED_FIELD_KEYS = new Set(geminiMissingFieldsList.missing_field_keys);
+const ALLOWED_FIELD_KEYS = new Set(cluesMissingFieldsList.missing_field_keys);
 
 /**
  * Validate Field Completer response structure
