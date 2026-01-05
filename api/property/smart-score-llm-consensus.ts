@@ -379,9 +379,45 @@ async function callGPT5(prompt: string): Promise<LLMResponse> {
 }
 
 // ============================================
-// GROK SMART SCORE - PLACEHOLDER FOR NEW PROMPT
+// OLIVIA CMA ANALYST PROMPT (Grok 4 Reasoning Mode)
 // ============================================
-const GROK_SMART_SCORE_SYSTEM_PROMPT = `PLACEHOLDER - NEW GROK SMART SCORE PROMPT REQUIRED`;
+const GROK_SMART_SCORE_SYSTEM_PROMPT = `You are Olivia, the CLUES Senior Investment Analyst (Grok 4 Reasoning Mode).
+Your MISSION is to perform a deep-dive Comparative Market Analysis (CMA) by evaluating a Subject Property against 3 Comparables across a 181-question data schema.
+
+### REASONING PROTOCOL
+1. METRIC CORRELATION: Compare the 34 high-velocity fields (AVMs, Portal Views) to determine "Market Momentum."
+2. VARIANCE ANALYSIS: Calculate the delta between the Subject's 'Price per Sqft' (Field 92) and the Comps.
+3. FRICTION IDENTIFICATION: If Field 174 (Saves) is high but Field 95 (Days on Market) is also high, identify this as a "Price-to-Condition Mismatch."
+4. THE "SUPERIOR COMP": Explicitly state which of the 3 Comps is the most statistically relevant "Superior Comp."
+
+OUTPUT SCHEMA
+{
+  "investment_thesis": {
+    "summary": "<2-3 sentence overview>",
+    "property_grade": "A|B|C|D|F",
+    "valuation_verdict": "Underpriced|Fair|Overpriced"
+  },
+  "comparative_breakdown": {
+    "superior_comp_address": "<address>",
+    "subject_vs_market_delta": <percentage>,
+    "key_metrics_table": [
+      {"metric": "Field 92: Price/Sqft", "subject": 0, "comp_avg": 0, "variance": 0}
+    ]
+  },
+  "risk_assessment": {
+    "concerns": [],
+    "red_flags": ["Identify issues in utility costs or market trends"]
+  },
+  "forecast_2026": {
+    "appreciation_1yr": <percentage>,
+    "market_stability_score": 0-100,
+    "reasoning": "<logic based on inventory surplus Field 96>"
+  },
+  "final_recommendation": {
+    "action": "Strong Buy|Buy|Hold|Pass",
+    "suggested_offer_range": {"low": 0, "high": 0}
+  }
+}`;
 
 /**
  * Call Grok API (alternative tiebreaker)
@@ -400,7 +436,7 @@ async function callGrok(prompt: string): Promise<LLMResponse> {
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'grok-4.1-fast-reasoning',
+      model: 'grok-4-1-fast-reasoning',
       messages: [
         {
           role: 'system',
@@ -411,7 +447,28 @@ async function callGrok(prompt: string): Promise<LLMResponse> {
           content: prompt,
         },
       ],
-      temperature: 0.1,
+      tools: [
+        {
+          type: 'function',
+          function: {
+            name: 'web_search',
+            description: 'Search the web for real-time information',
+            parameters: {
+              type: 'object',
+              properties: {
+                query: { type: 'string' },
+                num_results: { type: 'integer', default: 10 }
+              },
+              required: ['query']
+            }
+          }
+        }
+      ],
+      tool_choice: 'auto',
+      generation_config: {
+        temperature: 1.0,
+        response_mime_type: 'application/json'
+      },
       max_tokens: 16000,
     }),
   });
