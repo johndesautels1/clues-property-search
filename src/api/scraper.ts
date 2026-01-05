@@ -255,7 +255,7 @@ class PropertyScraper {
   private async scrapeWithGemini(prompt: string): Promise<PropertyScrapedData | null> {
     if (!this.gemini) throw new Error('Gemini not configured');
 
-    const model = this.gemini.getGenerativeModel({ model: 'gemini-3-pro-preview' });
+    const model = this.gemini.getGenerativeModel({ model: 'gemini-3-pro-latest' });
     const result = await model.generateContent([{ text: prompt }]);
     const response = await result.response;
 

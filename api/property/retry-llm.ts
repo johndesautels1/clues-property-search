@@ -895,23 +895,25 @@ async function callGemini(address: string): Promise<{ fields: Record<string, any
     return { error: 'API key not set', fields: {} };
   }
 
-  const prompt = `${GEMINI_RETRY_PROMPT}
-Address: ${address}`;
-
   const startTime = Date.now();
 
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-latest:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
+          // SYSTEM INSTRUCTION: Prompt goes here per 2026 Gemini 3 Pro specs
+          system_instruction: {
+            parts: [{ text: GEMINI_RETRY_PROMPT }]
+          },
+          // USER CONTENT: Only the task/address
+          contents: [{ parts: [{ text: `Address: ${address}` }] }],
           tools: [{ google_search: {} }],
           tool_config: { function_calling_config: { mode: "ANY" } },
           generation_config: {
-            temperature: 0.0,
+            temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro 2026
             response_mime_type: 'application/json',
             thinking_level: 'high'
           },

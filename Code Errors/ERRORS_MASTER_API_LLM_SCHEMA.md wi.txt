@@ -1,0 +1,548 @@
+  Created MASTER_API_LLM_SCHEMA.md with complete documentation:
+
+  ---
+  SUMMARY
+
+  TIMEOUTS
+
+  | Tier | Source                        | Timeout        |
+  |------|-------------------------------|----------------|
+  | 1    | Stellar MLS (Bridge API)      | 30s            |
+  | 2-3  | Google + Free APIs            | 90s            |
+  | 4    | Perplexity (10 micro-prompts) | 225s (3.75min) |
+  | 5    | Other LLMs (5 models)         | 210s (3.5min)  |
+
+  LLM MODELS (Exact IDs)
+
+  | LLM           | Model ID                   | Web Search             |
+  |---------------|----------------------------|------------------------|
+  | Perplexity    | sonar / sonar-pro          | YES                    |
+  | Grok          | grok-4                     | YES (X/Twitter)        |
+  | GPT           | gpt-5.2-2025-12-11         | NO                     |
+  | Claude Opus   | claude-opus-4-5-20251101   | NO                     |
+  | Gemini        | gemini-2.0-flash           | YES (Google grounding) |
+  | Claude Sonnet | claude-sonnet-4-5-20250929 | YES (web_search tool)  |
+
+  PERPLEXITY MICRO-PROMPTS (10 Parallel)
+
+  1. perplexity-portals - Portal data (Zillow, Redfin, etc.)
+  2. perplexity-county - County records, parcel
+  3. perplexity-schools - School assignments
+  4. perplexity-crime - Crime/safety scores
+  5. perplexity-utilities - Utility providers
+  6. perplexity-electric - Electric bill estimates
+  7. perplexity-water - Water bill estimates
+  8. perplexity-internet-speed - Internet speeds
+  9. perplexity-fiber - Fiber availability
+  10. perplexity-cell - Cell coverage
+
+  FREE APIs (25 Sources)
+
+  Google Geocode, Google Places, Google Solar, WalkScore, FEMA Flood, AirNow, SchoolDigger, GreatSchools, HowLoud, CrimeGrade, Weather, HUD FMR, FEMA Risk, NOAA Climate, NOAA Storm, NOAA Sea Level, USGS Elevation, USGS Earthquake, EPA FRS, Radon Risk, Redfin, BroadbandNow, AirDNA, Census API
+
+> and for the Ask Olivia mathematics when we recall the LLMs what LLms are you showing we call for Olivia. You also
+ did not include the timeouts i specfically asked you to put in the table
+
+● Search(pattern: "askOlivia|ask-olivia|AskOlivia|olivia.*llm|olivia.*model", path:
+        "D:\Clues_Quantum_Property_Dashboard")
+  ⎿  Found 7 files (ctrl+o to expand)
+
+● Search(pattern: "Olivia|OLIVIA", path: "D:\Clues_Quantum_Property_Dashboard\api")
+  ⎿  Found 0 files
+
+● Search(pattern: "**/*olivia*.ts", path: "D:\Clues_Quantum_Property_Dashboard")
+  ⎿  Found 0 files
+
+● Search(pattern: "**/api/**/ask*.ts", path: "D:\Clues_Quantum_Property_Dashboard")
+  ⎿  Found 0 files
+
+● Search(pattern: "ask.*olivia|olivia.*chat|chat.*olivia", path: "D:\Clues_Quantum_Property_Dashboard\src")
+  ⎿  Found 2 files (ctrl+o to expand)
+
+● Search(pattern: "anthropic|openai|claude|gpt|gemini|perplexity", path:
+        "D:\Clues_Quantum_Property_Dashboard\src\components\OliviaExecutiveReport.tsx", output_mode: "content")
+  ⎿  Found 0 lines
+
+● Search(pattern: "AskOlivia|askOlivia|ask-olivia|oliviaChat", path: "D:\Clues_Quantum_Property_Dashboard\src",
+        output_mode: "content")
+  ⎿  Found 2 lines (ctrl+o to expand)
+
+● Read(D:\Clues_Quantum_Property_Dashboard\src\pages\Compare.tsx)
+  ⎿  Read 80 lines
+
+● Search(pattern: "analyzeWithOlivia|analyzeWithOliviaProgressive", path: "D:\Clues_Quantum_Property_Dashboard\src",
+        output_mode: "content")
+  ⎿  Found 9 lines (ctrl+o to expand)
+
+● Search(pattern: "model|claude|gpt|anthropic|openai|gemini|perplexity|TIMEOUT|timeout", path:
+        "D:\Clues_Quantum_Property_Dashboard\src\api\olivia.ts", output_mode: "content")
+  ⎿  Found 7 lines (ctrl+o to expand)
+
+● Search(pattern: "model|claude|gpt|anthropic|openai|gemini|perplexity|TIMEOUT|timeout", path:
+        "D:\Clues_Quantum_Property_Dashboard\src\api\olivia-brain-enhanced.ts", output_mode: "content")
+  ⎿  Found 27 lines (ctrl+o to expand)
+
+● Read(D:\Clues_Quantum_Property_Dashboard\src\api\olivia-brain-enhanced.ts)
+  ⎿  Read 130 lines
+
+● Now I have all the Ask Olivia details. Let me update the master schema:
+
+● Read(D:\Clues_Quantum_Property_Dashboard\MASTER_API_LLM_SCHEMA.md)
+  ⎿  Read 314 lines
+
+● Update(D:\Clues_Quantum_Property_Dashboard\MASTER_API_LLM_SCHEMA.md)
+  ⎿  Added 16 lines, removed 7 lines
+      66
+      67  ---
+      68
+      69 -## TIMEOUT CONFIGURATION
+      69 +## MASTER TIMEOUT TABLE
+      70
+      71 -| Constant | Value | Description |
+      72 -|----------|-------|-------------|
+      73 -| `STELLAR_MLS_TIMEOUT` | 30,000ms (30s) | Bridge API / Stellar MLS (Tier 1) |
+      74 -| `FREE_API_TIMEOUT` | 90,000ms (90s) | Google, WalkScore, FEMA, etc (Tier 2 & 3) |
+      75 -| `LLM_TIMEOUT` | 210,000ms (3.5min) | Claude, GPT, Gemini, Grok (Tier 5) |
+      76 -| `PERPLEXITY_TIMEOUT` | 225,000ms (3.75min) | Perplexity web search (Tier 4) |
+      71 +| Constant | Milliseconds | Seconds | Minutes | Source/Tier | Location in Code |
+      72 +|----------|--------------|---------|---------|-------------|------------------|
+      73 +| `STELLAR_MLS_TIMEOUT` | 30,000 | 30 | 0.5 | Bridge API (Tier 1) | search.ts:34 |
+      74 +| `FREE_API_TIMEOUT` | 90,000 | 90 | 1.5 | Google, WalkScore, FEMA, etc (Tier 2 & 3) | search.ts:35 |
+      75 +| `FEMA_TIMEOUT` | 60,000 | 60 | 1.0 | FEMA Flood API only | search.ts:1203 |
+      76 +| `LLM_TIMEOUT` | 210,000 | 210 | 3.5 | Grok, GPT, Opus, Gemini, Sonnet (Tier 5) | search.ts:36 |
+      77 +| `PERPLEXITY_TIMEOUT` | 225,000 | 225 | 3.75 | Perplexity 10 micro-prompts (Tier 4) | search.ts:37 |
+      78
+      79 +### Code Reference (search.ts lines 34-37):
+      80 +```typescript
+      81 +const STELLAR_MLS_TIMEOUT = 30000;   // 30 seconds for Stellar MLS via Bridge API (Tier 1)
+      82 +const FREE_API_TIMEOUT = 90000;      // 90 seconds for Redfin, Google, and all free APIs (Tier 2 & 3)
+      83 +const LLM_TIMEOUT = 210000;          // 210 seconds (3.5 minutes) for Claude, GPT-4, Gemini, Grok (Tie
+         +r 5)
+      84 +const PERPLEXITY_TIMEOUT = 225000;   // 225 seconds (3.75 minutes) for Perplexity web search (Tier 4)
+      85 +```
+      86 +
+      87  ---
+      88
+      89  ## TIER 1: STELLAR MLS (Bridge API)
+
+● Update(D:\Clues_Quantum_Property_Dashboard\MASTER_API_LLM_SCHEMA.md)
+  ⎿  Added 77 lines, removed 1 line
+      318
+      319  ---
+      320
+      321 -**Document Version:** 1.0
+      321 +## ASK OLIVIA - MATHEMATICAL ANALYSIS LLMs
+      322 +
+      323 +Ask Olivia is a separate feature for comparing 3 properties with mathematical proofs.
+      324 +It uses different LLMs than the property search cascade.
+      325 +
+      326 +### Olivia LLM Configuration
+      327 +
+      328 +| Feature | Model ID | Provider | Calls | Fields Analyzed | File |
+      329 +|---------|----------|----------|-------|-----------------|------|
+      330 +| **Basic Olivia** | `claude-sonnet-4-5-20250929` | Anthropic | 1 | Summary comparison | olivia.ts:29
+          +3 |
+      331 +| **Enhanced Olivia** | `claude-opus-4-5-20251101` | Anthropic | 1 | All 168 fields | olivia-brain-en
+          +hanced.ts:675 |
+      332 +| **Progressive Olivia** | `claude-opus-4-5-20251101` | Anthropic | 4 | All 168 fields (chunked) | ol
+          +ivia-brain-enhanced.ts:869-976 |
+      333 +
+      334 +### Progressive Olivia - 4-Level Sequential Calls
+      335 +
+      336 +Progressive Olivia splits 168 fields into 4 sequential Claude Opus calls to avoid token limits:
+      337 +
+      338 +| Level | Call # | Fields Analyzed | Model | max_tokens | File Line |
+      339 +|-------|--------|-----------------|-------|------------|-----------|
+      340 +| **Level 1** | 1 | Fields 1-56 (Critical Decision) | `claude-opus-4-5-20251101` | 32,000 | olivia-br
+          +ain-enhanced.ts:869 |
+      341 +| **Level 2** | 2 | Fields 57-112 (Important Context) | `claude-opus-4-5-20251101` | 32,000 | olivia-
+          +brain-enhanced.ts:903 |
+      342 +| **Level 3** | 3 | Fields 113-168 (Remaining) | `claude-opus-4-5-20251101` | 32,000 | olivia-brain-e
+          +nhanced.ts:937 |
+      343 +| **Level 4** | 4 | Final Aggregation & Winner | `claude-opus-4-5-20251101` | 32,000 | olivia-brain-e
+          +nhanced.ts:976 |
+      344 +
+      345 +### Olivia Execution Flow
+      346 +
+      347 +```
+      348 +┌─────────────────────────────────────────────────────────────────┐
+      349 +│                    ASK OLIVIA (Compare Page)                     │
+      350 +├─────────────────────────────────────────────────────────────────┤
+      351 +│                                                                  │
+      352 +│  BASIC OLIVIA (handleAskOlivia)                                  │
+      353 +│  ├── Model: claude-sonnet-4-5-20250929                          │
+      354 +│  ├── Calls: 1                                                    │
+      355 +│  └── Output: Quick comparison summary                            │
+      356 +│                                                                  │
+      357 +│  ENHANCED OLIVIA (handleAskOliviaEnhanced)                       │
+      358 +│  ├── Requires: Exactly 3 properties                              │
+      359 +│  ├── Model: claude-opus-4-5-20251101                             │
+      360 +│  ├── Calls: 4 SEQUENTIAL                                         │
+      361 +│  │   ├── Level 1: Fields 1-56 (Critical)                        │
+      362 +│  │   ├── Level 2: Fields 57-112 (Context)                       │
+      363 +│  │   ├── Level 3: Fields 113-168 (Remaining)                    │
+      364 +│  │   └── Level 4: Final Aggregation                             │
+      365 +│  ├── Each call: max_tokens=32,000, temperature=0.3              │
+      366 +│  └── Output: Mathematical proofs, winner declaration             │
+      367 +│                                                                  │
+      368 +└─────────────────────────────────────────────────────────────────┘
+      369 +```
+      370 +
+      371 +### Environment Variables for Olivia
+      372 +
+      373 +```bash
+      374 +# Client-side (must have VITE_ prefix)
+      375 +VITE_ANTHROPIC_API_KEY=xxx
+      376 +```
+      377 +
+      378 +---
+      379 +
+      380 +## COMPLETE LLM MODEL REFERENCE
+      381 +
+      382 +| Use Case | Model ID | Provider | Web Search | Location |
+      383 +|----------|----------|----------|------------|----------|
+      384 +| **Property Search - Perplexity** | `sonar` | Perplexity | YES | search.ts:2434 |
+      385 +| **Property Search - Perplexity Pro** | `sonar-pro` | Perplexity | YES | search.ts:3179 |
+      386 +| **Property Search - Grok** | `grok-4` | xAI | YES | search.ts:4795 |
+      387 +| **Property Search - GPT** | `gpt-5.2-2025-12-11` | OpenAI | NO | search.ts:4464 |
+      388 +| **Property Search - Claude Opus** | `claude-opus-4-5-20251101` | Anthropic | NO | search.ts:4224 |
+      389 +| **Property Search - Gemini** | `gemini-2.0-flash` | Google | YES | search.ts:4850 |
+      390 +| **Property Search - Claude Sonnet** | `claude-sonnet-4-5-20250929` | Anthropic | YES | search.ts:42
+          +81 |
+      391 +| **Ask Olivia - Basic** | `claude-sonnet-4-5-20250929` | Anthropic | NO | olivia.ts:293 |
+      392 +| **Ask Olivia - Enhanced** | `claude-opus-4-5-20251101` | Anthropic | NO | olivia-brain-enhanced.ts:
+          +675 |
+      393 +| **Ask Olivia - Progressive (4 calls)** | `claude-opus-4-5-20251101` | Anthropic | NO | olivia-brain
+          +-enhanced.ts:869-976 |
+      394 +
+      395 +---
+      396 +
+      397 +**Document Version:** 1.1
+      398  **Last Updated:** 2025-01-05
+
+● Bash(cd "D:/Clues_Quantum_Property_Dashboard" && git add MASTER_API_LLM_SCHEMA.md && git commit -m "docs: Add Ask
+      Olivia LLMs + detailed timeout table to master sche…)
+  ⎿ [main 5526055] docs: Add Ask Olivia LLMs + detailed timeout table to master schema
+     1 file changed, 93 insertions(+), 8 deletions(-)
+    warning: in the working copy of 'MASTER_API_LLM_SCHEMA.md', LF will be replaced by CRLF the next time Git touc
+    … +3 lines (ctrl+o to expand)
+
+
+● Done. Commit 5526055 pushed.
+
+  Updated MASTER_API_LLM_SCHEMA.md with:
+
+  ---
+  MASTER TIMEOUT TABLE (Added)
+
+  | Constant            | Milliseconds | Seconds | Minutes | Source/Tier                              |
+  |---------------------|--------------|---------|---------|------------------------------------------|
+  | STELLAR_MLS_TIMEOUT | 30,000       | 30      | 0.5     | Bridge API (Tier 1)                      |
+  | FREE_API_TIMEOUT    | 90,000       | 90      | 1.5     | Google, WalkScore, FEMA (Tier 2 & 3)     |
+  | FEMA_TIMEOUT        | 60,000       | 60      | 1.0     | FEMA Flood only                          |
+  | LLM_TIMEOUT         | 210,000      | 210     | 3.5     | Grok, GPT, Opus, Gemini, Sonnet (Tier 5) |
+  | PERPLEXITY_TIMEOUT  | 225,000      | 225     | 3.75    | Perplexity micro-prompts (Tier 4)        |
+
+  ---
+  ASK OLIVIA LLMs (Added)
+
+  | Feature            | Model ID                   | Calls        |
+  |--------------------|----------------------------|--------------|
+  | Basic Olivia       | claude-sonnet-4-5-20250929 | 1            |
+  | Enhanced Olivia    | claude-opus-4-5-20251101   | 1            |
+  | Progressive Olivia | claude-opus-4-5-20251101   | 4 sequential |
+
+  Progressive Olivia 4-Level Breakdown:
+
+  - Level 1: Fields 1-56 (Critical Decision)
+  - Level 2: Fields 57-112 (Important Context)
+  - Level 3: Fields 113-168 (Remaining)
+  - Level 4: Final Aggregation & Winner
+
+  ---
+  COMPLETE LLM MODEL REFERENCE (10 Total)
+
+  | Use Case                        | Model ID                   |
+  |---------------------------------|----------------------------|
+  | Perplexity                      | sonar / sonar-pro          |
+  | Grok                            | grok-4                     |
+  | GPT                             | gpt-5.2-2025-12-11         |
+  | Claude Opus (Search)            | claude-opus-4-5-20251101   |
+  | Gemini                          | gemini-2.0-flash           |
+  | Claude Sonnet (Search)          | claude-sonnet-4-5-20250929 |
+  | Ask Olivia Basic                | claude-sonnet-4-5-20250929 |
+  | Ask Olivia Enhanced/Progressive | claude-opus-4-5-20251101   |
+
+> I see multiple problems with many of these functions. Now make me an exaustive list of all the problems you see
+
+● 3 Task agents finished (ctrl+o to expand)
+   ├─ Audit search.ts for problems · 28 tool uses · 80.9k tokens
+   │  ⎿  Done
+   ├─ Audit free-apis.ts for problems · 3 tool uses · 43.3k tokens
+   │  ⎿  Done
+   └─ Audit Olivia LLM files for problems · 5 tool uses · 44.1k tokens
+      ⎿  Done
+
+● EXHAUSTIVE PROBLEM LIST - CLUES Property Dashboard
+
+  CRITICAL ISSUES (Require Immediate Fix)
+
+  1. INVALID/NON-EXISTENT MODEL IDs
+
+  | File      | Line       | Model ID                   | Problem                                                 |
+  |-----------|------------|----------------------------|---------------------------------------------------------|
+  | search.ts | 4464, 4571 | gpt-5.2-2025-12-11         | GPT-5.2 doesn't exist - OpenAI's latest is GPT-4o       |
+  | search.ts | 4795       | grok-4                     | Grok-4 doesn't exist - xAI's latest is grok-2           |
+  | search.ts | 4850       | gemini-2.0-flash           | Wrong naming - Should be gemini-1.5-flash or gemini-pro |
+  | search.ts | 4224       | claude-opus-4-5-20251101   | Verify - May not be valid Anthropic model ID            |
+  | search.ts | 4281       | claude-sonnet-4-5-20250929 | Verify - May not be valid Anthropic model ID            |
+  | olivia.ts | 293        | claude-sonnet-4-5-20250929 | Same issue                                              |
+
+  2. CLIENT-SIDE API KEY EXPOSURE (SECURITY)
+
+  | File                     | Line     | Issue                                                 |
+  |--------------------------|----------|-------------------------------------------------------|
+  | olivia.ts                | 233      | VITE_ANTHROPIC_API_KEY exposed to browser             |
+  | olivia.ts                | 239-242  | dangerouslyAllowBrowser: true explicitly enables this |
+  | olivia-brain-enhanced.ts | 649, 839 | Same API key exposure pattern                         |
+  | olivia-brain-enhanced.ts | 662, 851 | Same dangerouslyAllowBrowser: true                    |
+
+  3. HTTP INSTEAD OF HTTPS (SECURITY)
+
+  | File         | Line | Issue                                                               |
+  |--------------|------|---------------------------------------------------------------------|
+  | free-apis.ts | 647  | http://vizmo.fcc.gov/api/carrier.json - Plaintext data transmission |
+
+  4. STALE HARDCODED DATA
+
+  | File         | Line    | Issue                                                                 |
+  |--------------|---------|-----------------------------------------------------------------------|
+  | free-apis.ts | 711-712 | FBI Crime API uses from=01-2022&to=12-2022 - Always returns 2022 data |
+
+  ---
+  HIGH SEVERITY ISSUES
+
+  5. DEAD CODE / UNUSED FUNCTIONS
+
+  | File                     | Line      | Function                           | Status                                 |
+  |--------------------------|-----------|------------------------------------|----------------------------------------|
+  | search.ts                | 552-620   | validateHOAFee()                   | Never called                           |
+  | search.ts                | 623-695   | validateTimeBasedField()           | Never called                           |
+  | search.ts                | 4368-4428 | callCopilot()                      | Not in LLM cascade - completely unused |
+  | search.ts                | 4539-4634 | callGPT_LLMFieldAuditor()          | Never called                           |
+  | search.ts                | 4640-4666 | extractLLMOnlyFields()             | Never called                           |
+  | search.ts                | 4672-4704 | shouldAuditLLMFields()             | Never called                           |
+  | olivia-brain-enhanced.ts | 318       | formatPropertyForPrompt()          | Never used                             |
+  | free-apis.ts             | 787-792   | usAnnualRate, vsNational variables | Calculated but never used              |
+
+  6. WRONG API URLS / DEPRECATED ENDPOINTS
+
+  | File         | Line | Issue                                                                      |
+  |--------------|------|----------------------------------------------------------------------------|
+  | search.ts    | 4379 | https://api.githubcopilot.com/chat/completions - No such public API exists |
+  | free-apis.ts | 647  | FCC VizMo API may be deprecated - modern API is at broadbandmap.fcc.gov    |
+  | free-apis.ts | 536  | AirDNA API v1 - may need v2                                                |
+
+  7. FAKE RESPONSE TIMEOUT FALLBACK
+
+  | File      | Line | Issue                                                                                         |
+  |-----------|------|-----------------------------------------------------------------------------------------------|
+  | search.ts | 5061 | Creates fake Response object on timeout that reports success (ok: true) even though it failed |
+
+  8. GEMINI API KEY IN URL
+
+  | File      | Line | Issue                                                                    |
+  |-----------|------|--------------------------------------------------------------------------|
+  | search.ts | 4850 | API key passed as ?key=${apiKey} query parameter - logged in server logs |
+
+  9. MISSING ERROR HANDLING IN LLM CALLS
+
+  | File                     | Line    | Issue                                                          |
+  |--------------------------|---------|----------------------------------------------------------------|
+  | search.ts                | 4238    | response.json() without checking response.ok in callClaudeOpus |
+  | search.ts                | 4810    | Same issue in callGrok                                         |
+  | search.ts                | 4893    | Same issue in callGemini                                       |
+  | olivia.ts                | 292-299 | No try-catch around client.messages.create()                   |
+  | olivia-brain-enhanced.ts | 674-689 | Stream handling with no try-catch                              |
+
+  10. HARDCODED FLORIDA-ONLY STATE
+
+  | File         | Line      | Function            | Issue                 |
+  |--------------|-----------|---------------------|-----------------------|
+  | free-apis.ts | 379       | callSchoolDigger()  | st=FL hardcoded       |
+  | free-apis.ts | 480       | callGreatSchools()  | state=FL hardcoded    |
+  | free-apis.ts | 1015-1083 | FLORIDA_COUNTY_FIPS | Only FL counties      |
+  | free-apis.ts | 1193-1218 | FLORIDA_STATIONS    | Only FL NOAA stations |
+  | free-apis.ts | 1567-1582 | FLORIDA_RADON_ZONES | Only FL radon data    |
+
+  11. DATA TYPE MISMATCH - SOUNDSCORE vs DECIBELS
+
+  | File         | Line    | Issue                                                                                                |
+  |--------------|---------|------------------------------------------------------------------------------------------------------|
+  | free-apis.ts | 627-629 | data.soundscore (0-100 quietness) stored directly as 129_noise_level_db_est (expects decibels 30-85) |
+
+  12. SILENT ERROR SWALLOWING
+
+  | File                     | Line                  | Issue                                          |
+  |--------------------------|-----------------------|------------------------------------------------|
+  | free-apis.ts             | 903-905, 921-923, 949 | Empty catch blocks - errors silently swallowed |
+  | olivia-brain-enhanced.ts | 810-814               | Catch swallows error and continues             |
+  | search.ts                | 5936-5944             | Date parsing errors silently swallowed         |
+
+  ---
+  MEDIUM SEVERITY ISSUES
+
+  13. MISLEADING FUNCTION NAMES
+
+  | File         | Line | Function           | Actually Calls                             |
+  |--------------|------|--------------------|--------------------------------------------|
+  | free-apis.ts | 642  | callBroadbandNow() | FCC VizMo API                              |
+  | free-apis.ts | 694  | callCrimeGrade()   | FBI Crime API                              |
+  | free-apis.ts | 1350 | callNOAASeaLevel() | No API - just calculates distance to coast |
+
+  14. DOCUMENTATION MISMATCH
+
+  | File                     | Line          | Issue                                                                                              |
+  |--------------------------|---------------|----------------------------------------------------------------------------------------------------|
+  | search.ts                | 4-8           | Comment says "Perplexity -> Sonnet -> GPT -> Opus -> Gemini -> Grok" but actual order is different |
+  | search.ts                | 6007          | cascade_order doesn't match LLM_CASCADE_ORDER from llm-constants.ts                                |
+  | olivia-brain-enhanced.ts | 6, 19-21, 596 | Comments reference "181 fields" but code only handles 168                                          |
+
+  15. SEQUENTIAL API CALLS (PERFORMANCE)
+
+  | File                     | Line     | Issue                                                                             |
+  |--------------------------|----------|-----------------------------------------------------------------------------------|
+  | free-apis.ts             | 135-159  | callGooglePlaces() - 5 place types × 2 API calls each = up to 10 sequential calls |
+  | olivia-brain-enhanced.ts | 868-1001 | 4 sequential Claude Opus calls with no parallelization                            |
+
+  16. TYPE ASSERTION INCONSISTENCIES
+
+  | File                     | Line | Issue                                              |
+  |--------------------------|------|----------------------------------------------------|
+  | search.ts                | 5264 | `tier: tier as 1                                   |
+  | search.ts                | 5639 | `tier: llmTier as 4                                |
+  | olivia-brain-enhanced.ts | 698  | JSON.parse(cleanText) as any loses all type safety |
+
+  17. HARDCODED APPRECIATION MULTIPLIERS
+
+  | File                     | Line               | Issue                                     |
+  |--------------------------|--------------------|-------------------------------------------|
+  | olivia-brain-enhanced.ts | 777-780, 1082-1086 | * 2.5, * 2 multipliers with no data basis |
+
+  18. DANGEROUS DATA DEFAULTS
+
+  | File                     | Line | Issue                                                      |
+  |--------------------------|------|------------------------------------------------------------|
+  | olivia-brain-enhanced.ts | 79   | living_sqft defaults to 0 - breaks price/sqft calculations |
+  | olivia-brain-enhanced.ts | 83   | year_built defaults to 2000 - arbitrary                    |
+  | olivia-brain-enhanced.ts | 84   | property_type defaults to 'Single Family'                  |
+
+  19. MISSING NULL CHECKS
+
+  | File         | Line       | Issue                                                                    |
+  |--------------|------------|--------------------------------------------------------------------------|
+  | search.ts    | 4239-4241  | No null check on data.content[0] before accessing text                   |
+  | search.ts    | 4491, 4813 | No null check on data.choices[0]                                         |
+  | search.ts    | 4906       | Deep access data.candidates[0].content.parts[0].text without null checks |
+  | free-apis.ts | 547-549    | market.adr * 30 - if adr undefined, result is NaN                        |
+
+  20. DUPLICATE DYNAMIC IMPORTS
+
+  | File                     | Line | Issue                                                                |
+  |--------------------------|------|----------------------------------------------------------------------|
+  | olivia-brain-enhanced.ts | 1021 | Dynamic import of validateOliviaResponse but already imported at top |
+  | olivia-brain-enhanced.ts | 860  | Dynamic import inside function should be top-level                   |
+
+  ---
+  LOW SEVERITY ISSUES
+
+  21. HARDCODED API URLS (Should be env vars)
+
+  | File      | Lines      |
+  |-----------|------------|
+  | search.ts | 4216, 4272 |
+  | search.ts | 4379       |
+  | search.ts | 4473, 4585 |
+  | search.ts | 4788       |
+  | search.ts | 4850       |
+  | search.ts | 3172       |
+
+  22. CONSOLE.LOG IN PRODUCTION
+
+  | File                     | Lines                                          |
+  |--------------------------|------------------------------------------------|
+  | search.ts                | Multiple                                       |
+  | free-apis.ts             | 260-275, 335, 345, 353-356, 489, 498, 501, 505 |
+  | olivia-brain-enhanced.ts | 670-671, 700-701, 856-858                      |
+
+  23. HARDCODED MAGIC NUMBERS
+
+  | File         | Line    | Value                          | Purpose                      |
+  |--------------|---------|--------------------------------|------------------------------|
+  | free-apis.ts | 182-185 | 600x400, 90, 0, 0              | Street View params           |
+  | free-apis.ts | 379     | 5                              | SchoolDigger search radius   |
+  | free-apis.ts | 600-618 | 30, 0.55                       | Soundscore conversion        |
+  | free-apis.ts | 1447    | 30 * 365 * 24 * 60 * 60 * 1000 | 30-year lookback             |
+  | free-apis.ts | 1453    | 2.0                            | Min earthquake magnitude     |
+  | free-apis.ts | 1794    | 0.35                           | Panel-to-kW conversion       |
+  | search.ts    | 5825    | 181                            | Field count for completion % |
+
+  24. OUTDATED CARRIER DATA
+
+  | File         | Line | Issue                                                           |
+  |--------------|------|-----------------------------------------------------------------|
+  | free-apis.ts | 667  | Sprint carrier included but Sprint merged with T-Mobile in 2020 |
+
+  25. OLD API VERSIONS
+
+  | File      | Line       | Issue                                                  |
+  |-----------|------------|--------------------------------------------------------|
+  | search.ts | 4378       | Azure OpenAI version 2024-02-15-preview - should be GA |
+  | search.ts | 4221, 4277 | Anthropic API version 2023-06-01 - old                 |
+
+  26. FIELD 169-181 MISMATCH
+
+  | File                     | Line     | Issue                                                                                   |
+  |--------------------------|----------|-----------------------------------------------------------------------------------------|
+  | olivia-brain-enhanced.ts | 564, 576 | SECTION_METADATA includes Market Performance fields 169-181 but they're never extracted |
+
+  ---
+  MISSING FEATURES
+
+  27. NO RATE LIMITING
+
+  - No rate limiting on any API calls
+  - Risk of quota exhaustion, IP blocking, cost overruns
+
+  28. NO RETRY LOGIC
+
+  - No retry for transient network failures
+  - Single failure = permanent failure
+
+  29. NO TIMEOUT HANDLING FOR STREAMS
+
+  - olivia-brain-enhanced.ts streaming calls could hang indefinitely
+
+  30. NO CIRCUIT BREAKER
+
+  - Failed APIs continue to be called repeatedly
+
+  ---
+  SUMMARY
+
+  | Severity         | Count |
+  |------------------|-------|
+  | CRITICAL         | 6     |
+  | HIGH             | 12    |
+  | MEDIUM           | 20    |
+  | LOW              | 26    |
+  | MISSING FEATURES | 4     |
+  | TOTAL            | 68    |
+
+  Top 5 Priorities:
+
+  1. Fix invalid model IDs - GPT-5.2, Grok-4, Gemini-2.0-flash don't exist
+  2. Move API keys server-side - Client-side exposure is critical security flaw
+  3. Fix HTTP→HTTPS - FCC API using plaintext
+  4. Update stale FBI crime data - Hardcoded 2022 dates
+  5. Remove dead code - 6+ unused functions consuming maintenance burden

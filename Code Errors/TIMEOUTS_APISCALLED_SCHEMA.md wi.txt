@@ -1,0 +1,42 @@
+  Updated MASTER_API_LLM_SCHEMA.md with:
+
+  ---
+  MASTER TIMEOUT TABLE (Added)
+
+  | Constant            | Milliseconds | Seconds | Minutes | Source/Tier                              |
+  |---------------------|--------------|---------|---------|------------------------------------------|
+  | STELLAR_MLS_TIMEOUT | 30,000       | 30      | 0.5     | Bridge API (Tier 1)                      |
+  | FREE_API_TIMEOUT    | 90,000       | 90      | 1.5     | Google, WalkScore, FEMA (Tier 2 & 3)     |
+  | FEMA_TIMEOUT        | 60,000       | 60      | 1.0     | FEMA Flood only                          |
+  | LLM_TIMEOUT         | 210,000      | 210     | 3.5     | Grok, GPT, Opus, Gemini, Sonnet (Tier 5) |
+  | PERPLEXITY_TIMEOUT  | 225,000      | 225     | 3.75    | Perplexity micro-prompts (Tier 4)        |
+
+  ---
+  ASK OLIVIA LLMs (Added)
+
+  | Feature            | Model ID                   | Calls        |
+  |--------------------|----------------------------|--------------|
+  | Basic Olivia       | claude-sonnet-4-5-20250929 | 1            |
+  | Enhanced Olivia    | claude-opus-4-5-20251101   | 1            |
+  | Progressive Olivia | claude-opus-4-5-20251101   | 4 sequential |
+
+  Progressive Olivia 4-Level Breakdown:
+
+  - Level 1: Fields 1-56 (Critical Decision)
+  - Level 2: Fields 57-112 (Important Context)
+  - Level 3: Fields 113-168 (Remaining)
+  - Level 4: Final Aggregation & Winner
+
+  ---
+  COMPLETE LLM MODEL REFERENCE (10 Total)
+
+  | Use Case                        | Model ID                   |
+  |---------------------------------|----------------------------|
+  | Perplexity                      | sonar / sonar-pro          |
+  | Grok                            | grok-4                     |
+  | GPT                             | gpt-5.2-2025-12-11         |
+  | Claude Opus (Search)            | claude-opus-4-5-20251101   |
+  | Gemini                          | gemini-2.0-flash           |
+  | Claude Sonnet (Search)          | claude-sonnet-4-5-20250929 |
+  | Ask Olivia Basic                | claude-sonnet-4-5-20250929 |
+  | Ask Olivia Enhanced/Progressive | claude-opus-4-5-20251101   |

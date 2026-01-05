@@ -158,7 +158,7 @@ RETURN JSON MATCHING THIS SCHEMA:
 // ============================================================================
 
 export const GEMINI_API_CONFIG = {
-  model: 'gemini-3-pro-preview',
+  model: 'gemini-3-pro-latest',
   tools: [{ google_search: {} }],
   tool_config: {
     function_calling_config: {
@@ -166,11 +166,21 @@ export const GEMINI_API_CONFIG = {
     }
   },
   generation_config: {
-    temperature: 0.0,
+    temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro 2026
     response_mime_type: 'application/json',
     thinking_level: 'high'
   }
 };
+
+// NOTE: Prompts MUST be passed in system_instruction field, NOT user content
+// Example API structure:
+// {
+//   system_instruction: { parts: [{ text: GEMINI_FIELD_COMPLETER_SYSTEM }] },
+//   contents: [{ parts: [{ text: "User task here" }] }],
+//   tools: [...],
+//   tool_config: {...},
+//   generation_config: {...}
+// }
 
 // Export field list for use in other modules
 export { geminiMissingFieldsList };

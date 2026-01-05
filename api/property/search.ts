@@ -4745,20 +4745,23 @@ async function callGemini(address: string): Promise<any> {
 
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-latest:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          // SYSTEM INSTRUCTION: Prompt goes here per 2026 Gemini 3 Pro specs
+          system_instruction: {
+            parts: [{ text: PROMPT_GEMINI }]
+          },
+          // USER CONTENT: Only the task/address
           contents: [
             {
               parts: [
                 {
-                  text: `${PROMPT_GEMINI}
-
-Extract property data fields for this address: ${address}
+                  text: `Extract property data fields for this address: ${address}
 
 Execute these searches:
 1. "${address} Zillow listing and Zestimate"
@@ -4781,7 +4784,7 @@ Return JSON only with the 34 field keys specified in the schema.`,
             }
           },
           generation_config: {
-            temperature: 0.0,
+            temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro 2026
             response_mime_type: 'application/json',
             thinking_level: 'high',
             max_output_tokens: 16000,
