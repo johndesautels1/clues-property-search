@@ -692,6 +692,13 @@ export default function PropertyDetail() {
             '14_last_sale_price': ['details', 'lastSalePrice'],
             '15_assessed_value': ['details', 'assessedValue'],
             '16_avms': ['financial', 'avms'],
+            // AVM Subfields (16a-16f) - Individual AVM Sources
+            '16a_zestimate': ['financial', 'zestimate'],
+            '16b_redfin_estimate': ['financial', 'redfinEstimate'],
+            '16c_first_american_avm': ['financial', 'firstAmericanAvm'],
+            '16d_quantarium_avm': ['financial', 'quantariumAvm'],
+            '16e_ice_avm': ['financial', 'iceAvm'],
+            '16f_collateral_analytics_avm': ['financial', 'collateralAnalyticsAvm'],
             // GROUP 3: Property Basics (17-29)
             '17_bedrooms': ['details', 'bedrooms'],
             '18_full_bathrooms': ['details', 'fullBathrooms'],
@@ -1575,6 +1582,31 @@ export default function PropertyDetail() {
                   {renderDataField("AVMs (Average)", fullProperty.financial.avms, 'currency', undefined, "16_avms")}
                 </div>
               </div>
+
+              {/* Individual AVM Sources (16a-16f) */}
+              {(fullProperty.financial?.zestimate?.value || fullProperty.financial?.redfinEstimate?.value ||
+                fullProperty.financial?.firstAmericanAvm?.value || fullProperty.financial?.quantariumAvm?.value ||
+                fullProperty.financial?.iceAvm?.value || fullProperty.financial?.collateralAnalyticsAvm?.value) && (
+                <div className="mt-6 pt-6 border-t border-white/10">
+                  <div className="flex items-center gap-2 mb-3">
+                    <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Individual AVM Sources</h4>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      {renderDataField("Zillow Zestimate", fullProperty.financial.zestimate, 'currency', undefined, "16a_zestimate")}
+                      {renderDataField("Redfin Estimate", fullProperty.financial.redfinEstimate, 'currency', undefined, "16b_redfin_estimate")}
+                    </div>
+                    <div>
+                      {renderDataField("First American AVM", fullProperty.financial.firstAmericanAvm, 'currency', undefined, "16c_first_american_avm")}
+                      {renderDataField("Quantarium AVM", fullProperty.financial.quantariumAvm, 'currency', undefined, "16d_quantarium_avm")}
+                    </div>
+                    <div>
+                      {renderDataField("ICE AVM", fullProperty.financial.iceAvm, 'currency', undefined, "16e_ice_avm")}
+                      {renderDataField("Collateral Analytics", fullProperty.financial.collateralAnalyticsAvm, 'currency', undefined, "16f_collateral_analytics_avm")}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Extended Data - Price History */}
               {fullProperty?.extendedMLS?.originalListPrice && (

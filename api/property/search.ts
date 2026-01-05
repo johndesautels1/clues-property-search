@@ -85,6 +85,13 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   '14_last_sale_price': 'currency', 'last_sale_price': 'currency',
   '15_assessed_value': 'currency', 'assessed_value': 'currency',
   '16_avms': 'currency', 'avms': 'currency',
+  // AVM Subfields (16a-16f) - Individual AVM Sources
+  '16a_zestimate': 'currency', 'zestimate': 'currency',
+  '16b_redfin_estimate': 'currency', 'redfin_estimate': 'currency',
+  '16c_first_american_avm': 'currency', 'first_american_avm': 'currency',
+  '16d_quantarium_avm': 'currency', 'quantarium_avm': 'currency',
+  '16e_ice_avm': 'currency', 'ice_avm': 'currency',
+  '16f_collateral_analytics_avm': 'currency', 'collateral_analytics_avm': 'currency',
 
   // ================================================================
   // GROUP 3: Property Basics (Fields 17-29)

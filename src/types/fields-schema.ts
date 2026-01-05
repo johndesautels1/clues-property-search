@@ -58,14 +58,14 @@ export const ALL_FIELDS: readonly FieldDefinition[] = [
   { num: 13, key: 'last_sale_date',        label: 'Last Sale Date',        group: 'Pricing & Value', type: 'date',     required: false },
   { num: 14, key: 'last_sale_price',       label: 'Last Sale Price',       group: 'Pricing & Value', type: 'currency', required: false },
   { num: 15, key: 'assessed_value',        label: 'Assessed Value',        group: 'Pricing & Value', type: 'currency', required: false },
-  { num: 16, key: 'avms',                  label: 'AVMs (Average)',        group: 'Pricing & Value', type: 'currency', required: false },
-  // Sub-fields for Field 16 AVMs (stored separately, no new field numbers):
-  // 16a: field_16a_zestimate - Zillow Zestimate
-  // 16b: field_16b_redfin_estimate - Redfin Estimate
-  // 16c: field_16c_first_american_avm - First American AVM (Homes.com)
-  // 16d: field_16d_quantarium_avm - Quantarium AVM (Homes.com)
-  // 16e: field_16e_ice_avm - ICE AVM (Homes.com)
-  // 16f: field_16f_collateral_analytics_avm - Collateral Analytics (Homes.com)
+  { num: 16, key: 'avms',                  label: 'AVMs (Average)',        group: 'Pricing & Value', type: 'currency', required: false, calculated: true },
+  // Sub-fields for Field 16 AVMs (individual AVM sources):
+  { num: '16a', key: 'zestimate',              label: 'Zillow Zestimate',           group: 'Pricing & Value', type: 'currency', required: false },
+  { num: '16b', key: 'redfin_estimate',        label: 'Redfin Estimate',            group: 'Pricing & Value', type: 'currency', required: false },
+  { num: '16c', key: 'first_american_avm',     label: 'First American AVM',         group: 'Pricing & Value', type: 'currency', required: false },
+  { num: '16d', key: 'quantarium_avm',         label: 'Quantarium AVM',             group: 'Pricing & Value', type: 'currency', required: false },
+  { num: '16e', key: 'ice_avm',                label: 'ICE AVM',                    group: 'Pricing & Value', type: 'currency', required: false },
+  { num: '16f', key: 'collateral_analytics_avm', label: 'Collateral Analytics AVM', group: 'Pricing & Value', type: 'currency', required: false },
 
   // ================================================================
   // GROUP 3: Property Basics (Fields 17-29)

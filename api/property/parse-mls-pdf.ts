@@ -78,7 +78,6 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'LP/SqFt': '11_price_per_sqft',
   'Price/SqFt': '11_price_per_sqft',
   '$/SqFt': '11_price_per_sqft',
-  'Zestimate': '12_market_value_estimate',
   'Estimated Value': '12_market_value_estimate',
   'Last Sale Date': '13_last_sale_date',
   'Prior Sale Date': '13_last_sale_date',
@@ -90,6 +89,23 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'Previous Sale Price': '14_last_sale_price',
   'Assessed Value': '15_assessed_value',
   'Tax Assessed Value': '15_assessed_value',
+
+  // ================================================================
+  // AVM SUBFIELDS (16a-16f) - Individual AVM Sources
+  // ================================================================
+  'Zestimate': '16a_zestimate',
+  'Zillow Zestimate': '16a_zestimate',
+  'Zillow Estimate': '16a_zestimate',
+  'Redfin Estimate': '16b_redfin_estimate',
+  'Redfin Value': '16b_redfin_estimate',
+  'First American AVM': '16c_first_american_avm',
+  'First American Estimate': '16c_first_american_avm',
+  'Quantarium AVM': '16d_quantarium_avm',
+  'Quantarium Estimate': '16d_quantarium_avm',
+  'ICE AVM': '16e_ice_avm',
+  'ICE Estimate': '16e_ice_avm',
+  'Collateral Analytics AVM': '16f_collateral_analytics_avm',
+  'Collateral Analytics': '16f_collateral_analytics_avm',
 
   // ================================================================
   // GROUP 3: PROPERTY BASICS (Fields 17-29)

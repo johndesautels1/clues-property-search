@@ -239,6 +239,17 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
     addField('15_assessed_value', property.TaxAssessedValue);
   }
 
+  // Field 16: AVMs (Average) - Calculated field, not from MLS
+  // AVM Subfields (16a-16f) - Individual AVM Sources
+  // NOTE: These come from external APIs, not Bridge MLS:
+  // - 16a_zestimate: Zillow API
+  // - 16b_redfin_estimate: Redfin API
+  // - 16c_first_american_avm: Homes.com
+  // - 16d_quantarium_avm: Homes.com
+  // - 16e_ice_avm: Homes.com
+  // - 16f_collateral_analytics_avm: Homes.com
+  // Field 16 (avms) is calculated as average of available AVM sources in field-calculations.ts
+
   // ================================================================
   // GROUP 3: Property Basics (Fields 17-29)
   // ================================================================
