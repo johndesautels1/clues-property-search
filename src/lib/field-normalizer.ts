@@ -1,9 +1,10 @@
 /**
  * CLUES Property Dashboard - Unified Field Normalizer
  *
- * SINGLE SOURCE OF TRUTH for mapping flat 168-field API keys to the nested Property interface.
+ * SINGLE SOURCE OF TRUTH for mapping flat 181-field API keys to the nested Property interface.
  * This MUST be the only place where field→path mapping is defined.
  * Updated: 2025-11-30 - Added 30 Stellar MLS fields (139-168)
+ * Updated: 2025-01-05 - Added Market Performance (169-181)
  *
  * API returns: { "7_listing_price": { value: 450000, source: "Zillow" } }
  * Property type expects: property.address.listingPrice.value = 450000
@@ -11,6 +12,29 @@
 
 import type { Property, DataField, ConfidenceLevel } from '@/types/property';
 import { enrichWithCalculatedFields } from './field-calculations';
+
+// ============================================
+// FIELD ALIASES - Backward compatibility layer
+// Old keys → new canonical keys (transition support)
+// ============================================
+const FIELD_ALIASES: Record<string, string> = {
+  // Old → new canonical (Field 31 refactor)
+  "31_hoa_fee_annual": "31_association_fee",
+  "hoa_fee_annual": "association_fee",
+};
+
+/**
+ * Apply field aliases to normalize old keys to new canonical keys
+ * Call this before validation to ensure backward compatibility
+ */
+export function applyFieldAliases(obj: Record<string, any>): Record<string, any> {
+  for (const [oldKey, newKey] of Object.entries(FIELD_ALIASES)) {
+    if (obj[oldKey] != null && obj[newKey] == null) {
+      obj[newKey] = obj[oldKey];
+    }
+  }
+  return obj;
+}
 
 export interface FlatFieldData {
   value: any;
@@ -89,7 +113,14 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
 
   // ========== GROUP 4: HOA & Taxes (Fields 30-38) ==========
   { fieldNumber: 30, apiKey: '30_hoa_yn', group: 'details', propName: 'hoaYn', type: 'boolean' },
-  { fieldNumber: 31, apiKey: '31_hoa_fee_annual', group: 'details', propName: 'hoaFeeAnnual', type: 'number', validation: (v) => v >= 0 && v < 500000 },
+  { fieldNumber: 31, apiKey: '31_association_fee', group: 'details', propName: 'associationFeeAnnualized', type: 'number', validation: (v) => v >= 0 && v < 500000 },
+  // Fee subfields (31A-31F)
+  { fieldNumber: '31A', apiKey: '31A_hoa_fee_monthly', group: 'details', propName: 'hoaFeeMonthly', type: 'number', validation: (v) => v >= 0 && v < 50000 },
+  { fieldNumber: '31B', apiKey: '31B_hoa_fee_annual', group: 'details', propName: 'hoaFeeAnnual', type: 'number', validation: (v) => v >= 0 && v < 500000 },
+  { fieldNumber: '31C', apiKey: '31C_condo_fee_monthly', group: 'details', propName: 'condoFeeMonthly', type: 'number', validation: (v) => v >= 0 && v < 50000 },
+  { fieldNumber: '31D', apiKey: '31D_condo_fee_annual', group: 'details', propName: 'condoFeeAnnual', type: 'number', validation: (v) => v >= 0 && v < 500000 },
+  { fieldNumber: '31E', apiKey: '31E_fee_frequency_primary', group: 'details', propName: 'feeFrequencyPrimary', type: 'string' },
+  { fieldNumber: '31F', apiKey: '31F_fee_raw_notes', group: 'details', propName: 'feeRawNotes', type: 'string' },
   { fieldNumber: 32, apiKey: '32_hoa_name', group: 'details', propName: 'hoaName', type: 'string' },
   { fieldNumber: 33, apiKey: '33_hoa_includes', group: 'details', propName: 'hoaIncludes', type: 'string' },
   { fieldNumber: 34, apiKey: '34_ownership_type', group: 'details', propName: 'ownershipType', type: 'string' },
@@ -262,6 +293,7 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
   // ========== GROUP 22: Stellar MLS - Features (Fields 166-168) ==========
   { fieldNumber: 166, apiKey: '166_community_features', group: 'stellarMLS.features', propName: 'communityFeatures', type: 'array' },
   { fieldNumber: 167, apiKey: '167_interior_features', group: 'stellarMLS.features', propName: 'interiorFeatures', type: 'array' },
+  { fieldNumber: '167C', apiKey: '167C_furnished_yn', group: 'stellarMLS.features', propName: 'furnishedYn', type: 'boolean' },
   { fieldNumber: 168, apiKey: '168_exterior_features', group: 'stellarMLS.features', propName: 'exteriorFeatures', type: 'array' },
 
   // ========== GROUP 23: Market Performance (Fields 169-181) - Section W ==========
@@ -542,6 +574,10 @@ export function normalizeToProperty(
   fieldSources: Record<string, string[]> = {},
   conflicts: Array<{ field: string; values: Array<{ source: string; value: any }> }> = []
 ): Property {
+  // Apply field aliases for backward compatibility (e.g., 31_hoa_fee_annual → 31_association_fee)
+  // This mutates the keys in place to map old keys to new canonical keys
+  applyFieldAliases(flatFields);
+
   const now = new Date().toISOString();
 
   const emptyDataField = <T>(defaultValue: T | null = null): DataField<T> => ({

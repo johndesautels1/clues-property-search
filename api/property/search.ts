@@ -56,7 +56,8 @@ import { TIER_35_FIELD_IDS } from '../../src/services/valuation/geminiConfig.js'
 // ============================================
 // COMPLETE TYPE MAP - ALL 181 FIELDS from fields-schema.ts
 // Maps EVERY field key to its expected type for validation and coercion
-// 336 total entries (168 numbered + 168 unnumbered key variants)
+// Includes subfields: 4A, 26A, 26B, 31A-31F, 132B, 167C, 167D
+// Updated: 2025-01-05
 // ============================================
 type FieldType = 'text' | 'number' | 'boolean' | 'currency' | 'percentage' | 'date' | 'select' | 'multiselect';
 const FIELD_TYPE_MAP: Record<string, FieldType> = {
@@ -67,6 +68,7 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   '2_mls_primary': 'text', 'mls_primary': 'text',
   '3_mls_secondary': 'text', 'mls_secondary': 'text',
   '4_listing_status': 'select', 'listing_status': 'select',
+  '4A_special_sale_type': 'select', 'special_sale_type': 'select',
   '5_listing_date': 'date', 'listing_date': 'date',
   '6_neighborhood': 'text', 'neighborhood': 'text',
   '7_county': 'text', 'county': 'text',
@@ -97,6 +99,8 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   '24_lot_size_acres': 'number', 'lot_size_acres': 'number',
   '25_year_built': 'number', 'year_built': 'number',
   '26_property_type': 'select', 'property_type': 'select',
+  '26A_arch_style': 'text', 'arch_style': 'text',
+  '26B_attached_yn': 'boolean', 'attached_yn': 'boolean',
   '27_stories': 'number', 'stories': 'number',
   '28_garage_spaces': 'number', 'garage_spaces': 'number',
   '29_parking_total': 'text', 'parking_total': 'text',
@@ -105,6 +109,15 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   // GROUP 4: HOA & Taxes (Fields 30-38)
   // ================================================================
   '30_hoa_yn': 'boolean', 'hoa_yn': 'boolean',
+  '31_association_fee': 'currency', 'association_fee': 'currency',
+  // Fee subfields (31A-31F)
+  '31A_hoa_fee_monthly': 'currency', 'hoa_fee_monthly': 'currency',
+  '31B_hoa_fee_annual': 'currency',
+  '31C_condo_fee_monthly': 'currency', 'condo_fee_monthly': 'currency',
+  '31D_condo_fee_annual': 'currency', 'condo_fee_annual': 'currency',
+  '31E_fee_frequency_primary': 'text', 'fee_frequency_primary': 'text',
+  '31F_fee_raw_notes': 'text', 'fee_raw_notes': 'text',
+  // Back-compat aliases (Field 31 refactor)
   '31_hoa_fee_annual': 'currency', 'hoa_fee_annual': 'currency',
   '32_hoa_name': 'text', 'hoa_name': 'text',
   '33_hoa_includes': 'text', 'hoa_includes': 'text',
@@ -135,13 +148,13 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   '50_kitchen_features': 'text', 'kitchen_features': 'text',
   '51_appliances_included': 'multiselect', 'appliances_included': 'multiselect',
   '52_fireplace_yn': 'boolean', 'fireplace_yn': 'boolean',
-  '53_primary_br_location': 'number', 'primary_br_location': 'select',
+  '53_primary_br_location': 'select', 'primary_br_location': 'select',
 
   // ================================================================
   // GROUP 7: Exterior Features (Fields 54-58)
   // ================================================================
   '54_pool_yn': 'boolean', 'pool_yn': 'boolean',
-  '55_pool_type': 'select', 'pool_type': 'select',
+  '55_pool_type': 'multiselect', 'pool_type': 'multiselect',
   '56_deck_patio': 'text', 'deck_patio': 'text',
   '57_fence': 'text', 'fence': 'text',
   '58_landscaping': 'text', 'landscaping': 'text',
@@ -255,6 +268,7 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   // ================================================================
   '131_view_type': 'text', 'view_type': 'text',
   '132_lot_features': 'text', 'lot_features': 'text',
+  '132B_other_structures': 'text', 'other_structures': 'text',
   '133_ev_charging': 'text', 'ev_charging': 'text',
   '134_smart_home_features': 'text', 'smart_home_features': 'text',
   '135_accessibility_modifications': 'text', 'accessibility_modifications': 'text',
@@ -314,6 +328,7 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   // ================================================================
   '166_community_features': 'multiselect', 'community_features': 'multiselect',
   '167_interior_features': 'multiselect', 'interior_features': 'multiselect',
+  '167C_furnished_yn': 'boolean', 'furnished_yn': 'boolean',
   '168_exterior_features': 'multiselect', 'exterior_features': 'multiselect',
 
   // ================================================================

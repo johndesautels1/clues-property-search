@@ -1,7 +1,11 @@
 /**
  * CLUES Property Dashboard - MLS PDF Parser API
  * Extracts property data from Stellar MLS CustomerFull PDF sheets
- * Uses Claude to parse PDF content and map to 168-field schema
+ * Uses Claude to parse PDF content and map to 181-field schema
+ *
+ * Updated: 2025-01-05
+ * - Added Field 31 subfields (31A-31F) for fee handling
+ * - Added subfield mappings: 4A, 26A, 26B, 132B, 167C, 167D
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -134,12 +138,17 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'HOA / Comm Assn': '30_hoa_yn',
   'HOA': '30_hoa_yn',
   'HOA Y/N': '30_hoa_yn',
-  'HOA Fee': '31_hoa_fee_annual',
-  'Monthly HOA Amount': '31_hoa_fee_annual',
-  'HOA Monthly': '31_hoa_fee_annual',
-  'HOA Annual': '31_hoa_fee_annual',
-  'Total Annual Assoc Fees': '31_hoa_fee_annual',
-  'Average Monthly Fees': '31_hoa_fee_annual',
+  // Canonical / ambiguous HOA fee → Field 31 (annualized)
+  'HOA Fee': '31_association_fee',
+
+  // Explicit monthly → 31A subfield
+  'Monthly HOA Amount': '31A_hoa_fee_monthly',
+  'HOA Monthly': '31A_hoa_fee_monthly',
+  'Average Monthly Fees': '31A_hoa_fee_monthly',
+
+  // Explicit annual → 31B subfield
+  'HOA Annual': '31B_hoa_fee_annual',
+  'Total Annual Assoc Fees': '31B_hoa_fee_annual',
   'HOA Name': '32_hoa_name',
   'Association Name': '32_hoa_name',
   'Master Assn/Name': '32_hoa_name',
@@ -158,7 +167,7 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'Exemptions': '38_tax_exemptions',
   'Tax Exempt': '38_tax_exemptions',
   'Other Exemptions': '38_tax_exemptions',
-  'HOA Pmt Sched': 'hoa_payment_schedule',
+  'HOA Pmt Sched': '31E_fee_frequency_primary',
 
   // ================================================================
   // GROUP 5: STRUCTURE & SYSTEMS (Fields 39-48)
@@ -392,7 +401,7 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'Max Pet Wt': '164_max_pet_weight',
   'Max Pet Weight': '164_max_pet_weight',
   'Pet Weight': '164_max_pet_weight',
-  'Pet Restrictions': 'pet_restrictions',
+  'Pet Restrictions': '136_pet_policy',
   'Association Approval Required': '165_association_approval_yn',
   'Association Approval': '165_association_approval_yn',
   'HOA Approval': '165_association_approval_yn',
@@ -409,7 +418,7 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'Interior': '167_interior_features',
   'Ext Features': '168_exterior_features',
   'Exterior Features': '168_exterior_features',
-  'Patio And Porch Features': 'patio_porch_features',
+  'Patio And Porch Features': '56_deck_patio',
   'View': '131_view_type',
   'Lot Features': '132_lot_features',
   'Lot Description': '132_lot_features',
@@ -429,46 +438,49 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   // ================================================================
   'New Construction': 'new_construction_yn',
   'Proj Comp Date': 'project_completion_date',
-  'Property Condition': 'property_condition',
+  'Property Condition': '48_interior_condition',
   'Home Warranty Y/N': 'home_warranty_yn',
   'Permit Number': 'permit_number',
   'Utilities': 'utilities',
-  'Water': 'water_source',
-  'Sewer': 'sewer_type',
+  'Water': '106_water_provider',
+  'Sewer': '108_sewer_provider',
   'Security Feat': 'security_features',
   'Window Features': 'window_features',
-  'Furnishings': 'furnishings',
+  'Furnishings': '167C_furnished_yn',  // Boolean only per owner requirement
   'Accessibility Features': '135_accessibility_modifications',
   'Road Surface Type': 'road_surface',
   'Road Responsibility': 'road_responsibility',
-  'Special Sale': 'special_sale_type',
+  'Special Sale': '4A_special_sale_type',
   'Pets': '136_pet_policy',
   'Max Times per Yr': 'max_lease_times_per_year',
   'Property Description': 'property_description',
-  'Architectural Style': 'architectural_style',
-  'Property Attached Y/N': 'property_attached_yn',
+  'Architectural Style': '26A_arch_style',
+  'Property Attached Y/N': '26B_attached_yn',
   'Spa and Features': 'spa_features',
   'Vegetation': 'vegetation',
   'Barn Features': 'barn_features',
   'Horse Amenities': 'horse_amenities',
   '# of Stalls': 'number_of_stalls',
   '# Paddocks/Pastures': 'number_paddocks_pastures',
-  'Green Energy Generation': 'green_energy_generation',
+  'Green Energy Generation': '130_solar_potential',
   'Green Energy Generation Y/N': 'green_energy_generation_yn',
   'Affidavit': 'affidavit',
   'Expire/Renewal Date': 'expire_renewal_date',
   'FCHR Website Y/N': 'fchr_website_yn',
-  'Condo Fee': 'condo_fee',
-  'Monthly Condo Fee': 'condo_fee_monthly',
+  // Condo fees → 31C (monthly) and 31D (annual)
+  'Condo Fee': '31C_condo_fee_monthly',  // Assume monthly if not specified
+  'Monthly Condo Fee': '31C_condo_fee_monthly',
+  'Annual Condo Fee': '31D_condo_fee_annual',
+  'Condo Fee Annual': '31D_condo_fee_annual',
   'Master Assn Ph': 'master_assn_phone',
   'Other Fee': 'other_fee',
-  'Housing for Older Per': 'housing_for_older_persons',
+  'Housing for Older Per': '137_age_restrictions',
   'Additional Rooms': 'additional_rooms',
   'Room Type': 'room_type',
   'Approx Dim': 'approximate_dimensions',
   'Closet Type': 'closet_type',
   'Features': 'room_features',
-  'Other Structures': 'other_structures',
+  'Other Structures': '132B_other_structures',
   'Other Equipment': 'other_equipment',
   'Pool Dimensions': 'pool_dimensions',
   'Farm Type': 'farm_type',

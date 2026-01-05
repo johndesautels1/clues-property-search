@@ -1,10 +1,22 @@
 /**
  * Bridge Interactive API to CLUES Schema Field Mapper
- * Maps RESO Web API fields from Bridge Interactive to our 168-field schema
+ * Maps RESO Web API fields from Bridge Interactive to our 181-field schema
  * SOURCE OF TRUTH: src/types/fields-schema.ts
+ *
+ * Updated: 2025-01-05
+ * - Added Field 31 subfields (31A-31F) for proper fee handling
+ * - Integrated fee-normalizer for bidirectional monthly/annual conversion
+ * - Condo vs HOA fee detection
  */
 
 import type { BridgeProperty } from './bridge-api-client.js';
+import {
+  normalizeFeeFrequency,
+  annualizeFee,
+  monthlyizeFee,
+  isCondoLike,
+  normalizeSpecialSaleType,
+} from './fee-normalizer.js';
 
 export interface MappedField {
   value: any;
@@ -274,10 +286,44 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // ================================================================
   addField('30_hoa_yn', property.AssociationYN);
 
-  // Convert HOA fee to annual
+  // ================================================================
+  // FIELD 31 + SUBFIELDS (31A-31F): Association Fee Handling
+  // Uses new fee-normalizer for proper monthly/annual conversion
+  // ================================================================
   if (property.AssociationFee) {
-    const annualFee = convertToAnnualHOA(property.AssociationFee, property.AssociationFeeFrequency);
-    addField('31_hoa_fee_annual', annualFee);
+    const fee = property.AssociationFee;
+    const freq = normalizeFeeFrequency(property.AssociationFeeFrequency);
+    const calcFreq = freq === 'Unknown' ? 'Monthly' : freq;
+
+    const annual = annualizeFee(fee, calcFreq);
+    const monthly = monthlyizeFee(fee, calcFreq);
+
+    // Determine if condo-like property
+    const propType = property.PropertySubType || property.PropertyType || '';
+    const condoLike = isCondoLike(propType);
+
+    // Set subfields based on property type
+    if (condoLike) {
+      addField('31D_condo_fee_annual', annual);
+      addField('31C_condo_fee_monthly', monthly);
+    } else {
+      addField('31B_hoa_fee_annual', annual);
+      addField('31A_hoa_fee_monthly', monthly);
+    }
+
+    // Fee frequency and raw notes
+    addField('31E_fee_frequency_primary', freq);
+    addField('31F_fee_raw_notes', `Bridge AssociationFee=${fee} | Freq=${property.AssociationFeeFrequency ?? 'null'}`);
+
+    // Canonical Field 31 (annualized total)
+    const hoaAnnual = Number(condoLike ? 0 : annual ?? 0);
+    const condoAnnual = Number(condoLike ? annual ?? 0 : 0);
+    addField('31_association_fee', hoaAnnual + condoAnnual);
+
+    // Bonus rule: if any fee exists, HOA true unless Bridge explicitly false
+    if ((hoaAnnual + condoAnnual) > 0 && property.AssociationYN !== false) {
+      addField('30_hoa_yn', true);
+    }
   }
 
   addField('32_hoa_name', property.AssociationName);

@@ -2,9 +2,13 @@
  * CLUES Property Dashboard - ONE SOURCE OF TRUTH SCHEMA
  * Created: 2025-11-27
  * Updated: 2025-11-30 - Added 30 Stellar MLS fields (139-168)
+ * Updated: 2025-01-05 - Added Market Performance (169-181)
  *
  * THIS IS THE ONLY FILE WHERE FIELDS ARE DEFINED.
- * All 168 fields (138 original + 30 Stellar MLS).
+ * All 181 fields total:
+ *   - Fields 1-138: Original CMA schema
+ *   - Fields 139-168: Stellar MLS fields
+ *   - Fields 169-181: Market Performance fields
  *
  * DO NOT define fields anywhere else.
  * DO NOT duplicate this data.
@@ -27,8 +31,8 @@ export interface FieldDefinition {
 }
 
 /**
- * THE MASTER FIELD LIST - 138 FIELDS
- * Extracted directly from the user's UI document.
+ * THE MASTER FIELD LIST - 181 FIELDS
+ * Extracted directly from the user's UI document + Stellar MLS + Market Performance.
  * Every field has: num, key, label, group, type, required
  */
 export const ALL_FIELDS: readonly FieldDefinition[] = [
@@ -84,7 +88,14 @@ export const ALL_FIELDS: readonly FieldDefinition[] = [
   // GROUP 4: HOA & Taxes (Fields 30-38)
   // ================================================================
   { num: 30, key: 'hoa_yn',            label: 'HOA',               group: 'HOA & Taxes', type: 'boolean',  required: false },
-  { num: 31, key: 'hoa_fee_annual',    label: 'HOA Fee (Annual)',  group: 'HOA & Taxes', type: 'currency', required: false },
+  { num: 31, key: 'association_fee', label: 'Association Fee (Annualized)', group: 'HOA & Taxes', type: 'currency', required: false },
+  // Sub-fields for Field 31 Association Fees (stored separately, no new field numbers):
+  // 31A: 31A_hoa_fee_monthly - HOA Fee (Monthly) - currency
+  // 31B: 31B_hoa_fee_annual - HOA Fee (Annual) - currency
+  // 31C: 31C_condo_fee_monthly - Condo Fee (Monthly) - currency
+  // 31D: 31D_condo_fee_annual - Condo Fee (Annual) - currency
+  // 31E: 31E_fee_frequency_primary - Fee Frequency - text
+  // 31F: 31F_fee_raw_notes - Fee Raw Notes - text
   { num: 32, key: 'hoa_name',          label: 'HOA Name',          group: 'HOA & Taxes', type: 'text',     required: false },
   { num: 33, key: 'hoa_includes',      label: 'HOA Includes',      group: 'HOA & Taxes', type: 'text',     required: false },
   { num: 34, key: 'ownership_type',    label: 'Ownership Type',    group: 'HOA & Taxes', type: 'select',   required: false, options: ['Fee Simple', 'Leasehold', 'Condo', 'Co-op'] },
