@@ -298,7 +298,7 @@ async function callClaudeOpusForecast(
 /**
  * GPT-5.2-PRO (Olivia) - Market forecast with web search
  */
-async function callGPT4Forecast(
+async function callGPT5Forecast(
   address: string,
   price: number,
   neighborhood: string,
@@ -600,7 +600,7 @@ export async function getMultiLLMMarketForecast(
   const forecasts = await Promise.allSettled([
     callClaudeForecast(address, price, neighborhood, propertyType),
     callClaudeOpusForecast(address, price, neighborhood, propertyType),
-    callGPT4Forecast(address, price, neighborhood, propertyType),
+    callGPT5Forecast(address, price, neighborhood, propertyType),
     callGeminiForecast(address, price, neighborhood, propertyType),
     callPerplexityForecast(address, price, neighborhood, propertyType),
     callGrokForecast(address, price, neighborhood, propertyType),

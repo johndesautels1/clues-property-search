@@ -331,10 +331,10 @@ Return ONLY the JSON described in the system prompt.`;
 const GPT_SMART_SCORE_SYSTEM_PROMPT = OLIVIA_SYSTEM_PROMPT;
 
 /**
- * Call GPT-5.2 API (tiebreaker)
+ * Call GPT-5.2-pro API (tiebreaker)
  */
 
-async function callGPT4(prompt: string): Promise<LLMResponse> {
+async function callGPT5(prompt: string): Promise<LLMResponse> {
   const apiKey = process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
@@ -610,7 +610,7 @@ async function calculateConsensus(
   let tiebreakerModel: 'gpt-5.2' | 'grok';
 
   try {
-    tiebreakerResult = await callGPT4(prompt);
+    tiebreakerResult = await callGPT5(prompt);
     tiebreakerModel = 'gpt-5.2';
     console.log('[LLM Consensus] 4th voter: GPT-5.2');
   } catch (error) {
