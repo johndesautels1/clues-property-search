@@ -618,7 +618,7 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
       },
       body: JSON.stringify({
         model: 'grok-4-1-fast-reasoning',
-        max_tokens: 4000,
+        max_tokens: 16000,
         tools: [
           {
             type: 'function',
@@ -728,7 +728,7 @@ Return null if you cannot find data. Return ONLY the JSON object.`;
       },
       body: JSON.stringify({
         model: 'claude-opus-4-5-20251101',
-        max_tokens: 4000,
+        max_tokens: 16000,
         messages: [{ role: 'user', content: prompt }],
       }),
     });
@@ -935,29 +935,48 @@ async function callClaudeSonnet(address: string): Promise<{ fields: Record<strin
   console.log('[CLAUDE SONNET] API key present:', !!apiKey, 'length:', apiKey?.length || 0);
   if (!apiKey) return { error: 'API key not set', fields: {} };
 
-  const prompt = `You are a real estate data assistant. You have web search available - use it when helpful.
+  const prompt = `You are Claude Sonnet, a property data specialist. You fire 5th in the LLM cascade (Opus fires LAST).
 
-Return a JSON object with property data for: ${address}
+CRITICAL: DO NOT search for fields already provided by MLS or other LLMs:
+- DO NOT search for: listing_price, bedrooms, bathrooms, sqft, year_built, taxes, lot_size
+- DO NOT search for: address, city, state, zip, county, parcel_id, legal_description
+- DO NOT search for: HOA fees, pool, garage, stories, property_type, listing_status
+- These are ALREADY provided by Stellar MLS (Tier 1)
 
+YOUR TASK: Use web search to find ONLY these commonly-missing fields for: ${address}
+
+COUNTY/TAX FIELDS (search "[county] property appraiser [address]"):
+- 12_market_value_estimate: Estimated market value from Zillow/Redfin
+- 15_assessed_value: Assessed value from county property appraiser
+- 91_median_home_price_neighborhood: Median home price in the neighborhood/ZIP
+- 92_price_per_sqft_recent_avg: Average $/sqft for recent sales in area
+- 151_homestead_yn: Yes/No if property has homestead exemption
+- 152_cdd_yn: Yes/No if property is in a Community Development District
+
+UTILITY/SERVICE FIELDS (search "[city] utility providers"):
+- 104_electric_provider: Local electric company name
+- 109_natural_gas: Gas company name (or "No natural gas service")
+- 106_water_provider: Water utility name
+- 108_sewer_provider: Sewer service provider
+- 110_trash_provider: Garbage collection provider
+
+CONNECTIVITY FIELDS (search "[address] internet providers"):
+- 112_max_internet_speed: Max available Mbps from any ISP
+- 113_fiber_available: Yes/No if fiber is available at address
+
+INSURANCE/RISK FIELDS (search "[county] flood zone"):
+- 97_insurance_est_annual: Annual homeowners insurance estimate
+- 119_flood_zone: FEMA flood zone designation
+
+Return JSON with numbered field keys like:
 {
-  "property_type": "Single Family | Condo | Townhouse | Multi-Family",
-  "city": "city name",
-  "state": "FL",
-  "county": "county name",
-  "neighborhood": "neighborhood name if known",
-  "zip_code": "ZIP code",
-  "median_home_price_neighborhood": median price for neighborhood,
-  "avg_days_on_market": average DOM,
-  "school_district": assigned school district,
-  "flood_risk_level": FEMA flood zone,
-  "hurricane_risk": "Low | Moderate | High",
-  "walkability_description": "description of walkability",
-  "rental_estimate_monthly": rental estimate,
-  "insurance_estimate_annual": estimated annual insurance,
-  "property_tax_rate_percent": tax rate
+  "fields": {
+    "12_market_value_estimate": {"value": 450000, "source": "Zillow.com", "confidence": "High"},
+    "104_electric_provider": {"value": "Duke Energy", "source": "Duke Energy website", "confidence": "High"}
+  }
 }
 
-Return your best data. Use null only for fields you truly cannot find. Return ONLY the JSON object.`;
+Return ONLY the JSON object. Use null only for fields you truly cannot find.`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -970,7 +989,7 @@ Return your best data. Use null only for fields you truly cannot find. Return ON
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5-20250929',
-        max_tokens: 4000,
+        max_tokens: 16000,
         tools: [
           {
             type: 'web_search_20250305',

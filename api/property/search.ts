@@ -3993,7 +3993,7 @@ const GPT_LLM_AUDITOR_USER_TEMPLATE = GPT_FIELD_COMPLETER_USER_TEMPLATE;
 // ============================================
 // CLAUDE SONNET PROMPT - WITH WEB SEARCH - Fast, accurate
 // ============================================
-const PROMPT_CLAUDE_SONNET = `You are Claude Sonnet, a property data specialist. You fire LAST in the LLM cascade.
+const PROMPT_CLAUDE_SONNET = `You are Claude Sonnet, a property data specialist. You fire 5th in the LLM cascade (Opus fires LAST).
 
 CRITICAL: DO NOT search for fields already provided by MLS or other LLMs:
 - DO NOT search for: listing_price, bedrooms, bathrooms, sqft, year_built, taxes, lot_size
