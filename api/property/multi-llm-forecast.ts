@@ -852,20 +852,20 @@ export async function getMultiLLMMarketForecast(
   console.log(`📍 ${address}, ${neighborhood}`);
   console.log(`💰 Current Price: $${price.toLocaleString()}`);
 
-  // Call all 6 LLMs in parallel
+  // Call all 6 LLMs in parallel (New Order: Perplexity→Gemini→GPT→Grok→Sonnet→Opus)
   const forecasts = await Promise.allSettled([
-    callClaudeForecast(address, price, neighborhood, propertyType),
-    callClaudeOpusForecast(address, price, neighborhood, propertyType),
-    callGPT5Forecast(address, price, neighborhood, propertyType),
-    callGeminiForecast(address, price, neighborhood, propertyType),
-    callPerplexityForecast(address, price, neighborhood, propertyType),
-    callGrokForecast(address, price, neighborhood, propertyType),
+    callPerplexityForecast(address, price, neighborhood, propertyType),  // #1 - Deep web search
+    callGeminiForecast(address, price, neighborhood, propertyType),      // #2 - Google Search grounding
+    callGPT5Forecast(address, price, neighborhood, propertyType),        // #3 - Web evidence mode
+    callGrokForecast(address, price, neighborhood, propertyType),        // #4 - X/Twitter real-time
+    callClaudeForecast(address, price, neighborhood, propertyType),      // #5 - Web search beta
+    callClaudeOpusForecast(address, price, neighborhood, propertyType),  // #6 - Deep reasoning (LAST)
   ]);
 
   // Extract successful forecasts
   const successfulForecasts: LLMForecast[] = [];
   forecasts.forEach((result, index) => {
-    const sources = ['Claude Sonnet 4.5', 'Claude Opus 4.5', 'GPT-5.2', 'Gemini 2.5', 'Perplexity Sonar Reasoning Pro', 'Grok 4'];
+    const sources = ['Perplexity Sonar', 'Gemini 3 Pro', 'GPT-5.2', 'Grok 4', 'Claude Sonnet 4.5', 'Claude Opus 4.5'];
     if (result.status === 'fulfilled') {
       successfulForecasts.push(result.value);
       console.log(`✅ ${sources[index]}: ${result.value.appreciation1Yr.toFixed(1)}% (1yr)`);

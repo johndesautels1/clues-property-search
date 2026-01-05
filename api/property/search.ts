@@ -5,7 +5,16 @@
  * Tier 1: Stellar MLS (when eKey obtained - future)
  * Tier 2: Google APIs (Geocode, Places)
  * Tier 3: Paid/Free APIs (WalkScore, SchoolDigger, AirNow, HowLoud, Weather, Crime, FEMA, Census)
- * Tier 4: LLMs (Perplexity → Sonnet → GPT → Opus → Gemini → Grok)
+ * Tier 4: Web-Search LLMs (Perplexity → Gemini → GPT → Grok)
+ * Tier 5: Claude LLMs (Sonnet → Opus) - Opus is LAST (no web search)
+ *
+ * LLM CASCADE ORDER (Updated 2026-01-05):
+ *   #1 Perplexity - Deep web search (HIGHEST)
+ *   #2 Gemini - Google Search grounding
+ *   #3 GPT - Web evidence mode
+ *   #4 Grok - X/Twitter real-time data
+ *   #5 Claude Sonnet - Web search beta
+ *   #6 Claude Opus - Deep reasoning, NO web search (LAST)
  *
  * ADDED (2025-12-05):
  * - U.S. Census API (Vacancy Rate - Field 100) - Tier 3
@@ -34,8 +43,8 @@ export const config = {
 // Timeout wrapper for API/LLM calls - prevents hanging
 const STELLAR_MLS_TIMEOUT = 30000; // 30 seconds for Stellar MLS via Bridge API (Tier 1) - typically responds in <10s
 const FREE_API_TIMEOUT = 90000; // 90 seconds for Redfin, Google, and all free APIs (Tier 2 & 3) - increased from 60s
-const LLM_TIMEOUT = 210000; // 210 seconds (3.5 minutes) for Claude, GPT-5.2, Gemini, Grok LLM enrichment (Tier 4) - increased from 180s
-const PERPLEXITY_TIMEOUT = 225000; // 225 seconds (3.75 minutes) for Perplexity (needs extra time for deep web search) - increased from 195s
+const LLM_TIMEOUT = 60000; // 60 seconds for Claude, GPT-5.2, Gemini, Grok single LLM calls
+const PERPLEXITY_TIMEOUT = 180000; // 180 seconds (3 minutes) for Perplexity deep web search
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([
     promise,
@@ -4842,8 +4851,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // CASCADE STRATEGY: Try all 6 LLMs in RELIABILITY order
-  // Order: Perplexity → Sonnet → GPT → Opus → Gemini → Grok
-  // Sonnet has web_search (highest Tier 5), then knowledge-based LLMs
+  // Order: Perplexity → Gemini → GPT → Grok → Sonnet → Opus
+  // Web-search LLMs first (Tier 4), then Claude LLMs (Tier 5)
   const {
     address: rawAddress,
     url: rawUrl,
@@ -4851,7 +4860,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     city: validationCity,  // Optional: City for Stellar MLS validation (prevents wrong property match)
     state: validationState,  // Optional: State for Stellar MLS validation
     zipCode: validationZip,  // Optional: Zip for Stellar MLS validation
-    engines = [...LLM_CASCADE_ORDER],  // All 6 LLMs: Perplexity → Grok → GPT → Opus → Gemini → Sonnet
+    engines = [...LLM_CASCADE_ORDER],  // All 6 LLMs: Perplexity → Gemini → GPT → Grok → Sonnet → Opus
     skipLLMs = false,
     useCascade = true, // Enable cascade mode by default
     existingFields = {},  // Previously accumulated fields from prior LLM calls
@@ -5273,12 +5282,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           { id: 'perplexity-fiber', fn: (addr: string) => callPerplexityFiberAvailable(addr, perplexityContext), enabled: engines.includes('perplexity') },
           { id: 'perplexity-cell', fn: (addr: string) => callPerplexityCellCoverage(addr, perplexityContext), enabled: engines.includes('perplexity') },
 
-          // OTHER LLMs (Tier 5) - Order matches LLM_CASCADE_ORDER
-          { id: 'grok', fn: callGrok, enabled: engines.includes('grok') },
-          { id: 'gpt', fn: callGPT, enabled: engines.includes('gpt') },
-          { id: 'claude-opus', fn: callClaudeOpus, enabled: engines.includes('claude-opus') },
-          { id: 'gemini', fn: callGemini, enabled: engines.includes('gemini') },
-          { id: 'claude-sonnet', fn: callClaudeSonnet, enabled: engines.includes('claude-sonnet') },
+          // OTHER LLMs - Order: Gemini → GPT → Grok → Sonnet → Opus (matches LLM_CASCADE_ORDER)
+          { id: 'gemini', fn: callGemini, enabled: engines.includes('gemini') },          // #2 - Google Search grounding
+          { id: 'gpt', fn: callGPT, enabled: engines.includes('gpt') },                  // #3 - Web evidence mode
+          { id: 'grok', fn: callGrok, enabled: engines.includes('grok') },               // #4 - X/Twitter real-time
+          { id: 'claude-sonnet', fn: callClaudeSonnet, enabled: engines.includes('claude-sonnet') }, // #5 - Web search beta
+          { id: 'claude-opus', fn: callClaudeOpus, enabled: engines.includes('claude-opus') },       // #6 - LAST (no web)
         ];
 
         // Filter to enabled LLMs only
@@ -5299,7 +5308,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           );
 
           // Process results SEQUENTIALLY to avoid race conditions
-          // Results are processed in order: perplexity → grok → gpt → opus → gemini → sonnet
+          // Results are processed in order: perplexity → gemini → gpt → grok → sonnet → opus
           console.log(`\n=== Processing ${llmResults.length} LLM results in sequence ===`);
 
           for (let idx = 0; idx < llmResults.length; idx++) {
@@ -5741,7 +5750,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       single_source_warnings: arbitrationResult.singleSourceWarnings,
       llm_responses: llmResponses,
       strategy: 'arbitration_pipeline',
-      cascade_order: ['perplexity-portals', 'perplexity-county', 'perplexity-schools', 'perplexity-crime', 'perplexity-utilities', 'perplexity-electric', 'perplexity-water', 'perplexity-internet-speed', 'perplexity-fiber', 'perplexity-cell', 'gpt', 'claude-opus', 'gemini', 'grok', 'claude-sonnet']
+      cascade_order: ['perplexity-portals', 'perplexity-county', 'perplexity-schools', 'perplexity-crime', 'perplexity-utilities', 'perplexity-electric', 'perplexity-water', 'perplexity-internet-speed', 'perplexity-fiber', 'perplexity-cell', 'gemini', 'gpt', 'grok', 'claude-sonnet', 'claude-opus']
     });
   } catch (error) {
     console.error('=== SEARCH ERROR ===');

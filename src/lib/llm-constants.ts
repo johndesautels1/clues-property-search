@@ -4,17 +4,17 @@
  * Used across AddProperty, Dashboard, API, and all components
  */
 
-// Official cascade order by reliability (tested and verified)
+// Official cascade order by reliability (Updated 2026-01-05)
 // 1. Web-search LLMs first (real data verification)
-// 2. Knowledge-based LLMs (fill gaps with reasoning)
-// 3. Backup LLMs (last resort)
+// 2. Claude Sonnet (web search beta - fills gaps)
+// 3. Claude Opus last (NO web search - pure reasoning)
 export const LLM_CASCADE_ORDER = [
-  'perplexity',      // Tier 4 - Web search (HIGHEST LLM PRIORITY)
-  'grok',            // Tier 5 - Web search + real-time data (2nd priority)
-  'gpt',             // Tier 5 - Knowledge - Comprehensive data
-  'claude-opus',     // Tier 5 - Knowledge - Deep reasoning (no web-search)
-  'gemini',          // Tier 5 - Knowledge - Google LLM
-  'claude-sonnet',   // Tier 5 - LAST - fills in MISSING fields only
+  'perplexity',      // #1 - Tier 4 - Deep web search (HIGHEST LLM PRIORITY)
+  'gemini',          // #2 - Tier 4 - Google Search grounding
+  'gpt',             // #3 - Tier 4 - Web evidence mode
+  'grok',            // #4 - Tier 4 - X/Twitter real-time data
+  'claude-sonnet',   // #5 - Tier 5 - Web search beta (fills gaps)
+  'claude-opus',     // #6 - Tier 5 - Deep reasoning, NO web search (LAST)
 ] as const;
 
 export type LLMEngine = typeof LLM_CASCADE_ORDER[number];

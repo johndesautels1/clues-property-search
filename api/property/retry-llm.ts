@@ -25,7 +25,7 @@ import { GEMINI_FIELD_COMPLETER_SYSTEM } from '../../src/config/gemini-prompts.j
 
 // Vercel serverless config
 export const config = {
-  maxDuration: 60, // Pro plan allows 60s
+  maxDuration: 300, // 5 minutes - Perplexity needs 180s for deep web search
 };
 
 // Timeout wrapper for LLM calls - prevents hanging
@@ -36,8 +36,8 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
   ]);
 }
 
-const LLM_TIMEOUT = 55000; // 55s per LLM call (within 60s Vercel Pro limit)
-const PERPLEXITY_TIMEOUT = 57000; // 57s for Perplexity (extra 2s for web search, still within 60s limit)
+const LLM_TIMEOUT = 60000; // 60s per LLM call
+const PERPLEXITY_TIMEOUT = 180000; // 180s (3 minutes) for Perplexity deep web search
 
 // ============================================
 // COMPLETE TYPE MAP - ALL 168 FIELDS from fields-schema.ts
@@ -1166,14 +1166,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Invalid address format' });
   }
 
-  // Map engine IDs to functions
+  // Map engine IDs to functions (Order: Perplexity → Gemini → GPT → Grok → Sonnet → Opus)
   const engineFunctions: Record<string, (address: string) => Promise<{ fields: Record<string, any>; error?: string }>> = {
-    'perplexity': callPerplexity,
-    'grok': callGrok,
-    'claude-opus': callClaudeOpus,
-    'gpt': callGPT,
-    'claude-sonnet': callClaudeSonnet,
-    'gemini': callGemini,
+    'perplexity': callPerplexity,     // #1 - Deep web search (HIGHEST)
+    'gemini': callGemini,             // #2 - Google Search grounding
+    'gpt': callGPT,                   // #3 - Web evidence mode
+    'grok': callGrok,                 // #4 - X/Twitter real-time
+    'claude-sonnet': callClaudeSonnet, // #5 - Web search beta
+    'claude-opus': callClaudeOpus,    // #6 - Deep reasoning, NO web (LAST)
   };
 
   // Get the first engine (single LLM call for retry)
