@@ -32,52 +32,8 @@ Output JSON ONLY with any fields you find:
 `;
 
 // ============================================
-// SCHOOLS MICRO-PROMPT
+// SCHOOLS MICRO-PROMPT - REMOVED (Google Places API handles schools)
 // ============================================
-
-export const SCHOOLS_SYSTEM_PROMPT = `
-You are a retrieval-only agent for assigned schools and ratings.
-
-Rules:
-- Use web search ONLY on:
-  - GreatSchools.org
-  - Official school district or school websites.
-- Retrieve school_district, elementary/middle/high school names, ratings,
-  and if available, distances in miles.
-- Do NOT guess boundaries or ratings; only use explicitly stated values.
-- Omit any field you cannot find.
-- Do NOT use words like "likely", "possibly", "about", "around".
-`;
-
-export const SCHOOLS_USER_TEMPLATE = (address: string) => `
-Task:
-Retrieve assigned school information for:
-"${address}"
-
-Search GreatSchools.org and official school district websites for:
-1. School district name
-2. Elementary school name and rating (1-10 scale)
-3. Middle school name and rating (1-10 scale)
-4. High school name and rating (1-10 scale)
-5. Distance to each school in miles (if available)
-
-Output JSON ONLY with any fields you find:
-{
-  "63_school_district": { "value": "<district name>", "source": "...", "source_url": "..." },
-  "65_elementary_school": { "value": "<school name>", "source": "GreatSchools", "source_url": "..." },
-  "66_elementary_rating": { "value": <number 1-10>, "source": "GreatSchools", "source_url": "..." },
-  "67_elementary_distance_mi": { "value": <number>, "source": "...", "source_url": "..." },
-  "68_middle_school": { "value": "<school name>", "source": "GreatSchools", "source_url": "..." },
-  "69_middle_rating": { "value": <number 1-10>, "source": "GreatSchools", "source_url": "..." },
-  "70_middle_distance_mi": { "value": <number>, "source": "...", "source_url": "..." },
-  "71_high_school": { "value": "<school name>", "source": "GreatSchools", "source_url": "..." },
-  "72_high_rating": { "value": <number 1-10>, "source": "GreatSchools", "source_url": "..." },
-  "73_high_distance_mi": { "value": <number>, "source": "...", "source_url": "..." }
-}
-
-- Omit fields you cannot find.
-- Do not include any extra keys or narrative text.
-`;
 
 // ============================================
 // CRIME MICRO-PROMPT
@@ -176,90 +132,12 @@ Output JSON ONLY with any fields you find:
 `;
 
 // ============================================
-// UTILITIES MICRO-PROMPT
+// UTILITIES MICRO-PROMPT - REMOVED (Redundant with search.ts utility searches)
 // ============================================
 
-export const UTILITIES_SYSTEM_PROMPT = `
-You are a retrieval-only agent for utility provider information.
-
-Rules:
-- Use web search ONLY on:
-  - Official utility company websites
-  - Local government utility pages
-  - Public utility commission databases
-- Retrieve provider names for electric, water, sewer, trash services ONLY if explicitly stated.
-- Do NOT guess providers based on region.
-- Omit any field you cannot find.
-- Do NOT use words like "likely", "possibly", "about", "around".
-`;
-
-export const UTILITIES_USER_TEMPLATE = (address: string) => `
-Task:
-Retrieve utility provider information for:
-"${address}"
-
-Search official utility websites and local government pages for:
-1. Electric provider name
-2. Water provider name
-3. Sewer provider name
-4. Natural gas availability (Yes/No/Available)
-5. Trash/waste provider name
-6. Cable TV provider(s)
-
-Output JSON ONLY with any fields you find:
-{
-  "104_electric_provider": { "value": "<provider name>", "source": "...", "source_url": "..." },
-  "106_water_provider": { "value": "<provider name>", "source": "...", "source_url": "..." },
-  "108_sewer_provider": { "value": "<provider name>", "source": "...", "source_url": "..." },
-  "109_natural_gas": { "value": "<Yes|No|Available>", "source": "...", "source_url": "..." },
-  "110_trash_provider": { "value": "<provider name>", "source": "...", "source_url": "..." },
-  "114_cable_tv_provider": { "value": "<provider name(s)>", "source": "...", "source_url": "..." }
-}
-
-- Omit fields you cannot find.
-- Do not include any extra keys or narrative text.
-`;
-
 // ============================================
-// ISP (INTERNET SERVICE PROVIDER) MICRO-PROMPT
+// ISP (INTERNET SERVICE PROVIDER) MICRO-PROMPT - REMOVED (Redundant with search.ts)
 // ============================================
-
-export const ISP_SYSTEM_PROMPT = `
-You are a retrieval-only agent for internet service provider data.
-
-Rules:
-- Use web search ONLY on:
-  - BroadbandNow.com
-  - FCC broadband maps
-  - Official ISP coverage pages
-- Retrieve ISP names, max speeds, and fiber availability ONLY if explicitly stated.
-- Do NOT estimate speeds or providers.
-- Omit any field you cannot find.
-- Do NOT use words like "likely", "possibly", "about", "around".
-`;
-
-export const ISP_USER_TEMPLATE = (address: string) => `
-Task:
-Retrieve internet service provider data for:
-"${address}"
-
-Search BroadbandNow, FCC maps, or ISP coverage pages for:
-1. Top 3 internet providers available
-2. Maximum internet speed available (Mbps)
-3. Fiber internet availability (Yes/No)
-4. Cell coverage quality rating
-
-Output JSON ONLY with any fields you find:
-{
-  "111_internet_providers_top3": { "value": "<provider1, provider2, provider3>", "source": "BroadbandNow", "source_url": "..." },
-  "112_max_internet_speed": { "value": "<number> Mbps", "source": "...", "source_url": "..." },
-  "113_fiber_available": { "value": "<Yes|No>", "source": "...", "source_url": "..." },
-  "115_cell_coverage_quality": { "value": "<Excellent|Good|Fair|Poor>", "source": "...", "source_url": "..." }
-}
-
-- Omit fields you cannot find.
-- Do not include any extra keys or narrative text.
-`;
 
 // ============================================
 // POI DISTANCES MICRO-PROMPT (Supplemental to Google Places API)

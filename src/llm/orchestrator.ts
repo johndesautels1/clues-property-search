@@ -2,7 +2,8 @@
  * Two-Stage LLM Workflow Orchestrator
  *
  * Stage 1: Parallel micro-prompts (Perplexity with web search)
- *   - WalkScore, Schools, Crime, Climate, Utilities, ISP, POI Distances
+ *   - WalkScore, Crime, Climate, POI Distances
+ *   - REMOVED: Schools (Google Places API), Utilities (search.ts), ISP (search.ts)
  *
  * Stage 2: Core schema normalizer (Claude Opus without web)
  *   - Receives all data (Stellar MLS, County, Paid APIs, Web Chunks)
@@ -18,16 +19,13 @@ import { callLlm } from '../services/llmClient.js';
 import {
   WALK_SCORE_SYSTEM_PROMPT,
   WALK_SCORE_USER_TEMPLATE,
-  SCHOOLS_SYSTEM_PROMPT,
-  SCHOOLS_USER_TEMPLATE,
+  // SCHOOLS - REMOVED (Google Places API handles schools)
   CRIME_SYSTEM_PROMPT,
   CRIME_USER_TEMPLATE,
   CLIMATE_SYSTEM_PROMPT,
   CLIMATE_USER_TEMPLATE,
-  UTILITIES_SYSTEM_PROMPT,
-  UTILITIES_USER_TEMPLATE,
-  ISP_SYSTEM_PROMPT,
-  ISP_USER_TEMPLATE,
+  // UTILITIES - REMOVED (Redundant with search.ts utility searches)
+  // ISP - REMOVED (Redundant with search.ts ISP searches)
   POI_DISTANCES_SYSTEM_PROMPT,
   POI_DISTANCES_USER_TEMPLATE,
 } from './prompts/microPromptLibrary.js';
@@ -43,11 +41,11 @@ import { validateCmaSchema, CmaSchemaType } from './validation/cmaSchemas.js';
 
 interface WebChunks {
   walkScore?: Record<string, any>;
-  schools?: Record<string, any>;
+  // schools - REMOVED (Google Places API handles schools)
   crime?: Record<string, any>;
   climate?: Record<string, any>;
-  utilities?: Record<string, any>;
-  isp?: Record<string, any>;
+  // utilities - REMOVED (Redundant with search.ts)
+  // isp - REMOVED (Redundant with search.ts)
   poiDistances?: Record<string, any>;
 }
 
@@ -74,28 +72,7 @@ async function getWalkScoreChunk(address: string): Promise<Record<string, any>> 
   }
 }
 
-/**
- * Get Schools data via Perplexity micro-prompt
- * Fields: 63-73 (school_district, elementary/middle/high schools + ratings + distances)
- */
-async function getSchoolsChunk(address: string): Promise<Record<string, any>> {
-  try {
-    console.log('[Orchestrator] Calling Schools micro-prompt...');
-    const result = await callLlm(
-      {
-        system: SCHOOLS_SYSTEM_PROMPT,
-        user: SCHOOLS_USER_TEMPLATE(address),
-        temperature: 0.1,
-      },
-      { useWebSearch: true } // Perplexity
-    );
-    console.log('[Orchestrator] Schools returned fields:', Object.keys(result || {}).length);
-    return result || {};
-  } catch (error) {
-    console.error('[Orchestrator] Schools micro-prompt failed:', error);
-    return {};
-  }
-}
+// getSchoolsChunk - REMOVED (Google Places API handles schools)
 
 /**
  * Get Crime data via Perplexity micro-prompt
@@ -143,51 +120,9 @@ async function getClimateChunk(address: string): Promise<Record<string, any>> {
   }
 }
 
-/**
- * Get Utilities data via Perplexity micro-prompt
- * Fields: 104-110, 114 (electric, water, sewer, gas, trash, cable providers)
- */
-async function getUtilitiesChunk(address: string): Promise<Record<string, any>> {
-  try {
-    console.log('[Orchestrator] Calling Utilities micro-prompt...');
-    const result = await callLlm(
-      {
-        system: UTILITIES_SYSTEM_PROMPT,
-        user: UTILITIES_USER_TEMPLATE(address),
-        temperature: 0.1,
-      },
-      { useWebSearch: true } // Perplexity
-    );
-    console.log('[Orchestrator] Utilities returned fields:', Object.keys(result || {}).length);
-    return result || {};
-  } catch (error) {
-    console.error('[Orchestrator] Utilities micro-prompt failed:', error);
-    return {};
-  }
-}
+// getUtilitiesChunk - REMOVED (Redundant with search.ts utility searches)
 
-/**
- * Get ISP data via Perplexity micro-prompt
- * Fields: 111-113, 115 (internet_providers, max_speed, fiber_available, cell_coverage)
- */
-async function getIspChunk(address: string): Promise<Record<string, any>> {
-  try {
-    console.log('[Orchestrator] Calling ISP micro-prompt...');
-    const result = await callLlm(
-      {
-        system: ISP_SYSTEM_PROMPT,
-        user: ISP_USER_TEMPLATE(address),
-        temperature: 0.1,
-      },
-      { useWebSearch: true } // Perplexity
-    );
-    console.log('[Orchestrator] ISP returned fields:', Object.keys(result || {}).length);
-    return result || {};
-  } catch (error) {
-    console.error('[Orchestrator] ISP micro-prompt failed:', error);
-    return {};
-  }
-}
+// getIspChunk - REMOVED (Redundant with search.ts ISP searches)
 
 /**
  * Get POI Distances data via Perplexity micro-prompt
@@ -242,36 +177,34 @@ export async function buildCmaSchema(inputs: BuildCmaSchemaInputs): Promise<CmaS
 
   // ================================================================
   // STAGE 1: Run all micro-prompts in parallel (Perplexity)
+  // NOTE: Schools, Utilities, ISP removed (handled by Google/search.ts)
   // ================================================================
-  console.log('[Orchestrator] STAGE 1: Running 7 micro-prompts in parallel...');
+  console.log('[Orchestrator] STAGE 1: Running 4 micro-prompts in parallel...');
 
-  const [walkScore, schools, crime, climate, utilities, isp, poiDistances] = await Promise.all([
+  const [walkScore, crime, climate, poiDistances] = await Promise.all([
     getWalkScoreChunk(address),
-    getSchoolsChunk(address),
+    // getSchoolsChunk - REMOVED (Google Places API handles schools)
     getCrimeChunk(address),
     getClimateChunk(address),
-    getUtilitiesChunk(address),
-    getIspChunk(address),
+    // getUtilitiesChunk - REMOVED (Redundant with search.ts)
+    // getIspChunk - REMOVED (Redundant with search.ts)
     getPoiDistancesChunk(address),
   ]);
 
   const webChunks: WebChunks = {
     walkScore,
-    schools,
+    // schools - REMOVED (Google Places API handles schools)
     crime,
     climate,
-    utilities,
-    isp,
+    // utilities - REMOVED (Redundant with search.ts)
+    // isp - REMOVED (Redundant with search.ts)
     poiDistances,
   };
 
   console.log('[Orchestrator] STAGE 1 complete. Web chunks retrieved:');
   console.log(`  - WalkScore: ${Object.keys(walkScore).length} fields`);
-  console.log(`  - Schools: ${Object.keys(schools).length} fields`);
   console.log(`  - Crime: ${Object.keys(crime).length} fields`);
   console.log(`  - Climate: ${Object.keys(climate).length} fields`);
-  console.log(`  - Utilities: ${Object.keys(utilities).length} fields`);
-  console.log(`  - ISP: ${Object.keys(isp).length} fields`);
   console.log(`  - POI Distances: ${Object.keys(poiDistances).length} fields`);
 
   // ================================================================
