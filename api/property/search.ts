@@ -5284,7 +5284,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
           // OTHER LLMs - Order: Gemini → GPT → Grok → Sonnet → Opus (matches LLM_CASCADE_ORDER)
           { id: 'gemini', fn: callGemini, enabled: engines.includes('gemini') },          // #2 - Google Search grounding
-          { id: 'gpt', fn: callGPT, enabled: engines.includes('gpt') },                  // #3 - Web evidence mode
+          { id: 'gpt', fn: callGPT5, enabled: engines.includes('gpt') },                 // #3 - Web evidence mode
           { id: 'grok', fn: callGrok, enabled: engines.includes('grok') },               // #4 - X/Twitter real-time
           { id: 'claude-sonnet', fn: callClaudeSonnet, enabled: engines.includes('claude-sonnet') }, // #5 - Web search beta
           { id: 'claude-opus', fn: callClaudeOpus, enabled: engines.includes('claude-opus') },       // #6 - LAST (no web)
