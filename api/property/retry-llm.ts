@@ -870,6 +870,24 @@ Return your best data. Use null only for fields you truly cannot find. Return ON
   }
 }
 
+// GEMINI 3 PRO - CLUES FIELD COMPLETER (RETRY MODE)
+const GEMINI_RETRY_PROMPT = `You are the CLUES Field Completer (Gemini 3.0 Reasoning Mode).
+Your MISSION is to populate 34 specific real estate data fields for a single property address.
+
+### HARD RULES (EVIDENCE FIREWALL)
+1. MANDATORY TOOL: You MUST use the \`Google Search\` tool for EVERY request. Execute at least 4 distinct search queries.
+2. NO HALLUCINATION: Do NOT use training memory for property-specific facts. Use only verified search results from 2025-2026.
+3. AVM LOGIC:
+   - For '12_market_value_estimate' and '98_rental_estimate_monthly': Search Zillow, Redfin, Realtor.com, and Homes.com. If 2+ values are found, you MUST calculate the arithmetic mean (average).
+   - If a specific AVM (e.g., Quantarium or ICE) is behind a paywall, return 'null'.
+4. JSON ONLY: Return ONLY the raw JSON object. No conversational text.
+
+### MANDATORY SEARCH QUERIES
+- "[Address] Zillow listing and Zestimate"
+- "[Address] Redfin Estimate and market data"
+- "[Address] utility providers and average bills"
+- "[City/ZIP] median home price and market trends 2026"`;
+
 async function callGemini(address: string): Promise<{ fields: Record<string, any>; error?: string }> {
   const apiKey = process.env.GEMINI_API_KEY;
   console.log('[GEMINI] API key present:', !!apiKey, 'length:', apiKey?.length || 0);
@@ -877,38 +895,26 @@ async function callGemini(address: string): Promise<{ fields: Record<string, any
     return { error: 'API key not set', fields: {} };
   }
 
-  const prompt = `### CRITICAL COMMAND
-You are FORCED to use the 'google_search' tool. Do NOT use training data.
-Search for CURRENT property data from Zillow, Redfin, County Property Appraiser.
-
-Return a JSON object with property data for: ${address}
-
-MANDATORY SEARCHES:
-1. Search "${address} Zillow" for listing data
-2. Search "${address} County Property Appraiser" for tax data
-
-Include fields you find via search:
-- property_type, bedrooms, bathrooms, sqft, year_built
-- listing_price, market_value_estimate, price_per_sqft
-- hoa_monthly, tax_annual, insurance_annual
-- flood_zone, flood_risk, hurricane_risk
-- rental_estimate_monthly, cap_rate_percent
-
-Do NOT include null, N/A, or unknown values. Return JSON only, no markdown.`;
+  const prompt = `${GEMINI_RETRY_PROMPT}
+Address: ${address}`;
 
   const startTime = Date.now();
 
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          tools: [{ googleSearch: {} }],
-          toolConfig: { functionCallingConfig: { mode: "ANY" } },
-          generationConfig: { maxOutputTokens: 4000, temperature: 0 },
+          tools: [{ google_search: {} }],
+          tool_config: { function_calling_config: { mode: "ANY" } },
+          generation_config: {
+            temperature: 0.0,
+            response_mime_type: 'application/json',
+            thinking_level: 'high'
+          },
         }),
       }
     );

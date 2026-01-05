@@ -62,41 +62,22 @@ export interface MarketForecast {
 }
 
 // ============================================================================
-// OLIVIA FORECAST SYSTEM PROMPT
+// OLIVIA CMA ANALYZER - GEMINI 3 PRO (PhD-Level Comparative Analysis)
 // ============================================================================
-const OLIVIA_FORECAST_SYSTEM_PROMPT = `You are Olivia, a CLUES Comparative Real Estate Analyst.
+const GEMINI_OLIVIA_CMA_SYSTEM = `You are Olivia, the CLUES Senior Investment Analyst.
+Your MISSION is to perform a deep-dive Comparative Market Analysis (CMA) by evaluating a Subject Property against 3 Comparables across a 181-question data schema.
 
-MISSION
-Provide a market forecast for a specific property location. Use web search ONLY for macro market context — never to assert property-specific facts.
+### REASONING PROTOCOL
+1. METRIC CORRELATION: Compare the 34 high-velocity fields (AVMs, Portal Views) to determine "Market Momentum."
+2. VARIANCE ANALYSIS: Calculate the delta between the Subject's 'Price per Sqft' (Field 92) and the Comps.
+3. FRICTION IDENTIFICATION: If Field 174 (Saves) is high but Field 95 (Days on Market) is also high, identify this as a "Price-to-Condition Mismatch."
+4. THE "SUPERIOR COMP": Explicitly state which of the 3 Comps is the most statistically relevant "Superior Comp."`;
 
-HARD RULES
-- Do NOT change or assert property facts. Only forecast market trends.
-- If you use web search, use it only for market context and cite sources.
-- Your outputs must be deterministic, consistent, and JSON-only.
-
-OUTPUT JSON (no markdown)
-{
-  "forecast": {
-    "appreciation1Yr_pct": <number|null>,
-    "appreciation5Yr_cum_pct": <number|null>,
-    "confidence_0_100": <number>,
-    "key_trends": ["<string>", "..."],
-    "reasoning": "<2-4 sentences>"
-  },
-  "market_sources": [
-    { "url": "<string>", "title": "<string>", "snippet": "<<=25 words>", "retrieved_at": "<ISO date>" }
-  ]
-}
-
-FORECAST GUIDANCE
-- Be REALISTIC - avoid overly optimistic forecasts
-- If data is limited, lower confidence score (0-100)
-- Consider both appreciation AND depreciation scenarios
-- Base on current market DATA, not speculation
-- Focus on THIS SPECIFIC LOCATION`;
+// Legacy alias for compatibility
+const GEMINI_FORECAST_SYSTEM_PROMPT = GEMINI_OLIVIA_CMA_SYSTEM;
 
 // ============================================================================
-// FORECAST PROMPT TEMPLATE
+// OLIVIA CMA USER PROMPT BUILDER
 // ============================================================================
 
 function buildForecastPrompt(
@@ -105,17 +86,46 @@ function buildForecastPrompt(
   neighborhood: string,
   propertyType: string = 'Single Family'
 ): string {
-  return `PROPERTY CONTEXT:
-- Address: ${address}
-- Current Price: $${currentPrice.toLocaleString()}
-- Neighborhood: ${neighborhood}
-- Property Type: ${propertyType}
+  return `SUBJECT_DATA:
+{
+  "address": "${address}",
+  "listing_price": ${currentPrice},
+  "neighborhood": "${neighborhood}",
+  "property_type": "${propertyType}"
+}
 
-TASK:
-Provide a data-driven market forecast for this property location.
-Use web search to gather current market context for ${neighborhood} / ${address.split(',').slice(-2).join(',')} area.
+COMP_1: {}
+COMP_2: {}
+COMP_3: {}
 
-Return ONLY the JSON described in the system prompt.`;
+RETURN JSON MATCHING THIS SCHEMA:
+{
+  "investment_thesis": {
+    "summary": "<2-3 sentence overview>",
+    "property_grade": "A|B|C|D|F",
+    "valuation_verdict": "Underpriced|Fair|Overpriced"
+  },
+  "comparative_breakdown": {
+    "superior_comp_address": "<address>",
+    "subject_vs_market_delta": <percentage>,
+    "key_metrics_table": [
+      {"metric": "Field 92: Price/Sqft", "subject": 0, "comp_avg": 0, "variance": 0}
+    ]
+  },
+  "risk_assessment": {
+    "concerns": [],
+    "red_flags": ["Identify issues in utility costs or market trends"]
+  },
+  "forecast_2026": {
+    "appreciation_1yr": <percentage>,
+    "market_stability_score": 0-100,
+    "reasoning": "<logic based on inventory surplus Field 96>"
+  },
+  "final_recommendation": {
+    "action": "Strong Buy|Buy|Hold|Pass",
+    "suggested_offer_range": {"low": 0, "high": 0}
+  }
+}`;
 }
 
 // ============================================================================

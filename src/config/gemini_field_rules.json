@@ -1,0 +1,81 @@
+{
+  "field_rules": {
+    "12_market_value_estimate": {
+      "type": "number",
+      "definition": "Average of available AVM estimates from Zillow, Redfin, Realtor, Homes.com",
+      "preferred_sources": ["zillow.com (Zestimate)", "redfin.com (Redfin Estimate)", "realtor.com (RealEstimate)", "homes.com (CoStar estimate)"],
+      "how_to_decide": "Average all available estimates. If only 1 source, use that value. If none available, return null.",
+      "min_sources_required": 1
+    },
+    "16a_zestimate": {
+      "type": "number",
+      "definition": "Zillow's Zestimate home value",
+      "preferred_sources": ["zillow.com"],
+      "how_to_decide": "Extract exact Zestimate value from Zillow property page. Do not estimate.",
+      "min_sources_required": 1
+    },
+    "16b_redfin_estimate": {
+      "type": "number",
+      "definition": "Redfin's home value estimate",
+      "preferred_sources": ["redfin.com"],
+      "how_to_decide": "Extract exact Redfin Estimate from property page.",
+      "min_sources_required": 1
+    },
+    "91_median_home_price_neighborhood": {
+      "type": "number",
+      "definition": "Median sale price for the property's ZIP code or neighborhood",
+      "preferred_sources": ["redfin.com (ZIP market data)", "zillow.com (neighborhood data)", "realtor.com"],
+      "how_to_decide": "Use ZIP-level data only, not city-wide. Return most recent available.",
+      "min_sources_required": 1
+    },
+    "95_days_on_market_avg": {
+      "type": "number",
+      "definition": "Average days on market for the ZIP code",
+      "preferred_sources": ["redfin.com", "zillow.com"],
+      "how_to_decide": "Use ZIP-level median DOM, not city average.",
+      "min_sources_required": 1
+    },
+    "97_insurance_est_annual": {
+      "type": "number",
+      "definition": "Estimated annual homeowners insurance cost",
+      "preferred_sources": ["insurance comparison sites", "state insurance department data"],
+      "how_to_decide": "Use Florida average for property type/value if specific quote unavailable.",
+      "min_sources_required": 2
+    },
+    "98_rental_estimate_monthly": {
+      "type": "number",
+      "definition": "Average of available rental estimates",
+      "preferred_sources": ["zillow.com (Rent Zestimate)", "redfin.com (Rental Estimate)", "rentometer.com"],
+      "how_to_decide": "Average available estimates. If only 1 source, use that value.",
+      "min_sources_required": 1
+    },
+    "104_electric_provider": {
+      "type": "string",
+      "definition": "Primary electric utility serving the property address",
+      "preferred_sources": ["official utility service territory lookup", "city/county utility page"],
+      "how_to_decide": "Must match exact address service area. Florida providers: Duke Energy, TECO, FPL, JEA.",
+      "min_sources_required": 1
+    },
+    "106_water_provider": {
+      "type": "string",
+      "definition": "Primary water utility serving the property address",
+      "preferred_sources": ["official utility service territory lookup", "city/county utility page"],
+      "how_to_decide": "Must match exact address service area.",
+      "min_sources_required": 1
+    },
+    "175_market_type": {
+      "type": "string",
+      "definition": "Current market condition: Buyer's Market, Seller's Market, or Balanced",
+      "preferred_sources": ["redfin.com market insights", "zillow.com market report"],
+      "how_to_decide": "Based on inventory levels, DOM trends, and sale-to-list ratios.",
+      "min_sources_required": 1
+    },
+    "176_avg_sale_to_list_percent": {
+      "type": "number",
+      "definition": "Average sale price as percentage of list price for the area",
+      "preferred_sources": ["redfin.com", "realtor.com market data"],
+      "how_to_decide": "Use ZIP-level or neighborhood data. Express as percentage (e.g., 98.5).",
+      "min_sources_required": 1
+    }
+  }
+}

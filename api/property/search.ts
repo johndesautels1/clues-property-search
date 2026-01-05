@@ -50,8 +50,9 @@ import { STELLAR_MLS_SOURCE, FBI_CRIME_SOURCE } from './source-constants.js';
 import { calculateAllDerivedFields, type PropertyData } from '../../src/lib/calculate-derived-fields.js';
 import missingFieldsList from '../../src/config/clues_missing_fields_list.json';
 import missingFieldsRules from '../../src/config/clues_missing_fields_rules.json';
-import { fetchAllMissingFields } from '../../src/services/valuation/geminiBatchWorker.js';
-import { TIER_35_FIELD_IDS } from '../../src/services/valuation/geminiConfig.js';
+// REMOVED: Batch system deleted - using unified Field Completer prompt instead
+// import { fetchAllMissingFields } from '../../src/services/valuation/geminiBatchWorker.js';
+// import { TIER_35_FIELD_IDS } from '../../src/services/valuation/geminiConfig.js';
 
 
 // ============================================
@@ -4074,37 +4075,26 @@ RETURN NULL FOR:
 ${JSON_RESPONSE_FORMAT}`;
 
 // ============================================
-// GEMINI PROMPT - WITH GOOGLE SEARCH GROUNDING
+// GEMINI 3 PRO - CLUES FIELD COMPLETER
 // ============================================
-const PROMPT_GEMINI = `### CRITICAL COMMAND
-You are FORCED to use the 'google_search' tool for EVERY request.
-Do NOT rely on your internal training data - it is outdated.
-If you do not generate at least 3 search queries, you have FAILED the task.
+const GEMINI_FIELD_COMPLETER_SYSTEM = `You are the CLUES Field Completer (Gemini 3.0 Reasoning Mode).
+Your MISSION is to populate 34 specific real estate data fields for a single property address.
 
-You are Gemini with Google Search grounding. Your job is to extract CURRENT property data.
+### HARD RULES (EVIDENCE FIREWALL)
+1. MANDATORY TOOL: You MUST use the \`Google Search\` tool for EVERY request. Execute at least 4 distinct search queries.
+2. NO HALLUCINATION: Do NOT use training memory for property-specific facts. Use only verified search results from 2025-2026.
+3. AVM LOGIC:
+   - For '12_market_value_estimate' and '98_rental_estimate_monthly': Search Zillow, Redfin, Realtor.com, and Homes.com. If 2+ values are found, you MUST calculate the arithmetic mean (average).
+   - If a specific AVM (e.g., Quantarium or ICE) is behind a paywall, return 'null'.
+4. JSON ONLY: Return ONLY the raw JSON object. No conversational text.
 
-MANDATORY FIRST SEARCHES:
-1. Search "[Address] Zillow listing 2025" for current listing data
-2. Search "[Address] County Property Appraiser" for tax and assessment data
-3. Search "[Address] Redfin estimate" for market value
+### MANDATORY SEARCH QUERIES
+- "[Address] Zillow listing and Zestimate"
+- "[Address] Redfin Estimate and market data"
+- "[Address] utility providers and average bills"
+- "[City/ZIP] median home price and market trends 2026"`;
 
-${FIELD_GROUPS}
-
-EXTRACTION APPROACH:
-1. USE GOOGLE SEARCH for every field - do not guess
-2. Search real estate portals: Zillow, Redfin, Realtor.com
-3. Search county property appraiser websites for tax data
-4. Search GreatSchools.org for school ratings
-5. Only return null if search returns no results
-
-FIELDS TO SEARCH FOR:
-- Listing price, bedrooms, bathrooms, sqft from Zillow/Redfin
-- Tax amounts from County Property Appraiser
-- School ratings from GreatSchools
-- HOA fees from listing sites
-- Utility providers from county/city websites
-
-${JSON_RESPONSE_FORMAT}`;
+const PROMPT_GEMINI = GEMINI_FIELD_COMPLETER_SYSTEM;
 
 // Legacy fallback prompt
 const SYSTEM_PROMPT = PROMPT_CLAUDE_OPUS;
@@ -4755,7 +4745,7 @@ async function callGemini(address: string): Promise<any> {
 
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: {
@@ -4770,26 +4760,31 @@ async function callGemini(address: string): Promise<any> {
 
 Extract property data fields for this address: ${address}
 
-MANDATORY: Use Google Search to find CURRENT data from Zillow, Redfin, County Property Appraiser.
-Use EXACT field keys like "10_listing_price", "7_county", "35_annual_taxes", "17_bedrooms".
-Search for real data - do not use training data. Return JSON only.`,
+Execute these searches:
+1. "${address} Zillow listing and Zestimate"
+2. "${address} Redfin Estimate and market data"
+3. "${address} utility providers and average bills"
+
+Return JSON only with the 34 field keys specified in the schema.`,
                 },
               ],
             },
           ],
-          // Enable Google Search grounding
+          // Enable Google Search grounding (Gemini 3 Pro)
           tools: [
-            { googleSearch: {} }
+            { google_search: {} }
           ],
           // Force the model to use the search tool
-          toolConfig: {
-            functionCallingConfig: {
+          tool_config: {
+            function_calling_config: {
               mode: "ANY"
             }
           },
-          generationConfig: {
-            maxOutputTokens: 16000,
-            temperature: 0,
+          generation_config: {
+            temperature: 0.0,
+            response_mime_type: 'application/json',
+            thinking_level: 'high',
+            max_output_tokens: 16000,
           },
         }),
       }
@@ -5216,159 +5211,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 
     // ========================================
-    // TIER 4: GEMINI STRUCTURED SEARCH (20 FIELDS)
+    // BATCH SYSTEM REMOVED
     // ========================================
-    // TEMPORARILY DISABLED - GEMINI CRASHES EXECUTION
+    // The old batch system (geminiBatchWorker.ts + geminiConfig.ts) has been deleted.
+    // Gemini now uses unified Field Completer prompt (callGemini function below)
+    // which extracts all 34 fields in a single call.
     console.log('========================================');
-    console.log(`TIER 4: Gemini Structured Search - ${disableGemini ? 'SKIPPED (disabled)' : 'RUNNING'}`);
+    console.log('TIER 4: Gemini Batch System - REMOVED (using unified Field Completer)');
     console.log('========================================');
-
-    if (!disableGemini) {
-    // Check if we need Gemini extraction
-    const tier35Check = arbitrationPipeline.getResult();
-    
-    // Extract county from arbitration pipeline (Field 7 from Google Geocode)
-    let countyName = 'Unknown';
-    const countyField = tier35Check.fields['7_county'];
-    if (countyField && countyField.value) {
-      countyName = String(countyField.value).replace(/\s+County$/i, '').trim();
-    }
-    console.log(`[Tier 4 Gemini] Detected county: ${countyName}`);
-    
-    
-    const tier35NeedsExtraction = TIER_35_FIELD_IDS.some(fieldId => {
-      const key = FIELD_ID_TO_KEY[fieldId];
-      if (!key) return true; // missing mapping means treat as missing
-      const existingField = tier35Check.fields[key];
-      return !existingField || existingField.value === null;
-    });
-    
-    if (tier35NeedsExtraction) {
-      try {
-        console.log(`[Tier 4 Gemini] Launching Gemini batch extraction (County: ${countyName})...`);
-        
-        const geminiResults = await fetchAllMissingFields(searchQuery, countyName);
-        
-        // Merge logic with Field 37 special handling
-        const tier35Fields: Record<string, FieldValue> = {};
-        let tier35Added = 0;
-        
-        Object.keys(geminiResults).forEach(fieldIdStr => {
-          const fieldId = parseInt(fieldIdStr);
-          const geminiField = geminiResults[fieldId as keyof typeof geminiResults];
-          const fieldKey = FIELD_ID_TO_KEY[fieldId] || `${fieldId}_unknown`;
-          const existingField = tier35Check.fields[fieldKey];
-
-          // Skip if Gemini didn't find data
-          if (!geminiField || geminiField.value === null) {
-            return;
-          }
-
-          // FIX: Coerce string numbers to actual numbers for ALL Gemini numeric fields
-          // Fields that should be numbers: 12, 16, 31, 37, 60, 61, 62, 75, 76, 91, 95, 98, 116
-          const numericFields = [12, 16, 31, 37, 60, 61, 62, 75, 76, 91, 95, 98, 116];
-          if (typeof geminiField.value === 'string' && numericFields.includes(fieldId)) {
-            const numValue = parseFloat(geminiField.value.replace(/[^0-9.-]/g, ''));
-            if (!isNaN(numValue)) {
-              geminiField.value = numValue;
-            }
-          }
-          
-          // SPECIAL CASE: Field 37 (Tax Rate)
-          // Prefer Gemini search over backend calculation
-          if (fieldId === 37) {
-            if (existingField?.source === 'Backend Calculation') {
-              // Search takes priority over calculation
-              console.log(`[Tier 4 Gemini] Field 37: Replacing calculation (${existingField.value}%) with search (${geminiField.value}%)`);
-              tier35Fields[fieldKey] = {
-                value: geminiField.value,
-                source: geminiField.source,
-                confidence: geminiField.confidence,
-                tier: geminiField.tier
-              };
-              tier35Added++;
-            } else if (!existingField || existingField.value === null) {
-              // No existing data
-              tier35Fields[fieldKey] = {
-                value: geminiField.value,
-                source: geminiField.source,
-                confidence: geminiField.confidence,
-                tier: geminiField.tier
-              };
-              tier35Added++;
-            } else {
-              // Higher tier source exists (MLS, API) - don't overwrite
-              console.log(`[Tier 4 Gemini] Field 37: Keeping higher-tier source (${existingField.source})`);
-            }
-            return;
-          }
-          
-          // VALIDATION MODE: Fields 75, 76 (Transit/Bike Scores)
-          // WalkScore API runs first, Gemini validates
-          if ((fieldId === 75 || fieldId === 76) && existingField && existingField.value != null) {
-            const diff = Math.abs(existingField.value - geminiField.value);
-            
-            if (diff > 5) { // >5 point difference threshold
-              console.warn(`[Tier 4 Gemini] Field ${fieldId} discrepancy: WalkScore=${existingField.value}, Gemini=${geminiField.value}, diff=${diff}`);
-              // Keep WalkScore value but log discrepancy
-            } else {
-              console.log(`[Tier 4 Gemini] Field ${fieldId}: WalkScore and Gemini agree (within ${diff} points)`);
-            }
-            return;
-          }
-          
-          // STANDARD MERGE: Only populate if field is null or from lower tier
-          if (!existingField || existingField.value === null) {
-            tier35Fields[fieldKey] = {
-              value: geminiField.value,
-              source: geminiField.source,
-              confidence: geminiField.confidence,
-              tier: geminiField.tier
-            };
-            tier35Added++;
-            console.log(`[Tier 4 Gemini] Field ${fieldId}: Populated by Gemini (${geminiField.value})`);
-          } else if (existingField.tier && existingField.tier <= 3) {
-            // Higher tier source exists (Tier 1-3: MLS, Google APIs, Free APIs)
-            // Don't overwrite
-            console.log(`[Tier 4 Gemini] Field ${fieldId}: Skipped - Tier ${existingField.tier} source exists (${existingField.source})`);
-          } else {
-            // Existing source is lower priority (Tier 4-5: LLMs) or no tier
-            // Overwrite with Gemini
-            console.log(`[Tier 4 Gemini] Field ${fieldId}: Replacing with Gemini`);
-            tier35Fields[fieldKey] = {
-              value: geminiField.value,
-              source: geminiField.source,
-              confidence: geminiField.confidence,
-              tier: geminiField.tier
-            };
-            tier35Added++;
-          }
-        });
-        
-        if (tier35Added > 0) {
-          try {
-            console.log(`[DEBUG] About to add ${tier35Added} Gemini fields to arbitration pipeline...`);
-            arbitrationPipeline.addFieldsFromSource(tier35Fields, 'Gemini 2.0 Search');
-            console.log(`✅ Added ${tier35Added} fields from Gemini Tier 4`);
-          } catch (addError) {
-            console.error('[CRITICAL ERROR] arbitrationPipeline.addFieldsFromSource() threw exception:', addError);
-            console.error('[CRITICAL ERROR] Stack trace:', (addError as Error).stack);
-            console.error('[CRITICAL ERROR] tier35Fields:', JSON.stringify(tier35Fields, null, 2));
-          }
-        } else {
-          console.log('⚠️  Gemini Tier 4 returned no new fields');
-        }
-
-      } catch (error) {
-        console.error('[Tier 4 Gemini] Gemini batch extraction failed:', error);
-        console.error('[Tier 4 Gemini] Stack trace:', (error as Error).stack);
-        // Fields remain null, will fall through to Tier 4
-      }
-    } else {
-      console.log('[Tier 4 Gemini] Skipped - all Tier 4 Gemini fields already populated');
-    }
-
-    }
 
     console.log('[DEBUG] About to start Tier 4 LLM Cascade...');
     console.log('========================================');
