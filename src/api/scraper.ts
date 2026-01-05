@@ -215,28 +215,41 @@ class PropertyScraper {
   }
 
   private async scrapeWithGPT(prompt: string): Promise<PropertyScrapedData | null> {
-    if (!this.gpt) throw new Error('GPT not configured');
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) throw new Error('GPT not configured - OPENAI_API_KEY missing');
 
-    // NOTE: gpt-5.2-pro may require the Responses API, not chat completions
-    // If this fails, refactor to use fetch('https://api.openai.com/v1/responses')
-    const response = await this.gpt.chat.completions.create({
-      model: 'gpt-5.2-pro',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a real estate data extraction API. Return ONLY valid JSON.',
-        },
-        { role: 'user', content: prompt },
-      ],
+    // GPT-5.2-pro requires /v1/responses endpoint, not /v1/chat/completions
+    const response = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-5.2-pro',
+        input: [
+          {
+            role: 'system',
+            content: 'You are a real estate data extraction API. Return ONLY valid JSON.',
+          },
+          { role: 'user', content: prompt },
+        ],
+        reasoning: { effort: 'high' },
+        tools: [{ type: 'web_search' }],
+        tool_choice: 'required',
+        include: ['web_search_call.action.sources'],
+      }),
     });
 
-    const inputTokens = response.usage?.prompt_tokens || 0;
-    const outputTokens = response.usage?.completion_tokens || 0;
-    const cost = (inputTokens * 0.01 + outputTokens * 0.03) / 1000;
+    const data = await response.json();
+
+    // Estimate cost (GPT-5.2-pro pricing)
+    const cost = 0.02; // Flat estimate per call
     this.costs.gpt += cost;
     this.costs.total += cost;
 
-    return this.parseResponse(response.choices[0]?.message?.content);
+    const text = data.output_text || data.choices?.[0]?.message?.content;
+    return this.parseResponse(text);
   }
 
   private async scrapeWithGrok(prompt: string): Promise<PropertyScrapedData | null> {
