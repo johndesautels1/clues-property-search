@@ -156,7 +156,7 @@ async function callPerplexity(prompt: string): Promise<LLMResponse> {
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'sonar-pro',
+      model: 'sonar-deep-research',
       messages: [
         {
           role: 'system',

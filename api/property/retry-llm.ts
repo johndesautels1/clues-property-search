@@ -397,7 +397,7 @@ async function callPerplexity(address: string): Promise<{ fields: Record<string,
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'sonar',
+        model: 'sonar-deep-research',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Extract all available property data for: ${address}` }

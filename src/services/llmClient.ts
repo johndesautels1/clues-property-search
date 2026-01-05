@@ -38,7 +38,7 @@ export async function callPerplexity(params: LlmCallParams): Promise<LlmResponse
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'sonar-pro',
+        model: 'sonar-deep-research',
         messages: [
           { role: 'system', content: params.system },
           { role: 'user', content: params.user }

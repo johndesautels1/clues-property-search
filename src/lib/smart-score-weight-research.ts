@@ -372,7 +372,7 @@ Format as JSON:
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'sonar-pro',
+        model: 'sonar-deep-research',
         messages: [
           {
             role: 'system',

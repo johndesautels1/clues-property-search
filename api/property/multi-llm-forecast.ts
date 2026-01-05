@@ -420,7 +420,7 @@ async function callPerplexityForecast(
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'sonar-reasoning-pro',
+      model: 'sonar-deep-research',
       messages: [
         { role: 'system', content: 'You are an expert real estate market analyst providing data-driven forecasts.' },
         { role: 'user', content: userPrompt }
