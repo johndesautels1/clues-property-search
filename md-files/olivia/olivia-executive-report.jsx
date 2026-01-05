@@ -720,7 +720,7 @@ function generateMockOliviaAnalysis() {
 
     // Market Forecast (Multi-LLM Consensus)
     marketForecast: {
-      llmSources: ['claude-opus', 'gpt-4', 'gemini-pro', 'perplexity'],
+      llmSources: ['claude-opus', 'gpt-4', 'gemini-3-pro', 'perplexity'],
       appreciationForecast: {
         year1: 4.2,
         year3: 13.8,

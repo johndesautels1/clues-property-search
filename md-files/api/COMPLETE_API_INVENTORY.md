@@ -62,11 +62,11 @@
 | # | LLM Name | Status | Env Variable | Model | Web Search? | Tier | Timeout |
 |---|----------|--------|--------------|-------|-------------|------|---------|
 | 26 | **Perplexity** | ✅ ACTIVE | `PERPLEXITY_API_KEY` | `sonar-pro` | ✅ YES | 4 | 225s |
-| 27 | **Grok (xAI)** | ✅ ACTIVE | `XAI_API_KEY` | `grok-4` | ✅ YES | 5 | 210s |
+| 27 | **Grok (xAI)** | ✅ ACTIVE | `XAI_API_KEY` | `grok-4.1-fast-reasoning` | ✅ YES | 5 | 210s |
 | 28 | **Claude Opus** | ✅ ACTIVE | `ANTHROPIC_API_KEY` | `claude-opus-4` | ❌ NO | 5 | 210s |
 | 29 | **GPT (OpenAI)** | ✅ ACTIVE | `OPENAI_API_KEY` | `gpt-5.2` | ❌ NO | 5 | 210s |
 | 30 | **Claude Sonnet** | ✅ ACTIVE | `ANTHROPIC_API_KEY` | `claude-sonnet-4.5` | ❌ NO | 5 | 210s |
-| 31 | **Gemini (Google)** | ✅ ACTIVE | `GOOGLE_GENERATIVE_AI_API_KEY` | `gemini-pro` | ❌ NO | 5 | 210s |
+| 31 | **Gemini (Google)** | ✅ ACTIVE | `GOOGLE_GENERATIVE_AI_API_KEY` | `gemini-3-pro-latest` | ✅ YES | 5 | 210s |
 
 ---
 

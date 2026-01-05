@@ -157,7 +157,7 @@ NEVER return null values - omit unfound fields entirely
 
 ### 2. GROK (Lines 3721-3789)
 
-**Model:** `grok-4`
+**Model:** `grok-4.1-fast-reasoning`
 **Capabilities:** LIVE WEB SEARCH
 **Timeout:** 210 seconds
 **Max Tokens:** 16,000
@@ -222,7 +222,7 @@ Extract property data using your training knowledge.
 
 ### 6. GEMINI (Lines 3792-3860)
 
-**Model:** `gemini-pro`
+**Model:** `gemini-3-pro-latest`
 **Capabilities:** NO WEB - Training data only
 **Timeout:** 210 seconds
 

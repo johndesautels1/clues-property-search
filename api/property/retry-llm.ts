@@ -21,6 +21,7 @@ import {
 } from '../../src/lib/safe-json-parse.js';
 import missingFieldsList from '../../src/config/clues_missing_fields_list.json';
 import missingFieldsRules from '../../src/config/clues_missing_fields_rules.json';
+import { GEMINI_FIELD_COMPLETER_SYSTEM } from '../../src/config/gemini-prompts.js';
 
 // Vercel serverless config
 export const config = {
@@ -452,14 +453,18 @@ async function callPerplexity(address: string): Promise<{ fields: Record<string,
   }
 }
 
+// ============================================
+// GROK FIELD COMPLETER - PLACEHOLDER FOR NEW PROMPT
+// ============================================
+const GROK_RETRY_SYSTEM_PROMPT = `PLACEHOLDER - NEW GROK PROMPT REQUIRED`;
+const GROK_RETRY_USER_PROMPT = (address: string) => `PLACEHOLDER - Address: ${address}`;
+
 async function callGrok(address: string): Promise<{ fields: Record<string, any>; error?: string }> {
   const apiKey = process.env.XAI_API_KEY;
   console.log('[GROK] API key present:', !!apiKey, 'length:', apiKey?.length || 0);
   if (!apiKey) {
     return { error: 'API key not set', fields: {} };
   }
-
-  const systemPrompt = `You are a real estate data assistant with web search capabilities. Return ONLY a JSON object with property data. Do NOT include null, N/A, or unknown values - simply omit fields you cannot verify. Return JSON only.`;
 
   try {
     const response = await fetch('https://api.x.ai/v1/chat/completions', {
@@ -469,13 +474,13 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'grok-3-fast',
+        model: 'grok-4.1-fast-reasoning',
         max_tokens: 4000,
         temperature: 0.1,
         search_parameters: { mode: 'auto' },
         messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Search and return property data for: ${address}. Return JSON only.` }
+          { role: 'system', content: GROK_RETRY_SYSTEM_PROMPT },
+          { role: 'user', content: GROK_RETRY_USER_PROMPT(address) }
         ],
       }),
     });
@@ -870,23 +875,7 @@ Return your best data. Use null only for fields you truly cannot find. Return ON
   }
 }
 
-// GEMINI 3 PRO - CLUES FIELD COMPLETER (RETRY MODE)
-const GEMINI_RETRY_PROMPT = `You are the CLUES Field Completer (Gemini 3.0 Reasoning Mode).
-Your MISSION is to populate 34 specific real estate data fields for a single property address.
-
-### HARD RULES (EVIDENCE FIREWALL)
-1. MANDATORY TOOL: You MUST use the \`Google Search\` tool for EVERY request. Execute at least 4 distinct search queries.
-2. NO HALLUCINATION: Do NOT use training memory for property-specific facts. Use only verified search results from 2025-2026.
-3. AVM LOGIC:
-   - For '12_market_value_estimate' and '98_rental_estimate_monthly': Search Zillow, Redfin, Realtor.com, and Homes.com. If 2+ values are found, you MUST calculate the arithmetic mean (average).
-   - If a specific AVM (e.g., Quantarium or ICE) is behind a paywall, return 'null'.
-4. JSON ONLY: Return ONLY the raw JSON object. No conversational text.
-
-### MANDATORY SEARCH QUERIES
-- "[Address] Zillow listing and Zestimate"
-- "[Address] Redfin Estimate and market data"
-- "[Address] utility providers and average bills"
-- "[City/ZIP] median home price and market trends 2026"`;
+// GEMINI 3 PRO - Uses GEMINI_FIELD_COMPLETER_SYSTEM from central config
 
 async function callGemini(address: string): Promise<{ fields: Record<string, any>; error?: string }> {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -906,7 +895,7 @@ async function callGemini(address: string): Promise<{ fields: Record<string, any
         body: JSON.stringify({
           // SYSTEM INSTRUCTION: Prompt goes here per 2026 Gemini 3 Pro specs
           system_instruction: {
-            parts: [{ text: GEMINI_RETRY_PROMPT }]
+            parts: [{ text: GEMINI_FIELD_COMPLETER_SYSTEM }]
           },
           // USER CONTENT: Only the task/address
           contents: [{ parts: [{ text: `Address: ${address}` }] }],

@@ -241,7 +241,7 @@ class PropertyScraper {
     if (!this.grok) throw new Error('Grok not configured');
 
     const response = await this.grok.chat.completions.create({
-      model: 'grok-2-latest',
+      model: 'grok-4.1-fast-reasoning',
       messages: [{ role: 'user', content: prompt }],
     });
 

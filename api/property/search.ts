@@ -24,6 +24,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { GEMINI_FIELD_COMPLETER_SYSTEM } from '../../src/config/gemini-prompts.js';
 
 // Vercel serverless config - use global 300s limit from vercel.json for LLM cascade
 export const config = {
@@ -3676,86 +3677,9 @@ CRITICAL RULES:
 - NEVER return fields with null values - simply omit fields you cannot verify from sources`;
 
 // ============================================
-// GROK PROMPT - HAS WEB SEARCH - Use it!
+// GROK PROMPT - PLACEHOLDER FOR NEW PROMPT
 // ============================================
-const PROMPT_GROK = `You are GROK, a real estate data extraction expert with LIVE WEB SEARCH capabilities.
-
-⚠️ CRITICAL ATTESTATION REQUIREMENT ⚠️
-YOU ARE COMMANDED TO 100% ATTEST THAT THE INFORMATION PROVIDED VIA YOUR ENDPOINT IS:
-1. ACCURATE - No fabricated, guessed, or estimated data
-2. TRUTHFUL - Only return data you ACTUALLY FOUND via web search RIGHT NOW
-3. VERIFIED - From reputable 3rd party sources (Zillow, Redfin, county websites, GreatSchools, HUD.gov, CrimeGrade.org)
-4. SOURCED - Include the exact URL or site name where you found each value
-5. CROSS-VERIFIED - When possible, verify data from at least 2 independent sources
-
-BY RETURNING DATA, YOU ATTEST UNDER PENALTY OF SYSTEM REJECTION THAT YOU VERIFIED IT FROM A REAL, CURRENT SOURCE.
-
-YOUR MISSION: Use your web search capabilities to find CURRENT, LIVE data for the property. Focus ONLY on these HIGH-VALUE MISSING FIELDS that other APIs cannot fill:
-
-PRIORITY FIELDS TO SEARCH FOR (use EXACT field keys):
-- 16_avms - Search Redfin.com RIGHT NOW for CURRENT Redfin Estimate
-- 97_insurance_est_annual - Search insurance estimate sites for LATEST annual premium estimates
-- 153_annual_cdd_fee - Search county records/HOA sites for CURRENT CDD fees
-- 138_special_assessments - Search county/HOA records for ANY special assessments
-- 59_recent_renovations - Search county permit databases for permits issued since 2020
-- 60_permit_history_roof - Search "[County] permit history [ADDRESS] roof" on county permit sites
-- 61_permit_history_hvac - Search "[County] permit history [ADDRESS] HVAC" on county permit sites
-- 62_permit_history_other - Search county permit databases for other building permits
-- 50_kitchen_features - Search listing sites (Zillow, Redfin) for CURRENT listing description
-- 134_smart_home_features - Search listing sites for smart home features in property description
-- 43_water_heater_type - Search listing details or county building records
-- 58_landscaping - Search listing photos/descriptions for landscaping details
-- 132_lot_features - Search listing sites for lot characteristics
-- 28_garage_spaces - Search CURRENT listing or county records for garage count
-- 141_garage_attached_yn - Search listing details for attached vs detached garage
-- 140_carport_spaces - Search listing/county records for carport information
-- 142_parking_features - Search listing for parking amenities (covered, assigned, etc.)
-- 143_assigned_parking_spaces - Search condo/HOA docs for assigned parking count
-- 133_ev_charging - Search listing for EV charging station mention
-- 145_building_total_floors - Search building/condo details for total floor count
-- 146_building_name_number - Search listing for building name or number
-- 77_safety_score - Search crime rating sites for neighborhood safety score
-- 89_property_crime_index - Search CrimeGrade.org or NeighborhoodScout for CURRENT property crime index
-- 98_rental_estimate_monthly - Search Rentometer.com or Zillow for CURRENT rental estimate
-- 99_rental_yield_est - COMPUTE: (rental_estimate_monthly * 12 / listing_price) * 100
-- 101_cap_rate_est - COMPUTE: ((rental_estimate_monthly * 12 - annual_taxes - hoa_fee - insurance) / listing_price) * 100
-- 93_price_to_rent_ratio - COMPUTE: listing_price / (rental_estimate_monthly * 12)
-- 100_vacancy_rate_neighborhood - Search "[ZIP] vacancy rate" on HUD.gov or census.gov
-- 95_days_on_market_avg - Search "[Neighborhood] average days on market" on Redfin or Realtor.com
-- 96_inventory_surplus - Search market reports for neighborhood inventory levels
-- 103_comparable_sales - Search Zillow/Redfin for 3 recent sales within 0.5 miles, similar sqft/beds. Return as JSON array: [{"address": "123 Main St", "price": 500000, "sqft": 2000, "beds": 3, "baths": 2, "sold_date": "2024-01-15"}, ...] (exactly 3 comparables)
-- 135_accessibility_modifications - Search listing for wheelchair ramps, widened doors, etc.
-
-${FIELD_GROUPS}
-
-CRITICAL WEB SEARCH INSTRUCTIONS:
-1. Frame ALL searches as REAL-TIME requests: "What is the CURRENT [field] for [address] as of 2025?"
-2. Specify exact sources: "Search Zillow.com RIGHT NOW", "Check Pinellas County permit database"
-3. For county data: Search "[County Name] Property Appraiser [ADDRESS]" and "[County Name] permit history [ADDRESS]"
-4. For computed fields (rental_yield, cap_rate, price_to_rent_ratio):
-   - First search for required inputs (rental_estimate, listing_price, taxes, etc.)
-   - Then compute using exact formulas (show your math)
-   - Only return if you have all required inputs
-5. Cross-verify critical values from 2+ sources when possible
-6. Include dates in searches for recent data: "since:2024" or "after 2023"
-
-FIELDS YOU MUST NOT POPULATE (handled by higher-tier systems):
-- MLS numbers (2_mls_primary, 3_mls_secondary) - Stellar MLS has authoritative data
-- Listing prices (10_listing_price), sale dates (13_last_sale_date, 14_last_sale_price) - Stellar MLS authoritative
-- Bedrooms (17_bedrooms), bathrooms (18_full_bathrooms, 19_half_bathrooms) - Stellar MLS exact measurements
-- Square footage (21_living_sqft, 23_lot_size_sqft) - Stellar MLS authoritative
-- School assignments (65_elementary_school, 68_middle_school, 71_high_school) - Perplexity searches GreatSchools
-- School ratings (66_elementary_rating, 69_middle_rating, 72_high_rating) - Perplexity more reliable
-- Tax amounts (35_annual_taxes, 36_tax_year) - County APIs authoritative
-- Assessed values (15_assessed_value), parcel IDs (9_parcel_id) - County APIs authoritative
-
-HONESTY OVER COMPLETENESS:
-- It is BETTER to return 10 VERIFIED fields than 50 GUESSED fields
-- If you cannot find CURRENT, VERIFIED data for a field, DO NOT INCLUDE IT in your response
-- NEVER return fields with null values - simply OMIT fields you cannot verify from live sources
-- For computed fields: OMIT if any required input is missing (don't estimate inputs)
-
-${JSON_RESPONSE_FORMAT}`;
+const PROMPT_GROK = `PLACEHOLDER - NEW GROK PROMPT REQUIRED`;
 
 // ============================================
 // NOTE: OLD PROMPT_PERPLEXITY removed - replaced by unified prompt in callPerplexity() function (line 2003)
@@ -4075,25 +3999,8 @@ RETURN NULL FOR:
 ${JSON_RESPONSE_FORMAT}`;
 
 // ============================================
-// GEMINI 3 PRO - CLUES FIELD COMPLETER
+// GEMINI 3 PRO - Uses GEMINI_FIELD_COMPLETER_SYSTEM from central config
 // ============================================
-const GEMINI_FIELD_COMPLETER_SYSTEM = `You are the CLUES Field Completer (Gemini 3.0 Reasoning Mode).
-Your MISSION is to populate 34 specific real estate data fields for a single property address.
-
-### HARD RULES (EVIDENCE FIREWALL)
-1. MANDATORY TOOL: You MUST use the \`Google Search\` tool for EVERY request. Execute at least 4 distinct search queries.
-2. NO HALLUCINATION: Do NOT use training memory for property-specific facts. Use only verified search results from 2025-2026.
-3. AVM LOGIC:
-   - For '12_market_value_estimate' and '98_rental_estimate_monthly': Search Zillow, Redfin, Realtor.com, and Homes.com. If 2+ values are found, you MUST calculate the arithmetic mean (average).
-   - If a specific AVM (e.g., Quantarium or ICE) is behind a paywall, return 'null'.
-4. JSON ONLY: Return ONLY the raw JSON object. No conversational text.
-
-### MANDATORY SEARCH QUERIES
-- "[Address] Zillow listing and Zestimate"
-- "[Address] Redfin Estimate and market data"
-- "[Address] utility providers and average bills"
-- "[City/ZIP] median home price and market trends 2026"`;
-
 const PROMPT_GEMINI = GEMINI_FIELD_COMPLETER_SYSTEM;
 
 // Legacy fallback prompt
@@ -4666,21 +4573,14 @@ const STELLAR_MLS_AUTHORITATIVE_FIELDS = new Set([
   '166_community_features', '167_interior_features', '168_exterior_features',
 ]);
 
-// Grok API call (xAI) - #2 in reliability, HAS WEB SEARCH
+// Grok API call (xAI) - HAS WEB SEARCH
 async function callGrok(address: string): Promise<any> {
   const apiKey = process.env.XAI_API_KEY;
   if (!apiKey) { console.log('❌ XAI_API_KEY not set'); return { error: 'XAI_API_KEY not set', fields: {} }; } console.log('✅ XAI_API_KEY found, calling Grok API...');
 
-  // Grok-specific prompt with web search emphasis
-  const grokSystemPrompt = `${PROMPT_GROK}
-
-${EXACT_FIELD_KEYS}
-
-${FIELD_CLARITY_RULES}
-
-CRITICAL: Use EXACT field keys like "10_listing_price", "7_county", "35_annual_taxes", "17_bedrooms"
-SEARCH THE WEB AGGRESSIVELY for: listing prices, tax values, assessed values, MLS numbers, school ratings
-CITE YOUR SOURCES for every field you populate`;
+  // PLACEHOLDER - New Grok prompts will be inserted here
+  const grokSystemPrompt = PROMPT_GROK;
+  const grokUserPrompt = `PLACEHOLDER - Address: ${address}`;
 
   try {
     const response = await fetch('https://api.x.ai/v1/chat/completions', {
@@ -4690,17 +4590,12 @@ CITE YOUR SOURCES for every field you populate`;
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'grok-4',
+        model: 'grok-4.1-fast-reasoning',
         max_tokens: 16000, // Increased from 8000 to handle 168 fields (was causing truncated JSON)
         temperature: 0.1, // Low temperature for factual consistency
         messages: [
           { role: 'system', content: grokSystemPrompt },
-          {
-            role: 'user',
-            content: `Use your web search tools to find REAL property data for this address: ${address}
-
-Search Zillow, Redfin, Realtor.com, county records, and other public sources. Return ONLY verified data you found from actual web searches. Include source URLs in your response.`,
-          },
+          { role: 'user', content: grokUserPrompt },
         ],
       }),
     });

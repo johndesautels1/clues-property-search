@@ -217,11 +217,11 @@ This session focused on systematically fixing NULL/problematic fields in the CLU
 
 ### TIER 4-5: LLMs (6 Models)
 26. **Perplexity** (sonar-pro) - Web search, Tier 4, 225s timeout
-27. **Grok** (grok-4) - Web search, Tier 5, 210s timeout
+27. **Grok** (grok-4.1-fast-reasoning) - Web search, Tier 5, 210s timeout
 28. **Claude Opus** (claude-opus-4) - No web, Tier 5, 210s timeout
 29. **GPT** (gpt-5.2) - No web, Tier 5, 210s timeout
 30. **Claude Sonnet** (claude-sonnet-4.5) - No web, Tier 5, 210s timeout
-31. **Gemini** (gemini-pro) - No web, Tier 5, 210s timeout
+31. **Gemini** (gemini-3-pro-latest) - Web search, Tier 5, 210s timeout
 
 ### Backend Calculation Engine (1)
 32. **calculate-derived-fields.ts** - 11 derived fields (Tier 1 priority)

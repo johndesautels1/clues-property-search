@@ -767,10 +767,10 @@ export async function analyzeWithOliviaEnhanced(
           llmSources: forecast.llmSources.map((source: string) => {
             if (source.includes('Claude')) return 'claude-opus';
             if (source.includes('GPT-4')) return 'gpt-4';
-            if (source.includes('Gemini')) return 'gemini-pro';
+            if (source.includes('Gemini')) return 'gemini-3-pro';
             if (source.includes('Perplexity')) return 'perplexity';
             return 'claude-opus';
-          }) as ('claude-opus' | 'gpt-4' | 'gemini-pro' | 'perplexity')[],
+          }) as ('claude-opus' | 'gpt-4' | 'gemini-3-pro' | 'perplexity')[],
 
           appreciationForecast: {
             year1: forecast.appreciation1Yr,
@@ -1073,10 +1073,10 @@ export async function analyzeWithOliviaProgressive(
         llmSources: forecast.llmSources.map((source: string) => {
           if (source.includes('Claude')) return 'claude-opus';
           if (source.includes('GPT')) return 'gpt-4';
-          if (source.includes('Gemini')) return 'gemini-pro';
+          if (source.includes('Gemini')) return 'gemini-3-pro';
           if (source.includes('Perplexity')) return 'perplexity';
           return 'claude-opus';
-        }) as ('claude-opus' | 'gpt-4' | 'gemini-pro' | 'perplexity')[],
+        }) as ('claude-opus' | 'gpt-4' | 'gemini-3-pro' | 'perplexity')[],
 
         appreciationForecast: {
           year1: forecast.appreciation1Yr,

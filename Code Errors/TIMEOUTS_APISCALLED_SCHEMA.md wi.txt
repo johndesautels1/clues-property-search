@@ -33,10 +33,10 @@
   | Use Case                        | Model ID                   |
   |---------------------------------|----------------------------|
   | Perplexity                      | sonar / sonar-pro          |
-  | Grok                            | grok-4                     |
+  | Grok                            | grok-4.1-fast-reasoning    |
   | GPT                             | gpt-5.2-2025-12-11         |
   | Claude Opus (Search)            | claude-opus-4-5-20251101   |
-  | Gemini                          | gemini-2.0-flash           |
+  | Gemini                          | gemini-3-pro-latest        |
   | Claude Sonnet (Search)          | claude-sonnet-4-5-20250929 |
   | Ask Olivia Basic                | claude-sonnet-4-5-20250929 |
   | Ask Olivia Enhanced/Progressive | claude-opus-4-5-20251101   |

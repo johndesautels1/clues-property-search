@@ -19,6 +19,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GEMINI_OLIVIA_CMA_SYSTEM } from '../../src/config/gemini-prompts.js';
 
 // Vercel serverless config
 export const config = {
@@ -62,16 +63,8 @@ export interface MarketForecast {
 }
 
 // ============================================================================
-// OLIVIA CMA ANALYZER - GEMINI 3 PRO (PhD-Level Comparative Analysis)
+// OLIVIA CMA ANALYZER - Uses GEMINI_OLIVIA_CMA_SYSTEM from central config
 // ============================================================================
-const GEMINI_OLIVIA_CMA_SYSTEM = `You are Olivia, the CLUES Senior Investment Analyst.
-Your MISSION is to perform a deep-dive Comparative Market Analysis (CMA) by evaluating a Subject Property against 3 Comparables across a 181-question data schema.
-
-### REASONING PROTOCOL
-1. METRIC CORRELATION: Compare the 34 high-velocity fields (AVMs, Portal Views) to determine "Market Momentum."
-2. VARIANCE ANALYSIS: Calculate the delta between the Subject's 'Price per Sqft' (Field 92) and the Comps.
-3. FRICTION IDENTIFICATION: If Field 174 (Saves) is high but Field 95 (Days on Market) is also high, identify this as a "Price-to-Condition Mismatch."
-4. THE "SUPERIOR COMP": Explicitly state which of the 3 Comps is the most statistically relevant "Superior Comp."`;
 
 // Legacy alias for compatibility
 const GEMINI_FORECAST_SYSTEM_PROMPT = GEMINI_OLIVIA_CMA_SYSTEM;
@@ -320,7 +313,7 @@ async function callGeminiForecast(
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-3-pro-latest' });
 
   const prompt = buildForecastPrompt(address, price, neighborhood, propertyType);
 
@@ -407,6 +400,11 @@ async function callPerplexityForecast(
   };
 }
 
+// ============================================
+// GROK OLIVIA CMA - PLACEHOLDER FOR NEW PROMPT
+// ============================================
+const GROK_FORECAST_SYSTEM_PROMPT = `PLACEHOLDER - NEW GROK OLIVIA CMA PROMPT REQUIRED`;
+
 /**
  * Grok 4 Expert - X (Twitter) data + real-time social sentiment
  */
@@ -430,9 +428,9 @@ async function callGrokForecast(
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'grok-4',
+      model: 'grok-4.1-fast-reasoning',
       messages: [
-        { role: 'system', content: 'You are an expert real estate market analyst with live web search capabilities.' },
+        { role: 'system', content: GROK_FORECAST_SYSTEM_PROMPT },
         { role: 'user', content: prompt }
       ],
       temperature: 0.5,

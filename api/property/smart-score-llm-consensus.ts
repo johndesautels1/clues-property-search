@@ -375,6 +375,11 @@ async function callGPT4(prompt: string): Promise<LLMResponse> {
   return JSON.parse(content);
 }
 
+// ============================================
+// GROK SMART SCORE - PLACEHOLDER FOR NEW PROMPT
+// ============================================
+const GROK_SMART_SCORE_SYSTEM_PROMPT = `PLACEHOLDER - NEW GROK SMART SCORE PROMPT REQUIRED`;
+
 /**
  * Call Grok API (alternative tiebreaker)
  */
@@ -392,11 +397,11 @@ async function callGrok(prompt: string): Promise<LLMResponse> {
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'grok-beta',
+      model: 'grok-4.1-fast-reasoning',
       messages: [
         {
           role: 'system',
-          content: 'You are a Florida real estate SMART Score calculation engine. You MUST return valid JSON with exact mathematical calculations as specified.',
+          content: GROK_SMART_SCORE_SYSTEM_PROMPT,
         },
         {
           role: 'user',

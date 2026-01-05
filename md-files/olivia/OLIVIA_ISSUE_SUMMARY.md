@@ -10,7 +10,7 @@
 
 ### 1. Multi-LLM Market Forecast (Vercel Serverless API)
 ✅ **File:** `api/property/multi-llm-forecast.ts`
-- Fixed Grok API: Changed model from `'grok-4-expert'` to `'grok-4'`
+- Fixed Grok API: Changed model to `'grok-4.1-fast-reasoning'`
 - Added system message to Grok (required by API)
 - Fixed GPT: `max_completion_tokens` instead of `max_tokens`
 - Fixed Perplexity: model `'sonar-reasoning-pro'` with system message

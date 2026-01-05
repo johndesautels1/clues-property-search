@@ -17,10 +17,10 @@
   | LLM           | Model ID                   | Web Search             |
   |---------------|----------------------------|------------------------|
   | Perplexity    | sonar / sonar-pro          | YES                    |
-  | Grok          | grok-4                     | YES (X/Twitter)        |
+  | Grok          | grok-4.1-fast-reasoning    | YES (X/Twitter)        |
   | GPT           | gpt-5.2-2025-12-11         | NO                     |
   | Claude Opus   | claude-opus-4-5-20251101   | NO                     |
-  | Gemini        | gemini-2.0-flash           | YES (Google grounding) |
+  | Gemini        | gemini-3-pro-latest        | YES (Google grounding) |
   | Claude Sonnet | claude-sonnet-4-5-20250929 | YES (web_search tool)  |
 
   PERPLEXITY MICRO-PROMPTS (10 Parallel)
@@ -203,10 +203,10 @@
       383 +|----------|----------|----------|------------|----------|
       384 +| **Property Search - Perplexity** | `sonar` | Perplexity | YES | search.ts:2434 |
       385 +| **Property Search - Perplexity Pro** | `sonar-pro` | Perplexity | YES | search.ts:3179 |
-      386 +| **Property Search - Grok** | `grok-4` | xAI | YES | search.ts:4795 |
+      386 +| **Property Search - Grok** | `grok-4.1-fast-reasoning` | xAI | YES | search.ts:4609 |
       387 +| **Property Search - GPT** | `gpt-5.2-2025-12-11` | OpenAI | NO | search.ts:4464 |
       388 +| **Property Search - Claude Opus** | `claude-opus-4-5-20251101` | Anthropic | NO | search.ts:4224 |
-      389 +| **Property Search - Gemini** | `gemini-2.0-flash` | Google | YES | search.ts:4850 |
+      389 +| **Property Search - Gemini** | `gemini-3-pro-latest` | Google | YES | search.ts:4659 |
       390 +| **Property Search - Claude Sonnet** | `claude-sonnet-4-5-20250929` | Anthropic | YES | search.ts:42
           +81 |
       391 +| **Ask Olivia - Basic** | `claude-sonnet-4-5-20250929` | Anthropic | NO | olivia.ts:293 |
@@ -265,10 +265,10 @@
   | Use Case                        | Model ID                   |
   |---------------------------------|----------------------------|
   | Perplexity                      | sonar / sonar-pro          |
-  | Grok                            | grok-4                     |
+  | Grok                            | grok-4.1-fast-reasoning    |
   | GPT                             | gpt-5.2-2025-12-11         |
   | Claude Opus (Search)            | claude-opus-4-5-20251101   |
-  | Gemini                          | gemini-2.0-flash           |
+  | Gemini                          | gemini-3-pro-latest        |
   | Claude Sonnet (Search)          | claude-sonnet-4-5-20250929 |
   | Ask Olivia Basic                | claude-sonnet-4-5-20250929 |
   | Ask Olivia Enhanced/Progressive | claude-opus-4-5-20251101   |
@@ -292,8 +292,8 @@
   | File      | Line       | Model ID                   | Problem                                                 |
   |-----------|------------|----------------------------|---------------------------------------------------------|
   | search.ts | 4464, 4571 | gpt-5.2-2025-12-11         | GPT-5.2 doesn't exist - OpenAI's latest is GPT-4o       |
-  | search.ts | 4795       | grok-4                     | Grok-4 doesn't exist - xAI's latest is grok-2           |
-  | search.ts | 4850       | gemini-2.0-flash           | Wrong naming - Should be gemini-1.5-flash or gemini-pro |
+  | search.ts | 4609       | grok-4.1-fast-reasoning    | ✅ FIXED - Updated to grok-4.1-fast-reasoning           |
+  | search.ts | 4659       | gemini-3-pro-latest        | ✅ FIXED - Updated to gemini-3-pro-latest               |
   | search.ts | 4224       | claude-opus-4-5-20251101   | Verify - May not be valid Anthropic model ID            |
   | search.ts | 4281       | claude-sonnet-4-5-20250929 | Verify - May not be valid Anthropic model ID            |
   | olivia.ts | 293        | claude-sonnet-4-5-20250929 | Same issue                                              |
