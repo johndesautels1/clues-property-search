@@ -931,6 +931,19 @@ async function callGemini(address: string): Promise<{ fields: Record<string, any
     const groundingMeta = data.candidates?.[0]?.groundingMetadata;
     if (groundingMeta) {
       console.log('[GEMINI] ✅ Google Search grounding detected');
+
+      // Log the actual search queries Gemini used (critical for debugging null fields)
+      if (groundingMeta.webSearchQueries && groundingMeta.webSearchQueries.length > 0) {
+        console.log('[GEMINI] 🔎 Web Search Queries Used:');
+        groundingMeta.webSearchQueries.forEach((query: string, i: number) => {
+          console.log(`   ${i + 1}. "${query}"`);
+        });
+      }
+
+      // Log grounding chunks (sources used)
+      if (groundingMeta.groundingChunks && groundingMeta.groundingChunks.length > 0) {
+        console.log(`[GEMINI] 📚 Sources cited: ${groundingMeta.groundingChunks.length} chunks`);
+      }
     } else {
       console.log('[GEMINI] ⚠️ No grounding metadata');
     }

@@ -4801,9 +4801,24 @@ Return JSON only with the 34 field keys specified in the schema.`,
     // Log grounding metadata to verify search was used
     const groundingMeta = data.candidates?.[0]?.groundingMetadata;
     if (groundingMeta) {
-      console.log('🔍 [Gemini] Grounding metadata:', JSON.stringify(groundingMeta).slice(0, 500));
+      console.log('🔍 [Gemini] Grounding metadata detected');
+
+      // Log the actual search queries Gemini used (critical for debugging null fields)
+      if (groundingMeta.webSearchQueries && groundingMeta.webSearchQueries.length > 0) {
+        console.log('🔎 [Gemini] Web Search Queries Used:');
+        groundingMeta.webSearchQueries.forEach((query: string, i: number) => {
+          console.log(`   ${i + 1}. "${query}"`);
+        });
+      }
+
+      // Log search entry point
       if (groundingMeta.searchEntryPoint?.renderedContent) {
-        console.log('✅ [Gemini] Google Search was used');
+        console.log('✅ [Gemini] Google Search Entry Point confirmed');
+      }
+
+      // Log grounding chunks (sources used)
+      if (groundingMeta.groundingChunks && groundingMeta.groundingChunks.length > 0) {
+        console.log(`📚 [Gemini] Sources cited: ${groundingMeta.groundingChunks.length} chunks`);
       }
     } else {
       console.log('⚠️ [Gemini] No grounding metadata - search may not have fired');
