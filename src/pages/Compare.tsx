@@ -13,7 +13,7 @@ import {
   MapPin, Building, Zap, Shield, BarChart3, Eye, RefreshCw,
   AlertTriangle, CheckCircle, Info, PieChart, Table2, Receipt,
   Maximize2, TreePine, Car, Waves, GraduationCap, Navigation,
-  Users, CloudRain, FileText, Brain
+  Users, CloudRain, FileText, Brain, Hammer, Sparkles, Layers, Activity
 } from 'lucide-react';
 import { usePropertyStore } from '@/store/propertyStore';
 import { analyzeWithOlivia, type OliviaAnalysisResult } from '@/api/olivia';
@@ -268,29 +268,59 @@ function mapToAnalyticsProperty(cardProp: PropertyCard, fullProp?: Property): An
   };
 }
 
-// Comparison field categories
+// Comparison field categories - Mapped to 23 Schema Groups (A-W) from fields-schema.ts
+// Tab IDs are UNCHANGED to preserve chart/data wiring. Only labels updated to match schema.
 const fieldCategories = [
+  // Composite/Summary Tabs (not direct schema groups)
   { id: 'overview', label: 'Overview', icon: Eye },
   { id: 'scores', label: 'Smart Scores & Rankings', icon: TrendingUp },
-  { id: 'price', label: 'Price & Value Analysis', icon: DollarSign },
-  { id: 'cost', label: 'Total Cost of Ownership', icon: Receipt },
-  { id: 'size', label: 'Size & Space', icon: Maximize2 },
-  { id: 'condition', label: 'Property Condition & Age', icon: Calendar },
+  // Schema Group A: Address & Identity (Fields 1-9) - Included in Overview
+  // Schema Group B: Pricing & Value (Fields 10-16)
+  { id: 'price', label: 'Pricing & Value', icon: DollarSign },
+  // Schema Group C: Property Basics (Fields 17-29)
+  { id: 'size', label: 'Property Basics', icon: Maximize2 },
+  // Schema Group D: HOA & Taxes (Fields 30-38)
+  { id: 'cost', label: 'HOA & Taxes', icon: Receipt },
+  // Schema Group E: Structure & Systems (Fields 39-48)
+  { id: 'condition', label: 'Structure & Systems', icon: Calendar },
+  // Schema Group F: Interior Features (Fields 49-53)
   { id: 'interior', label: 'Interior Features', icon: Home },
-  { id: 'exterior', label: 'Exterior & Outdoor Features', icon: TreePine },
-  { id: 'parking', label: 'Parking & Garage', icon: Car },
-  { id: 'building', label: 'Building Details (Condos)', icon: Building },
-  { id: 'waterfront', label: 'Waterfront & Views', icon: Waves },
+  // Schema Group G: Exterior Features (Fields 54-58)
+  { id: 'exterior', label: 'Exterior Features', icon: TreePine },
+  // Schema Group H: Permits & Renovations (Fields 59-62) - NEW
+  { id: 'permits', label: 'Permits & Renovations', icon: Hammer },
+  // Schema Group I: Assigned Schools (Fields 63-73)
+  { id: 'schools', label: 'Assigned Schools', icon: GraduationCap },
+  // Schema Group J: Location Scores (Fields 74-82)
   { id: 'location', label: 'Location Scores', icon: MapPin },
-  { id: 'schools', label: 'Schools', icon: GraduationCap },
+  // Schema Group K: Distances & Amenities (Fields 83-87)
   { id: 'distances', label: 'Distances & Amenities', icon: Navigation },
+  // Schema Group L: Safety & Crime (Fields 88-90)
   { id: 'safety', label: 'Safety & Crime', icon: Shield },
+  // Schema Group M: Market & Investment Data (Fields 91-103)
+  { id: 'investment', label: 'Market & Investment Data', icon: BarChart3 },
+  // Schema Group N: Utilities & Connectivity (Fields 104-116)
+  { id: 'utilities', label: 'Utilities & Connectivity', icon: Zap },
+  // Schema Group O: Environment & Risk (Fields 117-130)
+  { id: 'environmental', label: 'Environment & Risk', icon: CloudRain },
+  // Schema Group P: Additional Features (Fields 131-138) - NEW
+  { id: 'additional', label: 'Additional Features', icon: Sparkles },
+  // Schema Group Q: Parking (Fields 139-143)
+  { id: 'parking', label: 'Parking', icon: Car },
+  // Schema Group R: Building (Fields 144-148)
+  { id: 'building', label: 'Building', icon: Building },
+  // Schema Group S: Legal (Fields 149-154)
+  { id: 'legal', label: 'Legal', icon: Scale },
+  // Schema Group T: Waterfront (Fields 155-159)
+  { id: 'waterfront', label: 'Waterfront', icon: Waves },
+  // Schema Group U: Leasing (Fields 160-165)
+  { id: 'leasing', label: 'Leasing', icon: FileText },
+  // Schema Group V: Features (Fields 166-168) - NEW
+  { id: 'features', label: 'Features', icon: Layers },
+  // Schema Group W: Market Performance (Fields 169-181) - NEW
+  { id: 'marketperf', label: 'Market Performance', icon: Activity },
+  // Community & HOA kept for backwards compatibility (overlaps with D)
   { id: 'community', label: 'Community & HOA', icon: Users },
-  { id: 'environmental', label: 'Environmental & Climate Risk', icon: CloudRain },
-  { id: 'utilities', label: 'Utilities & Infrastructure', icon: Zap },
-  { id: 'investment', label: 'Investment & Rental Metrics', icon: BarChart3 },
-  { id: 'leasing', label: 'Leasing & Restrictions', icon: FileText },
-  { id: 'legal', label: 'Legal & Compliance', icon: Scale },
 ];
 
 // Field definitions for comparison (mapped to 181-field schema with CORRECT Property interface paths)
@@ -537,6 +567,44 @@ const comparisonFields: Record<string, Array<{
     { key: 'listingStatus', label: 'Listing Status', path: 'address.listingStatus.value', fieldNum: 4, format: 'text' },
     { key: 'listingDate', label: 'Listing Date', path: 'address.listingDate.value', fieldNum: 5, format: 'text' },
     { key: 'permitHistoryOther', label: 'Permit History - Other', path: 'structural.permitHistoryPoolAdditions.value', fieldNum: 62, format: 'text' },
+  ],
+  // NEW: Schema Group H - Permits & Renovations (Fields 59-62)
+  permits: [
+    { key: 'recentRenovations', label: 'Recent Renovations', path: 'structural.recentRenovations.value', fieldNum: 59, format: 'text' },
+    { key: 'permitHistoryRoof', label: 'Permit History - Roof', path: 'structural.permitHistoryRoof.value', fieldNum: 60, format: 'text' },
+    { key: 'permitHistoryHvac', label: 'Permit History - HVAC', path: 'structural.permitHistoryHvac.value', fieldNum: 61, format: 'text' },
+    { key: 'permitHistoryOther', label: 'Permit History - Other', path: 'structural.permitHistoryPoolAdditions.value', fieldNum: 62, format: 'text' },
+  ],
+  // NEW: Schema Group P - Additional Features (Fields 131-138)
+  additional: [
+    { key: 'viewType', label: 'View Type', path: 'features.viewType.value', fieldNum: 131, format: 'text' },
+    { key: 'lotFeatures', label: 'Lot Features', path: 'features.lotFeatures.value', fieldNum: 132, format: 'text' },
+    { key: 'evCharging', label: 'EV Charging', path: 'features.evCharging.value', fieldNum: 133, format: 'text' },
+    { key: 'smartHomeFeatures', label: 'Smart Home Features', path: 'features.smartHomeFeatures.value', fieldNum: 134, format: 'text' },
+    { key: 'accessibilityMods', label: 'Accessibility Modifications', path: 'features.accessibilityMods.value', fieldNum: 135, format: 'text' },
+    { key: 'petPolicy', label: 'Pet Policy', path: 'features.petPolicy.value', fieldNum: 136, format: 'text' },
+    { key: 'ageRestrictions', label: 'Age Restrictions', path: 'features.ageRestrictions.value', fieldNum: 137, format: 'text' },
+    { key: 'specialAssessments', label: 'Special Assessments', path: 'features.specialAssessments.value', fieldNum: 138, format: 'text' },
+  ],
+  // NEW: Schema Group V - Features (Fields 166-168)
+  features: [
+    { key: 'communityFeatures', label: 'Community Features', path: 'stellarMLS.features.communityFeatures.value', fieldNum: 166, format: 'text' },
+    { key: 'interiorFeatures', label: 'Interior Features', path: 'stellarMLS.features.interiorFeatures.value', fieldNum: 167, format: 'text' },
+    { key: 'exteriorFeatures', label: 'Exterior Features', path: 'stellarMLS.features.exteriorFeatures.value', fieldNum: 168, format: 'text' },
+  ],
+  // NEW: Schema Group W - Market Performance (Fields 169-181)
+  marketperf: [
+    { key: 'zillowViews', label: 'Zillow Views', path: 'marketPerformance.zillowViews.value', fieldNum: 169, format: 'number', higherIsBetter: true },
+    { key: 'redfinViews', label: 'Redfin Views', path: 'marketPerformance.redfinViews.value', fieldNum: 170, format: 'number', higherIsBetter: true },
+    { key: 'homesViews', label: 'Homes.com Views', path: 'marketPerformance.homesViews.value', fieldNum: 171, format: 'number', higherIsBetter: true },
+    { key: 'realtorViews', label: 'Realtor.com Views', path: 'marketPerformance.realtorViews.value', fieldNum: 172, format: 'number', higherIsBetter: true },
+    { key: 'savesFavorites', label: 'Saves/Favorites', path: 'marketPerformance.savesFavorites.value', fieldNum: 174, format: 'number', higherIsBetter: true },
+    { key: 'marketType', label: 'Market Type', path: 'marketPerformance.marketType.value', fieldNum: 175, format: 'text' },
+    { key: 'avgSaleToListPercent', label: 'Avg Sale-to-List %', path: 'marketPerformance.avgSaleToListPercent.value', fieldNum: 176, format: 'percent' },
+    { key: 'avgDaysToPending', label: 'Avg Days to Pending', path: 'marketPerformance.avgDaysToPending.value', fieldNum: 177, format: 'number', higherIsBetter: false },
+    { key: 'multipleOffersLikelihood', label: 'Multiple Offers Likelihood', path: 'marketPerformance.multipleOffersLikelihood.value', fieldNum: 178, format: 'text' },
+    { key: 'priceTrend', label: 'Price Trend', path: 'marketPerformance.priceTrend.value', fieldNum: 180, format: 'text' },
+    { key: 'rentZestimate', label: 'Rent Zestimate', path: 'marketPerformance.rentZestimate.value', fieldNum: 181, format: 'currency' },
   ],
 };
 
