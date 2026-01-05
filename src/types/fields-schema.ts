@@ -18,7 +18,7 @@ export type ConfidenceLevel = 'High' | 'Medium-High' | 'Medium' | 'Low' | 'Unver
 export type FieldType = 'text' | 'number' | 'boolean' | 'select' | 'multiselect' | 'date' | 'currency' | 'percentage';
 
 export interface FieldDefinition {
-  num: number;
+  num: number | string;  // Allow string for sub-fields like '16a', '16b', etc.
   key: string;
   label: string;
   group: string;
@@ -345,7 +345,7 @@ export const FIELD_MAP = new Map<string, FieldDefinition>(
  * Map of field number to field definition
  * Example: 10 -> { num: 10, key: 'listing_price', ... }
  */
-export const FIELD_BY_NUMBER = new Map<number, FieldDefinition>(
+export const FIELD_BY_NUMBER = new Map<number | string, FieldDefinition>(
   ALL_FIELDS.map(f => [f.num, f])
 );
 
@@ -459,7 +459,7 @@ export type DataSource = typeof DATA_SOURCES[number];
  * Maps to PropertySearchForm expectations
  */
 export interface UIFieldDefinition {
-  id: number;
+  id: number | string;  // Allow string for sub-fields like '16a', '16b', etc.
   key: string;
   label: string;
   group: string;
@@ -489,11 +489,11 @@ export const UI_FIELD_DEFINITIONS: UIFieldDefinition[] = ALL_FIELDS.map(f => ({
 
 /**
  * UI Field Groups with field ID arrays
- * Groups for the 138-field schema
+ * Groups for the 181-field schema (includes AVM sub-fields 16a-16f)
  */
-export const UI_FIELD_GROUPS = [
+export const UI_FIELD_GROUPS: Array<{ id: string; name: string; fields: (number | string)[]; color: string }> = [
   { id: 'A', name: 'Address & Identity', fields: [1, 2, 3, 4, 5, 6, 7, 8, 9], color: 'cyan' },
-  { id: 'B', name: 'Pricing & Value', fields: [10, 11, 12, 13, 14, 15, 16], color: 'green' },
+  { id: 'B', name: 'Pricing & Value', fields: [10, 11, 12, 13, 14, 15, 16, '16a', '16b', '16c', '16d', '16e', '16f'], color: 'green' },
   { id: 'C', name: 'Property Basics', fields: [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29], color: 'blue' },
   { id: 'D', name: 'HOA & Taxes', fields: [30, 31, 32, 33, 34, 35, 36, 37, 38], color: 'purple' },
   { id: 'E', name: 'Structure & Systems', fields: [39, 40, 41, 42, 43, 44, 45, 46, 47, 48], color: 'orange' },

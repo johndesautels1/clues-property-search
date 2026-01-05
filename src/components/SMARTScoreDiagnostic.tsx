@@ -230,7 +230,7 @@ export default function SMARTScoreDiagnostic({ property, compact = false }: Prop
       if (!fieldDef) return;
 
       // Find section from UI_FIELD_GROUPS
-      const section = UI_FIELD_GROUPS.find((g: { fields: number[] }) => g.fields.includes(fieldId));
+      const section = UI_FIELD_GROUPS.find((g: { fields: (number | string)[] }) => g.fields.includes(fieldId));
       if (!section) return;
 
       const propertyPath = getPropertyPath(fieldId);
