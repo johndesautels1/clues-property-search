@@ -66,14 +66,23 @@
 
 ---
 
-## TIMEOUT CONFIGURATION
+## MASTER TIMEOUT TABLE
 
-| Constant | Value | Description |
-|----------|-------|-------------|
-| `STELLAR_MLS_TIMEOUT` | 30,000ms (30s) | Bridge API / Stellar MLS (Tier 1) |
-| `FREE_API_TIMEOUT` | 90,000ms (90s) | Google, WalkScore, FEMA, etc (Tier 2 & 3) |
-| `LLM_TIMEOUT` | 210,000ms (3.5min) | Claude, GPT, Gemini, Grok (Tier 5) |
-| `PERPLEXITY_TIMEOUT` | 225,000ms (3.75min) | Perplexity web search (Tier 4) |
+| Constant | Milliseconds | Seconds | Minutes | Source/Tier | Location in Code |
+|----------|--------------|---------|---------|-------------|------------------|
+| `STELLAR_MLS_TIMEOUT` | 30,000 | 30 | 0.5 | Bridge API (Tier 1) | search.ts:34 |
+| `FREE_API_TIMEOUT` | 90,000 | 90 | 1.5 | Google, WalkScore, FEMA, etc (Tier 2 & 3) | search.ts:35 |
+| `FEMA_TIMEOUT` | 60,000 | 60 | 1.0 | FEMA Flood API only | search.ts:1203 |
+| `LLM_TIMEOUT` | 210,000 | 210 | 3.5 | Grok, GPT, Opus, Gemini, Sonnet (Tier 5) | search.ts:36 |
+| `PERPLEXITY_TIMEOUT` | 225,000 | 225 | 3.75 | Perplexity 10 micro-prompts (Tier 4) | search.ts:37 |
+
+### Code Reference (search.ts lines 34-37):
+```typescript
+const STELLAR_MLS_TIMEOUT = 30000;   // 30 seconds for Stellar MLS via Bridge API (Tier 1)
+const FREE_API_TIMEOUT = 90000;      // 90 seconds for Redfin, Google, and all free APIs (Tier 2 & 3)
+const LLM_TIMEOUT = 210000;          // 210 seconds (3.5 minutes) for Claude, GPT-4, Gemini, Grok (Tier 5)
+const PERPLEXITY_TIMEOUT = 225000;   // 225 seconds (3.75 minutes) for Perplexity web search (Tier 4)
+```
 
 ---
 
@@ -309,5 +318,81 @@ XAI_API_KEY=xxx             # Grok
 
 ---
 
-**Document Version:** 1.0
+## ASK OLIVIA - MATHEMATICAL ANALYSIS LLMs
+
+Ask Olivia is a separate feature for comparing 3 properties with mathematical proofs.
+It uses different LLMs than the property search cascade.
+
+### Olivia LLM Configuration
+
+| Feature | Model ID | Provider | Calls | Fields Analyzed | File |
+|---------|----------|----------|-------|-----------------|------|
+| **Basic Olivia** | `claude-sonnet-4-5-20250929` | Anthropic | 1 | Summary comparison | olivia.ts:293 |
+| **Enhanced Olivia** | `claude-opus-4-5-20251101` | Anthropic | 1 | All 168 fields | olivia-brain-enhanced.ts:675 |
+| **Progressive Olivia** | `claude-opus-4-5-20251101` | Anthropic | 4 | All 168 fields (chunked) | olivia-brain-enhanced.ts:869-976 |
+
+### Progressive Olivia - 4-Level Sequential Calls
+
+Progressive Olivia splits 168 fields into 4 sequential Claude Opus calls to avoid token limits:
+
+| Level | Call # | Fields Analyzed | Model | max_tokens | File Line |
+|-------|--------|-----------------|-------|------------|-----------|
+| **Level 1** | 1 | Fields 1-56 (Critical Decision) | `claude-opus-4-5-20251101` | 32,000 | olivia-brain-enhanced.ts:869 |
+| **Level 2** | 2 | Fields 57-112 (Important Context) | `claude-opus-4-5-20251101` | 32,000 | olivia-brain-enhanced.ts:903 |
+| **Level 3** | 3 | Fields 113-168 (Remaining) | `claude-opus-4-5-20251101` | 32,000 | olivia-brain-enhanced.ts:937 |
+| **Level 4** | 4 | Final Aggregation & Winner | `claude-opus-4-5-20251101` | 32,000 | olivia-brain-enhanced.ts:976 |
+
+### Olivia Execution Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    ASK OLIVIA (Compare Page)                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  BASIC OLIVIA (handleAskOlivia)                                  │
+│  ├── Model: claude-sonnet-4-5-20250929                          │
+│  ├── Calls: 1                                                    │
+│  └── Output: Quick comparison summary                            │
+│                                                                  │
+│  ENHANCED OLIVIA (handleAskOliviaEnhanced)                       │
+│  ├── Requires: Exactly 3 properties                              │
+│  ├── Model: claude-opus-4-5-20251101                             │
+│  ├── Calls: 4 SEQUENTIAL                                         │
+│  │   ├── Level 1: Fields 1-56 (Critical)                        │
+│  │   ├── Level 2: Fields 57-112 (Context)                       │
+│  │   ├── Level 3: Fields 113-168 (Remaining)                    │
+│  │   └── Level 4: Final Aggregation                             │
+│  ├── Each call: max_tokens=32,000, temperature=0.3              │
+│  └── Output: Mathematical proofs, winner declaration             │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Environment Variables for Olivia
+
+```bash
+# Client-side (must have VITE_ prefix)
+VITE_ANTHROPIC_API_KEY=xxx
+```
+
+---
+
+## COMPLETE LLM MODEL REFERENCE
+
+| Use Case | Model ID | Provider | Web Search | Location |
+|----------|----------|----------|------------|----------|
+| **Property Search - Perplexity** | `sonar` | Perplexity | YES | search.ts:2434 |
+| **Property Search - Perplexity Pro** | `sonar-pro` | Perplexity | YES | search.ts:3179 |
+| **Property Search - Grok** | `grok-4` | xAI | YES | search.ts:4795 |
+| **Property Search - GPT** | `gpt-5.2-2025-12-11` | OpenAI | NO | search.ts:4464 |
+| **Property Search - Claude Opus** | `claude-opus-4-5-20251101` | Anthropic | NO | search.ts:4224 |
+| **Property Search - Gemini** | `gemini-2.0-flash` | Google | YES | search.ts:4850 |
+| **Property Search - Claude Sonnet** | `claude-sonnet-4-5-20250929` | Anthropic | YES | search.ts:4281 |
+| **Ask Olivia - Basic** | `claude-sonnet-4-5-20250929` | Anthropic | NO | olivia.ts:293 |
+| **Ask Olivia - Enhanced** | `claude-opus-4-5-20251101` | Anthropic | NO | olivia-brain-enhanced.ts:675 |
+| **Ask Olivia - Progressive (4 calls)** | `claude-opus-4-5-20251101` | Anthropic | NO | olivia-brain-enhanced.ts:869-976 |
+
+---
+
+**Document Version:** 1.1
 **Last Updated:** 2025-01-05
