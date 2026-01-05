@@ -6,7 +6,7 @@
  * 2. GEMINI_OLIVIA_CMA - For PhD-level comparative analysis of 4 properties
  */
 
-import cluesMissingFieldsList from './clues_missing_fields_list.json';
+import cluesMissingFieldsList from './clues_missing_fields_list.json' with { type: 'json' };
 
 // ============================================================================
 // PROMPT #1: CLUES FIELD COMPLETER (Google Search Grounded)

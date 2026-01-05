@@ -19,8 +19,8 @@ import {
   sanitizeAddress,
   isValidAddress
 } from '../../src/lib/safe-json-parse.js';
-import missingFieldsList from '../../src/config/clues_missing_fields_list.json';
-import missingFieldsRules from '../../src/config/clues_missing_fields_rules.json';
+import missingFieldsList from '../../src/config/clues_missing_fields_list.json' with { type: 'json' };
+import missingFieldsRules from '../../src/config/clues_missing_fields_rules.json' with { type: 'json' };
 import { GEMINI_FIELD_COMPLETER_SYSTEM } from '../../src/config/gemini-prompts.js';
 
 // Vercel serverless config

@@ -49,8 +49,8 @@ import { sanitizeAddress, isValidAddress, safeFetch } from '../../src/lib/safe-j
 import { callCrimeGrade, callSchoolDigger, callGreatSchools, callFEMARiskIndex, callNOAAClimate, callNOAAStormEvents, callNOAASeaLevel, callUSGSElevation, callUSGSEarthquake, callEPAFRS, getRadonRisk, callGoogleStreetView, callGoogleSolarAPI, callHowLoud/*, callRedfinProperty*/ } from './free-apis.js';
 import { STELLAR_MLS_SOURCE, FBI_CRIME_SOURCE } from './source-constants.js';
 import { calculateAllDerivedFields, type PropertyData } from '../../src/lib/calculate-derived-fields.js';
-import missingFieldsList from '../../src/config/clues_missing_fields_list.json';
-import missingFieldsRules from '../../src/config/clues_missing_fields_rules.json';
+import missingFieldsList from '../../src/config/clues_missing_fields_list.json' with { type: 'json' };
+import missingFieldsRules from '../../src/config/clues_missing_fields_rules.json' with { type: 'json' };
 // REMOVED: Batch system deleted - using unified Field Completer prompt instead
 // import { fetchAllMissingFields } from '../../src/services/valuation/geminiBatchWorker.js';
 // import { TIER_35_FIELD_IDS } from '../../src/services/valuation/geminiConfig.js';
