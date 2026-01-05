@@ -34,7 +34,7 @@ export const config = {
 // Timeout wrapper for API/LLM calls - prevents hanging
 const STELLAR_MLS_TIMEOUT = 30000; // 30 seconds for Stellar MLS via Bridge API (Tier 1) - typically responds in <10s
 const FREE_API_TIMEOUT = 90000; // 90 seconds for Redfin, Google, and all free APIs (Tier 2 & 3) - increased from 60s
-const LLM_TIMEOUT = 210000; // 210 seconds (3.5 minutes) for Claude, GPT-4, Gemini, Grok LLM enrichment (Tier 4) - increased from 180s
+const LLM_TIMEOUT = 210000; // 210 seconds (3.5 minutes) for Claude, GPT-5.2, Gemini, Grok LLM enrichment (Tier 4) - increased from 180s
 const PERPLEXITY_TIMEOUT = 225000; // 225 seconds (3.75 minutes) for Perplexity (needs extra time for deep web search) - increased from 195s
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([
@@ -4219,8 +4219,8 @@ Return structured JSON with proper field keys. Use null for unknown data.`,
   }
 }
 
-// OpenAI GPT API call - Supports both legacy mode (address-only) and orchestrator mode (with input blobs)
-async function callGPT(
+// OpenAI GPT-5.2-pro API call - Supports both legacy mode (address-only) and orchestrator mode (with input blobs)
+async function callGPT5(
   address: string,
   inputBlobs?: {
     stellarMlsJson: unknown;
@@ -4324,10 +4324,10 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
 // ============================================
 
 /**
- * Call GPT-5.2 LLM-Only Auditor
+ * Call GPT-5.2-pro LLM-Only Field Auditor
  * Validates ONLY fields populated by LLMs (Tier 4/5), skips API fields (Tier 1-3)
  */
-async function callGPT_LLMFieldAuditor(
+async function callGPT5FieldAuditor(
   address: string,
   inputs: {
     stellarMlsJson: unknown;

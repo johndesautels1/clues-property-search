@@ -888,7 +888,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
               <div className="flex flex-wrap gap-2 ml-6">
                 {[
                   { id: 'perplexity', name: '1. Perplexity', color: 'cyan' },
-                  { id: 'gpt', name: '2. GPT-4', color: 'green' },
+                  { id: 'gpt', name: '2. GPT-5.2', color: 'green' },
                   { id: 'claude-opus', name: '3. Claude Opus', color: 'orange' },
                   { id: 'gemini', name: '4. Gemini', color: 'purple' },
                   { id: 'grok', name: '5. Grok', color: 'blue' },

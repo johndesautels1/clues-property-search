@@ -55,7 +55,7 @@ export interface MarketForecast {
 
   // Sources
   llmForecasts: LLMForecast[];   // Individual forecasts
-  llmSources: string[];          // ['Claude', 'GPT-4', 'Gemini', 'Perplexity']
+  llmSources: string[];          // ['Claude', 'GPT-5.2', 'Gemini', 'Perplexity']
 
   // Metadata
   timestamp: string;

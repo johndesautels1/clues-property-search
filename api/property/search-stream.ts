@@ -131,7 +131,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         'Grok': 'grok',
         'Claude Opus': 'claude-opus',
         'GPT': 'gpt',
-        'GPT-4o': 'gpt',
+        'GPT-5.2': 'gpt',
         'Claude Sonnet': 'claude-sonnet',
         'Gemini': 'gemini'
       };

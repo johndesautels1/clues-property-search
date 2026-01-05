@@ -669,7 +669,7 @@ CONFIDENCE RUBRIC
 - Low: weak/indirect support OR only non-authoritative sources available
 - Unverified: value=null`;
 
-async function callGPT(address: string): Promise<{ fields: Record<string, any>; error?: string }> {
+async function callGPT5(address: string): Promise<{ fields: Record<string, any>; error?: string }> {
   const apiKey = process.env.OPENAI_API_KEY;
   console.log('[GPT] API key present:', !!apiKey, 'length:', apiKey?.length || 0);
   if (!apiKey) {
