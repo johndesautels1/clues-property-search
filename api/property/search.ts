@@ -3813,14 +3813,67 @@ const STELLAR_MLS_AUTHORITATIVE_FIELDS = new Set([
 ]);
 
 // Grok API call (xAI) - HAS WEB SEARCH
+// Tavily search helper for Grok tool calls
+async function callTavilySearch(query: string, numResults: number = 5): Promise<string> {
+  const apiKey = process.env.TAVILY_API_KEY;
+  if (!apiKey) {
+    console.log('❌ TAVILY_API_KEY not set');
+    return 'Search unavailable - API key not configured';
+  }
+
+  try {
+    console.log(`🔍 [Tavily] Searching: "${query}"`);
+    const response = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: apiKey,
+        query: query,
+        search_depth: 'basic',
+        max_results: Math.min(numResults, 10),
+        include_answer: true,
+        include_raw_content: false
+      })
+    });
+
+    if (!response.ok) {
+      console.error(`❌ [Tavily] HTTP ${response.status}`);
+      return `Search failed with status ${response.status}`;
+    }
+
+    const data = await response.json();
+    console.log(`✅ [Tavily] Got ${data.results?.length || 0} results`);
+
+    // Format results for Grok
+    let formatted = data.answer ? `Summary: ${data.answer}\n\n` : '';
+    if (data.results && data.results.length > 0) {
+      formatted += 'Sources:\n';
+      data.results.forEach((r: any, i: number) => {
+        formatted += `${i + 1}. ${r.title}: ${r.content?.substring(0, 300) || 'No content'}\n`;
+      });
+    }
+    return formatted || 'No results found';
+  } catch (error) {
+    console.error('❌ [Tavily] Error:', error);
+    return `Search error: ${String(error)}`;
+  }
+}
+
 async function callGrok(address: string): Promise<any> {
   const apiKey = process.env.XAI_API_KEY;
-  if (!apiKey) { console.log('❌ XAI_API_KEY not set'); return { error: 'XAI_API_KEY not set', fields: {} }; } console.log('✅ XAI_API_KEY found, calling Grok API...');
+  if (!apiKey) { console.log('❌ XAI_API_KEY not set'); return { error: 'XAI_API_KEY not set', fields: {} }; }
+  console.log('✅ XAI_API_KEY found, calling Grok API...');
 
   const grokSystemPrompt = PROMPT_GROK;
   const grokUserPrompt = `Extract property data for: ${address}`;
 
+  const messages: any[] = [
+    { role: 'system', content: grokSystemPrompt },
+    { role: 'user', content: grokUserPrompt },
+  ];
+
   try {
+    // First call - Grok may request tool calls
     const response = await fetch('https://api.x.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -3830,18 +3883,18 @@ async function callGrok(address: string): Promise<any> {
       body: JSON.stringify({
         model: 'grok-4-1-fast-reasoning',
         max_tokens: 32000,
-        temperature: 0.2,  // MUST be 0.2 for Grok
+        temperature: 0.2,
         tools: [
           {
             type: 'function',
             function: {
               name: 'web_search',
-              description: 'Search the web for real-time information',
+              description: 'Search the web for real-time property information',
               parameters: {
                 type: 'object',
                 properties: {
-                  query: { type: 'string' },
-                  num_results: { type: 'integer', default: 10 }
+                  query: { type: 'string', description: 'Search query' },
+                  num_results: { type: 'integer', default: 5 }
                 },
                 required: ['query']
               }
@@ -3849,33 +3902,68 @@ async function callGrok(address: string): Promise<any> {
           }
         ],
         tool_choice: 'auto',
-        messages: [
-          { role: 'system', content: grokSystemPrompt },
-          { role: 'user', content: grokUserPrompt },
-        ],
+        messages: messages,
       }),
     });
 
-    const data = await response.json();
+    let data = await response.json();
     console.log('Grok response:', JSON.stringify(data).substring(0, 500));
 
+    // Check if Grok wants to use tools
+    const assistantMessage = data.choices?.[0]?.message;
+    if (assistantMessage?.tool_calls && assistantMessage.tool_calls.length > 0) {
+      console.log(`🔧 [Grok] Requesting ${assistantMessage.tool_calls.length} tool calls`);
+
+      // Add assistant message with tool calls to conversation
+      messages.push(assistantMessage);
+
+      // Execute each tool call via Tavily (limit to 3 to avoid timeout)
+      const toolCalls = assistantMessage.tool_calls.slice(0, 3);
+      for (const toolCall of toolCalls) {
+        if (toolCall.function?.name === 'web_search') {
+          const args = JSON.parse(toolCall.function.arguments || '{}');
+          const searchResult = await callTavilySearch(args.query, args.num_results || 5);
+
+          // Add tool result to messages
+          messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: searchResult
+          });
+        }
+      }
+
+      // Second call - Grok processes tool results and returns final answer
+      console.log('🔄 [Grok] Sending tool results back...');
+      const response2 = await fetch('https://api.x.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'grok-4-1-fast-reasoning',
+          max_tokens: 32000,
+          temperature: 0.2,
+          messages: messages,
+        }),
+      });
+
+      data = await response2.json();
+      console.log('Grok final response:', JSON.stringify(data).substring(0, 500));
+    }
+
+    // Parse the final response
     if (data.choices && data.choices[0]?.message?.content) {
       const text = data.choices[0].message.content;
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         try {
           const parsed = JSON.parse(jsonMatch[0]);
-
-          // 🛡️ NULL BLOCKING: Filter all null values before returning
-          // NOTE: Tier-based restrictions removed - arbitration pipeline handles tier precedence naturally
-          // Grok (Tier 5) can now fill gaps left by higher tiers, but cannot overwrite them
           const filteredFields = filterNullValues(parsed, 'Grok');
           return { fields: filteredFields, llm: 'Grok' };
         } catch (parseError) {
           console.error('❌ Grok JSON.parse error:', parseError);
-          console.error('   JSON length:', jsonMatch[0].length, 'chars');
-          console.error('   JSON sample (first 500 chars):', jsonMatch[0].substring(0, 500));
-          console.error('   JSON sample (last 500 chars):', jsonMatch[0].substring(jsonMatch[0].length - 500));
           return { error: `JSON parse error: ${String(parseError)}`, fields: {}, llm: 'Grok' };
         }
       }
