@@ -3530,72 +3530,36 @@ Return structured JSON with proper field keys. Use null for unknown data.`;
       }),
     });
 
-    let data = await response.json();
+    const data = await response.json();
 
-    // Check if Copilot returned tool_calls that need manual execution
-    const assistantMessage = data.choices?.[0]?.message;
-    if (assistantMessage?.tool_calls && assistantMessage.tool_calls.length > 0) {
-      console.log(`🔧 [Copilot] Requesting ${assistantMessage.tool_calls.length} tool calls - executing via Tavily`);
+    // Handle /v1/responses format - OpenAI handles web_search internally
+    let text: string | undefined;
 
-      // Build messages array for follow-up
-      const messages: any[] = [
-        { role: 'system', content: PROMPT_COPILOT },
-        { role: 'user', content: userPrompt },
-        assistantMessage,
-      ];
-
-      // Execute each tool call via Tavily (limit to 3)
-      const toolCalls = assistantMessage.tool_calls.slice(0, 3);
-      for (const toolCall of toolCalls) {
-        if (toolCall.function?.name === 'web_search') {
-          const args = JSON.parse(toolCall.function.arguments || '{}');
-          console.log(`🔍 [Copilot] Searching: ${args.query}`);
-          const searchResult = await callTavilySearch(args.query, args.num_results || 5);
-
-          messages.push({
-            role: 'tool',
-            tool_call_id: toolCall.id,
-            content: searchResult
-          });
-        }
+    // Method 1: Direct output_text
+    if (data.output_text) {
+      text = data.output_text;
+    }
+    // Method 2: Parse output array for message item
+    else if (Array.isArray(data.output)) {
+      const webSearchCalls = data.output.filter((o: any) => o.type === 'web_search_call');
+      if (webSearchCalls.length > 0) {
+        console.log(`🔍 [Copilot] Web search executed: ${webSearchCalls.length} searches`);
       }
 
-      // Second call with tool results
-      console.log('🔄 [Copilot] Sending tool results back...');
-      const response2 = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o',
-          max_tokens: 32000,
-          temperature: 0.2,
-          messages: messages,
-        }),
-      });
-
-      data = await response2.json();
-      console.log('[Copilot] Final response after tool execution received');
-
-      if (data.choices?.[0]?.message?.content) {
-        const toolResultText = data.choices[0].message.content;
-        const jsonMatch = toolResultText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          try {
-            const parsed = JSON.parse(jsonMatch[0]);
-            const filteredFields = filterNullValues(parsed, 'Copilot');
-            return { fields: filteredFields, llm: 'Copilot' };
-          } catch (parseError) {
-            console.error('❌ Copilot tool result JSON.parse error:', parseError);
-          }
+      const messageItem = data.output.find((o: any) => o.type === 'message');
+      if (messageItem?.content) {
+        if (Array.isArray(messageItem.content)) {
+          const textItem = messageItem.content.find((c: any) => c.type === 'output_text' || c.type === 'text');
+          text = textItem?.text;
+        } else if (typeof messageItem.content === 'string') {
+          text = messageItem.content;
         }
       }
     }
-
-    // Handle /v1/responses format
-    const text = data.output_text || data.choices?.[0]?.message?.content;
+    // Method 3: Fallback to chat/completions format
+    else if (data.choices?.[0]?.message?.content) {
+      text = data.choices[0].message.content;
+    }
     if (text) {
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
@@ -3687,74 +3651,46 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
     if (data.output) console.log(`[GPT] output type: ${typeof data.output}, isArray: ${Array.isArray(data.output)}, length: ${Array.isArray(data.output) ? data.output.length : 'N/A'}`);
     if (data.error) console.log(`[GPT] API error in response: ${JSON.stringify(data.error).substring(0, 300)}`);
 
-    // Check if GPT returned tool_calls that need manual execution (chat/completions format)
-    const assistantMessage = data.choices?.[0]?.message;
-    if (assistantMessage?.tool_calls && assistantMessage.tool_calls.length > 0) {
-      console.log(`🔧 [GPT] Requesting ${assistantMessage.tool_calls.length} tool calls - executing via Tavily`);
+    // Handle /v1/responses format - OpenAI handles web_search internally
+    // The output array contains: web_search_call items (search metadata) + message item (final text)
+    let text: string | undefined;
 
-      // Build messages array for follow-up
-      const messages: any[] = [
-        { role: 'system', content: isOrchestratorMode ? PROMPT_GPT_ORCHESTRATOR : PROMPT_GPT },
-        { role: 'user', content: userPrompt },
-        assistantMessage, // Include the assistant's tool_calls request
-      ];
+    // Method 1: Direct output_text (simplest case)
+    if (data.output_text) {
+      text = data.output_text;
+      console.log('[GPT] Found text in output_text');
+    }
+    // Method 2: Parse output array for message item
+    else if (Array.isArray(data.output)) {
+      // Log what we received for debugging
+      const outputTypes = data.output.map((o: any) => o.type).join(', ');
+      console.log(`[GPT] Output array contains: ${outputTypes}`);
 
-      // Execute each tool call via Tavily (limit to 3 to avoid timeout)
-      const toolCalls = assistantMessage.tool_calls.slice(0, 3);
-      for (const toolCall of toolCalls) {
-        if (toolCall.function?.name === 'web_search') {
-          const args = JSON.parse(toolCall.function.arguments || '{}');
-          console.log(`🔍 [GPT] Searching: ${args.query}`);
-          const searchResult = await callTavilySearch(args.query, args.num_results || 5);
-
-          // Add tool result to messages
-          messages.push({
-            role: 'tool',
-            tool_call_id: toolCall.id,
-            content: searchResult
-          });
-        }
+      // Check if web search was used
+      const webSearchCalls = data.output.filter((o: any) => o.type === 'web_search_call');
+      if (webSearchCalls.length > 0) {
+        console.log(`🔍 [GPT] Web search executed: ${webSearchCalls.length} searches`);
       }
 
-      // Second call - GPT processes tool results and returns final answer
-      console.log('🔄 [GPT] Sending tool results back...');
-      const response2 = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o', // Use chat/completions compatible model for tool results
-          max_tokens: 32000,
-          temperature: 0.2,
-          messages: messages,
-        }),
-      });
-
-      data = await response2.json();
-      console.log('[GPT] Final response after tool execution received');
-
-      // Parse from chat/completions format
-      if (data.choices?.[0]?.message?.content) {
-        const toolResultText = data.choices[0].message.content;
-        const jsonMatch = toolResultText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          try {
-            const parsed = JSON.parse(jsonMatch[0]);
-            const filteredFields = filterNullValues(parsed, 'GPT');
-            return { fields: filteredFields, llm: 'GPT' };
-          } catch (parseError) {
-            console.error('❌ GPT tool result JSON.parse error:', parseError);
-          }
+      // Find the message item with the actual response
+      const messageItem = data.output.find((o: any) => o.type === 'message');
+      if (messageItem?.content) {
+        // Content is an array, find the output_text item
+        if (Array.isArray(messageItem.content)) {
+          const textItem = messageItem.content.find((c: any) => c.type === 'output_text' || c.type === 'text');
+          text = textItem?.text;
+          console.log(`[GPT] Found text in message.content array (${textItem?.type})`);
+        } else if (typeof messageItem.content === 'string') {
+          text = messageItem.content;
+          console.log('[GPT] Found text in message.content string');
         }
       }
     }
-
-    // Handle /v1/responses format - check multiple possible locations for text output
-    const text = data.output_text
-      || data.output?.find?.((o: any) => o.type === 'message')?.content?.[0]?.text
-      || data.choices?.[0]?.message?.content;
+    // Method 3: Fallback to chat/completions format
+    else if (data.choices?.[0]?.message?.content) {
+      text = data.choices[0].message.content;
+      console.log('[GPT] Found text in choices[0].message.content (chat/completions format)');
+    }
 
     if (text) {
       const jsonMatch = text.match(/\{[\s\S]*\}/);
