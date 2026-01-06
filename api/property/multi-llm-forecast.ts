@@ -1041,24 +1041,6 @@ async function callGrokForecast(
       max_tokens: 32000,
       temperature: 0.2,
       messages: messages,
-      tools: [
-        {
-          type: 'function',
-          function: {
-            name: 'web_search',
-            description: 'Search the web for real-time market data, comparable sales, and neighborhood trends',
-            parameters: {
-              type: 'object',
-              properties: {
-                query: { type: 'string', description: 'Search query for market data' },
-                num_results: { type: 'integer', default: 5 }
-              },
-              required: ['query']
-            }
-          }
-        }
-      ],
-      tool_choice: 'auto',
     }),
   });
 

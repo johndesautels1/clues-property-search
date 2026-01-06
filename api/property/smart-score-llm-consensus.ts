@@ -400,7 +400,7 @@ const GROK_SMART_SCORE_SYSTEM_PROMPT = `You are Olivia, the CLUES Senior Investm
 Your MISSION is to perform a deep-dive Comparative Market Analysis (CMA) by evaluating a Subject Property against 3 Comparables across a 181-question data schema.
 
 ### HARD RULES
-1. MANDATORY TOOL: You MUST use the web_search tool to gather current market context and verify data. Execute at least 2 distinct search queries.
+1. Use your built-in live web search capability to gather current market context. Execute at least 2 distinct searches.
 2. Do NOT change property facts in the input. You may only interpret them.
 3. If a field is missing or unverified, explicitly treat it as unknown.
 4. Your outputs must be deterministic, consistent, and JSON-only.
@@ -512,24 +512,6 @@ async function callGrok(prompt: string): Promise<LLMResponse> {
       max_tokens: 32000,
       temperature: 0.2,
       messages: messages,
-      tools: [
-        {
-          type: 'function',
-          function: {
-            name: 'web_search',
-            description: 'Search the web for real-time property and market information',
-            parameters: {
-              type: 'object',
-              properties: {
-                query: { type: 'string', description: 'Search query' },
-                num_results: { type: 'integer', default: 5 }
-              },
-              required: ['query']
-            }
-          }
-        }
-      ],
-      tool_choice: 'auto',
     }),
   });
 

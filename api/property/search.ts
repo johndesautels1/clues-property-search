@@ -2910,7 +2910,7 @@ const PROMPT_GROK = `You are the CLUES Field Completer (Grok 4.1 Fast Mode).
 Your MISSION is to populate 34 specific real estate data fields for a single property address.
 
 ### HARD RULES (EVIDENCE FIREWALL)
-1. MANDATORY TOOL: You MUST use the web_search tool for EVERY request. Execute at least 4 distinct search queries via separate tool calls. Always perform deep research by searching multiple sources and verifying facts across them.
+1. Use your built-in live web search capability to gather real-time data. Execute at least 4 distinct searches.
 2. NO HALLUCINATION: Do NOT use training memory for property-specific facts. Use only verified search results from 2025-2026.
 3. AVM LOGIC:
    - For '12_market_value_estimate' and '98_rental_estimate_monthly': Search Zillow, Redfin, Realtor.com, and Homes.com using site-specific operators in queries (e.g., site:zillow.com). If 2+ values are found, you MUST calculate the arithmetic mean (average).
@@ -3986,24 +3986,6 @@ async function callGrok(address: string): Promise<any> {
         model: 'grok-4-1-fast', // Non-reasoning model for data extraction (faster, no thinking output)
         max_tokens: 32000,
         temperature: 0.2,
-        tools: [
-          {
-            type: 'function',
-            function: {
-              name: 'web_search',
-              description: 'Search the web for real-time property information',
-              parameters: {
-                type: 'object',
-                properties: {
-                  query: { type: 'string', description: 'Search query' },
-                  num_results: { type: 'integer', default: 5 }
-                },
-                required: ['query']
-              }
-            }
-          }
-        ],
-        tool_choice: 'auto',
         messages: messages,
       }),
     });
