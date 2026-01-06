@@ -3401,7 +3401,6 @@ async function callCopilot(address: string): Promise<any> {
       },
       body: JSON.stringify({
         model: 'gpt-5.2-pro',
-        temperature: 0.0,
         max_output_tokens: 32000,
         input: [
           { role: 'system', content: PROMPT_COPILOT },
@@ -3478,7 +3477,6 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
 
     const requestBody = {
       model: 'gpt-5.2-pro',
-      temperature: 0.0,
       max_output_tokens: 32000,
       input: [
         { role: 'system', content: systemPrompt },
@@ -3593,7 +3591,6 @@ async function callGPT5FieldAuditor(
 
     const requestBody = {
       model: 'gpt-5.2-pro',
-      temperature: 0.0, // Must be 0.0 across entire codebase
       max_output_tokens: 32000,
       input: [
         { role: 'system', content: systemPrompt },

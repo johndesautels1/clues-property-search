@@ -859,7 +859,6 @@ Return ONLY the JSON object described in the system prompt.`;
       },
       body: JSON.stringify({
         model: 'gpt-5.2-pro',
-        temperature: 0.0,
         max_output_tokens: 32000,
         input: [
           { role: 'system', content: GPT_RETRY_SYSTEM_PROMPT },

@@ -350,7 +350,6 @@ async function callGPT5(prompt: string): Promise<LLMResponse> {
     },
     body: JSON.stringify({
       model: 'gpt-5.2-pro',
-      temperature: 0.0,
       max_output_tokens: 32000,
       input: [
         { role: 'system', content: OLIVIA_SYSTEM_PROMPT },
