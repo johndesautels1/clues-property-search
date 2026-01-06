@@ -3505,6 +3505,10 @@ async function callCopilot(address: string): Promise<any> {
 
   if (!apiKey) return { error: 'OPENAI_API_KEY not set', fields: {} };
 
+  const userPrompt = `Extract property data fields for: ${address}
+
+Return structured JSON with proper field keys. Use null for unknown data.`;
+
   try {
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
@@ -3517,12 +3521,7 @@ async function callCopilot(address: string): Promise<any> {
         max_output_tokens: 32000,
         input: [
           { role: 'system', content: PROMPT_COPILOT },
-          {
-            role: 'user',
-            content: `Extract property data fields for: ${address}
-
-Return structured JSON with proper field keys. Use null for unknown data.`,
-          },
+          { role: 'user', content: userPrompt },
         ],
         reasoning: { effort: 'high' },
         tools: [{ type: 'web_search' }],
@@ -3531,7 +3530,70 @@ Return structured JSON with proper field keys. Use null for unknown data.`,
       }),
     });
 
-    const data = await response.json();
+    let data = await response.json();
+
+    // Check if Copilot returned tool_calls that need manual execution
+    const assistantMessage = data.choices?.[0]?.message;
+    if (assistantMessage?.tool_calls && assistantMessage.tool_calls.length > 0) {
+      console.log(`🔧 [Copilot] Requesting ${assistantMessage.tool_calls.length} tool calls - executing via Tavily`);
+
+      // Build messages array for follow-up
+      const messages: any[] = [
+        { role: 'system', content: PROMPT_COPILOT },
+        { role: 'user', content: userPrompt },
+        assistantMessage,
+      ];
+
+      // Execute each tool call via Tavily (limit to 3)
+      const toolCalls = assistantMessage.tool_calls.slice(0, 3);
+      for (const toolCall of toolCalls) {
+        if (toolCall.function?.name === 'web_search') {
+          const args = JSON.parse(toolCall.function.arguments || '{}');
+          console.log(`🔍 [Copilot] Searching: ${args.query}`);
+          const searchResult = await callTavilySearch(args.query, args.num_results || 5);
+
+          messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: searchResult
+          });
+        }
+      }
+
+      // Second call with tool results
+      console.log('🔄 [Copilot] Sending tool results back...');
+      const response2 = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          max_tokens: 32000,
+          temperature: 0.2,
+          messages: messages,
+        }),
+      });
+
+      data = await response2.json();
+      console.log('[Copilot] Final response after tool execution received');
+
+      if (data.choices?.[0]?.message?.content) {
+        const toolResultText = data.choices[0].message.content;
+        const jsonMatch = toolResultText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            const parsed = JSON.parse(jsonMatch[0]);
+            const filteredFields = filterNullValues(parsed, 'Copilot');
+            return { fields: filteredFields, llm: 'Copilot' };
+          } catch (parseError) {
+            console.error('❌ Copilot tool result JSON.parse error:', parseError);
+          }
+        }
+      }
+    }
+
     // Handle /v1/responses format
     const text = data.output_text || data.choices?.[0]?.message?.content;
     if (text) {
@@ -3618,12 +3680,76 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
       return { error: `API error: ${response.status} - ${errorText.substring(0, 200)}`, fields: {}, llm: 'GPT' };
     }
 
-    const data = await response.json();
+    let data = await response.json();
 
     // DEBUG: Log full response structure to diagnose issues
     console.log(`[GPT] Response keys: ${Object.keys(data).join(', ')}`);
     if (data.output) console.log(`[GPT] output type: ${typeof data.output}, isArray: ${Array.isArray(data.output)}, length: ${Array.isArray(data.output) ? data.output.length : 'N/A'}`);
     if (data.error) console.log(`[GPT] API error in response: ${JSON.stringify(data.error).substring(0, 300)}`);
+
+    // Check if GPT returned tool_calls that need manual execution (chat/completions format)
+    const assistantMessage = data.choices?.[0]?.message;
+    if (assistantMessage?.tool_calls && assistantMessage.tool_calls.length > 0) {
+      console.log(`🔧 [GPT] Requesting ${assistantMessage.tool_calls.length} tool calls - executing via Tavily`);
+
+      // Build messages array for follow-up
+      const messages: any[] = [
+        { role: 'system', content: isOrchestratorMode ? PROMPT_GPT_ORCHESTRATOR : PROMPT_GPT },
+        { role: 'user', content: userPrompt },
+        assistantMessage, // Include the assistant's tool_calls request
+      ];
+
+      // Execute each tool call via Tavily (limit to 3 to avoid timeout)
+      const toolCalls = assistantMessage.tool_calls.slice(0, 3);
+      for (const toolCall of toolCalls) {
+        if (toolCall.function?.name === 'web_search') {
+          const args = JSON.parse(toolCall.function.arguments || '{}');
+          console.log(`🔍 [GPT] Searching: ${args.query}`);
+          const searchResult = await callTavilySearch(args.query, args.num_results || 5);
+
+          // Add tool result to messages
+          messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: searchResult
+          });
+        }
+      }
+
+      // Second call - GPT processes tool results and returns final answer
+      console.log('🔄 [GPT] Sending tool results back...');
+      const response2 = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o', // Use chat/completions compatible model for tool results
+          max_tokens: 32000,
+          temperature: 0.2,
+          messages: messages,
+        }),
+      });
+
+      data = await response2.json();
+      console.log('[GPT] Final response after tool execution received');
+
+      // Parse from chat/completions format
+      if (data.choices?.[0]?.message?.content) {
+        const toolResultText = data.choices[0].message.content;
+        const jsonMatch = toolResultText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            const parsed = JSON.parse(jsonMatch[0]);
+            const filteredFields = filterNullValues(parsed, 'GPT');
+            return { fields: filteredFields, llm: 'GPT' };
+          } catch (parseError) {
+            console.error('❌ GPT tool result JSON.parse error:', parseError);
+          }
+        }
+      }
+    }
 
     // Handle /v1/responses format - check multiple possible locations for text output
     const text = data.output_text
