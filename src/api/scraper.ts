@@ -5,7 +5,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+// Note: Gemini uses REST API directly for thinking_config support
 
 export type LLMProvider = 'claude' | 'gpt' | 'grok' | 'gemini' | 'auto' | 'hybrid';
 
@@ -76,7 +76,7 @@ class PropertyScraper {
   private claude: Anthropic | null = null;
   private gpt: OpenAI | null = null;
   private grok: OpenAI | null = null;
-  private gemini: GoogleGenerativeAI | null = null;
+  // Gemini uses REST API directly - no SDK instance needed
 
   private costs = {
     claude: 0,
@@ -109,10 +109,7 @@ class PropertyScraper {
         dangerouslyAllowBrowser: true,
       });
     }
-
-    if (import.meta.env.VITE_GEMINI_API_KEY) {
-      this.gemini = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
-    }
+    // Gemini API key checked at call time - uses REST API directly
   }
 
   /**
@@ -268,25 +265,55 @@ class PropertyScraper {
   }
 
   private async scrapeWithGemini(prompt: string): Promise<PropertyScrapedData | null> {
-    if (!this.gemini) throw new Error('Gemini not configured');
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) throw new Error('Gemini not configured - VITE_GEMINI_API_KEY missing');
 
-    const model = this.gemini.getGenerativeModel({
-      model: 'gemini-3-pro-preview',
-      generationConfig: {
-        temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro
-        maxOutputTokens: 16000,
-        responseMimeType: 'application/json',
-      },
-      tools: [{ googleSearch: {} }],
-    });
-    const result = await model.generateContent([{ text: prompt }]);
-    const response = await result.response;
+    // Use REST API for Gemini 3 Pro with thinking_config support
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          tools: [{ google_search: {} }],
+          tool_config: {
+            function_calling_config: { mode: 'ANY' }
+          },
+          generationConfig: {
+            thinking_config: {
+              thinking_level: 'high',
+              include_thoughts: false  // Data extraction - no reasoning needed
+            },
+            temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro
+            maxOutputTokens: 16000,
+            responseMimeType: 'application/json'
+          }
+        })
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
 
     const cost = 0.002;
     this.costs.gemini += cost;
     this.costs.total += cost;
 
-    return this.parseResponse(response.text());
+    // Extract text from response parts
+    const parts = data.candidates?.[0]?.content?.parts || [];
+    let text = '';
+    for (const part of parts) {
+      if (part.text && !part.thought) {
+        text += part.text;
+      }
+    }
+
+    return this.parseResponse(text);
   }
 
   private async scrapeWithHybrid(input: string): Promise<PropertyScrapedData | null> {
