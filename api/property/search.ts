@@ -520,6 +520,29 @@ function coerceValue(key: string, value: any): any {
     if (typeof value === 'string') {
       // Remove currency symbols, commas, percentage signs
       const cleaned = value.replace(/[$,€£%\s]/g, '').trim();
+
+      // Handle ranges like "1.7-2.0" or "100-150" - take the midpoint
+      const rangeMatch = cleaned.match(/^(\d+\.?\d*)\s*[-–—to]+\s*(\d+\.?\d*)$/i);
+      if (rangeMatch) {
+        const low = parseFloat(rangeMatch[1]);
+        const high = parseFloat(rangeMatch[2]);
+        if (!isNaN(low) && !isNaN(high)) {
+          const midpoint = (low + high) / 2;
+          console.log(`🔄 TYPE COERCED RANGE: ${key} "${value}" → ${midpoint} (midpoint of ${low}-${high})`);
+          return midpoint;
+        }
+      }
+
+      // Handle "approximately X" or "~X" or "about X"
+      const approxMatch = cleaned.match(/^(?:approximately|approx|about|~|≈)\s*(\d+\.?\d*)$/i);
+      if (approxMatch) {
+        const num = parseFloat(approxMatch[1]);
+        if (!isNaN(num)) {
+          console.log(`🔄 TYPE COERCED APPROX: ${key} "${value}" → ${num}`);
+          return num;
+        }
+      }
+
       const num = parseFloat(cleaned);
       if (!isNaN(num)) {
         console.log(`🔄 TYPE COERCED: ${key} "${value}" → ${num} (${expectedType})`);
@@ -5086,9 +5109,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!getFieldValue('148_floors_in_unit')) smartDefaults['148_floors_in_unit'] = 'N/A (Single Family)';
     }
 
-    // Water fields - N/A if not waterfront
+    // Water fields - defaults if not waterfront
     if (!isWaterfront) {
-      if (!getFieldValue('156_waterfront_feet')) smartDefaults['156_waterfront_feet'] = 'N/A';
+      if (!getFieldValue('156_waterfront_feet')) smartDefaults['156_waterfront_feet'] = 0; // Numeric field
       if (!getFieldValue('159_water_body_name')) smartDefaults['159_water_body_name'] = 'N/A';
     }
 
@@ -5096,6 +5119,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!isWaterfront) {
       if (!getFieldValue('157_water_access_yn')) smartDefaults['157_water_access_yn'] = 'No';
       if (!getFieldValue('158_water_view_yn')) smartDefaults['158_water_view_yn'] = 'No';
+    }
+
+    // HOA Fee - If HOA=No, fee should be $0
+    const hoaYn = getFieldValue('30_hoa_yn');
+    if (hoaYn === false || hoaYn === 'No' || hoaYn === 'N') {
+      if (!getFieldValue('31_association_fee') && !getFieldValue('31A_hoa_fee_monthly') && !getFieldValue('31B_hoa_fee_annual')) {
+        smartDefaults['31_association_fee'] = 0;
+        smartDefaults['31A_hoa_fee_monthly'] = 0;
+        smartDefaults['31B_hoa_fee_annual'] = 0;
+        console.log('✅ Inferred HOA fees = $0 (HOA=No)');
+      }
     }
 
     if (Object.keys(smartDefaults).length > 0) {

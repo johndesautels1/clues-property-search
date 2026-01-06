@@ -286,7 +286,30 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
       addField('27_stories', 3, 'Medium');
     }
   } else if (property.Levels) {
-    addField('27_stories', property.Levels, 'Medium');
+    // Convert Levels array (e.g., ["One"], ["Two"]) to numeric value
+    const levelsText = Array.isArray(property.Levels) ? property.Levels.join(' ').toLowerCase() : String(property.Levels).toLowerCase();
+    const levelMap: Record<string, number> = {
+      'one': 1, 'single': 1, 'ground': 1,
+      'two': 2, 'double': 2,
+      'three': 3, 'tri': 3,
+      'four': 4,
+      'five': 5
+    };
+    let stories: number | null = null;
+    for (const [text, num] of Object.entries(levelMap)) {
+      if (levelsText.includes(text)) {
+        stories = num;
+        break;
+      }
+    }
+    // Also try direct number parsing
+    if (!stories) {
+      const numMatch = levelsText.match(/\d+/);
+      if (numMatch) stories = parseInt(numMatch[0], 10);
+    }
+    if (stories) {
+      addField('27_stories', stories, 'Medium');
+    }
   }
 
   addField('28_garage_spaces', property.GarageSpaces);
@@ -894,7 +917,8 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // GROUP 20: Legal & Compliance (Fields 149-154)
   // ================================================================
   addField('149_subdivision_name', property.SubdivisionName);
-  addField('150_legal_description', property.LegalDescription);
+  // Use LegalDescription, fallback to TaxLegalDescription from Bridge MLS
+  addField('150_legal_description', property.LegalDescription || property.TaxLegalDescription);
 
   // Field 151: Homestead Exemption
   if (property.HomesteadYN !== undefined) {

@@ -377,6 +377,29 @@ function coerceValue(key: string, value: any): any {
     if (typeof value === 'number' && !isNaN(value)) return value;
     if (typeof value === 'string') {
       const cleaned = value.replace(/[$,€£%\s]/g, '').trim();
+
+      // Handle ranges like "1.7-2.0" or "100-150" - take the midpoint
+      const rangeMatch = cleaned.match(/^(\d+\.?\d*)\s*[-–—to]+\s*(\d+\.?\d*)$/i);
+      if (rangeMatch) {
+        const low = parseFloat(rangeMatch[1]);
+        const high = parseFloat(rangeMatch[2]);
+        if (!isNaN(low) && !isNaN(high)) {
+          const midpoint = (low + high) / 2;
+          console.log(`[RETRY-LLM] 🔄 TYPE COERCED RANGE: ${key} "${value}" → ${midpoint}`);
+          return midpoint;
+        }
+      }
+
+      // Handle "approximately X" or "~X" or "about X"
+      const approxMatch = cleaned.match(/^(?:approximately|approx|about|~|≈)\s*(\d+\.?\d*)$/i);
+      if (approxMatch) {
+        const num = parseFloat(approxMatch[1]);
+        if (!isNaN(num)) {
+          console.log(`[RETRY-LLM] 🔄 TYPE COERCED APPROX: ${key} "${value}" → ${num}`);
+          return num;
+        }
+      }
+
       const num = parseFloat(cleaned);
       if (!isNaN(num)) {
         console.log(`[RETRY-LLM] 🔄 TYPE COERCED: ${key} "${value}" → ${num}`);
