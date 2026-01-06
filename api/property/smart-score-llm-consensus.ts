@@ -167,8 +167,8 @@ async function callPerplexity(prompt: string): Promise<LLMResponse> {
           content: prompt,
         },
       ],
-      temperature: 0.1,
-      max_tokens: 16000,
+      temperature: 0.2,
+      max_tokens: 2500,
     }),
   });
 

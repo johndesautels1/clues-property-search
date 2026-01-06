@@ -384,7 +384,8 @@ Format as JSON:
           }
         ],
         return_citations: true,
-        temperature: 0.2
+        temperature: 0.2,
+        max_tokens: 2500
       })
     });
 

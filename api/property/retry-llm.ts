@@ -485,7 +485,8 @@ async function callPerplexity(address: string): Promise<{ fields: Record<string,
           { role: 'system', content: PERPLEXITY_FIELD_COMPLETER_SYSTEM },
           { role: 'user', content: PERPLEXITY_FIELD_COMPLETER_USER(address, city, zip) }
         ],
-        temperature: 0.1,
+        temperature: 0.2,
+        max_tokens: 2500,
       }),
     });
 

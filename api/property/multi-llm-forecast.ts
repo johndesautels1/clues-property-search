@@ -659,8 +659,8 @@ async function callPerplexityForecast(
         { role: 'system', content: PERPLEXITY_OLIVIA_CMA_SYSTEM_PROMPT },
         { role: 'user', content: userPrompt }
       ],
-      temperature: 0.5,
-      max_tokens: 2000,
+      temperature: 0.2,
+      max_tokens: 2500,
     }),
   });
 
