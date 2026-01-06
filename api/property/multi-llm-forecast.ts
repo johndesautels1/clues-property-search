@@ -887,6 +887,51 @@ Execute these searches to gather market context:
 /**
  * Grok 4 Expert - X (Twitter) data + real-time social sentiment
  */
+// Tavily search helper for Grok tool calls
+async function callTavilySearchForecast(query: string, numResults: number = 5): Promise<string> {
+  const apiKey = process.env.TAVILY_API_KEY;
+  if (!apiKey) {
+    console.log('❌ [Tavily] TAVILY_API_KEY not set');
+    return 'Search unavailable - API key not configured';
+  }
+
+  try {
+    console.log(`🔍 [Tavily/Forecast] Searching: "${query}"`);
+    const response = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: apiKey,
+        query: query,
+        search_depth: 'basic',
+        max_results: Math.min(numResults, 10),
+        include_answer: true,
+        include_raw_content: false
+      })
+    });
+
+    if (!response.ok) {
+      console.error(`❌ [Tavily] HTTP ${response.status}`);
+      return `Search failed with status ${response.status}`;
+    }
+
+    const data = await response.json();
+    console.log(`✅ [Tavily/Forecast] Got ${data.results?.length || 0} results`);
+
+    let formatted = data.answer ? `Summary: ${data.answer}\n\n` : '';
+    if (data.results && data.results.length > 0) {
+      formatted += 'Sources:\n';
+      data.results.forEach((r: any, i: number) => {
+        formatted += `${i + 1}. ${r.title}: ${r.content?.substring(0, 300) || 'No content'}\n`;
+      });
+    }
+    return formatted || 'No results found';
+  } catch (error) {
+    console.error('❌ [Tavily] Error:', error);
+    return `Search error: ${String(error)}`;
+  }
+}
+
 async function callGrokForecast(
   address: string,
   price: number,
@@ -900,6 +945,12 @@ async function callGrokForecast(
 
   const prompt = buildForecastPrompt(address, price, neighborhood, propertyType);
 
+  const messages: any[] = [
+    { role: 'system', content: GROK_FORECAST_SYSTEM_PROMPT },
+    { role: 'user', content: prompt }
+  ];
+
+  // First call - Grok may request tool calls
   const response = await fetch('https://api.x.ai/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -909,22 +960,19 @@ async function callGrokForecast(
     body: JSON.stringify({
       model: 'grok-4-1-fast-reasoning',
       max_tokens: 32000,
-      temperature: 0.2,  // MUST be 0.2 for Grok
-      messages: [
-        { role: 'system', content: GROK_FORECAST_SYSTEM_PROMPT },
-        { role: 'user', content: prompt }
-      ],
+      temperature: 0.2,
+      messages: messages,
       tools: [
         {
           type: 'function',
           function: {
             name: 'web_search',
-            description: 'Search the web for real-time information',
+            description: 'Search the web for real-time market data, comparable sales, and neighborhood trends',
             parameters: {
               type: 'object',
               properties: {
-                query: { type: 'string' },
-                num_results: { type: 'integer', default: 10 }
+                query: { type: 'string', description: 'Search query for market data' },
+                num_results: { type: 'integer', default: 5 }
               },
               required: ['query']
             }
@@ -939,7 +987,55 @@ async function callGrokForecast(
     throw new Error(`Grok API error: ${response.statusText}`);
   }
 
-  const json = await response.json();
+  let json = await response.json();
+
+  // Check if Grok wants to use tools
+  const assistantMessage = json.choices?.[0]?.message;
+  if (assistantMessage?.tool_calls && assistantMessage.tool_calls.length > 0) {
+    console.log(`🔧 [Grok/Forecast] Requesting ${assistantMessage.tool_calls.length} tool calls`);
+
+    // Add assistant message with tool calls to conversation
+    messages.push(assistantMessage);
+
+    // Execute each tool call via Tavily (limit to 3 to avoid timeout)
+    const toolCalls = assistantMessage.tool_calls.slice(0, 3);
+    for (const toolCall of toolCalls) {
+      if (toolCall.function?.name === 'web_search') {
+        const args = JSON.parse(toolCall.function.arguments || '{}');
+        const searchResult = await callTavilySearchForecast(args.query, args.num_results || 5);
+
+        messages.push({
+          role: 'tool',
+          tool_call_id: toolCall.id,
+          content: searchResult
+        });
+      }
+    }
+
+    // Second call - Grok processes tool results
+    console.log('🔄 [Grok/Forecast] Sending tool results back...');
+    const response2 = await fetch('https://api.x.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'grok-4-1-fast-reasoning',
+        max_tokens: 32000,
+        temperature: 0.2,
+        messages: messages,
+      }),
+    });
+
+    if (!response2.ok) {
+      throw new Error(`Grok API error on second call: ${response2.statusText}`);
+    }
+
+    json = await response2.json();
+    console.log('[Grok/Forecast] Final response received');
+  }
+
   const text = json.choices[0]?.message?.content;
 
   if (!text) {

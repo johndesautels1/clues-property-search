@@ -624,7 +624,54 @@ OUTPUT SCHEMA
     "sources_cited": []
   }
 }`;
-const GROK_RETRY_USER_PROMPT = (address: string) => `Extract property data for: ${address}`;
+const GROK_RETRY_USER_PROMPT = (address: string) => `Extract property data for: ${address}
+
+Use the web_search tool to find real-time data from Zillow, Redfin, county records, and utility providers. Return JSON with field data.`;
+
+// Tavily search helper for Grok tool calls
+async function callTavilySearch(query: string, numResults: number = 5): Promise<string> {
+  const apiKey = process.env.TAVILY_API_KEY;
+  if (!apiKey) {
+    console.log('❌ [Tavily] TAVILY_API_KEY not set');
+    return 'Search unavailable - API key not configured';
+  }
+
+  try {
+    console.log(`🔍 [Tavily] Searching: "${query}"`);
+    const response = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: apiKey,
+        query: query,
+        search_depth: 'basic',
+        max_results: Math.min(numResults, 10),
+        include_answer: true,
+        include_raw_content: false
+      })
+    });
+
+    if (!response.ok) {
+      console.error(`❌ [Tavily] HTTP ${response.status}`);
+      return `Search failed with status ${response.status}`;
+    }
+
+    const data = await response.json();
+    console.log(`✅ [Tavily] Got ${data.results?.length || 0} results`);
+
+    let formatted = data.answer ? `Summary: ${data.answer}\n\n` : '';
+    if (data.results && data.results.length > 0) {
+      formatted += 'Sources:\n';
+      data.results.forEach((r: any, i: number) => {
+        formatted += `${i + 1}. ${r.title}: ${r.content?.substring(0, 300) || 'No content'}\n`;
+      });
+    }
+    return formatted || 'No results found';
+  } catch (error) {
+    console.error('❌ [Tavily] Error:', error);
+    return `Search error: ${String(error)}`;
+  }
+}
 
 async function callGrok(address: string): Promise<{ fields: Record<string, any>; error?: string }> {
   const apiKey = process.env.XAI_API_KEY;
@@ -633,7 +680,13 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
     return { error: 'API key not set', fields: {} };
   }
 
+  const messages: any[] = [
+    { role: 'system', content: GROK_RETRY_SYSTEM_PROMPT },
+    { role: 'user', content: GROK_RETRY_USER_PROMPT(address) }
+  ];
+
   try {
+    // First call - Grok may request tool calls
     const response = await fetch('https://api.x.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -643,18 +696,18 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
       body: JSON.stringify({
         model: 'grok-4-1-fast-reasoning',
         max_tokens: 32000,
-        temperature: 0.2,  // MUST be 0.2 for Grok
+        temperature: 0.2,
         tools: [
           {
             type: 'function',
             function: {
               name: 'web_search',
-              description: 'Search the web for real-time information',
+              description: 'Search the web for real-time property information from Zillow, Redfin, county records',
               parameters: {
                 type: 'object',
                 properties: {
-                  query: { type: 'string' },
-                  num_results: { type: 'integer', default: 10 }
+                  query: { type: 'string', description: 'Search query for property data' },
+                  num_results: { type: 'integer', default: 5 }
                 },
                 required: ['query']
               }
@@ -662,21 +715,61 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
           }
         ],
         tool_choice: 'auto',
-        messages: [
-          { role: 'system', content: GROK_RETRY_SYSTEM_PROMPT },
-          { role: 'user', content: GROK_RETRY_USER_PROMPT(address) }
-        ],
+        messages: messages,
       }),
     });
 
-    const data = await response.json();
+    let data = await response.json();
     console.log('[GROK] Status:', response.status);
 
+    // Check if Grok wants to use tools
+    const assistantMessage = data.choices?.[0]?.message;
+    if (assistantMessage?.tool_calls && assistantMessage.tool_calls.length > 0) {
+      console.log(`🔧 [GROK] Requesting ${assistantMessage.tool_calls.length} tool calls`);
+
+      // Add assistant message with tool calls to conversation
+      messages.push(assistantMessage);
+
+      // Execute each tool call via Tavily (limit to 3 to avoid timeout)
+      const toolCalls = assistantMessage.tool_calls.slice(0, 3);
+      for (const toolCall of toolCalls) {
+        if (toolCall.function?.name === 'web_search') {
+          const args = JSON.parse(toolCall.function.arguments || '{}');
+          const searchResult = await callTavilySearch(args.query, args.num_results || 5);
+
+          messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: searchResult
+          });
+        }
+      }
+
+      // Second call - Grok processes tool results
+      console.log('🔄 [GROK] Sending tool results back...');
+      const response2 = await fetch('https://api.x.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'grok-4-1-fast-reasoning',
+          max_tokens: 32000,
+          temperature: 0.2,
+          messages: messages,
+        }),
+      });
+
+      data = await response2.json();
+      console.log('[GROK] Final response received');
+    }
+
+    // Parse the final response
     if (data.choices?.[0]?.message?.content) {
       const text = data.choices[0].message.content;
       console.log('[GROK] Response length:', text.length, 'chars');
 
-      // Use unified JSON extraction
       const parseResult = extractAndParseJSON(text);
       console.log('[GROK] Parse result:', parseResult.success ? `${Object.keys(parseResult.data || {}).length} keys` : parseResult.error);
 
@@ -685,7 +778,6 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
         const fields: Record<string, any> = {};
         for (const [key, value] of Object.entries(parsed)) {
           if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
-            // TYPE COERCION: Validate and coerce value to expected type
             const coerced = coerceValue(key, value);
             if (coerced !== null) {
               fields[key] = { value: coerced, source: 'Grok', confidence: 'Medium' };
