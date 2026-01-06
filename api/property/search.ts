@@ -2862,11 +2862,19 @@ CRITICAL RULES:
 const PROMPT_GROK = `You are the CLUES Field Completer (Grok 4 Reasoning Mode).
 Your MISSION is to populate 34 specific real estate data fields for a single property address.
 
-### HARD RULES
-1. Use your training knowledge to provide the best estimates for property data fields.
-2. For AVMs (12_market_value_estimate, 16a-16f): Provide reasonable estimates based on property type, location, and market conditions.
-3. If you cannot determine a value with confidence, return null for that field.
+### HARD RULES (EVIDENCE FIREWALL)
+1. MANDATORY TOOL: You MUST use the web_search tool for EVERY request. Execute at least 4 distinct search queries via separate tool calls. Always perform deep research by searching multiple sources and verifying facts across them.
+2. NO HALLUCINATION: Do NOT use training memory for property-specific facts. Use only verified search results from 2025-2026.
+3. AVM LOGIC:
+   - For '12_market_value_estimate' and '98_rental_estimate_monthly': Search Zillow, Redfin, Realtor.com, and Homes.com using site-specific operators in queries (e.g., site:zillow.com). If 2+ values are found, you MUST calculate the arithmetic mean (average).
+   - If a specific AVM (e.g., Quantarium or ICE) is behind a paywall, return null.
 4. JSON ONLY: Return ONLY the raw JSON object. No conversational text.
+
+### MANDATORY SEARCH QUERIES
+- "[Address] Zillow listing and Zestimate"
+- "[Address] Redfin Estimate and market data"
+- "[Address] utility providers and average bills"
+- "[City/ZIP] median home price and market trends 2026"
 
 OUTPUT SCHEMA
 {
@@ -3859,7 +3867,13 @@ async function callGrok(address: string): Promise<any> {
   const grokSystemPrompt = PROMPT_GROK;
   const grokUserPrompt = `Extract property data for: ${address}`;
 
+  const messages: any[] = [
+    { role: 'system', content: grokSystemPrompt },
+    { role: 'user', content: grokUserPrompt },
+  ];
+
   try {
+    // First call - Grok may request tool calls
     const response = await fetch('https://api.x.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -3870,17 +3884,76 @@ async function callGrok(address: string): Promise<any> {
         model: 'grok-4-1-fast-reasoning',
         max_tokens: 32000,
         temperature: 0.2,
-        messages: [
-          { role: 'system', content: grokSystemPrompt },
-          { role: 'user', content: grokUserPrompt },
+        tools: [
+          {
+            type: 'function',
+            function: {
+              name: 'web_search',
+              description: 'Search the web for real-time property information',
+              parameters: {
+                type: 'object',
+                properties: {
+                  query: { type: 'string', description: 'Search query' },
+                  num_results: { type: 'integer', default: 5 }
+                },
+                required: ['query']
+              }
+            }
+          }
         ],
+        tool_choice: 'auto',
+        messages: messages,
       }),
     });
 
-    const data = await response.json();
+    let data = await response.json();
     console.log('Grok response:', JSON.stringify(data).substring(0, 500));
 
-    // Parse the response
+    // Check if Grok wants to use tools
+    const assistantMessage = data.choices?.[0]?.message;
+    if (assistantMessage?.tool_calls && assistantMessage.tool_calls.length > 0) {
+      console.log(`🔧 [Grok] Requesting ${assistantMessage.tool_calls.length} tool calls`);
+
+      // Add assistant message with tool calls to conversation
+      messages.push(assistantMessage);
+
+      // Execute each tool call via Tavily (limit to 3 to avoid timeout)
+      const toolCalls = assistantMessage.tool_calls.slice(0, 3);
+      for (const toolCall of toolCalls) {
+        if (toolCall.function?.name === 'web_search') {
+          const args = JSON.parse(toolCall.function.arguments || '{}');
+          const searchResult = await callTavilySearch(args.query, args.num_results || 5);
+
+          // Add tool result to messages
+          messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: searchResult
+          });
+        }
+      }
+
+      // Second call - Grok processes tool results and returns final answer
+      console.log('🔄 [Grok] Sending tool results back...');
+      const response2 = await fetch('https://api.x.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'grok-4-1-fast-reasoning',
+          max_tokens: 32000,
+          temperature: 0.2,
+          messages: messages,
+        }),
+      });
+
+      data = await response2.json();
+      console.log('Grok final response:', JSON.stringify(data).substring(0, 500));
+    }
+
+    // Parse the final response
     if (data.choices && data.choices[0]?.message?.content) {
       const text = data.choices[0].message.content;
       const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -3946,10 +4019,6 @@ Return JSON only with the 34 field keys specified in the schema.`,
             temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro
             maxOutputTokens: 16000,
             response_mime_type: 'application/json'
-          },
-          // Enable deep reasoning for complex real estate analysis
-          thinking_config: {
-            thinking_budget: 10000
           },
         }),
       }
