@@ -3651,6 +3651,55 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
     if (data.output) console.log(`[GPT] output type: ${typeof data.output}, isArray: ${Array.isArray(data.output)}, length: ${Array.isArray(data.output) ? data.output.length : 'N/A'}`);
     if (data.error) console.log(`[GPT] API error in response: ${JSON.stringify(data.error).substring(0, 300)}`);
 
+    // Check if GPT returned tool_calls that need manual execution (chat/completions format)
+    const assistantMessage = data.choices?.[0]?.message;
+    if (assistantMessage?.tool_calls && assistantMessage.tool_calls.length > 0) {
+      console.log(`🔧 [GPT] Requesting ${assistantMessage.tool_calls.length} tool calls - executing via Tavily`);
+
+      // Build messages array for follow-up
+      const messages: any[] = [
+        { role: 'system', content: isOrchestratorMode ? PROMPT_GPT_ORCHESTRATOR : PROMPT_GPT },
+        { role: 'user', content: userPrompt },
+        assistantMessage, // Include the assistant's tool_calls request
+      ];
+
+      // Execute each tool call via Tavily (limit to 3 to avoid timeout)
+      const toolCalls = assistantMessage.tool_calls.slice(0, 3);
+      for (const toolCall of toolCalls) {
+        if (toolCall.function?.name === 'web_search') {
+          const args = JSON.parse(toolCall.function.arguments || '{}');
+          console.log(`🔍 [GPT] Searching: ${args.query}`);
+          const searchResult = await callTavilySearch(args.query, args.num_results || 5);
+
+          // Add tool result to messages
+          messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: searchResult
+          });
+        }
+      }
+
+      // Second call - GPT processes tool results and returns final answer
+      console.log('🔄 [GPT] Sending tool results back...');
+      const response2 = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o', // Use chat/completions compatible model for tool results
+          max_tokens: 32000,
+          temperature: 0.2,
+          messages: messages,
+        }),
+      });
+
+      data = await response2.json();
+      console.log('[GPT] Final response after tool execution received');
+    }
+
     // Handle /v1/responses format - OpenAI handles web_search internally
     // The output array contains: web_search_call items (search metadata) + message item (final text)
     let text: string | undefined;
@@ -4106,7 +4155,11 @@ async function callGrok(address: string): Promise<any> {
       if (jsonMatch) {
         try {
           const parsed = JSON.parse(jsonMatch[0]);
-          const filteredFields = filterNullValues(parsed, 'Grok');
+          // Grok may return { data_fields: {...} } or { fields: {...} } or flat fields
+          const fieldsToFilter = parsed.data_fields || parsed.fields || parsed;
+          console.log(`[Grok] Parsed structure: ${parsed.data_fields ? 'data_fields' : parsed.fields ? 'fields' : 'flat'}, keys: ${Object.keys(fieldsToFilter).length}`);
+          const filteredFields = filterNullValues(fieldsToFilter, 'Grok');
+          console.log(`[Grok] After filtering: ${Object.keys(filteredFields).length} fields accepted`);
           return { fields: filteredFields, llm: 'Grok' };
         } catch (parseError) {
           console.error('❌ Grok JSON.parse error:', parseError);
