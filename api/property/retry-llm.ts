@@ -25,7 +25,7 @@ import { GEMINI_FIELD_COMPLETER_SYSTEM } from '../../src/config/gemini-prompts.j
 
 // Vercel serverless config
 export const config = {
-  maxDuration: 300, // 5 minutes - Perplexity needs 180s for deep web search
+  maxDuration: 300, // 5 minutes - reduced timeouts leave buffer for processing
 };
 
 // Timeout wrapper for LLM calls - prevents hanging
@@ -36,8 +36,8 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
   ]);
 }
 
-const LLM_TIMEOUT = 60000; // 60s per LLM call
-const PERPLEXITY_TIMEOUT = 180000; // 180s (3 minutes) for Perplexity deep web search
+const LLM_TIMEOUT = 45000; // 45s per LLM call (reduced from 60s)
+const PERPLEXITY_TIMEOUT = 90000; // 90s for Perplexity (reduced from 180s)
 
 // ============================================
 // COMPLETE TYPE MAP - ALL 181 FIELDS from fields-schema.ts
