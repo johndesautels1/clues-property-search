@@ -55,15 +55,15 @@ type InputMode = 'address' | 'url' | 'manual' | 'csv' | 'text' | 'pdf';
 // Generate a simple unique ID
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
 
-// LLM Engine options - CORRECT FIRING ORDER: Perplexity → GPT → Opus → Gemini → Grok → Sonnet
+// LLM Engine options - MATCHES api/property/llm-constants.ts LLM_CASCADE_ORDER
 const LLM_ENGINES = [
   { id: 'Auto', label: 'Auto Cascade', desc: 'All 6 engines', icon: '🔄' },
-  { id: 'perplexity', label: LLM_DISPLAY_NAMES['perplexity'], desc: '1. Web Search', icon: '🔍' },
-  { id: 'gpt', label: LLM_DISPLAY_NAMES['gpt'], desc: '2. Web Evidence', icon: '🤖' },
-  { id: 'claude-opus', label: LLM_DISPLAY_NAMES['claude-opus'], desc: '3. Deep Reasoning', icon: '👑' },
-  { id: 'gemini', label: LLM_DISPLAY_NAMES['gemini'], desc: '4. Google Grounding', icon: '♊' },
-  { id: 'grok', label: LLM_DISPLAY_NAMES['grok'], desc: '5. X/Twitter Data', icon: '⚡' },
-  { id: 'claude-sonnet', label: LLM_DISPLAY_NAMES['claude-sonnet'], desc: '6. Gap Filler', icon: '🧊' },
+  { id: 'perplexity', label: LLM_DISPLAY_NAMES['perplexity'], desc: '1. Deep Web Search', icon: '🔍' },
+  { id: 'gemini', label: LLM_DISPLAY_NAMES['gemini'], desc: '2. Google Grounding', icon: '♊' },
+  { id: 'gpt', label: LLM_DISPLAY_NAMES['gpt'], desc: '3. Web Evidence', icon: '🤖' },
+  { id: 'grok', label: LLM_DISPLAY_NAMES['grok'], desc: '4. X/Twitter Data', icon: '⚡' },
+  { id: 'claude-sonnet', label: LLM_DISPLAY_NAMES['claude-sonnet'], desc: '5. Web Search Beta', icon: '🧊' },
+  { id: 'claude-opus', label: LLM_DISPLAY_NAMES['claude-opus'], desc: '6. Deep Reasoning', icon: '👑' },
 ];
 
 export default function AddProperty() {
@@ -276,9 +276,9 @@ export default function AddProperty() {
       // Determine which engines to use based on selection
       const getEngines = () => {
         if (selectedEngine === 'Auto') {
-          // ALL 6 LLMs in CASCADE ORDER (MUST MATCH api/property/llm-constants.ts line 14)
-          // Perplexity → GPT → Opus → Gemini → Grok → Sonnet (Sonnet LAST - fills missing fields)
-          return ['perplexity', 'gpt', 'claude-opus', 'gemini', 'grok', 'claude-sonnet'];
+          // ALL 6 LLMs in CASCADE ORDER (MUST MATCH api/property/llm-constants.ts LLM_CASCADE_ORDER)
+          // Perplexity → Gemini → GPT → Grok → Sonnet → Opus (Opus LAST - no web search)
+          return ['perplexity', 'gemini', 'gpt', 'grok', 'claude-sonnet', 'claude-opus'];
         }
         return [selectedEngine];
       };
@@ -1696,7 +1696,7 @@ export default function AddProperty() {
                         <span className="text-white font-semibold">Enhance with AI (Optional)</span>
                       </div>
                       <p className="text-xs text-gray-400 mt-1">
-                        Cascade: Perplexity → GPT → Opus → Gemini → Grok → Sonnet (stops at 100%)
+                        Cascade: Perplexity → Gemini → GPT → Grok → Sonnet → Opus (stops at 100%)
                       </p>
                     </div>
                   </label>
@@ -1921,7 +1921,7 @@ export default function AddProperty() {
                 AI Engine <span className="text-quantum-cyan text-xs">(Reliability Order)</span>
               </label>
               <p className="text-xs text-gray-500 mb-3">
-                Cascade: Perplexity → GPT → Opus → Gemini → Grok → Sonnet
+                Cascade: Perplexity → Gemini → GPT → Grok → Sonnet → Opus
               </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {LLM_ENGINES.map((engine) => (
@@ -1986,7 +1986,7 @@ export default function AddProperty() {
                 AI Engine <span className="text-quantum-cyan text-xs">(Reliability Order)</span>
               </label>
               <p className="text-xs text-gray-500 mb-3">
-                Cascade: Perplexity → GPT → Opus → Gemini → Grok → Sonnet
+                Cascade: Perplexity → Gemini → GPT → Grok → Sonnet → Opus
               </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {LLM_ENGINES.map((engine) => (
@@ -2049,7 +2049,7 @@ Beautiful 3BR/2BA beach house at 290 41st Ave, St Pete Beach, FL 33706. Built in
                 AI Engine <span className="text-quantum-cyan text-xs">(Reliability Order)</span>
               </label>
               <p className="text-xs text-gray-500 mb-3">
-                Cascade: Perplexity → GPT → Opus → Gemini → Grok → Sonnet
+                Cascade: Perplexity → Gemini → GPT → Grok → Sonnet → Opus
               </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {LLM_ENGINES.map((engine) => (
