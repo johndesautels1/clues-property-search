@@ -176,20 +176,22 @@ export async function buildCmaSchema(inputs: BuildCmaSchemaInputs): Promise<CmaS
   console.log(`[Orchestrator] Address: ${address}`);
 
   // ================================================================
-  // STAGE 1: Run all micro-prompts in parallel (Perplexity)
+  // STAGE 1: Run micro-prompts SEQUENTIALLY (Perplexity rate limit fix)
   // NOTE: Schools, Utilities, ISP removed (handled by Google/search.ts)
   // ================================================================
-  console.log('[Orchestrator] STAGE 1: Running 4 micro-prompts in parallel...');
+  console.log('[Orchestrator] STAGE 1: Running 4 micro-prompts SEQUENTIALLY (rate limit fix)...');
 
-  const [walkScore, crime, climate, poiDistances] = await Promise.all([
-    getWalkScoreChunk(address),
-    // getSchoolsChunk - REMOVED (Google Places API handles schools)
-    getCrimeChunk(address),
-    getClimateChunk(address),
-    // getUtilitiesChunk - REMOVED (Redundant with search.ts)
-    // getIspChunk - REMOVED (Redundant with search.ts)
-    getPoiDistancesChunk(address),
-  ]);
+  // RATE LIMIT FIX: Run Perplexity calls sequentially with 500ms delay
+  const walkScore = await getWalkScoreChunk(address);
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  const crime = await getCrimeChunk(address);
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  const climate = await getClimateChunk(address);
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  const poiDistances = await getPoiDistancesChunk(address);
 
   const webChunks: WebChunks = {
     walkScore,

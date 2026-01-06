@@ -1031,15 +1031,24 @@ export async function getMultiLLMMarketForecast(
   console.log(`📍 ${address}, ${neighborhood}`);
   console.log(`💰 Current Price: $${price.toLocaleString()}`);
 
-  // Call all 6 LLMs in parallel (New Order: Perplexity→Gemini→GPT→Grok→Sonnet→Opus)
-  const forecasts = await Promise.allSettled([
+  // RATE LIMIT FIX: Call Perplexity FIRST (sequential), then other LLMs in parallel
+  console.log('[Forecast] Calling Perplexity first (sequential to avoid 429)...');
+  const perplexityResult = await Promise.allSettled([
     callPerplexityForecast(address, price, neighborhood, propertyType),  // #1 - Deep web search
+  ]);
+
+  // Other 5 LLMs can run in parallel (different rate limits)
+  console.log('[Forecast] Calling 5 other LLMs in parallel...');
+  const otherResults = await Promise.allSettled([
     callGeminiForecast(address, price, neighborhood, propertyType),      // #2 - Google Search grounding
     callGPT5Forecast(address, price, neighborhood, propertyType),        // #3 - Web evidence mode
     callGrokForecast(address, price, neighborhood, propertyType),        // #4 - X/Twitter real-time
     callClaudeForecast(address, price, neighborhood, propertyType),      // #5 - Web search beta
     callClaudeOpusForecast(address, price, neighborhood, propertyType),  // #6 - Deep reasoning (LAST)
   ]);
+
+  // Combine results in original order
+  const forecasts = [...perplexityResult, ...otherResults];
 
   // Extract successful forecasts
   const successfulForecasts: LLMForecast[] = [];
