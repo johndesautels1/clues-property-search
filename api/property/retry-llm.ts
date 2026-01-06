@@ -65,7 +65,7 @@ const missingFieldsRules = {
     "104_electric_provider": { type: "string", definition: "Primary electric utility company serving this address (e.g., 'Duke Energy', 'Florida Power & Light')." },
     "105_avg_electric_bill": { type: "number", definition: "Average monthly electric bill in USD for this property size in this area." },
     "106_water_provider": { type: "string", definition: "Primary water utility company or municipality providing water service." },
-    "107_avg_water_bill": { type: "number", definition: "Average monthly water/sewer bill in USD for this property size." },
+    "107_avg_water_bill": { type: "number", definition: "Average MONTHLY water/sewer bill in USD. IMPORTANT: Many FL utilities bill bi-monthly - if you find bi-monthly data, DIVIDE BY 2 to get monthly. Typical FL monthly water bill is $40-80." },
     "110_trash_provider": { type: "string", definition: "Trash/solid waste collection provider (often same as city/county)." },
     "111_internet_providers_top3": { type: "array", definition: "Top 3 internet providers available at this address with max speeds. Example: ['Spectrum (400 Mbps)', 'AT&T Fiber (1 Gbps)', 'T-Mobile 5G']." },
     "114_cable_tv_provider": { type: "string", definition: "Primary cable TV provider available at this address." },

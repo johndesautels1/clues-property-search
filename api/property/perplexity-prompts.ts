@@ -232,6 +232,7 @@ Rules for bills (electric and water):
 - Start from Tampa Bay / Florida typical bills when local data is not available, then adjust slightly based on size, bathrooms, floors, year built, and pool presence.
 - Always return a single best estimate for typical_avg_monthly_electric_bill_usd and typical_avg_monthly_water_bill_usd, not a range.
 - Never extrapolate from other states; stay within Tampa Bay / Florida benchmarks where regional context is required.
+- IMPORTANT for water bills: Many Florida utilities bill bi-monthly (every 2 months). If you find bi-monthly water bill data, DIVIDE BY 2 to get the monthly amount. Typical FL monthly water bill is $40-80.
 
 Rules for internet and fiber:
 - Use BroadbandNow, FCC National Broadband Map, or provider availability checkers.
