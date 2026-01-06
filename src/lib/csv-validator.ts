@@ -136,7 +136,7 @@ export function validateFieldValue(
     const fieldNumMatch = apiKey.match(/^(\d+)_/);
     if (fieldNumMatch) {
       const fieldNum = parseInt(fieldNumMatch[1]);
-      if (fieldNum < 1 || fieldNum > 168) {
+      if (fieldNum < 1 || fieldNum > 181) {
         return {
           valid: false,
           coercedValue: null,
@@ -146,7 +146,7 @@ export function validateFieldValue(
             fieldLabel: label || apiKey,
             value,
             errorType: 'unknown_field',
-            message: `Field number ${fieldNum} is outside valid range (1-168)`,
+            message: `Field number ${fieldNum} is outside valid range (1-181)`,
             severity: 'error',
           },
         };

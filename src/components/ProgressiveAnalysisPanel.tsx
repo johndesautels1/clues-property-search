@@ -476,7 +476,7 @@ export function ProgressiveAnalysisPanel({ properties, onComplete }: Progressive
             <div className="text-sm text-green-700 dark:text-green-300 space-y-1">
               <div>✓ {level2Results.fieldComparisons.length} fields analyzed with mathematical proofs</div>
               <div>✓ Quality Score: {level2Quality?.toFixed(0)}% ({level2Quality && level2Quality >= 75 ? 'Reliable' : 'Needs Review'})</div>
-              <div>✓ Total so far: {(level1Results?.fieldComparisons.length || 0) + level2Results.fieldComparisons.length}/168 fields</div>
+              <div>✓ Total so far: {(level1Results?.fieldComparisons.length || 0) + level2Results.fieldComparisons.length}/181 fields</div>
             </div>
           </motion.div>
         )}
@@ -506,7 +506,7 @@ export function ProgressiveAnalysisPanel({ properties, onComplete }: Progressive
                 Level 3: Remaining Fields
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Fields 113-168 • Environment, Legal, Waterfront, Leasing, Features
+                Fields 113-181 • Environment, Legal, Waterfront, Leasing, Features, Market Performance
               </p>
             </div>
           </div>
@@ -574,7 +574,7 @@ export function ProgressiveAnalysisPanel({ properties, onComplete }: Progressive
             <div className="text-sm text-green-700 dark:text-green-300 space-y-1">
               <div>✓ {level3Results.fieldComparisons.length} fields analyzed with mathematical proofs</div>
               <div>✓ Quality Score: {level3Quality?.toFixed(0)}% ({level3Quality && level3Quality >= 75 ? 'Reliable' : 'Needs Review'})</div>
-              <div>✓ ALL 168 fields complete! Ready for executive summary.</div>
+              <div>✓ ALL 181 fields complete! Ready for executive summary.</div>
             </div>
           </motion.div>
         )}
@@ -656,7 +656,7 @@ export function ProgressiveAnalysisPanel({ properties, onComplete }: Progressive
               <span>Analysis Complete!</span>
             </div>
             <div className="text-sm text-purple-700 dark:text-purple-300 space-y-2">
-              <div>✓ All 168 fields analyzed across 3 properties</div>
+              <div>✓ All 181 fields analyzed across 3 properties</div>
               <div>✓ 23 section scores calculated</div>
               <div>✓ Investment grades assigned</div>
               <div>✓ Top recommendation: {finalResults.verbalAnalysis?.topRecommendation?.propertyId || 'See full results'}</div>

@@ -57,8 +57,9 @@ interface FieldPathMapping {
 }
 
 /**
- * Complete 168-field mapping to Property interface structure
+ * Complete 181-field mapping to Property interface structure
  * UPDATED: 2025-11-30 - Corrected ALL field numbers to match fields-schema.ts
+ * UPDATED: 2026-01-05 - Added Market Performance fields (169-181)
  * group = the top-level object in Property (address, details, structural, location, financial, utilities, stellarMLS.*)
  * propName = the property name within that group
  */
@@ -1040,6 +1041,7 @@ export const DATA_QUALITY_RANGES = [
   { label: 'Section S: Listing Details', min: 145, max: 154, weight: 0.00, colorClass: 'text-slate-400', isCritical: false },
   { label: 'Section U: Views & Premium', min: 160, max: 163, weight: 0.00, colorClass: 'text-slate-400', isCritical: false },
   { label: 'Section V: Stellar AI Insights', min: 164, max: 168, weight: 0.00, colorClass: 'text-slate-400', isCritical: false },
+  { label: 'Section W: Market Performance', min: 169, max: 181, weight: 0.03, colorClass: 'text-cyan-400', isCritical: false },
 ] as const;
 
 /**

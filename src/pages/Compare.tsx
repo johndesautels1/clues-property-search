@@ -1129,7 +1129,7 @@ export default function Compare() {
   };
 
   /**
-   * Enhanced Olivia Analysis with 168 fields and mathematical proofs
+   * Enhanced Olivia Analysis with 181 fields and mathematical proofs
    */
   const handleAskOliviaEnhanced = async () => {
     // Validation
@@ -1143,9 +1143,9 @@ export default function Compare() {
     setOliviaEnhancedResult(null);
 
     try {
-      console.log('🧮 Starting Olivia Enhanced analysis (168 fields)...');
+      console.log('🧮 Starting Olivia Enhanced analysis (181 fields)...');
 
-      // Extract all 168 fields from each selected property
+      // Extract all 181 fields from each selected property
       const enhancedProperties = selectedProperties
         .map(prop => {
           // Get full property data from store
@@ -1156,7 +1156,7 @@ export default function Compare() {
             return null;
           }
 
-          // Extract all 168 fields
+          // Extract all 181 fields
           return extractPropertyData(fullProp);
         })
         .filter((prop): prop is NonNullable<typeof prop> => prop !== null);
@@ -1168,7 +1168,7 @@ export default function Compare() {
       }
 
       // Call PROGRESSIVE enhanced mathematical analysis API (4-level)
-      // This processes all 168 fields in 4 sequential calls to avoid token limits
+      // This processes all 181 fields in 4 sequential calls to avoid token limits
       const result = await analyzeWithOliviaProgressive({
         properties: enhancedProperties,
         buyerProfile: 'investor', // TODO: Get from user settings or add selector

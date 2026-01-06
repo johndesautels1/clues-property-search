@@ -216,7 +216,7 @@ export async function analyzeLevelTwo(
 }
 
 /**
- * LEVEL 3: Analyze Remaining Fields (113-168)
+ * LEVEL 3: Analyze Remaining Fields (113-181)
  *
  * Complete the analysis:
  * - Environment & risk
@@ -225,10 +225,11 @@ export async function analyzeLevelTwo(
  * - Waterfront
  * - Leasing & rentals
  * - Community features
+ * - Market Performance (169-181)
  *
  * @param properties - Exactly 3 properties to compare
  * @param onProgress - Optional callback for progress updates
- * @returns 56 field comparisons with full mathematical proofs
+ * @returns 69 field comparisons with full mathematical proofs
  */
 export async function analyzeLevelThree(
   properties: OliviaEnhancedPropertyInput[],
@@ -249,12 +250,12 @@ export async function analyzeLevelThree(
     dangerouslyAllowBrowser: true,
   });
 
-  console.log('📍 LEVEL 3/4: Starting Remaining Fields analysis (113-168)...');
-  onProgress?.('Building Level 3 prompt...', 0, 56);
+  console.log('📍 LEVEL 3/4: Starting Remaining Fields analysis (113-181)...');
+  onProgress?.('Building Level 3 prompt...', 0, 69);
 
   const prompt = buildLevelPrompt(properties, 3);
 
-  onProgress?.('Calling Claude Opus 4.5...', 5, 56);
+  onProgress?.('Calling Claude Opus 4.5...', 5, 69);
 
   const stream = await client.messages.stream({
     model: 'claude-opus-4-5-20251101',
@@ -275,12 +276,12 @@ export async function analyzeLevelThree(
       const newCount = matches ? matches.length : 0;
       if (newCount > fieldCount) {
         fieldCount = newCount;
-        onProgress?.(`Analyzing fields...`, fieldCount, 56);
+        onProgress?.(`Analyzing fields...`, fieldCount, 69);
       }
     }
   }
 
-  onProgress?.('Parsing response...', 56, 56);
+  onProgress?.('Parsing response...', 69, 69);
 
   let cleanText = responseText.trim();
   if (cleanText.startsWith('```')) {
@@ -293,7 +294,7 @@ export async function analyzeLevelThree(
 
   return {
     level: 3,
-    fieldRange: [113, 168],
+    fieldRange: [113, 181],
     fieldComparisons: result.fieldComparisons || [],
     timestamp: new Date().toISOString()
   };

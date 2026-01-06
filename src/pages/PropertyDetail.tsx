@@ -544,7 +544,7 @@ export default function PropertyDetail() {
             finalData = {
               fields: partialFields,
               partial: true,
-              completion_percentage: Math.round((Object.keys(partialFields).length / 168) * 100),
+              completion_percentage: Math.round((Object.keys(partialFields).length / 181) * 100),
             };
           } else if (!finalData) {
             throw new Error('Stream ended without complete event and no data received');
@@ -573,7 +573,7 @@ export default function PropertyDetail() {
                   console.log(`💾 Enrich: Captured ${Object.keys(currentFields).length} fields, total: ${Object.keys(partialFields).length}`);
                 }
 
-                setEnrichProgress(Math.min(Math.round((fieldsFound / 168) * 100), 99));
+                setEnrichProgress(Math.min(Math.round((fieldsFound / 181) * 100), 99));
               } else if (eventType === 'complete') {
                 finalData = data;
               } else if (eventType === 'error') {

@@ -2,7 +2,7 @@
  * CLUES Property Dashboard - Unified Property Card Component
  *
  * Combines best features from PropertyCard and PropertyComparisonPanels
- * - Pulls from FULL Property object (168 fields) from source of truth
+ * - Pulls from FULL Property object (181 fields) from source of truth
  * - Two modes: Compact (default) and Detailed (expanded)
  * - Mobile-first: Vertical scrolling only, no horizontal scroll
  * - Remembers user preference per card
@@ -72,7 +72,7 @@ export default function PropertyCardUnified({
     }
   }, [isExpanded, property.id, alwaysStartCollapsed]);
 
-  // Get full property object (168 fields) if available
+  // Get full property object (181 fields) if available
   const fullProperty = fullProperties.get(property.id);
 
   // Helper to safely extract field values from DataField<T>
@@ -113,7 +113,7 @@ export default function PropertyCardUnified({
     smartScore: property.smartScore,
 
     // FIX #6: Cap data completeness at 100% and calculate correctly
-    // Use actual filled fields / 168 total fields
+    // Use actual filled fields / 181 total fields
     dataCompleteness: Math.min(100, property.dataCompleteness || 0),
 
     thumbnail: property.thumbnail,
@@ -164,7 +164,7 @@ export default function PropertyCardUnified({
 
     // Features (fields 54, 133, 134)
     hasPool: fullProperty ? getFieldValue(fullProperty.structural?.poolYn) === true : false,
-    hasBeach: false, // Not in 168-field schema
+    hasBeach: false, // Not in 181-field schema
     hasEV: fullProperty ? (getFieldValue(fullProperty.utilities?.evChargingYn) === 'Yes' || getFieldValue(fullProperty.utilities?.evChargingYn) === 'true') : false,
     hasSmart: fullProperty ? (getFieldValue(fullProperty.utilities?.smartHomeFeatures) ? true : false) : false,
 

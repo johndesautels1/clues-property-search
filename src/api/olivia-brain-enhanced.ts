@@ -928,9 +928,9 @@ export async function analyzeWithOliviaProgressive(
   }
 
   // ============================================================================
-  // LEVEL 3: Remaining Fields (Fields 113-168)
+  // LEVEL 3: Remaining Fields (Fields 113-181)
   // ============================================================================
-  console.log('\n📍 LEVEL 3/4: Analyzing Remaining Fields (113-168)...');
+  console.log('\n📍 LEVEL 3/4: Analyzing Remaining Fields (113-181)...');
   const level3Prompt = buildLevelPrompt(request.properties, 3);
 
   const level3Stream = await client.messages.stream({

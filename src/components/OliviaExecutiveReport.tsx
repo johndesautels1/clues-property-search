@@ -186,7 +186,7 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
                   </h1>
                   <p className="text-sm text-quantum-cyan flex items-center gap-2">
                     <Sparkles className="w-4 h-4" />
-                    Olivia's Comprehensive 168-Field Intelligence Report
+                    Olivia's Comprehensive 181-Field Intelligence Report
                   </p>
                 </div>
               </div>
@@ -437,7 +437,7 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
               <Star className="w-6 h-6 text-quantum-cyan" />
               <h2 className="text-xl font-bold text-white">Key Findings</h2>
               <span className="text-sm text-gray-400">
-                ({result.keyFindings?.length || 0} critical insights from 168-field analysis)
+                ({result.keyFindings?.length || 0} critical insights from 181-field analysis)
               </span>
             </div>
 
@@ -493,7 +493,7 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
                 <FileText className="w-6 h-6 text-quantum-purple" />
                 <h2 className="text-xl font-bold text-white">Detailed Section Analysis</h2>
               </div>
-              <span className="text-sm text-gray-400">22 Categories • 168 Fields</span>
+              <span className="text-sm text-gray-400">22 Categories • 181 Fields</span>
             </div>
 
             <div className="space-y-3">
@@ -995,7 +995,7 @@ export function OliviaExecutiveReport({ result, properties, onClose }: OliviaExe
               </span>
             </div>
             <p className="text-sm text-gray-400 mb-2">
-              Analysis powered by Olivia AI • Comprehensive 168-Field Evaluation
+              Analysis powered by Olivia AI • Comprehensive 181-Field Evaluation
             </p>
             <p className="text-xs text-gray-600">
               © 2025 CLUES™ • Comprehensive Location Utility & Evaluation System
