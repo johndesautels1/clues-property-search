@@ -76,7 +76,7 @@ PROPERTY SEARCH FLOW:
 │ 6. TIER 5: LLM Web Search (34 missing fields)                   │
 │    - Perplexity sonar-pro (primary)                   │
 │    - Grok grok-4-1-fast-reasoning (fallback)                    │
-│    - Gemini gemini-3-pro (fallback)                             │
+│    - Gemini gemini-3-pro-preview (fallback)                             │
 │    - GPT gpt-5.2-pro (fallback)                                 │
 ├─────────────────────────────────────────────────────────────────┤
 │ 7. TIER 6: Claude Opus (schema normalization, NO web search)    │

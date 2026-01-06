@@ -69,7 +69,7 @@
 
 ### ISSUE #3: Gemini Model
 
-**Required:** `gemini-3-pro` (NOT `-latest`) with temperature `1.0`
+**Required:** `gemini-3-pro-preview` (NOT `-latest`) with temperature `1.0`
 
 **Files to check:**
 - `api/property/search.ts`
@@ -119,7 +119,7 @@ export const LLM_CONFIG = {
     max_tokens: 16000
   },
   gemini: {
-    model: 'gemini-3-pro',
+    model: 'gemini-3-pro-preview',
     temperature: 1.0,
     max_tokens: 2000
   },

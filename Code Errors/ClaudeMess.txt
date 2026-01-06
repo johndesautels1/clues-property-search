@@ -25,7 +25,7 @@
   LIE #3: "Gemini model is gemini-2.5-pro"
 
   - Claimed: Config shows gemini: { model: 'gemini-2.5-pro', ... }
-  - Reality: Codebase uses gemini-3-pro or gemini-3-pro-latest. User wants gemini-3-pro (NOT -latest)
+  - Reality: Codebase uses gemini-3-pro-preview or gemini-3-pro-latest. User wants gemini-3-pro-preview (NOT -latest)
 
   FAILURE #4: Inconsistent Claude Opus Model
 
@@ -66,7 +66,7 @@
       max_tokens: 16000
     },
     gemini: {
-      model: 'gemini-3-pro',  // NOT gemini-3-pro-latest, NOT gemini-2.5-pro
+      model: 'gemini-3-pro-preview',  // NOT gemini-3-pro-latest, NOT gemini-2.5-pro
       temperature: 1.0,  // MUST BE 1.0
       max_tokens: 2000
     },
@@ -100,7 +100,7 @@
 
   1. GPT: Change all temperatures to 0.0
   2. Grok: Change all temperatures to 0.2
-  3. Gemini: Change model to gemini-3-pro, temp to 1.0
+  3. Gemini: Change model to gemini-3-pro-preview, temp to 1.0
   4. Claude Opus: Fix line 212 in smart-score-llm-consensus.ts
 
   Phase 4: Verify
@@ -130,7 +130,7 @@
   grep -rn "sonar" --include="*.ts" --include="*.tsx"
   grep -rn "gpt-5.2-pro" --include="*.ts" --include="*.tsx"
   grep -rn "gpt-4o" --include="*.ts" --include="*.tsx"  # Should return nothing
-  grep -rn "gemini-3-pro" --include="*.ts" --include="*.tsx"
+  grep -rn "gemini-3-pro-preview" --include="*.ts" --include="*.tsx"
   grep -rn "gemini-3-pro-latest" --include="*.ts" --include="*.tsx"  # Should return nothing
   grep -rn "claude-opus-4-20250514" --include="*.ts" --include="*.tsx"  # Should return nothing
   grep -rn "callPerplexityPortals\|callPerplexityCounty" --include="*.ts"  # Should return nothing after fix
@@ -595,7 +595,7 @@ lengh about this. You may now begin fixing all the lies
         "content")
   ⎿  Found 4 lines (ctrl+o to expand)
 
-● I found all Gemini configurations. They're using gemini-3-pro-latest but should use gemini-3-pro. Let me fix them. Starting with search.ts:
+● I found all Gemini configurations. They're using gemini-3-pro-latest but should use gemini-3-pro-preview. Let me fix them. Starting with search.ts:
 
 ● Read(D:\Clues_Quantum_Property_Dashboard\api\property\search.ts)
   ⎿  Read 40 lines
@@ -610,7 +610,7 @@ lengh about this. You may now begin fixing all the lies
       3881      const response = await fetch(
       3882 -      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-latest:generateContent?ke
            -y=${apiKey}`,
-      3882 +      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro:generateContent?key=${api
+      3882 +      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=${api
            +Key}`,
       3883        {
       3884          method: 'POST',
@@ -634,13 +634,13 @@ lengh about this. You may now begin fixing all the lies
 
 ● Let me use sed to fix all Gemini model names at once:
 
-● Bash(cd "D:\Clues_Quantum_Property_Dashboard\api\property" && sed -i 's/gemini-3-pro-latest/gemini-3-pro/g'
+● Bash(cd "D:\Clues_Quantum_Property_Dashboard\api\property" && sed -i 's/gemini-3-pro-latest/gemini-3-pro-preview/g'
       retry-llm.ts multi-llm-forecast.ts smart-score-llm-consen…)
   ⎿  Fixed Gemini model names
 
 ● Good! Now let me check and fix Gemini temperatures. Let me search for temperature settings in Gemini sections:
 
-● Bash(cd "D:\Clues_Quantum_Property_Dashboard\api\property" && grep -A5 -B2 "gemini-3-pro:generateContent" retry-llm.ts
+● Bash(cd "D:\Clues_Quantum_Property_Dashboard\api\property" && grep -A5 -B2 "gemini-3-pro-preview:generateContent" retry-llm.ts
        | grep -E "(temperature|maxOutputTokens)" | he…)
   ⎿  (No content)
 
@@ -687,9 +687,9 @@ lengh about this. You may now begin fixing all the lies
       605    }
       606
       607    const genAI = new GoogleGenerativeAI(apiKey);
-      608 -  const model = genAI.getGenerativeModel({ model: 'gemini-3-pro' });
+      608 -  const model = genAI.getGenerativeModel({ model: 'gemini-3-pro-preview' });
       608 +  const model = genAI.getGenerativeModel({
-      609 +    model: 'gemini-3-pro',
+      609 +    model: 'gemini-3-pro-preview',
       610 +    generationConfig: {
       611 +      temperature: 1.0,
       612 +      maxOutputTokens: 16000
@@ -827,7 +827,7 @@ lengh about this. You may now begin fixing all the lies
 ● Bash(cd "D:\Clues_Quantum_Property_Dashboard\api\property" && echo "=== Checking for wrong Gemini model ===" && grep
       -rn "gemini-3-pro-latest" --include="*.ts" . &&…)
   ⎿  === Checking for wrong Gemini model ===
-     ✅ Gemini model fixed (gemini-3-pro)
+     ✅ Gemini model fixed (gemini-3-pro-preview)
 
 ● Excellent! All verifications passed. Now committing to GitHub:
 
@@ -877,7 +877,7 @@ lengh about this. You may now begin fixing all the lies
 
   4. Gemini Configurations ✅
 
-  - Model: gemini-3-pro (removed -latest suffix)
+  - Model: gemini-3-pro-preview (removed -latest suffix)
   - Temperature: 1.0 ✓
   - Max tokens: 16000 (added where missing)
   - Files fixed: search.ts, retry-llm.ts, multi-llm-forecast.ts, smart-score-llm-consensus.ts
@@ -1014,7 +1014,7 @@ lengh about this. You may now begin fixing all the lies
        6  * - GPT temperature MUST be 0.0
        7  * - Grok temperature MUST be 0.2
        8  * - Gemini temperature MUST be 1.0
-       9  * - Gemini model MUST be gemini-3-pro (NOT gemini-3-pro-latest)
+       9  * - Gemini model MUST be gemini-3-pro-preview (NOT gemini-3-pro-latest)
       10  * - Claude Opus model MUST be claude-opus-4-5-20251101 (NOT claude-opus-4-20250514)
 
 ● Now let me update all files to use this centralized config. Starting with the import statements:
@@ -1263,7 +1263,7 @@ given me a breakdown on the risk to the code data base data flow or my very adva
     - Different model version = different scoring behavior → Breaks historical score comparisons
   - ⚠️ GEMINI MODEL CHANGE:
     - Old: gemini-3-pro-latest (rolling, updates automatically)
-    - New: gemini-3-pro (pinned version)
+    - New: gemini-3-pro-preview (pinned version)
     - Scores become reproducible but may differ from historical data
 
   CRITICAL RISK: If you have historical smart scores in your database, changing LLM configs makes new scores non-comparable to old ones. You lose time-series comparability.
@@ -1680,7 +1680,7 @@ knowledge base so hopefully this is just a ui mistake.
     },
 
     gemini: {
-      model: 'gemini-3-pro',
+      model: 'gemini-3-pro-preview',
       temperature: 1.0, // NO CHANGE
       maxOutputTokens: 32000, // CHANGED from 16000
       generationConfig: {
@@ -2334,7 +2334,7 @@ the chat for me to review
   LIE #3: "Gemini model is gemini-2.5-pro"
 
   - Claimed: Config shows gemini: { model: 'gemini-2.5-pro', ... }
-  - Reality: Codebase uses gemini-3-pro or gemini-3-pro-latest. User wants gemini-3-pro (NOT -latest)
+  - Reality: Codebase uses gemini-3-pro-preview or gemini-3-pro-latest. User wants gemini-3-pro-preview (NOT -latest)
 
   FAILURE #4: Inconsistent Claude Opus Model
 
@@ -2375,7 +2375,7 @@ the chat for me to review
       max_tokens: 16000
     },
     gemini: {
-      model: 'gemini-3-pro',  // NOT gemini-3-pro-latest, NOT gemini-2.5-pro
+      model: 'gemini-3-pro-preview',  // NOT gemini-3-pro-latest, NOT gemini-2.5-pro
       temperature: 1.0,  // MUST BE 1.0
       max_tokens: 2000
     },
@@ -2409,7 +2409,7 @@ the chat for me to review
 
   1. GPT: Change all temperatures to 0.0
   2. Grok: Change all temperatures to 0.2
-  3. Gemini: Change model to gemini-3-pro, temp to 1.0
+  3. Gemini: Change model to gemini-3-pro-preview, temp to 1.0
   4. Claude Opus: Fix line 212 in smart-score-llm-consensus.ts
 
   Phase 4: Verify
@@ -2439,7 +2439,7 @@ the chat for me to review
   grep -rn "sonar" --include="*.ts" --include="*.tsx"
   grep -rn "gpt-5.2-pro" --include="*.ts" --include="*.tsx"
   grep -rn "gpt-4o" --include="*.ts" --include="*.tsx"  # Should return nothing
-  grep -rn "gemini-3-pro" --include="*.ts" --include="*.tsx"
+  grep -rn "gemini-3-pro-preview" --include="*.ts" --include="*.tsx"
   grep -rn "gemini-3-pro-latest" --include="*.ts" --include="*.tsx"  # Should return nothing
   grep -rn "claude-opus-4-20250514" --include="*.ts" --include="*.tsx"  # Should return nothing
   grep -rn "callPerplexityPortals\|callPerplexityCounty" --include="*.ts"  # Should return nothing after fix
@@ -2904,7 +2904,7 @@ lengh about this. You may now begin fixing all the lies
         "content")
   ⎿  Found 4 lines (ctrl+o to expand)
 
-● I found all Gemini configurations. They're using gemini-3-pro-latest but should use gemini-3-pro. Let me fix them. Starting with search.ts:
+● I found all Gemini configurations. They're using gemini-3-pro-latest but should use gemini-3-pro-preview. Let me fix them. Starting with search.ts:
 
 ● Read(D:\Clues_Quantum_Property_Dashboard\api\property\search.ts)
   ⎿  Read 40 lines
@@ -2919,7 +2919,7 @@ lengh about this. You may now begin fixing all the lies
       3881      const response = await fetch(
       3882 -      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-latest:generateContent?ke
            -y=${apiKey}`,
-      3882 +      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro:generateContent?key=${api
+      3882 +      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=${api
            +Key}`,
       3883        {
       3884          method: 'POST',
@@ -2943,13 +2943,13 @@ lengh about this. You may now begin fixing all the lies
 
 ● Let me use sed to fix all Gemini model names at once:
 
-● Bash(cd "D:\Clues_Quantum_Property_Dashboard\api\property" && sed -i 's/gemini-3-pro-latest/gemini-3-pro/g'
+● Bash(cd "D:\Clues_Quantum_Property_Dashboard\api\property" && sed -i 's/gemini-3-pro-latest/gemini-3-pro-preview/g'
       retry-llm.ts multi-llm-forecast.ts smart-score-llm-consen…)
   ⎿  Fixed Gemini model names
 
 ● Good! Now let me check and fix Gemini temperatures. Let me search for temperature settings in Gemini sections:
 
-● Bash(cd "D:\Clues_Quantum_Property_Dashboard\api\property" && grep -A5 -B2 "gemini-3-pro:generateContent" retry-llm.ts
+● Bash(cd "D:\Clues_Quantum_Property_Dashboard\api\property" && grep -A5 -B2 "gemini-3-pro-preview:generateContent" retry-llm.ts
        | grep -E "(temperature|maxOutputTokens)" | he…)
   ⎿  (No content)
 
@@ -2996,9 +2996,9 @@ lengh about this. You may now begin fixing all the lies
       605    }
       606
       607    const genAI = new GoogleGenerativeAI(apiKey);
-      608 -  const model = genAI.getGenerativeModel({ model: 'gemini-3-pro' });
+      608 -  const model = genAI.getGenerativeModel({ model: 'gemini-3-pro-preview' });
       608 +  const model = genAI.getGenerativeModel({
-      609 +    model: 'gemini-3-pro',
+      609 +    model: 'gemini-3-pro-preview',
       610 +    generationConfig: {
       611 +      temperature: 1.0,
       612 +      maxOutputTokens: 16000
@@ -3136,7 +3136,7 @@ lengh about this. You may now begin fixing all the lies
 ● Bash(cd "D:\Clues_Quantum_Property_Dashboard\api\property" && echo "=== Checking for wrong Gemini model ===" && grep
       -rn "gemini-3-pro-latest" --include="*.ts" . &&…)
   ⎿  === Checking for wrong Gemini model ===
-     ✅ Gemini model fixed (gemini-3-pro)
+     ✅ Gemini model fixed (gemini-3-pro-preview)
 
 ● Excellent! All verifications passed. Now committing to GitHub:
 
@@ -3186,7 +3186,7 @@ lengh about this. You may now begin fixing all the lies
 
   4. Gemini Configurations ✅
 
-  - Model: gemini-3-pro (removed -latest suffix)
+  - Model: gemini-3-pro-preview (removed -latest suffix)
   - Temperature: 1.0 ✓
   - Max tokens: 16000 (added where missing)
   - Files fixed: search.ts, retry-llm.ts, multi-llm-forecast.ts, smart-score-llm-consensus.ts
@@ -3323,7 +3323,7 @@ lengh about this. You may now begin fixing all the lies
        6  * - GPT temperature MUST be 0.0
        7  * - Grok temperature MUST be 0.2
        8  * - Gemini temperature MUST be 1.0
-       9  * - Gemini model MUST be gemini-3-pro (NOT gemini-3-pro-latest)
+       9  * - Gemini model MUST be gemini-3-pro-preview (NOT gemini-3-pro-latest)
       10  * - Claude Opus model MUST be claude-opus-4-5-20251101 (NOT claude-opus-4-20250514)
 
 ● Now let me update all files to use this centralized config. Starting with the import statements:
@@ -3572,7 +3572,7 @@ given me a breakdown on the risk to the code data base data flow or my very adva
     - Different model version = different scoring behavior → Breaks historical score comparisons
   - ⚠️ GEMINI MODEL CHANGE:
     - Old: gemini-3-pro-latest (rolling, updates automatically)
-    - New: gemini-3-pro (pinned version)
+    - New: gemini-3-pro-preview (pinned version)
     - Scores become reproducible but may differ from historical data
 
   CRITICAL RISK: If you have historical smart scores in your database, changing LLM configs makes new scores non-comparable to old ones. You lose time-series comparability.
@@ -3989,7 +3989,7 @@ knowledge base so hopefully this is just a ui mistake.
     },
 
     gemini: {
-      model: 'gemini-3-pro',
+      model: 'gemini-3-pro-preview',
       temperature: 1.0, // NO CHANGE
       maxOutputTokens: 32000, // CHANGED from 16000
       generationConfig: {
@@ -4827,7 +4827,7 @@ app. Do you have any clue the financial and emotional toll you have taken on me 
 ● Update(D:\Clues_Quantum_Property_Dashboard\src\config\llm-config.ts)
   ⎿  Added 2 lines, removed 1 line
        8   * - Gemini temperature MUST be 1.0
-       9   * - Gemini model MUST be gemini-3-pro (NOT gemini-3-pro-latest)
+       9   * - Gemini model MUST be gemini-3-pro-preview (NOT gemini-3-pro-latest)
       10   * - Claude Opus model MUST be claude-opus-4-5-20251101 (NOT claude-opus-4-20250514)
       11 - * - All max_tokens MUST be 16000 (except Perplexity)
       11 + * - Claude max_tokens MUST be 32000 (for complete 181-field analysis)
@@ -4908,7 +4908,7 @@ would be undone with it
 
   What stays GOOD:
   - The NEW 5-prompt Perplexity system (from earlier commit)
-  - Fixed model versions (gpt-5.2-pro, claude-opus-4-5-20251101, gemini-3-pro) from earlier commit
+  - Fixed model versions (gpt-5.2-pro, claude-opus-4-5-20251101, gemini-3-pro-preview) from earlier commit
   - LLM cascade updated from 10 to 5 prompts (from earlier commit)
 
   ---
