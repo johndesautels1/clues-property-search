@@ -654,7 +654,7 @@ async function callPerplexityForecast(
     // NOTE: Perplexity has BUILT-IN web search - NO tools/tool_choice needed
     // Search behavior is controlled via the prompt itself
     body: JSON.stringify({
-      model: 'sonar-pro',
+      model: 'sonar-reasoning-pro',
       messages: [
         { role: 'system', content: PERPLEXITY_OLIVIA_CMA_SYSTEM_PROMPT },
         { role: 'user', content: userPrompt }

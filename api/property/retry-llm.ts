@@ -480,7 +480,7 @@ async function callPerplexity(address: string): Promise<{ fields: Record<string,
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'sonar-pro',
+        model: 'sonar-reasoning-pro',
         messages: [
           { role: 'system', content: PERPLEXITY_FIELD_COMPLETER_SYSTEM },
           { role: 'user', content: PERPLEXITY_FIELD_COMPLETER_USER(address, city, zip) }

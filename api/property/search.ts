@@ -2494,13 +2494,13 @@ Do not return any text outside the JSON object.`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'sonar-pro',
+        model: 'sonar-reasoning-pro',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.1,
-        max_tokens: 500
+        temperature: 0.2,
+        max_tokens: 2500
       })
     });
 
@@ -2625,13 +2625,13 @@ Return ONLY the JSON object, no other text.`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'sonar-pro',
+        model: 'sonar-reasoning-pro',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.1,
-        max_tokens: 500
+        temperature: 0.2,
+        max_tokens: 2500
       })
     });
 
@@ -2767,13 +2767,13 @@ Return only the JSON object, no extra text.`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'sonar-pro',
+        model: 'sonar-reasoning-pro',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.1,
-        max_tokens: 400
+        temperature: 0.2,
+        max_tokens: 2500
       })
     });
 
@@ -2932,13 +2932,13 @@ Return only the JSON object, no extra text.`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'sonar-pro',
+        model: 'sonar-reasoning-pro',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.1,
-        max_tokens: 400
+        temperature: 0.2,
+        max_tokens: 2500
       })
     });
 
@@ -3101,13 +3101,13 @@ Return only the JSON object, no extra text.`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'sonar-pro',
+        model: 'sonar-reasoning-pro',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.1,
-        max_tokens: 400
+        temperature: 0.2,
+        max_tokens: 2500
       })
     });
 
@@ -3255,7 +3255,10 @@ async function callPerplexityHelper(promptName: string, userPrompt: string): Pro
     return {};
   }
 
-  const systemMessage = `You are a retrieval-only real estate research agent with LIVE WEB SEARCH capabilities. Extract ONLY explicitly stated values. Output JSON ONLY with exact field keys. Never guess or fabricate data.`;
+  const systemMessage = `You are a real estate data analyst. Use web search ONLY to quickly verify or fill in missing factual fields from reputable property/market sources.
+DO NOT perform broad market research or long-form narrative reports.
+Keep total web searches and pages consulted to the MINIMUM necessary to confidently fill the requested fields.
+Extract ONLY explicitly stated values. Output JSON ONLY with exact field keys. Never guess or fabricate data.`;
 
   try {
     console.log(`✅ [Perplexity ${promptName}] Calling API...`);
@@ -3266,12 +3269,13 @@ async function callPerplexityHelper(promptName: string, userPrompt: string): Pro
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'sonar-pro',
+        model: 'sonar-reasoning-pro',
         messages: [
           { role: 'system', content: systemMessage },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.1,
+        temperature: 0.2,
+        max_tokens: 2500,
       }),
     });
 
