@@ -1109,7 +1109,10 @@ async function callGrokForecast(
     throw new Error('No JSON found in Grok response');
   }
 
-  const data = JSON.parse(jsonMatch[0]);
+  const parsed = JSON.parse(jsonMatch[0]);
+  // Grok may return { data_fields: {...} } or { fields: {...} } or flat fields
+  const data = parsed.data_fields || parsed.fields || parsed;
+  console.log(`[Grok/Forecast] Parsed structure: ${parsed.data_fields ? 'data_fields' : parsed.fields ? 'fields' : 'flat'}`);
 
   return {
     source: 'Grok 4.1 Fast Reasoning',

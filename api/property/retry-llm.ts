@@ -804,8 +804,12 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
 
       if (parseResult.success && parseResult.data) {
         const parsed = parseResult.data;
+        // Grok may return { data_fields: {...} } or { fields: {...} } or flat fields
+        const fieldsToProcess = parsed.data_fields || parsed.fields || parsed;
+        console.log(`[GROK] Parsed structure: ${parsed.data_fields ? 'data_fields' : parsed.fields ? 'fields' : 'flat'}, keys: ${Object.keys(fieldsToProcess).length}`);
+
         const fields: Record<string, any> = {};
-        for (const [key, value] of Object.entries(parsed)) {
+        for (const [key, value] of Object.entries(fieldsToProcess)) {
           if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
             const coerced = coerceValue(key, value);
             if (coerced !== null) {
