@@ -13,11 +13,10 @@
    - `src/types/fields-schema.ts` - Changed `num: number` to `num: number | string`
    - `src/components/SMARTScoreDiagnostic.tsx` - Fixed type annotation
 
-2. **Commit `2723787`** - Fixed Vercel runtime error
-   - Added `with { type: 'json' }` to all JSON imports in:
-     - `src/config/gemini-prompts.ts`
-     - `api/property/retry-llm.ts`
-     - `api/property/search.ts`
+2. **Commit `2723787`** - ~~Fixed Vercel runtime error~~ **REVERTED - THIS WAS WRONG**
+   - Added `with { type: 'json' }` to all JSON imports - **CAUSED 500 ERRORS**
+   - **Fixed in commit `0ebd16b`** - Inlined JSON data instead
+   - ES2025 import attributes are NOT supported in Vercel's Node.js runtime
 
 3. **Commit `a898ef7`** - Added 4 missing tabs to Compare.tsx (Advanced Market Analysis)
    - Renamed 21 tabs to match 23 schema groups
@@ -226,6 +225,6 @@ Start by reading these files to understand current state:
 ## NOTES
 
 - Build is now passing (commits 772fc29, 2723787)
-- All JSON imports have `with { type: 'json' }` attribute
+- ~~All JSON imports have `with { type: 'json' }` attribute~~ **WRONG - Reverted. JSON data inlined instead.**
 - 181-field schema is stable - DO NOT modify field numbers
 - Compare.tsx now has 25 tabs matching all schema groups
