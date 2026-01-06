@@ -2494,7 +2494,7 @@ Do not return any text outside the JSON object.`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'sonar-deep-research',
+        model: 'sonar-pro',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -2625,7 +2625,7 @@ Return ONLY the JSON object, no other text.`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'sonar-deep-research',
+        model: 'sonar-pro',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -2767,7 +2767,7 @@ Return only the JSON object, no extra text.`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'sonar-deep-research',
+        model: 'sonar-pro',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -2932,7 +2932,7 @@ Return only the JSON object, no extra text.`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'sonar-deep-research',
+        model: 'sonar-pro',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -3101,7 +3101,7 @@ Return only the JSON object, no extra text.`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'sonar-deep-research',
+        model: 'sonar-pro',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -3266,7 +3266,7 @@ async function callPerplexityHelper(promptName: string, userPrompt: string): Pro
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'sonar-deep-research',
+        model: 'sonar-pro',
         messages: [
           { role: 'system', content: systemMessage },
           { role: 'user', content: userPrompt }
