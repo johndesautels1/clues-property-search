@@ -605,11 +605,13 @@ async function callGeminiForecast(
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
-    model: 'gemini-3-pro',
+    model: 'gemini-3-pro-preview',
     generationConfig: {
-      temperature: 1.0,
+      temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro
       maxOutputTokens: 16000
-    }
+    },
+    // Enable Google Search for real-time market data
+    tools: [{ googleSearch: {} }]
   });
 
   const prompt = buildForecastPrompt(address, price, neighborhood, propertyType);
