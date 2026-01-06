@@ -7,7 +7,7 @@
  * - GPT-5.2: Market psychology + buyer behavior
  * - Gemini 2.5 Pro: Google data integration + local trends
  * - Perplexity Sonar Reasoning Pro: LIVE web search for breaking news
- * - Grok 4 Expert: X (Twitter) data + real-time social sentiment
+ * - Grok 4.1 Expert: X (Twitter) data + real-time social sentiment
  *
  * Returns aggregated forecast with consensus score
  * In conflicts, the consensus algorithm calculates standard deviation:
@@ -779,9 +779,9 @@ async function callPerplexityForecast(
 }
 
 // ============================================
-// GROK OLIVIA CMA ANALYST PROMPT (Grok 4 Reasoning Mode)
+// GROK OLIVIA CMA ANALYST PROMPT (Grok 4.1 Fast Reasoning Mode)
 // ============================================
-const GROK_FORECAST_SYSTEM_PROMPT = `You are Olivia, the CLUES Senior Investment Analyst (Grok 4 Reasoning Mode).
+const GROK_FORECAST_SYSTEM_PROMPT = `You are Olivia, the CLUES Senior Investment Analyst (Grok 4.1 Fast Reasoning Mode).
 Your MISSION is to perform a deep-dive Comparative Market Analysis (CMA) by evaluating a Subject Property against 3 Comparables across a 181-field data schema.
 
 ### HARD RULES
@@ -964,7 +964,7 @@ Execute these searches to gather market context:
 }`;
 
 /**
- * Grok 4 Expert - X (Twitter) data + real-time social sentiment
+ * Grok 4.1 Expert - X (Twitter) data + real-time social sentiment
  */
 // Tavily search helper for Grok tool calls
 async function callTavilySearchForecast(query: string, numResults: number = 5): Promise<string> {
@@ -1130,7 +1130,7 @@ async function callGrokForecast(
   const data = JSON.parse(jsonMatch[0]);
 
   return {
-    source: 'Grok 4 Expert',
+    source: 'Grok 4.1 Expert',
     appreciation1Yr: data.appreciation1Yr,
     appreciation5Yr: data.appreciation5Yr,
     confidence: data.confidence,
@@ -1231,7 +1231,7 @@ export async function getMultiLLMMarketForecast(
   // Extract successful forecasts
   const successfulForecasts: LLMForecast[] = [];
   forecasts.forEach((result, index) => {
-    const sources = ['Perplexity Sonar', 'Gemini 3 Pro', 'GPT-5.2', 'Grok 4', 'Claude Sonnet 4.5', 'Claude Opus 4.5'];
+    const sources = ['Perplexity Sonar', 'Gemini 3 Pro', 'GPT-5.2', 'Grok 4.1', 'Claude Sonnet 4.5', 'Claude Opus 4.5'];
     if (result.status === 'fulfilled') {
       successfulForecasts.push(result.value);
       console.log(`✅ ${sources[index]}: ${result.value.appreciation1Yr.toFixed(1)}% (1yr)`);

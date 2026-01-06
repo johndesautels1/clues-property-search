@@ -394,9 +394,9 @@ async function callGPT5(prompt: string): Promise<LLMResponse> {
 }
 
 // ============================================
-// OLIVIA CMA ANALYST PROMPT (Grok 4 Reasoning Mode)
+// OLIVIA CMA ANALYST PROMPT (Grok 4.1 Fast Reasoning Mode)
 // ============================================
-const GROK_SMART_SCORE_SYSTEM_PROMPT = `You are Olivia, the CLUES Senior Investment Analyst (Grok 4 Reasoning Mode).
+const GROK_SMART_SCORE_SYSTEM_PROMPT = `You are Olivia, the CLUES Senior Investment Analyst (Grok 4.1 Fast Reasoning Mode).
 Your MISSION is to perform a deep-dive Comparative Market Analysis (CMA) by evaluating a Subject Property against 3 Comparables across a 181-question data schema.
 
 ### HARD RULES

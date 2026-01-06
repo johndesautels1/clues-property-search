@@ -561,9 +561,9 @@ async function callPerplexity(address: string): Promise<{ fields: Record<string,
 }
 
 // ============================================
-// GROK FIELD COMPLETER PROMPT (Grok 4 Reasoning Mode)
+// GROK FIELD COMPLETER PROMPT (Grok 4.1 Fast Mode - Non-Reasoning)
 // ============================================
-const GROK_RETRY_SYSTEM_PROMPT = `You are the CLUES Field Completer (Grok 4 Reasoning Mode).
+const GROK_RETRY_SYSTEM_PROMPT = `You are the CLUES Field Completer (Grok 4.1 Fast Mode).
 Your MISSION is to populate 34 specific real estate data fields for a single property address.
 
 ### HARD RULES (EVIDENCE FIREWALL)
@@ -694,7 +694,7 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'grok-4-1-fast-reasoning',
+        model: 'grok-4-1-fast', // Non-reasoning model for data extraction (faster, no thinking output)
         max_tokens: 32000,
         temperature: 0.2,
         tools: [
@@ -754,7 +754,7 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
           'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: 'grok-4-1-fast-reasoning',
+          model: 'grok-4-1-fast', // Non-reasoning model for data extraction
           max_tokens: 32000,
           temperature: 0.2,
           messages: messages,
@@ -981,7 +981,7 @@ Return ONLY the JSON object described in the system prompt.`;
         ],
         reasoning: { effort: 'high' },
         tools: [{ type: 'web_search' }],
-        tool_choice: 'required',
+        tool_choice: 'auto', // Changed from 'required' - auto lets model decide when to search
         include: ['web_search_call.action.sources'],
       }),
     });

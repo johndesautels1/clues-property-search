@@ -2857,9 +2857,9 @@ CRITICAL RULES:
 - NEVER return fields with null values - simply omit fields you cannot verify from sources`;
 
 // ============================================
-// GROK FIELD COMPLETER PROMPT (Grok 4 Reasoning Mode)
+// GROK FIELD COMPLETER PROMPT (Grok 4.1 Fast Mode - Non-Reasoning)
 // ============================================
-const PROMPT_GROK = `You are the CLUES Field Completer (Grok 4 Reasoning Mode).
+const PROMPT_GROK = `You are the CLUES Field Completer (Grok 4.1 Fast Mode).
 Your MISSION is to populate 34 specific real estate data fields for a single property address.
 
 ### HARD RULES (EVIDENCE FIREWALL)
@@ -3436,7 +3436,7 @@ Return structured JSON with proper field keys. Use null for unknown data.`,
         ],
         reasoning: { effort: 'high' },
         tools: [{ type: 'web_search' }],
-        tool_choice: 'required',
+        tool_choice: 'auto', // Changed from 'required' - auto lets model decide when to search
         include: ['web_search_call.action.sources'],
       }),
     });
@@ -3507,7 +3507,7 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
       ],
       reasoning: { effort: 'high' },
       tools: [{ type: 'web_search' }],
-      tool_choice: 'required',
+      tool_choice: 'auto', // Changed from 'required' - auto lets model decide when to search
       include: ['web_search_call.action.sources'],
     };
 
@@ -3530,8 +3530,16 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
 
     const data = await response.json();
 
-    // Handle /v1/responses format
-    const text = data.output_text || data.choices?.[0]?.message?.content;
+    // DEBUG: Log full response structure to diagnose issues
+    console.log(`[GPT] Response keys: ${Object.keys(data).join(', ')}`);
+    if (data.output) console.log(`[GPT] output type: ${typeof data.output}, isArray: ${Array.isArray(data.output)}, length: ${Array.isArray(data.output) ? data.output.length : 'N/A'}`);
+    if (data.error) console.log(`[GPT] API error in response: ${JSON.stringify(data.error).substring(0, 300)}`);
+
+    // Handle /v1/responses format - check multiple possible locations for text output
+    const text = data.output_text
+      || data.output?.find?.((o: any) => o.type === 'message')?.content?.[0]?.text
+      || data.choices?.[0]?.message?.content;
+
     if (text) {
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
@@ -3565,8 +3573,12 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
         }
       }
     }
-    return { error: 'Failed to parse GPT response', fields: {}, llm: 'GPT' };
+    // No text found - log detailed diagnostics
+    console.error('[GPT] No text content found in response');
+    console.error('[GPT] Full response (first 1000 chars):', JSON.stringify(data).substring(0, 1000));
+    return { error: 'Failed to parse GPT response - no text content', fields: {}, llm: 'GPT' };
   } catch (error) {
+    console.error('[GPT] Exception:', error);
     return { error: String(error), fields: {}, llm: 'GPT' };
   }
 }
@@ -3621,7 +3633,7 @@ async function callGPT5FieldAuditor(
       ],
       reasoning: { effort: 'high' },
       tools: [{ type: 'web_search' }],
-      tool_choice: 'required',
+      tool_choice: 'auto', // Changed from 'required' - auto lets model decide when to search
       include: ['web_search_call.action.sources'],
     };
 
@@ -3881,7 +3893,7 @@ async function callGrok(address: string): Promise<any> {
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'grok-4-1-fast-reasoning',
+        model: 'grok-4-1-fast', // Non-reasoning model for data extraction (faster, no thinking output)
         max_tokens: 32000,
         temperature: 0.2,
         tools: [
@@ -3942,7 +3954,7 @@ async function callGrok(address: string): Promise<any> {
           'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: 'grok-4-1-fast-reasoning',
+          model: 'grok-4-1-fast', // Non-reasoning model for data extraction
           max_tokens: 32000,
           temperature: 0.2,
           messages: messages,

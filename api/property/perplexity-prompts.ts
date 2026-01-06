@@ -378,6 +378,7 @@ export const PERPLEXITY_FIELD_MAPPING: Record<string, string> = {
   'status': null,
   'reason': null,
   'notes': null,
+  'note': null, // Singular version
   'search_date': null,
   'data_limitations': null,
   'data_confidence': null,
@@ -389,6 +390,14 @@ export const PERPLEXITY_FIELD_MAPPING: Record<string, string> = {
   'timestamp': null,
   'error': null,
   'message': null,
+
+  // Additional field aliases Perplexity returns (discovered 2026-01-06)
+  'current_listing_price': '10_listing_price',
+  'current_listing_status': '4_listing_status',
+  'current_beds_baths_sqft': null, // Metadata - individual fields already mapped
+  'mls_id': '2_mls_primary',
+  'comparable_sales_note': '103_comparable_sales', // Singular variant
+  'financing_note': '102_financing_terms', // Singular variant
 };
 
 /**
