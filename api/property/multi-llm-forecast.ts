@@ -437,7 +437,7 @@ async function callClaudeForecast(
 
   const response = await client.messages.create({
     model: 'claude-sonnet-4-5-20250929',
-    max_tokens: 16000,
+    max_tokens: 32000,
     temperature: 0.2,
     system: CLAUDE_SONNET_OLIVIA_CMA_SYSTEM_PROMPT,
     betas: ['web-search-2025-03-05'],
@@ -496,7 +496,7 @@ async function callClaudeOpusForecast(
 
   const response = await client.messages.create({
     model: 'claude-opus-4-5-20251101',
-    max_tokens: 16000,
+    max_tokens: 32000,
     temperature: 0.2,
     system: CLAUDE_OPUS_OLIVIA_CMA_SYSTEM_PROMPT,
     messages: [{ role: 'user', content: prompt }],
@@ -553,7 +553,7 @@ async function callGPT5Forecast(
     body: JSON.stringify({
       model: 'gpt-5.2-pro',
       temperature: 0.0,
-      max_tokens: 16000,
+      max_tokens: 32000,
       input: [
         { role: 'system', content: GPT_OLIVIA_CMA_SYSTEM_PROMPT },
         { role: 'user', content: prompt },
@@ -909,7 +909,7 @@ async function callGrokForecast(
     },
     body: JSON.stringify({
       model: 'grok-4-1-fast-reasoning',
-      max_tokens: 16000,
+      max_tokens: 32000,
       messages: [
         { role: 'system', content: GROK_FORECAST_SYSTEM_PROMPT },
         { role: 'user', content: prompt }

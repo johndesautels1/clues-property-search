@@ -619,7 +619,7 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
       },
       body: JSON.stringify({
         model: 'grok-4-1-fast-reasoning',
-        max_tokens: 16000,
+        max_tokens: 32000,
         tools: [
           {
             type: 'function',
@@ -729,7 +729,7 @@ Return null if you cannot find data. Return ONLY the JSON object.`;
       },
       body: JSON.stringify({
         model: 'claude-opus-4-5-20251101',
-        max_tokens: 16000,
+        max_tokens: 32000,
         messages: [{ role: 'user', content: prompt }],
       }),
     });
@@ -863,7 +863,7 @@ Return ONLY the JSON object described in the system prompt.`;
       body: JSON.stringify({
         model: 'gpt-5.2-pro',
         temperature: 0.0,
-        max_tokens: 16000,
+        max_tokens: 32000,
         input: [
           { role: 'system', content: GPT_RETRY_SYSTEM_PROMPT },
           { role: 'user', content: userPrompt }
@@ -992,7 +992,7 @@ Return ONLY the JSON object. Use null only for fields you truly cannot find.`;
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5-20250929',
-        max_tokens: 16000,
+        max_tokens: 32000,
         tools: [
           {
             type: 'web_search_20250305',

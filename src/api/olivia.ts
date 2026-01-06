@@ -291,7 +291,7 @@ When comparing properties, pay special attention to:
 
   const response = await client.messages.create({
     model: 'claude-sonnet-4-5-20250929',
-    max_tokens: 3000, // Increased for enhanced response
+    max_tokens: 32000, // Increased for enhanced response
     system: OLIVIA_SYSTEM_PROMPT,
     messages: [
       { role: 'user', content: userPrompt }

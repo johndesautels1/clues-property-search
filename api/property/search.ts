@@ -3244,7 +3244,7 @@ async function callClaudeOpus(address: string): Promise<any> {
       },
       body: JSON.stringify({
         model: 'claude-opus-4-5-20251101',
-        max_tokens: 16000,
+        max_tokens: 32000,
         system: PROMPT_CLAUDE_OPUS,
         messages: [
           {
@@ -3301,7 +3301,7 @@ async function callClaudeSonnet(address: string): Promise<any> {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5-20250929',
-        max_tokens: 16000,
+        max_tokens: 32000,
         system: PROMPT_CLAUDE_SONNET,
         tools: [
           {
@@ -3402,7 +3402,7 @@ async function callCopilot(address: string): Promise<any> {
       body: JSON.stringify({
         model: 'gpt-5.2-pro',
         temperature: 0.0,
-        max_tokens: 16000,
+        max_tokens: 32000,
         input: [
           { role: 'system', content: PROMPT_COPILOT },
           {
@@ -3479,7 +3479,7 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
     const requestBody = {
       model: 'gpt-5.2-pro',
       temperature: 0.0,
-      max_tokens: 16000,
+      max_tokens: 32000,
       input: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
@@ -3594,7 +3594,7 @@ async function callGPT5FieldAuditor(
     const requestBody = {
       model: 'gpt-5.2-pro',
       temperature: 0.0, // Must be 0.0 across entire codebase
-      max_tokens: 16000,
+      max_tokens: 32000,
       input: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
@@ -3809,7 +3809,7 @@ async function callGrok(address: string): Promise<any> {
       },
       body: JSON.stringify({
         model: 'grok-4-1-fast-reasoning',
-        max_tokens: 16000,
+        max_tokens: 32000,
         tools: [
           {
             type: 'function',
