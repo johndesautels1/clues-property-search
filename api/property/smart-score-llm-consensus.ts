@@ -71,7 +71,7 @@ interface ConsensusResult {
     claudeOpus: number[];
     gemini: number[];
     tiebreaker?: {
-      model: 'gpt-5.2' | 'grok';
+      model: 'gpt-5.2-pro' | 'grok';
       scores: number[];
     };
   };
@@ -664,12 +664,12 @@ async function calculateConsensus(
   console.log('[LLM Consensus] ⚠️ Large disagreement - calling GPT-5.2 as 4th voter...');
 
   let tiebreakerResult: LLMResponse;
-  let tiebreakerModel: 'gpt-5.2' | 'grok';
+  let tiebreakerModel: 'gpt-5.2-pro' | 'grok';
 
   try {
     tiebreakerResult = await callGPT5(prompt);
-    tiebreakerModel = 'gpt-5.2';
-    console.log('[LLM Consensus] 4th voter: GPT-5.2');
+    tiebreakerModel = 'gpt-5.2-pro';
+    console.log('[LLM Consensus] 4th voter: gpt-5.2-pro');
   } catch (error) {
     console.log('[LLM Consensus] GPT-5.2 failed, trying Grok...');
     tiebreakerResult = await callGrok(prompt);

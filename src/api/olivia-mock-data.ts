@@ -387,7 +387,7 @@ My confidence in this recommendation is 92%. This is based on hard data across v
 
     // Multi-LLM Market Forecast
     marketForecast: {
-      llmSources: ['claude-opus', 'gpt-4', 'gemini-3-pro', 'perplexity'],
+      llmSources: ['claude-opus', 'gpt-5.2-pro', 'gemini-3-pro', 'perplexity'],
       appreciationForecast: {
         year1: 5.2,
         year3: 16.8,
