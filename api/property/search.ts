@@ -5391,18 +5391,55 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const enabledLlms = llmCascade.filter(llm => llm.enabled);
 
         if (enabledLlms.length > 0) {
-          console.log(`\n=== Calling ${enabledLlms.length} LLMs in PARALLEL (Perplexity: ${PERPLEXITY_TIMEOUT}ms, Others: ${LLM_TIMEOUT}ms) ===`);
+          // RATE LIMIT FIX: Separate Perplexity calls (sequential) from other LLMs (parallel)
+          const perplexityLlms = enabledLlms.filter(llm => llm.id.startsWith('perplexity'));
+          const otherLlms = enabledLlms.filter(llm => !llm.id.startsWith('perplexity'));
 
-          // Run ALL enabled LLMs in parallel with timeout wrapper
-          const llmResults = await Promise.allSettled(
-            enabledLlms.map(llm =>
+          console.log(`\n=== Calling ${perplexityLlms.length} Perplexity LLMs SEQUENTIALLY + ${otherLlms.length} other LLMs in PARALLEL ===`);
+
+          // Run Perplexity calls SEQUENTIALLY with 500ms delay to avoid 429 rate limit
+          const perplexityResults: PromiseSettledResult<any>[] = [];
+          for (let i = 0; i < perplexityLlms.length; i++) {
+            const llm = perplexityLlms[i];
+            console.log(`  [Perplexity ${i + 1}/${perplexityLlms.length}] Calling ${llm.id}...`);
+            try {
+              const result = await withTimeout(
+                llm.fn(realAddress),
+                PERPLEXITY_TIMEOUT,
+                { fields: {}, error: 'timeout' }
+              );
+              perplexityResults.push({ status: 'fulfilled', value: result });
+            } catch (err) {
+              perplexityResults.push({ status: 'rejected', reason: err });
+            }
+            // Add delay between Perplexity calls to avoid rate limiting (except after last call)
+            if (i < perplexityLlms.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+          }
+
+          // Run other LLMs in PARALLEL (they don't share rate limits)
+          const otherResults = await Promise.allSettled(
+            otherLlms.map(llm =>
               withTimeout(
                 llm.fn(realAddress),
-                llm.id.startsWith('perplexity') ? PERPLEXITY_TIMEOUT : LLM_TIMEOUT,
+                LLM_TIMEOUT,
                 { fields: {}, error: 'timeout' }
               )
             )
           );
+
+          // Combine results in original order
+          const llmResults: PromiseSettledResult<any>[] = [];
+          let perplexityIdx = 0;
+          let otherIdx = 0;
+          for (const llm of enabledLlms) {
+            if (llm.id.startsWith('perplexity')) {
+              llmResults.push(perplexityResults[perplexityIdx++]);
+            } else {
+              llmResults.push(otherResults[otherIdx++]);
+            }
+          }
 
           // Process results SEQUENTIALLY to avoid race conditions
           // Results are processed in order: perplexity → gemini → gpt → grok → sonnet → opus
