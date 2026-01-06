@@ -4,10 +4,10 @@
  * Calls 6 different LLMs to get consensus on property market forecasts:
  * - Claude Sonnet 4.5: Fast, efficient analysis + pattern recognition
  * - Claude Opus 4.5: Deep reasoning + complex market modeling
- * - GPT-5.2: Market psychology + buyer behavior
- * - Gemini 2.5 Pro: Google data integration + local trends
+ * - GPT-5.2 Pro: Market psychology + buyer behavior
+ * - Gemini 3 Pro Preview: Google data integration + local trends
  * - Perplexity Sonar Reasoning Pro: LIVE web search for breaking news
- * - Grok 4.1 Expert: X (Twitter) data + real-time social sentiment
+ * - Grok 4.1 Fast Reasoning: X (Twitter) data + real-time social sentiment
  *
  * Returns aggregated forecast with consensus score
  * In conflicts, the consensus algorithm calculates standard deviation:
@@ -65,7 +65,7 @@ export interface MarketForecast {
 
   // Sources
   llmForecasts: LLMForecast[];   // Individual forecasts
-  llmSources: string[];          // ['Claude', 'GPT-5.2', 'Gemini', 'Perplexity']
+  llmSources: string[];          // ['Claude Sonnet 4.5', 'Claude Opus 4.5', 'GPT-5.2 Pro', 'Gemini 3 Pro Preview', 'Perplexity Sonar Reasoning Pro', 'Grok 4.1 Fast Reasoning']
 
   // Metadata
   timestamp: string;
@@ -590,7 +590,7 @@ async function callGPT5Forecast(
   const forecast = data.forecast || data;
 
   return {
-    source: 'GPT-5.2-pro (Olivia)',
+    source: 'GPT-5.2 Pro',
     appreciation1Yr: forecast.appreciation1Yr_pct ?? forecast.appreciation1Yr,
     appreciation5Yr: forecast.appreciation5Yr_cum_pct ?? forecast.appreciation5Yr,
     confidence: forecast.confidence_0_100 ?? forecast.confidence,
@@ -600,7 +600,7 @@ async function callGPT5Forecast(
 }
 
 /**
- * Gemini 2.5 Pro - Google data integration + local trends
+ * Gemini 3 Pro Preview - Google data integration + local trends
  */
 async function callGeminiForecast(
   address: string,
@@ -964,7 +964,7 @@ Execute these searches to gather market context:
 }`;
 
 /**
- * Grok 4.1 Expert - X (Twitter) data + real-time social sentiment
+ * Grok 4.1 Fast Reasoning - X (Twitter) data + real-time social sentiment
  */
 // Tavily search helper for Grok tool calls
 async function callTavilySearchForecast(query: string, numResults: number = 5): Promise<string> {
@@ -1130,7 +1130,7 @@ async function callGrokForecast(
   const data = JSON.parse(jsonMatch[0]);
 
   return {
-    source: 'Grok 4.1 Expert',
+    source: 'Grok 4.1 Fast Reasoning',
     appreciation1Yr: data.appreciation1Yr,
     appreciation5Yr: data.appreciation5Yr,
     confidence: data.confidence,

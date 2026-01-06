@@ -2,9 +2,9 @@
  * CLUES SMART Score - TIER 2 LLM Consensus API
  *
  * Implements 2-tier voting consensus model:
- * 1. Call Perplexity + Claude Opus simultaneously
+ * 1. Call Perplexity Sonar Reasoning Pro + Claude Opus 4.5 + Gemini 3 Pro Preview simultaneously
  * 2. If they agree (within 10 points), use consensus
- * 3. If they disagree, call GPT-5.2 as tiebreaker
+ * 3. If they disagree, call GPT-5.2 Pro as tiebreaker
  * 4. Return final LLM consensus scores for all 3 properties
  *
  * @module smart-score-llm-consensus
@@ -346,7 +346,7 @@ Return ONLY the JSON described in the system prompt.`;
 const GPT_SMART_SCORE_SYSTEM_PROMPT = OLIVIA_SYSTEM_PROMPT;
 
 /**
- * Call GPT-5.2-pro API (tiebreaker)
+ * Call GPT-5.2 Pro API (tiebreaker)
  */
 
 async function callGPT5(prompt: string): Promise<LLMResponse> {
@@ -379,7 +379,7 @@ async function callGPT5(prompt: string): Promise<LLMResponse> {
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`GPT-5.2-pro API error: ${response.status} ${error}`);
+    throw new Error(`GPT-5.2 Pro API error: ${response.status} ${error}`);
   }
 
   const data = await response.json();
@@ -387,7 +387,7 @@ async function callGPT5(prompt: string): Promise<LLMResponse> {
   const content = data.output_text || data.choices?.[0]?.message?.content;
 
   if (!content) {
-    throw new Error('GPT-5.2-pro returned empty response');
+    throw new Error('GPT-5.2 Pro returned empty response');
   }
 
   return JSON.parse(content);
@@ -819,8 +819,8 @@ async function calculateConsensus(
     };
   }
 
-  // STEP 4: Large disagreement - Call GPT-5.2 as 4th voter for weighted consensus
-  console.log('[LLM Consensus] ⚠️ Large disagreement - calling GPT-5.2 as 4th voter...');
+  // STEP 4: Large disagreement - Call GPT-5.2 Pro as 4th voter for weighted consensus
+  console.log('[LLM Consensus] ⚠️ Large disagreement - calling GPT-5.2 Pro as 4th voter...');
 
   let tiebreakerResult: LLMResponse;
   let tiebreakerModel: 'gpt-5.2-pro' | 'grok';
@@ -830,7 +830,7 @@ async function calculateConsensus(
     tiebreakerModel = 'gpt-5.2-pro';
     console.log('[LLM Consensus] 4th voter: gpt-5.2-pro');
   } catch (error) {
-    console.log('[LLM Consensus] GPT-5.2 failed, trying Grok...');
+    console.log('[LLM Consensus] GPT-5.2 Pro failed, trying Grok 4.1 Fast Reasoning...');
     tiebreakerResult = await callGrok(prompt);
     tiebreakerModel = 'grok';
     console.log('[LLM Consensus] 4th voter: Grok');
