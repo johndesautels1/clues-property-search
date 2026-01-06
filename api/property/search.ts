@@ -3348,7 +3348,7 @@ async function callPerplexityHelper(promptName: string, userPrompt: string): Pro
 // LLM CALLS (DISABLED - hallucinate without web access)
 // ============================================
 
-// Field definitions for the prompt - SYNCHRONIZED WITH fields-schema.ts (168 fields)
+// Field definitions for the prompt - SYNCHRONIZED WITH fields-schema.ts (181 fields)
 const FIELD_GROUPS = `
 GROUP 1 - Address & Identity (Fields 1-9):
 1. full_address, 2. mls_primary, 3. mls_secondary, 4. listing_status, 5. listing_date,
@@ -3434,6 +3434,11 @@ GROUP 21 - Stellar MLS Leasing (Fields 160-165):
 
 GROUP 22 - Stellar MLS Features (Fields 166-168):
 166. community_features, 167. interior_features, 168. exterior_features
+
+GROUP 23 - Market Performance (Fields 169-181):
+169. zillow_views, 170. redfin_views, 171. homes_views, 172. realtor_views, 173. total_views,
+174. saves_favorites, 175. market_type, 176. avg_sale_to_list_percent, 177. avg_days_to_pending,
+178. multiple_offers_likelihood, 179. appreciation_percent, 180. price_trend, 181. rent_zestimate
 `;
 
 // ============================================
@@ -3838,7 +3843,7 @@ OUTPUT SCHEMA
 // ============================================
 const PROMPT_CLAUDE_OPUS = `You are Claude Opus, the most capable AI assistant, helping extract property data. You do NOT have web access.
 
-YOUR MISSION: Extract as many of the 168 property fields as possible using your training knowledge.
+YOUR MISSION: Extract as many of the 181 property fields as possible using your training knowledge.
 
 ${FIELD_GROUPS}
 
@@ -4182,7 +4187,7 @@ async function callClaudeOpus(address: string): Promise<any> {
         messages: [
           {
             role: 'user',
-            content: `Extract all 168 property data fields for this address: ${address}
+            content: `Extract all 181 property data fields for this address: ${address}
 
 Return verified data only. If you cannot find data, return null for that field.`,
           },
@@ -4401,7 +4406,7 @@ async function callGPT5(
             webChunks: inputBlobs.webChunksJson,
           },
         })
-      : `Extract all 168 property data fields for this address: ${address}
+      : `Extract all 181 property data fields for this address: ${address}
 
 Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listing_price", "7_county", "17_bedrooms"). Omit fields you cannot verify - do not return null values.`;
 

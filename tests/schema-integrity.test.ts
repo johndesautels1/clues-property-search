@@ -20,10 +20,11 @@ import {
 
 describe('Schema Integrity Tests', () => {
   
-  test('Has exactly 168 fields', () => {
+  test('Has exactly 181 fields', () => {
     // Schema expanded from 138 to 168 fields on 2025-11-30 with Stellar MLS fields (139-168)
-    expect(TOTAL_FIELDS).toBe(168);
-    expect(ALL_FIELDS.length).toBe(168);
+    // Schema expanded from 168 to 181 fields on 2025-01-05 with Market Performance fields (169-181)
+    expect(TOTAL_FIELDS).toBe(181);
+    expect(ALL_FIELDS.length).toBe(181);
   });
 
   test('No duplicate field numbers', () => {
@@ -50,7 +51,7 @@ describe('Schema Integrity Tests', () => {
     expect(uniqueKeys.size).toBe(keys.length);
   });
 
-  test('Field numbers are sequential from 1 to 168', () => {
+  test('Field numbers are sequential from 1 to 181', () => {
     const numbers = ALL_FIELDS.map(f => f.num).sort((a, b) => a - b);
     
     for (let i = 0; i < numbers.length; i++) {

@@ -1,7 +1,7 @@
 /**
  * Bridge Interactive MLS API Endpoint
  * Fetches property data from Bridge Interactive RESO Web API
- * Maps to CLUES 168-field schema
+ * Maps to CLUES 181-field schema
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';

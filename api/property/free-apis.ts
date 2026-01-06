@@ -306,7 +306,7 @@ export async function callFemaFlood(lat: number, lon: number): Promise<ApiResult
       setField(fields, '119_flood_zone', `FEMA Zone ${floodZone}`, 'FEMA Flood');
       setField(fields, '120_flood_risk_level', isHighRisk ? 'High Risk (Special Flood Hazard Area)' : 'Minimal Risk', 'FEMA Flood');
 
-      // Note: No separate flood_insurance_required field in 168-field schema
+      // Note: No separate flood_insurance_required field in 181-field schema
     } else {
       setField(fields, '119_flood_zone', 'Zone X (Minimal Risk)', 'FEMA Flood', 'Medium');
       setField(fields, '120_flood_risk_level', 'Minimal', 'FEMA Flood', 'Medium');
@@ -447,7 +447,7 @@ export async function callSchoolDigger(lat: number, lon: number): Promise<ApiRes
     }
 
     // FIX #13: School district with proper fallback - use captured district or explicit default
-    // Note: No school_rating_avg field in 168-field schema
+    // Note: No school_rating_avg field in 181-field schema
     // School district is field 63
     const district = elementary?.schoolDistrict || middle?.schoolDistrict || high?.schoolDistrict || schoolDistrict;
     if (district) {
@@ -547,7 +547,7 @@ export async function callAirDNA(lat: number, lon: number, address: string): Pro
     // Mapping to closest market/investment fields (91-103)
     setField(fields, '98_rental_estimate_monthly', market.adr ? Math.round(market.adr * 30) : null, 'AirDNA');
     setField(fields, '99_rental_yield_est', market.occupancy, 'AirDNA');
-    // Note: STR-specific fields not in 168-field schema - storing as generic rental data
+    // Note: STR-specific fields not in 181-field schema - storing as generic rental data
 
     return { success: Object.keys(fields).length > 0, source: 'AirDNA', fields };
 
@@ -788,7 +788,7 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
           const usMonthlyRates = Object.values(usRates).filter((v): v is number => typeof v === 'number');
           const usAnnualRate = Math.round(usMonthlyRates.reduce((a, b) => a + b, 0));
           const vsNational = Math.round((annualRate / usAnnualRate - 1) * 100);
-          // Note: No direct field for crime_vs_national_percent in 168-field schema
+          // Note: No direct field for crime_vs_national_percent in 181-field schema
         }
       }
     } else {
@@ -888,7 +888,7 @@ export async function callWeather(lat: number, lon: number): Promise<ApiResult> 
       if (owmResult.success && owmResult.data) {
         const data = owmResult.data;
 
-        // Note: Weather data is supplementary - not in 168-field schema
+        // Note: Weather data is supplementary - not in 181-field schema
         // Storing as metadata only - not mapped to numbered fields
         if (data.main) {
           setField(fields, 'current_temperature', Math.round(data.main.temp), 'OpenWeatherMap');
@@ -913,7 +913,7 @@ export async function callWeather(lat: number, lon: number): Promise<ApiResult> 
 
       if (fetchResult.success && fetchResult.data) {
         const data = fetchResult.data;
-        // Note: Weather data is supplementary - not in 168-field schema
+        // Note: Weather data is supplementary - not in 181-field schema
         setField(fields, 'current_temperature', data.temperature, 'Weather.com');
         setField(fields, 'humidity', data.relativeHumidity, 'Weather.com');
         return { success: Object.keys(fields).length > 0, source: 'Weather.com', fields };
@@ -931,7 +931,7 @@ export async function callWeather(lat: number, lon: number): Promise<ApiResult> 
     if (fetchResult.success && fetchResult.data) {
       const data = fetchResult.data;
 
-      // Note: Weather data is supplementary - not in 168-field schema
+      // Note: Weather data is supplementary - not in 181-field schema
       if (data.current_weather) {
         setField(fields, 'current_temperature', data.current_weather.temperature, 'Open-Meteo');
       }
@@ -985,7 +985,7 @@ export async function callHudFairMarketRent(zip: string): Promise<ApiResult> {
     const fmrData = data?.data?.basicdata ?? data?.basicdata ?? data ?? null;
 
     // Extract rent by bedroom count - map to rental_estimate_monthly (field 98)
-    // Note: FMR data is supplementary - not all fields in 168-field schema
+    // Note: FMR data is supplementary - not all fields in 181-field schema
     if (fmrData) {
       // FIX #18: Use nullish coalescing for cleaner fallbacks
       const twoBedroomRent = fmrData['Two-Bedroom'] ?? fmrData.two_bedroom ?? null;

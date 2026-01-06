@@ -56,11 +56,11 @@ export const FIELD_LEVELS = {
     description: 'Schools, location quality, market data, and utilities'
   },
 
-  // LEVEL 3: Remaining Fields (113-168) - 56 fields
+  // LEVEL 3: Remaining Fields (113-181) - 69 fields
   // Complete the picture
   LEVEL_3: {
     name: 'Remaining Fields',
-    fieldRange: [113, 168] as const,
+    fieldRange: [113, 181] as const,
     groups: [
       'Utilities & Connectivity', // rest - fields 113-116
       'Environment & Risk',
@@ -70,7 +70,8 @@ export const FIELD_LEVELS = {
       'Legal & Compliance',
       'Waterfront',
       'Leasing & Rentals',
-      'Community & Features'
+      'Community & Features',
+      'Market Performance' // fields 169-181
     ],
     description: 'Environmental risks, legal, waterfront, leasing, and additional features'
   }
@@ -692,7 +693,7 @@ You MUST return valid JSON with this exact structure:
       "winner": 1,
       "reasoning": "Property 1 is $200k less expensive than Property 3"
     }
-    // REPEAT FOR ALL 168 FIELDS
+    // REPEAT FOR ALL 181 FIELDS
   ],
   "sectionScores": [
     {
@@ -1362,13 +1363,13 @@ I have analyzed ALL 181 fields with complete mathematical proofs.
 **Property 2 Average:** ${calculatePropertyAverage(2)}/100 across ${allFieldComparisons.length} fields
 **Property 3 Average:** ${calculatePropertyAverage(3)}/100 across ${allFieldComparisons.length} fields
 
-**NOTE:** You do NOT need to return fieldComparisons in your response - I already have all 168 complete field analyses from Levels 1-3. Your job is ONLY to aggregate them into sections and provide final recommendations.
+**NOTE:** You do NOT need to return fieldComparisons in your response - I already have all 181 complete field analyses from Levels 1-3. Your job is ONLY to aggregate them into sections and provide final recommendations.
 
 ## YOUR TASK:
 
 Using the complete field analysis above, calculate:
 
-1. **22 Section Scores** - Aggregate field scores by section with weighted averages
+1. **23 Section Scores** - Aggregate field scores by section with weighted averages
 2. **Overall Investment Grades** - A+ to F for each property
 3. **Winner Declaration** - Determine mathematical winner across all 181 fields
 4. **Buyer-Specific Recommendations** - Investor, Family, Retiree, Vacation, First-Time
@@ -1648,8 +1649,8 @@ export function validateOliviaResponse(response: any): ValidationResult {
     errors.push('Missing or invalid fieldComparisons array');
   } else {
     // Should have all 181 fields
-    if (response.fieldComparisons.length < 168) {
-      warnings.push(`Only ${response.fieldComparisons.length} fields analyzed, expected 168`);
+    if (response.fieldComparisons.length < 181) {
+      warnings.push(`Only ${response.fieldComparisons.length} fields analyzed, expected 181`);
     }
 
     // Check for hallucinations (missing calculations)

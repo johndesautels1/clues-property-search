@@ -152,7 +152,7 @@ export async function getMLSListingByNumber(mlsNumber: string): Promise<StellarM
 }
 
 /**
- * Stellar MLS RETS/Web API field mapping to CLUES 168-field schema
+ * Stellar MLS RETS/Web API field mapping to CLUES 181-field schema
  * ALIGNED WITH fields-schema.ts (SOURCE OF TRUTH)
  * Updated: 2025-11-30
  */

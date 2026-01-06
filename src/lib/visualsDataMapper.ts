@@ -1,6 +1,6 @@
 /**
  * Visuals Data Mapper
- * Converts CLUES Property (168-field DataField<T> structure) → Chart-ready format
+ * Converts CLUES Property (181-field DataField<T> structure) → Chart-ready format
  *
  * NEVER modifies the source Property schema
  * Extracts .value from DataField<T> for chart consumption

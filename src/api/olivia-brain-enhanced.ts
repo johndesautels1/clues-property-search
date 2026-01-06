@@ -1,9 +1,9 @@
 /**
- * OLIVIA BRAIN ENHANCED - COMPLETE 168-FIELD IMPLEMENTATION
+ * OLIVIA BRAIN ENHANCED - COMPLETE 181-FIELD IMPLEMENTATION
  * Every single field mapped and formatted - NO SHORTCUTS
  *
- * ✅ ALL 168 fields extracted from Property type
- * ✅ ALL 168 fields formatted in API prompt
+ * ✅ ALL 181 fields extracted from Property type
+ * ✅ ALL 181 fields formatted in API prompt
  * ✅ Verified against fields-schema.ts
  * ✅ Ready for production integration
  */
@@ -23,11 +23,11 @@ import {
 // Multi-LLM forecast now via API endpoint
 
 // ============================================================================
-// COMPLETE FIELD EXTRACTION - ALL 168 FIELDS
+// COMPLETE FIELD EXTRACTION - ALL 181 FIELDS
 // ============================================================================
 
 /**
- * Extract ALL 168 fields from Property type to OliviaEnhancedPropertyInput
+ * Extract ALL 181 fields from Property type to OliviaEnhancedPropertyInput
  * VERIFIED against src/types/property.ts structure
  */
 export function extractPropertyData(property: Property): OliviaEnhancedPropertyInput {
@@ -309,11 +309,11 @@ export function extractPropertyData(property: Property): OliviaEnhancedPropertyI
 }
 
 // ============================================================================
-// COMPLETE API PROMPT FORMATTING - ALL 168 FIELDS
+// COMPLETE API PROMPT FORMATTING - ALL 181 FIELDS
 // ============================================================================
 
 /**
- * Format property data for Claude API - ALL 168 fields included
+ * Format property data for Claude API - ALL 181 fields included
  */
 function formatPropertyForPrompt(p: OliviaEnhancedPropertyInput, index: number): string {
   const lines: string[] = [`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`];
@@ -633,10 +633,10 @@ CORE PRINCIPLES:
 1. Every score must have a mathematical proof
 2. Every comparison must show calculations
 3. If data is missing, say "Data unavailable" - do NOT guess
-4. Winner must be determined by weighted aggregate scores across all 168 fields
+4. Winner must be determined by weighted aggregate scores across all 181 fields
 5. Show your work - formulas, ranges, weighted averages
 
-You will analyze properties using rigorous mathematical methodologies across all 168 fields.
+You will analyze properties using rigorous mathematical methodologies across all 181 fields.
 
 Return ONLY valid JSON. No markdown code blocks. Pure JSON only.`;
 
@@ -664,16 +664,16 @@ export async function analyzeWithOliviaEnhanced(
     dangerouslyAllowBrowser: true,
   });
 
-  // Build mathematical prompt with all 168 fields and scoring methodologies
+  // Build mathematical prompt with all 181 fields and scoring methodologies
   const mathematicalPrompt = buildMathematicalAnalysisPrompt(request.properties);
 
   console.log('🧮 Sending mathematical analysis request to Claude Desktop...');
-  console.log(`📊 Analyzing ${request.properties.length} properties across 168 fields`);
+  console.log(`📊 Analyzing ${request.properties.length} properties across 181 fields`);
   console.log(`👤 Buyer profile: ${request.buyerProfile || 'General'}`);
 
   const stream = await client.messages.stream({
     model: 'claude-opus-4-5-20251101',
-    max_tokens: 32000, // Increased for complete 168-field analysis with proofs
+    max_tokens: 32000, // Increased for complete 181-field analysis with proofs
     temperature: 0.3, // Lower temperature for more deterministic math
     system: OLIVIA_SYSTEM_PROMPT,
     messages: [{ role: 'user', content: mathematicalPrompt }],
@@ -827,10 +827,10 @@ export async function analyzeWithOliviaEnhanced(
 
 /**
  * Analyze properties with 4-level progressive analysis
- * Splits 168 fields into 3 sequential Claude Opus calls + 1 final aggregation
+ * Splits 181 fields into 3 sequential Claude Opus calls + 1 final aggregation
  *
- * This solves the 32K token limit issue by processing ~56 fields at a time
- * with FULL mathematical proofs for ALL 168 fields.
+ * This solves the 32K token limit issue by processing ~60 fields at a time
+ * with FULL mathematical proofs for ALL 181 fields.
  */
 export async function analyzeWithOliviaProgressive(
   request: OliviaEnhancedAnalysisRequest
@@ -854,7 +854,7 @@ export async function analyzeWithOliviaProgressive(
   });
 
   console.log('🔬 STARTING PROGRESSIVE ANALYSIS (4 Levels)');
-  console.log(`📊 Analyzing ${request.properties.length} properties across 168 fields`);
+  console.log(`📊 Analyzing ${request.properties.length} properties across 181 fields`);
   console.log(`🎯 Buyer profile: ${request.buyerProfile || 'General'}`);
 
   const { buildLevelPrompt, buildAggregationPrompt } = await import('./olivia-math-engine');
@@ -1004,7 +1004,7 @@ export async function analyzeWithOliviaProgressive(
   // INJECT FIELD COMPARISONS FROM LEVELS 1-3
   // ============================================================================
   // Level 4 only returns aggregated data (sections, grades, recommendations)
-  // We now inject the complete 168 field comparisons from Levels 1-3
+  // We now inject the complete 181 field comparisons from Levels 1-3
   const allFieldComparisons = [
     ...(level1Results.fieldComparisons || []),
     ...(level2Results.fieldComparisons || []),
@@ -1017,7 +1017,7 @@ export async function analyzeWithOliviaProgressive(
   // ============================================================================
   // VALIDATION
   // ============================================================================
-  console.log('\n🔍 Validating complete 168-field analysis...');
+  console.log('\n🔍 Validating complete 181-field analysis...');
   const { validateOliviaResponse } = await import('./olivia-math-engine');
   const validation = validateOliviaResponse(result);
 
@@ -1117,8 +1117,8 @@ export async function analyzeWithOliviaProgressive(
   }
 
   console.log('\n🎉 PROGRESSIVE ANALYSIS COMPLETE');
-  console.log(`   Total Fields Analyzed: ${result.fieldComparisons?.length || 0}/168`);
-  console.log(`   Sections Analyzed: ${result.sectionScores?.length || 0}/22`);
+  console.log(`   Total Fields Analyzed: ${result.fieldComparisons?.length || 0}/181`);
+  console.log(`   Sections Analyzed: ${result.sectionScores?.length || 0}/23`);
   console.log(`   Winner: Property ${result.overallRecommendation?.winner || 'TBD'}`);
 
   return result as OliviaEnhancedAnalysisResult & { validation: ValidationResult };

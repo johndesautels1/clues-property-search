@@ -1,5 +1,5 @@
 /**
- * Verify all 168 fields are mapped in CSV import
+ * Verify all 181 fields are mapped in CSV import
  * Run with: npx tsx scripts/verify-csv-field-mapping.ts
  */
 
@@ -26,23 +26,23 @@ console.log('========================================');
 console.log('CSV FIELD MAPPING VERIFICATION');
 console.log('========================================\n');
 
-// Check all 168 fields
+// Check all 181 fields
 const missingFields: number[] = [];
-for (let i = 1; i <= 168; i++) {
+for (let i = 1; i <= 181; i++) {
   if (!foundFields.has(i)) {
     missingFields.push(i);
   }
 }
 
 console.log(`Total unique fields mapped: ${foundFields.size}`);
-console.log(`Expected fields: 168`);
+console.log(`Expected fields: 181`);
 
 if (missingFields.length > 0) {
   console.log(`\n❌ MISSING FIELDS (${missingFields.length}):`);
   missingFields.forEach(f => console.log(`   - Field ${f}`));
   process.exit(1);
 } else {
-  console.log('\n✅ ALL 168 FIELDS ARE MAPPED');
+  console.log('\n✅ ALL 181 FIELDS ARE MAPPED');
 
   // Show distribution
   const sorted = Array.from(foundFields).sort((a, b) => a - b);
@@ -50,7 +50,7 @@ if (missingFields.length > 0) {
 
   // Verify no gaps
   let hasGaps = false;
-  for (let i = 1; i <= 168; i++) {
+  for (let i = 1; i <= 181; i++) {
     if (!foundFields.has(i)) {
       hasGaps = true;
       break;
@@ -58,7 +58,7 @@ if (missingFields.length > 0) {
   }
 
   if (!hasGaps) {
-    console.log('✅ No gaps in field numbering (1-168 continuous)');
+    console.log('✅ No gaps in field numbering (1-181 continuous)');
   }
 
   process.exit(0);

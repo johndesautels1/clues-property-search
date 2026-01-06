@@ -192,7 +192,7 @@ Respond ONLY with valid JSON in this exact format:
     ],
     "nextSteps": [
       "Consult with CLUES™ certified advisor for detailed analysis",
-      "Review full 168-field property report",
+      "Review full 181-field property report",
       "Evaluate financing options and rates",
       "Plan property visit and neighborhood tour"
     ],

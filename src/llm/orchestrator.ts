@@ -7,7 +7,7 @@
  *
  * Stage 2: Core schema normalizer (Claude Opus without web)
  *   - Receives all data (Stellar MLS, County, Paid APIs, Web Chunks)
- *   - Fills 168-field CMA schema with NO hallucination
+ *   - Fills 181-field CMA schema with NO hallucination
  *
  * CRITICAL: This orchestrator RESPECTS the existing tier arbitration system
  * - Perplexity micro-prompts → Tier 4
@@ -160,14 +160,14 @@ export interface BuildCmaSchemaInputs {
 }
 
 /**
- * Build complete 168-field CMA schema using two-stage LLM workflow
+ * Build complete 181-field CMA schema using two-stage LLM workflow
  *
  * IMPORTANT: This function returns RAW data that must be passed through
  * the existing arbitration pipeline (createArbitrationPipeline) to enforce
  * tier-based precedence rules.
  *
  * @param inputs - Data from existing sources (Stellar MLS, County, Paid APIs)
- * @returns 168-field CMA schema ready for arbitration
+ * @returns 181-field CMA schema ready for arbitration
  */
 export async function buildCmaSchema(inputs: BuildCmaSchemaInputs): Promise<CmaSchemaType> {
   const { address, stellarMlsJson, countyJson, paidApisJson } = inputs;

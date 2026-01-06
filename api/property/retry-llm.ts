@@ -40,9 +40,9 @@ const LLM_TIMEOUT = 60000; // 60s per LLM call
 const PERPLEXITY_TIMEOUT = 180000; // 180s (3 minutes) for Perplexity deep web search
 
 // ============================================
-// COMPLETE TYPE MAP - ALL 168 FIELDS from fields-schema.ts
+// COMPLETE TYPE MAP - ALL 181 FIELDS from fields-schema.ts
 // Maps EVERY field key to its expected type for validation and coercion
-// 336 total entries (168 numbered + 168 unnumbered key variants)
+// 362 total entries (181 numbered + 181 unnumbered key variants)
 // ============================================
 type FieldType = 'text' | 'number' | 'boolean' | 'currency' | 'percentage' | 'date' | 'select' | 'multiselect';
 const FIELD_TYPE_MAP: Record<string, FieldType> = {
@@ -261,7 +261,7 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
 
 // ============================================
 // TYPE COERCION FUNCTION - Validates and coerces LLM values
-// Ensures values match expected types from the 168-field schema
+// Ensures values match expected types from the 181-field schema
 // ============================================
 
 /**
@@ -291,7 +291,7 @@ function coerceValue(key: string, value: any): any {
 
   // If no type mapping (unknown field), return as-is
   if (!expectedType) {
-    console.log(`[RETRY-LLM] ⚠️ UNKNOWN FIELD: ${key} not in 168-field schema`);
+    console.log(`[RETRY-LLM] ⚠️ UNKNOWN FIELD: ${key} not in 181-field schema`);
     return value;
   }
 

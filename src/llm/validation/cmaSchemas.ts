@@ -1,6 +1,6 @@
 /**
  * CMA Schema Validation Layer
- * Zod schemas for all 168 fields with type constraints, bounds checking, and validation
+ * Zod schemas for all 181 fields with type constraints, bounds checking, and validation
  *
  * IMPORTANT: This validation layer works AFTER tier arbitration
  * It does NOT affect the firing order or hierarchy - just validates data quality
@@ -16,7 +16,7 @@ import { z } from 'zod';
 
 /**
  * CMA Field Value Wrapper
- * Every field in the 168-field schema uses this structure
+ * Every field in the 181-field schema uses this structure
  */
 export const CmaFieldValueSchema = z.object({
   value: z.union([z.string(), z.number(), z.boolean(), z.array(z.string()), z.null()]),
@@ -106,7 +106,7 @@ const multiselectField = (options: [string, ...string[]]) => z.object({
 });
 
 // ============================================
-// 168-FIELD CMA SCHEMA
+// 181-FIELD CMA SCHEMA
 // ============================================
 
 export const CmaSchema = z.object({
@@ -508,14 +508,14 @@ export function getMissingFieldsReport(schema: CmaSchemaType): {
 
 /**
  * Get schema completion percentage
- * Percentage of non-null fields out of 168 total
+ * Percentage of non-null fields out of 181 total
  */
 export function getSchemaCompletion(schema: CmaSchemaType): {
   completed: number;
   total: number;
   percentage: number;
 } {
-  const total = 168;
+  const total = 181;
   let completed = 0;
 
   for (const fieldValue of Object.values(schema)) {

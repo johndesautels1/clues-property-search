@@ -22,7 +22,7 @@ import { GEMINI_OLIVIA_CMA_SYSTEM } from '../../src/config/gemini-prompts.js';
 // =============================================================================
 
 interface Property {
-  [key: string]: any; // Full property object with all 168 fields
+  [key: string]: any; // Full property object with all 181 fields
 }
 
 interface FieldScore {

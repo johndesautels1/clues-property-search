@@ -1,9 +1,9 @@
 /**
- * OLIVIA ENHANCED - 168-Field Intelligence System
+ * OLIVIA ENHANCED - 181-Field Intelligence System
  * Comprehensive TypeScript interfaces for Olivia's brain
  *
  * This file defines all data structures for:
- * - 168-field property analysis
+ * - 181-field property analysis
  * - 23-section executive appraisal report
  * - Multi-LLM market forecasting
  * - HeyGen avatar integration
@@ -14,14 +14,14 @@ import type { Property } from '@/types/property';
 import type { ALL_FIELDS } from '@/types/fields-schema';
 
 // ============================================================================
-// PROPERTY INPUT (ALL 168 FIELDS)
+// PROPERTY INPUT (ALL 181 FIELDS)
 // ============================================================================
 
 export interface OliviaEnhancedPropertyInput {
   // Property identification
   id: string;
 
-  // All 168 fields extracted from Property type
+  // All 181 fields extracted from Property type
   // GROUP 1: Address & Identity (1-9)
   full_address: string;
   mls_primary?: string;

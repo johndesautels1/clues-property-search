@@ -1,7 +1,7 @@
 /**
  * OLIVIA MOCK DATA GENERATOR
  * For testing and previewing the UI in Claude Desktop
- * Generates realistic 168-field analysis results
+ * Generates realistic 181-field analysis results
  */
 
 import type { OliviaEnhancedAnalysisResult } from '@/types/olivia-enhanced';
@@ -313,7 +313,7 @@ export function generateMockOliviaAnalysis(): OliviaEnhancedAnalysisResult {
 
     // Olivia's Verbal Analysis
     verbalAnalysis: {
-      executiveSummary: `Hello! I'm Olivia, and I've completed a comprehensive analysis of these three exceptional Florida waterfront properties. After evaluating all 168 data points across 22 categories, I'm excited to share some fascinating insights with you.
+      executiveSummary: `Hello! I'm Olivia, and I've completed a comprehensive analysis of these three exceptional Florida waterfront properties. After evaluating all 181 data points across 23 categories, I'm excited to share some fascinating insights with you.
 
 The property at 789 Gulf Way emerges as my top recommendation with an A- investment grade. Here's why: This property offers an incredibly rare combination - premium waterfront living with direct boat access, yet it's priced 18% below the assessed value. That's immediate equity the moment you close.
 
@@ -597,9 +597,9 @@ My confidence in this recommendation is 92%. This is based on hard data across v
 
     // Call to Action
     callToAction: {
-      primaryAction: 'Based on this comprehensive 168-field analysis, Property 789 Gulf Way represents an exceptional opportunity. The below-market pricing combined with premium waterfront access creates both immediate equity and long-term appreciation potential. I recommend scheduling an in-person tour within the next 7 days, as waterfront properties in this price range typically receive multiple offers.',
+      primaryAction: 'Based on this comprehensive 181-field analysis, Property 789 Gulf Way represents an exceptional opportunity. The below-market pricing combined with premium waterfront access creates both immediate equity and long-term appreciation potential. I recommend scheduling an in-person tour within the next 7 days, as waterfront properties in this price range typically receive multiple offers.',
       secondaryActions: [
-        'Download complete 168-field property report (PDF)',
+        'Download complete 181-field property report (PDF)',
         'Schedule virtual consultation with CLUES™ certified advisor',
         'Request customized financial analysis for your specific situation',
         'Tour property with Olivia via FaceTime walkthrough',
