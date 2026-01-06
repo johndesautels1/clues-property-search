@@ -45,6 +45,32 @@ const STELLAR_MLS_TIMEOUT = 30000; // 30 seconds for Stellar MLS via Bridge API 
 const FREE_API_TIMEOUT = 90000; // 90 seconds for Redfin, Google, and all free APIs (Tier 2 & 3) - increased from 60s
 const LLM_TIMEOUT = 60000; // 60 seconds for Claude, GPT-5.2, Gemini, Grok single LLM calls
 const PERPLEXITY_TIMEOUT = 180000; // 180 seconds (3 minutes) for Perplexity deep web search
+
+// ============================================
+// RATE LIMIT TRACKING - Skip LLMs only when 429 detected
+// ============================================
+const rateLimitState = {
+  perplexity: { limited: false, resetAt: 0 },
+  gemini: { limited: false, resetAt: 0 },
+  gpt: { limited: false, resetAt: 0 },
+  grok: { limited: false, resetAt: 0 },
+};
+
+function isRateLimited(llm: keyof typeof rateLimitState): boolean {
+  const state = rateLimitState[llm];
+  if (!state.limited) return false;
+  // Reset after 60 seconds
+  if (Date.now() > state.resetAt) {
+    state.limited = false;
+    return false;
+  }
+  return true;
+}
+
+function setRateLimited(llm: keyof typeof rateLimitState): void {
+  rateLimitState[llm] = { limited: true, resetAt: Date.now() + 60000 };
+  console.log(`⚠️ [Rate Limit] ${llm} rate limited (429) - skipping remaining calls for 60s`);
+}
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([
     promise,
@@ -2139,6 +2165,10 @@ async function enrichWithFreeAPIs(
  * Fields: 10, 12, 16-19, 21, 26, 28, 30-33, 44, 54-55, 59, 98, 102-103 (20 fields)
  */
 async function callPerplexityPortals(address: string, context: any = {}): Promise<Record<string, any>> {
+  if (isRateLimited('perplexity')) {
+    console.log(`⏭️ [Perplexity Portals] Skipping - rate limited`);
+    return {};
+  }
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) {
     console.log('❌ PERPLEXITY_API_KEY not set');
@@ -2186,6 +2216,10 @@ JSON format: { "10_listing_price": { "value": 500000, "source": "Redfin", "sourc
  * Fields: 9, 13-15, 35-38, 60-62, 149-153 (16 fields)
  */
 async function callPerplexityCounty(address: string, context: any = {}): Promise<Record<string, any>> {
+  if (isRateLimited('perplexity')) {
+    console.log(`⏭️ [Perplexity County] Skipping - rate limited`);
+    return {};
+  }
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) {
     console.log('❌ PERPLEXITY_API_KEY not set');
@@ -2225,6 +2259,10 @@ JSON format: { "35_annual_taxes": { "value": 15392, "source": "County Tax Collec
  * Fields: 63, 65-73 (10 fields)
  */
 async function callPerplexitySchools(address: string, context: any = {}): Promise<Record<string, any>> {
+  if (isRateLimited('perplexity')) {
+    console.log(`⏭️ [Perplexity Schools] Skipping - rate limited`);
+    return {};
+  }
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) {
     console.log('❌ PERPLEXITY_API_KEY not set');
@@ -2265,6 +2303,10 @@ JSON format: { "66_elementary_rating": { "value": 7, "source": "GreatSchools", "
  * Fields: 74-80, 88-90 (10 fields)
  */
 async function callPerplexityWalkScoreCrime(address: string, context: any = {}): Promise<Record<string, any>> {
+  if (isRateLimited('perplexity')) {
+    console.log(`⏭️ [Perplexity WalkScore/Crime] Skipping - rate limited`);
+    return {};
+  }
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) {
     console.log('❌ PERPLEXITY_API_KEY not set');
@@ -2303,6 +2345,10 @@ JSON format: { "74_walk_score": { "value": 62, "source": "WalkScore", "source_ur
  * Fields: 104-116 (13 fields)
  */
 async function callPerplexityUtilities(address: string, context: any = {}): Promise<Record<string, any>> {
+  if (isRateLimited('perplexity')) {
+    console.log(`⏭️ [Perplexity Utilities] Skipping - rate limited`);
+    return {};
+  }
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) {
     console.log('❌ PERPLEXITY_API_KEY not set');
@@ -2368,6 +2414,10 @@ JSON format: { "105_avg_electric_bill": { "value": "$145", "source": "Duke Energ
  * Uses Tampa Bay specific utility data with property attributes
  */
 async function callPerplexityElectricBill(address: string, context: any = {}): Promise<Record<string, any>> {
+  if (isRateLimited('perplexity')) {
+    console.log(`⏭️ [Field 105] Skipping - rate limited`);
+    return {};
+  }
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) {
     console.log('❌ [Field 105] PERPLEXITY_API_KEY not set');
@@ -2456,6 +2506,7 @@ Do not return any text outside the JSON object.`;
 
     if (!response.ok) {
       console.error(`❌ [Field 105] API error: ${response.status}`);
+      if (response.status === 429) setRateLimited('perplexity');
       return {};
     }
 
@@ -2503,6 +2554,10 @@ Do not return any text outside the JSON object.`;
  * Uses Tampa Bay specific utility data with property attributes
  */
 async function callPerplexityWaterBill(address: string, context: any = {}): Promise<Record<string, any>> {
+  if (isRateLimited('perplexity')) {
+    console.log(`⏭️ [Field 107] Skipping - rate limited`);
+    return {};
+  }
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) {
     console.log('❌ [Field 107] PERPLEXITY_API_KEY not set');
@@ -2582,6 +2637,7 @@ Return ONLY the JSON object, no other text.`;
 
     if (!response.ok) {
       console.error(`❌ [Field 107] API error: ${response.status}`);
+      if (response.status === 429) setRateLimited('perplexity');
       return {};
     }
 
@@ -2647,6 +2703,10 @@ Return ONLY the JSON object, no other text.`;
  * Uses FCC National Broadband Map, provider availability checkers
  */
 async function callPerplexityInternetSpeed(address: string, context: any = {}): Promise<Record<string, any>> {
+  if (isRateLimited('perplexity')) {
+    console.log(`⏭️ [Field 112] Skipping - rate limited`);
+    return {};
+  }
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) {
     console.log('❌ [Field 112] PERPLEXITY_API_KEY not set');
@@ -2719,6 +2779,7 @@ Return only the JSON object, no extra text.`;
 
     if (!response.ok) {
       console.error(`❌ [Field 112] API error: ${response.status}`);
+      if (response.status === 429) setRateLimited('perplexity');
       return {};
     }
 
@@ -2803,6 +2864,10 @@ Return only the JSON object, no extra text.`;
  * Uses FCC National Broadband Map, provider fiber availability
  */
 async function callPerplexityFiberAvailable(address: string, context: any = {}): Promise<Record<string, any>> {
+  if (isRateLimited('perplexity')) {
+    console.log(`⏭️ [Field 113] Skipping - rate limited`);
+    return {};
+  }
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) {
     console.log('❌ [Field 113] PERPLEXITY_API_KEY not set');
@@ -2879,6 +2944,7 @@ Return only the JSON object, no extra text.`;
 
     if (!response.ok) {
       console.error(`❌ [Field 113] API error: ${response.status}, using city fallback`);
+      if (response.status === 429) setRateLimited('perplexity');
       // CITY FALLBACK on API error
       const tampaBayFiberCities = ['tampa', 'st. petersburg', 'st petersburg', 'clearwater', 'st. pete beach', 'st pete beach', 'largo', 'pinellas park', 'dunedin', 'safety harbor', 'treasure island', 'madeira beach', 'seminole', 'palm harbor', 'tarpon springs', 'brandon', 'riverview'];
       const hasFiber = tampaBayFiberCities.some(c => city.toLowerCase().includes(c));
@@ -2966,6 +3032,10 @@ Return only the JSON object, no extra text.`;
  * Uses carrier coverage maps (Verizon, AT&T, T-Mobile)
  */
 async function callPerplexityCellCoverage(address: string, context: any = {}): Promise<Record<string, any>> {
+  if (isRateLimited('perplexity')) {
+    console.log(`⏭️ [Field 115] Skipping - rate limited`);
+    return {};
+  }
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) {
     console.log('❌ [Field 115] PERPLEXITY_API_KEY not set');
@@ -3043,6 +3113,7 @@ Return only the JSON object, no extra text.`;
 
     if (!response.ok) {
       console.error(`❌ [Field 115] API error: ${response.status}, using city fallback`);
+      if (response.status === 429) setRateLimited('perplexity');
       // CITY FALLBACK on API error - Tampa Bay has excellent 5G coverage
       return {
         '115_cell_coverage_quality': {
@@ -3172,6 +3243,12 @@ function extractFirstJsonObject(text: string): string | null {
 }
 
 async function callPerplexityHelper(promptName: string, userPrompt: string): Promise<Record<string, any>> {
+  // Check if Perplexity is rate limited (429 detected)
+  if (isRateLimited('perplexity')) {
+    console.log(`⏭️ [Perplexity ${promptName}] Skipping - rate limited (429 detected earlier)`);
+    return {};
+  }
+
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) {
     console.error(`❌ [Perplexity ${promptName}] PERPLEXITY_API_KEY not set`);
@@ -3203,6 +3280,10 @@ async function callPerplexityHelper(promptName: string, userPrompt: string): Pro
     if (!response.ok) {
       console.error(`❌ [Perplexity ${promptName}] API error: ${response.status} ${response.statusText}`);
       console.error(`❌ [Perplexity ${promptName}] Error data:`, JSON.stringify(data, null, 2));
+      // Detect 429 rate limit and set flag to skip remaining Perplexity calls
+      if (response.status === 429) {
+        setRateLimited('perplexity');
+      }
       return {};
     }
 
@@ -4750,21 +4831,21 @@ Return JSON only with the 34 field keys specified in the schema.`,
               ],
             },
           ],
-          // Enable Google Search grounding (Gemini 3 Pro)
+          // Enable Google Search grounding (Gemini 3 Pro - 2026 API format)
           tools: [
-            { google_search: {} }
-          ],
-          // Force the model to use the search tool
-          tool_config: {
-            function_calling_config: {
-              mode: "ANY"
+            {
+              googleSearchRetrieval: {
+                dynamicRetrievalConfig: {
+                  mode: "MODE_DYNAMIC",
+                  dynamicThreshold: 0.3  // Lower threshold = more likely to search
+                }
+              }
             }
-          },
+          ],
           generation_config: {
-            temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro 2026
-            response_mime_type: 'application/json',
-            thinking_level: 'high',
-            max_output_tokens: 16000,
+            temperature: 0.7,  // Slightly lower for more consistent JSON
+            responseMimeType: 'application/json',
+            maxOutputTokens: 16000,
           },
         }),
       }
