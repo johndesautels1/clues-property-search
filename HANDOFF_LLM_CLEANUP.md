@@ -50,7 +50,7 @@ Files to check:
 | GPT | `gpt-5.2-pro-2025-12-11` | DONE |
 | Gemini | `gemini-3-pro-latest` | DONE |
 | Grok | `grok-4-1-fast-reasoning` | DONE |
-| Perplexity | `sonar-deep-research` | DONE |
+| Perplexity | `sonar-pro` | DONE |
 | Claude Opus | `claude-opus-4-5-20251101` | NEEDS VERIFICATION |
 | Claude Sonnet | ??? | NEEDS VERIFICATION |
 
@@ -75,7 +75,7 @@ PROPERTY SEARCH FLOW:
 │    - FEMA, NOAA, USGS, EPA, FBI Crime, Google Solar, etc.       │
 ├─────────────────────────────────────────────────────────────────┤
 │ 6. TIER 5: LLM Web Search (34 missing fields)                   │
-│    - Perplexity sonar-deep-research (primary)                   │
+│    - Perplexity sonar-pro (primary)                   │
 │    - Grok grok-4-1-fast-reasoning (fallback)                    │
 │    - Gemini gemini-3-pro (fallback)                             │
 │    - GPT gpt-5.2-pro (fallback)                                 │
