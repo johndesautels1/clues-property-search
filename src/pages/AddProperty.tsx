@@ -55,15 +55,15 @@ type InputMode = 'address' | 'url' | 'manual' | 'csv' | 'text' | 'pdf';
 // Generate a simple unique ID
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
 
-// LLM Engine options - Use unified cascade order from constants (Perplexity & Grok first for web search)
+// LLM Engine options - CORRECT FIRING ORDER: Perplexity → GPT → Opus → Gemini → Grok → Sonnet
 const LLM_ENGINES = [
   { id: 'Auto', label: 'Auto Cascade', desc: 'All 6 engines', icon: '🔄' },
-  { id: 'perplexity', label: LLM_DISPLAY_NAMES['perplexity'], desc: 'Web Search', icon: '🔍' },
-  { id: 'grok', label: LLM_DISPLAY_NAMES['grok'], desc: 'Web Search', icon: '⚡' },
-  { id: 'claude-opus', label: LLM_DISPLAY_NAMES['claude-opus'], desc: 'Knowledge', icon: '👑' },
-  { id: 'gpt', label: LLM_DISPLAY_NAMES['gpt'], desc: 'Knowledge', icon: '🤖' },
-  { id: 'claude-sonnet', label: LLM_DISPLAY_NAMES['claude-sonnet'], desc: 'Fallback', icon: '🧊' },
-  { id: 'gemini', label: LLM_DISPLAY_NAMES['gemini'], desc: 'Last resort', icon: '♊' },
+  { id: 'perplexity', label: LLM_DISPLAY_NAMES['perplexity'], desc: '1. Web Search', icon: '🔍' },
+  { id: 'gpt', label: LLM_DISPLAY_NAMES['gpt'], desc: '2. Web Evidence', icon: '🤖' },
+  { id: 'claude-opus', label: LLM_DISPLAY_NAMES['claude-opus'], desc: '3. Deep Reasoning', icon: '👑' },
+  { id: 'gemini', label: LLM_DISPLAY_NAMES['gemini'], desc: '4. Google Grounding', icon: '♊' },
+  { id: 'grok', label: LLM_DISPLAY_NAMES['grok'], desc: '5. X/Twitter Data', icon: '⚡' },
+  { id: 'claude-sonnet', label: LLM_DISPLAY_NAMES['claude-sonnet'], desc: '6. Gap Filler', icon: '🧊' },
 ];
 
 export default function AddProperty() {
