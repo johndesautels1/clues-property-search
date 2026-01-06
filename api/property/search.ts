@@ -4015,10 +4015,14 @@ Return JSON only with the 34 field keys specified in the schema.`,
           // Enable Google Search (Gemini 3 Pro Preview - 2026 API format)
           tools: [{ google_search: {} }],
           tool_config: { function_calling_config: { mode: 'ANY' } },
-          generation_config: {
+          generationConfig: {
+            thinking_config: {
+              thinking_level: "high",
+              include_thoughts: false  // Just need data, not reasoning
+            },
             temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro
             maxOutputTokens: 16000,
-            response_mime_type: 'application/json'
+            responseMimeType: 'application/json'
           },
         }),
       }

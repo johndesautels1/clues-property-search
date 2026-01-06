@@ -1197,10 +1197,14 @@ async function callGemini(address: string): Promise<{ fields: Record<string, any
           contents: [{ parts: [{ text: `Address: ${address}` }] }],
           tools: [{ google_search: {} }],
           tool_config: { function_calling_config: { mode: "ANY" } },
-          generation_config: {
+          generationConfig: {
+            thinking_config: {
+              thinking_level: "high",
+              include_thoughts: false  // Just need data, not reasoning
+            },
             temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro
             maxOutputTokens: 16000,
-            response_mime_type: 'application/json'
+            responseMimeType: 'application/json'
           },
         }),
       }

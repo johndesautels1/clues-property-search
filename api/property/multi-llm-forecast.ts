@@ -603,24 +603,63 @@ async function callGeminiForecast(
     throw new Error('GEMINI_API_KEY not found in environment variables');
   }
 
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-3-pro-preview',
-    generationConfig: {
-      temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro
-      maxOutputTokens: 16000,
-      responseMimeType: 'application/json',
-    },
-    // Enable Google Search for real-time market data
-    tools: [{ googleSearch: {} }],
-    // Note: thinking_level is passed via providerOptions in Vercel AI SDK
-    // For Google AI SDK, high reasoning is enabled by default with gemini-3-pro-preview
-  });
-
   const prompt = buildForecastPrompt(address, price, neighborhood, propertyType);
 
-  const result = await model.generateContent(prompt);
-  const text = result.response.text();
+  // Use REST API for Gemini 3 Pro with thinking_config
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: {
+          parts: [{ text: GEMINI_FORECAST_SYSTEM_PROMPT }]
+        },
+        contents: [{ parts: [{ text: prompt }] }],
+        tools: [{ google_search: {} }],
+        tool_config: { function_calling_config: { mode: 'ANY' } },
+        generationConfig: {
+          thinking_config: {
+            thinking_level: "high",
+            include_thoughts: true  // Include reasoning for Olivia CMA
+          },
+          temperature: 1.0,
+          maxOutputTokens: 16000,
+          responseMimeType: 'application/json'
+        },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Gemini API error: ${response.status} ${error}`);
+  }
+
+  const responseData = await response.json();
+  const parts = responseData.candidates?.[0]?.content?.parts;
+
+  if (!parts || parts.length === 0) {
+    throw new Error('Gemini returned empty response');
+  }
+
+  // Separate thoughts from final answer
+  let thoughtProcess = "";
+  let finalAnswer = "";
+
+  parts.forEach((part: any) => {
+    if (part.thought) {
+      thoughtProcess += part.text;
+    } else if (part.text) {
+      finalAnswer += part.text;
+    }
+  });
+
+  if (thoughtProcess) {
+    console.log('[Gemini/Forecast] 🧠 Thought process:', thoughtProcess.substring(0, 300) + '...');
+  }
+
+  const text = finalAnswer || parts[0]?.text;
 
   // Extract JSON from response
   const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -631,7 +670,7 @@ async function callGeminiForecast(
   const data = JSON.parse(jsonMatch[0]);
 
   return {
-    source: 'Gemini 2.5 Pro',
+    source: 'Gemini 3 Pro',
     appreciation1Yr: data.appreciation1Yr,
     appreciation5Yr: data.appreciation5Yr,
     confidence: data.confidence,

@@ -612,10 +612,14 @@ async function callGemini(prompt: string): Promise<LLMResponse> {
         contents: [{ parts: [{ text: prompt }] }],
         tools: [{ google_search: {} }],
         tool_config: { function_calling_config: { mode: 'ANY' } },
-        generation_config: {
+        generationConfig: {
+          thinking_config: {
+            thinking_level: "high",
+            include_thoughts: true  // Include reasoning for SMART Score analysis
+          },
           temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro
           maxOutputTokens: 16000,
-          response_mime_type: 'application/json'
+          responseMimeType: 'application/json'
         },
       }),
     }
@@ -627,10 +631,34 @@ async function callGemini(prompt: string): Promise<LLMResponse> {
   }
 
   const data = await response.json();
-  const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  const parts = data.candidates?.[0]?.content?.parts;
+
+  if (!parts || parts.length === 0) {
+    throw new Error('Gemini returned empty response');
+  }
+
+  // Separate thoughts from final answer (Gemini 3 Pro thinking mode)
+  let thoughtProcess = "";
+  let finalAnswer = "";
+
+  parts.forEach((part: any) => {
+    if (part.thought) {
+      thoughtProcess += part.text;
+    } else if (part.text) {
+      finalAnswer += part.text;
+    }
+  });
+
+  // Log the reasoning for debugging
+  if (thoughtProcess) {
+    console.log('[Gemini] 🧠 Thought process:', thoughtProcess.substring(0, 500) + '...');
+  }
+
+  // Use finalAnswer if available, otherwise use first part text
+  const content = finalAnswer || parts[0]?.text;
 
   if (!content) {
-    throw new Error('Gemini returned empty response');
+    throw new Error('Gemini returned no content');
   }
 
   // Parse JSON from response
