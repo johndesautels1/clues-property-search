@@ -17,6 +17,21 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { GEMINI_OLIVIA_CMA_SYSTEM } from '../../src/config/gemini-prompts.js';
 
+// Vercel serverless config
+export const config = {
+  maxDuration: 300, // 5 minutes for LLM consensus calls
+};
+
+// Timeout wrapper for LLM calls - prevents hanging
+const LLM_TIMEOUT = 90000; // 90s per LLM call (Gemini 3 Pro needs 60-90s with thinking_level: high)
+
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))
+  ]);
+}
+
 // =============================================================================
 // TYPE DEFINITIONS
 // =============================================================================

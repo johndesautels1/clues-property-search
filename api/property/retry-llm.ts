@@ -59,7 +59,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
   ]);
 }
 
-const LLM_TIMEOUT = 45000; // 45s per LLM call (reduced from 60s)
+const LLM_TIMEOUT = 90000; // 90s per LLM call (Gemini 3 Pro needs 60-90s with thinking_level: high)
 const PERPLEXITY_TIMEOUT = 90000; // 90s for Perplexity (reduced from 180s)
 
 // ============================================

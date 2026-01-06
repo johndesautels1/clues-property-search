@@ -23,6 +23,16 @@ export const config = {
   maxDuration: 120, // 2 minutes for PDF parsing
 };
 
+// Timeout wrapper for LLM calls - prevents hanging
+const LLM_TIMEOUT = 90000; // 90s per LLM call
+
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))
+  ]);
+}
+
 // Fields that contain monthly HOA values (need conversion to annual)
 const MONTHLY_HOA_FIELDS = new Set([
   'Monthly HOA Amount',

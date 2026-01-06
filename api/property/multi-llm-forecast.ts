@@ -26,6 +26,16 @@ export const config = {
   maxDuration: 300, // 5 minutes for 6 LLM calls
 };
 
+// Timeout wrapper for LLM calls - prevents hanging
+const LLM_TIMEOUT = 90000; // 90s per LLM call (Gemini 3 Pro needs 60-90s with thinking_level: high)
+
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))
+  ]);
+}
+
 // ============================================================================
 // TYPES
 // ============================================================================
