@@ -353,7 +353,7 @@ class PropertyScraper {
   }
 
   private buildExtractionPrompt(input: string): string {
-    return `You are the CLUES Field Completer (Grok 4 Reasoning Mode).
+    return `You are the CLUES Field Completer (Grok 4.1 Fast Mode).
 Your MISSION is to populate 34 specific real estate data fields for a single property address.
 
 ### HARD RULES (EVIDENCE FIREWALL)

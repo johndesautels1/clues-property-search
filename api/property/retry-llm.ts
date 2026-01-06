@@ -37,11 +37,58 @@ const missingFieldsList = {
 };
 const missingFieldsRules = {
   field_rules: {
-    "104_electric_provider": { type: "string", definition: "Primary electric utility serving the property address." },
-    "106_water_provider": { type: "string", definition: "Primary water utility serving the property address." },
+    // AVMs & Market Values
+    "12_market_value_estimate": { type: "number", definition: "Estimated market value in USD. Average of Zestimate and Redfin Estimate if both available." },
+    "16a_zestimate": { type: "number", definition: "Zillow's Zestimate value in USD. Search 'site:zillow.com [address]'." },
+    "16b_redfin_estimate": { type: "number", definition: "Redfin's estimate value in USD. Search 'site:redfin.com [address]'." },
+    "16c_first_american_avm": { type: "number", definition: "First American AVM value in USD. Often behind paywall - return null if unavailable." },
+    "16d_quantarium_avm": { type: "number", definition: "Quantarium AVM value in USD. Often behind paywall - return null if unavailable." },
+    "16e_ice_avm": { type: "number", definition: "ICE (Intercontinental Exchange) AVM value in USD. Often behind paywall - return null if unavailable." },
+    "16f_collateral_analytics_avm": { type: "number", definition: "Collateral Analytics AVM value in USD. Often behind paywall - return null if unavailable." },
+
+    // Transit & Location
+    "81_public_transit_access": { type: "string", definition: "Description of public transit options (bus routes, train stations) within 1 mile of property." },
+    "82_commute_to_city_center": { type: "string", definition: "Estimated commute time to nearest major city center by car during rush hour." },
+
+    // Market Statistics
+    "91_median_home_price_neighborhood": { type: "number", definition: "Median home sale price in the neighborhood/ZIP code in USD. Search '[ZIP] median home price 2024 2025'." },
+    "92_price_per_sqft_recent_avg": { type: "number", definition: "Average price per square foot for recent sales in the area in USD." },
+    "95_days_on_market_avg": { type: "number", definition: "Average days on market for listings in this ZIP/neighborhood." },
+    "96_inventory_surplus": { type: "string", definition: "Market inventory status: 'Buyer's Market' (>6 months inventory), 'Seller's Market' (<3 months), or 'Balanced' (3-6 months)." },
+    "97_insurance_est_annual": { type: "number", definition: "Estimated annual homeowners insurance cost in USD for this property type and location." },
+    "98_rental_estimate_monthly": { type: "number", definition: "Estimated monthly rent in USD. Search 'site:zillow.com [address] rent' or 'site:rentometer.com [ZIP]'." },
+
+    // Comparable Sales
+    "103_comparable_sales": { type: "array", definition: "Array of 3-5 recent comparable sales within 1 mile. Each comp: {address, sale_price, sale_date, sqft, beds, baths}." },
+
+    // Utilities
+    "104_electric_provider": { type: "string", definition: "Primary electric utility company serving this address (e.g., 'Duke Energy', 'Florida Power & Light')." },
+    "105_avg_electric_bill": { type: "number", definition: "Average monthly electric bill in USD for this property size in this area." },
+    "106_water_provider": { type: "string", definition: "Primary water utility company or municipality providing water service." },
+    "107_avg_water_bill": { type: "number", definition: "Average monthly water/sewer bill in USD for this property size." },
+    "110_trash_provider": { type: "string", definition: "Trash/solid waste collection provider (often same as city/county)." },
+    "111_internet_providers_top3": { type: "array", definition: "Top 3 internet providers available at this address with max speeds. Example: ['Spectrum (400 Mbps)', 'AT&T Fiber (1 Gbps)', 'T-Mobile 5G']." },
+    "114_cable_tv_provider": { type: "string", definition: "Primary cable TV provider available at this address." },
+
+    // Listing Activity & Views
+    "169_zillow_views": { type: "number", definition: "Number of views on Zillow listing (if active listing). Return null if not listed or not available." },
+    "170_redfin_views": { type: "number", definition: "Number of views on Redfin listing (if active listing). Return null if not listed or not available." },
+    "171_homes_views": { type: "number", definition: "Number of views on Homes.com listing (if active listing). Return null if not listed or not available." },
+    "172_realtor_views": { type: "number", definition: "Number of views on Realtor.com listing (if active listing). Return null if not listed or not available." },
+    "174_saves_favorites": { type: "number", definition: "Number of times listing was saved/favorited across platforms. Return null if not available." },
+
+    // Market Trends
+    "175_market_type": { type: "string", definition: "Current market classification: 'Hot', 'Warm', 'Cool', or 'Cold' based on days on market and sale-to-list ratio." },
+    "176_avg_sale_to_list_percent": { type: "number", definition: "Average sale price as percentage of list price in this area (e.g., 98.5 means homes sell for 98.5% of asking)." },
+    "177_avg_days_to_pending": { type: "number", definition: "Average number of days from listing to pending status in this ZIP/neighborhood." },
+    "178_multiple_offers_likelihood": { type: "string", definition: "Likelihood of multiple offers: 'High' (>50% of listings), 'Medium' (25-50%), 'Low' (<25%)." },
+    "180_price_trend": { type: "string", definition: "Price trend direction: 'Rising', 'Stable', or 'Declining' based on YoY median price change." },
+    "181_rent_zestimate": { type: "number", definition: "Zillow's Rent Zestimate (estimated monthly rent) in USD. Search 'site:zillow.com [address] rent zestimate'." },
+
+    // Legacy fields (kept for backward compatibility)
     "120_flood_risk_level": { type: "string", definition: "FEMA flood zone designation or flood risk category." },
     "124_hurricane_risk": { type: "string", definition: "Hurricane risk level or evacuation zone." },
-    "35_annual_taxes": { type: "number", definition: "Most recent annual property tax amount (USD)." }
+    "35_annual_taxes": { type: "number", definition: "Most recent annual property tax amount in USD from county records." }
   }
 };
 import { GEMINI_FIELD_COMPLETER_SYSTEM } from '../../src/config/gemini-prompts.js';

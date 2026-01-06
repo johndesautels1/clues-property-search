@@ -40,8 +40,8 @@ export const DATA_TIERS: Record<string, TierConfig> = {
   'fbi-crime': { tier: 3, name: 'FBI Crime', description: 'Crime statistics', reliability: 90 },
   // LLM Cascade Order: Perplexity → Gemini → GPT → Grok → Sonnet → Opus
   'perplexity': { tier: 4, name: 'Perplexity', description: '#1 - Deep web search (HIGHEST LLM)', reliability: 90 },
-  'gemini': { tier: 4, name: 'Gemini 3 Pro', description: '#2 - Google Search grounding', reliability: 85 },
-  'gpt': { tier: 4, name: 'GPT-5.2', description: '#3 - Web evidence mode', reliability: 80 },
+  'gemini': { tier: 4, name: 'Gemini 3 Pro Preview', description: '#2 - Google Search grounding', reliability: 85 },
+  'gpt': { tier: 4, name: 'GPT-5.2 Pro', description: '#3 - Web evidence mode', reliability: 80 },
   'grok': { tier: 4, name: 'Grok/xAI', description: '#4 - X/Twitter real-time data', reliability: 75 },
   'claude-sonnet': { tier: 5, name: 'Claude Sonnet', description: '#5 - Web search beta (fills gaps)', reliability: 70 },
   'claude-opus': { tier: 5, name: 'Claude Opus', description: '#6 - Deep reasoning, NO web search (LAST)', reliability: 65 },

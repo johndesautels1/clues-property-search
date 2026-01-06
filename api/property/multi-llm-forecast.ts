@@ -705,7 +705,7 @@ async function callGeminiForecast(
   }
 
   return {
-    source: 'Gemini 3 Pro',
+    source: 'Gemini 3 Pro Preview',
     appreciation1Yr: data.appreciation1Yr,
     appreciation5Yr: data.appreciation5Yr,
     confidence: data.confidence,
