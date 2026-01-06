@@ -3947,7 +3947,20 @@ Return JSON only with the 34 field keys specified in the schema.`,
     const elapsed = Date.now() - startTime;
     console.log(`⏱️ [Gemini] Response time: ${elapsed}ms ${elapsed < 2000 ? '⚠️ TOO FAST - may not have searched' : '✅ Good - likely searched'}`);
 
+    // Check for HTTP errors first
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ [Gemini] HTTP ${response.status}: ${errorText.substring(0, 500)}`);
+      return { error: `HTTP ${response.status}: ${response.statusText}`, fields: {}, llm: 'Gemini' };
+    }
+
     const data = await response.json();
+
+    // Log API-level errors
+    if (data.error) {
+      console.error(`❌ [Gemini] API Error:`, JSON.stringify(data.error).substring(0, 500));
+      return { error: `API Error: ${data.error.message || JSON.stringify(data.error)}`, fields: {}, llm: 'Gemini' };
+    }
 
     // Log grounding metadata to verify search was used
     const groundingMeta = data.candidates?.[0]?.groundingMetadata;
@@ -4010,8 +4023,14 @@ Return JSON only with the 34 field keys specified in the schema.`,
         }
       }
     }
+    // Log what we received if we couldn't parse it
+    console.error(`❌ [Gemini] No parseable response. Candidates:`, data.candidates ? 'present' : 'missing');
+    if (data.candidates?.[0]) {
+      console.error(`❌ [Gemini] Candidate 0 content:`, JSON.stringify(data.candidates[0]).substring(0, 300));
+    }
     return { error: 'Failed to parse Gemini response', fields: {}, llm: 'Gemini' };
   } catch (error) {
+    console.error(`❌ [Gemini] Exception:`, String(error));
     return { error: String(error), fields: {}, llm: 'Gemini' };
   }
 }
@@ -4533,6 +4552,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
               if (result.status === 'fulfilled') {
               const llmData = result.value;
+
+              // Debug logging for Gemini to catch issues
+              if (llm.id === 'gemini') {
+                console.log(`[Gemini Debug] Result value type: ${typeof llmData}, keys: ${llmData ? Object.keys(llmData).join(', ') : 'null'}`);
+                if (llmData?.error) console.log(`[Gemini Debug] Error: ${llmData.error}`);
+              }
 
               // Handle both formats: Perplexity returns fields directly, others return { fields: ... }
               const llmFields = llmData.fields || llmData;
