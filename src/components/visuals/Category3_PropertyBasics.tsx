@@ -3,7 +3,7 @@
  * 7 Charts comparing bedroom, bathroom, living space, lot size, efficiency, age, parking
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { ChartProperty } from '@/lib/visualsDataMapper';
 import { usePropertyStore } from '@/store/propertyStore';
@@ -128,7 +128,7 @@ export default function Category3_PropertyBasics({ properties }: Category3Props)
 
   // Convert all properties from store
   const allProperties = Array.from(fullProperties.values());
-  const allChartProperties = mapPropertiesToChart(allProperties);
+  const allChartProperties = useMemo(() => mapPropertiesToChart(allProperties), [allProperties.length]);
 
   // Use sample data if no real properties exist
   const availableProperties = allChartProperties.length > 0 ? allChartProperties : SAMPLE_PROPERTIES;

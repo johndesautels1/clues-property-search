@@ -7,7 +7,7 @@
  * Real data from usePropertyStore → visualsDataMapper → Charts
  */
 
-import { useState, useEffect, Suspense, lazy } from 'react';
+import { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePropertyStore } from '@/store/propertyStore';
 import { mapPropertiesToChart, type ChartProperty } from '@/lib/visualsDataMapper';
@@ -105,7 +105,7 @@ export default function Visuals() {
 
   // Convert Map to array and map to chart format
   const properties = Array.from(fullProperties.values());
-  const chartProperties = mapPropertiesToChart(properties);
+  const chartProperties = useMemo(() => mapPropertiesToChart(properties), [properties.length]);
 
   // Sample properties for testing (used when no real properties exist)
   const SAMPLE_PROPERTIES: ChartProperty[] = [

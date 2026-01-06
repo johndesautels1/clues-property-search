@@ -42,9 +42,9 @@ export const config = {
 
 // Timeout wrapper for API/LLM calls - prevents hanging
 const STELLAR_MLS_TIMEOUT = 30000; // 30 seconds for Stellar MLS via Bridge API (Tier 1) - typically responds in <10s
-const FREE_API_TIMEOUT = 90000; // 90 seconds for Redfin, Google, and all free APIs (Tier 2 & 3) - increased from 60s
-const LLM_TIMEOUT = 60000; // 60 seconds for Claude, GPT-5.2, Gemini, Grok single LLM calls
-const PERPLEXITY_TIMEOUT = 180000; // 180 seconds (3 minutes) for Perplexity deep web search
+const FREE_API_TIMEOUT = 60000; // 60 seconds for free APIs (Tier 2 & 3) - increased from 60s
+const LLM_TIMEOUT = 45000; // 45 seconds for Claude, GPT, Gemini, Grok single LLM calls
+const PERPLEXITY_TIMEOUT = 90000; // 90 seconds for Perplexity deep web search
 
 // ============================================
 // RATE LIMIT TRACKING - Skip LLMs only when 429 detected
@@ -5209,7 +5209,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('========================================');
       console.log('TIER 2 & 3: FREE APIs (Google, WalkScore, FEMA, etc.)');
       console.log('========================================');
-      console.log('🔍 Calling enrichWithFreeAPIs with 90s timeout for:', realAddress); // Note: This is FREE_API_TIMEOUT, not STELLAR_MLS_TIMEOUT
+      console.log('🔍 Calling enrichWithFreeAPIs with 60s timeout for:', realAddress); // Note: This is FREE_API_TIMEOUT, not STELLAR_MLS_TIMEOUT
       console.log('🔍 With validation: city=', mlsCity, 'state=', mlsState, 'zip=', mlsZip);
       try {
         const enrichedData = await withTimeout(
