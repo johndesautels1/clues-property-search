@@ -22,7 +22,7 @@ export type LLMEngine = typeof LLM_CASCADE_ORDER[number];
 // Display names for UI
 export const LLM_DISPLAY_NAMES: Record<LLMEngine, string> = {
   'perplexity': 'Perplexity Sonar Reasoning Pro',
-  'grok': 'Grok 4.1',
+  'grok': 'Grok 4.1 Fast',
   'claude-opus': 'Claude Opus 4.5',
   'gpt': 'GPT-5.2 Pro',
   'claude-sonnet': 'Claude Sonnet 4.5',
