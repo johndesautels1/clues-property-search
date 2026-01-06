@@ -605,7 +605,7 @@ async function callGeminiForecast(
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
-    model: 'gemini-3-pro',
+    model: 'gemini-2.5-flash',
     generationConfig: {
       temperature: 1.0,
       maxOutputTokens: 16000
