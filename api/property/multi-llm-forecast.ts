@@ -608,10 +608,13 @@ async function callGeminiForecast(
     model: 'gemini-3-pro-preview',
     generationConfig: {
       temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro
-      maxOutputTokens: 16000
+      maxOutputTokens: 16000,
+      responseMimeType: 'application/json',
     },
     // Enable Google Search for real-time market data
-    tools: [{ googleSearch: {} }]
+    tools: [{ googleSearch: {} }],
+    // Note: thinking_level is passed via providerOptions in Vercel AI SDK
+    // For Google AI SDK, high reasoning is enabled by default with gemini-3-pro-preview
   });
 
   const prompt = buildForecastPrompt(address, price, neighborhood, propertyType);

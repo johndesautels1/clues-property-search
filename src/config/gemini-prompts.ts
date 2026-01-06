@@ -242,7 +242,7 @@ RETURN JSON MATCHING THIS SCHEMA:
 // ============================================================================
 
 export const GEMINI_API_CONFIG = {
-  model: 'gemini-3-pro',
+  model: 'gemini-3-pro-preview',
   tools: [{ google_search: {} }],
   tool_config: {
     function_calling_config: {
@@ -250,7 +250,8 @@ export const GEMINI_API_CONFIG = {
     }
   },
   generation_config: {
-    temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro 2026
+    temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro
+    maxOutputTokens: 16000,
     response_mime_type: 'application/json',
     thinking_level: 'high'
   }

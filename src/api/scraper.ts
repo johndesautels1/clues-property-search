@@ -270,7 +270,15 @@ class PropertyScraper {
   private async scrapeWithGemini(prompt: string): Promise<PropertyScrapedData | null> {
     if (!this.gemini) throw new Error('Gemini not configured');
 
-    const model = this.gemini.getGenerativeModel({ model: 'gemini-3-pro' });
+    const model = this.gemini.getGenerativeModel({
+      model: 'gemini-3-pro-preview',
+      generationConfig: {
+        temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro
+        maxOutputTokens: 16000,
+        responseMimeType: 'application/json',
+      },
+      tools: [{ googleSearch: {} }],
+    });
     const result = await model.generateContent([{ text: prompt }]);
     const response = await result.response;
 
