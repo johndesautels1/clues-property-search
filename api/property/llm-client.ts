@@ -107,7 +107,7 @@ export async function callClaudeOpus(params: LlmCallParams): Promise<LlmResponse
       },
       body: JSON.stringify({
         model: 'claude-opus-4-5-20251101',
-        max_tokens: params.maxTokens ?? 8000,
+        max_tokens: params.maxTokens ?? 16000,
         temperature: params.temperature ?? 0.2,
         system: params.system,
         messages: [{ role: 'user', content: params.user }],

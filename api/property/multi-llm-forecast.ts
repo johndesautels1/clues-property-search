@@ -438,7 +438,7 @@ async function callClaudeForecast(
   const response = await client.messages.create({
     model: 'claude-sonnet-4-5-20250929',
     max_tokens: 16000,
-    temperature: 0.5,
+    temperature: 0.2,
     system: CLAUDE_SONNET_OLIVIA_CMA_SYSTEM_PROMPT,
     betas: ['web-search-2025-03-05'],
     tools: [
@@ -497,7 +497,7 @@ async function callClaudeOpusForecast(
   const response = await client.messages.create({
     model: 'claude-opus-4-5-20251101',
     max_tokens: 16000,
-    temperature: 0.5,
+    temperature: 0.2,
     system: CLAUDE_OPUS_OLIVIA_CMA_SYSTEM_PROMPT,
     messages: [{ role: 'user', content: prompt }],
   });
@@ -552,6 +552,8 @@ async function callGPT5Forecast(
     },
     body: JSON.stringify({
       model: 'gpt-5.2-pro',
+      temperature: 0.0,
+      max_tokens: 16000,
       input: [
         { role: 'system', content: GPT_OLIVIA_CMA_SYSTEM_PROMPT },
         { role: 'user', content: prompt },
@@ -560,7 +562,6 @@ async function callGPT5Forecast(
       tools: [{ type: 'web_search' }],
       tool_choice: 'required', // Always use web search for forecasts
       include: ['web_search_call.action.sources'],
-      temperature: 0.5,
     }),
   });
 
@@ -604,7 +605,13 @@ async function callGeminiForecast(
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: 'gemini-3-pro-latest' });
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-3-pro',
+    generationConfig: {
+      temperature: 1.0,
+      maxOutputTokens: 16000
+    }
+  });
 
   const prompt = buildForecastPrompt(address, price, neighborhood, propertyType);
 
@@ -902,6 +909,7 @@ async function callGrokForecast(
     },
     body: JSON.stringify({
       model: 'grok-4-1-fast-reasoning',
+      max_tokens: 16000,
       messages: [
         { role: 'system', content: GROK_FORECAST_SYSTEM_PROMPT },
         { role: 'user', content: prompt }
@@ -925,10 +933,9 @@ async function callGrokForecast(
       ],
       tool_choice: 'auto',
       generation_config: {
-        temperature: 1.0,
+        temperature: 0.2,
         response_mime_type: 'application/json'
       },
-      max_tokens: 2000,
     }),
   });
 

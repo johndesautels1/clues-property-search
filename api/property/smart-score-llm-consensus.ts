@@ -209,9 +209,9 @@ async function callClaudeOpus(prompt: string): Promise<LLMResponse> {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-opus-4-20250514',
+      model: 'claude-opus-4-5-20251101',
       max_tokens: 16000,
-      temperature: 0.1,
+      temperature: 0.2,
       messages: [
         {
           role: 'user',
@@ -350,6 +350,8 @@ async function callGPT5(prompt: string): Promise<LLMResponse> {
     },
     body: JSON.stringify({
       model: 'gpt-5.2-pro',
+      temperature: 0.0,
+      max_tokens: 16000,
       input: [
         { role: 'system', content: OLIVIA_SYSTEM_PROMPT },
         { role: 'user', content: prompt },
@@ -358,7 +360,6 @@ async function callGPT5(prompt: string): Promise<LLMResponse> {
       tools: [{ type: 'web_search' }],
       tool_choice: 'auto', // Optional for CMA - only use web for market context
       include: ['web_search_call.action.sources'],
-      temperature: 0.1,
     }),
   });
 
@@ -466,7 +467,7 @@ async function callGrok(prompt: string): Promise<LLMResponse> {
       ],
       tool_choice: 'auto',
       generation_config: {
-        temperature: 1.0,
+        temperature: 0.2,
         response_mime_type: 'application/json'
       },
       max_tokens: 16000,
@@ -507,7 +508,7 @@ async function callGemini(prompt: string): Promise<LLMResponse> {
   }
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-latest:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -520,6 +521,7 @@ async function callGemini(prompt: string): Promise<LLMResponse> {
         tool_config: { function_calling_config: { mode: 'ANY' } },
         generation_config: {
           temperature: 1.0,
+          maxOutputTokens: 16000,
           response_mime_type: 'application/json',
           thinking_level: 'high'
         },

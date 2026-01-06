@@ -639,7 +639,7 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
         ],
         tool_choice: 'auto',
         generation_config: {
-          temperature: 1.0,
+          temperature: 0.2,
           response_mime_type: 'application/json'
         },
         messages: [
@@ -862,6 +862,8 @@ Return ONLY the JSON object described in the system prompt.`;
       },
       body: JSON.stringify({
         model: 'gpt-5.2-pro',
+        temperature: 0.0,
+        max_tokens: 16000,
         input: [
           { role: 'system', content: GPT_RETRY_SYSTEM_PROMPT },
           { role: 'user', content: userPrompt }
@@ -1071,7 +1073,7 @@ async function callGemini(address: string): Promise<{ fields: Record<string, any
 
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-latest:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1086,6 +1088,7 @@ async function callGemini(address: string): Promise<{ fields: Record<string, any
           tool_config: { function_calling_config: { mode: "ANY" } },
           generation_config: {
             temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro 2026
+            maxOutputTokens: 16000,
             response_mime_type: 'application/json',
             thinking_level: 'high'
           },

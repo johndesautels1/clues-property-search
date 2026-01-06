@@ -34,6 +34,17 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GEMINI_FIELD_COMPLETER_SYSTEM } from '../../src/config/gemini-prompts.js';
+import {
+  buildPromptA,
+  buildPromptB,
+  buildPromptC,
+  buildPromptD,
+  buildPromptE,
+  mapPerplexityFieldsToSchema,
+  PERPLEXITY_SYSTEM_PROMPT,
+  PERPLEXITY_CONFIG,
+  type PromptDContext
+} from './perplexity-prompts.js';
 
 // Vercel serverless config - use global 300s limit from vercel.json for LLM cascade
 export const config = {
@@ -2155,1046 +2166,200 @@ async function enrichWithFreeAPIs(
 // ============================================
 
 // ============================================
-// PERPLEXITY MICRO-PROMPTS (5 source-centric prompts)
-// Based on Perplexity team guidance (Jan 1, 2026)
-// Each prompt: 1,000-1,300 tokens, 10-20 fields, 90% confidence threshold
+// PERPLEXITY - HAS REAL WEB SEARCH
+// Consolidated 5-prompt system recommended by Perplexity team
 // ============================================
 
 /**
- * PROMPT 1: Portal Data (Zillow, Redfin, Realtor.com)
- * Fields: 10, 12, 16-19, 21, 26, 28, 30-33, 44, 54-55, 59, 98, 102-103 (20 fields)
+ * PROMPT A: Listing Portals & Neighborhood Pricing
  */
-async function callPerplexityPortals(address: string, context: any = {}): Promise<Record<string, any>> {
+async function callPerplexityPromptA(address: string, context: any = {}): Promise<Record<string, any>> {
   if (isRateLimited('perplexity')) {
-    console.log(`⏭️ [Perplexity Portals] Skipping - rate limited`);
-    return {};
-  }
-  const apiKey = process.env.PERPLEXITY_API_KEY;
-  if (!apiKey) {
-    console.log('❌ PERPLEXITY_API_KEY not set');
+    console.log(`⏭️ [Perplexity A] Skipping - rate limited`);
     return {};
   }
 
-  const userPrompt = `You are a retrieval-only real estate research agent with LIVE WEB SEARCH.
+  const userPrompt = buildPromptA(
+    address,
+    context.city || 'Unknown',
+    context.county || 'Unknown'
+  );
 
-Property address: "${address}"
-
-Known context (for disambiguation only):
-- County: ${context.county || 'Unknown'}
-- City: ${context.city || 'Unknown'}
-
-Goal: Extract ONLY explicitly stated values from major listing portals (Redfin, Zillow, Realtor.com, Trulia, Homes.com).
-
-Target fields:
-10_listing_price, 12_market_value_estimate, 16_avms, 17_bedrooms, 18_full_bathrooms, 19_half_bathrooms, 21_living_sqft, 26_property_type, 28_garage_spaces, 30_hoa_yn, 31_hoa_fee_annual, 32_hoa_name, 33_hoa_includes, 44_garage_type, 54_pool_yn, 55_pool_type, 59_recent_renovations, 91_median_home_price_neighborhood, 92_price_per_sqft_recent_avg, 93_price_to_rent_ratio, 94_price_vs_median_percent, 95_days_on_market_avg, 98_rental_estimate_monthly, 102_financing_terms, 103_comparable_sales
-
-Field definitions for 91-95:
-- 91_median_home_price_neighborhood: Median sold price in this neighborhood/zip (from Redfin/Zillow market data)
-- 92_price_per_sqft_recent_avg: Average $/sqft for recent sales in area
-- 93_price_to_rent_ratio: Calculate as listing_price / (rental_estimate * 12) if both available
-- 94_price_vs_median_percent: How this property compares to median (e.g., +15% or -10%)
-- 95_days_on_market_avg: Average DOM for area from Redfin/Zillow market stats
-
-Rules:
-- Use ONLY these portals: Redfin, Zillow, Realtor.com, Trulia, Homes.com
-- If 90%+ confident, include field with: value, source, source_url
-- If <90% confident, omit field entirely
-- Never guess, infer, or use AI summaries
-- Prefer Redfin > Zillow > Realtor.com for conflicts
-- Output JSON ONLY, no commentary
-
-Search patterns:
-"${address} Redfin", "${address} Zillow", "${address} Realtor.com"
-
-JSON format: { "10_listing_price": { "value": 500000, "source": "Redfin", "source_url": "https://..." }, ... }`;
-
-  return await callPerplexityHelper('Portals', userPrompt);
+  return await callPerplexityWithMapping('Prompt A', userPrompt);
 }
 
 /**
- * PROMPT 2: County Records & Permits
- * Fields: 9, 13-15, 35-38, 60-62, 149-153 (16 fields)
+ * PROMPT B: County / Public Records
  */
-async function callPerplexityCounty(address: string, context: any = {}): Promise<Record<string, any>> {
+async function callPerplexityPromptB(address: string, context: any = {}): Promise<Record<string, any>> {
   if (isRateLimited('perplexity')) {
-    console.log(`⏭️ [Perplexity County] Skipping - rate limited`);
-    return {};
-  }
-  const apiKey = process.env.PERPLEXITY_API_KEY;
-  if (!apiKey) {
-    console.log('❌ PERPLEXITY_API_KEY not set');
+    console.log(`⏭️ [Perplexity B] Skipping - rate limited`);
     return {};
   }
 
-  const userPrompt = `You are a retrieval-only real estate research agent with LIVE WEB SEARCH.
+  const userPrompt = buildPromptB(
+    address,
+    context.county || 'Unknown',
+    context.parcelId
+  );
 
-Property address: "${address}"
-
-Known context (for disambiguation only):
-- County: ${context.county || 'Unknown'}
-- Parcel ID: ${context.parcelId || 'Unknown'}
-
-Goal: Extract ONLY explicitly stated values from official county .gov websites.
-
-Target fields:
-9_parcel_id, 13_last_sale_date, 14_last_sale_price, 15_assessed_value, 35_annual_taxes, 36_tax_year, 37_property_tax_rate, 38_tax_exemptions, 60_permit_history_roof, 61_permit_history_hvac, 62_permit_history_other, 149_subdivision_name, 150_legal_description, 151_homestead_yn, 152_cdd_yn, 153_annual_cdd_fee
-
-Rules:
-- Use ONLY official county .gov sites (Property Appraiser, Tax Collector, Building Dept)
-- If 90%+ confident, include field
-- You MAY compute 37_property_tax_rate as: (35_annual_taxes ÷ 15_assessed_value) × 100 if both explicit
-- Never use Zillow/Redfin for county data
-- Output JSON ONLY
-
-Search patterns:
-"${context.county} County Property Appraiser ${address}", "${context.county} County Building Permits ${address}", "site:.gov ${context.county} ${address} parcel"
-
-JSON format: { "35_annual_taxes": { "value": 15392, "source": "County Tax Collector", "source_url": "https://..." }, ... }`;
-
-  return await callPerplexityHelper('County', userPrompt);
+  return await callPerplexityWithMapping('Prompt B', userPrompt);
 }
 
 /**
- * PROMPT 3: Schools & Ratings
- * Fields: 63, 65-73 (10 fields)
+ * PROMPT C: Schools, Walkability, Crime
  */
-async function callPerplexitySchools(address: string, context: any = {}): Promise<Record<string, any>> {
+async function callPerplexityPromptC(address: string, context: any = {}): Promise<Record<string, any>> {
   if (isRateLimited('perplexity')) {
-    console.log(`⏭️ [Perplexity Schools] Skipping - rate limited`);
-    return {};
-  }
-  const apiKey = process.env.PERPLEXITY_API_KEY;
-  if (!apiKey) {
-    console.log('❌ PERPLEXITY_API_KEY not set');
+    console.log(`⏭️ [Perplexity C] Skipping - rate limited`);
     return {};
   }
 
-  const userPrompt = `You are a retrieval-only real estate research agent with LIVE WEB SEARCH.
+  const userPrompt = buildPromptC(
+    address,
+    context.city || 'Unknown',
+    context.county || 'Unknown'
+  );
 
-Property address: "${address}"
-
-Known context (for disambiguation only):
-- County: ${context.county || 'Unknown'}
-- City: ${context.city || 'Unknown'}
-
-Goal: Extract ONLY numeric 1-10 school ratings from GreatSchools.org.
-
-Target fields:
-63_school_district, 65_elementary_school, 66_elementary_rating, 67_elementary_distance_mi, 68_middle_school, 69_middle_rating, 70_middle_distance_mi, 71_high_school, 72_high_rating, 73_high_distance_mi
-
-Rules:
-- Use ONLY GreatSchools.org and official school district websites
-- For ratings: ONLY use numeric 1-10 from GreatSchools profile page
-- If numeric 1-10 rating NOT clearly visible, OMIT the *_rating field (do NOT convert from other metrics)
-- For distances: ONLY if miles explicitly shown by GreatSchools
-- Never infer attendance boundaries
-- Output JSON ONLY
-
-Search patterns:
-"${address} GreatSchools", "schools near ${address}"
-
-JSON format: { "66_elementary_rating": { "value": 7, "source": "GreatSchools", "source_url": "https://..." }, ... }`;
-
-  return await callPerplexityHelper('Schools', userPrompt);
+  return await callPerplexityWithMapping('Prompt C', userPrompt);
 }
 
 /**
- * PROMPT 4: WalkScore, Crime, Safety
- * Fields: 74-80, 88-90 (10 fields)
+ * PROMPT D: Utilities & Recurring Bills
  */
-async function callPerplexityWalkScoreCrime(address: string, context: any = {}): Promise<Record<string, any>> {
+async function callPerplexityPromptD(address: string, context: any = {}): Promise<Record<string, any>> {
   if (isRateLimited('perplexity')) {
-    console.log(`⏭️ [Perplexity WalkScore/Crime] Skipping - rate limited`);
-    return {};
-  }
-  const apiKey = process.env.PERPLEXITY_API_KEY;
-  if (!apiKey) {
-    console.log('❌ PERPLEXITY_API_KEY not set');
+    console.log(`⏭️ [Perplexity D] Skipping - rate limited`);
     return {};
   }
 
-  const userPrompt = `You are a retrieval-only real estate research agent with LIVE WEB SEARCH.
+  const promptContext: PromptDContext = {
+    address,
+    city: context.city || 'Unknown',
+    state: context.state || 'FL',
+    zip: context.zip || '',
+    bedrooms: context.bedrooms,
+    bathrooms: context.bathrooms || context.total_bathrooms,
+    hasPool: context.pool_yn || context.hasPool || false,
+    sqft: context.sqft || context.living_sqft,
+    floors: context.floors || context.stories,
+    yearBuilt: context.yearBuilt || context.year_built
+  };
 
-Property address: "${address}"
+  const userPrompt = buildPromptD(promptContext);
 
-Known context (for disambiguation only):
-- City: ${context.city || 'Unknown'}
-
-Goal: Extract ONLY explicitly stated scores from WalkScore.com and crime data providers.
-
-Target fields:
-74_walk_score, 75_transit_score, 76_bike_score, 77_safety_score, 78_noise_level, 79_traffic_level, 80_walkability_description, 88_violent_crime_index, 89_property_crime_index, 90_neighborhood_safety_rating
-
-Rules:
-- Walkability: Use ONLY WalkScore.com for scores 74-76, 80
-- Noise: Prefer HowLoud.com
-- Crime: Use ONLY NeighborhoodScout, CrimeGrade, or official police portals
-- Never compute your own indices
-- Output JSON ONLY
-
-Search patterns:
-"${address} WalkScore", "${address} NeighborhoodScout", "${address} CrimeGrade"
-
-JSON format: { "74_walk_score": { "value": 62, "source": "WalkScore", "source_url": "https://..." }, ... }`;
-
-  return await callPerplexityHelper('WalkScore/Crime', userPrompt);
+  return await callPerplexityWithMapping('Prompt D', userPrompt);
 }
 
 /**
- * PROMPT 5: Utilities & ISP
- * Fields: 104-116 (13 fields)
+ * PROMPT E: Comparable Sales (Optional)
  */
-async function callPerplexityUtilities(address: string, context: any = {}): Promise<Record<string, any>> {
+async function callPerplexityPromptE(address: string, context: any = {}): Promise<Record<string, any>> {
   if (isRateLimited('perplexity')) {
-    console.log(`⏭️ [Perplexity Utilities] Skipping - rate limited`);
-    return {};
-  }
-  const apiKey = process.env.PERPLEXITY_API_KEY;
-  if (!apiKey) {
-    console.log('❌ PERPLEXITY_API_KEY not set');
+    console.log(`⏭️ [Perplexity E] Skipping - rate limited`);
     return {};
   }
 
-  const userPrompt = `You are a retrieval-only real estate research agent with LIVE WEB SEARCH.
+  const userPrompt = buildPromptE(
+    address,
+    context.city || 'Unknown'
+  );
 
-Property address: "${address}"
-
-Known context (for disambiguation only):
-- City: ${context.city || 'Unknown'}
-- State: ${context.state || 'FL'}
-- ZIP: ${context.zip || 'Unknown'}
-
-Goal: Extract utility providers, average bills, and connectivity data.
-
-Target fields with SPECIFIC instructions:
-
-1. **105_avg_electric_bill** - Search for:
-   - "${context.city || 'Florida'} average electric bill residential"
-   - Official utility company (Duke Energy, TECO, FPL) average bill data
-   - Use Florida avg of ~$150/month if local data unavailable
-   - Format: "$XXX" (monthly amount)
-
-2. **107_avg_water_bill** - Search for:
-   - "${context.city || 'Florida'} water utility average bill"
-   - Local water utility residential rates
-   - Use Florida avg of ~$35-50/month if local data unavailable
-   - Format: "$XX" (monthly amount)
-
-3. **112_max_internet_speed** - Search for:
-   - "${address} internet availability BroadbandNow"
-   - Check Xfinity, Spectrum, AT&T, Frontier availability
-   - Format: "XXX Mbps" or "X Gbps"
-
-4. **113_fiber_available** - Search for:
-   - "${address} fiber internet availability"
-   - Check AT&T Fiber, Verizon Fios, Google Fiber availability
-   - Format: "Yes", "No", or null
-
-5. **115_cell_coverage_quality** - Search for:
-   - "${address} cell phone coverage"
-   - Check Verizon, AT&T, T-Mobile coverage maps
-   - Format: "Excellent" (5G), "Good" (strong 4G), "Fair", "Poor"
-
-Other fields (104, 106, 108-111, 114):
-104_electric_provider, 106_water_provider, 108_sewer_provider, 109_natural_gas, 110_trash_provider, 111_internet_providers_top3, 114_cable_tv_provider
-
-Rules:
-- For utility bills: Return ACTUAL numbers, not "varies" or "depends"
-- For internet: Use BroadbandNow.com, FCC broadband maps, ISP websites
-- Use Florida state averages as fallback when local data unavailable
-- Output JSON ONLY
-
-JSON format: { "105_avg_electric_bill": { "value": "$145", "source": "Duke Energy", "source_url": "https://..." }, "112_max_internet_speed": { "value": "1 Gbps", "source": "BroadbandNow" }, ... }`;
-
-  return await callPerplexityHelper('Utilities', userPrompt);
+  return await callPerplexityWithMapping('Prompt E', userPrompt);
 }
 
 /**
- * DEDICATED MICRO-PROMPT: Field 105 - Average Electric Bill
- * Uses Tampa Bay specific utility data with property attributes
+ * Shared Perplexity API caller with field mapping
  */
-async function callPerplexityElectricBill(address: string, context: any = {}): Promise<Record<string, any>> {
+async function callPerplexityWithMapping(promptName: string, userPrompt: string): Promise<Record<string, any>> {
   if (isRateLimited('perplexity')) {
-    console.log(`⏭️ [Field 105] Skipping - rate limited`);
+    console.log(`⏭️ [Perplexity ${promptName}] Skipping - rate limited`);
     return {};
   }
+
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) {
-    console.log('❌ [Field 105] PERPLEXITY_API_KEY not set');
+    console.error(`❌ [Perplexity ${promptName}] PERPLEXITY_API_KEY not set`);
     return {};
   }
-
-  const sqft = context.sqft || context.living_sqft || 'Unknown';
-  const floors = context.floors || context.stories || 1;
-  const yearBuilt = context.yearBuilt || context.year_built || 'Unknown';
-  const hvacAge = context.hvacAge || 'Unknown';
-  const city = context.city || 'Tampa';
-  const state = context.state || 'FL';
-  const zip = context.zip || '';
-
-  const systemPrompt = `You are a strict, retrieval-only utility cost assistant for residential real estate in the Tampa Bay area.
-Your ONLY task is to estimate the average monthly electric bill for each property using:
-- The full street address, city, state, ZIP code
-- Property square footage and number of floors
-- Year built and, if provided, ages of HVAC and windows
-
-Rules:
-- Use only credible, quantitative sources: utility rate schedules (Tampa Electric, Duke Energy Florida), official/public rate aggregators, or statistically valid Tampa/Tampa Bay usage benchmarks in kWh and dollars.
-- Start from local average monthly kWh usage and cost per kWh for Tampa/Tampa Bay, then scale cautiously based on home size, floors, and obvious efficiency factors (newer HVAC/windows → slightly lower; very old systems → slightly higher).
-- Do NOT personalize for occupant behavior, number of residents, work-from-home, or pool unless these facts are explicitly given.
-- If there is not enough information to adjust safely away from the local average, return a value very close to the local typical bill instead of guessing a wide range.
-- Never invent sources, never fabricate utility programs or rates, and never extrapolate from unrelated cities or states.
-- If you cannot produce a defensible numeric estimate from Tampa/Tampa Bay specific data plus the provided attributes, return null for that property instead of guessing.
-
-Output contract (MUST follow exactly):
-Always return a JSON object with this shape:
-{
-  "properties": [
-    {
-      "input_id": "string",
-      "avg_electric_bill_monthly_usd": 0,
-      "status": "ok",
-      "notes": "string"
-    }
-  ]
-}
-
-Field rules:
-- input_id: Echo the property identifier passed in (do not change it).
-- avg_electric_bill_monthly_usd: Integer dollars (no cents) if a defensible estimate exists. Use Tampa/Tampa Bay based kWh and price data only.
-- status: "ok" if you can produce a defensible estimate. "not_available" if you cannot; in that case, set avg_electric_bill_monthly_usd to null.
-- notes: One short sentence on how you derived the estimate, mentioning the type of source.
-
-Do NOT add any extra keys or commentary outside this JSON.`;
-
-  const userPrompt = `You are given 1 residential property in the Tampa Bay area.
-Estimate the typical average monthly electric bill.
-
-Return a single JSON object using the exact schema specified above.
-
-Property:
-- input_id: "prop_1"
-- Address: ${address}
-- City: ${city}
-- State: ${state}
-- ZIP: ${zip}
-- Square footage: ${sqft}
-- Floors/Stories: ${floors}
-- Year built: ${yearBuilt}
-- HVAC age: ${hvacAge}
-
-Do not return any text outside the JSON object.`;
 
   try {
-    console.log(`✅ [Field 105] Calling Perplexity for electric bill estimate...`);
+    console.log(`✅ [Perplexity ${promptName}] Calling API...`);
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'sonar-reasoning-pro',
+        ...PERPLEXITY_CONFIG,
         messages: [
-          { role: 'system', content: systemPrompt },
+          { role: 'system', content: PERPLEXITY_SYSTEM_PROMPT },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.2,
-        max_tokens: 2500
-      })
+      }),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      console.error(`❌ [Field 105] API error: ${response.status}`);
+      console.error(`❌ [Perplexity ${promptName}] API error: ${response.status} ${response.statusText}`);
       if (response.status === 429) setRateLimited('perplexity');
       return {};
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    if (data.choices?.[0]?.message?.content) {
+      const text = data.choices[0].message.content;
+      console.log(`✅ [Perplexity ${promptName}] Response received (${text.length} chars)`);
 
-    if (!content) {
-      console.log(`❌ [Field 105] No content in response`);
-      return {};
-    }
+      const cleaned = stripJsonCodeFences(text);
+      const candidate = (() => {
+        try { JSON.parse(cleaned); return cleaned; } catch {}
+        return extractFirstJsonObject(cleaned);
+      })();
 
-    // Parse the response
-    const jsonStr = extractFirstJsonObject(content);
-    if (!jsonStr) {
-      console.log(`❌ [Field 105] No JSON found in response`);
-      return {};
-    }
+      if (candidate) {
+        try {
+          const parsed = JSON.parse(candidate);
 
-    const parsed = JSON.parse(jsonStr);
-    const prop = parsed.properties?.[0];
+          // Map natural field names to schema field IDs
+          const mapped = mapPerplexityFieldsToSchema(parsed);
+          const rawCount = Object.keys(mapped).length;
+          console.log(`✅ [Perplexity ${promptName}] Mapped ${rawCount} fields to schema IDs`);
 
-    if (prop && prop.status === 'ok' && prop.avg_electric_bill_monthly_usd !== null) {
-      const billAmount = prop.avg_electric_bill_monthly_usd;
-      console.log(`✅ [Field 105] Electric bill estimate: $${billAmount}/month`);
-      return {
-        '105_avg_electric_bill': {
-          value: `$${billAmount}`,
-          source: 'Tampa Bay Utility Data',
-          confidence: 'Medium',
-          details: prop.notes || 'Estimated from local utility rates'
+          // Filter null values
+          const filteredFields = filterNullValues(mapped, `Perplexity ${promptName}`);
+          const finalCount = Object.keys(filteredFields).length;
+          console.log(`✅ [Perplexity ${promptName}] Returning ${finalCount} fields after filtering`);
+
+          // Upgrade confidence to High for Perplexity (has web search)
+          for (const key of Object.keys(filteredFields)) {
+            if (filteredFields[key] && typeof filteredFields[key] === 'object') {
+              filteredFields[key].confidence = 'High';
+              if (filteredFields[key].source && !filteredFields[key].source.includes('Perplexity')) {
+                filteredFields[key].source = `${filteredFields[key].source} (via Perplexity)`;
+              }
+            }
+          }
+
+          return filteredFields;
+        } catch (parseError) {
+          console.error(`❌ [Perplexity ${promptName}] JSON parse error:`, parseError);
         }
-      };
-    } else {
-      console.log(`❌ [Field 105] Could not estimate: ${prop?.notes || 'Unknown reason'}`);
-      return {};
-    }
-  } catch (error) {
-    console.error(`❌ [Field 105] Error:`, error);
-    return {};
-  }
-}
-
-/**
- * DEDICATED MICRO-PROMPT: Field 107 - Average Water Bill
- * Uses Tampa Bay specific utility data with property attributes
- */
-async function callPerplexityWaterBill(address: string, context: any = {}): Promise<Record<string, any>> {
-  if (isRateLimited('perplexity')) {
-    console.log(`⏭️ [Field 107] Skipping - rate limited`);
-    return {};
-  }
-  const apiKey = process.env.PERPLEXITY_API_KEY;
-  if (!apiKey) {
-    console.log('❌ [Field 107] PERPLEXITY_API_KEY not set');
-    return {};
-  }
-
-  const sqft = context.sqft || context.living_sqft || 'Unknown';
-  const bedrooms = context.bedrooms || 'Unknown';
-  const bathrooms = context.bathrooms || context.total_bathrooms || 'Unknown';
-  const city = context.city || 'Tampa';
-  const state = context.state || 'FL';
-  const zip = context.zip || '';
-  const hasPool = context.pool_yn || context.hasPool || false;
-
-  const systemPrompt = `You are a strict, retrieval-only utility cost assistant for residential real estate in the Tampa Bay area.
-Your ONLY task is to estimate the average monthly water bill for each property using:
-- The full street address, city, state, ZIP code
-- Property bedrooms and bathrooms (as proxy for water usage)
-- Whether property has a pool
-
-Rules:
-- Use only credible sources: Tampa Bay Water, Hillsborough County Water, Pinellas County Utilities rate schedules.
-- Start from local average monthly water usage (gallons) and cost per 1,000 gallons for Tampa Bay area.
-- Scale based on home size and bathrooms. Pool adds approximately $15-25/month.
-
-FALLBACK HIERARCHY (use in order):
-1. Address-specific utility data if available
-2. City-level average water bill data for the specific city
-3. County-level rates: Pinellas County uses $4.05 per 1,000 gallons base rate. Typical household uses 5,000-8,000 gallons/month = $20-32 base + sewer charges (~$25-35) = $45-70/month total
-4. Tampa Bay regional average: $45-65/month for typical 3BR/2BA single-family home
-
-IMPORTANT: You MUST return an estimate. Use the fallback hierarchy above. Do NOT return null - always provide at least a city or county-level estimate.
-
-Output contract (MUST follow exactly):
-{
-  "properties": [
-    {
-      "input_id": "string",
-      "avg_water_bill_monthly_usd": 0,
-      "status": "ok",
-      "notes": "string"
-    }
-  ]
-}`;
-
-  const userPrompt = `Estimate the typical average monthly water bill for this Tampa Bay property:
-
-- input_id: "prop_1"
-- Address: ${address}
-- City: ${city}
-- State: ${state}
-- ZIP: ${zip}
-- Bedrooms: ${bedrooms}
-- Bathrooms: ${bathrooms}
-- Has Pool: ${hasPool ? 'Yes' : 'No'}
-
-Return ONLY the JSON object, no other text.`;
-
-  try {
-    console.log(`✅ [Field 107] Calling Perplexity for water bill estimate...`);
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'sonar-reasoning-pro',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.2,
-        max_tokens: 2500
-      })
-    });
-
-    if (!response.ok) {
-      console.error(`❌ [Field 107] API error: ${response.status}`);
-      if (response.status === 429) setRateLimited('perplexity');
-      return {};
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-
-    if (!content) {
-      console.log(`❌ [Field 107] No content in response`);
-      return {};
-    }
-
-    const jsonStr = extractFirstJsonObject(content);
-    if (!jsonStr) {
-      console.log(`❌ [Field 107] No JSON found in response`);
-      return {};
-    }
-
-    const parsed = JSON.parse(jsonStr);
-    const prop = parsed.properties?.[0];
-
-    if (prop && prop.status === 'ok' && prop.avg_water_bill_monthly_usd !== null) {
-      const billAmount = prop.avg_water_bill_monthly_usd;
-      console.log(`✅ [Field 107] Water bill estimate: $${billAmount}/month`);
-      return {
-        '107_avg_water_bill': {
-          value: `$${billAmount}`,
-          source: 'Tampa Bay Water Utility Data',
-          confidence: 'Medium',
-          details: prop.notes || 'Estimated from local utility rates'
-        }
-      };
-    } else {
-      // FALLBACK: Use Pinellas County formula when API doesn't return estimate
-      // Base rate: $4.05/1000 gal, typical usage 6000 gal = $24.30 + sewer ~$30 = ~$55/month
-      const fallbackBill = hasPool ? 70 : 55;
-      console.log(`⚠️ [Field 107] Using county-level fallback: $${fallbackBill}/month (pool: ${hasPool})`);
-      return {
-        '107_avg_water_bill': {
-          value: `$${fallbackBill}`,
-          source: 'Pinellas County Utilities (Estimated)',
-          confidence: 'Low',
-          details: `County-level estimate based on $4.05/1000 gal rate. ${hasPool ? 'Includes pool surcharge.' : ''}`
-        }
-      };
-    }
-  } catch (error) {
-    console.error(`❌ [Field 107] Error:`, error);
-    // FALLBACK on error
-    const fallbackBill = hasPool ? 70 : 55;
-    return {
-      '107_avg_water_bill': {
-        value: `$${fallbackBill}`,
-        source: 'Pinellas County Utilities (Estimated)',
-        confidence: 'Low',
-        details: 'County-level estimate based on $4.05/1000 gal rate'
+      } else {
+        console.log(`❌ [Perplexity ${promptName}] No JSON found in response`);
       }
-    };
-  }
-}
-
-/**
- * DEDICATED MICRO-PROMPT: Field 112 - Max Internet Speed
- * Uses FCC National Broadband Map, provider availability checkers
- */
-async function callPerplexityInternetSpeed(address: string, context: any = {}): Promise<Record<string, any>> {
-  if (isRateLimited('perplexity')) {
-    console.log(`⏭️ [Field 112] Skipping - rate limited`);
-    return {};
-  }
-  const apiKey = process.env.PERPLEXITY_API_KEY;
-  if (!apiKey) {
-    console.log('❌ [Field 112] PERPLEXITY_API_KEY not set');
-    return {};
-  }
-
-  const city = context.city || 'Tampa';
-  const state = context.state || 'FL';
-  const zip = context.zip || '';
-
-  const systemPrompt = `You are a strict, retrieval-only broadband availability assistant.
-Your ONLY task is to determine the maximum advertised residential wired download speed (in Mbps) available at a specific U.S. residential address and return it as a number or null.
-
-Rules:
-- Use only authoritative broadband sources that allow address or ZIP+address lookup (e.g., FCC National Broadband Map, provider availability checkers, and reputable "internet in my area" aggregators).
-- Prefer provider/official data over generic marketing pages or nationwide statistics.
-- Only consider fixed wired technologies (fiber, cable, DSL, fixed wireless) that advertise specific maximum speeds.
-- If sources disagree, choose the highest clearly advertised residential wired download speed.
-- If you cannot find any trustworthy address-level or ZIP+area data, return null instead of guessing.
-- Never infer speeds from unrelated cities, states, or national reports.
-- Do NOT invent providers, technologies, or speeds.
-
-Output contract (MUST follow exactly):
-{
-  "field_id": 112,
-  "input_id": "string",
-  "max_internet_speed_mbps": 0,
-  "status": "ok",
-  "notes": "string"
-}
-
-Field rules:
-- field_id: Always 112.
-- input_id: Echo the input property id exactly.
-- max_internet_speed_mbps: Integer (Mbps) if a defensible maximum advertised wired download speed exists. null if not determinable from reliable address/ZIP-level data.
-- status: "ok" if max_internet_speed_mbps is not null. "not_available" if max_internet_speed_mbps is null.
-- notes: One short sentence naming the type of source and top technology (e.g., "Cable provider address lookup shows up to 1000 Mbps download").
-
-Do NOT add any extra keys or text.`;
-
-  const userPrompt = `Determine the maximum advertised wired download speed for this property:
-
-Property:
-- input_id: "prop_1"
-- address: "${address}"
-- city: "${city}"
-- state: "${state}"
-- zip: "${zip}"
-
-Return only the JSON object, no extra text.`;
-
-  try {
-    console.log(`✅ [Field 112] Calling Perplexity for max internet speed...`);
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'sonar-reasoning-pro',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.2,
-        max_tokens: 2500
-      })
-    });
-
-    if (!response.ok) {
-      console.error(`❌ [Field 112] API error: ${response.status}`);
-      if (response.status === 429) setRateLimited('perplexity');
-      return {};
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-
-    if (!content) {
-      console.log(`❌ [Field 112] No content in response`);
-      return {};
-    }
-
-    const jsonStr = extractFirstJsonObject(content);
-    if (!jsonStr) {
-      console.log(`❌ [Field 112] No JSON found in response`);
-      return {};
-    }
-
-    const parsed = JSON.parse(jsonStr);
-
-    if (parsed.status === 'ok' && parsed.max_internet_speed_mbps !== null) {
-      const speedMbps = parsed.max_internet_speed_mbps;
-      const speedStr = speedMbps >= 1000 ? `${speedMbps / 1000} Gbps` : `${speedMbps} Mbps`;
-      console.log(`✅ [Field 112] Max speed: ${speedStr}`);
-      return {
-        '112_max_internet_speed': {
-          value: speedStr,
-          source: 'FCC/ISP Data',
-          confidence: 'Medium',
-          details: parsed.notes || ''
-        }
-      };
     } else {
-      // CITY-LEVEL FALLBACK: If address-specific data not found, use city defaults
-      console.log(`⚠️ [Field 112] Address-specific not found, using city-level fallback for ${city}, ${state}`);
-
-      // Tampa Bay area city-level defaults based on typical ISP coverage
-      const cityDefaults: Record<string, number> = {
-        'tampa': 1000,
-        'st. petersburg': 1000,
-        'clearwater': 1000,
-        'treasure island': 500,
-        'st pete beach': 500,
-        'madeira beach': 500,
-        'seminole': 1000,
-        'largo': 1000,
-        'pinellas park': 1000,
-        'dunedin': 1000,
-        'palm harbor': 1000,
-        'tarpon springs': 500,
-        'brandon': 1000,
-        'riverview': 1000,
-        'valrico': 1000,
-        'plant city': 500,
-        'lakeland': 1000,
-        'winter haven': 500,
-        'sarasota': 1000,
-        'bradenton': 1000
-      };
-
-      const cityLower = city.toLowerCase();
-      const defaultSpeed = cityDefaults[cityLower] || 500; // Default to 500 Mbps for unknown cities
-      const speedStr = defaultSpeed >= 1000 ? `${defaultSpeed / 1000} Gbps` : `${defaultSpeed} Mbps`;
-
-      console.log(`✅ [Field 112] City fallback: ${speedStr} for ${city}`);
-      return {
-        '112_max_internet_speed': {
-          value: `Up to ${speedStr} (${city} area)`,
-          source: 'City-Level Estimate',
-          confidence: 'Low',
-          details: `Based on typical ISP coverage in ${city}, ${state}`
-        }
-      };
+      console.log(`❌ [Perplexity ${promptName}] No content in response`);
     }
+    return {};
   } catch (error) {
-    console.error(`❌ [Field 112] Error:`, error);
+    console.error(`❌ [Perplexity ${promptName}] Error:`, error);
     return {};
   }
 }
 
-/**
- * DEDICATED MICRO-PROMPT: Field 113 - Fiber Available (Y/N)
- * Uses FCC National Broadband Map, provider fiber availability
- */
-async function callPerplexityFiberAvailable(address: string, context: any = {}): Promise<Record<string, any>> {
-  if (isRateLimited('perplexity')) {
-    console.log(`⏭️ [Field 113] Skipping - rate limited`);
-    return {};
-  }
-  const apiKey = process.env.PERPLEXITY_API_KEY;
-  if (!apiKey) {
-    console.log('❌ [Field 113] PERPLEXITY_API_KEY not set');
-    return {};
-  }
-
-  const city = context.city || 'Tampa';
-  const state = context.state || 'FL';
-  const zip = context.zip || '';
-
-  const systemPrompt = `You are a strict, retrieval-only broadband availability assistant.
-Your ONLY task is to determine whether fiber internet service is available (yes/no) at a specific U.S. residential address.
-
-Rules:
-- Use authoritative broadband/fiber availability sources: FCC National Broadband Map, provider availability checkers, BroadbandNow.
-- Confirm that at least one provider lists fiber (fiber to the premises or equivalent) as available.
-- If data only shows cable, DSL, fixed wireless, or satellite and no fiber, treat that as "no".
-
-FALLBACK HIERARCHY (use in order):
-1. Address-specific fiber availability from FCC map or provider lookup
-2. ZIP code level fiber availability data (if fiber providers serve this ZIP)
-3. City-level data: Check if AT&T Fiber, Verizon Fios, or other fiber providers serve the city
-4. If the city/ZIP has known fiber infrastructure (e.g., St. Pete Beach, Tampa, Clearwater have AT&T Fiber coverage), return the city-level availability
-
-IMPORTANT: You MUST return true or false. Use the fallback hierarchy above. Do NOT return null - use city/ZIP level data if address-specific is unavailable.
-
-Output contract (MUST follow exactly):
-{
-  "field_id": 113,
-  "input_id": "string",
-  "fiber_available": true,
-  "status": "ok",
-  "notes": "string"
-}
-
-Field rules:
-- field_id: Always 113.
-- input_id: Echo the input property id exactly.
-- fiber_available: true if fiber is available at address, ZIP, or city level. false if only non-fiber options available.
-- status: Always "ok" since you must provide an answer using fallback hierarchy.
-- notes: State the data source level used (e.g., "AT&T Fiber serves this ZIP code" or "City-level: Fiber available in St. Pete Beach").
-
-Do NOT add any extra keys or text.`;
-
-  const userPrompt = `Determine whether fiber internet is available for this property:
-
-Property:
-- input_id: "prop_1"
-- address: "${address}"
-- city: "${city}"
-- state: "${state}"
-- zip: "${zip}"
-
-Return only the JSON object, no extra text.`;
-
-  try {
-    console.log(`✅ [Field 113] Calling Perplexity for fiber availability...`);
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'sonar-reasoning-pro',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.2,
-        max_tokens: 2500
-      })
-    });
-
-    if (!response.ok) {
-      console.error(`❌ [Field 113] API error: ${response.status}, using city fallback`);
-      if (response.status === 429) setRateLimited('perplexity');
-      // CITY FALLBACK on API error
-      const tampaBayFiberCities = ['tampa', 'st. petersburg', 'st petersburg', 'clearwater', 'st. pete beach', 'st pete beach', 'largo', 'pinellas park', 'dunedin', 'safety harbor', 'treasure island', 'madeira beach', 'seminole', 'palm harbor', 'tarpon springs', 'brandon', 'riverview'];
-      const hasFiber = tampaBayFiberCities.some(c => city.toLowerCase().includes(c));
-      return {
-        '113_fiber_available': {
-          value: hasFiber ? 'Yes' : 'No',
-          source: 'City-Level Estimate',
-          confidence: 'Low',
-          details: `AT&T Fiber serves most of ${city} area`
-        }
-      };
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-
-    if (!content) {
-      console.log(`❌ [Field 113] No content in response, using city fallback`);
-      return {
-        '113_fiber_available': {
-          value: 'Yes',
-          source: 'City-Level Estimate',
-          confidence: 'Low',
-          details: `AT&T Fiber typically available in ${city}, FL`
-        }
-      };
-    }
-
-    const jsonStr = extractFirstJsonObject(content);
-    if (!jsonStr) {
-      console.log(`❌ [Field 113] No JSON found, using city fallback`);
-      return {
-        '113_fiber_available': {
-          value: 'Yes',
-          source: 'City-Level Estimate',
-          confidence: 'Low',
-          details: `Fiber typically available in Tampa Bay metro area`
-        }
-      };
-    }
-
-    const parsed = JSON.parse(jsonStr);
-
-    if (parsed.status === 'ok' && parsed.fiber_available !== null) {
-      const fiberValue = parsed.fiber_available ? 'Yes' : 'No';
-      console.log(`✅ [Field 113] Fiber available: ${fiberValue}`);
-      return {
-        '113_fiber_available': {
-          value: fiberValue,
-          source: 'FCC/ISP Data',
-          confidence: 'Medium',
-          details: parsed.notes || ''
-        }
-      };
-    } else {
-      // FALLBACK: Tampa Bay metro area generally has AT&T Fiber coverage
-      console.log(`⚠️ [Field 113] Using city-level fallback for ${city}`);
-      const tampaBayFiberCities = ['tampa', 'st. petersburg', 'st petersburg', 'clearwater', 'st. pete beach', 'st pete beach', 'largo', 'pinellas park', 'dunedin', 'safety harbor', 'treasure island', 'madeira beach'];
-      const hasFiber = tampaBayFiberCities.some(c => city.toLowerCase().includes(c));
-      return {
-        '113_fiber_available': {
-          value: hasFiber ? 'Yes' : 'Unknown',
-          source: 'City-Level AT&T Fiber Coverage',
-          confidence: 'Low',
-          details: hasFiber ? `AT&T Fiber serves ${city} area` : 'Could not confirm fiber availability'
-        }
-      };
-    }
-  } catch (error) {
-    console.error(`❌ [Field 113] Error:`, error);
-    // FALLBACK on error - assume Tampa Bay has fiber
-    return {
-      '113_fiber_available': {
-        value: 'Yes',
-        source: 'City-Level AT&T Fiber Coverage',
-        confidence: 'Low',
-        details: 'Tampa Bay metro area typically has AT&T Fiber coverage'
-      }
-    };
-  }
-}
-
-/**
- * DEDICATED MICRO-PROMPT: Field 115 - Cell Coverage Quality
- * Uses carrier coverage maps (Verizon, AT&T, T-Mobile)
- */
-async function callPerplexityCellCoverage(address: string, context: any = {}): Promise<Record<string, any>> {
-  if (isRateLimited('perplexity')) {
-    console.log(`⏭️ [Field 115] Skipping - rate limited`);
-    return {};
-  }
-  const apiKey = process.env.PERPLEXITY_API_KEY;
-  if (!apiKey) {
-    console.log('❌ [Field 115] PERPLEXITY_API_KEY not set');
-    return {};
-  }
-
-  const city = context.city || 'Tampa';
-  const state = context.state || 'FL';
-  const zip = context.zip || '';
-
-  const systemPrompt = `You are a strict, retrieval-only cell coverage assistant.
-Your ONLY task is to determine the cell coverage quality at a specific U.S. residential address.
-
-Rules:
-- Use carrier coverage maps (Verizon, AT&T, T-Mobile) or aggregator sites like OpenSignal, RootMetrics
-- Check for 5G and 4G LTE availability from major carriers
-
-FALLBACK HIERARCHY (use in order):
-1. Address-specific coverage data from carrier maps
-2. ZIP code level coverage data
-3. City-level coverage: Most Tampa Bay cities (Tampa, St. Petersburg, Clearwater, St. Pete Beach) have excellent 5G/4G coverage from all major carriers
-4. Metropolitan area data: Tampa Bay metro area has comprehensive 5G coverage from Verizon, AT&T, and T-Mobile
-
-IMPORTANT: You MUST return a rating. Use the fallback hierarchy above. Do NOT return null - Tampa Bay area has well-documented carrier coverage data.
-
-Output contract (MUST follow exactly):
-{
-  "field_id": 115,
-  "input_id": "string",
-  "cell_coverage_quality": "string",
-  "status": "ok",
-  "notes": "string"
-}
-
-Field rules:
-- cell_coverage_quality:
-  - "Excellent" = 5G available from 2+ carriers (most Tampa Bay urban areas)
-  - "Good" = Strong 4G LTE from all major carriers
-  - "Fair" = 4G LTE with some weak spots or limited carriers
-  - "Poor" = Limited coverage, frequent drops (rare in Tampa Bay metro)
-- status: Always "ok" since you must provide an answer using fallback hierarchy
-- notes: State the data source level used (e.g., "City-level: St. Pete Beach has 5G from Verizon and T-Mobile")
-
-Do NOT add any extra keys or text.`;
-
-  const userPrompt = `Determine cell coverage quality for this property:
-
-Property:
-- input_id: "prop_1"
-- address: "${address}"
-- city: "${city}"
-- state: "${state}"
-- zip: "${zip}"
-
-Return only the JSON object, no extra text.`;
-
-  try {
-    console.log(`✅ [Field 115] Calling Perplexity for cell coverage...`);
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'sonar-reasoning-pro',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.2,
-        max_tokens: 2500
-      })
-    });
-
-    if (!response.ok) {
-      console.error(`❌ [Field 115] API error: ${response.status}, using city fallback`);
-      if (response.status === 429) setRateLimited('perplexity');
-      // CITY FALLBACK on API error - Tampa Bay has excellent 5G coverage
-      return {
-        '115_cell_coverage_quality': {
-          value: 'Excellent',
-          source: 'City-Level Estimate',
-          confidence: 'Low',
-          details: `${city} is in Tampa Bay metro with 5G from Verizon, AT&T, T-Mobile`
-        }
-      };
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-
-    if (!content) {
-      console.log(`❌ [Field 115] No content in response, using city fallback`);
-      return {
-        '115_cell_coverage_quality': {
-          value: 'Excellent',
-          source: 'City-Level Estimate',
-          confidence: 'Low',
-          details: `Tampa Bay metro has comprehensive 5G/4G coverage`
-        }
-      };
-    }
-
-    const jsonStr = extractFirstJsonObject(content);
-    if (!jsonStr) {
-      console.log(`❌ [Field 115] No JSON found, using city fallback`);
-      return {
-        '115_cell_coverage_quality': {
-          value: 'Excellent',
-          source: 'City-Level Estimate',
-          confidence: 'Low',
-          details: `All major carriers provide excellent coverage in ${city}`
-        }
-      };
-    }
-
-    const parsed = JSON.parse(jsonStr);
-
-    if (parsed.status === 'ok' && parsed.cell_coverage_quality !== null) {
-      console.log(`✅ [Field 115] Cell coverage: ${parsed.cell_coverage_quality}`);
-      return {
-        '115_cell_coverage_quality': {
-          value: parsed.cell_coverage_quality,
-          source: 'Carrier Coverage Maps',
-          confidence: 'Medium',
-          details: parsed.notes || ''
-        }
-      };
-    } else {
-      // FALLBACK: Tampa Bay metro has excellent cell coverage
-      console.log(`⚠️ [Field 115] Using city-level fallback for ${city}`);
-      return {
-        '115_cell_coverage_quality': {
-          value: 'Excellent',
-          source: 'Tampa Bay Metro Coverage Data',
-          confidence: 'Low',
-          details: `${city} is in Tampa Bay metro area with 5G coverage from Verizon, AT&T, and T-Mobile`
-        }
-      };
-    }
-  } catch (error) {
-    console.error(`❌ [Field 115] Error:`, error);
-    // FALLBACK on error - Tampa Bay has excellent coverage
-    return {
-      '115_cell_coverage_quality': {
-        value: 'Excellent',
-        source: 'Tampa Bay Metro Coverage Data',
-        confidence: 'Low',
-        details: 'Tampa Bay metro area has comprehensive 5G/4G coverage from all major carriers'
-      }
-    };
-  }
-}
-
-/**
- * Shared Perplexity API call helper
- */
-
+// Helper functions for JSON extraction
 function stripJsonCodeFences(text: string): string {
   return text
     .replace(/```json\s*/gi, '')
@@ -3202,7 +2367,6 @@ function stripJsonCodeFences(text: string): string {
     .trim();
 }
 
-// Extract the first complete JSON object from a string by balancing braces (handles nested objects)
 function extractFirstJsonObject(text: string): string | null {
   const start = text.indexOf('{');
   if (start === -1) return null;
@@ -3240,112 +2404,6 @@ function extractFirstJsonObject(text: string): string | null {
   }
 
   return null;
-}
-
-async function callPerplexityHelper(promptName: string, userPrompt: string): Promise<Record<string, any>> {
-  // Check if Perplexity is rate limited (429 detected)
-  if (isRateLimited('perplexity')) {
-    console.log(`⏭️ [Perplexity ${promptName}] Skipping - rate limited (429 detected earlier)`);
-    return {};
-  }
-
-  const apiKey = process.env.PERPLEXITY_API_KEY;
-  if (!apiKey) {
-    console.error(`❌ [Perplexity ${promptName}] PERPLEXITY_API_KEY not set`);
-    return {};
-  }
-
-  const systemMessage = `You are a real estate data analyst. Use web search ONLY to quickly verify or fill in missing factual fields from reputable property/market sources.
-DO NOT perform broad market research or long-form narrative reports.
-Keep total web searches and pages consulted to the MINIMUM necessary to confidently fill the requested fields.
-Extract ONLY explicitly stated values. Output JSON ONLY with exact field keys. Never guess or fabricate data.`;
-
-  try {
-    console.log(`✅ [Perplexity ${promptName}] Calling API...`);
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'sonar-reasoning-pro',
-        messages: [
-          { role: 'system', content: systemMessage },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.2,
-        max_tokens: 2500,
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error(`❌ [Perplexity ${promptName}] API error: ${response.status} ${response.statusText}`);
-      console.error(`❌ [Perplexity ${promptName}] Error data:`, JSON.stringify(data, null, 2));
-      // Detect 429 rate limit and set flag to skip remaining Perplexity calls
-      if (response.status === 429) {
-        setRateLimited('perplexity');
-      }
-      return {};
-    }
-
-    if (data.choices?.[0]?.message?.content) {
-      const text = data.choices[0].message.content;
-      console.log(`✅ [Perplexity ${promptName}] Response received (${text.length} chars)`);
-
-      // Parse JSON safely (Perplexity often returns nested objects, so regex is not enough)
-      const cleaned = stripJsonCodeFences(text);
-      const candidate = (() => {
-        // Fast path: whole content is valid JSON
-        try { JSON.parse(cleaned); return cleaned; } catch {}
-        // Fallback: extract first balanced JSON object
-        return extractFirstJsonObject(cleaned);
-      })();
-
-      if (candidate) {
-        try {
-          const parsed = JSON.parse(candidate);
-          const rawCount = Object.keys(parsed).length;
-          console.log(`✅ [Perplexity ${promptName}] Parsed ${rawCount} raw fields`);
-
-          // Use shared filterNullValues with type coercion
-          const filteredFields = filterNullValues(parsed, `Perplexity ${promptName}`);
-          const finalCount = Object.keys(filteredFields).length;
-          console.log(`✅ [Perplexity ${promptName}] Returning ${finalCount} fields after filtering`);
-
-          // Upgrade confidence to High for Perplexity (has web search)
-          for (const key of Object.keys(filteredFields)) {
-            // FIX: Add defensive check for source property
-            if (filteredFields[key] && typeof filteredFields[key] === 'object') {
-              filteredFields[key].confidence = 'High';
-              if (filteredFields[key].source && !filteredFields[key].source.includes('Perplexity')) {
-                filteredFields[key].source = `${filteredFields[key].source} (via Perplexity)`;
-              }
-            }
-          }
-
-          return filteredFields;
-        } catch (parseError) {
-          console.error(`❌ [Perplexity ${promptName}] JSON parse error:`, parseError);
-          console.error(`❌ [Perplexity ${promptName}] Response text:`, text);
-          console.error(`❌ [Perplexity ${promptName}] JSON candidate:`, candidate);
-        }
-      } else {
-        console.log(`❌ [Perplexity ${promptName}] No JSON found in response`);
-        console.log(`❌ [Perplexity ${promptName}] Response text:`, text);
-      }
-    } else {
-      console.log(`❌ [Perplexity ${promptName}] No content in response`);
-      console.log(`❌ [Perplexity ${promptName}] Response data:`, JSON.stringify(data, null, 2));
-    }
-    return {};
-  } catch (error) {
-    console.error(`❌ [Perplexity ${promptName}] Error:`, error);
-    console.error(`❌ [Perplexity ${promptName}] Stack:`, (error as Error).stack);
-    return {};
-  }
 }
 
 // ============================================
@@ -4343,6 +3401,8 @@ async function callCopilot(address: string): Promise<any> {
       },
       body: JSON.stringify({
         model: 'gpt-5.2-pro',
+        temperature: 0.0,
+        max_tokens: 16000,
         input: [
           { role: 'system', content: PROMPT_COPILOT },
           {
@@ -4418,6 +3478,8 @@ Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listin
 
     const requestBody = {
       model: 'gpt-5.2-pro',
+      temperature: 0.0,
+      max_tokens: 16000,
       input: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
@@ -4531,6 +3593,8 @@ async function callGPT5FieldAuditor(
 
     const requestBody = {
       model: 'gpt-5.2-pro',
+      temperature: 0.0, // Must be 0.0 across entire codebase
+      max_tokens: 16000,
       input: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
@@ -4539,7 +3603,6 @@ async function callGPT5FieldAuditor(
       tools: [{ type: 'web_search' }],
       tool_choice: 'required',
       include: ['web_search_call.action.sources'],
-      temperature: 0.1, // Low temperature for deterministic auditing
     };
 
     // LOG RAW REQUEST
@@ -4766,7 +3829,7 @@ async function callGrok(address: string): Promise<any> {
         ],
         tool_choice: 'auto',
         generation_config: {
-          temperature: 1.0,
+          temperature: 0.2,
           response_mime_type: 'application/json'
         },
         messages: [
@@ -4816,7 +3879,7 @@ async function callGemini(address: string): Promise<any> {
 
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-latest:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: {
@@ -4856,7 +3919,7 @@ Return JSON only with the 34 field keys specified in the schema.`,
             }
           ],
           generation_config: {
-            temperature: 0.7,  // Slightly lower for more consistent JSON
+            temperature: 1.0,
             responseMimeType: 'application/json',
             maxOutputTokens: 16000,
           },
@@ -5353,16 +4416,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log('[Perplexity Context]', perplexityContext);
 
         const llmSourceNames: Record<string, string> = {
-          'perplexity-portals': 'Perplexity Portals',
-          'perplexity-county': 'Perplexity County',
-          'perplexity-schools': 'Perplexity Schools',
-          'perplexity-crime': 'Perplexity Crime',
-          'perplexity-utilities': 'Perplexity Utilities',
-          'perplexity-electric': 'Perplexity Electric Bill',
-          'perplexity-water': 'Perplexity Water Bill',
-          'perplexity-internet-speed': 'Perplexity Internet Speed',
-          'perplexity-fiber': 'Perplexity Fiber',
-          'perplexity-cell': 'Perplexity Cell Coverage',
+          'perplexity-a': 'Perplexity A (Portals & Pricing)',
+          'perplexity-b': 'Perplexity B (County Records)',
+          'perplexity-c': 'Perplexity C (Schools & Safety)',
+          'perplexity-d': 'Perplexity D (Utilities)',
+          'perplexity-e': 'Perplexity E (Comps)',
           'grok': 'Grok',
           'claude-opus': 'Claude Opus',
           'gpt': 'GPT',
@@ -5371,17 +4429,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         };
 
         const llmCascade = [
-          // PERPLEXITY MICRO-PROMPTS (10 dedicated calls)
-          { id: 'perplexity-portals', fn: (addr: string) => callPerplexityPortals(addr, perplexityContext), enabled: engines.includes('perplexity') },
-          { id: 'perplexity-county', fn: (addr: string) => callPerplexityCounty(addr, perplexityContext), enabled: engines.includes('perplexity') },
-          { id: 'perplexity-schools', fn: (addr: string) => callPerplexitySchools(addr, perplexityContext), enabled: engines.includes('perplexity') },
-          { id: 'perplexity-crime', fn: (addr: string) => callPerplexityWalkScoreCrime(addr, perplexityContext), enabled: engines.includes('perplexity') },
-          { id: 'perplexity-utilities', fn: (addr: string) => callPerplexityUtilities(addr, perplexityContext), enabled: engines.includes('perplexity') },
-          { id: 'perplexity-electric', fn: (addr: string) => callPerplexityElectricBill(addr, perplexityContext), enabled: engines.includes('perplexity') },
-          { id: 'perplexity-water', fn: (addr: string) => callPerplexityWaterBill(addr, perplexityContext), enabled: engines.includes('perplexity') },
-          { id: 'perplexity-internet-speed', fn: (addr: string) => callPerplexityInternetSpeed(addr, perplexityContext), enabled: engines.includes('perplexity') },
-          { id: 'perplexity-fiber', fn: (addr: string) => callPerplexityFiberAvailable(addr, perplexityContext), enabled: engines.includes('perplexity') },
-          { id: 'perplexity-cell', fn: (addr: string) => callPerplexityCellCoverage(addr, perplexityContext), enabled: engines.includes('perplexity') },
+          // PERPLEXITY CONSOLIDATED PROMPTS (5 prompts - A through E)
+          { id: 'perplexity-a', fn: (addr: string) => callPerplexityPromptA(addr, perplexityContext), enabled: engines.includes('perplexity') },
+          { id: 'perplexity-b', fn: (addr: string) => callPerplexityPromptB(addr, perplexityContext), enabled: engines.includes('perplexity') },
+          { id: 'perplexity-c', fn: (addr: string) => callPerplexityPromptC(addr, perplexityContext), enabled: engines.includes('perplexity') },
+          { id: 'perplexity-d', fn: (addr: string) => callPerplexityPromptD(addr, perplexityContext), enabled: engines.includes('perplexity') },
+          { id: 'perplexity-e', fn: (addr: string) => callPerplexityPromptE(addr, perplexityContext), enabled: engines.includes('perplexity') },
 
           // OTHER LLMs - Order: Gemini → GPT → Grok → Sonnet → Opus (matches LLM_CASCADE_ORDER)
           { id: 'gemini', fn: callGemini, enabled: engines.includes('gemini') },          // #2 - Google Search grounding
