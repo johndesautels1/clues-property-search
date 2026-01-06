@@ -19,8 +19,31 @@ import {
   sanitizeAddress,
   isValidAddress
 } from '../../src/lib/safe-json-parse.js';
-import missingFieldsList from '../../src/config/clues_missing_fields_list.json' with { type: 'json' };
-import missingFieldsRules from '../../src/config/clues_missing_fields_rules.json' with { type: 'json' };
+// Inline JSON data to avoid Vercel import issues with `with { type: 'json' }` syntax
+const missingFieldsList = {
+  missing_field_keys: [
+    "12_market_value_estimate", "16a_zestimate", "16b_redfin_estimate",
+    "16c_first_american_avm", "16d_quantarium_avm", "16e_ice_avm", "16f_collateral_analytics_avm",
+    "81_public_transit_access", "82_commute_to_city_center",
+    "91_median_home_price_neighborhood", "92_price_per_sqft_recent_avg", "95_days_on_market_avg",
+    "96_inventory_surplus", "97_insurance_est_annual", "98_rental_estimate_monthly",
+    "103_comparable_sales", "104_electric_provider", "105_avg_electric_bill",
+    "106_water_provider", "107_avg_water_bill", "110_trash_provider",
+    "111_internet_providers_top3", "114_cable_tv_provider",
+    "169_zillow_views", "170_redfin_views", "171_homes_views", "172_realtor_views",
+    "174_saves_favorites", "175_market_type", "176_avg_sale_to_list_percent",
+    "177_avg_days_to_pending", "178_multiple_offers_likelihood", "180_price_trend", "181_rent_zestimate"
+  ]
+};
+const missingFieldsRules = {
+  field_rules: {
+    "104_electric_provider": { type: "string", definition: "Primary electric utility serving the property address." },
+    "106_water_provider": { type: "string", definition: "Primary water utility serving the property address." },
+    "120_flood_risk_level": { type: "string", definition: "FEMA flood zone designation or flood risk category." },
+    "124_hurricane_risk": { type: "string", definition: "Hurricane risk level or evacuation zone." },
+    "35_annual_taxes": { type: "number", definition: "Most recent annual property tax amount (USD)." }
+  }
+};
 import { GEMINI_FIELD_COMPLETER_SYSTEM } from '../../src/config/gemini-prompts.js';
 
 // Vercel serverless config
