@@ -4394,10 +4394,12 @@ async function callGPT5(
     const userPrompt = isOrchestratorMode
       ? GPT_ORCHESTRATOR_USER_TEMPLATE({
           address,
-          stellarMlsJson: inputBlobs.stellarMlsJson,
-          countyJson: inputBlobs.countyJson,
-          paidApisJson: inputBlobs.paidApisJson,
-          webChunksJson: inputBlobs.webChunksJson,
+          knownData: {
+            stellarMls: inputBlobs.stellarMlsJson,
+            county: inputBlobs.countyJson,
+            paidApis: inputBlobs.paidApisJson,
+            webChunks: inputBlobs.webChunksJson,
+          },
         })
       : `Extract all 168 property data fields for this address: ${address}
 
@@ -4506,12 +4508,14 @@ async function callGPT5FieldAuditor(
     const systemPrompt = PROMPT_GPT_LLM_AUDITOR;
     const userPrompt = GPT_LLM_AUDITOR_USER_TEMPLATE({
       address,
-      stellarMlsJson: inputs.stellarMlsJson,
-      countyJson: inputs.countyJson,
-      paidApisJson: inputs.paidApisJson,
-      webChunksJson: inputs.webChunksJson,
-      llmOnlyFields: inputs.llmOnlyFields,
-      apiPopulatedFieldKeys: inputs.apiPopulatedFieldKeys,
+      knownData: {
+        stellarMls: inputs.stellarMlsJson,
+        county: inputs.countyJson,
+        paidApis: inputs.paidApisJson,
+        webChunks: inputs.webChunksJson,
+        llmOnlyFields: inputs.llmOnlyFields,
+        apiPopulatedFieldKeys: inputs.apiPopulatedFieldKeys,
+      },
     });
 
     console.log(`[GPT LLM Auditor] Auditing ${Object.keys(inputs.llmOnlyFields).length} LLM-populated fields`);
