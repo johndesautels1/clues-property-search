@@ -398,6 +398,7 @@ export const PERPLEXITY_FIELD_MAPPING: Record<string, string> = {
   'mls_id': '2_mls_primary',
   'comparable_sales_note': '103_comparable_sales', // Singular variant
   'financing_note': '102_financing_terms', // Singular variant
+  'data_quality_notes': null, // Metadata about response quality - skip
 };
 
 /**
