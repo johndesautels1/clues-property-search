@@ -163,7 +163,7 @@ const PERPLEXITY_TIMEOUT = 225000;   // 225 seconds (3.75 minutes) for Perplexit
 | 1 | `grok` | Grok | `grok-4.1-fast-reasoning` | YES (real-time X/Twitter) | xAI |
 | 2 | `gpt` | GPT-5.2 | `gpt-5.2-2025-12-11` | NO (knowledge cutoff) | OpenAI |
 | 3 | `claude-opus` | Claude Opus | `claude-opus-4-5-20251101` | NO (knowledge only) | Anthropic |
-| 4 | `gemini` | Gemini | `gemini-3-pro-latest` | YES (Google Search grounding) | Google |
+| 4 | `gemini` | Gemini | `gemini-3-pro-preview` | YES (Google Search grounding) | Google |
 | 5 | `claude-sonnet` | Claude Sonnet | `claude-sonnet-4-5-20250929` | YES (`web_search` tool) | Anthropic |
 
 ---
@@ -386,7 +386,7 @@ VITE_ANTHROPIC_API_KEY=xxx
 | **Property Search - Grok** | `grok-4.1-fast-reasoning` | xAI | YES | search.ts:4609 |
 | **Property Search - GPT** | `gpt-5.2-2025-12-11` | OpenAI | NO | search.ts:4464 |
 | **Property Search - Claude Opus** | `claude-opus-4-5-20251101` | Anthropic | NO | search.ts:4224 |
-| **Property Search - Gemini** | `gemini-3-pro-latest` | Google | YES | search.ts:4659 |
+| **Property Search - Gemini** | `gemini-3-pro-preview` | Google | YES | search.ts:3987 |
 | **Property Search - Claude Sonnet** | `claude-sonnet-4-5-20250929` | Anthropic | YES | search.ts:4281 |
 | **Ask Olivia - Basic** | `claude-sonnet-4-5-20250929` | Anthropic | NO | olivia.ts:293 |
 | **Ask Olivia - Enhanced** | `claude-opus-4-5-20251101` | Anthropic | NO | olivia-brain-enhanced.ts:675 |

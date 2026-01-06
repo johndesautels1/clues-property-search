@@ -169,7 +169,7 @@ async function callGeminiForecast(
   neighborhood: string
 ): Promise<LLMForecast> {
   const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GOOGLE_AI_API_KEY);
-  const model = genAI.getGenerativeModel({ model: 'gemini-3-pro-latest' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-3-pro-preview' });
 
   const result = await model.generateContent(
     FORECAST_PROMPT(address, price, neighborhood)

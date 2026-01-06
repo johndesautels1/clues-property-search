@@ -11,7 +11,7 @@
 | # | LLM | Model ID | Web Search | Tier | Reliability |
 |---|-----|----------|------------|------|-------------|
 | 1 | **Perplexity** | `sonar-pro` | ✅ Built-in | 4 | 90% |
-| 2 | **Gemini** | `gemini-3-pro-latest` | ✅ Google Search grounding | 4 | 85% |
+| 2 | **Gemini** | `gemini-3-pro-preview` | ✅ Google Search grounding | 4 | 85% |
 | 3 | **GPT** | `gpt-5.2-pro` | ✅ Web evidence mode | 4 | 80% |
 | 4 | **Grok** | `grok-4-1-fast-reasoning` | ✅ X/Twitter data | 4 | 75% |
 | 5 | **Claude Sonnet** | `claude-sonnet-4-5-20250929` | ✅ Beta (web-search-2025-03-05) | 5 | 70% |
@@ -69,7 +69,7 @@ TIER 3: Paid/Free APIs (parallel execution)
 
 TIER 4: Web-Search LLMs (cascade order)
    ├── #1 Perplexity - sonar-pro
-   ├── #2 Gemini - gemini-3-pro-latest (Google Search grounding)
+   ├── #2 Gemini - gemini-3-pro-preview (Google Search grounding)
    ├── #3 GPT - gpt-5.2-pro (Web evidence mode)
    └── #4 Grok - grok-4-1-fast-reasoning (X/Twitter)
 
@@ -250,7 +250,7 @@ XAI_API_KEY=...                  # Grok (xAI) - NOT GROK_API_KEY!
 | Function | File | Line | Model |
 |----------|------|------|-------|
 | `callPerplexityForecast` | multi-llm-forecast.ts | 456 | sonar-pro |
-| `callGeminiForecast` | multi-llm-forecast.ts | 416 | gemini-3-pro-latest |
+| `callGeminiForecast` | multi-llm-forecast.ts | 610 | gemini-3-pro-preview |
 | `callGPT5Forecast` | multi-llm-forecast.ts | 354 | gpt-5.2-pro |
 | `callGrokForecast` | multi-llm-forecast.ts | 705 | grok-4-1-fast-reasoning |
 | `callClaudeForecast` | multi-llm-forecast.ts | 244 | claude-sonnet-4-5-20250929 |

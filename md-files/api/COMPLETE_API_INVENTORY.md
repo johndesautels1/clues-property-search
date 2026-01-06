@@ -66,7 +66,7 @@
 | 28 | **Claude Opus** | ✅ ACTIVE | `ANTHROPIC_API_KEY` | `claude-opus-4` | ❌ NO | 5 | 210s |
 | 29 | **GPT (OpenAI)** | ✅ ACTIVE | `OPENAI_API_KEY` | `gpt-5.2` | ❌ NO | 5 | 210s |
 | 30 | **Claude Sonnet** | ✅ ACTIVE | `ANTHROPIC_API_KEY` | `claude-sonnet-4.5` | ❌ NO | 5 | 210s |
-| 31 | **Gemini (Google)** | ✅ ACTIVE | `GOOGLE_GENERATIVE_AI_API_KEY` | `gemini-3-pro-latest` | ✅ YES | 5 | 210s |
+| 31 | **Gemini (Google)** | ✅ ACTIVE | `GOOGLE_GENERATIVE_AI_API_KEY` | `gemini-3-pro-preview` | ✅ YES | 5 | 210s |
 
 ---
 

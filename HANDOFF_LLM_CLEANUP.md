@@ -47,7 +47,7 @@ Files to check:
 | LLM | Model ID | Status |
 |-----|----------|--------|
 | GPT | `gpt-5.2-pro-2025-12-11` | DONE |
-| Gemini | `gemini-3-pro-latest` | DONE |
+| Gemini | `gemini-3-pro-preview` | DONE |
 | Grok | `grok-4-1-fast-reasoning` | DONE |
 | Perplexity | `sonar-pro` | DONE |
 | Claude Opus | `claude-opus-4-5-20251101` | NEEDS VERIFICATION |
