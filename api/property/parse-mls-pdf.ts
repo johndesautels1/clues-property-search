@@ -24,7 +24,7 @@ export const config = {
 };
 
 // Timeout wrapper for LLM calls - prevents hanging
-const LLM_TIMEOUT = 90000; // 90s per LLM call
+const LLM_TIMEOUT = 120000; // 120s per LLM call (GPT/Grok web search + Gemini thinking_level: high need 90-120s)
 
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([

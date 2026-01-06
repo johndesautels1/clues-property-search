@@ -59,7 +59,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
   ]);
 }
 
-const LLM_TIMEOUT = 90000; // 90s per LLM call (Gemini 3 Pro needs 60-90s with thinking_level: high)
+const LLM_TIMEOUT = 120000; // 120s per LLM call (GPT/Grok web search + Gemini thinking_level: high need 90-120s)
 const PERPLEXITY_TIMEOUT = 90000; // 90s for Perplexity (reduced from 180s)
 
 // ============================================

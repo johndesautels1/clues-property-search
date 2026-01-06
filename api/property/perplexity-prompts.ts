@@ -362,22 +362,56 @@ export const PERPLEXITY_FIELD_MAPPING: Record<string, string> = {
 
   // Prompt E - Comps (same as A, already mapped above)
   'typical_financing_terms_or_concessions_for_area': '102_financing_terms',
+
+  // Additional field aliases that Perplexity sometimes returns
+  'property_address': '1_full_address',
+  'address': '1_full_address',
+  'full_address': '1_full_address',
+  'city': null, // Metadata - ignore (already part of address)
+  'state': null, // Metadata - ignore
+  'zip': null, // Metadata - ignore
+  'zip_code': '8_zip_code',
+  'comparable_sales_notes': '103_comparable_sales',
+  'financing_notes': '102_financing_terms',
+
+  // Metadata fields - explicitly map to null to suppress warnings
+  'status': null,
+  'reason': null,
+  'notes': null,
+  'search_date': null,
+  'data_limitations': null,
+  'data_confidence': null,
+  'source': null,
+  'sources': null,
+  'source_url': null,
+  'source_urls': null,
+  'query': null,
+  'timestamp': null,
+  'error': null,
+  'message': null,
 };
 
 /**
  * Maps Perplexity response fields to our internal field IDs
+ * - Fields mapped to null are metadata and will be silently skipped
+ * - Unknown fields will log a warning for future mapping
  */
 export function mapPerplexityFieldsToSchema(perplexityResponse: Record<string, any>): Record<string, any> {
   const mapped: Record<string, any> = {};
 
   for (const [naturalKey, fieldData] of Object.entries(perplexityResponse)) {
-    const schemaFieldId = PERPLEXITY_FIELD_MAPPING[naturalKey];
-    if (schemaFieldId) {
-      mapped[schemaFieldId] = fieldData;
+    // Check if key exists in mapping (including null mappings)
+    if (naturalKey in PERPLEXITY_FIELD_MAPPING) {
+      const schemaFieldId = PERPLEXITY_FIELD_MAPPING[naturalKey];
+      // Skip null mappings (metadata fields) - don't add to output
+      if (schemaFieldId !== null) {
+        mapped[schemaFieldId] = fieldData;
+      }
+      // Null mappings are silently skipped (no warning)
     } else {
-      // Keep unmapped fields with their original key (for debugging)
+      // Unknown field - log warning for future mapping
       console.warn(`[Perplexity Mapper] Unknown field: ${naturalKey}`);
-      mapped[naturalKey] = fieldData;
+      // Don't add unknown fields to output to keep data clean
     }
   }
 

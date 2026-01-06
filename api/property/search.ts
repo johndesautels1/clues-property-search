@@ -54,7 +54,7 @@ export const config = {
 // Timeout wrapper for API/LLM calls - prevents hanging
 const STELLAR_MLS_TIMEOUT = 30000; // 30 seconds for Stellar MLS via Bridge API (Tier 1) - typically responds in <10s
 const FREE_API_TIMEOUT = 60000; // 60 seconds for free APIs (Tier 2 & 3) - reduced from 90s
-const LLM_TIMEOUT = 90000; // 90 seconds for Claude, GPT, Gemini, Grok single LLM calls (Gemini 3 Pro needs 60-90s with thinking_level: high)
+const LLM_TIMEOUT = 120000; // 120 seconds for Claude, GPT, Gemini, Grok single LLM calls (GPT/Grok web search + Gemini thinking_level: high need 90-120s)
 const PERPLEXITY_TIMEOUT = 90000; // 90 seconds for Perplexity deep web search
 
 // ============================================
