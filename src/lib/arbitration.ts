@@ -486,16 +486,18 @@ export function detectSingleSourceHallucinations(
   fields: Record<string, FieldValue>
 ): Array<{ field: string; source: string }> {
   const warnings: Array<{ field: string; source: string }> = [];
-  
+
   for (const [key, field] of Object.entries(fields)) {
-    if (field.tier === 4) {
+    // FIX: Check both Tier 4 (web-search LLMs) AND Tier 5 (Claude LLMs) for hallucinations
+    // Previously only checked Tier 4, missing Claude Opus/Sonnet single-source warnings
+    if (field.tier >= 4) {
       const sources = field.llmSources || [field.source];
       if (sources.length === 1 && !field.conflictValues?.length) {
         warnings.push({ field: key, source: sources[0] });
       }
     }
   }
-  
+
   return warnings;
 }
 
