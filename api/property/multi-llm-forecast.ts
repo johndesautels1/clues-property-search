@@ -643,14 +643,16 @@ async function callGeminiForecast(
     throw new Error('Gemini returned empty response');
   }
 
-  // Separate thoughts from final answer
+  // Separate thoughts from final answer (Gemini 3 Pro thinking mode)
   let thoughtProcess = "";
   let finalAnswer = "";
 
   parts.forEach((part: any) => {
-    if (part.thought) {
-      thoughtProcess += part.text;
+    if (part.thought === true) {
+      // Thought parts contain internal reasoning (plain text, not JSON)
+      thoughtProcess += part.text || "";
     } else if (part.text) {
+      // Non-thought parts contain the actual response (should be JSON)
       finalAnswer += part.text;
     }
   });
@@ -659,15 +661,38 @@ async function callGeminiForecast(
     console.log('[Gemini/Forecast] 🧠 Thought process:', thoughtProcess.substring(0, 300) + '...');
   }
 
-  const text = finalAnswer || parts[0]?.text;
+  // Use finalAnswer if available, otherwise fallback to first non-thought part
+  const content = finalAnswer || parts.find((p: any) => !p.thought)?.text;
 
-  // Extract JSON from response
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error('No JSON found in Gemini response');
+  if (!content) {
+    throw new Error('Gemini returned no content');
   }
 
-  const data = JSON.parse(jsonMatch[0]);
+  // Parse JSON from response - handle multiple formats
+  let jsonStr = content.trim();
+
+  // Case 1: Wrapped in markdown code block
+  const markdownMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (markdownMatch) {
+    jsonStr = markdownMatch[1].trim();
+  }
+
+  // Case 2: Raw JSON (starts with { or [)
+  if (!jsonStr.startsWith('{') && !jsonStr.startsWith('[')) {
+    // Try to extract JSON object from mixed content
+    const jsonObjectMatch = jsonStr.match(/(\{[\s\S]*\})/);
+    jsonStr = jsonObjectMatch?.[1] || jsonStr;
+  }
+
+  // Parse with error handling
+  let data;
+  try {
+    data = JSON.parse(jsonStr);
+  } catch (parseError) {
+    console.error('[Gemini/Forecast] JSON parse error:', parseError);
+    console.error('[Gemini/Forecast] Raw content:', content.substring(0, 1000));
+    throw new Error(`Failed to parse Gemini JSON response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+  }
 
   return {
     source: 'Gemini 3 Pro',

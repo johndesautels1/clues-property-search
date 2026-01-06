@@ -642,9 +642,11 @@ async function callGemini(prompt: string): Promise<LLMResponse> {
   let finalAnswer = "";
 
   parts.forEach((part: any) => {
-    if (part.thought) {
-      thoughtProcess += part.text;
+    if (part.thought === true) {
+      // Thought parts contain internal reasoning (plain text, not JSON)
+      thoughtProcess += part.text || "";
     } else if (part.text) {
+      // Non-thought parts contain the actual response (should be JSON)
       finalAnswer += part.text;
     }
   });
@@ -654,18 +656,38 @@ async function callGemini(prompt: string): Promise<LLMResponse> {
     console.log('[Gemini] 🧠 Thought process:', thoughtProcess.substring(0, 500) + '...');
   }
 
-  // Use finalAnswer if available, otherwise use first part text
-  const content = finalAnswer || parts[0]?.text;
+  // Use finalAnswer if available, otherwise fallback to first non-thought part
+  const content = finalAnswer || parts.find((p: any) => !p.thought)?.text;
 
   if (!content) {
     throw new Error('Gemini returned no content');
   }
 
-  // Parse JSON from response
-  const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || [null, content];
-  const jsonStr = jsonMatch[1] || content;
+  // Parse JSON from response - handle multiple formats
+  let jsonStr = content.trim();
 
-  return JSON.parse(jsonStr);
+  // Case 1: Wrapped in markdown code block
+  const markdownMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (markdownMatch) {
+    jsonStr = markdownMatch[1].trim();
+  }
+
+  // Case 2: Raw JSON (starts with { or [)
+  if (!jsonStr.startsWith('{') && !jsonStr.startsWith('[')) {
+    // Try to extract JSON object from mixed content
+    const jsonObjectMatch = jsonStr.match(/(\{[\s\S]*\})/);
+    const jsonArrayMatch = jsonStr.match(/(\[[\s\S]*\])/);
+    jsonStr = jsonObjectMatch?.[1] || jsonArrayMatch?.[1] || jsonStr;
+  }
+
+  // Parse with error handling
+  try {
+    return JSON.parse(jsonStr);
+  } catch (parseError) {
+    console.error('[Gemini] JSON parse error:', parseError);
+    console.error('[Gemini] Raw content:', content.substring(0, 1000));
+    throw new Error(`Failed to parse Gemini JSON response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+  }
 }
 
 // =============================================================================
