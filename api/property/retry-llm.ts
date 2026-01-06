@@ -620,6 +620,7 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
       body: JSON.stringify({
         model: 'grok-4-1-fast-reasoning',
         max_tokens: 32000,
+        temperature: 0.2,  // MUST be 0.2 for Grok
         tools: [
           {
             type: 'function',
@@ -638,10 +639,6 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
           }
         ],
         tool_choice: 'auto',
-        generation_config: {
-          temperature: 0.2,
-          response_mime_type: 'application/json'
-        },
         messages: [
           { role: 'system', content: GROK_RETRY_SYSTEM_PROMPT },
           { role: 'user', content: GROK_RETRY_USER_PROMPT(address) }
@@ -863,7 +860,7 @@ Return ONLY the JSON object described in the system prompt.`;
       body: JSON.stringify({
         model: 'gpt-5.2-pro',
         temperature: 0.0,
-        max_tokens: 32000,
+        max_output_tokens: 32000,
         input: [
           { role: 'system', content: GPT_RETRY_SYSTEM_PROMPT },
           { role: 'user', content: userPrompt }

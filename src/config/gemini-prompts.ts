@@ -204,7 +204,7 @@ RETURN JSON MATCHING THIS SCHEMA:
 // ============================================================================
 
 export const GEMINI_API_CONFIG = {
-  model: 'gemini-3-pro-latest',
+  model: 'gemini-3-pro',
   tools: [{ google_search: {} }],
   tool_config: {
     function_calling_config: {
