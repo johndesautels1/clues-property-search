@@ -2381,19 +2381,43 @@ async function callPerplexityWithMapping(promptName: string, userPrompt: string)
     if (data.choices?.[0]?.message?.content) {
       const text = data.choices[0].message.content;
       console.log(`✅ [Perplexity ${promptName}] Response received (${text.length} chars)`);
+      console.log(`📝 [Perplexity ${promptName}] Raw response (first 500 chars): ${text.substring(0, 500)}`);
 
       const cleaned = stripJsonCodeFences(text);
-      const candidate = (() => {
-        try { JSON.parse(cleaned); return cleaned; } catch {}
-        return extractFirstJsonObject(cleaned);
-      })();
+
+      // Try multiple JSON extraction methods
+      let candidate: string | null = null;
+
+      // Method 1: Try parsing cleaned text directly
+      try {
+        JSON.parse(cleaned);
+        candidate = cleaned;
+        console.log(`✅ [Perplexity ${promptName}] Method 1: Direct parse succeeded`);
+      } catch {
+        // Method 2: Extract first JSON object
+        candidate = extractFirstJsonObject(cleaned);
+        if (candidate) {
+          console.log(`✅ [Perplexity ${promptName}] Method 2: extractFirstJsonObject succeeded`);
+        } else {
+          // Method 3: Try regex extraction as fallback
+          const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            candidate = jsonMatch[0];
+            console.log(`✅ [Perplexity ${promptName}] Method 3: Regex extraction succeeded`);
+          }
+        }
+      }
 
       if (candidate) {
         try {
           const parsed = JSON.parse(candidate);
 
+          // Check for nested structures (data_fields, fields, etc.)
+          const fieldsToMap = parsed.data_fields || parsed.fields || parsed;
+          console.log(`✅ [Perplexity ${promptName}] Parsed structure: ${parsed.data_fields ? 'data_fields' : parsed.fields ? 'fields' : 'flat'}`);
+
           // Map natural field names to schema field IDs
-          const mapped = mapPerplexityFieldsToSchema(parsed);
+          const mapped = mapPerplexityFieldsToSchema(fieldsToMap);
           const rawCount = Object.keys(mapped).length;
           console.log(`✅ [Perplexity ${promptName}] Mapped ${rawCount} fields to schema IDs`);
 
@@ -2415,12 +2439,15 @@ async function callPerplexityWithMapping(promptName: string, userPrompt: string)
           return filteredFields;
         } catch (parseError) {
           console.error(`❌ [Perplexity ${promptName}] JSON parse error:`, parseError);
+          console.error(`❌ [Perplexity ${promptName}] Candidate JSON (first 300 chars): ${candidate.substring(0, 300)}`);
         }
       } else {
         console.log(`❌ [Perplexity ${promptName}] No JSON found in response`);
+        console.log(`❌ [Perplexity ${promptName}] Cleaned text (first 500 chars): ${cleaned.substring(0, 500)}`);
       }
     } else {
       console.log(`❌ [Perplexity ${promptName}] No content in response`);
+      console.log(`❌ [Perplexity ${promptName}] Full response: ${JSON.stringify(data).substring(0, 500)}`);
     }
     return {};
   } catch (error) {
