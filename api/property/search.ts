@@ -4018,8 +4018,7 @@ Return JSON only with the 34 field keys specified in the schema.`,
           generation_config: {
             temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro
             maxOutputTokens: 16000,
-            response_mime_type: 'application/json',
-            thinking_level: 'high'  // Required for complex real estate analysis
+            response_mime_type: 'application/json'
           },
         }),
       }

@@ -252,8 +252,8 @@ export const GEMINI_API_CONFIG = {
   generation_config: {
     temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro
     maxOutputTokens: 16000,
-    response_mime_type: 'application/json',
-    thinking_level: 'high'
+    response_mime_type: 'application/json'
+    // Note: thinking_level is only for Vercel AI SDK providerOptions, not REST API
   }
 };
 
