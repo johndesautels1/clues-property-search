@@ -3661,7 +3661,7 @@ async function callCopilot(address: string): Promise<any> {
 Return structured JSON with proper field keys. Use null for unknown data.`;
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -3670,7 +3670,7 @@ Return structured JSON with proper field keys. Use null for unknown data.`;
       body: JSON.stringify({
         model: 'gpt-5.2-pro',
         max_output_tokens: 32000,
-        messages: [
+        input: [
           { role: 'system', content: PROMPT_COPILOT },
           { role: 'user', content: userPrompt },
         ],
@@ -3766,7 +3766,7 @@ async function callGPT5(
     const requestBody = {
       model: 'gpt-5.2-pro',
       max_output_tokens: 32000,
-      messages: [
+      input: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
@@ -3776,7 +3776,7 @@ async function callGPT5(
       include: ['web_search_call.action.sources'],
     };
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -3975,7 +3975,7 @@ async function callGPT5FieldAuditor(
     const requestBody = {
       model: 'gpt-5.2-pro',
       max_output_tokens: 32000,
-      messages: [
+      input: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
@@ -3985,7 +3985,7 @@ async function callGPT5FieldAuditor(
       include: ['web_search_call.action.sources'],
     };
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

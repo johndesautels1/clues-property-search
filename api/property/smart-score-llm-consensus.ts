@@ -357,7 +357,7 @@ async function callGPT5(prompt: string): Promise<LLMResponse> {
   }
 
   // Use OpenAI Responses API with web search for market context
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -366,7 +366,7 @@ async function callGPT5(prompt: string): Promise<LLMResponse> {
     body: JSON.stringify({
       model: 'gpt-5.2-pro',
       max_output_tokens: 32000,
-      messages: [
+      input: [
         { role: 'system', content: OLIVIA_SYSTEM_PROMPT },
         { role: 'user', content: prompt },
       ],

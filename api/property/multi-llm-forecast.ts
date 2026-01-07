@@ -554,7 +554,7 @@ async function callGPT5Forecast(
   const prompt = buildForecastPrompt(address, price, neighborhood, propertyType);
 
   // Use OpenAI Responses API with web search for market context
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -563,7 +563,7 @@ async function callGPT5Forecast(
     body: JSON.stringify({
       model: 'gpt-5.2-pro',
       max_output_tokens: 32000,
-      messages: [
+      input: [
         { role: 'system', content: GPT_OLIVIA_CMA_SYSTEM_PROMPT },
         { role: 'user', content: prompt },
       ],
