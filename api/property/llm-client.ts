@@ -44,7 +44,7 @@ export async function callPerplexity(params: LlmCallParams): Promise<LlmResponse
           { role: 'user', content: params.user }
         ],
         temperature: params.temperature ?? 0.2,
-        max_tokens: params.maxTokens ?? 2500,
+        max_tokens: params.maxTokens ?? 32000,
       }),
     });
 

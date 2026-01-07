@@ -745,7 +745,7 @@ async function callPerplexityForecast(
         { role: 'user', content: userPrompt }
       ],
       temperature: 0.2,
-      max_tokens: 2500,
+      max_tokens: 32000,
     }),
   });
 

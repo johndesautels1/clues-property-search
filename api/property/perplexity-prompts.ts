@@ -25,7 +25,7 @@ Respond in valid JSON only, with the exact keys requested in the user message.`;
 export const PERPLEXITY_CONFIG = {
   model: 'sonar-reasoning-pro',
   temperature: 0.2,
-  max_tokens: 8000,  // Increased from 2500 to prevent truncation
+  max_tokens: 32000,  // Standardized across all LLMs
   web_search_options: {
     search_context_size: 'medium'
   }
