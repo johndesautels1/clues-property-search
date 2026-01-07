@@ -1,0 +1,177 @@
+{
+  "description": "The 34 high-velocity fields that ALL LLMs must search for when MLS data is missing",
+  "version": "1.0.0",
+  "updated": "2026-01-07",
+  "fields": [
+    {
+      "id": 12,
+      "name": "market_value_estimate",
+      "description": "Automated valuation model estimate of property value"
+    },
+    {
+      "id": "16a",
+      "name": "zestimate",
+      "description": "Zillow's automated home value estimate"
+    },
+    {
+      "id": "16b",
+      "name": "redfin_estimate",
+      "description": "Redfin's automated home value estimate"
+    },
+    {
+      "id": "16c",
+      "name": "first_american_avm",
+      "description": "First American automated valuation model"
+    },
+    {
+      "id": "16d",
+      "name": "quantarium_avm",
+      "description": "Quantarium automated valuation model"
+    },
+    {
+      "id": "16e",
+      "name": "ice_avm",
+      "description": "ICE automated valuation model"
+    },
+    {
+      "id": "16f",
+      "name": "collateral_analytics",
+      "description": "Collateral Analytics valuation estimate"
+    },
+    {
+      "id": 81,
+      "name": "public_transit_access",
+      "description": "Access to public transportation"
+    },
+    {
+      "id": 82,
+      "name": "commute_to_city_center",
+      "description": "Commute time to city center"
+    },
+    {
+      "id": 91,
+      "name": "median_home_price",
+      "description": "Median home price in the neighborhood"
+    },
+    {
+      "id": 92,
+      "name": "price_per_sqft_recent",
+      "description": "Recent price per square foot in the area"
+    },
+    {
+      "id": 95,
+      "name": "days_on_market_avg",
+      "description": "Average days on market for similar properties"
+    },
+    {
+      "id": 96,
+      "name": "inventory_surplus",
+      "description": "Current inventory surplus in the market"
+    },
+    {
+      "id": 97,
+      "name": "insurance_est_annual",
+      "description": "Estimated annual homeowners insurance cost"
+    },
+    {
+      "id": 98,
+      "name": "rental_estimate_monthly",
+      "description": "Estimated monthly rental value"
+    },
+    {
+      "id": 103,
+      "name": "comparable_sales",
+      "description": "Recent comparable sales in the area"
+    },
+    {
+      "id": 104,
+      "name": "electric_provider",
+      "description": "Electric utility provider for the area"
+    },
+    {
+      "id": 105,
+      "name": "avg_electric_bill",
+      "description": "Average monthly electric bill"
+    },
+    {
+      "id": 106,
+      "name": "water_provider",
+      "description": "Water utility provider for the area"
+    },
+    {
+      "id": 107,
+      "name": "avg_water_bill",
+      "description": "Average monthly water bill"
+    },
+    {
+      "id": 110,
+      "name": "trash_provider",
+      "description": "Trash/waste collection provider"
+    },
+    {
+      "id": 111,
+      "name": "internet_providers_top3",
+      "description": "Top 3 internet service providers available"
+    },
+    {
+      "id": 114,
+      "name": "cable_tv_provider",
+      "description": "Cable TV provider for the area"
+    },
+    {
+      "id": 169,
+      "name": "zillow_views",
+      "description": "Number of views on Zillow"
+    },
+    {
+      "id": 170,
+      "name": "redfin_views",
+      "description": "Number of views on Redfin"
+    },
+    {
+      "id": 171,
+      "name": "homes_views",
+      "description": "Number of views on Homes.com"
+    },
+    {
+      "id": 172,
+      "name": "realtor_views",
+      "description": "Number of views on Realtor.com"
+    },
+    {
+      "id": 174,
+      "name": "saves_favorites",
+      "description": "Number of saves/favorites across platforms"
+    },
+    {
+      "id": 175,
+      "name": "market_type",
+      "description": "Market type (buyer's, seller's, balanced)"
+    },
+    {
+      "id": 176,
+      "name": "avg_sale_to_list_pct",
+      "description": "Average sale to list price percentage"
+    },
+    {
+      "id": 177,
+      "name": "avg_days_to_pending",
+      "description": "Average days from listing to pending"
+    },
+    {
+      "id": 178,
+      "name": "multiple_offers_likelihood",
+      "description": "Likelihood of receiving multiple offers"
+    },
+    {
+      "id": 180,
+      "name": "price_trend",
+      "description": "Recent price trend direction"
+    },
+    {
+      "id": 181,
+      "name": "rent_zestimate",
+      "description": "Zillow's rent estimate (Rent Zestimate)"
+    }
+  ]
+}
