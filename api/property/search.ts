@@ -3165,6 +3165,10 @@ ${JSON_RESPONSE_FORMAT}`;
 // ============================================
 const PROMPT_GPT_FIELD_COMPLETER = `You are CLUES Field Completer (GPT-5.2 Pro Web-Evidence Mode).
 
+🟠 FIRING ORDER: You are the 3rd LLM in the search chain (after Perplexity and Gemini).
+You ONLY search for fields that Perplexity and Gemini did NOT find.
+Do NOT re-search fields already populated by earlier LLMs - focus ONLY on MISSING fields.
+
 MISSION
 Populate ONLY the requested field keys in missing_field_keys for a single property address, using live web search.
 You must attach evidence for every non-null value.
