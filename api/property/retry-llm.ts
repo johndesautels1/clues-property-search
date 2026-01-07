@@ -1193,38 +1193,66 @@ async function callClaudeSonnet(address: string): Promise<{ fields: Record<strin
   console.log('[CLAUDE SONNET] API key present:', !!apiKey, 'length:', apiKey?.length || 0);
   if (!apiKey) return { error: 'API key not set', fields: {} };
 
-  const prompt = `You are Claude Sonnet, a property data specialist. You fire 5th in the LLM cascade (Opus fires LAST).
+  const prompt = `You are Claude Sonnet, a property data specialist with web search capabilities.
 
-CRITICAL: DO NOT search for fields already provided by MLS or other LLMs:
-- DO NOT search for: listing_price, bedrooms, bathrooms, sqft, year_built, taxes, lot_size
-- DO NOT search for: address, city, state, zip, county, parcel_id, legal_description
-- DO NOT search for: HOA fees, pool, garage, stories, property_type, listing_status
-- These are ALREADY provided by Stellar MLS (Tier 1)
+🔵 FIRING ORDER: You are the 5th LLM in the search chain (after Perplexity, Gemini, GPT, and Grok). Claude Opus fires LAST.
+You ONLY search for fields that earlier LLMs did NOT find.
+Do NOT re-search fields already populated - focus ONLY on MISSING fields from the 34 high-velocity field list.
 
-YOUR TASK: Use web search to find ONLY these commonly-missing fields for: ${address}
+MISSION: Use web search to populate ANY of the 34 high-velocity fields that are still missing for: ${address}
 
-COUNTY/TAX FIELDS (search "[county] property appraiser [address]"):
-- 12_market_value_estimate: Estimated market value from Zillow/Redfin
-- 15_assessed_value: Assessed value from county property appraiser
-- 91_median_home_price_neighborhood: Median home price in the neighborhood/ZIP
-- 92_price_per_sqft_recent_avg: Average $/sqft for recent sales in area
-- 151_homestead_yn: Yes/No if property has homestead exemption
-- 152_cdd_yn: Yes/No if property is in a Community Development District
+VALUATION & AVM FIELDS:
+- 12_market_value_estimate: Estimated market value (average of available AVMs)
+- 16a_zestimate: Zillow Zestimate
+- 16b_redfin_estimate: Redfin Estimate
+- 16c_first_american_avm: First American AVM
+- 16d_quantarium_avm: Quantarium AVM
+- 16e_ice_avm: ICE AVM
+- 16f_collateral_analytics_avm: Collateral Analytics AVM
 
-UTILITY/SERVICE FIELDS (search "[city] utility providers"):
-- 104_electric_provider: Local electric company name
-- 109_natural_gas: Gas company name (or "No natural gas service")
-- 106_water_provider: Water utility name
-- 108_sewer_provider: Sewer service provider
-- 110_trash_provider: Garbage collection provider
+MARKET & PRICING FIELDS:
+- 91_median_home_price_neighborhood: Median home price in neighborhood
+- 92_price_per_sqft_recent_avg: Recent average $/sqft in area
+- 95_days_on_market_avg: Average days on market
+- 96_inventory_surplus: Market inventory level
+- 175_market_type: Buyer's/Seller's/Balanced market
+- 176_avg_sale_to_list_percent: Average sale-to-list price ratio
+- 177_avg_days_to_pending: Average days to pending status
+- 178_multiple_offers_likelihood: Likelihood of multiple offers
+- 180_price_trend: Price trend direction
 
-CONNECTIVITY FIELDS (search "[address] internet providers"):
-- 112_max_internet_speed: Max available Mbps from any ISP
-- 113_fiber_available: Yes/No if fiber is available at address
-
-INSURANCE/RISK FIELDS (search "[county] flood zone"):
+RENTAL & INVESTMENT FIELDS:
+- 98_rental_estimate_monthly: Monthly rental estimate
+- 181_rent_zestimate: Zillow Rent Zestimate
 - 97_insurance_est_annual: Annual homeowners insurance estimate
-- 119_flood_zone: FEMA flood zone designation
+- 103_comparable_sales: Recent comparable sales
+
+UTILITY & SERVICE PROVIDER FIELDS:
+- 104_electric_provider: Electric utility provider
+- 105_avg_electric_bill: Average monthly electric bill
+- 106_water_provider: Water utility provider
+- 107_avg_water_bill: Average monthly water bill
+- 110_trash_provider: Trash collection provider
+- 111_internet_providers_top3: Top 3 internet providers available
+- 114_cable_tv_provider: Cable TV provider
+
+LOCATION & TRANSIT FIELDS:
+- 81_public_transit_access: Public transit access description
+- 82_commute_to_city_center: Commute time to city center
+
+MARKET ACTIVITY FIELDS (if property is actively listed):
+- 169_zillow_views: Number of Zillow views
+- 170_redfin_views: Number of Redfin views
+- 171_homes_views: Number of Homes.com views
+- 172_realtor_views: Number of Realtor.com views
+- 174_saves_favorites: Number of saves/favorites
+
+SEARCH STRATEGY:
+1. Use web search for "[ADDRESS]" on Zillow, Redfin, Homes.com, Realtor.com for AVMs and market activity
+2. Search "[CITY/ZIP] median home price 2026" for market statistics
+3. Search "[CITY] utility providers" for utility/service information
+4. Search "[ADDRESS] public transit" for transit access
+5. Only return fields you found with high confidence - use null for unverified data
 
 Return JSON with numbered field keys like:
 {
