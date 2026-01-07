@@ -3674,16 +3674,15 @@ Return structured JSON with proper field keys. Use null for unknown data.`;
           { role: 'system', content: PROMPT_COPILOT },
           { role: 'user', content: userPrompt },
         ],
-        reasoning: { effort: 'high' },
+        reasoning: { effort: 'medium' },
         tools: [{ type: 'web_search' }],
-        tool_choice: 'auto', // Changed from 'required' - auto lets model decide when to search
+        tool_choice: 'auto',
         include: ['web_search_call.action.sources'],
       }),
     });
 
     const data = await response.json();
 
-    // Handle /v1/responses format - OpenAI handles web_search internally
     let text: string | undefined;
 
     // Method 1: Direct output_text
@@ -3980,16 +3979,11 @@ async function callGPT5FieldAuditor(
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      reasoning: { effort: 'high' },
+      reasoning: { effort: 'medium' },
       tools: [{ type: 'web_search' }],
-      tool_choice: 'auto', // Changed from 'required' - auto lets model decide when to search
+      tool_choice: 'auto',
       include: ['web_search_call.action.sources'],
     };
-
-    // LOG RAW REQUEST
-    console.log(`[GPT LLM Auditor] REQUEST: model=${requestBody.model}`);
-    console.log(`[GPT LLM Auditor] System prompt length: ${systemPrompt.length} chars`);
-    console.log(`[GPT LLM Auditor] User prompt length: ${userPrompt.length} chars`);
 
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',

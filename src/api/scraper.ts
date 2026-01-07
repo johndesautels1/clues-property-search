@@ -231,9 +231,9 @@ class PropertyScraper {
           },
           { role: 'user', content: prompt },
         ],
-        reasoning: { effort: 'high' },
+        reasoning: { effort: 'medium' },
         tools: [{ type: 'web_search' }],
-        tool_choice: 'required',
+        tool_choice: 'auto',
         include: ['web_search_call.action.sources'],
       }),
     });
