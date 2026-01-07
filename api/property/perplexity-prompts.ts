@@ -403,14 +403,46 @@ export const PERPLEXITY_FIELD_MAPPING: Record<string, string> = {
 };
 
 /**
+ * Flatten nested Perplexity response objects
+ * Perplexity may return: { field: { value: X, source_name: Y, ... } }
+ * We need to extract just the value: { field: X }
+ */
+function flattenPerplexityResponse(response: Record<string, any>): Record<string, any> {
+  const flattened: Record<string, any> = {};
+
+  for (const [key, val] of Object.entries(response)) {
+    if (val === null || val === undefined) {
+      continue;
+    }
+
+    // If it's an object with a 'value' property, extract the value
+    if (typeof val === 'object' && !Array.isArray(val) && 'value' in val) {
+      flattened[key] = val.value;
+      // Log source info for debugging
+      if (val.source_name || val.source_url) {
+        console.log(`📝 [Perplexity] ${key}: "${val.value}" (source: ${val.source_name || val.source_url || 'N/A'})`);
+      }
+    } else {
+      // Use value as-is
+      flattened[key] = val;
+    }
+  }
+
+  return flattened;
+}
+
+/**
  * Maps Perplexity response fields to our internal field IDs
  * - Fields mapped to null are metadata and will be silently skipped
  * - Unknown fields will log a warning for future mapping
  */
 export function mapPerplexityFieldsToSchema(perplexityResponse: Record<string, any>): Record<string, any> {
+  // First flatten any nested objects with 'value' property
+  const flatResponse = flattenPerplexityResponse(perplexityResponse);
+
   const mapped: Record<string, any> = {};
 
-  for (const [naturalKey, fieldData] of Object.entries(perplexityResponse)) {
+  for (const [naturalKey, fieldData] of Object.entries(flatResponse)) {
     // Check if key exists in mapping (including null mappings)
     if (naturalKey in PERPLEXITY_FIELD_MAPPING) {
       const schemaFieldId = PERPLEXITY_FIELD_MAPPING[naturalKey];

@@ -2504,6 +2504,22 @@ async function callPerplexityWithMapping(promptName: string, userPrompt: string)
         } catch (parseError) {
           console.error(`❌ [Perplexity ${promptName}] JSON parse error:`, parseError);
           console.error(`❌ [Perplexity ${promptName}] Candidate JSON (first 300 chars): ${candidate.substring(0, 300)}`);
+
+          // Try to repair truncated JSON by closing unclosed braces
+          try {
+            const repaired = repairTruncatedJson(candidate);
+            if (repaired !== candidate) {
+              console.log(`🔧 [Perplexity ${promptName}] Attempting JSON repair...`);
+              const repairedParsed = JSON.parse(repaired);
+              const fieldsToMap = repairedParsed.data_fields || repairedParsed.fields || repairedParsed;
+              const mapped = mapPerplexityFieldsToSchema(fieldsToMap);
+              const filteredFields = filterNullValues(mapped, `Perplexity ${promptName}`);
+              console.log(`✅ [Perplexity ${promptName}] JSON repair succeeded! Returning ${Object.keys(filteredFields).length} fields`);
+              return filteredFields;
+            }
+          } catch (repairError) {
+            console.error(`❌ [Perplexity ${promptName}] JSON repair also failed`);
+          }
         }
       } else {
         console.log(`❌ [Perplexity ${promptName}] No JSON found in response`);
@@ -2526,6 +2542,50 @@ function stripJsonCodeFences(text: string): string {
     .replace(/```json\s*/gi, '')
     .replace(/```\s*/g, '')
     .trim();
+}
+
+/**
+ * Attempts to repair truncated JSON by:
+ * 1. Removing the last incomplete property
+ * 2. Adding closing braces/brackets
+ */
+function repairTruncatedJson(json: string): string {
+  let repaired = json.trim();
+
+  // Count opening vs closing braces/brackets
+  const openBraces = (repaired.match(/{/g) || []).length;
+  const closeBraces = (repaired.match(/}/g) || []).length;
+  const openBrackets = (repaired.match(/\[/g) || []).length;
+  const closeBrackets = (repaired.match(/]/g) || []).length;
+
+  // If balanced, no repair needed
+  if (openBraces === closeBraces && openBrackets === closeBrackets) {
+    return json;
+  }
+
+  // Try to find the last complete property (ends with }, ], ", number, true, false, null)
+  // Remove any trailing incomplete property
+  const lastCompleteMatch = repaired.match(/^([\s\S]*(?:}|]|"|true|false|null|\d))\s*,?\s*"[^"]*"?\s*:?\s*(?:\{[^}]*)?$/);
+  if (lastCompleteMatch) {
+    repaired = lastCompleteMatch[1];
+  }
+
+  // Remove trailing comma if present
+  repaired = repaired.replace(/,\s*$/, '');
+
+  // Add missing closing brackets
+  const missingBrackets = openBrackets - closeBrackets;
+  for (let i = 0; i < missingBrackets; i++) {
+    repaired += ']';
+  }
+
+  // Add missing closing braces
+  const missingBraces = openBraces - closeBraces;
+  for (let i = 0; i < missingBraces; i++) {
+    repaired += '}';
+  }
+
+  return repaired;
 }
 
 function extractFirstJsonObject(text: string): string | null {
