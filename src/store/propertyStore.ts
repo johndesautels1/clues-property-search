@@ -351,9 +351,16 @@ const customStorage = {
     if (!str) return null;
     try {
       const parsed = JSON.parse(str);
-      // Convert fullProperties array back to Map
-      if (parsed.state?.fullProperties && Array.isArray(parsed.state.fullProperties)) {
-        parsed.state.fullProperties = new Map(parsed.state.fullProperties);
+      // Convert fullProperties back to Map (handles both Array and legacy Object formats)
+      if (parsed.state?.fullProperties) {
+        if (Array.isArray(parsed.state.fullProperties)) {
+          // Current format: array of [key, value] pairs
+          parsed.state.fullProperties = new Map(parsed.state.fullProperties);
+        } else if (typeof parsed.state.fullProperties === 'object') {
+          // Legacy format: plain object - convert to Map
+          console.log('💽 MIGRATION: Converting legacy Object format to Map');
+          parsed.state.fullProperties = new Map(Object.entries(parsed.state.fullProperties));
+        }
       }
       return parsed;
     } catch (parseError) {

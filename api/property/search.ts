@@ -4676,6 +4676,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             } else {
               console.log(`⚠️ [FIELD 10 DEBUG] Stellar MLS did NOT return Field 10 (listing_price) - property may not be actively listed`);
             }
+
+            // ========================================
+            // ADDITIONAL FIELD MAPPINGS FROM RAW MLS DATA
+            // ========================================
+            const additionalFields: Record<string, any> = {};
+
+            // Map taxLegalDescription -> 150_legal_description
+            if (bridgeData.rawData?.TaxLegalDescription && !mlsFields['150_legal_description']) {
+              additionalFields['150_legal_description'] = bridgeData.rawData.TaxLegalDescription;
+              console.log('📋 Mapped TaxLegalDescription -> 150_legal_description');
+            }
+
+            // Map GarageSpaces -> 28_garage_spaces
+            if (bridgeData.rawData?.GarageSpaces !== undefined && !mlsFields['28_garage_spaces']) {
+              additionalFields['28_garage_spaces'] = parseInt(bridgeData.rawData.GarageSpaces) || 0;
+              console.log('🚗 Mapped GarageSpaces -> 28_garage_spaces:', additionalFields['28_garage_spaces']);
+            }
+
+            // Calculate 11_price_per_sqft from Price/Sqft if missing
+            if (!mlsFields['11_price_per_sqft']) {
+              const price = mlsFields['10_listing_price'] || bridgeData.rawData?.ListPrice;
+              const sqft = mlsFields['21_living_sqft'] || bridgeData.rawData?.LivingArea;
+              if (price && sqft && sqft > 0) {
+                additionalFields['11_price_per_sqft'] = Math.round(price / sqft);
+                console.log('💲 Calculated 11_price_per_sqft: $', additionalFields['11_price_per_sqft'], '/sqft');
+              }
+            }
+
+            // Set 31_hoa_fee_annual to 0 if 30_hoa_yn is false
+            if (mlsFields['30_hoa_yn'] === false && !mlsFields['31_hoa_fee_annual']) {
+              additionalFields['31_hoa_fee_annual'] = 0;
+              console.log('🏘️ Set 31_hoa_fee_annual = 0 (no HOA)');
+            }
+
+            // Add additional fields to arbitration pipeline
+            if (Object.keys(additionalFields).length > 0) {
+              const addedCount = arbitrationPipeline.addFieldsFromSource(additionalFields, STELLAR_MLS_SOURCE);
+              console.log(`✅ Added ${addedCount} additional mapped fields from MLS rawData`);
+            }
           } else {
             console.log('⚠️ Bridge Interactive: No property found or no data returned');
             console.log('   - success:', bridgeData.success);
