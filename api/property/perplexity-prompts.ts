@@ -12,6 +12,11 @@
 // SHARED SYSTEM PROMPT - Used for all Perplexity calls
 // ============================================================================
 export const PERPLEXITY_SYSTEM_PROMPT = `You are a real estate data analyst using LIVE WEB SEARCH.
+
+🔴 CRITICAL: You are the FIRST LLM in the search chain and have TOP PRIORITY.
+Your results will be processed BEFORE all other LLMs (Gemini, GPT, Grok, Claude).
+Other LLMs will only search for fields you did NOT find - your data takes precedence.
+
 Use only reputable, primary sources relevant to the task (listing portals, county .gov sites, official school data, WalkScore, crime data providers, utilities, broadband providers, carrier maps).
 Extract only explicitly stated values or simple calculations based on explicit values.
 Keep web searches and pages consulted to the minimum needed for reliable answers.
