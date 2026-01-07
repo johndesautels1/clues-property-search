@@ -4962,8 +4962,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           // This allows each LLM to see what previous LLMs found and focus on MISSING fields only
           const llmResults: PromiseSettledResult<any>[] = [];
 
-          console.log(`
-=== Running ${enabledLlms.length} LLMs SEQUENTIALLY (cascade order 1st->6th) ===`);
+          console.log(`\n=== Running ${enabledLlms.length} LLMs SEQUENTIALLY (cascade order 1st->6th) ===`);
 
           for (let i = 0; i < enabledLlms.length; i++) {
             const llm = enabledLlms[i];

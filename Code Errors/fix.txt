@@ -1,0 +1,862 @@
+CLUES FIELD CONSISTENCY AUDIT - COMPLETE GAP ANALYSIS
+
+  EXECUTIVE SUMMARY OF FAILURES
+
+  | Category                   | Severity    | Description                                                     |
+  |----------------------------|-------------|-----------------------------------------------------------------|
+  | LLM Field Inconsistency    | 🔴 CRITICAL | 34 high-velocity fields NOT searched by all 5 LLMs              |
+  | File Duplication Gap       | 🔴 CRITICAL | APIs exist in search.ts but NOT in free-apis.ts (or vice versa) |
+  | retry-llm.ts Incomplete    | 🔴 CRITICAL | Only GPT + Sonnet, missing Perplexity/Gemini/Grok/Opus          |
+  | Claude Sonnet Wrong Fields | 🔴 CRITICAL | Searches 16 fields instead of 34 (8 match, 8 wrong)             |
+  | MLS Fields Missing         | 🟡 MAJOR    | Fields available in MLS not being parsed                        |
+  | Free API Fragmentation     | 🟡 MAJOR    | Same API calls duplicated/split across files                    |
+
+  ---
+  PART 1: API FILE LOCATION AUDIT
+
+  APIs in search.ts but NOT in free-apis.ts (SHOULD BE IN BOTH)
+
+  | API                     | search.ts         | free-apis.ts | Fields Affected   | Fix Required        |
+  |-------------------------|-------------------|--------------|-------------------|---------------------|
+  | CENSUS (US Census)      | ✅ Line 1452      | ❌ MISSING   | 100               | Add to free-apis.ts |
+  | GPLA (Google Places)    | ✅ Line 1633+     | ❌ MISSING   | 65-73, 83-87, 116 | Add to free-apis.ts |
+  | GDIST (Google Distance) | ✅ Line 2067      | ❌ MISSING   | 82                | Add to free-apis.ts |
+  | NOAA Climate            | ✅ Line 2189      | ❌ MISSING   | 121, 124-125, 128 | Add to free-apis.ts |
+  | USGS Elevation          | ✅ Line 2192      | ❌ MISSING   | 64, 123           | Add to free-apis.ts |
+  | EPA FRS/Radon           | ✅ Line 2193-2195 | ❌ MISSING   | 126-127           | Add to free-apis.ts |
+  | GSUN (Google Solar)     | ✅ Line 2197      | ❌ MISSING   | 130               | Add to free-apis.ts |
+
+  APIs in free-apis.ts but NOT in search.ts (SHOULD BE IN BOTH)
+
+  | API     | free-apis.ts | search.ts  | Fields Affected | Fix Required     |
+  |---------|--------------|------------|-----------------|------------------|
+  | HowLoud | ✅ Line 562  | ❌ MISSING | 78-79, 129      | Add to search.ts |
+
+  APIs properly in BOTH files
+
+  | API                | free-apis.ts | search.ts    | Fields         | Status |
+  |--------------------|--------------|--------------|----------------|--------|
+  | Google Geocode     | ✅ Line 38   | ✅ Line 1183 | 1, 6-8         | ✅ OK  |
+  | WalkScore          | ✅ Line 233  | ✅ Line 1343 | 74-76, 80      | ✅ OK  |
+  | FEMA Flood         | ✅ Line 287  | ✅ Line 1381 | 119-120        | ✅ OK  |
+  | AirNow             | ✅ Line 325  | ✅ Line 1418 | 117-118        | ✅ OK  |
+  | SchoolDigger       | ✅ Line 368  | ✅ Line 2187 | 63, 66, 69, 72 | ✅ OK  |
+  | Google Street View | ✅ Line 171  | ✅ Line 2196 | photo_url      | ✅ OK  |
+
+  ---
+  PART 2: LLM COVERAGE AUDIT - THE 34 HIGH-VELOCITY FIELDS
+
+  Current State: Which LLMs Search for Each Field
+
+  | #   | Field                      | PPX | GEM | GPT | GROK | CSON | COPUS | retry-llm.ts | CORRECT?                       |
+  |-----|----------------------------|-----|-----|-----|------|------|-------|--------------|--------------------------------|
+  | 12  | market_value_estimate      | ✅  | ✅  | ✅  | ✅   | ✅   | ❌    | ✅ CSON only | ❌ Missing GEM,GPT,GROK,PPX    |
+  | 16a | zestimate                  | ✅  | ✅  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing CSON, retry-llm     |
+  | 16b | redfin_estimate            | ✅  | ✅  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing CSON, retry-llm     |
+  | 16c | first_american_avm         | ✅  | ❌  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing GEM,CSON, retry-llm |
+  | 16d | quantarium_avm             | ✅  | ❌  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing GEM,CSON, retry-llm |
+  | 16e | ice_avm                    | ✅  | ❌  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing GEM,CSON, retry-llm |
+  | 16f | collateral_analytics       | ✅  | ❌  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing GEM,CSON, retry-llm |
+  | 81  | public_transit_access      | ✅  | ❌  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing GEM,CSON, retry-llm |
+  | 82  | commute_to_city_center     | ✅  | ❌  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing GEM,CSON, retry-llm |
+  | 91  | median_home_price          | ✅  | ✅  | ✅  | ✅   | ✅   | ❌    | ✅ CSON only | ❌ Missing GEM,GPT,GROK,PPX    |
+  | 92  | price_per_sqft_recent      | ✅  | ✅  | ✅  | ✅   | ✅   | ❌    | ✅ CSON only | ❌ Missing GEM,GPT,GROK,PPX    |
+  | 95  | days_on_market_avg         | ✅  | ❌  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing GEM,CSON, retry-llm |
+  | 96  | inventory_surplus          | ✅  | ✅  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing CSON, retry-llm     |
+  | 97  | insurance_est_annual       | ✅  | ✅  | ✅  | ✅   | ✅   | ❌    | ✅ CSON only | ❌ Missing GEM,GPT,GROK,PPX    |
+  | 98  | rental_estimate_monthly    | ✅  | ✅  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing CSON, retry-llm     |
+  | 103 | comparable_sales           | ✅  | ✅  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing CSON, retry-llm     |
+  | 104 | electric_provider          | ✅  | ❌  | ✅  | ✅   | ✅   | ❌    | ✅ CSON only | ❌ Missing GEM,GPT,GROK,PPX    |
+  | 105 | avg_electric_bill          | ✅  | ❌  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing GEM,CSON, retry-llm |
+  | 106 | water_provider             | ✅  | ❌  | ✅  | ✅   | ✅   | ❌    | ✅ CSON only | ❌ Missing GEM,GPT,GROK,PPX    |
+  | 107 | avg_water_bill             | ✅  | ❌  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing GEM,CSON, retry-llm |
+  | 110 | trash_provider             | ✅  | ❌  | ✅  | ✅   | ✅   | ❌    | ✅ CSON only | ❌ Missing GEM,GPT,GROK,PPX    |
+  | 111 | internet_providers_top3    | ✅  | ❌  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing GEM,CSON, retry-llm |
+  | 114 | cable_tv_provider          | ✅  | ❌  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing GEM,CSON, retry-llm |
+  | 169 | zillow_views               | ✅  | ❌  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing GEM,CSON, retry-llm |
+  | 170 | redfin_views               | ✅  | ❌  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing GEM,CSON, retry-llm |
+  | 171 | homes_views                | ✅  | ❌  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing GEM,CSON, retry-llm |
+  | 172 | realtor_views              | ✅  | ❌  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing GEM,CSON, retry-llm |
+  | 174 | saves_favorites            | ✅  | ❌  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing GEM,CSON, retry-llm |
+  | 175 | market_type                | ✅  | ❌  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing GEM,CSON, retry-llm |
+  | 176 | avg_sale_to_list_pct       | ✅  | ❌  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing GEM,CSON, retry-llm |
+  | 177 | avg_days_to_pending        | ✅  | ❌  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing GEM,CSON, retry-llm |
+  | 178 | multiple_offers_likelihood | ✅  | ❌  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing GEM,CSON, retry-llm |
+  | 180 | price_trend                | ✅  | ❌  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing GEM,CSON, retry-llm |
+  | 181 | rent_zestimate             | ✅  | ❌  | ✅  | ✅   | ❌   | ❌    | ❌           | ❌ Missing GEM,CSON, retry-llm |
+
+  CRITICAL FINDING: Claude Sonnet in retry-llm.ts (Lines 1196-1237)
+
+  | Issue              | Expected | Actual                                                                         |
+  |--------------------|----------|--------------------------------------------------------------------------------|
+  | Field count        | 34       | 16 (8 correct + 8 WRONG)                                                       |
+  | Missing from 34    | -        | 16a-f, 81, 82, 95, 96, 98, 103, 105, 107, 111, 114, 169-172, 174-178, 180, 181 |
+  | WRONG fields added | -        | 15, 108, 109, 112, 113, 119, 151, 152                                          |
+
+  ---
+  PART 3: retry-llm.ts LLM COVERAGE GAPS
+
+  Current State of retry-llm.ts
+
+  | LLM           | Present in retry-llm.ts | Line Numbers | Fields Searched |
+  |---------------|-------------------------|--------------|-----------------|
+  | Perplexity    | ❌ MISSING              | N/A          | 0               |
+  | Gemini        | ❌ MISSING              | N/A          | 0               |
+  | GPT-5.2       | ✅ Present              | ~1050-1188   | 34 (correct)    |
+  | Grok          | ❌ MISSING              | N/A          | 0               |
+  | Claude Sonnet | ✅ Present              | ~1191-1300   | 16 (WRONG)      |
+  | Claude Opus   | ❌ MISSING              | N/A          | 0               |
+
+  What SHOULD be in retry-llm.ts
+
+  | LLM              | Should Search | Current      | Gap                 |
+  |------------------|---------------|--------------|---------------------|
+  | Perplexity (A-E) | 34 fields     | 0            | ❌ Missing entirely |
+  | Gemini 3 Pro     | 34 fields     | 0            | ❌ Missing entirely |
+  | GPT-5.2 Pro      | 34 fields     | 34           | ✅ Correct          |
+  | Grok 4.1         | 34 fields     | 0            | ❌ Missing entirely |
+  | Claude Sonnet    | 34 fields     | 16 (8 wrong) | ❌ Wrong prompt     |
+  | Claude Opus      | 34 fields     | 0            | ❌ Missing entirely |
+
+  ---
+  PART 4: FIELD-BY-FIELD COMPLETE AUDIT
+
+  Legend
+
+  - ✅ = Present and correct
+  - ❌ = Missing (should be there)
+  - ⚠️ = Present but inconsistent
+  - ➖ = Not applicable to this source
+
+  GROUP A-B: Address & Pricing (Fields 1-16)
+
+  | #   | Field                 | MLS | Free APIs | search.ts | retry-llm | PPX | GEM | GPT | GROK | CSON | Issue                           |
+  |-----|-----------------------|-----|-----------|-----------|-----------|-----|-----|-----|------|------|---------------------------------|
+  | 1   | full_address          | ✅  | ✅ GEO    | ✅        | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ✅ OK                           |
+  | 2   | mls_primary           | ✅  | ➖        | ➖        | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ✅ OK                           |
+  | 3   | mls_secondary         | ✅  | ➖        | ➖        | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ✅ OK                           |
+  | 4   | listing_status        | ✅  | ➖        | ➖        | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ✅ OK                           |
+  | 5   | listing_date          | ✅  | ➖        | ➖        | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ✅ OK                           |
+  | 6   | neighborhood          | ✅  | ✅ GEO    | ✅        | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ✅ OK                           |
+  | 7   | county                | ✅  | ✅ GEO    | ✅        | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ✅ OK                           |
+  | 8   | zip_code              | ✅  | ✅ GEO    | ✅        | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ✅ OK                           |
+  | 9   | parcel_id             | ✅  | ➖        | ➖        | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ✅ OK                           |
+  | 10  | listing_price         | ✅  | ➖        | ➖        | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ✅ OK                           |
+  | 11  | price_per_sqft        | ✅  | ➖        | CALC      | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ✅ OK                           |
+  | 12  | market_value_estimate | ➖  | ➖        | ⚠️        | ⚠️ CSON   | ✅  | ✅  | ✅  | ✅   | ⚠️   | ❌ Missing all 5 in retry-llm   |
+  | 13  | last_sale_date        | ✅  | ➖        | ➖        | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ✅ OK                           |
+  | 14  | last_sale_price       | ✅  | ➖        | ➖        | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ✅ OK                           |
+  | 15  | assessed_value        | ✅  | ➖        | ❌        | ⚠️ CSON   | ❌  | ❌  | ❌  | ❌   | ⚠️   | ❌ Not in 34 fields, should be  |
+  | 16  | avms                  | ➖  | ➖        | CALC      | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ✅ OK (calculated)              |
+  | 16a | zestimate             | ➖  | ➖        | ✅        | ❌        | ✅  | ✅  | ✅  | ✅   | ❌   | ❌ Missing CSON, retry-llm      |
+  | 16b | redfin_estimate       | ➖  | ➖        | ✅        | ❌        | ✅  | ✅  | ✅  | ✅   | ❌   | ❌ Missing CSON, retry-llm      |
+  | 16c | first_american_avm    | ➖  | ➖        | ✅        | ❌        | ✅  | ❌  | ✅  | ✅   | ❌   | ❌ Missing GEM, CSON, retry-llm |
+  | 16d | quantarium_avm        | ➖  | ➖        | ✅        | ❌        | ✅  | ❌  | ✅  | ✅   | ❌   | ❌ Missing GEM, CSON, retry-llm |
+  | 16e | ice_avm               | ➖  | ➖        | ✅        | ❌        | ✅  | ❌  | ✅  | ✅   | ❌   | ❌ Missing GEM, CSON, retry-llm |
+  | 16f | collateral_analytics  | ➖  | ➖        | ✅        | ❌        | ✅  | ❌  | ✅  | ✅   | ❌   | ❌ Missing GEM, CSON, retry-llm |
+
+  GROUP C-E: Property Basics & Structure (Fields 17-48)
+
+  | #     | Field               | MLS    | Issue            |
+  |-------|---------------------|--------|------------------|
+  | 17-29 | Property Basics     | ✅ All | ✅ OK - MLS only |
+  | 30-38 | HOA & Taxes         | ✅ All | ✅ OK - MLS only |
+  | 39-48 | Structure & Systems | ✅ All | ✅ OK - MLS only |
+  | 49-53 | Interior Features   | ✅ All | ✅ OK - MLS only |
+  | 54-58 | Exterior Features   | ✅ All | ✅ OK - MLS only |
+
+  GROUP H: Permits (Fields 59-62)
+
+  | #   | Field                | MLS | search.ts | retry-llm | PPX | GEM | GPT | GROK | CSON | Issue                               |
+  |-----|----------------------|-----|-----------|-----------|-----|-----|-----|------|------|-------------------------------------|
+  | 59  | recent_renovations   | ❌  | ✅        | ❌        | ✅  | ✅  | ❌  | ❌   | ❌   | ❌ Missing GPT,GROK,CSON, retry-llm |
+  | 60  | permit_history_roof  | ❌  | ✅        | ❌        | ✅  | ✅  | ❌  | ❌   | ❌   | ❌ Missing GPT,GROK,CSON, retry-llm |
+  | 61  | permit_history_hvac  | ❌  | ✅        | ❌        | ✅  | ✅  | ❌  | ❌   | ❌   | ❌ Missing GPT,GROK,CSON, retry-llm |
+  | 62  | permit_history_other | ❌  | ✅        | ❌        | ✅  | ✅  | ❌  | ❌   | ❌   | ❌ Missing GPT,GROK,CSON, retry-llm |
+
+  GROUP I: Schools (Fields 63-73)
+
+  | #   | Field                  | MLS | free-apis | search.ts | Issue                        |
+  |-----|------------------------|-----|-----------|-----------|------------------------------|
+  | 63  | school_district        | ✅  | ✅ SDIG   | ❌        | ❌ Should be in BOTH files   |
+  | 64  | elevation_feet         | ✅  | ❌        | ✅ USGS   | ❌ Should be in free-apis.ts |
+  | 65  | elementary_school      | ❌  | ❌        | ✅ GPLA   | ❌ Should be in free-apis.ts |
+  | 66  | elementary_rating      | ❌  | ✅ SDIG   | ❌        | ❌ Should be in BOTH files   |
+  | 67  | elementary_distance_mi | ❌  | ❌        | ✅ GPLA   | ❌ Should be in free-apis.ts |
+  | 68  | middle_school          | ❌  | ❌        | ✅ GPLA   | ❌ Should be in free-apis.ts |
+  | 69  | middle_rating          | ❌  | ✅ SDIG   | ❌        | ❌ Should be in BOTH files   |
+  | 70  | middle_distance_mi     | ❌  | ❌        | ✅ GPLA   | ❌ Should be in free-apis.ts |
+  | 71  | high_school            | ❌  | ❌        | ✅ GPLA   | ❌ Should be in free-apis.ts |
+  | 72  | high_rating            | ❌  | ✅ SDIG   | ❌        | ❌ Should be in BOTH files   |
+  | 73  | high_distance_mi       | ❌  | ❌        | ✅ GPLA   | ❌ Should be in free-apis.ts |
+
+  GROUP J: Location Scores (Fields 74-82)
+
+  | #   | Field                   | free-apis | search.ts | retry-llm | PPX | GEM | GPT | GROK | CSON | Issue                                     |
+  |-----|-------------------------|-----------|-----------|-----------|-----|-----|-----|------|------|-------------------------------------------|
+  | 74  | walk_score              | ✅ WALK   | ✅        | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ✅ OK                                     |
+  | 75  | transit_score           | ✅ WALK   | ✅        | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ✅ OK                                     |
+  | 76  | bike_score              | ✅ WALK   | ✅        | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ✅ OK                                     |
+  | 77  | safety_score            | ❌        | ✅        | ❌        | ✅  | ✅  | ❌  | ❌   | ❌   | ❌ Missing GPT,GROK,CSON, retry-llm       |
+  | 78  | noise_level             | ✅ HOW    | ❌        | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ❌ Missing in search.ts                   |
+  | 79  | traffic_level           | ✅ HOW    | ❌        | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ❌ Missing in search.ts                   |
+  | 80  | walkability_description | ✅ WALK   | ✅        | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ✅ OK                                     |
+  | 81  | public_transit_access   | ❌        | ✅ GPLA   | ❌        | ✅  | ❌  | ✅  | ✅   | ❌   | ❌ Missing GEM,CSON, free-apis, retry-llm |
+  | 82  | commute_to_city_center  | ❌        | ✅ GDIST  | ❌        | ✅  | ❌  | ✅  | ✅   | ❌   | ❌ Missing GEM,CSON, free-apis, retry-llm |
+
+  GROUP L: Crime (Fields 88-90)
+
+  | #   | Field                | free-apis | search.ts | retry-llm | PPX | GEM | GPT | GROK | CSON | Issue                                              |
+  |-----|----------------------|-----------|-----------|-----------|-----|-----|-----|------|------|----------------------------------------------------|
+  | 88  | violent_crime_index  | ❌        | ✅ FBI    | ❌        | ✅  | ❌  | ❌  | ❌   | ❌   | ❌ Missing free-apis, GEM,GPT,GROK,CSON, retry-llm |
+  | 89  | property_crime_index | ❌        | ✅ FBI    | ❌        | ✅  | ❌  | ❌  | ❌   | ❌   | ❌ Missing free-apis, GEM,GPT,GROK,CSON, retry-llm |
+  | 90  | neighborhood_safety  | ❌        | ✅ FBI    | ❌        | ✅  | ❌  | ❌  | ❌   | ❌   | ❌ Missing free-apis, GEM,GPT,GROK,CSON, retry-llm |
+
+  GROUP M: Market & Investment (Fields 91-103)
+
+  | #   | Field                   | MLS | free-apis | search.ts | retry-llm | PPX | GEM | GPT | GROK | CSON | Issue                                    |
+  |-----|-------------------------|-----|-----------|-----------|-----------|-----|-----|-----|------|------|------------------------------------------|
+  | 91  | median_home_price       | ❌  | ❌        | ✅        | ⚠️ CSON   | ✅  | ✅  | ✅  | ✅   | ⚠️   | ❌ Missing all 5 in retry-llm            |
+  | 92  | price_per_sqft_recent   | ❌  | ❌        | ✅        | ⚠️ CSON   | ✅  | ✅  | ✅  | ✅   | ⚠️   | ❌ Missing all 5 in retry-llm            |
+  | 93  | price_to_rent_ratio     | ❌  | ❌        | CALC      | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ✅ OK (calculated)                       |
+  | 94  | price_vs_median_pct     | ❌  | ❌        | CALC      | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ✅ OK (calculated)                       |
+  | 95  | days_on_market_avg      | ✅  | ❌        | ✅        | ❌        | ✅  | ❌  | ✅  | ✅   | ❌   | ❌ Missing GEM,CSON, retry-llm           |
+  | 96  | inventory_surplus       | ❌  | ❌        | ✅        | ❌        | ✅  | ✅  | ✅  | ✅   | ❌   | ❌ Missing CSON, retry-llm               |
+  | 97  | insurance_est_annual    | ❌  | ❌        | ✅        | ⚠️ CSON   | ✅  | ✅  | ✅  | ✅   | ⚠️   | ❌ Missing all 5 in retry-llm            |
+  | 98  | rental_estimate_monthly | ❌  | ❌        | ✅        | ❌        | ✅  | ✅  | ✅  | ✅   | ❌   | ❌ Missing CSON, retry-llm               |
+  | 99  | rental_yield_est        | ❌  | ❌        | CALC      | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ✅ OK (calculated)                       |
+  | 100 | vacancy_rate            | ❌  | ❌        | ✅ CENSUS | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ❌ Missing in free-apis.ts               |
+  | 101 | cap_rate_est            | ❌  | ❌        | CALC      | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ✅ OK (calculated)                       |
+  | 102 | financing_terms         | ✅  | ❌        | ✅        | ❌        | ✅  | ✅  | ❌  | ❌   | ❌   | ❌ Missing GPT,GROK,CSON, MLS, retry-llm |
+  | 103 | comparable_sales        | ❌  | ❌        | ✅        | ❌        | ✅  | ✅  | ✅  | ✅   | ❌   | ❌ Missing CSON, retry-llm               |
+
+  GROUP N: Utilities (Fields 104-116)
+
+  | #   | Field                 | MLS | free-apis | search.ts | retry-llm | PPX | GEM | GPT | GROK | CSON | Issue                                  |
+  |-----|-----------------------|-----|-----------|-----------|-----------|-----|-----|-----|------|------|----------------------------------------|
+  | 104 | electric_provider     | ❌  | ❌        | ✅        | ⚠️ CSON   | ✅  | ❌  | ✅  | ✅   | ⚠️   | ❌ Missing GEM, all 5 in retry-llm     |
+  | 105 | avg_electric_bill     | ❌  | ❌        | ✅        | ❌        | ✅  | ❌  | ✅  | ✅   | ❌   | ❌ Missing GEM,CSON, retry-llm         |
+  | 106 | water_provider        | ✅  | ❌        | ✅        | ⚠️ CSON   | ✅  | ❌  | ✅  | ✅   | ⚠️   | ❌ Missing GEM, all 5 in retry-llm     |
+  | 107 | avg_water_bill        | ❌  | ❌        | ✅        | ❌        | ✅  | ❌  | ✅  | ✅   | ❌   | ❌ Missing GEM,CSON, retry-llm         |
+  | 108 | sewer_provider        | ✅  | ❌        | ❌        | ⚠️ CSON   | ❌  | ❌  | ❌  | ❌   | ⚠️   | ❌ Missing PPX,GEM,GPT,GROK, search.ts |
+  | 109 | natural_gas           | ❌  | ❌        | ❌        | ⚠️ CSON   | ❌  | ❌  | ❌  | ❌   | ⚠️   | ❌ Missing PPX,GEM,GPT,GROK, search.ts |
+  | 110 | trash_provider        | ❌  | ❌        | ✅        | ⚠️ CSON   | ✅  | ❌  | ✅  | ✅   | ⚠️   | ❌ Missing GEM, all 5 in retry-llm     |
+  | 111 | internet_providers    | ❌  | ❌        | ✅        | ❌        | ✅  | ❌  | ✅  | ✅   | ❌   | ❌ Missing GEM,CSON, retry-llm         |
+  | 112 | max_internet_speed    | ❌  | ❌        | ❌        | ⚠️ CSON   | ❌  | ❌  | ❌  | ❌   | ⚠️   | ❌ Missing PPX,GEM,GPT,GROK, search.ts |
+  | 113 | fiber_available       | ❌  | ❌        | ❌        | ⚠️ CSON   | ❌  | ❌  | ❌  | ❌   | ⚠️   | ❌ Missing PPX,GEM,GPT,GROK, search.ts |
+  | 114 | cable_tv_provider     | ❌  | ❌        | ✅        | ❌        | ✅  | ❌  | ✅  | ✅   | ❌   | ❌ Missing GEM,CSON, retry-llm         |
+  | 115 | cell_coverage_quality | ❌  | ❌        | ✅        | ❌        | ✅  | ✅  | ❌  | ❌   | ❌   | ❌ Missing GPT,GROK,CSON, retry-llm    |
+  | 116 | emergency_services    | ❌  | ❌        | ✅ GPLA   | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ❌ Missing in free-apis.ts             |
+
+  GROUP O: Environment & Risk (Fields 117-130)
+
+  | #   | Field                 | free-apis | search.ts | Issue                                               |
+  |-----|-----------------------|-----------|-----------|-----------------------------------------------------|
+  | 117 | air_quality_index     | ✅ AIR    | ✅        | ✅ OK                                               |
+  | 118 | air_quality_grade     | ✅ AIR    | ✅        | ✅ OK                                               |
+  | 119 | flood_zone            | ✅ FEMA   | ✅        | ✅ OK (also MLS, CSON)                              |
+  | 120 | flood_risk_level      | ✅ FEMA   | ✅        | ✅ OK                                               |
+  | 121 | climate_risk          | ❌        | ✅ NOAA   | ❌ Missing in free-apis.ts                          |
+  | 122 | wildfire_risk         | ❌        | ✅ NOAA   | ❌ Missing in free-apis.ts (CSON should NOT search) |
+  | 123 | earthquake_risk       | ❌        | ✅ USGS   | ❌ Missing in free-apis.ts                          |
+  | 124 | hurricane_risk        | ❌        | ✅ NOAA   | ❌ Missing in free-apis.ts                          |
+  | 125 | tornado_risk          | ❌        | ✅ NOAA   | ❌ Missing in free-apis.ts                          |
+  | 126 | radon_risk            | ❌        | ✅ EPA    | ❌ Missing in free-apis.ts                          |
+  | 127 | superfund_site_nearby | ❌        | ✅ EPA    | ❌ Missing in free-apis.ts                          |
+  | 128 | sea_level_rise_risk   | ❌        | ✅ NOAA   | ❌ Missing in free-apis.ts                          |
+  | 129 | noise_level_db_est    | ✅ HOW    | ❌        | ❌ Missing in search.ts                             |
+  | 130 | solar_potential       | ❌        | ✅ GSUN   | ❌ Missing in free-apis.ts                          |
+
+  GROUP P-V: Additional Features, MLS Extensions (Fields 131-168)
+
+  | # Range | Fields              | MLS     | LLM Fallback | retry-llm    | Issue                                |
+  |---------|---------------------|---------|--------------|--------------|--------------------------------------|
+  | 131-138 | Additional Features | ✅ Most | CSON only    | CSON partial | ❌ Missing PPX,GEM,GPT,GROK fallback |
+  | 139-143 | Parking Details     | ✅ All  | ❌           | ❌           | ❌ Should have LLM fallback          |
+  | 144-148 | Building Details    | ✅ All  | ❌           | ❌           | ❌ Should have LLM fallback          |
+  | 149-154 | Legal & Compliance  | ✅ All  | CSON partial | CSON partial | ❌ Missing PPX,GEM,GPT,GROK fallback |
+  | 155-159 | Waterfront          | ✅ All  | ❌           | ❌           | ❌ Should have LLM fallback          |
+  | 160-165 | Leasing & Rentals   | ✅ All  | CSON partial | CSON partial | ❌ Missing PPX,GEM,GPT,GROK fallback |
+  | 166-168 | Community Features  | ✅ All  | CSON partial | CSON partial | ❌ Missing PPX,GEM,GPT,GROK fallback |
+
+  GROUP W: Market Performance (Fields 169-181)
+
+  | #   | Field                | search.ts | retry-llm | PPX | GEM | GPT | GROK | CSON | Issue                          |
+  |-----|----------------------|-----------|-----------|-----|-----|-----|------|------|--------------------------------|
+  | 169 | zillow_views         | ✅        | ❌        | ✅  | ❌  | ✅  | ✅   | ❌   | ❌ Missing GEM,CSON, retry-llm |
+  | 170 | redfin_views         | ✅        | ❌        | ✅  | ❌  | ✅  | ✅   | ❌   | ❌ Missing GEM,CSON, retry-llm |
+  | 171 | homes_views          | ✅        | ❌        | ✅  | ❌  | ✅  | ✅   | ❌   | ❌ Missing GEM,CSON, retry-llm |
+  | 172 | realtor_views        | ✅        | ❌        | ✅  | ❌  | ✅  | ✅   | ❌   | ❌ Missing GEM,CSON, retry-llm |
+  | 173 | total_views          | CALC      | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ✅ OK (calculated)             |
+  | 174 | saves_favorites      | ✅        | ❌        | ✅  | ❌  | ✅  | ✅   | ❌   | ❌ Missing GEM,CSON, retry-llm |
+  | 175 | market_type          | ✅        | ❌        | ✅  | ❌  | ✅  | ✅   | ❌   | ❌ Missing GEM,CSON, retry-llm |
+  | 176 | avg_sale_to_list_pct | ✅        | ❌        | ✅  | ❌  | ✅  | ✅   | ❌   | ❌ Missing GEM,CSON, retry-llm |
+  | 177 | avg_days_to_pending  | ✅        | ❌        | ✅  | ❌  | ✅  | ✅   | ❌   | ❌ Missing GEM,CSON, retry-llm |
+  | 178 | multiple_offers      | ✅        | ❌        | ✅  | ❌  | ✅  | ✅   | ❌   | ❌ Missing GEM,CSON, retry-llm |
+  | 179 | appreciation_percent | CALC      | ➖        | ➖  | ➖  | ➖  | ➖   | ➖   | ✅ OK (calculated)             |
+  | 180 | price_trend          | ✅        | ❌        | ✅  | ❌  | ✅  | ✅   | ❌   | ❌ Missing GEM,CSON, retry-llm |
+  | 181 | rent_zestimate       | ✅        | ❌        | ✅  | ❌  | ✅  | ✅   | ❌   | ❌ Missing GEM,CSON, retry-llm |
+
+  ---
+  PART 5: COMPREHENSIVE FIX PLAN
+
+  PHASE 1: Establish Single Source of Truth
+
+  1. Create src/config/field-sources.json - Master definition of which sources search for each field
+  2. Create src/config/llm-field-list.json - Single list of 34 high-velocity fields used by ALL LLMs
+
+  PHASE 2: Fix File Consistency
+
+  | Task | Files to Modify | Description                                                                |
+  |------|-----------------|----------------------------------------------------------------------------|
+  | 2.1  | free-apis.ts    | Add: Census, Google Places, Google Distance, NOAA, USGS, EPA, Google Solar |
+  | 2.2  | search.ts       | Add: HowLoud calls                                                         |
+  | 2.3  | free-apis.ts    | Add: Crime API (FBI/CrimeGrade)                                            |
+
+  PHASE 3: Fix retry-llm.ts
+
+  | Task | Description                                                 |
+  |------|-------------------------------------------------------------|
+  | 3.1  | Add Perplexity prompts (A-E) with 34 fields                 |
+  | 3.2  | Add Gemini 3 Pro with 34 fields                             |
+  | 3.3  | Add Grok 4.1 with 34 fields                                 |
+  | 3.4  | Add Claude Opus with 34 fields                              |
+  | 3.5  | FIX Claude Sonnet - Replace 16 wrong fields with correct 34 |
+  | 3.6  | Verify GPT-5.2 has correct 34 fields                        |
+
+  PHASE 4: Standardize LLM Prompts
+
+  | Task | Description                                                      |
+  |------|------------------------------------------------------------------|
+  | 4.1  | Create single STANDARD_34_FIELDS constant                        |
+  | 4.2  | Update Perplexity prompts to use it                              |
+  | 4.3  | Update Gemini prompt to use it                                   |
+  | 4.4  | Update GPT prompt to use it                                      |
+  | 4.5  | Update Grok prompt to use it                                     |
+  | 4.6  | Update Claude Sonnet prompt to use it                            |
+  | 4.7  | Update Claude Opus prompt (no web, uses knowledge for 34 fields) |
+
+  PHASE 5: Establish Correct Firing Order
+
+  | Order | LLM              | File                     | Purpose                        |
+  |-------|------------------|--------------------------|--------------------------------|
+  | 1     | Perplexity (A-E) | search.ts + retry-llm.ts | Primary web search (5 prompts) |
+  | 2     | Gemini 3 Pro     | search.ts + retry-llm.ts | Secondary web search           |
+  | 3     | GPT-5.2 Pro      | search.ts + retry-llm.ts | Tertiary web search            |
+  | 4     | Grok 4.1 Fast    | search.ts + retry-llm.ts | Quaternary web search          |
+  | 5     | Claude Sonnet    | search.ts + retry-llm.ts | Fifth web search               |
+  | 6     | Claude Opus      | search.ts + retry-llm.ts | Final (training data only)     |
+
+  ---
+  PART 6: CORRECTED 34-FIELD LIST FOR ALL LLMs
+
+  {
+    "standard_llm_fields": [
+      "12_market_value_estimate",
+      "16a_zestimate",
+      "16b_redfin_estimate",
+      "16c_first_american_avm",
+      "16d_quantarium_avm",
+      "16e_ice_avm",
+      "16f_collateral_analytics_avm",
+      "81_public_transit_access",
+      "82_commute_to_city_center",
+      "91_median_home_price_neighborhood",
+      "92_price_per_sqft_recent_avg",
+      "95_days_on_market_avg",
+      "96_inventory_surplus",
+      "97_insurance_est_annual",
+      "98_rental_estimate_monthly",
+      "103_comparable_sales",
+      "104_electric_provider",
+      "105_avg_electric_bill",
+      "106_water_provider",
+      "107_avg_water_bill",
+      "110_trash_provider",
+      "111_internet_providers_top3",
+      "114_cable_tv_provider",
+      "169_zillow_views",
+      "170_redfin_views",
+      "171_homes_views",
+      "172_realtor_views",
+      "174_saves_favorites",
+      "175_market_type",
+      "176_avg_sale_to_list_percent",
+      "177_avg_days_to_pending",
+      "178_multiple_offers_likelihood",
+      "180_price_trend",
+      "181_rent_zestimate"
+    ]
+  }
+
+  ---
+  SUMMARY OF TOTAL GAPS FOUND
+
+  | Category                          | Count                    |
+  |-----------------------------------|--------------------------|
+  | APIs missing from free-apis.ts    | 7                        |
+  | APIs missing from search.ts       | 1                        |
+  | LLMs missing from retry-llm.ts    | 4 (PPX, GEM, GROK, OPUS) |
+  | Claude Sonnet wrong fields        | 16 (8 wrong + 8 missing) |
+  | Fields missing Gemini coverage    | 22 of 34                 |
+  | Fields missing Sonnet coverage    | 26 of 34                 |
+  | Fields missing retry-llm coverage | 34 of 34                 |
+
+  Total inconsistencies requiring fixes: 100+
+
+  ---
+  This is the complete audit. The codebase has severe fragmentation where the same logic was partially implemented in different files without consistency. The fix requires:
+
+  1. A single source of truth for field definitions
+  2. All 6 LLMs in both search.ts AND retry-llm.ts
+  3. All free APIs in both files
+  4. Standardized 34-field prompt for all LLMs
+
+
+
+
+
+
+
+
+
+
+
+
+
+ISSUE 1: PARALLEL FIRING & DATA OVERRIDE
+
+  Current Code Reality (search.ts ~line 4894)
+
+  const llmCalls = [
+    { id: 'perplexity-a', fn: callPerplexityPromptA, ... },
+    { id: 'perplexity-b', fn: callPerplexityPromptB, ... },
+    { id: 'perplexity-c', fn: callPerplexityPromptC, ... },
+    { id: 'perplexity-d', fn: callPerplexityPromptD, ... },
+    { id: 'perplexity-e', fn: callPerplexityPromptE, ... },
+    { id: 'gemini', fn: callGemini, ... },
+    { id: 'gpt', fn: callGPT5, ... },
+    { id: 'grok', fn: callGrok, ... },
+    { id: 'claude-sonnet', fn: callClaudeSonnet, ... },
+    { id: 'claude-opus', fn: callClaudeOpus, ... },
+  ];
+
+  // PROBLEM: Currently fires ALL in parallel
+  const results = await Promise.all(llmCalls.map(call => call.fn(address)));
+
+  The Problem
+
+  If Grok returns in 2 seconds with 12_market_value_estimate = $450,000
+  And Perplexity returns in 5 seconds with 12_market_value_estimate = $475,000
+
+  Current behavior: Whichever result gets merged LAST wins. This is random based on network timing.
+
+  The Fix (Simple)
+
+  Option A: Sequential Firing (Recommended)
+  // Fire in ORDER, stop searching field once found
+  let fields = {};
+
+  // Tier 4 - Primary
+  const ppxResults = await callPerplexityAll(address);
+  fields = mergeFields(fields, ppxResults); // First write wins
+
+  const gemResults = await callGemini(address);
+  fields = mergeFieldsIfMissing(fields, gemResults); // Only fills gaps
+
+  // Tier 5 - Secondary (only if fields still missing)
+  if (countMissingFields(fields) > 0) {
+    const gptResults = await callGPT5(address);
+    fields = mergeFieldsIfMissing(fields, gptResults);
+  }
+  // ... continue
+
+  Option B: Parallel with Priority Merge
+  // Fire all in parallel
+  const [ppx, gem, gpt, grok, sonnet, opus] = await Promise.all([...]);
+
+  // Merge in PRIORITY ORDER (higher tier always wins)
+  let fields = {};
+  fields = mergeFields(fields, opus);    // Lowest priority - written first
+  fields = mergeFields(fields, sonnet);  // Overwrites opus
+  fields = mergeFields(fields, grok);    // Overwrites sonnet
+  fields = mergeFields(fields, gpt);     // Overwrites grok
+  fields = mergeFields(fields, gem);     // Overwrites gpt
+  fields = mergeFields(fields, ppx);     // HIGHEST - overwrites all
+
+  My Recommendation: Option A (Sequential)
+
+  - Simpler to understand
+  - Lower cost (stop early if fields found)
+  - No timing race conditions
+  - Clear audit trail of which LLM provided which field
+
+  ---
+  ISSUE 2: PROMPT LANGUAGE THAT MUST CHANGE
+
+  Current Prompts with Specific Language Problems
+
+  | LLM                          | File         | Lines     | Current Language Problem                                                            |
+  |------------------------------|--------------|-----------|-------------------------------------------------------------------------------------|
+  | Claude Sonnet (search.ts)    | search.ts    | 3408-3452 | Says "DO NOT search for listing_price, bedrooms..." but should search for 34 fields |
+  | Claude Sonnet (retry-llm.ts) | retry-llm.ts | 1196-1237 | Has 16 WRONG fields instead of 34                                                   |
+  | Grok                         | search.ts    | 3058-3120 | Has correct 34 fields but says "Execute at least 4 distinct searches"               |
+  | GPT                          | search.ts    | 3166-3261 | Has correct 34 fields, detailed evidence requirements                               |
+  | Gemini                       | config file  | external  | Need to verify has all 34 fields                                                    |
+  | Opus                         | search.ts    | 3125-3161 | Says "NEVER fabricate" but asks for live data it cannot get                         |
+
+  Specific Prompt Text That MUST Change
+
+  1. Claude Sonnet (search.ts lines 3408-3452)
+
+  CURRENT (WRONG):
+  CRITICAL: DO NOT search for fields already provided by MLS or other LLMs:
+  - DO NOT search for: listing_price, bedrooms, bathrooms, sqft, year_built, taxes, lot_size
+
+  SHOULD BE:
+  You are Claude Sonnet firing 5th in the LLM cascade.
+  Your job is to search for ANY of these 34 fields that are STILL MISSING:
+  [list all 34 fields]
+
+  DO NOT return fields that already have values - only search for MISSING fields.
+
+  2. Claude Sonnet (retry-llm.ts lines 1196-1237)
+
+  CURRENT (WRONG):
+  YOUR TASK: Use web search to find ONLY these commonly-missing fields:
+
+  COUNTY/TAX FIELDS:
+  - 12_market_value_estimate
+  - 15_assessed_value        ← NOT IN 34 FIELDS
+  - 91_median_home_price_neighborhood
+  - 92_price_per_sqft_recent_avg
+  - 151_homestead_yn         ← NOT IN 34 FIELDS
+  - 152_cdd_yn               ← NOT IN 34 FIELDS
+
+  UTILITY/SERVICE FIELDS:
+  - 104_electric_provider
+  - 109_natural_gas          ← NOT IN 34 FIELDS
+  - 106_water_provider
+  - 108_sewer_provider       ← NOT IN 34 FIELDS
+  - 110_trash_provider
+
+  CONNECTIVITY FIELDS:
+  - 112_max_internet_speed   ← NOT IN 34 FIELDS
+  - 113_fiber_available      ← NOT IN 34 FIELDS
+
+  INSURANCE/RISK FIELDS:
+  - 97_insurance_est_annual
+  - 119_flood_zone           ← NOT IN 34 FIELDS
+
+  SHOULD BE:
+  You are Claude Sonnet in RETRY mode. Previous LLMs failed to find these fields.
+  Search AGGRESSIVELY for ONLY the specific missing fields provided in this request.
+
+  STANDARD 34 HIGH-VELOCITY FIELDS:
+  12_market_value_estimate, 16a_zestimate, 16b_redfin_estimate,
+  16c_first_american_avm, 16d_quantarium_avm, 16e_ice_avm, 16f_collateral_analytics_avm,
+  81_public_transit_access, 82_commute_to_city_center,
+  91_median_home_price_neighborhood, 92_price_per_sqft_recent_avg, 95_days_on_market_avg,
+  96_inventory_surplus, 97_insurance_est_annual, 98_rental_estimate_monthly,
+  103_comparable_sales, 104_electric_provider, 105_avg_electric_bill,
+  106_water_provider, 107_avg_water_bill, 110_trash_provider,
+  111_internet_providers_top3, 114_cable_tv_provider,
+  169_zillow_views, 170_redfin_views, 171_homes_views, 172_realtor_views,
+  174_saves_favorites, 175_market_type, 176_avg_sale_to_list_percent,
+  177_avg_days_to_pending, 178_multiple_offers_likelihood, 180_price_trend, 181_rent_zestimate
+
+  3. Claude Opus (search.ts lines 3125-3161)
+
+  CURRENT (PROBLEMATIC):
+  YOUR MISSION: Extract as many of the 181 property fields as possible using your training knowledge.
+
+  SHOULD BE:
+  You are Claude Opus. You have NO web search capability.
+
+  YOU CAN PROVIDE (from training data):
+  - 7_county (geographic knowledge)
+  - 104_electric_provider (regional utility - e.g., "Duke Energy" for Tampa Bay)
+  - 106_water_provider (regional utility)
+  - 108_sewer_provider (regional)
+  - 109_natural_gas (regional - e.g., "TECO Peoples Gas")
+  - 110_trash_provider (regional)
+
+  YOU CANNOT PROVIDE (require live data - return null):
+  - ANY prices, AVMs, estimates (fields 10-16)
+  - ANY market stats (fields 91-103)
+  - ANY view counts (fields 169-181)
+  - ANY current listings or sales data
+
+  If you don't KNOW it from training, return null. DO NOT GUESS.
+
+  4. Perplexity Prompts A-E
+
+  These are mostly correct but should explicitly state:
+  You are Perplexity firing FIRST in the LLM cascade.
+  Your data takes PRIORITY over all other LLMs.
+  Search thoroughly - if you find it, no other LLM needs to search for it.
+
+  5. Gemini, GPT, Grok
+
+  Add to each prompt:
+  You are [LLM NAME] firing [Nth] in the LLM cascade.
+  ONLY search for fields that are STILL MISSING after higher-tier LLMs.
+  The following fields were ALREADY FOUND by earlier LLMs: [dynamic list]
+  DO NOT waste tokens re-searching fields that already have values.
+
+  ---
+  SUMMARY FOR NEW CHAT
+
+  Two Core Fixes:
+
+  | Issue        | Current                            | Fix                                                           |
+  |--------------|------------------------------------|---------------------------------------------------------------|
+  | Firing Order | Parallel (race condition)          | Sequential with "first write wins"                            |
+  | Prompts      | Each LLM has different field lists | ALL use same 34 fields, lower tiers told what's already found |
+
+  Prompt Changes Required:
+
+  | LLM                   | Change Required                                                |
+  |-----------------------|----------------------------------------------------------------|
+  | Perplexity A-E        | Add "You fire FIRST, your data takes priority"                 |
+  | Gemini                | Add "ONLY search MISSING fields" + pass missing list           |
+  | GPT                   | Add "ONLY search MISSING fields" + pass missing list           |
+  | Grok                  | Add "ONLY search MISSING fields" + pass missing list           |
+  | Sonnet (search.ts)    | REWRITE - use 34 fields, not current wrong list                |
+  | Sonnet (retry-llm.ts) | REWRITE - use 34 fields, not current 16 wrong fields           |
+  | Opus                  | REWRITE - only regional knowledge, explicitly forbid live data |
+
+  Data Merge Rule (Simple):
+
+  IF field already has value from higher-tier LLM:
+     DO NOT overwrite with lower-tier data
+
+  IF field is empty/null:
+     Accept value from current LLM
+
+  ---
+  Start the new chat with these two requirements clear:
+  1. Sequential firing, first write wins
+  2. All prompts use same 34 fields, lower tiers receive list of already-found fields
+
+
+  ## Problem Summary
+  - 100+ inconsistencies in field coverage
+  - Claude Sonnet has WRONG 16-field prompt (should be 34)
+  - retry-llm.ts missing 4 of 6 LLMs
+  - free-apis.ts missing 7 APIs
+  - No cascade logic - all LLMs search blindly
+
+  ## Files to Modify
+  1. src/config/standard-34-fields.json (CREATE)
+  2. free-apis.ts (ADD 7 APIs)
+  3. search.ts (ADD HowLoud, FIX cascade logic)
+  4. retry-llm.ts (ADD PPX, GEM, GROK, OPUS, FIX Sonnet)
+
+  ## Firing Order (Final)
+  1. Perplexity A-E (CASCADE within prompts)
+  2. Gemini (ONLY missing fields)
+  3. GPT (ONLY missing fields)
+  4. Grok (ONLY missing fields)
+  5. Sonnet (ONLY missing fields)
+  6. Opus (regional knowledge ONLY - NO live data)
+
+  ## Standard 34 Fields (ALL LLMs except Opus)
+  [paste the 34-field JSON here]
+
+  ## Opus-Safe Fields (training data OK)
+  - 7_county
+  - 104_electric_provider (regional)
+  - 106_water_provider (regional)
+  - 108_sewer_provider (regional)
+  - 109_natural_gas (regional)
+  - 110_trash_provider (regional)
+
+  ## Opus-FORBIDDEN Fields (will hallucinate)
+  - ALL AVMs (12, 16a-f)
+  - ALL Views (169-172, 174)
+  - ALL Market Stats (91-92, 95-98, 103, 175-181)
+
+  The Fix (Simple)
+
+  Option A: Sequential Firing (Recommended)
+  // Fire in ORDER, stop searching field once found
+  let fields = {};
+
+  // Tier 4 - Primary
+  const ppxResults = await callPerplexityAll(address);
+  fields = mergeFields(fields, ppxResults); // First write wins
+
+  const gemResults = await callGemini(address);
+  fields = mergeFieldsIfMissing(fields, gemResults); // Only fills gaps
+
+  // Tier 5 - Secondary (only if fields still missing)
+  if (countMissingFields(fields) > 0) {
+    const gptResults = await callGPT5(address);
+    fields = mergeFieldsIfMissing(fields, gptResults);
+  }
+  // ... continue
+
+  Option B: Parallel with Priority Merge
+  // Fire all in parallel
+  const [ppx, gem, gpt, grok, sonnet, opus] = await Promise.all([...]);
+
+  // Merge in PRIORITY ORDER (higher tier always wins)
+  let fields = {};
+  fields = mergeFields(fields, opus);    // Lowest priority - written first
+  fields = mergeFields(fields, sonnet);  // Overwrites opus
+  fields = mergeFields(fields, grok);    // Overwrites sonnet
+  fields = mergeFields(fields, gpt);     // Overwrites grok
+  fields = mergeFields(fields, gem);     // Overwrites gpt
+  fields = mergeFields(fields, ppx);     // HIGHEST - overwrites all
+
+  My Recommendation: Option A (Sequential)
+
+  - Simpler to understand
+  - Lower cost (stop early if fields found)
+  - No timing race conditions
+  - Clear audit trail of which LLM provided which field
+
+  ---
+  ISSUE 2: PROMPT LANGUAGE THAT MUST CHANGE
+
+  Current Prompts with Specific Language Problems
+
+  | LLM                          | File         | Lines     | Current Language Problem                                                            |
+  |------------------------------|--------------|-----------|-------------------------------------------------------------------------------------|
+  | Claude Sonnet (search.ts)    | search.ts    | 3408-3452 | Says "DO NOT search for listing_price, bedrooms..." but should search for 34 fields |
+  | Claude Sonnet (retry-llm.ts) | retry-llm.ts | 1196-1237 | Has 16 WRONG fields instead of 34                                                   |
+  | Grok                         | search.ts    | 3058-3120 | Has correct 34 fields but says "Execute at least 4 distinct searches"               |
+  | GPT                          | search.ts    | 3166-3261 | Has correct 34 fields, detailed evidence requirements                               |
+  | Gemini                       | config file  | external  | Need to verify has all 34 fields                                                    |
+  | Opus                         | search.ts    | 3125-3161 | Says "NEVER fabricate" but asks for live data it cannot get                         |
+
+  Specific Prompt Text That MUST Change
+
+  1. Claude Sonnet (search.ts lines 3408-3452)
+
+  CURRENT (WRONG):
+  CRITICAL: DO NOT search for fields already provided by MLS or other LLMs:
+  - DO NOT search for: listing_price, bedrooms, bathrooms, sqft, year_built, taxes, lot_size
+
+  SHOULD BE:
+  You are Claude Sonnet firing 5th in the LLM cascade.
+  Your job is to search for ANY of these 34 fields that are STILL MISSING:
+  [list all 34 fields]
+
+  DO NOT return fields that already have values - only search for MISSING fields.
+
+  2. Claude Sonnet (retry-llm.ts lines 1196-1237)
+
+  CURRENT (WRONG):
+  YOUR TASK: Use web search to find ONLY these commonly-missing fields:
+
+  COUNTY/TAX FIELDS:
+  - 12_market_value_estimate
+  - 15_assessed_value        ← NOT IN 34 FIELDS
+  - 91_median_home_price_neighborhood
+  - 92_price_per_sqft_recent_avg
+  - 151_homestead_yn         ← NOT IN 34 FIELDS
+  - 152_cdd_yn               ← NOT IN 34 FIELDS
+
+  UTILITY/SERVICE FIELDS:
+  - 104_electric_provider
+  - 109_natural_gas          ← NOT IN 34 FIELDS
+  - 106_water_provider
+  - 108_sewer_provider       ← NOT IN 34 FIELDS
+  - 110_trash_provider
+
+  CONNECTIVITY FIELDS:
+  - 112_max_internet_speed   ← NOT IN 34 FIELDS
+  - 113_fiber_available      ← NOT IN 34 FIELDS
+
+  INSURANCE/RISK FIELDS:
+  - 97_insurance_est_annual
+  - 119_flood_zone           ← NOT IN 34 FIELDS
+
+  SHOULD BE:
+  You are Claude Sonnet in RETRY mode. Previous LLMs failed to find these fields.
+  Search AGGRESSIVELY for ONLY the specific missing fields provided in this request.
+
+  STANDARD 34 HIGH-VELOCITY FIELDS:
+  12_market_value_estimate, 16a_zestimate, 16b_redfin_estimate,
+  16c_first_american_avm, 16d_quantarium_avm, 16e_ice_avm, 16f_collateral_analytics_avm,
+  81_public_transit_access, 82_commute_to_city_center,
+  91_median_home_price_neighborhood, 92_price_per_sqft_recent_avg, 95_days_on_market_avg,
+  96_inventory_surplus, 97_insurance_est_annual, 98_rental_estimate_monthly,
+  103_comparable_sales, 104_electric_provider, 105_avg_electric_bill,
+  106_water_provider, 107_avg_water_bill, 110_trash_provider,
+  111_internet_providers_top3, 114_cable_tv_provider,
+  169_zillow_views, 170_redfin_views, 171_homes_views, 172_realtor_views,
+  174_saves_favorites, 175_market_type, 176_avg_sale_to_list_percent,
+  177_avg_days_to_pending, 178_multiple_offers_likelihood, 180_price_trend, 181_rent_zestimate
+
+  3. Claude Opus (search.ts lines 3125-3161)
+
+  CURRENT (PROBLEMATIC):
+  YOUR MISSION: Extract as many of the 181 property fields as possible using your training knowledge.
+
+  SHOULD BE:
+  You are Claude Opus. You have NO web search capability.
+
+  YOU CAN PROVIDE (from training data):
+  - 7_county (geographic knowledge)
+  - 104_electric_provider (regional utility - e.g., "Duke Energy" for Tampa Bay)
+  - 106_water_provider (regional utility)
+  - 108_sewer_provider (regional)
+  - 109_natural_gas (regional - e.g., "TECO Peoples Gas")
+  - 110_trash_provider (regional)
+
+  YOU CANNOT PROVIDE (require live data - return null):
+  - ANY prices, AVMs, estimates (fields 10-16)
+  - ANY market stats (fields 91-103)
+  - ANY view counts (fields 169-181)
+  - ANY current listings or sales data
+
+  If you don't KNOW it from training, return null. DO NOT GUESS.
+
+  4. Perplexity Prompts A-E
+
+  These are mostly correct but should explicitly state:
+  You are Perplexity firing FIRST in the LLM cascade.
+  Your data takes PRIORITY over all other LLMs.
+  Search thoroughly - if you find it, no other LLM needs to search for it.
+
+  5. Gemini, GPT, Grok
+
+  Add to each prompt:
+  You are [LLM NAME] firing [Nth] in the LLM cascade.
+  ONLY search for fields that are STILL MISSING after higher-tier LLMs.
+  The following fields were ALREADY FOUND by earlier LLMs: [dynamic list]
+  DO NOT waste tokens re-searching fields that already have values.
+
+  ---
+  SUMMARY FOR NEW CHAT
+
+  Two Core Fixes:
+
+  | Issue        | Current                            | Fix                                                           |
+  |--------------|------------------------------------|---------------------------------------------------------------|
+  | Firing Order | Parallel (race condition)          | Sequential with "first write wins"                            |
+  | Prompts      | Each LLM has different field lists | ALL use same 34 fields, lower tiers told what's already found |
+
+  Prompt Changes Required:
+
+  | LLM                   | Change Required                                                |
+  |-----------------------|----------------------------------------------------------------|
+  | Perplexity A-E        | Add "You fire FIRST, your data takes priority"                 |
+  | Gemini                | Add "ONLY search MISSING fields" + pass missing list           |
+  | GPT                   | Add "ONLY search MISSING fields" + pass missing list           |
+  | Grok                  | Add "ONLY search MISSING fields" + pass missing list           |
+  | Sonnet (search.ts)    | REWRITE - use 34 fields, not current wrong list                |
+  | Sonnet (retry-llm.ts) | REWRITE - use 34 fields, not current 16 wrong fields           |
+  | Opus                  | REWRITE - only regional knowledge, explicitly forbid live data |
+
+  Data Merge Rule (Simple):
+
+  IF field already has value from higher-tier LLM:
+     DO NOT overwrite with lower-tier data
+
+  IF field is empty/null:
+     Accept value from current LLM
+
