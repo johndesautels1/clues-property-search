@@ -3186,7 +3186,6 @@ RULES:
 4. NEVER estimate monetary values, statistics, or market metrics
 
 ${JSON_RESPONSE_FORMAT}`;
-${JSON_RESPONSE_FORMAT}`;
 
 // ============================================
 // GPT-5.2-PRO FIELD COMPLETER - Web-Evidence Mode
