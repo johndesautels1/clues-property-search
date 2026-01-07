@@ -285,7 +285,7 @@ Output JSON only.`;
 // Field Name → Field ID Mapping
 // Used by normalizer to map Perplexity's natural language keys to our schema
 // ============================================================================
-export const PERPLEXITY_FIELD_MAPPING: Record<string, string> = {
+export const PERPLEXITY_FIELD_MAPPING: Record<string, string | null> = {
   // Prompt A - Listing Portals
   'listing_price': '10_listing_price',
   'market_value_estimate': '12_market_value_estimate',

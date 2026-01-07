@@ -465,11 +465,11 @@ export function applyLLMQuorumVoting(
     
     let maxCount = 0;
     let winningEntry: { count: number; sources: string[]; value: any } | null = null;
-    
+
     Array.from(valueCounts.values()).forEach(entry => {
       if (entry.count > maxCount) { maxCount = entry.count; winningEntry = entry; } });
-    
-    if (winningEntry && maxCount >= minQuorum) {
+
+    if (winningEntry !== null && maxCount >= minQuorum) {
       fields[key] = {
         ...field,
         value: winningEntry.value,
@@ -477,7 +477,7 @@ export function applyLLMQuorumVoting(
         llmSources: winningEntry.sources,
         hasConflict: valueCounts.size > 1,
       };
-      
+
       quorumFields.push({
         field: key,
         value: winningEntry.value,
