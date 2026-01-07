@@ -431,6 +431,39 @@ function coerceValue(key: string, value: any): any {
 }
 
 /**
+ * UTILITY BILL NORMALIZATION
+ * Many FL utilities bill bi-monthly - detect and convert to monthly
+ * Typical FL monthly ranges: Water $40-80, Electric $100-200
+ */
+function normalizeUtilityBillToMonthly(fieldKey: string, value: any): { value: number; wasNormalized: boolean } | null {
+  if (typeof value !== 'number' || isNaN(value) || value <= 0) {
+    return null;
+  }
+
+  // Field 107: Water bill - typical monthly is $40-80, bi-monthly would be $80-160
+  if (fieldKey === '107_avg_water_bill' || fieldKey === 'avg_water_bill') {
+    if (value > 100) {
+      const monthly = Math.round(value / 2);
+      console.log(`[RETRY-LLM] 🔄 UTILITY NORMALIZED: ${fieldKey} $${value} → $${monthly}/month (detected bi-monthly)`);
+      return { value: monthly, wasNormalized: true };
+    }
+    return { value, wasNormalized: false };
+  }
+
+  // Field 105: Electric bill - typical monthly is $100-200, bi-monthly would be $200-400
+  if (fieldKey === '105_avg_electric_bill' || fieldKey === 'avg_electric_bill') {
+    if (value > 300) {
+      const monthly = Math.round(value / 2);
+      console.log(`[RETRY-LLM] 🔄 UTILITY NORMALIZED: ${fieldKey} $${value} → $${monthly}/month (detected bi-monthly)`);
+      return { value: monthly, wasNormalized: true };
+    }
+    return { value, wasNormalized: false };
+  }
+
+  return null;
+}
+
+/**
  * Wrapper for shared mapFlatFieldsToNumbered that also handles HOA fee conversion
  */
 function mapFlatFieldsToNumbered(fields: Record<string, any>): Record<string, any> {
@@ -604,8 +637,11 @@ async function callPerplexity(address: string): Promise<{ fields: Record<string,
                 flattenObject(value, prefix + key + '_');
               } else {
                 // TYPE COERCION: Validate and coerce value to expected type
-                const coerced = coerceValue(prefix + key, value);
+                let coerced = coerceValue(prefix + key, value);
                 if (coerced !== null) {
+                  // UTILITY BILL NORMALIZATION: Convert bi-monthly to monthly
+                  const utilityNormalized = normalizeUtilityBillToMonthly(prefix + key, coerced);
+                  if (utilityNormalized) coerced = utilityNormalized.value;
                   fields[prefix + key] = { value: coerced, source: 'Perplexity', confidence: 'Medium' };
                 }
               }
@@ -834,8 +870,11 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
         const fields: Record<string, any> = {};
         for (const [key, value] of Object.entries(fieldsToProcess)) {
           if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
-            const coerced = coerceValue(key, value);
+            let coerced = coerceValue(key, value);
             if (coerced !== null) {
+              // UTILITY BILL NORMALIZATION: Convert bi-monthly to monthly
+              const utilityNormalized = normalizeUtilityBillToMonthly(key, coerced);
+              if (utilityNormalized) coerced = utilityNormalized.value;
               fields[key] = { value: coerced, source: 'Grok', confidence: 'Medium' };
             }
           }
@@ -923,8 +962,11 @@ Return null if you cannot find data. Return ONLY the JSON object.`;
           if (!isBadValue) {
             const rawValue = (value as any)?.value !== undefined ? (value as any).value : value;
             // TYPE COERCION: Validate and coerce value to expected type
-            const coerced = coerceValue(key, rawValue);
+            let coerced = coerceValue(key, rawValue);
             if (coerced !== null) {
+              // UTILITY BILL NORMALIZATION: Convert bi-monthly to monthly
+              const utilityNormalized = normalizeUtilityBillToMonthly(key, coerced);
+              if (utilityNormalized) coerced = utilityNormalized.value;
               fields[key] = {
                 value: coerced,
                 source: 'Claude Opus',
@@ -1118,8 +1160,11 @@ Return ONLY the JSON object described in the system prompt.`;
           // Legacy format fallback
           for (const [key, value] of Object.entries(parsed)) {
             if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
-              const coerced = coerceValue(key, value);
+              let coerced = coerceValue(key, value);
               if (coerced !== null) {
+                // UTILITY BILL NORMALIZATION: Convert bi-monthly to monthly
+                const utilityNormalized = normalizeUtilityBillToMonthly(key, coerced);
+                if (utilityNormalized) coerced = utilityNormalized.value;
                 fields[key] = { value: coerced, source: 'GPT', confidence: 'Low' };
               }
             }
@@ -1239,8 +1284,11 @@ Return ONLY the JSON object. Use null only for fields you truly cannot find.`;
             if (!isBadValue) {
               const rawValue = (value as any)?.value !== undefined ? (value as any).value : value;
               // TYPE COERCION: Validate and coerce value to expected type
-              const coerced = coerceValue(key, rawValue);
+              let coerced = coerceValue(key, rawValue);
               if (coerced !== null) {
+                // UTILITY BILL NORMALIZATION: Convert bi-monthly to monthly
+                const utilityNormalized = normalizeUtilityBillToMonthly(key, coerced);
+                if (utilityNormalized) coerced = utilityNormalized.value;
                 fields[key] = {
                   value: coerced,
                   source: 'Claude Sonnet',
@@ -1350,8 +1398,11 @@ async function callGemini(address: string): Promise<{ fields: Record<string, any
         for (const [key, value] of Object.entries(parsed)) {
           if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
             // TYPE COERCION: Validate and coerce value to expected type
-            const coerced = coerceValue(key, value);
+            let coerced = coerceValue(key, value);
             if (coerced !== null) {
+              // UTILITY BILL NORMALIZATION: Convert bi-monthly to monthly
+              const utilityNormalized = normalizeUtilityBillToMonthly(key, coerced);
+              if (utilityNormalized) coerced = utilityNormalized.value;
               fields[key] = { value: coerced, source: 'Gemini', confidence: 'Medium' };
             }
           }

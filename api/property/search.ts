@@ -591,6 +591,41 @@ function coerceValue(key: string, value: any): any {
 }
 
 // ============================================
+// UTILITY BILL NORMALIZATION
+// Many FL utilities bill bi-monthly - detect and convert to monthly
+// Typical FL monthly ranges: Water $40-80, Electric $100-200
+// ============================================
+function normalizeUtilityBillToMonthly(fieldKey: string, value: any): { value: number; wasNormalized: boolean } | null {
+  if (typeof value !== 'number' || isNaN(value) || value <= 0) {
+    return null;
+  }
+
+  // Field 107: Water bill - typical monthly is $40-80, bi-monthly would be $80-160
+  if (fieldKey === '107_avg_water_bill' || fieldKey === 'avg_water_bill') {
+    if (value > 100) {
+      // Likely bi-monthly - divide by 2
+      const monthly = Math.round(value / 2);
+      console.log(`🔄 UTILITY NORMALIZED: ${fieldKey} $${value} → $${monthly}/month (detected bi-monthly)`);
+      return { value: monthly, wasNormalized: true };
+    }
+    return { value, wasNormalized: false };
+  }
+
+  // Field 105: Electric bill - typical monthly is $100-200, bi-monthly would be $200-400
+  if (fieldKey === '105_avg_electric_bill' || fieldKey === 'avg_electric_bill') {
+    if (value > 300) {
+      // Likely bi-monthly - divide by 2
+      const monthly = Math.round(value / 2);
+      console.log(`🔄 UTILITY NORMALIZED: ${fieldKey} $${value} → $${monthly}/month (detected bi-monthly)`);
+      return { value: monthly, wasNormalized: true };
+    }
+    return { value, wasNormalized: false };
+  }
+
+  return null;
+}
+
+// ============================================
 // NULL BLOCKING HELPER - CRITICAL SYSTEM RULE
 // NO NULL VALUES ARE ALLOWED INTO THE FIELD SYSTEM
 // This function filters LLM responses to remove any nulls
@@ -649,12 +684,18 @@ function filterNullValues(parsed: any, llmName: string): Record<string, any> {
 
     // TYPE COERCION: Validate and coerce value to expected type
     const originalValue = rawValue;
-    const coercedValue = coerceValue(key, rawValue);
+    let coercedValue = coerceValue(key, rawValue);
 
     // If coercion returned null, the value was invalid for expected type
     if (coercedValue === null) {
       nullsBlocked++;
       continue;
+    }
+
+    // UTILITY BILL NORMALIZATION: Convert bi-monthly to monthly
+    const utilityNormalized = normalizeUtilityBillToMonthly(key, coercedValue);
+    if (utilityNormalized) {
+      coercedValue = utilityNormalized.value;
     }
 
     // Track if type was coerced
