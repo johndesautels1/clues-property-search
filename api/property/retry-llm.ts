@@ -1457,7 +1457,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const engineFunctions: Record<string, (address: string) => Promise<{ fields: Record<string, any>; error?: string }>> = {
     'perplexity': callPerplexity,     // #1 - Deep web search (HIGHEST)
     'gemini': callGemini,             // #2 - Google Search grounding
-    'gpt': callGPT,                   // #3 - Web evidence mode
+    'gpt': callGPT5,                  // #3 - Web evidence mode
     'grok': callGrok,                 // #4 - X/Twitter real-time
     'claude-sonnet': callClaudeSonnet, // #5 - Web search beta
     'claude-opus': callClaudeOpus,    // #6 - Deep reasoning, NO web (LAST)

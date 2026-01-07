@@ -3749,19 +3749,19 @@ async function callGPT5(
     const isOrchestratorMode = !!inputBlobs;
     const systemPrompt = isOrchestratorMode ? PROMPT_GPT_ORCHESTRATOR : PROMPT_GPT;
 
-    const userPrompt = isOrchestratorMode
-      ? GPT_ORCHESTRATOR_USER_TEMPLATE({
-          address,
-          knownData: {
+    // ALWAYS use the Field Completer template - it provides missing_field_keys and field_rules
+    // that the system prompt REQUIRES. Legacy mode just doesn't have knownData blobs.
+    const userPrompt = GPT_FIELD_COMPLETER_USER_TEMPLATE({
+      address,
+      knownData: isOrchestratorMode && inputBlobs
+        ? {
             stellarMls: inputBlobs.stellarMlsJson,
             county: inputBlobs.countyJson,
             paidApis: inputBlobs.paidApisJson,
             webChunks: inputBlobs.webChunksJson,
-          },
-        })
-      : `Extract all 181 property data fields for this address: ${address}
-
-Use your training knowledge. Return JSON with EXACT field keys (e.g., "10_listing_price", "7_county", "17_bedrooms"). Omit fields you cannot verify - do not return null values.`;
+          }
+        : undefined, // No known data in legacy mode - GPT will web search everything
+    });
 
     console.log(`[GPT] Using ${isOrchestratorMode ? 'ORCHESTRATOR' : 'LEGACY'} mode`);
 
