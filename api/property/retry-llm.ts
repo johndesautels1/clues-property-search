@@ -106,7 +106,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
   ]);
 }
 
-const LLM_TIMEOUT = 120000; // 120s per LLM call (GPT/Grok web search + Gemini thinking_level: high need 90-120s)
+const LLM_TIMEOUT = 180000; // 180s (3 min) - GPT-5.2-pro with reasoning needs 2-3 min
 const PERPLEXITY_TIMEOUT = 90000; // 90s for Perplexity (reduced from 180s)
 
 // ============================================
@@ -1120,7 +1120,7 @@ Return ONLY the JSON object described in the system prompt.`;
           { role: 'system', content: GPT_RETRY_SYSTEM_PROMPT },
           { role: 'user', content: userPrompt }
         ],
-        reasoning: { effort: 'high' },
+        reasoning: { effort: 'medium' },
         tools: [{ type: 'web_search' }],
         tool_choice: 'auto', // Changed from 'required' - auto lets model decide when to search
         include: ['web_search_call.action.sources'],

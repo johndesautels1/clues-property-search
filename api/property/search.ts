@@ -54,7 +54,7 @@ export const config = {
 // Timeout wrapper for API/LLM calls - prevents hanging
 const STELLAR_MLS_TIMEOUT = 30000; // 30 seconds for Stellar MLS via Bridge API (Tier 1) - typically responds in <10s
 const FREE_API_TIMEOUT = 60000; // 60 seconds for free APIs (Tier 2 & 3) - reduced from 90s
-const LLM_TIMEOUT = 120000; // 120 seconds for Claude, GPT, Gemini, Grok single LLM calls (GPT/Grok web search + Gemini thinking_level: high need 90-120s)
+const LLM_TIMEOUT = 180000; // 180 seconds (3 min) for Claude, GPT, Gemini, Grok - GPT-5.2-pro with reasoning needs 2-3 min
 const PERPLEXITY_TIMEOUT = 90000; // 90 seconds for Perplexity deep web search
 
 // ============================================
@@ -3750,7 +3750,6 @@ async function callGPT5(
     const systemPrompt = isOrchestratorMode ? PROMPT_GPT_ORCHESTRATOR : PROMPT_GPT;
 
     // ALWAYS use the Field Completer template - it provides missing_field_keys and field_rules
-    // that the system prompt REQUIRES. Legacy mode just doesn't have knownData blobs.
     const userPrompt = GPT_FIELD_COMPLETER_USER_TEMPLATE({
       address,
       knownData: isOrchestratorMode && inputBlobs
@@ -3760,10 +3759,10 @@ async function callGPT5(
             paidApis: inputBlobs.paidApisJson,
             webChunks: inputBlobs.webChunksJson,
           }
-        : undefined, // No known data in legacy mode - GPT will web search everything
+        : null, // null not undefined - JSON.stringify(undefined) breaks the prompt
     });
 
-    console.log(`[GPT] Using ${isOrchestratorMode ? 'ORCHESTRATOR' : 'LEGACY'} mode`);
+    console.log(`[GPT] Calling API...`);
 
     const requestBody = {
       model: 'gpt-5.2-pro',
@@ -3772,13 +3771,12 @@ async function callGPT5(
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      reasoning: { effort: 'high' },
+      reasoning: { effort: 'medium' },
       tools: [{ type: 'web_search' }],
-      tool_choice: 'auto', // Changed from 'required' - auto lets model decide when to search
+      tool_choice: 'auto',
       include: ['web_search_call.action.sources'],
     };
 
-    const fetchStart = Date.now();
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
@@ -3787,7 +3785,6 @@ async function callGPT5(
       },
       body: JSON.stringify(requestBody),
     });
-    const fetchDuration = Date.now() - fetchStart;
 
     if (!response.ok) {
       const errorText = await response.text();
