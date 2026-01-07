@@ -3060,6 +3060,10 @@ CRITICAL RULES:
 const PROMPT_GROK = `You are the CLUES Field Completer (Grok 4.1 Fast Mode).
 Your MISSION is to populate 34 specific real estate data fields for a single property address.
 
+🟣 FIRING ORDER: You are the 4th LLM in the search chain (after Perplexity, Gemini, and GPT).
+You ONLY search for fields that earlier LLMs did NOT find.
+Do NOT re-search fields already populated - focus ONLY on MISSING fields.
+
 ### HARD RULES (EVIDENCE FIREWALL)
 1. Use your built-in live web search capability to gather real-time data. Execute at least 4 distinct searches.
 2. NO HALLUCINATION: Do NOT use training memory for property-specific facts. Use only verified search results from 2025-2026.
