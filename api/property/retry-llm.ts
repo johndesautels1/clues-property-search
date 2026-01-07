@@ -955,8 +955,10 @@ Return null if you cannot find data. Return ONLY the JSON object.`;
       if (parseResult.success && parseResult.data) {
         const parsed = parseResult.data;
         const fields: Record<string, any> = {};
-        // Handle both parsed.fields (wrapped) and parsed directly
-        for (const [key, value] of Object.entries(parsed.fields || parsed)) {
+        // FIX: Handle nested { data_fields: {...} }, { fields: {...} }, or flat format
+        const fieldsToProcess = parsed.data_fields || parsed.fields || parsed;
+        console.log(`[CLAUDE OPUS] Parsed structure: ${parsed.data_fields ? 'data_fields' : parsed.fields ? 'fields' : 'flat'}, keys: ${Object.keys(fieldsToProcess).length}`);
+        for (const [key, value] of Object.entries(fieldsToProcess)) {
           const strVal = String(value).toLowerCase().trim();
           const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'unknown' || strVal === 'not available' || strVal === 'none';
           if (!isBadValue) {
@@ -1144,9 +1146,13 @@ Return ONLY the JSON object described in the system prompt.`;
         const parsed = parseResult.data;
         const fields: Record<string, any> = {};
 
-        // Handle new evidence-based format
-        if (parsed.fields) {
-          for (const [key, fieldData] of Object.entries(parsed.fields as Record<string, any>)) {
+        // FIX: Handle nested { data_fields: {...} }, { fields: {...} }, or flat format
+        const fieldsToProcess = parsed.data_fields || parsed.fields || parsed;
+        console.log(`[GPT] Parsed structure: ${parsed.data_fields ? 'data_fields' : parsed.fields ? 'fields' : 'flat'}, keys: ${Object.keys(fieldsToProcess).length}`);
+
+        // Handle new evidence-based format (if fields were wrapped in data_fields or fields)
+        if (parsed.data_fields || parsed.fields) {
+          for (const [key, fieldData] of Object.entries(fieldsToProcess as Record<string, any>)) {
             if (fieldData?.value !== null && fieldData?.value !== undefined) {
               fields[key] = {
                 value: fieldData.value,
@@ -1157,8 +1163,8 @@ Return ONLY the JSON object described in the system prompt.`;
             }
           }
         } else {
-          // Legacy format fallback
-          for (const [key, value] of Object.entries(parsed)) {
+          // Legacy format fallback (flat structure)
+          for (const [key, value] of Object.entries(fieldsToProcess)) {
             if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
               let coerced = coerceValue(key, value);
               if (coerced !== null) {
@@ -1305,8 +1311,10 @@ Return ONLY the JSON object. Use null only for fields you truly cannot find.`;
         if (parseResult.success && parseResult.data) {
           const parsed = parseResult.data;
           const fields: Record<string, any> = {};
-          // Handle both parsed.fields (wrapped) and parsed directly
-          for (const [key, value] of Object.entries(parsed.fields || parsed)) {
+          // FIX: Handle nested { data_fields: {...} }, { fields: {...} }, or flat format
+          const fieldsToProcess = parsed.data_fields || parsed.fields || parsed;
+          console.log(`[CLAUDE SONNET] Parsed structure: ${parsed.data_fields ? 'data_fields' : parsed.fields ? 'fields' : 'flat'}, keys: ${Object.keys(fieldsToProcess).length}`);
+          for (const [key, value] of Object.entries(fieldsToProcess)) {
             const strVal = String(value).toLowerCase().trim();
             const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'unknown' || strVal === 'not available' || strVal === 'none';
             if (!isBadValue) {
@@ -1423,7 +1431,10 @@ async function callGemini(address: string): Promise<{ fields: Record<string, any
       if (parseResult.success && parseResult.data) {
         const parsed = parseResult.data;
         const fields: Record<string, any> = {};
-        for (const [key, value] of Object.entries(parsed)) {
+        // FIX: Handle nested { data_fields: {...} }, { fields: {...} }, or flat format
+        const fieldsToProcess = parsed.data_fields || parsed.fields || parsed;
+        console.log(`[GEMINI] Parsed structure: ${parsed.data_fields ? 'data_fields' : parsed.fields ? 'fields' : 'flat'}, keys: ${Object.keys(fieldsToProcess).length}`);
+        for (const [key, value] of Object.entries(fieldsToProcess)) {
           if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
             // TYPE COERCION: Validate and coerce value to expected type
             let coerced = coerceValue(key, value);

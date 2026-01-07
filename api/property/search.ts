@@ -3576,8 +3576,11 @@ Return verified data only. If you cannot find data, return null for that field.`
       if (jsonMatch) {
         try {
           const parsed = JSON.parse(jsonMatch[0]);
+          // FIX: Extract fields - handle nested { data_fields: {...} }, { fields: {...} }, or flat format
+          const fieldsToFilter = parsed.data_fields || parsed.fields || parsed;
+          console.log(`[Claude Opus] Parsed structure: ${parsed.data_fields ? 'data_fields' : parsed.fields ? 'fields' : 'flat'}, keys: ${Object.keys(fieldsToFilter).length}`);
           // 🛡️ NULL BLOCKING: Filter all null values before returning
-          const filteredFields = filterNullValues(parsed, 'Claude Opus');
+          const filteredFields = filterNullValues(fieldsToFilter, 'Claude Opus');
           return { fields: filteredFields, llm: 'Claude Opus' };
         } catch (parseError) {
           console.error('❌ Claude Opus JSON.parse error:', parseError);
@@ -3668,8 +3671,11 @@ Return JSON with numbered field keys like "10_listing_price": {"value": 450000, 
           if (jsonMatch) {
             try {
               const parsed = JSON.parse(jsonMatch[0]);
+              // FIX: Extract fields - handle nested { data_fields: {...} }, { fields: {...} }, or flat format
+              const fieldsToFilter = parsed.data_fields || parsed.fields || parsed;
+              console.log(`[Claude Sonnet] Parsed structure: ${parsed.data_fields ? 'data_fields' : parsed.fields ? 'fields' : 'flat'}, keys: ${Object.keys(fieldsToFilter).length}`);
               // 🛡️ NULL BLOCKING: Filter all null values before returning
-              const filteredFields = filterNullValues(parsed, 'Claude Sonnet');
+              const filteredFields = filterNullValues(fieldsToFilter, 'Claude Sonnet');
               console.log('[Claude Sonnet] Fields extracted:', Object.keys(filteredFields).length);
               return { fields: filteredFields, llm: 'Claude Sonnet' };
             } catch (parseError) {
@@ -3957,7 +3963,10 @@ async function callGPT5(
             };
           } else {
             // Legacy mode: filter null values
-            const filteredFields = filterNullValues(parsed, 'GPT');
+            // FIX: Extract fields - handle nested { data_fields: {...} }, { fields: {...} }, or flat format
+            const fieldsToFilter = parsed.data_fields || parsed.fields || parsed;
+            console.log(`[GPT] Parsed structure: ${parsed.data_fields ? 'data_fields' : parsed.fields ? 'fields' : 'flat'}, keys: ${Object.keys(fieldsToFilter).length}`);
+            const filteredFields = filterNullValues(fieldsToFilter, 'GPT');
             return { fields: filteredFields, llm: 'GPT' };
           }
         } catch (parseError) {
@@ -4480,11 +4489,10 @@ Return JSON only with the 34 field keys specified in the schema.`,
       if (jsonStr) {
         try {
           const parsed = JSON.parse(jsonStr);
-          console.log('🔍 Gemini parsed structure keys:', Object.keys(parsed));
-          // FIX: Extract fields - handle nested { fields: {...} } format
-          // Gemini returns { fields: {...}, sources_searched: [...] } - we only want the fields
-          const fieldsToFilter = parsed.fields || parsed;
-          console.log('Gemini fieldsToFilter count:', Object.keys(fieldsToFilter).length);
+          // FIX: Extract fields - handle nested { data_fields: {...} }, { fields: {...} }, or flat format
+          // Gemini may return data wrapped in data_fields or fields, or return flat structure
+          const fieldsToFilter = parsed.data_fields || parsed.fields || parsed;
+          console.log(`[Gemini] Parsed structure: ${parsed.data_fields ? 'data_fields' : parsed.fields ? 'fields' : 'flat'}, keys: ${Object.keys(fieldsToFilter).length}`);
           // NULL BLOCKING: Filter all null values before returning
           const filteredFields = filterNullValues(fieldsToFilter, 'Gemini');
           console.log('Gemini filteredFields count:', Object.keys(filteredFields).length);
