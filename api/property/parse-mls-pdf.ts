@@ -902,7 +902,7 @@ Return ONLY the JSON object, no markdown or explanation.`;
       },
       body: JSON.stringify({
         model: model,
-        max_tokens: 8000,
+        max_tokens: 32000,
         messages: [
           {
             role: 'user',

@@ -197,7 +197,7 @@ class PropertyScraper {
 
     const response = await this.claude.messages.create({
       model: 'claude-sonnet-4-5-20250929',
-      max_tokens: 4096,
+      max_tokens: 32000,
       messages: [{ role: 'user', content: prompt }],
     });
 

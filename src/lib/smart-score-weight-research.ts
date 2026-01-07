@@ -299,7 +299,7 @@ Provide your analysis as JSON with weight, confidence, and reasoning.`;
   try {
     const response = await client.messages.create({
       model: 'claude-opus-4-5-20251101',
-      max_tokens: 1500,
+      max_tokens: 32000,
       temperature: 0.3, // Lower temperature for more factual responses
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }]
@@ -385,7 +385,7 @@ Format as JSON:
         ],
         return_citations: true,
         temperature: 0.2,
-        max_tokens: 2500
+        max_tokens: 32000
       })
     });
 
