@@ -630,7 +630,7 @@ async function callGeminiForecast(
         tool_config: { function_calling_config: { mode: 'ANY' } },
         generationConfig: {
           thinking_config: {
-            thinking_level: "high",
+            thinking_level: "low",
             include_thoughts: true  // Include reasoning for Olivia CMA
           },
           temperature: 1.0,

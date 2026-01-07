@@ -1374,7 +1374,7 @@ async function callGemini(address: string): Promise<{ fields: Record<string, any
           tool_config: { function_calling_config: { mode: "ANY" } },
           generationConfig: {
             thinking_config: {
-              thinking_level: "high",
+              thinking_level: "low",
               include_thoughts: false  // Just need data, not reasoning
             },
             temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro

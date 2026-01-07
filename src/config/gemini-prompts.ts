@@ -255,7 +255,7 @@ export const GEMINI_API_CONFIG = {
   },
   generationConfig: {
     thinking_config: {
-      thinking_level: "high",  // "high" or "low" for Gemini 3 Pro
+      thinking_level: "low",  // "high" or "low" for Gemini 3 Pro
       include_thoughts: false  // Set true to get reasoning in response
     },
     temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro

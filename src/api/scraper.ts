@@ -282,7 +282,7 @@ class PropertyScraper {
           },
           generationConfig: {
             thinking_config: {
-              thinking_level: 'high',
+              thinking_level: 'low',
               include_thoughts: false  // Data extraction - no reasoning needed
             },
             temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro
