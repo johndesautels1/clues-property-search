@@ -4958,53 +4958,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const enabledLlms = llmCascade.filter(llm => llm.enabled);
 
         if (enabledLlms.length > 0) {
-          // RATE LIMIT FIX: Separate Perplexity calls (sequential) from other LLMs (parallel)
-          const perplexityLlms = enabledLlms.filter(llm => llm.id.startsWith('perplexity'));
-          const otherLlms = enabledLlms.filter(llm => !llm.id.startsWith('perplexity'));
+          // SEQUENTIAL LLM CASCADE: Each LLM fires in order (Firing Order: 1st->6th)
+          // This allows each LLM to see what previous LLMs found and focus on MISSING fields only
+          const llmResults: PromiseSettledResult<any>[] = [];
 
-          console.log(`\n=== Calling ${perplexityLlms.length} Perplexity LLMs SEQUENTIALLY + ${otherLlms.length} other LLMs in PARALLEL ===`);
+          console.log(`
+=== Running ${enabledLlms.length} LLMs SEQUENTIALLY (cascade order 1st->6th) ===`);
 
-          // Run Perplexity calls SEQUENTIALLY with 500ms delay to avoid 429 rate limit
-          const perplexityResults: PromiseSettledResult<any>[] = [];
-          for (let i = 0; i < perplexityLlms.length; i++) {
-            const llm = perplexityLlms[i];
-            console.log(`  [Perplexity ${i + 1}/${perplexityLlms.length}] Calling ${llm.id}...`);
+          for (let i = 0; i < enabledLlms.length; i++) {
+            const llm = enabledLlms[i];
+            const isPerplexity = llm.id.startsWith('perplexity');
+            const timeout = isPerplexity ? PERPLEXITY_TIMEOUT : LLM_TIMEOUT;
+
+            console.log(`  [${i + 1}/${enabledLlms.length}] Calling ${llm.id} (firing order position)...`);
+
             try {
               const result = await withTimeout(
                 llm.fn(realAddress),
-                PERPLEXITY_TIMEOUT,
+                timeout,
                 { fields: {}, error: 'timeout' }
               );
-              perplexityResults.push({ status: 'fulfilled', value: result });
+              llmResults.push({ status: 'fulfilled', value: result });
+              console.log(`  [${i + 1}/${enabledLlms.length}] ${llm.id} completed - found ${Object.keys(result?.fields || {}).length} fields`);
             } catch (err) {
-              perplexityResults.push({ status: 'rejected', reason: err });
+              llmResults.push({ status: 'rejected', reason: err });
+              console.log(`  [${i + 1}/${enabledLlms.length}] ${llm.id} failed: ${err}`);
             }
-            // Add delay between Perplexity calls to avoid rate limiting (except after last call)
-            if (i < perplexityLlms.length - 1) {
+
+            // Add delay between Perplexity calls to avoid rate limiting
+            if (isPerplexity && i < enabledLlms.length - 1 && enabledLlms[i + 1]?.id.startsWith('perplexity')) {
+              console.log('  Waiting 500ms before next Perplexity call (rate limit protection)...');
               await new Promise(resolve => setTimeout(resolve, 500));
-            }
-          }
-
-          // Run other LLMs in PARALLEL (they don't share rate limits)
-          const otherResults = await Promise.allSettled(
-            otherLlms.map(llm =>
-              withTimeout(
-                llm.fn(realAddress),
-                LLM_TIMEOUT,
-                { fields: {}, error: 'timeout' }
-              )
-            )
-          );
-
-          // Combine results in original order
-          const llmResults: PromiseSettledResult<any>[] = [];
-          let perplexityIdx = 0;
-          let otherIdx = 0;
-          for (const llm of enabledLlms) {
-            if (llm.id.startsWith('perplexity')) {
-              llmResults.push(perplexityResults[perplexityIdx++]);
-            } else {
-              llmResults.push(otherResults[otherIdx++]);
             }
           }
 
