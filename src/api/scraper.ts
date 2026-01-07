@@ -215,8 +215,8 @@ class PropertyScraper {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error('GPT not configured - OPENAI_API_KEY missing');
 
-    // GPT-5.2-pro requires /v1/responses endpoint, not /v1/chat/completions
-    const response = await fetch('https://api.openai.com/v1/responses', {
+    // Use OpenAI Chat Completions API
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -224,7 +224,7 @@ class PropertyScraper {
       },
       body: JSON.stringify({
         model: 'gpt-5.2-pro',
-        input: [
+        messages: [
           {
             role: 'system',
             content: 'You are a real estate data extraction API. Return ONLY valid JSON.',

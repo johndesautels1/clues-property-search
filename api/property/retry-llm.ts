@@ -1107,7 +1107,7 @@ Return ONLY the JSON object described in the system prompt.`;
 
   try {
     // Use OpenAI Responses API with web search tool
-    const response = await fetch('https://api.openai.com/v1/responses', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1116,7 +1116,7 @@ Return ONLY the JSON object described in the system prompt.`;
       body: JSON.stringify({
         model: 'gpt-5.2-pro',
         max_output_tokens: 32000,
-        input: [
+        messages: [
           { role: 'system', content: GPT_RETRY_SYSTEM_PROMPT },
           { role: 'user', content: userPrompt }
         ],
