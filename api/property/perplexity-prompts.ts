@@ -25,7 +25,7 @@ Respond in valid JSON only, with the exact keys requested in the user message.`;
 export const PERPLEXITY_CONFIG = {
   model: 'sonar-reasoning-pro',
   temperature: 0.2,
-  max_tokens: 2500,
+  max_tokens: 8000,  // Increased from 2500 to prevent truncation
   web_search_options: {
     search_context_size: 'medium'
   }
@@ -77,13 +77,13 @@ Rules:
 - For neighborhood metrics, use portal "market stats" or similar pages for the neighborhood or ZIP.
 - If listing_price and rental_estimate_monthly are both available, compute price_to_rent_ratio = listing_price / (rental_estimate_monthly * 12).
 - Include a field only if you are ≥90% confident; otherwise omit it.
-- For each returned field, include: value, source_name, source_url.
+- IMPORTANT: Return FLAT values only, NOT nested objects. No source_name, source_url, or notes.
 
 Output JSON only, no commentary. Example shape:
 {
-  "listing_price": { "value": 500000, "source_name": "Redfin", "source_url": "https://..." },
-  "bedrooms": { "value": 3, "source_name": "Zillow", "source_url": "https://..." },
-  "neighborhood_median_price": { "value": 520000, "source_name": "Redfin", "source_url": "https://..." }
+  "listing_price": 500000,
+  "bedrooms": 3,
+  "neighborhood_median_price": 520000
 }`;
 }
 
@@ -122,7 +122,7 @@ Rules:
 - Do not use listing portals (Zillow/Redfin) for any of these fields.
 - You may compute effective_property_tax_rate_percent as (annual_property_taxes ÷ assessed_value_current_year) × 100 if both values are explicitly provided.
 - Include a field only if you are ≥90% confident; otherwise omit it.
-- For each returned field, include: value, source_name, source_url.
+- IMPORTANT: Return FLAT values only, NOT nested objects.
 
 Output JSON only with those keys as needed, no commentary.`;
 }
@@ -176,7 +176,7 @@ Rules for crime and safety:
 
 General rules:
 - Include a field only if you are ≥90% confident.
-- For each returned field: value, source_name, source_url.
+- IMPORTANT: Return FLAT values only, NOT nested objects.
 
 Output JSON only, no commentary.`;
 }
@@ -248,8 +248,8 @@ Rules for cell coverage:
 - If address-level data is unclear but the city/ZIP is a typical Tampa Bay metro area with strong coverage, default to at least "Good".
 
 General rules:
-- For each field, include: value, source_name (or description of benchmark level), source_url if applicable, and a short notes string where helpful.
-- If a specific provider type truly does not exist (e.g., natural gas), set value to null and briefly explain in notes.
+- IMPORTANT: Return FLAT values only, NOT nested objects. No source_name, source_url, or notes.
+- If a specific provider type truly does not exist (e.g., natural gas), set value to null.
 
 Output JSON only, no commentary.`;
 }
@@ -271,7 +271,7 @@ typical_financing_terms_or_concessions_for_area (short description: e.g., common
 Rules:
 - Use listing portals (Redfin, Zillow, Realtor.com) and local market/stat sites.
 - Include only explicitly described comps; do not invent.
-- For each comp, include source_name and source_url.
+- IMPORTANT: Return FLAT values only, NOT nested objects.
 
 Output JSON only.`;
 }
