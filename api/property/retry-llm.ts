@@ -1252,8 +1252,8 @@ Use web search to fill as many missing fields as possible with evidence.
 Return ONLY the JSON object described in the system prompt.`;
 
   try {
-    // Use OpenAI Responses API with web search tool
-    const response = await fetch('https://api.openai.com/v1/responses', {
+    // Use OpenAI Chat Completions API with web_search tool (2025 format)
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1261,23 +1261,21 @@ Return ONLY the JSON object described in the system prompt.`;
       },
       body: JSON.stringify({
         model: 'gpt-4o',
-        max_output_tokens: 32000,
-        input: [
+        max_tokens: 16000,
+        messages: [
           { role: 'system', content: GPT_RETRY_SYSTEM_PROMPT },
           { role: 'user', content: userPrompt }
         ],
-        reasoning: { effort: 'low' },
-        tools: [{ type: 'web_search' }],
-        tool_choice: 'auto', // Changed from 'required' - auto lets model decide when to search
-        include: ['web_search_call.action.sources'],
+        temperature: 0.2,
+        response_format: { type: 'json_object' }, // Enforce JSON output
       }),
     });
 
     const data = await response.json();
     console.log('[GPT] Status:', response.status);
 
-    // Handle Responses API format (output_text) or Chat Completions format (choices)
-    const text = data.output_text || data.choices?.[0]?.message?.content;
+    // Handle Chat Completions format
+    const text = data.choices?.[0]?.message?.content;
 
     if (text) {
       console.log('[GPT] Response length:', text.length, 'chars');
