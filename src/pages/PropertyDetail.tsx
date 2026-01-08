@@ -250,7 +250,7 @@ const DataField = ({ label, value, icon, format = 'text', confidence, sources, l
             {isRetrying ? 'Fetching...' : 'Try fetching this field with:'}
           </div>
           <div className="flex flex-wrap gap-2">
-            {['Perplexity', 'Gemini', 'GPT-5.2', 'Grok', 'Claude Sonnet', 'Claude Opus'].map((llm) => (
+            {['Perplexity', 'Gemini', 'GPT-4o', 'Grok', 'Claude Sonnet', 'Claude Opus'].map((llm) => (
               <button
                 key={llm}
                 onClick={() => onRetry(fieldKey, llm)}

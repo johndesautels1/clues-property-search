@@ -331,7 +331,7 @@ export default function AddProperty() {
             // 2. Try common variations if exact match failed
             if (fieldsFound === 0) {
               const variations = [
-                source.name.replace('GPT-5.2', 'GPT'),
+                source.name.replace('GPT-4o', 'GPT'),
                 source.name.replace('FBI Crime', 'FBI Crime Data'),
                 source.name,
               ];

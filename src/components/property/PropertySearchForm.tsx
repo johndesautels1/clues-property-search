@@ -889,7 +889,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
                 {[
                   { id: 'perplexity', name: '1. Perplexity', color: 'cyan' },
                   { id: 'gemini', name: '2. Gemini', color: 'purple' },
-                  { id: 'gpt', name: '3. GPT-5.2', color: 'green' },
+                  { id: 'gpt', name: '3. GPT-4o', color: 'green' },
                   { id: 'grok', name: '4. Grok', color: 'blue' },
                   { id: 'claude-sonnet', name: '5. Claude Sonnet', color: 'pink' },
                   { id: 'claude-opus', name: '6. Claude Opus', color: 'orange' },
