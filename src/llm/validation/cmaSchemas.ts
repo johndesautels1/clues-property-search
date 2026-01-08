@@ -185,7 +185,8 @@ export const CmaSchema = z.object({
   '50_kitchen_features': textField(),
   '51_appliances_included': multiselectField(['Refrigerator', 'Dishwasher', 'Range/Oven', 'Microwave', 'Washer', 'Dryer', 'Disposal']),
   '52_fireplace_yn': booleanField(),
-  '53_primary_br_location': numberField(0, 10),
+  // FIXED 2026-01-08: Field 53 is Primary BR Location (select), NOT fireplace count (number)
+  '53_primary_br_location': selectField(['Main Floor', 'Upper Floor', 'Lower Floor', 'Split', 'Main', 'Upper', 'Lower']),
 
   // ================================================================
   // GROUP 7: Exterior Features (Fields 54-58)

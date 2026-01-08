@@ -100,7 +100,8 @@ export const FIELD_MAPPINGS: FieldMapping[] = [
   { fieldNumber: 50, apiKey: '50_kitchen_features', frontendKey: 'interiorFeatures.kitchenFeatures', csvHeader: 'Kitchen Features', label: 'Kitchen Features', group: 'Interior Features', type: 'string' },
   { fieldNumber: 51, apiKey: '51_appliances_included', frontendKey: 'interiorFeatures.appliancesIncluded', csvHeader: 'Appliances Included', label: 'Appliances Included', group: 'Interior Features', type: 'array' },
   { fieldNumber: 52, apiKey: '52_fireplace_yn', frontendKey: 'interiorFeatures.fireplaceYn', csvHeader: 'Fireplace', label: 'Fireplace', group: 'Interior Features', type: 'boolean' },
-  { fieldNumber: 53, apiKey: '53_primary_br_location', frontendKey: 'interiorFeatures.primaryBrLocation', csvHeader: 'Fireplace Count', label: 'Fireplace Count', group: 'Interior Features', type: 'number' },
+  // FIXED 2026-01-08: Field 53 is Primary BR Location, NOT fireplace count
+  { fieldNumber: 53, apiKey: '53_primary_br_location', frontendKey: 'structural.primaryBrLocation', csvHeader: 'Primary BR Location', label: 'Primary BR Location', group: 'Interior Features', type: 'string' },
 
   // ================================================================
   // GROUP 7: Exterior Features (Fields 54-58)

@@ -498,7 +498,9 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   }
 
   addField('52_fireplace_yn', property.FireplaceYN);
-  addField('53_primary_br_location', property.FireplacesTotal);
+  // FIXED 2026-01-08: Field 53 is Primary BR Location, NOT fireplace count
+  // MasterBedroomLevel contains values like "Main", "Upper", "Lower"
+  addField('53_primary_br_location', property.MasterBedroomLevel);
 
   // ================================================================
   // GROUP 7: Exterior Features (Fields 54-58)
@@ -989,7 +991,9 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   addField('162_lease_restrictions_yn', property.LeaseRestrictionsYN);
   addField('163_pet_size_limit', property.PetSizeLimit);
   addField('164_max_pet_weight', property.MaxPetWeight);
-  addField('165_association_approval_yn', property.BuyerFinancingYN);
+  // FIXED 2026-01-08: Field 165 is Association Approval Required, NOT Buyer Financing
+  // BuyerFinancingYN was WRONG - AssociationApprovalRequiredYN is correct
+  addField('165_association_approval_yn', property.AssociationApprovalRequiredYN);
 
   // ================================================================
   // GROUP 23: Community & Features (Fields 166-168)

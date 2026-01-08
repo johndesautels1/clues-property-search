@@ -163,6 +163,7 @@ export interface BridgeProperty {
   WaterHeaterType?: string;
   WaterHeaterFeatures?: string[];
   AccessibilityFeatures?: string[];
+  MasterBedroomLevel?: string;  // Primary bedroom location: "Main", "Upper", "Lower" - Field 53
 
   // Exterior Features
   PoolPrivateYN?: boolean;
@@ -219,6 +220,7 @@ export interface BridgeProperty {
   PetSizeLimit?: string;
   MaxPetWeight?: number;
   PetRestrictions?: string;  // Full pet restrictions text from MLS
+  AssociationApprovalRequiredYN?: boolean;  // HOA approval required for buyers - Field 165
 
   // Age & Senior Community
   HousingForOlderPersonsYN?: boolean;  // 55+ community (Housing for Older Per)

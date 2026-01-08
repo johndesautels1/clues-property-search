@@ -597,7 +597,8 @@ export function calculateAllDerivedFields(data: PropertyData): Record<string, Ca
     '37_property_tax_rate': calculatePropertyTaxRate(data),
     '40_roof_age_est': calculateRoofAge(data),
     '46_hvac_age': calculateHVACAge(data),
-    '53_primary_br_location': calculateFireplaceCount(data),
+    // REMOVED 2026-01-08: Field 53 is Primary BR Location from MasterBedroomLevel, NOT calculated
+    // '53_primary_br_location': calculateFireplaceCount(data), // WRONG - removed
     '55_pool_type': calculatePoolType(data),
     '93_price_to_rent_ratio': calculatePriceToRentRatio(data),
     '94_price_vs_median_percent': calculatePriceVsMedian(data),

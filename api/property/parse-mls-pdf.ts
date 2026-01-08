@@ -246,10 +246,11 @@ const MLS_FIELD_MAPPING: Record<string, string> = {
   'Fireplace': '52_fireplace_yn',
   'Fireplace Y/N': '52_fireplace_yn',
 
-  'Fireplace Count': '53_primary_br_location',
-  '# of Fireplaces': '53_primary_br_location',
-  'Fireplaces': '53_primary_br_location',
-  'Number of Fireplaces': '53_primary_br_location',
+  // FIXED 2026-01-08: Field 53 is Primary BR Location, NOT fireplace count
+  'Primary Bedroom Location': '53_primary_br_location',
+  'Primary BR Location': '53_primary_br_location',
+  'Master Bedroom Level': '53_primary_br_location',
+  'MasterBedroomLevel': '53_primary_br_location',
   // ================================================================
   // GROUP 7: EXTERIOR FEATURES (Fields 54-58)
   // ================================================================

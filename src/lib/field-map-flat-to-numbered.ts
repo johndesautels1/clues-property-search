@@ -126,7 +126,10 @@ export const FLAT_TO_NUMBERED_FIELD_MAP: Record<string, string> = {
   'fireplace_yn': '52_fireplace_yn',
   'fireplace': '52_fireplace_yn',
   'has_fireplace': '52_fireplace_yn',
-  'fireplace_count': '53_primary_br_location',
+  // FIXED 2026-01-08: Field 53 is Primary BR Location, NOT fireplace count
+  'primary_br_location': '53_primary_br_location',
+  'primary_bedroom_location': '53_primary_br_location',
+  'master_bedroom_level': '53_primary_br_location',
 
   // Exterior (54-58)
   'pool_yn': '54_pool_yn',

@@ -391,7 +391,10 @@ const PERPLEXITY_TO_NUMBERED_FIELDS: Record<string, string> = {
   'interior_features_kitchen_features': '50_kitchen_features',
   'interior_features_appliances_included': '51_appliances_included',
   'interior_features_fireplace': '52_fireplace_yn',
-  'interior_features_fireplace_count': '53_primary_br_location',
+  // FIXED 2026-01-08: Field 53 is Primary BR Location, NOT fireplace count
+  'interior_features_primary_br_location': '53_primary_br_location',
+  'primary_bedroom_level': '53_primary_br_location',
+  'master_bedroom_level': '53_primary_br_location',
 
   // Exterior Features
   'exterior_features_pool': '54_pool_yn',

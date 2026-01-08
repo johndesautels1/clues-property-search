@@ -179,7 +179,8 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   '50_kitchen_features': 'text', 'kitchen_features': 'text',
   '51_appliances_included': 'multiselect', 'appliances_included': 'multiselect',
   '52_fireplace_yn': 'boolean', 'fireplace_yn': 'boolean',
-  '53_primary_br_location': 'number', 'primary_br_location': 'select',
+  // FIXED 2026-01-08: Field 53 is Primary BR Location (select), NOT fireplace count (number)
+  '53_primary_br_location': 'select', 'primary_br_location': 'select',
 
   // GROUP 7: Exterior Features (Fields 54-58)
   '54_pool_yn': 'boolean', 'pool_yn': 'boolean',

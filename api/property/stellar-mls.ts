@@ -210,7 +210,10 @@ export const STELLAR_MLS_FIELD_MAPPING: Record<string, string> = {
   'KitchenFeatures': '50_kitchen_features',
   'Appliances': '51_appliances_included',
   'FireplaceYN': '52_fireplace_yn',
-  'FireplacesTotal': '53_primary_br_location',
+  // FIXED 2026-01-08: Field 53 is Primary BR Location, NOT fireplace count
+  'MasterBedroomLevel': '53_primary_br_location',
+  'MasterBedroom Level': '53_primary_br_location',
+  'Primary Bedroom Level': '53_primary_br_location',
 
   // Exterior Features (Fields 54-58)
   'PoolPrivateYN': '54_pool_yn',
