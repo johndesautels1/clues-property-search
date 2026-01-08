@@ -470,18 +470,21 @@ export function applyLLMQuorumVoting(
       if (entry.count > maxCount) { maxCount = entry.count; winningEntry = entry; } });
 
     if (winningEntry !== null && maxCount >= minQuorum) {
+      // Extract to const to satisfy TypeScript control flow analysis
+      const winner = winningEntry;
+
       fields[key] = {
         ...field,
-        value: winningEntry.value,
+        value: winner.value,
         confidence: maxCount >= 3 ? 'High' : 'Medium',
-        llmSources: winningEntry.sources,
+        llmSources: winner.sources,
         hasConflict: valueCounts.size > 1,
       };
 
       quorumFields.push({
         field: key,
-        value: winningEntry.value,
-        sources: winningEntry.sources,
+        value: winner.value,
+        sources: winner.sources,
         quorumCount: maxCount,
       });
     }
