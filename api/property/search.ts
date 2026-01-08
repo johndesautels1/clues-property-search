@@ -5101,6 +5101,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('Skipping free APIs - using cached data from previous session');
     }
 
+    // ========================================
+    // TIER 3 (continued): TAVILY WEB SEARCH
+    // Targeted searches for AVMs, market data, permits, views
+    // ========================================
+    if (!skipApis) {
+      console.log('========================================');
+      console.log('TIER 3: TAVILY WEB SEARCH');
+      console.log('========================================');
+      try {
+        const { runTavilyTier3 } = await import('./tavily-search');
+        const tavilyFields = await runTavilyTier3(
+          realAddress,
+          mlsCity || '',
+          mlsState || 'FL',
+          mlsCounty || '',
+          mlsZip || ''
+        );
+
+        if (Object.keys(tavilyFields).length > 0) {
+          console.log(`✅ TIER 3: Tavily returned ${Object.keys(tavilyFields).length} fields`);
+          // Add Tavily fields to arbitration pipeline
+          let tavilyAdded = 0;
+          try {
+            tavilyAdded = arbitrationPipeline.addFieldsFromSource(tavilyFields, 'Tavily');
+          } catch (pipelineError) {
+            console.error('TIER 3: Tavily pipeline error:', pipelineError);
+          }
+          console.log(`✅ TIER 3: Added ${tavilyAdded} fields from Tavily`);
+        } else {
+          console.log('⚠️ TIER 3: Tavily returned 0 fields');
+        }
+      } catch (tavilyError) {
+        console.error('TIER 3: Tavily search failed:', tavilyError);
+      }
+    }
 
     // ========================================
     // BATCH SYSTEM REMOVED

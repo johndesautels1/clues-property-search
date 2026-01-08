@@ -40,3 +40,46 @@ export const LLM_DISPLAY_NAMES: Record<LLMEngine, string> = {
   'claude-sonnet': 'Claude Sonnet 4.5',
   'gemini': 'Gemini 3 Pro Preview',
 };
+
+// Tavily Configuration (Tier 3)
+export const TAVILY_CONFIG = {
+  name: 'Tavily',
+  tier: 3,
+  timeout: 15000, // 15 seconds
+  reliability: 85, // 85% reliability score
+  description: 'Targeted web searches for AVMs, market data, permits, views',
+  fields: [
+    '16a_zestimate',
+    '16b_redfin_estimate',
+    '40_roof_age_est',
+    '46_hvac_age',
+    '59_recent_renovations',
+    '60_permit_history_roof',
+    '61_permit_history_hvac',
+    '62_permit_history_other',
+    '91_median_home_price_neighborhood',
+    '92_price_per_sqft_recent_avg',
+    '95_days_on_market_avg',
+    '104_electric_provider',
+    '106_water_provider',
+    '109_natural_gas',
+    '133_ev_charging',
+    '134_smart_home_features',
+    '135_accessibility_modifications',
+    '138_special_assessments',
+    '169_zillow_views',
+    '170_redfin_views',
+    '171_homes_views',
+    '172_realtor_views',
+    '174_saves_favorites',
+  ],
+} as const;
+
+// Full tier structure
+export const TIER_STRUCTURE = {
+  1: { name: 'Stellar MLS', source: 'Bridge Interactive API' },
+  2: { name: 'Google APIs', source: 'Google Places, Geocoding' },
+  3: { name: 'Free APIs + Tavily', source: 'SchoolDigger, FBI Crime, WalkScore, FEMA, Tavily' },
+  4: { name: 'Web-Search LLMs', source: 'Perplexity, Gemini, GPT, Sonnet, Grok' },
+  5: { name: 'Claude Opus', source: 'Deep reasoning, no web search' },
+} as const;

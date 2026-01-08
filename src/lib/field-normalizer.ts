@@ -14,6 +14,52 @@ import type { Property, DataField, ConfidenceLevel } from '@/types/property';
 import { enrichWithCalculatedFields } from './field-calculations';
 
 // ============================================
+// VALID DATA SOURCES - All recognized data sources
+// Added: 2026-01-08 - Tavily integration
+// ============================================
+export const VALID_SOURCES = [
+  // Tier 1: MLS
+  'Stellar MLS',
+  'Bridge MLS',
+  'Bridge Interactive',
+  // Tier 2: Google APIs
+  'Google Places',
+  'Google Geocoding',
+  // Tier 3: Free APIs + Tavily
+  'Tavily',
+  'Tavily (Zillow)',
+  'Tavily (Redfin)',
+  'Tavily (Realtor.com)',
+  'Tavily (Homes.com)',
+  'SchoolDigger',
+  'FBI Crime',
+  'WalkScore',
+  'FEMA Flood',
+  'AirNow',
+  'HowLoud',
+  'Weather',
+  'U.S. Census',
+  // Tier 4: LLMs
+  'Perplexity',
+  'Gemini',
+  'GPT',
+  'GPT-4o',
+  'Claude Sonnet',
+  'Grok',
+  // Tier 5: Claude Opus
+  'Claude Opus',
+  // Legacy/Other
+  'Zillow',
+  'Redfin',
+  'Realtor.com',
+  'Homes.com',
+  'County Records',
+  'Unknown',
+] as const;
+
+export type ValidSource = typeof VALID_SOURCES[number];
+
+// ============================================
 // FIELD ALIASES - Backward compatibility layer
 // Old keys → new canonical keys (transition support)
 // ============================================

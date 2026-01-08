@@ -234,6 +234,7 @@ Year built: ${ctx.yearBuilt || 'Unknown'}
 
 Goal: Using local utility, municipal, and reputable rate/availability sources, extract:
 
+UTILITY PROVIDERS:
 electric_utility_provider_name
 typical_avg_monthly_electric_bill_usd
 water_utility_provider_name
@@ -241,11 +242,17 @@ typical_avg_monthly_water_bill_usd
 sewer_provider_name
 natural_gas_provider_name_or_none
 trash_or_solid_waste_provider_name
+
+INTERNET & CONNECTIVITY:
 main_internet_providers_top3 (list of provider names)
 max_advertised_wired_download_speed_mbps
 fiber_internet_available_boolean
 cable_tv_provider_name
 cell_coverage_quality_rating (Excellent / Good / Fair / Poor)
+
+STRUCTURE AGES (search county permit records or listing history):
+roof_age_estimated_years (estimated roof age in years - search for roof permits, replacement dates, or listing mentions)
+hvac_age_estimated_years (estimated HVAC system age in years - search for HVAC permits, replacement dates, or listing mentions)
 
 Rules for bills (electric and water):
 - Prefer address- or city-specific data from local utilities or official/regional rate studies.
@@ -294,6 +301,52 @@ Rules:
 - IMPORTANT: Return FLAT values only, NOT nested objects.
 
 Output JSON only.`;
+}
+
+// ============================================================================
+// PROMPT F: Property Features & Market Activity (ADDED 2026-01-08)
+// Fields: EV charging, smart home, accessibility, special assessments,
+//         portal views (Zillow, Redfin, Homes.com, Realtor.com), saves/favorites
+// ============================================================================
+export function buildPromptF(address: string, city: string): string {
+  return `You are a retrieval-only property features and market activity research agent with LIVE WEB SEARCH.
+Property address: "${address}"
+City: ${city}
+
+Goal: Using listing portals (Zillow, Redfin, Realtor.com, Homes.com, Trulia), extract:
+
+PROPERTY FEATURES (from listing descriptions):
+ev_charging (EV charging capability: e.g., "Tesla charger installed", "240V outlet in garage", "None", null if unknown)
+smart_home_features (smart home technology: e.g., "Nest thermostat, smart locks, Ring doorbell", null if none mentioned)
+accessibility_modifications (accessibility features: e.g., "Wheelchair ramp, grab bars, wide doorways", null if none mentioned)
+special_assessments (any special assessments or pending HOA assessments: e.g., "Roof assessment $5,000 due 2026", null if none)
+
+MARKET ACTIVITY (if property is actively listed - return null if not found):
+zillow_views (number of views on Zillow listing page)
+redfin_views (number of views on Redfin listing page)
+homes_views (number of views on Homes.com listing page)
+realtor_views (number of views on Realtor.com listing page)
+saves_favorites (total saves or favorites across all portals)
+
+Rules:
+- Use only listing portals: Zillow, Redfin, Realtor.com, Homes.com, Trulia
+- For views/saves: Only report if explicitly shown on the listing page
+- For features: Extract from property description or features list
+- Include a field only if you are ≥90% confident; otherwise use null
+- IMPORTANT: Return FLAT values only, NOT nested objects
+
+Output JSON only, no commentary. Example:
+{
+  "ev_charging": "240V outlet in garage",
+  "smart_home_features": "Nest thermostat, Ring doorbell",
+  "accessibility_modifications": null,
+  "special_assessments": null,
+  "zillow_views": 1250,
+  "redfin_views": 890,
+  "homes_views": null,
+  "realtor_views": 450,
+  "saves_favorites": 45
+}`;
 }
 
 // ============================================================================
@@ -390,6 +443,25 @@ export const PERPLEXITY_FIELD_MAPPING: Record<string, string | null> = {
   'fiber_internet_available_boolean': '113_fiber_available',
   'cable_tv_provider_name': '114_cable_tv_provider',
   'cell_coverage_quality_rating': '115_cell_coverage_quality',
+
+  // Prompt D - Structure Ages (ADDED 2026-01-08)
+  'roof_age_estimated_years': '40_roof_age_est',
+  'roof_age_est': '40_roof_age_est',
+  'roof_age': '40_roof_age_est',
+  'hvac_age_estimated_years': '46_hvac_age',
+  'hvac_age_est': '46_hvac_age',
+  'hvac_age': '46_hvac_age',
+
+  // Prompt F - Property Features & Market Activity (ADDED 2026-01-08)
+  'ev_charging': '133_ev_charging',
+  'smart_home_features': '134_smart_home_features',
+  'accessibility_modifications': '135_accessibility_modifications',
+  'special_assessments': '138_special_assessments',
+  'zillow_views': '169_zillow_views',
+  'redfin_views': '170_redfin_views',
+  'homes_views': '171_homes_views',
+  'realtor_views': '172_realtor_views',
+  'saves_favorites': '174_saves_favorites',
 
   // Prompt E - Comps (same as A, already mapped above)
   'typical_financing_terms_or_concessions_for_area': '102_financing_terms',

@@ -5,6 +5,13 @@
  * 1. Call Stellar MLS (Bridge API) with MLS # to get full property data + address
  * 2. Use returned address to fire full hierarchy (TIER 2-5) via existing search endpoint
  *
+ * FULL TIER STRUCTURE (Updated 2026-01-08):
+ * - Tier 1: Stellar MLS (Bridge Interactive API) - Called directly in Step 1
+ * - Tier 2: Google APIs (Geocoding, Places, Distance)
+ * - Tier 3: Free APIs + Tavily (SchoolDigger, FBI Crime, WalkScore, FEMA, Tavily Web Search)
+ * - Tier 4: Web-Search LLMs (Perplexity, Gemini, GPT, Sonnet, Grok)
+ * - Tier 5: Claude Opus (Deep reasoning, no web search)
+ *
  * ISOLATION: This endpoint is ONLY used by AddProperty.tsx Manual tab
  * - Does NOT affect Search Property page (uses /api/property/search)
  * - Does NOT affect other Add Property tabs (PDF, Address tabs use /api/property/search)

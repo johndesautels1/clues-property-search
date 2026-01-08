@@ -39,10 +39,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Send initial progress for all data sources
     const allSources = [
+      // Tier 1: MLS
       'stellar-mls',
+      // Tier 2: Google APIs
       'google-geocode',
       'google-places',
       'google-distance',
+      // Tier 3: Free APIs + Tavily
+      'tavily',  // ADDED 2026-01-08 - Tier 3 Tavily web search
       'redfin',
       'walkscore',
       'fema',
@@ -59,12 +63,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       'usgs-earthquake',
       'epa-frs',
       'epa-radon',
+      // Tier 4: Web-Search LLMs
       'perplexity',
       'grok',
-      'claude-opus',
       'gpt',
       'claude-sonnet',
-      'gemini'
+      'gemini',
+      // Tier 5: Claude Opus (no web search)
+      'claude-opus'
     ];
 
     allSources.forEach(source => {
