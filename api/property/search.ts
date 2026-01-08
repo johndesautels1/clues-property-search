@@ -56,7 +56,7 @@ const STELLAR_MLS_TIMEOUT = 30000; // 30 seconds for Stellar MLS via Bridge API 
 const FREE_API_TIMEOUT = 60000; // 60 seconds for free APIs (Tier 2) - reduced from 90s
 const TAVILY_TIMEOUT = 15000; // 15 seconds for Tavily web searches (Tier 3) - fast targeted searches
 const LLM_TIMEOUT = 180000; // 180 seconds (3 min) for Claude, GPT, Gemini, Grok (Tier 4-5) - GPT-5.2-pro with reasoning needs 2-3 min
-const PERPLEXITY_TIMEOUT = 90000; // 90 seconds for Perplexity deep web search (Tier 4 #1)
+const PERPLEXITY_TIMEOUT = 60000; // 60 seconds for Perplexity deep web search (Tier 4 #1)
 
 // ============================================
 // RATE LIMIT TRACKING - Skip LLMs only when 429 detected
@@ -5139,10 +5139,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           // Track LLM metadata alongside results to maintain order
           const llmMetadata: Array<{ id: string; enabled: boolean; fn: any }> = [];
 
-          // PHASE 1: Perplexity A-E (SEQUENTIAL with rate limit protection)
+          // PHASE 1: Perplexity A-E (SEQUENTIAL - rate limit protection required)
           const perplexityLlms = enabledLlms.filter(llm => llm.id.startsWith('perplexity'));
           if (perplexityLlms.length > 0) {
-            console.log(`\n[Phase 1/2] Running ${perplexityLlms.length} Perplexity prompts SEQUENTIALLY...`);
+            console.log(`\n[Phase 1/2] Running ${perplexityLlms.length} Perplexity prompts SEQUENTIALLY (rate limit protection)...`);
             for (let i = 0; i < perplexityLlms.length; i++) {
               const llm = perplexityLlms[i];
               console.log(`  [${i + 1}/${perplexityLlms.length}] Calling ${llm.id}...`);
