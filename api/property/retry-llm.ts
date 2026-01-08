@@ -1237,7 +1237,7 @@ async function callClaudeSonnet(address: string): Promise<{ fields: Record<strin
 
   const prompt = `You are Claude Sonnet, a property data specialist with web search capabilities.
 
-🔵 FIRING ORDER: You are the 5th LLM in the search chain (after Perplexity, Gemini, GPT, and Grok). Claude Opus fires LAST.
+🔵 FIRING ORDER: You are the 4th LLM in the search chain (after Perplexity, Gemini, and GPT). Grok and Claude Opus fire AFTER you.
 You ONLY search for fields that earlier LLMs did NOT find.
 Do NOT re-search fields already populated - focus ONLY on MISSING fields from the 34 high-velocity field list.
 
