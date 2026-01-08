@@ -89,6 +89,36 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
   ]);
 }
 
+/**
+ * CRASH FIX #3: Safe JSON serializer that handles BigInt, undefined, NaN, and circular refs
+ * Prevents JSON.stringify crashes in final response
+ */
+function safeJsonSerialize(data: any): any {
+  const seen = new WeakSet();
+  return JSON.parse(JSON.stringify(data, (key, value) => {
+    // Handle circular references
+    if (typeof value === 'object' && value !== null) {
+      if (seen.has(value)) {
+        return '[Circular]';
+      }
+      seen.add(value);
+    }
+    // Handle BigInt
+    if (typeof value === 'bigint') {
+      return value.toString();
+    }
+    // Handle undefined
+    if (value === undefined) {
+      return null;
+    }
+    // Handle NaN and Infinity
+    if (typeof value === 'number' && (isNaN(value) || !isFinite(value))) {
+      return null;
+    }
+    return value;
+  }));
+}
+
 import { LLM_CASCADE_ORDER } from './llm-constants.js';
 import { createArbitrationPipeline, type FieldValue, type ArbitrationResult } from './arbitration.js';
 import { sanitizeAddress, isValidAddress, safeFetch } from '../../src/lib/safe-json-parse.js';
@@ -4732,7 +4762,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               mlsFields[key] = actualValue;
             }
 
-            const mlsAdded = arbitrationPipeline.addFieldsFromSource(mlsFields, STELLAR_MLS_SOURCE);
+            // CRASH FIX #4: Wrap MLS addFieldsFromSource in try-catch
+            let mlsAdded = 0;
+            try {
+              mlsAdded = arbitrationPipeline.addFieldsFromSource(mlsFields, STELLAR_MLS_SOURCE);
+            } catch (pipelineError) {
+              console.error('CRASH FIX #4: MLS pipeline error:', pipelineError);
+            }
             actualFieldCounts[STELLAR_MLS_SOURCE] = mlsFieldCount; // Track ACTUAL fields returned
             console.log(`✅ TIER 1 COMPLETE: Added ${mlsAdded} fields from ${STELLAR_MLS_SOURCE} (via Bridge Interactive)`);
             console.log('📊 Sample MLS field values:', JSON.stringify(Object.fromEntries(Object.entries(mlsFields).slice(0, 3)), null, 2));
@@ -4948,14 +4984,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log('🔵 TIER 3 API sources:', Object.keys(tier3Groups).map(src => `${src} (${Object.keys(tier3Groups[src]).length} fields)`).join(', '));
 
         // Add each Google source independently as Tier 2
+        // CRASH FIX #5: Wrap Tier 2 addFieldsFromSource in try-catch
         for (const [source, fields] of Object.entries(tier2Groups)) {
-          const added = arbitrationPipeline.addFieldsFromSource(fields, source);
+          let added = 0;
+          try {
+            added = arbitrationPipeline.addFieldsFromSource(fields, source);
+          } catch (pipelineError) {
+            console.error(`CRASH FIX #5: Tier 2 pipeline error for ${source}:`, pipelineError);
+          }
           console.log(`✅ TIER 2: Added ${added} fields from ${source}`);
         }
 
         // Add each other API source independently as Tier 3
+        // CRASH FIX #6: Wrap Tier 3 addFieldsFromSource in try-catch
         for (const [source, fields] of Object.entries(tier3Groups)) {
-          const added = arbitrationPipeline.addFieldsFromSource(fields, source);
+          let added = 0;
+          try {
+            added = arbitrationPipeline.addFieldsFromSource(fields, source);
+          } catch (pipelineError) {
+            console.error(`CRASH FIX #6: Tier 3 pipeline error for ${source}:`, pipelineError);
+          }
           console.log(`✅ TIER 3: Added ${added} fields from ${source}`);
         }
 
@@ -5213,7 +5261,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   };
                 }
 
-                const newUniqueFields = arbitrationPipeline.addFieldsFromSource(formattedFields, llmSourceNames[llm.id]);
+                // CRASH FIX #7: Wrap LLM addFieldsFromSource in try-catch
+                let newUniqueFields = 0;
+                try {
+                  newUniqueFields = arbitrationPipeline.addFieldsFromSource(formattedFields, llmSourceNames[llm.id]);
+                } catch (pipelineError) {
+                  console.error(`CRASH FIX #7: LLM pipeline error for ${llm.id}:`, pipelineError);
+                }
                 const totalAfter = arbitrationPipeline.getFieldCount();
 
                 llmResponses.push({
@@ -5334,7 +5388,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log(`  - Field 21 (living_sqft): ${propertyData.field_21_living_sqft}`);
 
     // Run all backend calculations
-    const calculatedFields = calculateAllDerivedFields(propertyData);
+    // CRASH FIX #1: Wrap in try-catch to prevent divide-by-zero and type coercion crashes
+    let calculatedFields: Record<string, any> = {};
+    try {
+      calculatedFields = calculateAllDerivedFields(propertyData);
+      console.log(`CRASH FIX #1: calculateAllDerivedFields succeeded with ${Object.keys(calculatedFields).length} fields`);
+    } catch (calcError) {
+      console.error('CRASH FIX #1: calculateAllDerivedFields failed:', calcError);
+      // Continue with empty calculated fields - better than crashing entire request
+    }
 
     // Add calculated fields to arbitration pipeline with Tier 1 priority
     const backendCalcFields: Record<string, FieldValue> = {};
@@ -5356,8 +5418,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (calculationsAdded > 0) {
-      arbitrationPipeline.addFieldsFromSource(backendCalcFields, 'Backend Calculation');
-      console.log(`✅ Added ${calculationsAdded} calculated fields to arbitration pipeline (Tier 1)`);
+      // CRASH FIX #8: Wrap backend calc addFieldsFromSource in try-catch
+      try {
+        arbitrationPipeline.addFieldsFromSource(backendCalcFields, 'Backend Calculation');
+        console.log(`✅ Added ${calculationsAdded} calculated fields to arbitration pipeline (Tier 1)`);
+      } catch (pipelineError) {
+        console.error('CRASH FIX #8: Backend calc pipeline error:', pipelineError);
+      }
     } else {
       console.log('⚠️  No calculations performed - missing required input fields');
     }
@@ -5366,7 +5433,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // SMART DEFAULTS: N/A for Single-Family and Conditional Fields
     // ========================================
     const smartDefaults: Record<string, any> = {};
-    const propertyType = getFieldValue('26_property_type') || '';
+    // CRASH FIX #10: Ensure propertyType is a string before calling toLowerCase
+    const rawPropertyType = getFieldValue('26_property_type');
+    const propertyType = typeof rawPropertyType === 'string' ? rawPropertyType : String(rawPropertyType || '');
     const isSingleFamily = propertyType.toLowerCase().includes('single') ||
                            propertyType.toLowerCase().includes('detached') ||
                            propertyType.toLowerCase().includes('house');
@@ -5404,8 +5473,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (Object.keys(smartDefaults).length > 0) {
-      arbitrationPipeline.addFieldsFromSource(smartDefaults, 'Backend Logic');
-      console.log(`✅ Added ${Object.keys(smartDefaults).length} smart defaults (N/A fields)`);
+      // CRASH FIX #8b: Wrap smart defaults addFieldsFromSource in try-catch
+      try {
+        arbitrationPipeline.addFieldsFromSource(smartDefaults, 'Backend Logic');
+        console.log(`✅ Added ${Object.keys(smartDefaults).length} smart defaults (N/A fields)`);
+      } catch (pipelineError) {
+        console.error('CRASH FIX #8b: Smart defaults pipeline error:', pipelineError);
+      }
     }
 
     console.log('========================================');
@@ -5570,7 +5644,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Transform flat fields to nested structure for PropertyDetail & other pages
-    const nestedFields = convertFlatToNestedStructure(convertedFields);
+    // CRASH FIX #2: Wrap in try-catch to prevent undefined property access crashes
+    let nestedFields: Record<string, any> = {};
+    try {
+      nestedFields = convertFlatToNestedStructure(convertedFields);
+      console.log('CRASH FIX #2: convertFlatToNestedStructure succeeded');
+    } catch (structError) {
+      console.error('CRASH FIX #2: convertFlatToNestedStructure failed:', structError);
+      // Continue with empty nested structure - flat fields still work
+    }
 
     // Build sources list from unique sources in result
     const sources = Array.from(new Set(
@@ -5582,7 +5664,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('Conflicts:', arbitrationResult.conflicts?.length || 0);
     console.log('LLM responses:', llmResponses?.length || 0);
 
-    return res.status(200).json({
+    // CRASH FIX #3: Use safeJsonSerialize to prevent BigInt/circular ref crashes
+    return res.status(200).json(safeJsonSerialize({
       success: true,
       address: realAddress,
       fields: convertedFields,
@@ -5599,7 +5682,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       llm_responses: llmResponses,
       strategy: 'arbitration_pipeline',
       cascade_order: ['perplexity-portals', 'perplexity-county', 'perplexity-schools', 'perplexity-crime', 'perplexity-utilities', 'perplexity-electric', 'perplexity-water', 'perplexity-internet-speed', 'perplexity-fiber', 'perplexity-cell', 'gemini', 'gpt', 'claude-sonnet', 'grok', 'claude-opus']
-    });
+    }));
   } catch (error) {
     console.error('=== SEARCH ERROR ===');
     console.error('Error:', error);

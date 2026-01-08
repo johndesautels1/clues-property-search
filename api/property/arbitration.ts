@@ -276,6 +276,25 @@ export function validateField(fieldKey: string, value: any): { valid: boolean; m
   return { valid: true };
 }
 
+/**
+ * CRASH FIX #9: Safe JSON stringify that handles BigInt, circular refs, and other edge cases
+ */
+function safeStringify(value: any): string {
+  try {
+    const seen = new WeakSet();
+    return JSON.stringify(value, (key, val) => {
+      if (typeof val === 'object' && val !== null) {
+        if (seen.has(val)) return '[Circular]';
+        seen.add(val);
+      }
+      if (typeof val === 'bigint') return val.toString();
+      return val;
+    });
+  } catch {
+    return String(value);
+  }
+}
+
 export function validateBathroomMath(
   fullBathrooms: number | undefined,
   halfBathrooms: number | undefined,
@@ -341,7 +360,7 @@ export function arbitrateField(
       confidence: getSourceConfidence(newSource, true),
       tier: newTier,
       timestamp,
-      hasConflict: JSON.stringify(existingField.value) !== JSON.stringify(newValue),
+      hasConflict: safeStringify(existingField.value) !== safeStringify(newValue),
       conflictValues: existingField.value !== newValue 
         ? [{ source: existingField.source, value: existingField.value }]
         : undefined,
@@ -362,7 +381,7 @@ export function arbitrateField(
     return { result: overrideField, action: 'override' };
   }
   
-  if (newTier === existingField.tier && JSON.stringify(existingField.value) !== JSON.stringify(newValue)) {
+  if (newTier === existingField.tier && safeStringify(existingField.value) !== safeStringify(newValue)) {
     if (newTier >= 4) {
       const updatedField: FieldValue = {
         ...existingField,
