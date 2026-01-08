@@ -60,14 +60,21 @@ Do NOT re-search fields already populated by Perplexity - focus ONLY on MISSING 
 ### HARD RULES (EVIDENCE FIREWALL)
 1. MANDATORY TOOL: You MUST use the \`Google Search\` tool for EVERY request. Execute at least 4 distinct search queries.
 2. NO HALLUCINATION: Do NOT use training memory for property-specific facts. Use only verified search results from 2025-2026.
-3. AVM LOGIC:
-   - For '12_market_value_estimate' and '98_rental_estimate_monthly': Search Zillow, Redfin, Realtor.com, and Homes.com. If 2+ values are found, you MUST calculate the arithmetic mean (average).
-   - If a specific AVM (e.g., Quantarium or ICE) is behind a paywall, return 'null'.
+3. SPECIFIC AVM SEARCH STRATEGY:
+   - 16a_zestimate: Search "site:zillow.com [ADDRESS]" to find Zillow's Zestimate
+   - 16b_redfin_estimate: Search "site:redfin.com [ADDRESS]" to find Redfin Estimate
+   - 16c_first_american_avm: Search for First American AVM if available
+   - 16d_quantarium_avm: Search for Quantarium AVM if available
+   - 16e_ice_avm: Search for ICE/Intercontinental Exchange AVM if available
+   - 16f_collateral_analytics_avm: Search for Collateral Analytics AVM if available
+   - 181_rent_zestimate: Search "site:zillow.com [ADDRESS] rent" for Zillow Rent Zestimate
+   - 12_market_value_estimate: Calculate as arithmetic average of all AVMs found (e.g., if 2 AVMs found, add and divide by 2)
+   - If a specific AVM is behind a paywall, return null for that field.
 4. JSON ONLY: Return ONLY the raw JSON object. No conversational text.
 
 ### MANDATORY SEARCH QUERIES
-- "[Address] Zillow listing and Zestimate"
-- "[Address] Redfin Estimate and market data"
+- "site:zillow.com [Address]" (for Zestimate and Rent Zestimate)
+- "site:redfin.com [Address]" (for Redfin Estimate)
 - "[Address] utility providers and average bills"
 - "[City/ZIP] median home price and market trends 2026"`;
 
