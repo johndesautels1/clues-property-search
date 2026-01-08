@@ -17,6 +17,8 @@ export interface LlmResponse {
   error?: string;
 }
 
+const PERPLEXITY_TIMEOUT = 60000; // 60 seconds timeout for Perplexity API calls
+
 /**
  * Call Perplexity API with web search capabilities
  * Used for micro-prompts (WalkScore, Schools, Crime, Climate, Utilities, ISP)
@@ -29,8 +31,12 @@ export async function callPerplexity(params: LlmCallParams): Promise<LlmResponse
     return { success: false, data: null, error: 'PERPLEXITY_API_KEY not set' };
   }
 
+  // Create AbortController for 60s timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), PERPLEXITY_TIMEOUT);
+
   try {
-    console.log('[Perplexity] Calling API...');
+    console.log('[Perplexity] Calling API (60s timeout)...');
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
@@ -46,7 +52,9 @@ export async function callPerplexity(params: LlmCallParams): Promise<LlmResponse
         temperature: params.temperature ?? 0.2,
         max_tokens: params.maxTokens ?? 32000,
       }),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     const data = await response.json();
 

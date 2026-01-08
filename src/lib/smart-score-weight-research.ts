@@ -11,6 +11,9 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 
+// Perplexity API timeout
+const PERPLEXITY_TIMEOUT = 60000; // 60s for Perplexity API calls
+
 // ================================================================
 // TYPE DEFINITIONS
 // ================================================================
@@ -364,6 +367,10 @@ Format as JSON:
   "reasoning": "explanation with data"
 }`;
 
+  // Create AbortController for 60s timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), PERPLEXITY_TIMEOUT);
+
   try {
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
@@ -386,8 +393,10 @@ Format as JSON:
         return_citations: true,
         temperature: 0.2,
         max_tokens: 32000
-      })
+      }),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       throw new Error(`Perplexity API error: ${response.status} ${response.statusText}`);

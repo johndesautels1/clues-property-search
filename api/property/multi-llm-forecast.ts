@@ -28,6 +28,7 @@ export const config = {
 
 // Timeout wrapper for LLM calls - prevents hanging
 const LLM_TIMEOUT = 180000; // 180s (3 min) - GPT-5.2-pro with reasoning needs 2-3 min
+const PERPLEXITY_TIMEOUT = 60000; // 60s for Perplexity API calls
 
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([
@@ -748,6 +749,10 @@ async function callPerplexityForecast(
 
   const userPrompt = buildForecastPrompt(address, price, neighborhood, propertyType);
 
+  // Create AbortController for 60s timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), PERPLEXITY_TIMEOUT);
+
   const response = await fetch('https://api.perplexity.ai/chat/completions', {
     method: 'POST',
     headers: {
@@ -765,7 +770,9 @@ async function callPerplexityForecast(
       temperature: 0.2,
       max_tokens: 32000,
     }),
+    signal: controller.signal,
   });
+  clearTimeout(timeoutId);
 
   if (!response.ok) {
     throw new Error(`Perplexity API error: ${response.statusText}`);
