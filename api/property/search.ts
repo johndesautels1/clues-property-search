@@ -4412,7 +4412,7 @@ async function callGrok(address: string): Promise<any> {
       body: JSON.stringify({
         model: 'grok-4', // Grok 4.0 for field completion
         max_tokens: 32000,
-        temperature: 0.2,
+        temperature: 0.1,
         messages: messages,
       }),
     });
@@ -4455,7 +4455,7 @@ async function callGrok(address: string): Promise<any> {
         body: JSON.stringify({
           model: 'grok-4', // Grok 4.0 for field completion
           max_tokens: 32000,
-          temperature: 0.2,
+          temperature: 0.1,
           messages: messages,
         }),
       });

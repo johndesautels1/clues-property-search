@@ -254,6 +254,8 @@ class PropertyScraper {
     const response = await this.grok.chat.completions.create({
       model: 'grok-4',
       messages: [{ role: 'user', content: prompt }],
+      max_tokens: 32000,
+      temperature: 0.1,
     });
 
     const cost = 0.005;
