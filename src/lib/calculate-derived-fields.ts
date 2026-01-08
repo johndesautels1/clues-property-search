@@ -77,6 +77,7 @@ function parseNumericValue(value: any): number {
 /**
  * Field 11: Price Per Square Foot
  * Formula: listing_price / living_sqft
+ * FIXED 2026-01-08: Exclude rental properties (monthly rent makes no sense as $/sqft)
  */
 export function calculatePricePerSqft(data: PropertyData): CalculationResult | null {
   // Parse inputs - handle both numbers and strings (e.g., "1250000" or "$1,250,000")
@@ -92,6 +93,13 @@ export function calculatePricePerSqft(data: PropertyData): CalculationResult | n
 
   if (isNaN(listingPrice) || isNaN(livingSqft) || livingSqft === 0) {
     console.log('[calculatePricePerSqft] ❌ FAILED - Missing or invalid inputs');
+    return null;
+  }
+
+  // RENTAL DETECTION: If listing price < $10,000, it's likely monthly rent, not sale price
+  // Example: $2,700 rent / 595 sqft = $5/sqft is MEANINGLESS for rentals
+  if (listingPrice < 10000) {
+    console.log('[calculatePricePerSqft] ⚠️ SKIPPED - Detected rental property (price < $10k)');
     return null;
   }
 

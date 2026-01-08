@@ -256,7 +256,8 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   addField('17_bedrooms', property.BedroomsTotal);
   addField('18_full_bathrooms', property.BathroomsFull);
   addField('19_half_bathrooms', property.BathroomsHalf);
-  addField('20_total_bathrooms', property.BathroomsTotalInteger);
+  // FIXED 2026-01-08: Use BathroomsTotalDecimal for precision (2.5 baths vs 2)
+  addField('20_total_bathrooms', property.BathroomsTotalDecimal);
   // Round to whole number - sqft should never have decimals
   addField('21_living_sqft', property.LivingArea ? Math.round(property.LivingArea) : undefined);
   addField('22_total_sqft_under_roof', property.BuildingAreaTotal ? Math.round(property.BuildingAreaTotal) : undefined);
