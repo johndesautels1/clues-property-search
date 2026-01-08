@@ -351,6 +351,21 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   '166_community_features': 'multiselect', 'community_features': 'multiselect',
   '167_interior_features': 'multiselect', 'interior_features': 'multiselect',
   '168_exterior_features': 'multiselect', 'exterior_features': 'multiselect',
+
+  // GROUP 23: Market Performance (Fields 169-181) - ADDED 2026-01-08
+  '169_zillow_views': 'number', 'zillow_views': 'number',
+  '170_redfin_views': 'number', 'redfin_views': 'number',
+  '171_homes_views': 'number', 'homes_views': 'number',
+  '172_realtor_views': 'number', 'realtor_views': 'number',
+  '173_listing_score': 'number', 'listing_score': 'number',
+  '174_saves_favorites': 'number', 'saves_favorites': 'number',
+  '175_market_type': 'select', 'market_type': 'select',
+  '176_avg_sale_to_list_percent': 'percentage', 'avg_sale_to_list_percent': 'percentage',
+  '177_avg_days_to_pending': 'number', 'avg_days_to_pending': 'number',
+  '178_multiple_offers_likelihood': 'select', 'multiple_offers_likelihood': 'select',
+  '179_appreciation_percent': 'percentage', 'appreciation_percent': 'percentage',
+  '180_price_trend': 'select', 'price_trend': 'select',
+  '181_rent_zestimate': 'currency', 'rent_zestimate': 'currency',
 };
 
 // ============================================
