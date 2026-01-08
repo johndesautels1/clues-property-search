@@ -56,7 +56,7 @@ const STELLAR_MLS_TIMEOUT = 15000; // 15 seconds for Stellar MLS via Bridge API 
 const FREE_API_TIMEOUT = 60000; // 60 seconds for free APIs (Tier 2) - reduced from 90s
 const TAVILY_TIMEOUT = 15000; // 15 seconds for Tavily web searches (Tier 3) - fast targeted searches
 const LLM_TIMEOUT = 180000; // 180 seconds (3 min) for Claude, GPT, Gemini, Grok (Tier 4-5) - GPT-5.2-pro with reasoning needs 2-3 min
-const PERPLEXITY_TIMEOUT = 60000; // 60 seconds for Perplexity deep web search (Tier 4 #1)
+const PERPLEXITY_TIMEOUT = 45000; // 45 seconds for Perplexity deep web search (Tier 4 #1)
 
 // ============================================
 // RATE LIMIT TRACKING - Skip LLMs only when 429 detected

@@ -12,7 +12,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 
 // Perplexity API timeout
-const PERPLEXITY_TIMEOUT = 60000; // 60s for Perplexity API calls
+const PERPLEXITY_TIMEOUT = 45000; // 45s for Perplexity API calls
 
 // ================================================================
 // TYPE DEFINITIONS

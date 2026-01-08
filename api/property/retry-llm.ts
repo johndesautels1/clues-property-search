@@ -107,7 +107,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
 }
 
 const LLM_TIMEOUT = 180000; // 180s (3 min) - GPT-5.2-pro with reasoning needs 2-3 min
-const PERPLEXITY_TIMEOUT = 60000; // 60s for Perplexity (reduced from 90s)
+const PERPLEXITY_TIMEOUT = 45000; // 45s for Perplexity
 
 // ============================================
 // COMPLETE TYPE MAP - ALL 181 FIELDS from fields-schema.ts

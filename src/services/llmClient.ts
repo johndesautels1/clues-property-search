@@ -17,7 +17,7 @@ export interface LlmResponse {
   error?: string;
 }
 
-const PERPLEXITY_TIMEOUT = 60000; // 60 seconds timeout for Perplexity API calls
+const PERPLEXITY_TIMEOUT = 45000; // 45 seconds timeout for Perplexity API calls
 
 /**
  * Call Perplexity API with web search capabilities
@@ -31,12 +31,12 @@ export async function callPerplexity(params: LlmCallParams): Promise<LlmResponse
     return { success: false, data: null, error: 'PERPLEXITY_API_KEY not set' };
   }
 
-  // Create AbortController for 60s timeout
+  // Create AbortController for 45s timeout
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), PERPLEXITY_TIMEOUT);
 
   try {
-    console.log('[Perplexity] Calling API (60s timeout)...');
+    console.log('[Perplexity] Calling API (45s timeout)...');
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {

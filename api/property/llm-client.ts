@@ -17,7 +17,7 @@ export interface LlmResponse {
   error?: string;
 }
 
-const PERPLEXITY_TIMEOUT = 60000; // 60 seconds timeout for Perplexity API calls
+const PERPLEXITY_TIMEOUT = 45000; // 45 seconds timeout for Perplexity API calls
 
 /**
  * Call Perplexity API with web search capabilities
@@ -36,7 +36,7 @@ export async function callPerplexity(params: LlmCallParams): Promise<LlmResponse
   const timeoutId = setTimeout(() => controller.abort(), PERPLEXITY_TIMEOUT);
 
   try {
-    console.log('[Perplexity] Calling API (60s timeout)...');
+    console.log('[Perplexity] Calling API (45s timeout)...');
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
