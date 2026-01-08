@@ -56,7 +56,7 @@ export const DATA_TIERS: Record<string, TierConfig> = {
   // TIER 4: LLM Cascade Order: Perplexity → Gemini → GPT → Sonnet → Grok
   'perplexity': { tier: 4, name: 'Perplexity Sonar Reasoning Pro', description: '#1 - Deep web search (HIGHEST LLM)', reliability: 90 },
   'gemini': { tier: 4, name: 'Gemini 3 Pro Preview', description: '#2 - Google Search grounding', reliability: 85 },
-  'gpt': { tier: 4, name: 'GPT-5.2 Pro', description: '#3 - Web evidence mode', reliability: 80 },
+  'gpt': { tier: 4, name: 'GPT-4o', description: '#3 - Web evidence mode', reliability: 80 },
   'claude-sonnet': { tier: 4, name: 'Claude Sonnet 4.5', description: '#4 - Web search beta (fills gaps)', reliability: 75 },
   'grok': { tier: 4, name: 'Grok 4.1 Fast', description: '#5 - X/Twitter real-time data', reliability: 70 },
   // TIER 5: Claude Opus (Deep reasoning, NO web search - LAST)

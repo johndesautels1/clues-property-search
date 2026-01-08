@@ -55,7 +55,7 @@ export const config = {
 const STELLAR_MLS_TIMEOUT = 15000; // 15 seconds for Stellar MLS via Bridge API (Tier 1) - typically responds in <10s
 const FREE_API_TIMEOUT = 60000; // 60 seconds for free APIs (Tier 2) - reduced from 90s
 const TAVILY_TIMEOUT = 15000; // 15 seconds for Tavily web searches (Tier 3) - fast targeted searches
-const LLM_TIMEOUT = 180000; // 180 seconds (3 min) for Claude, GPT, Gemini, Grok (Tier 4-5) - GPT-5.2-pro with reasoning needs 2-3 min
+const LLM_TIMEOUT = 180000; // 180 seconds (3 min) for Claude, GPT, Gemini, Grok (Tier 4-5) - GPT-4o with reasoning needs 2-3 min
 const PERPLEXITY_TIMEOUT = 45000; // 45 seconds for Perplexity deep web search (Tier 4 #1)
 
 // ============================================
@@ -3226,9 +3226,9 @@ RULES:
 ${JSON_RESPONSE_FORMAT}`;
 
 // ============================================
-// GPT-5.2-PRO FIELD COMPLETER - Web-Evidence Mode
+// GPT-4o FIELD COMPLETER - Web-Evidence Mode
 // ============================================
-const PROMPT_GPT_FIELD_COMPLETER = `You are CLUES Field Completer (GPT-5.2 Pro Web-Evidence Mode).
+const PROMPT_GPT_FIELD_COMPLETER = `You are CLUES Field Completer (GPT-4o Web-Evidence Mode).
 
 🟠 FIRING ORDER: You are the 3rd LLM in the search chain (after Perplexity and Gemini).
 You ONLY search for fields that Perplexity and Gemini did NOT find.
@@ -3338,12 +3338,12 @@ CONFIDENCE RUBRIC
 const PROMPT_GPT = PROMPT_GPT_FIELD_COMPLETER;
 
 // ============================================
-// GPT-5.2-PRO FIELD COMPLETER USER TEMPLATE
+// GPT-4o FIELD COMPLETER USER TEMPLATE
 // ============================================
 
 /**
  * GPT Field Completer User Template
- * Formats input for GPT-5.2-pro web-evidence field completion
+ * Formats input for GPT-4o web-evidence field completion
  */
 const GPT_FIELD_COMPLETER_USER_TEMPLATE = (params: {
   address: string;
@@ -3770,7 +3770,7 @@ Return structured JSON with proper field keys. Use null for unknown data.`;
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-5.2-pro',
+        model: 'gpt-4o',
         max_output_tokens: 32000,
         input: [
           { role: 'system', content: PROMPT_COPILOT },
@@ -3832,7 +3832,7 @@ Return structured JSON with proper field keys. Use null for unknown data.`;
   }
 }
 
-// OpenAI GPT-5.2-pro API call - Supports both legacy mode (address-only) and orchestrator mode (with input blobs)
+// OpenAI GPT-4o API call - Supports both legacy mode (address-only) and orchestrator mode (with input blobs)
 async function callGPT5(
   address: string,
   inputBlobs?: {
@@ -3866,7 +3866,7 @@ async function callGPT5(
     console.log(`[GPT] Calling API...`);
 
     const requestBody = {
-      model: 'gpt-5.2-pro',
+      model: 'gpt-4o',
       max_output_tokens: 32000,
       input: [
         { role: 'system', content: systemPrompt },
@@ -3900,7 +3900,7 @@ async function callGPT5(
     if (data.output) console.log(`[GPT] output type: ${typeof data.output}, isArray: ${Array.isArray(data.output)}, length: ${Array.isArray(data.output) ? data.output.length : 'N/A'}`);
     if (data.error) console.log(`[GPT] API error in response: ${JSON.stringify(data.error).substring(0, 300)}`);
 
-    // ⚠️ CRITICAL: Check for incomplete response (GPT-5.x reasoning models can hit max_output_tokens)
+    // ⚠️ CRITICAL: Check for incomplete response (GPT-4o reasoning models can hit max_output_tokens)
     // Per OpenAI docs: reasoning tokens count against output budget, causing incomplete responses
     if (data.status === 'incomplete') {
       const reason = data.incomplete_details?.reason || 'unknown';
@@ -3969,7 +3969,7 @@ async function callGPT5(
           'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: 'gpt-5.2-pro', // Unified model for tool results callback
+          model: 'gpt-4o', // Unified model for tool results callback
           max_tokens: 32000,
           temperature: 0.2,
           messages: messages,
@@ -4068,11 +4068,11 @@ async function callGPT5(
 }
 
 // ============================================
-// GPT-5.2 LLM-ONLY AUDITOR - Validates LLM-populated fields only
+// GPT-4o LLM-ONLY AUDITOR - Validates LLM-populated fields only
 // ============================================
 
 /**
- * Call GPT-5.2-pro LLM-Only Field Auditor
+ * Call GPT-4o LLM-Only Field Auditor
  * Validates ONLY fields populated by LLMs (Tier 4/5), skips API fields (Tier 1-3)
  */
 async function callGPT5FieldAuditor(
@@ -4109,7 +4109,7 @@ async function callGPT5FieldAuditor(
     console.log(`[GPT LLM Auditor] Auditing ${Object.keys(inputs.llmOnlyFields).length} LLM-populated fields`);
 
     const requestBody = {
-      model: 'gpt-5.2-pro',
+      model: 'gpt-4o',
       max_output_tokens: 32000,
       input: [
         { role: 'system', content: systemPrompt },
@@ -4229,7 +4229,7 @@ function extractLLMOnlyFields(
 }
 
 /**
- * Determines if LLM fields need GPT-5.2 audit
+ * Determines if LLM fields need GPT-4o audit
  * Feature flag + quality gates
  */
 function shouldAuditLLMFields(llmFieldCount: number, llmOnlyFields: Record<string, any>): boolean {

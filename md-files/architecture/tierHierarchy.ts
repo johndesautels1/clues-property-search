@@ -10,7 +10,7 @@
  * TIER 2: Google APIs (Geocode, Places, Distance, Street View)
  * TIER 3: Other Paid/Free APIs (WalkScore → EPA Radon)
  * TIER 4: Primary LLM Web Search (Perplexity + Gemini)
- * TIER 5: Secondary LLM Web Search (Grok, Claude Opus, GPT-5.2, Claude Sonnet)
+ * TIER 5: Secondary LLM Web Search (Grok, Claude Opus, GPT-4o, Claude Sonnet)
  * 
  * CRITICAL RULE: Lower tier CANNOT overwrite data filled by upper tier
  * 
@@ -19,7 +19,7 @@
  * 1. PERPLEXITY    (Tier 4) - Fires first
  * 2. GROK          (Tier 5)
  * 3. CLAUDE OPUS   (Tier 5)
- * 4. GPT-5.2       (Tier 5)
+ * 4. GPT-4o       (Tier 5)
  * 5. CLAUDE SONNET (Tier 5) - Tier 5 cleanup (catches missed fields)
  * 6. GEMINI        (Tier 4) - ABSOLUTE LAST - verification pass (can upgrade Tier 5 data)
  * 
@@ -260,7 +260,7 @@ export function getUnfilledFields(
 
 /**
  * Generates LLM firing queue based on remaining unfilled fields
- * Uses MASTER FIRING ORDER: Perplexity → Grok → Claude Opus → GPT-5.2 → Claude Sonnet → Gemini
+ * Uses MASTER FIRING ORDER: Perplexity → Grok → Claude Opus → GPT-4o → Claude Sonnet → Gemini
  */
 export function generateLLMFiringQueue(
   fieldStore: Record<string, FieldValue>,

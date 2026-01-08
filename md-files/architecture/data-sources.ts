@@ -265,7 +265,7 @@ export const DATA_SOURCES: DataSource[] = [
   },
   {
     id: 'gpt',
-    name: 'GPT-5.2',
+    name: 'GPT-4o',
     type: 'llm',
     tier: 5,
     icon: 'brain',

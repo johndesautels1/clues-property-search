@@ -215,7 +215,7 @@ class PropertyScraper {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error('GPT not configured - OPENAI_API_KEY missing');
 
-    // GPT-5.2-pro requires /v1/responses endpoint, not /v1/chat/completions
+    // GPT-4o requires /v1/responses endpoint, not /v1/chat/completions
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
@@ -223,7 +223,7 @@ class PropertyScraper {
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-5.2-pro',
+        model: 'gpt-4o',
         input: [
           {
             role: 'system',
@@ -240,7 +240,7 @@ class PropertyScraper {
 
     const data = await response.json();
 
-    // Estimate cost (GPT-5.2-pro pricing)
+    // Estimate cost (GPT-4o pricing)
     const cost = 0.02; // Flat estimate per call
     this.costs.gpt += cost;
     this.costs.total += cost;

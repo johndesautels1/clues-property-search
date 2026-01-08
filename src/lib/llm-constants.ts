@@ -34,7 +34,7 @@ export const LLM_DISPLAY_NAMES: Record<LLMEngine, string> = {
   'perplexity': 'Perplexity Sonar Reasoning Pro',
   'grok': 'Grok 4.1 Fast',
   'claude-opus': 'Claude Opus 4.5',
-  'gpt': 'GPT-5.2 Pro',
+  'gpt': 'GPT-4o',
   'claude-sonnet': 'Claude Sonnet 4.5',
   'gemini': 'Gemini 3 Pro Preview',
 };

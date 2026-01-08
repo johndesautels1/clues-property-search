@@ -106,7 +106,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
   ]);
 }
 
-const LLM_TIMEOUT = 180000; // 180s (3 min) - GPT-5.2-pro with reasoning needs 2-3 min
+const LLM_TIMEOUT = 180000; // 180s (3 min) - GPT-4o with reasoning needs 2-3 min
 const PERPLEXITY_TIMEOUT = 45000; // 45s for Perplexity
 
 // ============================================
@@ -1073,9 +1073,9 @@ Return null if you cannot find data. Return ONLY the JSON object.`;
 }
 
 // ============================================
-// GPT-5.2-PRO FIELD COMPLETER - Web-Evidence Mode (Retry)
+// GPT-4o FIELD COMPLETER - Web-Evidence Mode (Retry)
 // ============================================
-const GPT_RETRY_SYSTEM_PROMPT = `You are CLUES Field Completer (GPT-5.2 Pro Web-Evidence Mode).
+const GPT_RETRY_SYSTEM_PROMPT = `You are CLUES Field Completer (GPT-4o Web-Evidence Mode).
 
 MISSION
 Populate ONLY the requested field keys in missing_field_keys for a single property address, using live web search.
@@ -1199,7 +1199,7 @@ Return ONLY the JSON object described in the system prompt.`;
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-5.2-pro',
+        model: 'gpt-4o',
         max_output_tokens: 32000,
         input: [
           { role: 'system', content: GPT_RETRY_SYSTEM_PROMPT },

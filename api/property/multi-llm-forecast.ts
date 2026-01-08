@@ -4,7 +4,7 @@
  * Calls 6 different LLMs to get consensus on property market forecasts:
  * - Claude Sonnet 4.5: Fast, efficient analysis + pattern recognition
  * - Claude Opus 4.5: Deep reasoning + complex market modeling
- * - GPT-5.2 Pro: Market psychology + buyer behavior
+ * - GPT-4o: Market psychology + buyer behavior
  * - Gemini 3 Pro Preview: Google data integration + local trends
  * - Perplexity Sonar Reasoning Pro: LIVE web search for breaking news
  * - Grok 4.1 Fast Reasoning: X (Twitter) data + real-time social sentiment
@@ -27,7 +27,7 @@ export const config = {
 };
 
 // Timeout wrapper for LLM calls - prevents hanging
-const LLM_TIMEOUT = 180000; // 180s (3 min) - GPT-5.2-pro with reasoning needs 2-3 min
+const LLM_TIMEOUT = 180000; // 180s (3 min) - GPT-4o with reasoning needs 2-3 min
 const PERPLEXITY_TIMEOUT = 45000; // 45s for Perplexity API calls
 
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
@@ -66,7 +66,7 @@ export interface MarketForecast {
 
   // Sources
   llmForecasts: LLMForecast[];   // Individual forecasts
-  llmSources: string[];          // ['Claude Sonnet 4.5', 'Claude Opus 4.5', 'GPT-5.2 Pro', 'Gemini 3 Pro Preview', 'Perplexity Sonar Reasoning Pro', 'Grok 4.1 Fast Reasoning']
+  llmSources: string[];          // ['Claude Sonnet 4.5', 'Claude Opus 4.5', 'GPT-4o', 'Gemini 3 Pro Preview', 'Perplexity Sonar Reasoning Pro', 'Grok 4.1 Fast Reasoning']
 
   // Metadata
   timestamp: string;
@@ -260,10 +260,10 @@ Explicitly state which of the 3 Comps is the most statistically relevant "Superi
 }`;
 
 // ============================================
-// GPT-5.2 OLIVIA CMA ANALYST PROMPT
+// GPT-4o OLIVIA CMA ANALYST PROMPT
 // Matches Grok/Gemini protocol for 181-field schema analysis
 // ============================================
-const GPT_OLIVIA_CMA_SYSTEM_PROMPT = `You are Olivia, the CLUES Senior Investment Analyst (GPT-5.2 Web-Evidence Mode).
+const GPT_OLIVIA_CMA_SYSTEM_PROMPT = `You are Olivia, the CLUES Senior Investment Analyst (GPT-4o Web-Evidence Mode).
 Your MISSION is to perform a deep-dive Comparative Market Analysis (CMA) by evaluating a Subject Property against 3 Comparables across a 181-field data schema.
 
 ### HARD RULES
@@ -551,7 +551,7 @@ async function callClaudeOpusForecast(
 }
 
 /**
- * GPT-5.2-PRO (Olivia) - Market forecast with web search
+ * GPT-4o-PRO (Olivia) - Market forecast with web search
  */
 async function callGPT5Forecast(
   address: string,
@@ -574,7 +574,7 @@ async function callGPT5Forecast(
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'gpt-5.2-pro',
+      model: 'gpt-4o',
       max_output_tokens: 32000,
       input: [
         { role: 'system', content: GPT_OLIVIA_CMA_SYSTEM_PROMPT },
@@ -589,14 +589,14 @@ async function callGPT5Forecast(
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`GPT-5.2-pro forecast error: ${response.status} ${error}`);
+    throw new Error(`GPT-4o forecast error: ${response.status} ${error}`);
   }
 
   const responseData = await response.json();
   const text = responseData.output_text || responseData.choices?.[0]?.message?.content;
 
   if (!text) {
-    throw new Error('No content in GPT-5.2-pro response');
+    throw new Error('No content in GPT-4o response');
   }
 
   // CRASH FIX: Wrap JSON.parse in try-catch
@@ -609,7 +609,7 @@ async function callGPT5Forecast(
   const forecast = data.forecast || data;
 
   return {
-    source: 'GPT-5.2 Pro',
+    source: 'GPT-4o',
     appreciation1Yr: forecast.appreciation1Yr_pct ?? forecast.appreciation1Yr,
     appreciation5Yr: forecast.appreciation5Yr_cum_pct ?? forecast.appreciation5Yr,
     confidence: forecast.confidence_0_100 ?? forecast.confidence,
@@ -1260,7 +1260,7 @@ export async function getMultiLLMMarketForecast(
   // Extract successful forecasts
   const successfulForecasts: LLMForecast[] = [];
   forecasts.forEach((result, index) => {
-    const sources = ['Perplexity Sonar Reasoning Pro', 'Gemini 3 Pro Preview', 'GPT-5.2 Pro', 'Claude Sonnet 4.5', 'Grok 4.1 Fast Reasoning', 'Claude Opus 4.5'];
+    const sources = ['Perplexity Sonar Reasoning Pro', 'Gemini 3 Pro Preview', 'GPT-4o', 'Claude Sonnet 4.5', 'Grok 4.1 Fast Reasoning', 'Claude Opus 4.5'];
     if (result.status === 'fulfilled') {
       successfulForecasts.push(result.value);
       console.log(`✅ ${sources[index]}: ${result.value.appreciation1Yr.toFixed(1)}% (1yr)`);

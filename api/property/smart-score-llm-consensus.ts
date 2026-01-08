@@ -4,7 +4,7 @@
  * Implements 2-tier voting consensus model:
  * 1. Call Perplexity Sonar Reasoning Pro + Claude Opus 4.5 + Gemini 3 Pro Preview simultaneously
  * 2. If they agree (within 10 points), use consensus
- * 3. If they disagree, call GPT-5.2 Pro as tiebreaker
+ * 3. If they disagree, call GPT-4o as tiebreaker
  * 4. Return final LLM consensus scores for all 3 properties
  *
  * @module smart-score-llm-consensus
@@ -23,7 +23,7 @@ export const config = {
 };
 
 // Timeout wrapper for LLM calls - prevents hanging
-const LLM_TIMEOUT = 180000; // 180s (3 min) - GPT-5.2-pro with reasoning needs 2-3 min
+const LLM_TIMEOUT = 180000; // 180s (3 min) - GPT-4o with reasoning needs 2-3 min
 const PERPLEXITY_TIMEOUT = 45000; // 45s for Perplexity API calls
 
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
@@ -87,7 +87,7 @@ interface ConsensusResult {
     claudeOpus: number[];
     gemini: number[];
     tiebreaker?: {
-      model: 'gpt-5.2-pro' | 'grok';
+      model: 'gpt-4o' | 'grok';
       scores: number[];
     };
   };
@@ -363,7 +363,7 @@ Return ONLY the JSON described in the system prompt.`;
 const GPT_SMART_SCORE_SYSTEM_PROMPT = OLIVIA_SYSTEM_PROMPT;
 
 /**
- * Call GPT-5.2 Pro API (tiebreaker)
+ * Call GPT-4o API (tiebreaker)
  */
 
 async function callGPT5(prompt: string): Promise<LLMResponse> {
@@ -381,7 +381,7 @@ async function callGPT5(prompt: string): Promise<LLMResponse> {
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'gpt-5.2-pro',
+      model: 'gpt-4o',
       max_output_tokens: 32000,
       input: [
         { role: 'system', content: OLIVIA_SYSTEM_PROMPT },
@@ -396,7 +396,7 @@ async function callGPT5(prompt: string): Promise<LLMResponse> {
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`GPT-5.2 Pro API error: ${response.status} ${error}`);
+    throw new Error(`GPT-4o API error: ${response.status} ${error}`);
   }
 
   const data = await response.json();
@@ -404,7 +404,7 @@ async function callGPT5(prompt: string): Promise<LLMResponse> {
   const content = data.output_text || data.choices?.[0]?.message?.content;
 
   if (!content) {
-    throw new Error('GPT-5.2 Pro returned empty response');
+    throw new Error('GPT-4o returned empty response');
   }
 
   // CRASH FIX: Wrap JSON.parse in try-catch
@@ -835,18 +835,18 @@ async function calculateConsensus(
     };
   }
 
-  // STEP 4: Large disagreement - Call GPT-5.2 Pro as 4th voter for weighted consensus
-  console.log('[LLM Consensus] ⚠️ Large disagreement - calling GPT-5.2 Pro as 4th voter...');
+  // STEP 4: Large disagreement - Call GPT-4o as 4th voter for weighted consensus
+  console.log('[LLM Consensus] ⚠️ Large disagreement - calling GPT-4o as 4th voter...');
 
   let tiebreakerResult: LLMResponse;
-  let tiebreakerModel: 'gpt-5.2-pro' | 'grok';
+  let tiebreakerModel: 'gpt-4o' | 'grok';
 
   try {
     tiebreakerResult = await callGPT5(prompt);
-    tiebreakerModel = 'gpt-5.2-pro';
-    console.log('[LLM Consensus] 4th voter: gpt-5.2-pro');
+    tiebreakerModel = 'gpt-4o';
+    console.log('[LLM Consensus] 4th voter: gpt-4o');
   } catch (error) {
-    console.log('[LLM Consensus] GPT-5.2 Pro failed, trying Grok 4.1 Fast Reasoning...');
+    console.log('[LLM Consensus] GPT-4o failed, trying Grok 4.1 Fast Reasoning...');
     tiebreakerResult = await callGrok(prompt);
     tiebreakerModel = 'grok';
     console.log('[LLM Consensus] 4th voter: Grok');
