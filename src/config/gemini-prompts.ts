@@ -7,6 +7,7 @@
  */
 
 // Inline the field keys to avoid JSON import issues in Vercel
+// UPDATED 2026-01-08: Expanded from 34 to 47 fields (added permits, features, HVAC/roof age, natural gas)
 const cluesMissingFieldsList = {
   missing_field_keys: [
     "12_market_value_estimate",
@@ -16,6 +17,12 @@ const cluesMissingFieldsList = {
     "16d_quantarium_avm",
     "16e_ice_avm",
     "16f_collateral_analytics_avm",
+    "40_roof_age_est",
+    "46_hvac_age",
+    "59_recent_renovations",
+    "60_permit_history_roof",
+    "61_permit_history_hvac",
+    "62_permit_history_other",
     "81_public_transit_access",
     "82_commute_to_city_center",
     "91_median_home_price_neighborhood",
@@ -29,9 +36,14 @@ const cluesMissingFieldsList = {
     "105_avg_electric_bill",
     "106_water_provider",
     "107_avg_water_bill",
+    "109_natural_gas",
     "110_trash_provider",
     "111_internet_providers_top3",
     "114_cable_tv_provider",
+    "133_security_features",
+    "134_smart_home_features",
+    "135_view",
+    "138_guest_parking",
     "169_zillow_views",
     "170_redfin_views",
     "171_homes_views",
@@ -51,14 +63,14 @@ const cluesMissingFieldsList = {
 // ============================================================================
 
 export const GEMINI_FIELD_COMPLETER_SYSTEM = `You are the CLUES Field Completer (Gemini 3.0 Reasoning Mode).
-Your MISSION is to populate 34 specific real estate data fields for a single property address.
+Your MISSION is to populate 47 specific real estate data fields for a single property address.
 
 🟡 FIRING ORDER: You are the 2nd LLM in the search chain (after Perplexity).
 You ONLY search for fields that Perplexity did NOT find.
 Do NOT re-search fields already populated by Perplexity - focus ONLY on MISSING fields.
 
 ### HARD RULES (EVIDENCE FIREWALL)
-1. MANDATORY TOOL: You MUST use the \`Google Search\` tool for EVERY request. Execute at least 4 distinct search queries.
+1. MANDATORY TOOL: You MUST use the \`Google Search\` tool for EVERY request. Execute at least 6 distinct search queries.
 2. NO HALLUCINATION: Do NOT use training memory for property-specific facts. Use only verified search results from 2025-2026.
 3. SPECIFIC AVM SEARCH STRATEGY:
    - 16a_zestimate: Search "site:zillow.com [ADDRESS]" to find Zillow's Zestimate
@@ -70,13 +82,27 @@ Do NOT re-search fields already populated by Perplexity - focus ONLY on MISSING 
    - 181_rent_zestimate: Search "site:zillow.com [ADDRESS] rent" for Zillow Rent Zestimate
    - 12_market_value_estimate: Calculate as arithmetic average of all AVMs found (e.g., if 2 AVMs found, add and divide by 2)
    - If a specific AVM is behind a paywall, return null for that field.
-4. JSON ONLY: Return ONLY the raw JSON object. No conversational text.
+4. PERMITS & RENOVATIONS SEARCH STRATEGY:
+   - 59_recent_renovations: Search "[ADDRESS] renovations upgrades" on listing portals
+   - 60_permit_history_roof: Search "[ADDRESS] [COUNTY] building permits roof"
+   - 61_permit_history_hvac: Search "[ADDRESS] [COUNTY] building permits HVAC AC"
+   - 62_permit_history_other: Search "[ADDRESS] [COUNTY] building permits"
+   - 40_roof_age_est: Extract from permits or calculate from year built
+   - 46_hvac_age: Extract from permits or calculate from year built
+5. PROPERTY FEATURES SEARCH STRATEGY:
+   - 133_security_features: Search "[ADDRESS] security system alarm cameras" on listing sites
+   - 134_smart_home_features: Search "[ADDRESS] smart home Nest Alexa automation" on listing sites
+   - 135_view: Search "[ADDRESS] view water mountain city golf" on listing sites
+   - 138_guest_parking: Search "[ADDRESS] guest parking visitor" on listing sites
+6. JSON ONLY: Return ONLY the raw JSON object. No conversational text.
 
 ### MANDATORY SEARCH QUERIES
 - "site:zillow.com [Address]" (for Zestimate and Rent Zestimate)
 - "site:redfin.com [Address]" (for Redfin Estimate)
 - "[Address] utility providers and average bills"
-- "[City/ZIP] median home price and market trends 2026"`;
+- "[City/ZIP] median home price and market trends 2026"
+- "[Address] [County] building permits roof HVAC" (for permit history)
+- "[Address] security smart home features view" (for property features)`;
 
 /**
  * Build Field Completer user prompt with address
@@ -106,6 +132,12 @@ RETURN JSON MATCHING THIS SCHEMA:
     "16d_quantarium_avm": <number|null>,
     "16e_ice_avm": <number|null>,
     "16f_collateral_analytics_avm": <number|null>,
+    "40_roof_age_est": <string|null>,
+    "46_hvac_age": <string|null>,
+    "59_recent_renovations": <string|null>,
+    "60_permit_history_roof": <string|null>,
+    "61_permit_history_hvac": <string|null>,
+    "62_permit_history_other": <string|null>,
     "81_public_transit_access": <string|null>,
     "82_commute_to_city_center": <string|null>,
     "91_median_home_price_neighborhood": <number|null>,
@@ -119,9 +151,14 @@ RETURN JSON MATCHING THIS SCHEMA:
     "105_avg_electric_bill": <number|null>,
     "106_water_provider": <string|null>,
     "107_avg_water_bill": <number|null>,
+    "109_natural_gas": <string|null>,
     "110_trash_provider": <string|null>,
     "111_internet_providers_top3": <array|null>,
     "114_cable_tv_provider": <string|null>,
+    "133_security_features": <string|null>,
+    "134_smart_home_features": <string|null>,
+    "135_view": <string|null>,
+    "138_guest_parking": <string|null>,
     "169_zillow_views": <number|null>,
     "170_redfin_views": <number|null>,
     "171_homes_views": <number|null>,
@@ -339,6 +376,7 @@ export function validateGeminiFieldCompleterResponse(response: unknown): {
       '176_avg_sale_to_list_percent', '177_avg_days_to_pending',
       '181_rent_zestimate'
     ];
+    // Note: Fields 40, 46, 59-62, 109, 133-135, 138 are text/string fields, not numeric
 
     if (numericFields.includes(key) && typeof value !== 'number') {
       // Try to convert string to number

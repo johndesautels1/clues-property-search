@@ -20,16 +20,20 @@ import {
   isValidAddress
 } from '../../src/lib/safe-json-parse.js';
 // Inline JSON data to avoid Vercel import issues with `with { type: 'json' }` syntax
+// UPDATED 2026-01-08: Expanded from 34 to 47 fields (added permits, features, HVAC/roof age, natural gas)
 const missingFieldsList = {
   missing_field_keys: [
     "12_market_value_estimate", "16a_zestimate", "16b_redfin_estimate",
     "16c_first_american_avm", "16d_quantarium_avm", "16e_ice_avm", "16f_collateral_analytics_avm",
+    "40_roof_age_est", "46_hvac_age",
+    "59_recent_renovations", "60_permit_history_roof", "61_permit_history_hvac", "62_permit_history_other",
     "81_public_transit_access", "82_commute_to_city_center",
     "91_median_home_price_neighborhood", "92_price_per_sqft_recent_avg", "95_days_on_market_avg",
     "96_inventory_surplus", "97_insurance_est_annual", "98_rental_estimate_monthly",
     "103_comparable_sales", "104_electric_provider", "105_avg_electric_bill",
-    "106_water_provider", "107_avg_water_bill", "110_trash_provider",
+    "106_water_provider", "107_avg_water_bill", "109_natural_gas", "110_trash_provider",
     "111_internet_providers_top3", "114_cable_tv_provider",
+    "133_security_features", "134_smart_home_features", "135_view", "138_guest_parking",
     "169_zillow_views", "170_redfin_views", "171_homes_views", "172_realtor_views",
     "174_saves_favorites", "175_market_type", "176_avg_sale_to_list_percent",
     "177_avg_days_to_pending", "178_multiple_offers_likelihood", "180_price_trend", "181_rent_zestimate"
@@ -84,6 +88,25 @@ const missingFieldsRules = {
     "178_multiple_offers_likelihood": { type: "string", definition: "Likelihood of multiple offers: 'High' (>50% of listings), 'Medium' (25-50%), 'Low' (<25%)." },
     "180_price_trend": { type: "string", definition: "Price trend direction: 'Rising', 'Stable', or 'Declining' based on YoY median price change." },
     "181_rent_zestimate": { type: "number", definition: "Zillow's Rent Zestimate (estimated monthly rent) in USD. Search 'site:zillow.com [address] rent zestimate'." },
+
+    // Structure & Systems (ADDED 2026-01-08)
+    "40_roof_age_est": { type: "string", definition: "Estimated roof age (e.g., '5-10 years', 'New 2020'). Extract from permits or calculate from year built." },
+    "46_hvac_age": { type: "string", definition: "HVAC system age (e.g., '3 years', 'Replaced 2022'). Extract from permits or calculate from year built." },
+
+    // Permits & Renovations (ADDED 2026-01-08)
+    "59_recent_renovations": { type: "string", definition: "Recent renovations or upgrades (e.g., 'Kitchen remodel 2023, New flooring 2024'). Search listing portals." },
+    "60_permit_history_roof": { type: "string", definition: "Roof permit history from county building department (e.g., 'Roof replacement 2019'). Search '[ADDRESS] [COUNTY] building permits roof'." },
+    "61_permit_history_hvac": { type: "string", definition: "HVAC permit history from county building department (e.g., 'AC unit replacement 2021'). Search '[ADDRESS] [COUNTY] building permits HVAC'." },
+    "62_permit_history_other": { type: "string", definition: "Other significant permit history (additions, pool, electrical, plumbing). Search '[ADDRESS] [COUNTY] building permits'." },
+
+    // Utilities (ADDED 2026-01-08)
+    "109_natural_gas": { type: "string", definition: "Natural gas provider name or 'None' if all-electric. Search '[CITY] [STATE] natural gas provider'." },
+
+    // Property Features (ADDED 2026-01-08)
+    "133_security_features": { type: "string", definition: "Security system details (e.g., 'Ring doorbell, ADT alarm, cameras'). Search listing portals." },
+    "134_smart_home_features": { type: "string", definition: "Smart home technology (e.g., 'Nest thermostat, Alexa integration, smart locks'). Search listing portals." },
+    "135_view": { type: "string", definition: "Property view description (e.g., 'Water view', 'Mountain view', 'City skyline', 'Golf course'). Search listing portals." },
+    "138_guest_parking": { type: "string", definition: "Guest/visitor parking availability (e.g., 'Street parking', 'Visitor spots', 'None'). Search listing portals." },
 
     // Legacy fields (kept for backward compatibility)
     "120_flood_risk_level": { type: "string", definition: "FEMA flood zone designation or flood risk category." },
