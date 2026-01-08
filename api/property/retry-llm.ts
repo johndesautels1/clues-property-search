@@ -20,7 +20,7 @@ import {
   isValidAddress
 } from '../../src/lib/safe-json-parse.js';
 // Inline JSON data to avoid Vercel import issues with `with { type: 'json' }` syntax
-// UPDATED 2026-01-08: Expanded from 34 to 47 fields (added permits, features, HVAC/roof age, natural gas)
+// UPDATED 2026-01-09: 47 high-velocity fields for LLM field completion
 const missingFieldsList = {
   missing_field_keys: [
     "12_market_value_estimate", "16a_zestimate", "16b_redfin_estimate",
