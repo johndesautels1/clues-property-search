@@ -203,7 +203,12 @@ async function callPerplexity(prompt: string): Promise<LLMResponse> {
   const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || [null, content];
   const jsonStr = jsonMatch[1] || content;
 
-  return JSON.parse(jsonStr);
+  // CRASH FIX: Wrap JSON.parse in try-catch
+  try {
+    return JSON.parse(jsonStr);
+  } catch (parseError) {
+    throw new Error(`Failed to parse Perplexity JSON: ${parseError}`);
+  }
 }
 
 /**
@@ -252,7 +257,12 @@ async function callClaudeOpus(prompt: string): Promise<LLMResponse> {
   const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || [null, content];
   const jsonStr = jsonMatch[1] || content;
 
-  return JSON.parse(jsonStr);
+  // CRASH FIX: Wrap JSON.parse in try-catch
+  try {
+    return JSON.parse(jsonStr);
+  } catch (parseError) {
+    throw new Error(`Failed to parse Claude Opus JSON: ${parseError}`);
+  }
 }
 
 // ============================================
@@ -390,7 +400,12 @@ async function callGPT5(prompt: string): Promise<LLMResponse> {
     throw new Error('GPT-5.2 Pro returned empty response');
   }
 
-  return JSON.parse(content);
+  // CRASH FIX: Wrap JSON.parse in try-catch
+  try {
+    return JSON.parse(content);
+  } catch (parseError) {
+    throw new Error(`Failed to parse GPT JSON: ${parseError}`);
+  }
 }
 
 // ============================================
@@ -534,7 +549,14 @@ async function callGrok(prompt: string): Promise<LLMResponse> {
     const toolCalls = assistantMessage.tool_calls.slice(0, 3);
     for (const toolCall of toolCalls) {
       if (toolCall.function?.name === 'web_search') {
-        const args = JSON.parse(toolCall.function.arguments || '{}');
+        // CRASH FIX: Wrap JSON.parse in try-catch for tool call arguments
+        let args: any = {};
+        try {
+          args = JSON.parse(toolCall.function.arguments || '{}');
+        } catch (parseError) {
+          console.error('[Grok/Score] Failed to parse tool call arguments:', parseError);
+          continue;
+        }
         const searchResult = await callTavilySearchScore(args.query, args.num_results || 5);
 
         messages.push({
@@ -580,7 +602,12 @@ async function callGrok(prompt: string): Promise<LLMResponse> {
   const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || [null, content];
   const jsonStr = jsonMatch[1] || content;
 
-  return JSON.parse(jsonStr);
+  // CRASH FIX: Wrap JSON.parse in try-catch
+  try {
+    return JSON.parse(jsonStr);
+  } catch (parseError) {
+    throw new Error(`Failed to parse Grok JSON: ${parseError}`);
+  }
 }
 
 // ============================================

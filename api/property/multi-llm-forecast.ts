@@ -473,7 +473,13 @@ async function callClaudeForecast(
     throw new Error('No JSON found in Claude response');
   }
 
-  const data = JSON.parse(jsonMatch[0]);
+  // CRASH FIX: Wrap JSON.parse in try-catch
+  let data: any;
+  try {
+    data = JSON.parse(jsonMatch[0]);
+  } catch (parseError) {
+    throw new Error(`Failed to parse Claude Sonnet JSON: ${parseError}`);
+  }
 
   return {
     source: 'Claude Sonnet 4.5',
@@ -525,7 +531,13 @@ async function callClaudeOpusForecast(
     throw new Error('No JSON found in Claude Opus response');
   }
 
-  const data = JSON.parse(jsonMatch[0]);
+  // CRASH FIX: Wrap JSON.parse in try-catch
+  let data: any;
+  try {
+    data = JSON.parse(jsonMatch[0]);
+  } catch (parseError) {
+    throw new Error(`Failed to parse Claude Opus JSON: ${parseError}`);
+  }
 
   return {
     source: 'Claude Opus 4.5',
@@ -586,7 +598,13 @@ async function callGPT5Forecast(
     throw new Error('No content in GPT-5.2-pro response');
   }
 
-  const data = JSON.parse(text);
+  // CRASH FIX: Wrap JSON.parse in try-catch
+  let data: any;
+  try {
+    data = JSON.parse(text);
+  } catch (parseError) {
+    throw new Error(`Failed to parse GPT JSON: ${parseError}`);
+  }
   const forecast = data.forecast || data;
 
   return {
@@ -766,7 +784,13 @@ async function callPerplexityForecast(
     throw new Error('No JSON found in Perplexity response');
   }
 
-  const data = JSON.parse(jsonMatch[0]);
+  // CRASH FIX: Wrap JSON.parse in try-catch
+  let data: any;
+  try {
+    data = JSON.parse(jsonMatch[0]);
+  } catch (parseError) {
+    throw new Error(`Failed to parse Perplexity JSON: ${parseError}`);
+  }
 
   return {
     source: 'Perplexity Sonar Reasoning Pro',
@@ -1062,7 +1086,14 @@ async function callGrokForecast(
     const toolCalls = assistantMessage.tool_calls.slice(0, 3);
     for (const toolCall of toolCalls) {
       if (toolCall.function?.name === 'web_search') {
-        const args = JSON.parse(toolCall.function.arguments || '{}');
+        // CRASH FIX: Wrap JSON.parse in try-catch for tool call arguments
+        let args: any = {};
+        try {
+          args = JSON.parse(toolCall.function.arguments || '{}');
+        } catch (parseError) {
+          console.error('[Grok/Forecast] Failed to parse tool call arguments:', parseError);
+          continue;
+        }
         const searchResult = await callTavilySearchForecast(args.query, args.num_results || 5);
 
         messages.push({
@@ -1109,7 +1140,13 @@ async function callGrokForecast(
     throw new Error('No JSON found in Grok response');
   }
 
-  const parsed = JSON.parse(jsonMatch[0]);
+  // CRASH FIX: Wrap JSON.parse in try-catch
+  let parsed: any;
+  try {
+    parsed = JSON.parse(jsonMatch[0]);
+  } catch (parseError) {
+    throw new Error(`Failed to parse Grok JSON: ${parseError}`);
+  }
   // Grok may return { data_fields: {...} } or { fields: {...} } or flat fields
   const data = parsed.data_fields || parsed.fields || parsed;
   console.log(`[Grok/Forecast] Parsed structure: ${parsed.data_fields ? 'data_fields' : parsed.fields ? 'fields' : 'flat'}`);

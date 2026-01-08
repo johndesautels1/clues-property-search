@@ -909,7 +909,14 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
       const toolCalls = assistantMessage.tool_calls.slice(0, 3);
       for (const toolCall of toolCalls) {
         if (toolCall.function?.name === 'web_search') {
-          const args = JSON.parse(toolCall.function.arguments || '{}');
+          // CRASH FIX: Wrap JSON.parse in try-catch for tool call arguments
+          let args: any = {};
+          try {
+            args = JSON.parse(toolCall.function.arguments || '{}');
+          } catch (parseError) {
+            console.error('[GROK] Failed to parse tool call arguments:', parseError);
+            continue; // Skip this tool call
+          }
           const searchResult = await callTavilySearch(args.query, args.num_results || 5);
 
           messages.push({
