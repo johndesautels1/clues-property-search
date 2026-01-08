@@ -373,8 +373,8 @@ async function callGPT5(prompt: string): Promise<LLMResponse> {
     throw new Error('OPENAI_API_KEY not configured');
   }
 
-  // Use OpenAI Responses API with web search for market context
-  const response = await fetch('https://api.openai.com/v1/responses', {
+  // Use OpenAI Chat Completions API (fixed from /v1/responses)
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -382,15 +382,13 @@ async function callGPT5(prompt: string): Promise<LLMResponse> {
     },
     body: JSON.stringify({
       model: 'gpt-4o',
-      max_output_tokens: 32000,
-      input: [
+      max_tokens: 16000,
+      messages: [
         { role: 'system', content: OLIVIA_SYSTEM_PROMPT },
         { role: 'user', content: prompt },
       ],
-      reasoning: { effort: 'low' },
-      tools: [{ type: 'web_search' }],
-      tool_choice: 'auto',
-      include: ['web_search_call.action.sources'],
+      temperature: 0.2,
+      response_format: { type: 'json_object' },
     }),
   });
 
@@ -400,8 +398,8 @@ async function callGPT5(prompt: string): Promise<LLMResponse> {
   }
 
   const data = await response.json();
-  // Handle Responses API format (output_text) or Chat Completions format (choices)
-  const content = data.output_text || data.choices?.[0]?.message?.content;
+  // Handle Chat Completions format
+  const content = data.choices?.[0]?.message?.content;
 
   if (!content) {
     throw new Error('GPT-4o returned empty response');

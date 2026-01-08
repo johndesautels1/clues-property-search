@@ -215,8 +215,8 @@ class PropertyScraper {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error('GPT not configured - OPENAI_API_KEY missing');
 
-    // GPT-4o requires /v1/responses endpoint, not /v1/chat/completions
-    const response = await fetch('https://api.openai.com/v1/responses', {
+    // Use OpenAI Chat Completions API (fixed from /v1/responses)
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -224,17 +224,16 @@ class PropertyScraper {
       },
       body: JSON.stringify({
         model: 'gpt-4o',
-        input: [
+        max_tokens: 16000,
+        messages: [
           {
             role: 'system',
             content: 'You are a real estate data extraction API. Return ONLY valid JSON.',
           },
           { role: 'user', content: prompt },
         ],
-        reasoning: { effort: 'low' },
-        tools: [{ type: 'web_search' }],
-        tool_choice: 'auto',
-        include: ['web_search_call.action.sources'],
+        temperature: 0.2,
+        response_format: { type: 'json_object' },
       }),
     });
 
@@ -245,7 +244,7 @@ class PropertyScraper {
     this.costs.gpt += cost;
     this.costs.total += cost;
 
-    const text = data.output_text || data.choices?.[0]?.message?.content;
+    const text = data.choices?.[0]?.message?.content;
     return this.parseResponse(text);
   }
 

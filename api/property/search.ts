@@ -33,7 +33,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GEMINI_FIELD_COMPLETER_SYSTEM } from '../../src/config/gemini-prompts.js';
+import { GEMINI_FIELD_COMPLETER_SYSTEM, buildGeminiFieldCompleterUserPrompt } from '../../src/config/gemini-prompts.js';
 import {
   buildPromptA,
   buildPromptB,
@@ -3831,7 +3831,8 @@ async function callCopilot(address: string): Promise<any> {
 Return structured JSON with proper field keys. Use null for unknown data.`;
 
   try {
-    const response = await fetch('https://api.openai.com/v1/responses', {
+    // Use OpenAI Chat Completions API (fixed from /v1/responses)
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -3839,27 +3840,30 @@ Return structured JSON with proper field keys. Use null for unknown data.`;
       },
       body: JSON.stringify({
         model: 'gpt-4o',
-        max_output_tokens: 32000,
-        input: [
+        max_tokens: 16000,
+        messages: [
           { role: 'system', content: PROMPT_COPILOT },
           { role: 'user', content: userPrompt },
         ],
-        reasoning: { effort: 'low' },
-        tools: [{ type: 'web_search' }],
-        tool_choice: 'auto',
-        include: ['web_search_call.action.sources'],
+        temperature: 0.2,
+        response_format: { type: 'json_object' },
       }),
     });
 
     const data = await response.json();
+    console.log('[Copilot GPT] Status:', response.status);
 
     let text: string | undefined;
 
-    // Method 1: Direct output_text
-    if (data.output_text) {
+    // Handle Chat Completions format
+    if (data.choices?.[0]?.message?.content) {
+      text = data.choices[0].message.content;
+    }
+    // Fallback: Direct output_text (legacy)
+    else if (data.output_text) {
       text = data.output_text;
     }
-    // Method 2: Parse output array for message item
+    // Fallback: Parse output array for message item (legacy)
     else if (Array.isArray(data.output)) {
       const webSearchCalls = data.output.filter((o: any) => o.type === 'web_search_call');
       if (webSearchCalls.length > 0) {
@@ -3933,20 +3937,19 @@ async function callGPT5(
 
     console.log(`[GPT] Calling API...`);
 
+    // Use OpenAI Chat Completions API (fixed from /v1/responses)
     const requestBody = {
       model: 'gpt-4o',
-      max_output_tokens: 32000,
-      input: [
+      max_tokens: 16000,
+      messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      reasoning: { effort: 'low' },
-      tools: [{ type: 'web_search' }],
-      tool_choice: 'auto',
-      include: ['web_search_call.action.sources'],
+      temperature: 0.2,
+      response_format: { type: 'json_object' },
     };
 
-    const response = await fetch('https://api.openai.com/v1/responses', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -3964,33 +3967,8 @@ async function callGPT5(
     let data = await response.json();
 
     // DEBUG: Log full response structure to diagnose issues
-    console.log(`[GPT] Response keys: ${Object.keys(data).join(', ')}`);
-    if (data.output) console.log(`[GPT] output type: ${typeof data.output}, isArray: ${Array.isArray(data.output)}, length: ${Array.isArray(data.output) ? data.output.length : 'N/A'}`);
+    console.log(`[GPT] Response status: ${response.status}`);
     if (data.error) console.log(`[GPT] API error in response: ${JSON.stringify(data.error).substring(0, 300)}`);
-
-    // ⚠️ CRITICAL: Check for incomplete response (GPT-4o reasoning models can hit max_output_tokens)
-    // Per OpenAI docs: reasoning tokens count against output budget, causing incomplete responses
-    if (data.status === 'incomplete') {
-      const reason = data.incomplete_details?.reason || 'unknown';
-      const reasoningTokens = data.usage?.output_tokens_details?.reasoning_tokens || 0;
-      const totalOutputTokens = data.usage?.output_tokens || 0;
-
-      console.error(`⚠️ [GPT] INCOMPLETE RESPONSE detected!`);
-      console.error(`   Reason: ${reason}`);
-      console.error(`   Reasoning tokens used: ${reasoningTokens}`);
-      console.error(`   Total output tokens: ${totalOutputTokens} / ${requestBody.max_output_tokens}`);
-
-      if (reason === 'max_output_tokens') {
-        console.error(`   💡 Fix: Increase max_output_tokens OR lower reasoning.effort to 'low'`);
-      }
-
-      return {
-        error: `GPT response incomplete: ${reason} (reasoning tokens: ${reasoningTokens}, total output: ${totalOutputTokens})`,
-        fields: {},
-        llm: 'GPT',
-        incomplete: true
-      };
-    }
 
     // Log successful completion with token usage
     if (data.status === 'completed' && data.usage) {
@@ -4176,20 +4154,19 @@ async function callGPT5FieldAuditor(
 
     console.log(`[GPT LLM Auditor] Auditing ${Object.keys(inputs.llmOnlyFields).length} LLM-populated fields`);
 
+    // Use OpenAI Chat Completions API (fixed from /v1/responses)
     const requestBody = {
       model: 'gpt-4o',
-      max_output_tokens: 32000,
-      input: [
+      max_tokens: 16000,
+      messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      reasoning: { effort: 'low' },
-      tools: [{ type: 'web_search' }],
-      tool_choice: 'auto',
-      include: ['web_search_call.action.sources'],
+      temperature: 0.2,
+      response_format: { type: 'json_object' },
     };
 
-    const response = await fetch('https://api.openai.com/v1/responses', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -4209,29 +4186,8 @@ async function callGPT5FieldAuditor(
 
     const data = await response.json();
 
-    // ⚠️ CRITICAL: Check for incomplete response
-    if (data.status === 'incomplete') {
-      const reason = data.incomplete_details?.reason || 'unknown';
-      const reasoningTokens = data.usage?.output_tokens_details?.reasoning_tokens || 0;
-      const totalOutputTokens = data.usage?.output_tokens || 0;
-
-      console.error(`⚠️ [GPT LLM Auditor] INCOMPLETE RESPONSE detected!`);
-      console.error(`   Reason: ${reason}`);
-      console.error(`   Reasoning tokens used: ${reasoningTokens}`);
-      console.error(`   Total output tokens: ${totalOutputTokens} / ${requestBody.max_output_tokens}`);
-
-      return {
-        fields: inputs.llmOnlyFields,
-        fields_audited: 0,
-        fields_corrected: 0,
-        fields_nulled: 0,
-        error: `Incomplete response: ${reason}`,
-        incomplete: true
-      };
-    }
-
     // Log successful completion
-    if (data.status === 'completed' && data.usage) {
+    if (data.usage) {
       const reasoningTokens = data.usage.output_tokens_details?.reasoning_tokens || 0;
       const outputTokens = data.usage.output_tokens || 0;
       console.log(`✅ [GPT LLM Auditor] Response completed - reasoning: ${reasoningTokens} tokens, output: ${outputTokens} tokens`);
@@ -4555,6 +4511,15 @@ async function callGemini(address: string): Promise<any> {
 
   const startTime = Date.now();
 
+  // Extract city/zip from address for context
+  const addressParts = address.split(',').map(s => s.trim());
+  const city = addressParts.length > 1 ? addressParts[1] : undefined;
+  const zipMatch = address.match(/\b(\d{5})\b/);
+  const zip = zipMatch ? zipMatch[1] : undefined;
+
+  // Build user prompt with COMPLETE FIELD SCHEMA to prevent hallucination
+  const userPrompt = buildGeminiFieldCompleterUserPrompt({ address, city, zip });
+
   try {
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=${apiKey}`,
@@ -4568,21 +4533,10 @@ async function callGemini(address: string): Promise<any> {
           system_instruction: {
             parts: [{ text: PROMPT_GEMINI }]
           },
-          // USER CONTENT: Only the task/address
+          // USER CONTENT: Full schema prompt to prevent field hallucination
           contents: [
             {
-              parts: [
-                {
-                  text: `Extract property data fields for this address: ${address}
-
-Execute these searches:
-1. "${address} Zillow listing and Zestimate"
-2. "${address} Redfin Estimate and market data"
-3. "${address} utility providers and average bills"
-
-Return JSON only with the 34 field keys specified in the schema.`,
-                },
-              ],
+              parts: [{ text: userPrompt }],
             },
           ],
           // Enable Google Search (Gemini 3 Pro Preview - 2026 API format)

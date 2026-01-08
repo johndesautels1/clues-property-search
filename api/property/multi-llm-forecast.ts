@@ -566,8 +566,8 @@ async function callGPT5Forecast(
 
   const prompt = buildForecastPrompt(address, price, neighborhood, propertyType);
 
-  // Use OpenAI Responses API with web search for market context
-  const response = await fetch('https://api.openai.com/v1/responses', {
+  // Use OpenAI Chat Completions API (fixed from /v1/responses)
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -575,15 +575,13 @@ async function callGPT5Forecast(
     },
     body: JSON.stringify({
       model: 'gpt-4o',
-      max_output_tokens: 32000,
-      input: [
+      max_tokens: 16000,
+      messages: [
         { role: 'system', content: GPT_OLIVIA_CMA_SYSTEM_PROMPT },
         { role: 'user', content: prompt },
       ],
-      reasoning: { effort: 'low' },
-      tools: [{ type: 'web_search' }],
-      tool_choice: 'required', // Always use web search for forecasts
-      include: ['web_search_call.action.sources'],
+      temperature: 0.2,
+      response_format: { type: 'json_object' },
     }),
   });
 
@@ -593,7 +591,7 @@ async function callGPT5Forecast(
   }
 
   const responseData = await response.json();
-  const text = responseData.output_text || responseData.choices?.[0]?.message?.content;
+  const text = responseData.choices?.[0]?.message?.content;
 
   if (!text) {
     throw new Error('No content in GPT-4o response');
