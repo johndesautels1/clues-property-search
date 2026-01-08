@@ -350,6 +350,93 @@ function isHallucinatedFieldKey(value: any): boolean {
   return false;
 }
 
+// ============================================
+// FILTER NULL VALUES - UNIFIED FIELD VALIDATION
+// Copied from search.ts to ensure UNIFORM rules across codebase
+// ============================================
+function filterNullValues(parsed: any, llmName: string): Record<string, any> {
+  const fields: Record<string, any> = {};
+  let nullsBlocked = 0;
+  let fieldsAccepted = 0;
+  let typesCoerced = 0;
+
+  // Handle case where parsed has a 'fields' property
+  const dataToProcess = parsed.fields || parsed;
+
+  for (const [key, val] of Object.entries(dataToProcess)) {
+    // Skip metadata fields
+    if (['llm', 'error', 'sources_searched', 'fields_found', 'fields_missing', 'note', 'status', 'message', 'success', 'citations'].includes(key)) {
+      continue;
+    }
+
+    // BLOCK 1: Skip if val is directly null/undefined
+    if (val === null || val === undefined) {
+      nullsBlocked++;
+      continue;
+    }
+
+    // Extract the actual value (handle both {value: x} objects and direct values)
+    let rawValue: any;
+    let source: string = llmName;
+    let confidence: string = 'Medium';
+
+    if (typeof val === 'object' && val !== null) {
+      rawValue = (val as any).value;
+      source = (val as any).source || llmName;
+      confidence = (val as any).confidence || 'Medium';
+    } else {
+      rawValue = val;
+    }
+
+    // BLOCK 2: Skip null-like values
+    if (rawValue === null || rawValue === undefined || rawValue === '' ||
+        rawValue === 'null' || rawValue === 'N/A' || rawValue === 'Not found' ||
+        rawValue === 'Unknown' || rawValue === 'not available' ||
+        (typeof rawValue === 'string' && rawValue.toLowerCase() === 'none')) {
+      nullsBlocked++;
+      continue;
+    }
+
+    // TYPE COERCION: Validate and coerce value to expected type
+    const originalValue = rawValue;
+    let coercedValue = coerceValue(key, rawValue);
+
+    // If coercion returned null, the value was invalid for expected type
+    if (coercedValue === null) {
+      nullsBlocked++;
+      continue;
+    }
+
+    // UTILITY BILL NORMALIZATION: Convert bi-monthly to monthly
+    const utilityNormalized = normalizeUtilityBillToMonthly(key, coercedValue);
+    if (utilityNormalized) {
+      coercedValue = utilityNormalized.value;
+    }
+
+    // Track if type was coerced
+    if (coercedValue !== originalValue) {
+      typesCoerced++;
+    }
+
+    // BLOCK 3: Skip NaN numbers
+    if (typeof coercedValue === 'number' && isNaN(coercedValue)) {
+      nullsBlocked++;
+      continue;
+    }
+
+    // ACCEPT: Valid, type-coerced value
+    fields[key] = {
+      value: coercedValue,
+      source: source,
+      confidence: confidence
+    };
+    fieldsAccepted++;
+  }
+
+  console.log(`🛡️ ${llmName}: ${fieldsAccepted} fields ACCEPTED, ${nullsBlocked} nulls BLOCKED, ${typesCoerced} types COERCED`);
+  return fields;
+}
+
 function coerceValue(key: string, value: any): any {
   // CRITICAL: Reject hallucinated field keys as values
   if (isHallucinatedFieldKey(value)) {
@@ -866,20 +953,8 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
         // Grok may return { data_fields: {...} } or { fields: {...} } or flat fields
         const fieldsToProcess = parsed.data_fields || parsed.fields || parsed;
         console.log(`[GROK] Parsed structure: ${parsed.data_fields ? 'data_fields' : parsed.fields ? 'fields' : 'flat'}, keys: ${Object.keys(fieldsToProcess).length}`);
-
-        const fields: Record<string, any> = {};
-        for (const [key, value] of Object.entries(fieldsToProcess)) {
-          if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
-            let coerced = coerceValue(key, value);
-            if (coerced !== null) {
-              // UTILITY BILL NORMALIZATION: Convert bi-monthly to monthly
-              const utilityNormalized = normalizeUtilityBillToMonthly(key, coerced);
-              if (utilityNormalized) coerced = utilityNormalized.value;
-              fields[key] = { value: coerced, source: 'Grok', confidence: 'Medium' };
-            }
-          }
-        }
-        console.log('[GROK] Fields found:', Object.keys(fields).length);
+        // Use unified filterNullValues() for consistent field validation
+        const fields = filterNullValues(fieldsToProcess, 'Grok');
         return { fields };
       } else {
         console.log('[GROK] JSON extraction failed:', parseResult.error);
@@ -954,30 +1029,11 @@ Return null if you cannot find data. Return ONLY the JSON object.`;
 
       if (parseResult.success && parseResult.data) {
         const parsed = parseResult.data;
-        const fields: Record<string, any> = {};
         // FIX: Handle nested { data_fields: {...} }, { fields: {...} }, or flat format
         const fieldsToProcess = parsed.data_fields || parsed.fields || parsed;
         console.log(`[CLAUDE OPUS] Parsed structure: ${parsed.data_fields ? 'data_fields' : parsed.fields ? 'fields' : 'flat'}, keys: ${Object.keys(fieldsToProcess).length}`);
-        for (const [key, value] of Object.entries(fieldsToProcess)) {
-          const strVal = String(value).toLowerCase().trim();
-          const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'unknown' || strVal === 'not available' || strVal === 'none';
-          if (!isBadValue) {
-            const rawValue = (value as any)?.value !== undefined ? (value as any).value : value;
-            // TYPE COERCION: Validate and coerce value to expected type
-            let coerced = coerceValue(key, rawValue);
-            if (coerced !== null) {
-              // UTILITY BILL NORMALIZATION: Convert bi-monthly to monthly
-              const utilityNormalized = normalizeUtilityBillToMonthly(key, coerced);
-              if (utilityNormalized) coerced = utilityNormalized.value;
-              fields[key] = {
-                value: coerced,
-                source: 'Claude Opus',
-                confidence: 'Low'
-              };
-            }
-          }
-        }
-        console.log('[CLAUDE OPUS] Fields found:', Object.keys(fields).length);
+        // Use unified filterNullValues() for consistent field validation
+        const fields = filterNullValues(fieldsToProcess, 'Claude Opus');
         return { fields };
       } else {
         console.log('[CLAUDE OPUS] JSON extraction failed:', parseResult.error);
@@ -1144,39 +1200,11 @@ Return ONLY the JSON object described in the system prompt.`;
 
       if (parseResult.success && parseResult.data) {
         const parsed = parseResult.data;
-        const fields: Record<string, any> = {};
-
         // FIX: Handle nested { data_fields: {...} }, { fields: {...} }, or flat format
         const fieldsToProcess = parsed.data_fields || parsed.fields || parsed;
         console.log(`[GPT] Parsed structure: ${parsed.data_fields ? 'data_fields' : parsed.fields ? 'fields' : 'flat'}, keys: ${Object.keys(fieldsToProcess).length}`);
-
-        // Handle new evidence-based format (if fields were wrapped in data_fields or fields)
-        if (parsed.data_fields || parsed.fields) {
-          for (const [key, fieldData] of Object.entries(fieldsToProcess as Record<string, any>)) {
-            if (fieldData?.value !== null && fieldData?.value !== undefined) {
-              fields[key] = {
-                value: fieldData.value,
-                source: 'GPT (Web Evidence)',
-                confidence: fieldData.confidence || 'Low',
-                evidence: fieldData.evidence || []
-              };
-            }
-          }
-        } else {
-          // Legacy format fallback (flat structure)
-          for (const [key, value] of Object.entries(fieldsToProcess)) {
-            if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
-              let coerced = coerceValue(key, value);
-              if (coerced !== null) {
-                // UTILITY BILL NORMALIZATION: Convert bi-monthly to monthly
-                const utilityNormalized = normalizeUtilityBillToMonthly(key, coerced);
-                if (utilityNormalized) coerced = utilityNormalized.value;
-                fields[key] = { value: coerced, source: 'GPT', confidence: 'Low' };
-              }
-            }
-          }
-        }
-        console.log('[GPT] Fields found:', Object.keys(fields).length);
+        // Use unified filterNullValues() for consistent field validation
+        const fields = filterNullValues(fieldsToProcess, 'GPT');
         return { fields };
       } else {
         console.log('[GPT] JSON extraction failed:', parseResult.error);
@@ -1310,30 +1338,11 @@ Return ONLY the JSON object. Use null only for fields you truly cannot find.`;
 
         if (parseResult.success && parseResult.data) {
           const parsed = parseResult.data;
-          const fields: Record<string, any> = {};
           // FIX: Handle nested { data_fields: {...} }, { fields: {...} }, or flat format
           const fieldsToProcess = parsed.data_fields || parsed.fields || parsed;
           console.log(`[CLAUDE SONNET] Parsed structure: ${parsed.data_fields ? 'data_fields' : parsed.fields ? 'fields' : 'flat'}, keys: ${Object.keys(fieldsToProcess).length}`);
-          for (const [key, value] of Object.entries(fieldsToProcess)) {
-            const strVal = String(value).toLowerCase().trim();
-            const isBadValue = strVal === '' || strVal === 'null' || strVal === 'undefined' || strVal === 'n/a' || strVal === 'na' || strVal === 'unknown' || strVal === 'not available' || strVal === 'none';
-            if (!isBadValue) {
-              const rawValue = (value as any)?.value !== undefined ? (value as any).value : value;
-              // TYPE COERCION: Validate and coerce value to expected type
-              let coerced = coerceValue(key, rawValue);
-              if (coerced !== null) {
-                // UTILITY BILL NORMALIZATION: Convert bi-monthly to monthly
-                const utilityNormalized = normalizeUtilityBillToMonthly(key, coerced);
-                if (utilityNormalized) coerced = utilityNormalized.value;
-                fields[key] = {
-                  value: coerced,
-                  source: 'Claude Sonnet',
-                  confidence: 'Low'
-                };
-              }
-            }
-          }
-          console.log('[CLAUDE SONNET] Fields found:', Object.keys(fields).length);
+          // Use unified filterNullValues() for consistent field validation
+          const fields = filterNullValues(fieldsToProcess, 'Claude Sonnet');
           return { fields };
         } else {
           console.log('[CLAUDE SONNET] JSON extraction failed:', parseResult.error);
@@ -1430,23 +1439,11 @@ async function callGemini(address: string): Promise<{ fields: Record<string, any
 
       if (parseResult.success && parseResult.data) {
         const parsed = parseResult.data;
-        const fields: Record<string, any> = {};
         // FIX: Handle nested { data_fields: {...} }, { fields: {...} }, or flat format
         const fieldsToProcess = parsed.data_fields || parsed.fields || parsed;
         console.log(`[GEMINI] Parsed structure: ${parsed.data_fields ? 'data_fields' : parsed.fields ? 'fields' : 'flat'}, keys: ${Object.keys(fieldsToProcess).length}`);
-        for (const [key, value] of Object.entries(fieldsToProcess)) {
-          if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
-            // TYPE COERCION: Validate and coerce value to expected type
-            let coerced = coerceValue(key, value);
-            if (coerced !== null) {
-              // UTILITY BILL NORMALIZATION: Convert bi-monthly to monthly
-              const utilityNormalized = normalizeUtilityBillToMonthly(key, coerced);
-              if (utilityNormalized) coerced = utilityNormalized.value;
-              fields[key] = { value: coerced, source: 'Gemini', confidence: 'Medium' };
-            }
-          }
-        }
-        console.log('[GEMINI] Fields found:', Object.keys(fields).length);
+        // Use unified filterNullValues() for consistent field validation
+        const fields = filterNullValues(fieldsToProcess, 'Gemini');
         return { fields };
       } else {
         console.log('[GEMINI] JSON extraction failed:', parseResult.error);
