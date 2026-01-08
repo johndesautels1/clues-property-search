@@ -11,7 +11,7 @@ The system uses **6 different LLMs in parallel** with unique prompts tailored to
 
 | LLM | Web Search? | Timeout (search.ts) | Timeout (retry-llm.ts) | Primary Role |
 |-----|-------------|---------------------|------------------------|--------------|
-| **Perplexity** | ✅ YES | 195s | 57s | Deep web research for current data |
+| **Perplexity** | ✅ YES | 45s | 45s | Deep web research for current data |
 | **Grok** | ✅ YES | 180s | 55s | Aggressive web search, cite sources |
 | **Claude Opus** | ❌ NO | 180s | 55s | Highest reasoning from training data |
 | **GPT-4** | ❌ NO | 180s | 55s | Strong reasoning, regional knowledge |
@@ -20,7 +20,7 @@ The system uses **6 different LLMs in parallel** with unique prompts tailored to
 
 ---
 
-## 1. PERPLEXITY (Has Web Search) - 195 second timeout
+## 1. PERPLEXITY (Has Web Search) - 45 second timeout
 
 **Full Prompt:**
 
@@ -56,7 +56,7 @@ CONFIDENCE LEVELS:
 [JSON_RESPONSE_FORMAT with exact field key requirements]
 ```
 
-**Why 195s timeout:** Perplexity performs deep web searches across multiple sources and needs extra time to complete thorough research.
+**Why 45s timeout:** Perplexity performs deep web searches across multiple sources. The 45s timeout balances thoroughness with response speed.
 
 ---
 
@@ -338,13 +338,13 @@ All LLMs receive exact field key format requirements:
 const STELLAR_MLS_TIMEOUT = 90000;      // 90 seconds
 const FREE_API_TIMEOUT = 60000;         // 60 seconds
 const LLM_TIMEOUT = 180000;             // 180 seconds (Grok, Claude, GPT, Gemini)
-const PERPLEXITY_TIMEOUT = 195000;      // 195 seconds (Perplexity only)
+const PERPLEXITY_TIMEOUT = 45000;       // 45 seconds (Perplexity only)
 ```
 
 ### retry-llm.ts (Retry Endpoint - 60s Vercel limit)
 ```typescript
 const LLM_TIMEOUT = 55000;              // 55 seconds (most LLMs)
-const PERPLEXITY_TIMEOUT = 57000;       // 57 seconds (Perplexity only)
+const PERPLEXITY_TIMEOUT = 45000;       // 45 seconds (Perplexity only)
 ```
 
 ---
@@ -383,7 +383,7 @@ const PERPLEXITY_TIMEOUT = 57000;       // 57 seconds (Perplexity only)
 | Feature | Perplexity | Grok | Claude Opus | GPT-4 | Claude Sonnet | Gemini |
 |---------|-----------|------|-------------|-------|---------------|---------|
 | Web Search | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Timeout | 195s | 180s | 180s | 180s | 180s | 180s |
+| Timeout | 45s | 180s | 180s | 180s | 180s | 180s |
 | Best For | Current listings, tax data | MLS data, property appraisers | Geographic knowledge | Regional knowledge | Fast extraction | General knowledge |
 | Hallucination Risk | Low (verifies) | Medium (must cite) | Very Low | Low | Very Low | Low |
 | Response Style | Detailed | Aggressive | Honest | Explanatory | Concise | Balanced |

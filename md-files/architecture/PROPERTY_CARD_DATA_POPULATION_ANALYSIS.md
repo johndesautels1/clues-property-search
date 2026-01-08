@@ -307,7 +307,7 @@ export interface PropertyCard {
 ```typescript
 // Run all LLMs in parallel instead of sequential cascade
 const llmResults = await Promise.all([
-  withTimeout(callPerplexity(...), 180000, {}),
+  withTimeout(callPerplexity(...), 45000, {}),
   withTimeout(callGrok(...), 180000, {}),
   withTimeout(callClaudeOpus(...), 180000, {}),
   // ... etc

@@ -326,7 +326,7 @@ After implementing fixes, test each API individually:
 const STELLAR_MLS_TIMEOUT = 90000;   // 90 seconds
 const FREE_API_TIMEOUT = 60000;      // 60 seconds ← Used for all 3 APIs
 const LLM_TIMEOUT = 180000;          // 180 seconds
-const PERPLEXITY_TIMEOUT = 195000;   // 195 seconds
+const PERPLEXITY_TIMEOUT = 45000;    // 45 seconds
 ```
 
 ### Timeout Usage:

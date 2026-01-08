@@ -89,7 +89,7 @@ TIER 5: Claude LLMs
 | search-stream.ts | 300s (5 min) | Streaming search |
 | search-by-mls.ts | 300s (5 min) | MLS search |
 | multi-llm-forecast.ts | 300s (5 min) | 6-LLM Olivia CMA |
-| **retry-llm.ts** | **300s (5 min)** | Single field retry (Perplexity needs 180s) |
+| **retry-llm.ts** | **300s (5 min)** | Single field retry (Perplexity needs 45s) |
 | parse-mls-pdf.ts | 120s (2 min) | PDF parsing |
 | census.ts | 60s | Census API |
 | bridge-mls.ts | 30s | Bridge MLS direct |
@@ -99,7 +99,7 @@ TIER 5: Claude LLMs
 | Constant | search.ts | retry-llm.ts | Notes |
 |----------|-----------|--------------|-------|
 | **LLM_TIMEOUT** | 60000 (60s) | 60000 (60s) | All non-Perplexity LLMs |
-| **PERPLEXITY_TIMEOUT** | 180000 (180s) | 180000 (180s) | Perplexity deep web search |
+| **PERPLEXITY_TIMEOUT** | 45000 (45s) | 45000 (45s) | Perplexity deep web search |
 
 ### Free API Timeouts (free-apis.ts)
 | API | Timeout | Notes |
@@ -265,7 +265,7 @@ XAI_API_KEY=...                  # Grok (xAI) - NOT GROK_API_KEY!
 | Date | Change | Files Modified |
 |------|--------|----------------|
 | 2026-01-06 | **LLM CASCADE REORDER**: Perplexity→Gemini→GPT→Grok→Sonnet→Opus | 8 files |
-| 2026-01-06 | **TIMEOUT UPDATE**: LLM=60s, Perplexity=180s | search.ts, retry-llm.ts |
+| 2026-01-06 | **TIMEOUT UPDATE**: LLM=60s, Perplexity=45s | search.ts, retry-llm.ts |
 | 2026-01-06 | **TIER UPDATE**: Gemini/GPT/Grok moved to Tier 4 | arbitration.ts |
 | 2026-01-06 | **retry-llm.ts maxDuration**: Increased to 300s for Perplexity | retry-llm.ts |
 | 2026-01-05 | Initial LLM documentation created | LLM_DOCUMENTATION.md |
@@ -292,10 +292,10 @@ XAI_API_KEY=...                  # Grok (xAI) - NOT GROK_API_KEY!
 | search.ts | `STELLAR_MLS_TIMEOUT` | 30s | Bridge MLS API |
 | search.ts | `FREE_API_TIMEOUT` | 90s | All free APIs |
 | search.ts | `LLM_TIMEOUT` | **60s** | Non-Perplexity LLMs |
-| search.ts | `PERPLEXITY_TIMEOUT` | **180s** | Perplexity deep search |
+| search.ts | `PERPLEXITY_TIMEOUT` | **45s** | Perplexity deep search |
 | retry-llm.ts | `maxDuration` | 300s | Vercel function limit |
 | retry-llm.ts | `LLM_TIMEOUT` | **60s** | Non-Perplexity LLMs |
-| retry-llm.ts | `PERPLEXITY_TIMEOUT` | **180s** | Perplexity deep search |
+| retry-llm.ts | `PERPLEXITY_TIMEOUT` | **45s** | Perplexity deep search |
 | multi-llm-forecast.ts | `maxDuration` | 300s | 6 parallel LLM calls |
 | free-apis.ts | FEMA-Flood | 60s | Flood zone |
 | free-apis.ts | FEMA-Risk | 10s | Risk index |

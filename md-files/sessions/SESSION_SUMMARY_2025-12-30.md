@@ -210,7 +210,7 @@ Individual API calls:     60 seconds (safeFetch explicit timeout)
 enrichWithFreeAPIs:       90 seconds (FREE_API_TIMEOUT wrapper)
 Stellar MLS:              90 seconds (STELLAR_MLS_TIMEOUT)
 LLMs:                    210 seconds (LLM_TIMEOUT)
-Perplexity:              225 seconds (PERPLEXITY_TIMEOUT)
+Perplexity:              45 seconds (PERPLEXITY_TIMEOUT)
 ```
 
 ### API Source Name Mappings

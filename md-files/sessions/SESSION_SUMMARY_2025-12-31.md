@@ -216,7 +216,7 @@ This session focused on systematically fixing NULL/problematic fields in the CLU
 25. ~~BroadbandNow~~ - NOT WIRED (exists but never called)
 
 ### TIER 4-5: LLMs (6 Models)
-26. **Perplexity** (sonar-pro) - Web search, Tier 4, 225s timeout
+26. **Perplexity** (sonar-pro) - Web search, Tier 4, 45s timeout
 27. **Grok** (grok-4.1-fast-reasoning) - Web search, Tier 5, 210s timeout
 28. **Claude Opus** (claude-opus-4) - No web, Tier 5, 210s timeout
 29. **GPT** (gpt-5.2) - No web, Tier 5, 210s timeout
