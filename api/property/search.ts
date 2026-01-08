@@ -3829,6 +3829,7 @@ SEARCH and extract ALL 47 high-velocity fields listed in your instructions.
     console.log('[Claude Sonnet] Full response:', JSON.stringify(data).substring(0, 500));
     return { error: 'Failed to parse Claude Sonnet response', fields: {}, llm: 'Claude Sonnet' };
   } catch (error) {
+    console.error('❌ [Claude Sonnet] Exception:', error);
     return { error: String(error), fields: {}, llm: 'Claude Sonnet' };
   }
 }
