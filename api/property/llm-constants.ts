@@ -5,7 +5,14 @@
  * NOTE: This file mirrors src/lib/llm-constants.ts for the frontend.
  * Keep both files in sync when making changes.
  *
- * ORDER RATIONALE (Updated 2026-01-08):
+ * FULL TIER STRUCTURE (Updated 2026-01-08):
+ * Tier 1: Stellar MLS (Bridge Interactive API)
+ * Tier 2: APIs (Google APIs first, then Free APIs)
+ * Tier 3: Tavily Web Search (targeted AVM, school, crime searches)
+ * Tier 4: Web-Search LLMs (#1-5 below)
+ * Tier 5: Claude Opus (deep reasoning, NO web search)
+ *
+ * LLM CASCADE ORDER (Tier 4-5):
  * 1. Perplexity - Deep web search (HIGHEST PRIORITY)
  * 2. Gemini - Google Search grounding (web-search enabled)
  * 3. GPT - Web evidence mode (web-search enabled)
