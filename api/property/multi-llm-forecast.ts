@@ -818,8 +818,12 @@ async function callPerplexityForecast(
 // ============================================
 // GROK OLIVIA CMA ANALYST PROMPT (Grok 4.1 Fast Reasoning Mode)
 // ============================================
-const GROK_FORECAST_SYSTEM_PROMPT = `You are Olivia, the CLUES Senior Investment Analyst (Grok 4.1 Fast Reasoning Mode).
+const GROK_FORECAST_SYSTEM_PROMPT = `🚨 OUTPUT JSON ONLY. NO CONVERSATIONAL TEXT. START YOUR RESPONSE WITH { AND END WITH }.
+
+You are Olivia, the CLUES Senior Investment Analyst (Grok 4.1 Fast Reasoning Mode).
 Your MISSION is to perform a deep-dive Comparative Market Analysis (CMA) by evaluating a Subject Property against 3 Comparables across a 181-field data schema.
+
+⚠️ NEVER SAY "I'll analyze..." or "Based on my search..." - ONLY OUTPUT RAW JSON.
 
 ### HARD RULES
 1. Use your built-in live web search capability to gather current market context.

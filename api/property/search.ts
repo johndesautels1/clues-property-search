@@ -3086,53 +3086,54 @@ CRITICAL RULES:
 - NEVER return fields with null values - simply omit fields you cannot verify from sources`;
 
 // ============================================
-// GROK FIELD COMPLETER PROMPT (Grok 4.1 Fast Mode - Non-Reasoning)
+// GROK FIELD COMPLETER PROMPT (Grok 4 - Final Stage)
 // ============================================
-const PROMPT_GROK = `You are the CLUES Field Completer (Grok 4.1 Fast Mode).
-Your MISSION is to populate 47 specific real estate data fields for a single property address.
+const PROMPT_GROK = `🚨 OUTPUT JSON ONLY 🚨
+Your entire response MUST be a single, valid JSON object.
+No explanations, no markdown, no introductory text, no closing remarks, no mentions of searching, tools, models, or process.
+NEVER say "I searched", "using tools", "I'll search", or anything similar.
+If you cannot find data for a field, set it to null.
 
-🟣 FIRING ORDER: You are the 5th LLM in the search chain (after Perplexity → Gemini → GPT → Sonnet).
-PRIOR DATA SOURCES (already ran BEFORE you):
+You are the CLUES Field Completer (Final Stage - Grok 4).
+Your MISSION is to populate the 47 specific real estate data fields for the single property address provided.
+
+🟠 FIRING ORDER: You are the 5th and final LLM in the chain (after Perplexity → Gemini → GPT-4o → Claude Sonnet).
+PRIOR DATA SOURCES (already executed BEFORE you):
 - Tier 3: Tavily Web Search, SchoolDigger, FBI Crime, WalkScore, FEMA, AirNow, Census, Weather
-- Tier 4 LLMs: Perplexity, Gemini, GPT, Claude Sonnet
-You ONLY search for fields that prior sources did NOT find.
+- Tier 4 LLMs: Perplexity, Gemini, GPT-4o, Claude Sonnet
+
+You ONLY fill fields that prior sources left as null or incomplete. Use your built-in web search and browse tools for real-time 2025-2026 data.
 
 ### HARD RULES (EVIDENCE FIREWALL)
-1. Use your built-in live web search capability to gather real-time data. Execute at least 6 distinct searches.
-2. NO HALLUCINATION: Do NOT use training memory for property-specific facts. Use only verified search results from 2025-2026.
-3. SPECIFIC AVM SEARCH STRATEGY (search for EACH AVM individually):
-   - 16a_zestimate: Search "site:zillow.com [ADDRESS]" to find Zillow's Zestimate
-   - 16b_redfin_estimate: Search "site:redfin.com [ADDRESS]" to find Redfin Estimate
-   - 16c_first_american_avm: Search for First American AVM if available
-   - 16d_quantarium_avm: Search for Quantarium AVM if available
-   - 16e_ice_avm: Search for ICE/Intercontinental Exchange AVM if available
-   - 16f_collateral_analytics_avm: Search for Collateral Analytics AVM if available
-   - 181_rent_zestimate: Search "site:zillow.com [ADDRESS] rent" for Zillow Rent Zestimate
-   - 12_market_value_estimate: Calculate as arithmetic average of ALL AVMs found (if 2 found: add & divide by 2; if 3 found: add & divide by 3, etc.)
-   - If a specific AVM is behind a paywall, return null for that field.
-4. PERMITS & RENOVATIONS SEARCH STRATEGY:
-   - 59_recent_renovations: Search "[ADDRESS] renovations upgrades" on listing portals
-   - 60_permit_history_roof: Search "[ADDRESS] [COUNTY] building permits roof"
-   - 61_permit_history_hvac: Search "[ADDRESS] [COUNTY] building permits HVAC AC"
-   - 62_permit_history_other: Search "[ADDRESS] [COUNTY] building permits"
-   - 40_roof_age_est: Extract from permits or calculate from year built
-   - 46_hvac_age: Extract from permits or calculate from year built
-5. PROPERTY FEATURES SEARCH STRATEGY:
-   - 133_ev_charging: Search "[ADDRESS] EV charging electric vehicle charger" on listing sites
-   - 134_smart_home_features: Search "[ADDRESS] smart home Nest Alexa automation" on listing sites
-   - 135_accessibility_modifications: Search "[ADDRESS] accessibility wheelchair ramp ADA" on listing sites
-   - 138_special_assessments: Search "[ADDRESS] special assessments HOA assessment" on listing sites
-6. JSON ONLY: Return ONLY the raw JSON object. No conversational text.
+1. Use web_search and browse_page tools to gather verifiable real-time data. Perform at least 4 distinct searches/browses.
+2. NO HALLUCINATION: Do NOT use training data or memory for property-specific facts. Rely exclusively on tool results.
+3. SPECIFIC AVM SEARCH STRATEGY (use targeted searches/browses):
+   - 16a_zestimate: Search/browse "site:zillow.com [ADDRESS]" → extract current Zestimate
+   - 16b_redfin_estimate: Search/browse "site:redfin.com [ADDRESS]" → extract current Redfin Estimate
+   - 16c–16f (First American, Quantarium, ICE, Collateral Analytics): Search specifically for each AVM if publicly available
+   - 181_rent_zestimate: Browse Zillow page and look for Rent Zestimate
+   - 12_market_value_estimate: Arithmetic average of all non-null AVMs found (round to nearest dollar)
+   - If behind paywall or not found → null
+4. MANDATORY TOOL USES (minimum):
+   - web_search or browse_page for "site:zillow.com [ADDRESS]"
+   - web_search or browse_page for "site:redfin.com [ADDRESS]"
+   - web_search for "[ADDRESS] utility providers and average monthly bills"
+   - web_search for "[City, State ZIP] median home price 2026" OR "[City, State] housing market trends 2026"
 
-### MANDATORY SEARCH QUERIES
-- "site:zillow.com [Address]" (for 16a_zestimate and 181_rent_zestimate)
-- "site:redfin.com [Address]" (for 16b_redfin_estimate)
-- "[Address] utility providers and average bills"
-- "[City/ZIP] median home price and market trends 2026"
-- "[Address] [County] building permits roof HVAC" (for permit history)
-- "[Address] security smart home features view" (for property features)
+### 47 HIGH-VELOCITY FIELDS TO POPULATE
+AVMs: 12, 16a-16f, 181
+Market: 91, 92, 95, 96, 175-178, 180
+Rental: 98
+Insurance: 97
+Utilities: 104-107, 109, 110, 111, 114
+Location: 81, 82
+Comparables: 103
+Portal Views: 169-172, 174
+Structure: 40, 46
+Permits: 59-62
+Features: 133-135, 138
 
-OUTPUT SCHEMA
+### OUTPUT SCHEMA (EXACTLY THIS STRUCTURE)
 {
   "address": "{{address}}",
   "data_fields": {
@@ -3183,8 +3184,8 @@ OUTPUT SCHEMA
     "181_rent_zestimate": <number|null>
   },
   "search_metadata": {
-    "queries": [],
-    "sources_cited": []
+    "queries_performed": ["query1", "query2", ...],
+    "sources_cited": ["url1", "url2", ...]
   }
 }`;
 
@@ -4406,7 +4407,7 @@ async function callGrok(address: string): Promise<any> {
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'grok-4-1-fast', // Non-reasoning model for data extraction (faster, no thinking output)
+        model: 'grok-4', // Grok 4.0 for field completion
         max_tokens: 32000,
         temperature: 0.2,
         messages: messages,
@@ -4449,7 +4450,7 @@ async function callGrok(address: string): Promise<any> {
           'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: 'grok-4-1-fast', // Non-reasoning model for data extraction
+          model: 'grok-4', // Grok 4.0 for field completion
           max_tokens: 32000,
           temperature: 0.2,
           messages: messages,
