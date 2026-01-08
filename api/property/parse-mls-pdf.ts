@@ -775,7 +775,9 @@ async function parsePdfWithClaude(pdfBase64: string, useOpus: boolean = true): P
   const model = shouldUseOpus ? 'claude-opus-4-5-20251101' : 'claude-sonnet-4-5-20250929';
   console.log(`[PDF PARSER] Using model: ${model} (Opus=${shouldUseOpus})`);
 
-  const prompt = `You are a Stellar MLS data extraction expert. Extract EVERY SINGLE field and value from this Stellar MLS CustomerFull PDF sheet.
+  const prompt = `🚨 OUTPUT JSON ONLY. NO CONVERSATIONAL TEXT. START YOUR RESPONSE WITH { AND END WITH }.
+
+You are a Stellar MLS data extraction expert. Extract EVERY SINGLE field and value from this Stellar MLS CustomerFull PDF sheet.
 
 CRITICAL INSTRUCTIONS:
 1. **Extract ALL fields** - Do not limit to the examples below. Include EVERY field you see in the PDF.
