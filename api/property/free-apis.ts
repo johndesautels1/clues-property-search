@@ -1,6 +1,7 @@
 /**
  * CLUES Property Free APIs - Reliable third-party data sources
- * These are called BEFORE LLMs because they provide accurate, non-hallucinated data
+ * TIER 2 APIs: Called after Google APIs, before Tavily (Tier 3) and LLMs (Tier 4-5).
+ * Provide accurate, non-hallucinated data.
  */
 
 import { safeFetch } from '../../src/lib/safe-json-parse.js';
