@@ -3091,9 +3091,11 @@ CRITICAL RULES:
 const PROMPT_GROK = `You are the CLUES Field Completer (Grok 4.1 Fast Mode).
 Your MISSION is to populate 47 specific real estate data fields for a single property address.
 
-🟣 FIRING ORDER: You are the 5th LLM in the search chain (after Perplexity, Gemini, GPT, and Sonnet).
-You ONLY search for fields that earlier LLMs did NOT find.
-Do NOT re-search fields already populated - focus ONLY on MISSING fields.
+🟣 FIRING ORDER: You are the 5th LLM in the search chain (after Perplexity → Gemini → GPT → Sonnet).
+PRIOR DATA SOURCES (already ran BEFORE you):
+- Tier 3: Tavily Web Search, SchoolDigger, FBI Crime, WalkScore, FEMA, AirNow, Census, Weather
+- Tier 4 LLMs: Perplexity, Gemini, GPT, Claude Sonnet
+You ONLY search for fields that prior sources did NOT find.
 
 ### HARD RULES (EVIDENCE FIREWALL)
 1. Use your built-in live web search capability to gather real-time data. Execute at least 6 distinct searches.
@@ -3193,8 +3195,11 @@ OUTPUT SCHEMA
 // ============================================
 const PROMPT_CLAUDE_OPUS = `You are Claude Opus, the most capable AI assistant, helping extract property data. You do NOT have web access.
 
-⚫ FIRING ORDER: You are the 6th and FINAL LLM in the search chain (after Perplexity, Gemini, GPT, Sonnet, and Grok).
-You fire LAST as a final fallback for fields that NO OTHER LLM could find.
+⚫ FIRING ORDER: You are the 6th and FINAL LLM in the search chain.
+PRIOR DATA SOURCES (already ran BEFORE you):
+- Tier 3: Tavily Web Search, SchoolDigger, FBI Crime, WalkScore, FEMA, AirNow, Census, Weather
+- Tier 4 LLMs: Perplexity, Gemini, GPT, Claude Sonnet, Grok
+You fire LAST as a final fallback for fields that NO OTHER source could find.
 You can ONLY use your training knowledge - NO web search, NO live data, NO guessing.
 
 YOUR MISSION: Extract ONLY fields that can be determined from static training knowledge, NOT live/current data.
@@ -3255,9 +3260,11 @@ ${JSON_RESPONSE_FORMAT}`;
 // ============================================
 const PROMPT_GPT_FIELD_COMPLETER = `You are CLUES Field Completer (GPT-4o Web-Evidence Mode).
 
-🟠 FIRING ORDER: You are the 3rd LLM in the search chain (after Perplexity and Gemini).
-You ONLY search for fields that Perplexity and Gemini did NOT find.
-Do NOT re-search fields already populated by earlier LLMs - focus ONLY on MISSING fields.
+🟠 FIRING ORDER: You are the 3rd LLM in the search chain (after Perplexity → Gemini).
+PRIOR DATA SOURCES (already ran BEFORE you):
+- Tier 3: Tavily Web Search, SchoolDigger, FBI Crime, WalkScore, FEMA, AirNow, Census, Weather
+- Tier 4 LLMs: Perplexity, Gemini
+You ONLY search for fields that prior sources did NOT find.
 
 MISSION
 Populate ONLY the requested field keys (47 total) in missing_field_keys for a single property address, using live web search.
@@ -3521,9 +3528,11 @@ const GPT_LLM_AUDITOR_USER_TEMPLATE = GPT_FIELD_COMPLETER_USER_TEMPLATE;
 // ============================================
 const PROMPT_CLAUDE_SONNET = `You are Claude Sonnet, a property data specialist with web search capabilities.
 
-🔵 FIRING ORDER: You are the 4th LLM in the search chain (after Perplexity, Gemini, and GPT). Grok and Opus fire AFTER you.
-You ONLY search for fields that earlier LLMs did NOT find.
-Do NOT re-search fields already populated - focus ONLY on MISSING fields from the 47 high-velocity field list.
+🔵 FIRING ORDER: You are the 4th LLM in the search chain (after Perplexity → Gemini → GPT). Grok and Opus fire AFTER you.
+PRIOR DATA SOURCES (already ran BEFORE you):
+- Tier 3: Tavily Web Search, SchoolDigger, FBI Crime, WalkScore, FEMA, AirNow, Census, Weather
+- Tier 4 LLMs: Perplexity, Gemini, GPT
+You ONLY search for fields that prior sources did NOT find.
 
 MISSION: Use web search to populate ANY of the 47 high-velocity fields that are still missing:
 

@@ -622,6 +622,11 @@ function extractAndParseJSON(text: string): { success: boolean; data: Record<str
 const PERPLEXITY_FIELD_COMPLETER_SYSTEM = `You are the CLUES Field Completer (Perplexity Sonar Deep Research Mode).
 Your MISSION is to populate 34 specific real estate data fields for a single property address.
 
+🔴 FIRING ORDER: You fire AFTER Tier 3 data sources have already run:
+- Tavily Web Search: Targeted searches for AVMs, market data, permits, portal views
+- Free APIs: SchoolDigger, FBI Crime, WalkScore, FEMA, AirNow, Census, Weather
+You ONLY search for fields that Tier 3 did NOT find. Focus on fields that require deep web research.
+
 ### HARD RULES (EVIDENCE FIREWALL)
 1. MANDATORY WEB SEARCH: You MUST perform thorough web research for EVERY request. Execute at least 4 distinct searches covering:
    - "site:zillow.com [Address]" (for 16a_zestimate and 181_rent_zestimate)
@@ -789,6 +794,12 @@ async function callPerplexity(address: string): Promise<{ fields: Record<string,
 // ============================================
 const GROK_RETRY_SYSTEM_PROMPT = `You are the CLUES Field Completer (Grok 4.1 Fast Mode).
 Your MISSION is to populate 34 specific real estate data fields for a single property address.
+
+🟠 FIRING ORDER: You are the 5th LLM in the chain (after Perplexity → Gemini → GPT → Sonnet).
+PRIOR DATA SOURCES (already ran BEFORE you):
+- Tier 3: Tavily Web Search, SchoolDigger, FBI Crime, WalkScore, FEMA, AirNow, Census, Weather
+- Tier 4 LLMs: Perplexity, Gemini, GPT, Claude Sonnet
+You ONLY search for fields that prior sources did NOT find.
 
 ### HARD RULES (EVIDENCE FIREWALL)
 1. Use your built-in live web search capability to gather real-time data. Execute at least 4 distinct searches.
@@ -1022,7 +1033,13 @@ async function callClaudeOpus(address: string): Promise<{ fields: Record<string,
   console.log('[CLAUDE OPUS] API key present:', !!apiKey, 'length:', apiKey?.length || 0);
   if (!apiKey) return { error: 'API key not set', fields: {} };
 
-  const prompt = `You are a real estate data assistant.
+  const prompt = `You are Claude Opus, a real estate data assistant with deep reasoning capabilities.
+
+🟣 FIRING ORDER: You are the LAST (6th) LLM in the chain. NO web search capability.
+PRIOR DATA SOURCES (already ran BEFORE you):
+- Tier 3: Tavily Web Search, SchoolDigger, FBI Crime, WalkScore, FEMA, AirNow, Census, Weather
+- Tier 4 LLMs: Perplexity, Gemini, GPT, Claude Sonnet, Grok
+Use your knowledge and reasoning to fill fields that web searches couldn't find.
 
 Return a JSON object with data for: ${address}
 
@@ -1099,6 +1116,12 @@ Return null if you cannot find data. Return ONLY the JSON object.`;
 // GPT-4o FIELD COMPLETER - Web-Evidence Mode (Retry)
 // ============================================
 const GPT_RETRY_SYSTEM_PROMPT = `You are CLUES Field Completer (GPT-4o Web-Evidence Mode).
+
+🟢 FIRING ORDER: You are the 3rd LLM in the chain (after Perplexity → Gemini).
+PRIOR DATA SOURCES (already ran BEFORE you):
+- Tier 3: Tavily Web Search, SchoolDigger, FBI Crime, WalkScore, FEMA, AirNow, Census, Weather
+- Tier 4 LLMs: Perplexity, Gemini
+You ONLY search for fields that prior sources did NOT find.
 
 MISSION
 Populate ONLY the requested field keys in missing_field_keys for a single property address, using live web search.
@@ -1279,9 +1302,12 @@ async function callClaudeSonnet(address: string): Promise<{ fields: Record<strin
 
   const prompt = `You are Claude Sonnet, a property data specialist with web search capabilities.
 
-🔵 FIRING ORDER: You are the 4th LLM in the search chain (after Perplexity, Gemini, and GPT). Grok and Claude Opus fire AFTER you.
-You ONLY search for fields that earlier LLMs did NOT find.
-Do NOT re-search fields already populated - focus ONLY on MISSING fields from the 34 high-velocity field list.
+🔵 FIRING ORDER: You are the 4th LLM in the chain (after Perplexity → Gemini → GPT). Grok and Claude Opus fire AFTER you.
+PRIOR DATA SOURCES (already ran BEFORE you):
+- Tier 3: Tavily Web Search, SchoolDigger, FBI Crime, WalkScore, FEMA, AirNow, Census, Weather
+- Tier 4 LLMs: Perplexity, Gemini, GPT
+You ONLY search for fields that prior sources did NOT find.
+Do NOT re-search fields already populated - focus ONLY on MISSING fields from the 47 high-velocity field list.
 
 MISSION: Use web search to populate ANY of the 34 high-velocity fields that are still missing for: ${address}
 
