@@ -2307,10 +2307,10 @@ async function enrichWithFreeAPIs(
 /**
  * PROMPT A: Listing Portals & Neighborhood Pricing
  */
-async function callPerplexityPromptA(address: string, context: any = {}): Promise<Record<string, any>> {
+async function callPerplexityPromptA(address: string, context: any = {}): Promise<{ fields: Record<string, any>; llm: string }> {
   if (isRateLimited('perplexity')) {
     console.log(`⏭️ [Perplexity A] Skipping - rate limited`);
-    return {};
+    return { fields: {}, llm: 'Perplexity Prompt A' };
   }
 
   const userPrompt = buildPromptA(
@@ -2325,10 +2325,10 @@ async function callPerplexityPromptA(address: string, context: any = {}): Promis
 /**
  * PROMPT B: County / Public Records
  */
-async function callPerplexityPromptB(address: string, context: any = {}): Promise<Record<string, any>> {
+async function callPerplexityPromptB(address: string, context: any = {}): Promise<{ fields: Record<string, any>; llm: string }> {
   if (isRateLimited('perplexity')) {
     console.log(`⏭️ [Perplexity B] Skipping - rate limited`);
-    return {};
+    return { fields: {}, llm: 'Perplexity Prompt B' };
   }
 
   const userPrompt = buildPromptB(
@@ -2343,10 +2343,10 @@ async function callPerplexityPromptB(address: string, context: any = {}): Promis
 /**
  * PROMPT C: Schools, Walkability, Crime
  */
-async function callPerplexityPromptC(address: string, context: any = {}): Promise<Record<string, any>> {
+async function callPerplexityPromptC(address: string, context: any = {}): Promise<{ fields: Record<string, any>; llm: string }> {
   if (isRateLimited('perplexity')) {
     console.log(`⏭️ [Perplexity C] Skipping - rate limited`);
-    return {};
+    return { fields: {}, llm: 'Perplexity Prompt C' };
   }
 
   const userPrompt = buildPromptC(
@@ -2361,10 +2361,10 @@ async function callPerplexityPromptC(address: string, context: any = {}): Promis
 /**
  * PROMPT D: Utilities & Recurring Bills
  */
-async function callPerplexityPromptD(address: string, context: any = {}): Promise<Record<string, any>> {
+async function callPerplexityPromptD(address: string, context: any = {}): Promise<{ fields: Record<string, any>; llm: string }> {
   if (isRateLimited('perplexity')) {
     console.log(`⏭️ [Perplexity D] Skipping - rate limited`);
-    return {};
+    return { fields: {}, llm: 'Perplexity Prompt D' };
   }
 
   const promptContext: PromptDContext = {
@@ -2388,10 +2388,10 @@ async function callPerplexityPromptD(address: string, context: any = {}): Promis
 /**
  * PROMPT E: Comparable Sales (Optional)
  */
-async function callPerplexityPromptE(address: string, context: any = {}): Promise<Record<string, any>> {
+async function callPerplexityPromptE(address: string, context: any = {}): Promise<{ fields: Record<string, any>; llm: string }> {
   if (isRateLimited('perplexity')) {
     console.log(`⏭️ [Perplexity E] Skipping - rate limited`);
-    return {};
+    return { fields: {}, llm: 'Perplexity Prompt E' };
   }
 
   const userPrompt = buildPromptE(
@@ -2405,16 +2405,16 @@ async function callPerplexityPromptE(address: string, context: any = {}): Promis
 /**
  * Shared Perplexity API caller with field mapping
  */
-async function callPerplexityWithMapping(promptName: string, userPrompt: string): Promise<Record<string, any>> {
+async function callPerplexityWithMapping(promptName: string, userPrompt: string): Promise<{ fields: Record<string, any>; llm: string }> {
   if (isRateLimited('perplexity')) {
     console.log(`⏭️ [Perplexity ${promptName}] Skipping - rate limited`);
-    return {};
+    return { fields: {}, llm: `Perplexity ${promptName}` };
   }
 
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) {
     console.error(`❌ [Perplexity ${promptName}] PERPLEXITY_API_KEY not set`);
-    return {};
+    return { fields: {}, llm: `Perplexity ${promptName}` };
   }
 
   try {
@@ -2500,7 +2500,7 @@ async function callPerplexityWithMapping(promptName: string, userPrompt: string)
             }
           }
 
-          return filteredFields;
+          return { fields: filteredFields, llm: `Perplexity ${promptName}` };
         } catch (parseError) {
           console.error(`❌ [Perplexity ${promptName}] JSON parse error:`, parseError);
           console.error(`❌ [Perplexity ${promptName}] Candidate JSON (first 300 chars): ${candidate.substring(0, 300)}`);
@@ -2515,7 +2515,7 @@ async function callPerplexityWithMapping(promptName: string, userPrompt: string)
               const mapped = mapPerplexityFieldsToSchema(fieldsToMap);
               const filteredFields = filterNullValues(mapped, `Perplexity ${promptName}`);
               console.log(`✅ [Perplexity ${promptName}] JSON repair succeeded! Returning ${Object.keys(filteredFields).length} fields`);
-              return filteredFields;
+              return { fields: filteredFields, llm: `Perplexity ${promptName}` };
             }
           } catch (repairError) {
             console.error(`❌ [Perplexity ${promptName}] JSON repair also failed`);
