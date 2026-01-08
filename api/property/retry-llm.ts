@@ -114,7 +114,7 @@ const missingFieldsRules = {
     "35_annual_taxes": { type: "number", definition: "Most recent annual property tax amount in USD from county records." }
   }
 };
-import { GEMINI_FIELD_COMPLETER_SYSTEM } from '../../src/config/gemini-prompts.js';
+import { GEMINI_FIELD_COMPLETER_SYSTEM, buildGeminiFieldCompleterUserPrompt } from '../../src/config/gemini-prompts.js';
 
 // Vercel serverless config
 export const config = {
@@ -1315,7 +1315,9 @@ async function callClaudeSonnet(address: string): Promise<{ fields: Record<strin
   console.log('[CLAUDE SONNET] API key present:', !!apiKey, 'length:', apiKey?.length || 0);
   if (!apiKey) return { error: 'API key not set', fields: {} };
 
-  const prompt = `You are Claude Sonnet, a property data specialist with web search capabilities.
+  const prompt = `🚨 CRITICAL: OUTPUT JSON ONLY. NO CONVERSATIONAL TEXT. NO EXPLANATIONS. START YOUR RESPONSE WITH { AND END WITH }.
+
+You are Claude Sonnet, a property data specialist with web search capabilities.
 
 🔵 FIRING ORDER: You are the 4th LLM in the chain (after Perplexity → Gemini → GPT). Grok and Claude Opus fire AFTER you.
 PRIOR DATA SOURCES (already ran BEFORE you):
@@ -1323,6 +1325,8 @@ PRIOR DATA SOURCES (already ran BEFORE you):
 - Tier 4 LLMs: Perplexity, Gemini, GPT
 You ONLY search for fields that prior sources did NOT find.
 Do NOT re-search fields already populated - focus ONLY on MISSING fields from the 47 high-velocity field list.
+
+⚠️ NEVER SAY "I'll search for..." or "Let me find..." - ONLY OUTPUT RAW JSON.
 
 MISSION: Use web search to populate ANY of the 34 high-velocity fields that are still missing for: ${address}
 
@@ -1404,7 +1408,7 @@ SEARCH STRATEGY:
 7. Search "[ADDRESS] EV charging smart home accessibility special assessments" on listing sites for fields 133-135, 138
 8. Only return fields you found with high confidence - use null for unverified data
 
-Return JSON with numbered field keys like:
+🚨 RESPOND WITH THIS EXACT JSON FORMAT - NO OTHER TEXT:
 {
   "fields": {
     "12_market_value_estimate": {"value": 450000, "source": "Zillow.com", "confidence": "High"},
@@ -1412,7 +1416,9 @@ Return JSON with numbered field keys like:
   }
 }
 
-Return ONLY the JSON object. Use null only for fields you truly cannot find.`;
+⛔ DO NOT write "I'll search for...", "Let me find...", or ANY conversational text.
+✅ START YOUR RESPONSE WITH { AND END WITH }.
+Use null only for fields you truly cannot find.`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -1490,6 +1496,15 @@ async function callGemini(address: string): Promise<{ fields: Record<string, any
 
   const startTime = Date.now();
 
+  // Extract city/zip from address for context
+  const addressParts = address.split(',').map(s => s.trim());
+  const city = addressParts.length > 1 ? addressParts[1] : undefined;
+  const zipMatch = address.match(/\b(\d{5})\b/);
+  const zip = zipMatch ? zipMatch[1] : undefined;
+
+  // Build user prompt with COMPLETE FIELD SCHEMA to prevent hallucination
+  const userPrompt = buildGeminiFieldCompleterUserPrompt({ address, city, zip });
+
   try {
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=${apiKey}`,
@@ -1501,8 +1516,8 @@ async function callGemini(address: string): Promise<{ fields: Record<string, any
           system_instruction: {
             parts: [{ text: GEMINI_FIELD_COMPLETER_SYSTEM }]
           },
-          // USER CONTENT: Only the task/address
-          contents: [{ parts: [{ text: `Address: ${address}` }] }],
+          // USER CONTENT: Full schema prompt to prevent field hallucination
+          contents: [{ parts: [{ text: userPrompt }] }],
           tools: [{ google_search: {} }],
           tool_config: { function_calling_config: { mode: "ANY" } },
           generationConfig: {
