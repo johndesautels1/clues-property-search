@@ -1740,7 +1740,7 @@ export default function PropertyDetail() {
                 </div>
                 <div>
                   {renderDataField("Fireplace", fullProperty.structural.fireplaceYn, "text", undefined, "52_fireplace_yn")}
-                  {renderDataField("Primary BR Location", fullProperty.structural.primaryBrLocation, "number", undefined, "53_primary_br_location")}
+                  {renderDataField("Primary BR Location", fullProperty.structural.primaryBrLocation, "text", undefined, "53_primary_br_location")}
                 </div>
               </div>
             </Section>
