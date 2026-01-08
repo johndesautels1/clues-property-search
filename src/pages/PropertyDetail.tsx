@@ -2200,27 +2200,53 @@ export default function PropertyDetail() {
               </div>
             </Section>
 
-            {/* Listing Remarks - NOT a numbered field, metadata only */}
-            {fullProperty.publicRemarksExtracted && fullProperty.publicRemarksExtracted.length > 50 && (
-              <Section title="Listing Remarks" icon={<FileText className="w-6 h-6" />} defaultExpanded={false}>
-                <div className="bg-quantum-dark/30 p-6 rounded-lg border border-quantum-cyan/20">
-                  <div className="flex items-start gap-3 mb-3">
-                    <Info className="w-5 h-5 text-quantum-cyan mt-1 flex-shrink-0" />
-                    <p className="text-sm text-gray-400">
-                      Original listing agent remarks from Stellar MLS. Data extracted to specific fields above has been removed from this display.
-                    </p>
+            {/* Section W: Market Performance (Fields 169-181) - ADDED 2026-01-08 */}
+            <Section title="Market Performance" icon={<TrendingUp className="w-6 h-6" />} defaultExpanded={false}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Portal Views (169-172) */}
+                {renderDataField("Zillow Views", fullProperty.marketPerformance?.zillowViews, "number", <Eye className="w-5 h-5" />, "169_zillow_views")}
+                {renderDataField("Redfin Views", fullProperty.marketPerformance?.redfinViews, "number", <Eye className="w-5 h-5" />, "170_redfin_views")}
+                {renderDataField("Homes.com Views", fullProperty.marketPerformance?.homesViews, "number", <Eye className="w-5 h-5" />, "171_homes_views")}
+                {renderDataField("Realtor.com Views", fullProperty.marketPerformance?.realtorViews, "number", <Eye className="w-5 h-5" />, "172_realtor_views")}
+
+                {/* Field 173 is calculated total views */}
+
+                {/* Saves/Favorites & Market Metrics (174-181) */}
+                {renderDataField("Saves/Favorites", fullProperty.marketPerformance?.savesFavorites, "number", <Bookmark className="w-5 h-5" />, "174_saves_favorites")}
+                {renderDataField("Market Type", fullProperty.marketPerformance?.marketType, "text", <TrendingUp className="w-5 h-5" />, "175_market_type")}
+                {renderDataField("Avg Sale-to-List %", fullProperty.marketPerformance?.avgSaleToListPercent, "percent", <Target className="w-5 h-5" />, "176_avg_sale_to_list_percent")}
+                {renderDataField("Avg Days to Pending", fullProperty.marketPerformance?.avgDaysToPending, "number", <Calendar className="w-5 h-5" />, "177_avg_days_to_pending")}
+                {renderDataField("Multiple Offers Likelihood", fullProperty.marketPerformance?.multipleOffersLikelihood, "text", <TrendingUp className="w-5 h-5" />, "178_multiple_offers_likelihood")}
+                {renderDataField("Appreciation %", fullProperty.marketPerformance?.appreciationPercent, "percent", <TrendingUp className="w-5 h-5" />, "179_appreciation_percent")}
+                {renderDataField("Price Trend", fullProperty.marketPerformance?.priceTrend, "text", <TrendingUp className="w-5 h-5" />, "180_price_trend")}
+                {renderDataField("Rent Zestimate", fullProperty.marketPerformance?.rentZestimate, "currency", <DollarSign className="w-5 h-5" />, "181_rent_zestimate")}
+              </div>
+
+              {/* Property Description - Public Remarks (Field 48 extraction result) */}
+              {fullProperty.publicRemarksExtracted && fullProperty.publicRemarksExtracted.length > 50 && (
+                <div className="mt-8 bg-quantum-dark/30 p-6 rounded-lg border border-quantum-cyan/20">
+                  <div className="flex items-start gap-3 mb-4">
+                    <FileText className="w-5 h-5 text-quantum-cyan mt-1 flex-shrink-0" />
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-1">
+                        Property Description
+                      </h3>
+                      <p className="text-sm text-gray-400">
+                        Original listing agent remarks from Stellar MLS. Data extracted to specific fields above has been removed from this display.
+                      </p>
+                    </div>
                   </div>
                   <div className="text-white leading-relaxed whitespace-pre-wrap">
                     {fullProperty.publicRemarksExtracted}
                   </div>
                   <div className="mt-4 pt-4 border-t border-quantum-cyan/10">
                     <span className="text-xs text-gray-500">
-                      Source: Stellar MLS Public Remarks
+                      Source: Stellar MLS Public Remarks (Field 48 extraction)
                     </span>
                   </div>
                 </div>
-              </Section>
-            )}
+              )}
+            </Section>
           </div>
         ) : (
           <motion.div variants={itemVariants} className="glass-card p-8 text-center">
