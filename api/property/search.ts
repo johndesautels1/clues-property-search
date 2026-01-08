@@ -5060,7 +5060,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('TIER 3: TAVILY WEB SEARCH');
       console.log('========================================');
       try {
-        const { runTavilyTier3 } = await import('./tavily-search');
+        const { runTavilyTier3 } = await import('./tavily-search.js');
         // Wrap with 30s timeout to prevent hanging
         const tavilyFields = await withTimeout(
           runTavilyTier3(
