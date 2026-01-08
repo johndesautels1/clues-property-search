@@ -370,7 +370,7 @@ async function callGPT5(prompt: string): Promise<LLMResponse> {
         { role: 'system', content: OLIVIA_SYSTEM_PROMPT },
         { role: 'user', content: prompt },
       ],
-      reasoning: { effort: 'medium' },
+      reasoning: { effort: 'low' },
       tools: [{ type: 'web_search' }],
       tool_choice: 'auto',
       include: ['web_search_call.action.sources'],

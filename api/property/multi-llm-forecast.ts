@@ -567,7 +567,7 @@ async function callGPT5Forecast(
         { role: 'system', content: GPT_OLIVIA_CMA_SYSTEM_PROMPT },
         { role: 'user', content: prompt },
       ],
-      reasoning: { effort: 'medium' },
+      reasoning: { effort: 'low' },
       tools: [{ type: 'web_search' }],
       tool_choice: 'required', // Always use web search for forecasts
       include: ['web_search_call.action.sources'],

@@ -1178,7 +1178,7 @@ Return ONLY the JSON object described in the system prompt.`;
           { role: 'system', content: GPT_RETRY_SYSTEM_PROMPT },
           { role: 'user', content: userPrompt }
         ],
-        reasoning: { effort: 'medium' },
+        reasoning: { effort: 'low' },
         tools: [{ type: 'web_search' }],
         tool_choice: 'auto', // Changed from 'required' - auto lets model decide when to search
         include: ['web_search_call.action.sources'],
