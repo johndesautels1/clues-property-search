@@ -5063,12 +5063,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const enabledLlms = llmCascade.filter(llm => llm.enabled);
 
         if (enabledLlms.length > 0) {
-          // HYBRID LLM CASCADE: Perplexity+Gemini sequential, then GPT/Grok/Sonnet/Opus parallel
-          // Perplexity sequential to avoid rate limits, Gemini sequential for stability
-          // Other 4 LLMs run in parallel for 40% speed improvement (9 min savings)
+          // HYBRID LLM CASCADE: Perplexity sequential, then Gemini/GPT/Grok/Sonnet/Opus parallel
+          // Perplexity sequential to avoid rate limits
+          // Other 5 LLMs run in parallel for maximum speed (prevents any single LLM from blocking the cascade)
           const llmResults: PromiseSettledResult<any>[] = [];
 
-          console.log(`\n=== HYBRID LLM CASCADE: Perplexity+Gemini sequential, then 4 LLMs parallel ===`);
+          console.log(`\n=== HYBRID LLM CASCADE: Perplexity sequential, then 5 LLMs parallel (Gemini/GPT/Grok/Sonnet/Opus) ===`);
 
           // Track LLM metadata alongside results to maintain order
           const llmMetadata: Array<{ id: string; enabled: boolean; fn: any }> = [];
@@ -5076,7 +5076,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           // PHASE 1: Perplexity A-E (SEQUENTIAL with rate limit protection)
           const perplexityLlms = enabledLlms.filter(llm => llm.id.startsWith('perplexity'));
           if (perplexityLlms.length > 0) {
-            console.log(`\n[Phase 1/3] Running ${perplexityLlms.length} Perplexity prompts SEQUENTIALLY...`);
+            console.log(`\n[Phase 1/2] Running ${perplexityLlms.length} Perplexity prompts SEQUENTIALLY...`);
             for (let i = 0; i < perplexityLlms.length; i++) {
               const llm = perplexityLlms[i];
               console.log(`  [${i + 1}/${perplexityLlms.length}] Calling ${llm.id}...`);
@@ -5101,32 +5101,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
           }
 
-          // PHASE 2: Gemini (SEQUENTIAL after Perplexity for stability)
-          const geminiLlm = enabledLlms.find(llm => llm.id === 'gemini');
-          if (geminiLlm) {
-            console.log(`\n[Phase 2/3] Running Gemini SEQUENTIALLY (after Perplexity)...`);
-            console.log(`  Calling gemini...`);
-            llmMetadata.push(geminiLlm);
-            try {
-              const result = await withTimeout(
-                geminiLlm.fn(realAddress),
-                LLM_TIMEOUT,
-                { fields: {}, error: 'timeout' }
-              );
-              llmResults.push({ status: 'fulfilled', value: result });
-              console.log(`  gemini completed - found ${Object.keys(result?.fields || {}).length} fields`);
-            } catch (err) {
-              llmResults.push({ status: 'rejected', reason: err });
-              console.log(`  gemini failed: ${err}`);
-            }
-          }
-
-          // PHASE 3: GPT + Grok + Sonnet + Opus (PARALLEL for speed)
+          // PHASE 2 & 3 MERGED: Gemini + GPT + Grok + Sonnet + Opus (ALL PARALLEL after Perplexity)
+          // CRITICAL FIX: Run Gemini in parallel with GPT so Gemini can't block the cascade if it fails
           const parallelLlms = enabledLlms.filter(llm =>
-            llm.id === 'gpt' || llm.id === 'grok' || llm.id === 'claude-sonnet' || llm.id === 'claude-opus'
+            llm.id === 'gemini' || llm.id === 'gpt' || llm.id === 'grok' || llm.id === 'claude-sonnet' || llm.id === 'claude-opus'
           );
           if (parallelLlms.length > 0) {
-            console.log(`\n[Phase 3/3] Running ${parallelLlms.length} LLMs in PARALLEL (GPT/Grok/Sonnet/Opus)...`);
+            console.log(`\n[Phase 2/3] Running ${parallelLlms.length} LLMs in PARALLEL (Gemini/GPT/Grok/Sonnet/Opus)...`);
             // Add metadata in order before parallel execution
             parallelLlms.forEach(llm => llmMetadata.push(llm));
             const parallelPromises = parallelLlms.map(llm => {
