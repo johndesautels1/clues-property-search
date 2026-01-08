@@ -19,6 +19,9 @@ export const config = {
   maxDuration: 300, // 5 minutes - same as search.ts
 };
 
+// Bridge MLS timeout - matches STELLAR_MLS_TIMEOUT in search.ts
+const BRIDGE_MLS_TIMEOUT = 15000; // 15 seconds for Bridge API calls
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -60,11 +63,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const bridgeUrl = `${req.headers.host?.includes('localhost') ? 'http://localhost:3000' : 'https://' + req.headers.host}/api/property/bridge-mls`;
 
+    // Create AbortController for 15s timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), BRIDGE_MLS_TIMEOUT);
+
     const bridgeResponse = await fetch(bridgeUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mlsNumber: mls })
+      body: JSON.stringify({ mlsNumber: mls }),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     if (!bridgeResponse.ok) {
       const errorText = await bridgeResponse.text();

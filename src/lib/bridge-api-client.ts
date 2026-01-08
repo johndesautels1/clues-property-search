@@ -4,6 +4,9 @@
  * Documentation: https://www.bridgeinteractive.com/developers/bridge-api/
  */
 
+// Bridge API timeout - matches STELLAR_MLS_TIMEOUT in search.ts
+const BRIDGE_API_TIMEOUT = 15000; // 15 seconds for Bridge API calls
+
 export interface BridgeAPIConfig {
   clientId?: string;
   clientSecret?: string;
@@ -306,15 +309,21 @@ export class BridgeAPIClient {
     console.log('[Bridge API] Auth URL:', authUrl);
     console.log('[Bridge API] Credentials length:', credentials.length);
 
+    // Create AbortController for 15s timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), BRIDGE_API_TIMEOUT);
+
     try {
-      console.log('[Bridge API] Attempting authentication with Basic Auth...');
+      console.log('[Bridge API] Attempting authentication with Basic Auth (15s timeout)...');
       const response = await fetch(authUrl, {
         method: 'GET',
         headers: {
           'Authorization': `Basic ${base64Credentials}`,
           'Content-Type': 'application/json',
         },
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       console.log('[Bridge API] Auth response status:', response.status, response.statusText);
       console.log('[Bridge API] Auth response headers:', JSON.stringify(Object.fromEntries(response.headers.entries())));
@@ -489,6 +498,10 @@ export class BridgeAPIClient {
 
     console.log('[Bridge API] Searching properties:', url);
 
+    // Create AbortController for 15s timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), BRIDGE_API_TIMEOUT);
+
     try {
       const response = await fetch(url, {
         method: 'GET',
@@ -496,7 +509,9 @@ export class BridgeAPIClient {
           'Authorization': `${token.token_type} ${token.access_token}`,
           'Content-Type': 'application/json',
         },
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -860,12 +875,19 @@ export class BridgeAPIClient {
       console.log('[Bridge API] Lenient search URL:', url);
 
       const token = await this.authenticate();
+
+      // Create AbortController for 15s timeout
+      const lenientController = new AbortController();
+      const lenientTimeoutId = setTimeout(() => lenientController.abort(), BRIDGE_API_TIMEOUT);
+
       const lenientResponse = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${token.access_token}`,
           'Accept': 'application/json',
         },
+        signal: lenientController.signal,
       });
+      clearTimeout(lenientTimeoutId);
 
       if (lenientResponse.ok) {
         const data = await lenientResponse.json();
@@ -907,12 +929,18 @@ export class BridgeAPIClient {
 
       console.log(`[Bridge API] Media URL: ${url}`);
 
+      // Create AbortController for 15s timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), BRIDGE_API_TIMEOUT);
+
       const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${authToken.access_token}`,
           'Content-Type': 'application/json'
-        }
+        },
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         // BUG #13 FIX: Enhanced error logging for Media API failures
