@@ -2,12 +2,22 @@
  * Unified LLM Configuration
  * Single source of truth for LLM cascade order and names
  * Used across AddProperty, Dashboard, API, and all components
+ *
+ * FULL TIER STRUCTURE (Updated 2026-01-08):
+ * Tier 1: Stellar MLS (Bridge Interactive API)
+ * Tier 2: APIs (Google APIs first, then Free APIs)
+ * Tier 3: Tavily Web Search (targeted AVM, school, crime searches)
+ * Tier 4: Web-Search LLMs (#1-5 below)
+ * Tier 5: Claude Opus (deep reasoning, NO web search)
+ *
+ * LLM CASCADE ORDER (Tier 4-5):
+ * 1. Perplexity - Deep web search (HIGHEST PRIORITY)
+ * 2. Gemini - Google Search grounding
+ * 3. GPT - Web evidence mode
+ * 4. Claude Sonnet - Web search beta
+ * 5. Grok - X/Twitter real-time data
+ * 6. Claude Opus - Deep reasoning (LAST)
  */
-
-// Official cascade order by reliability (Updated 2026-01-08)
-// 1. Web-search LLMs first (real data verification)
-// 2. Claude Sonnet moved to #4 (before Grok)
-// 3. Claude Opus last (NO web search - pure reasoning)
 export const LLM_CASCADE_ORDER = [
   'perplexity',      // #1 - Tier 4 - Deep web search (HIGHEST LLM PRIORITY)
   'gemini',          // #2 - Tier 4 - Google Search grounding
