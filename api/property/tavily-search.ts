@@ -12,7 +12,7 @@
 
 export const TAVILY_CONFIG = {
   baseUrl: 'https://api.tavily.com/search',
-  timeout: 15000, // 15 seconds
+  timeout: 30000, // 30 seconds - INCREASED from 15s on 2026-01-08
   maxResults: 5,
   searchDepth: 'basic' as const,
 };
@@ -49,9 +49,9 @@ export async function tavilySearch(
     return { results: [], query };
   }
 
-  // Create AbortController for 5s timeout per API call (15s total for all 5 parallel groups)
+  // Create AbortController for 10s timeout per API call (30s total budget)
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000);
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
 
   try {
     console.log(`🔍 [Tavily] Searching: "${query}"`);
@@ -88,7 +88,7 @@ export async function tavilySearch(
   } catch (error) {
     clearTimeout(timeoutId);
     if (error instanceof Error && error.name === 'AbortError') {
-      console.log(`⚠️ [Tavily] Timeout after 5s for: "${query}"`);
+      console.log(`⚠️ [Tavily] Timeout after 10s for: "${query}"`);
     } else {
       console.error('❌ [Tavily] Search failed:', error);
     }

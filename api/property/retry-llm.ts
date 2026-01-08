@@ -129,7 +129,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
   ]);
 }
 
-const LLM_TIMEOUT = 180000; // 180s (3 min) - GPT-4o with reasoning needs 2-3 min
+const LLM_TIMEOUT = 60000; // 60s (1 min) - REDUCED from 180s on 2026-01-08
 const PERPLEXITY_TIMEOUT = 45000; // 45s for Perplexity
 
 // ============================================

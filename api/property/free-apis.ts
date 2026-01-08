@@ -290,7 +290,7 @@ export async function callFemaFlood(lat: number, lon: number): Promise<ApiResult
 
   try {
     const url = `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?where=1%3D1&geometry=${lon}%2C${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE%2CZONE_SUBTY%2CSFHA_TF&returnGeometry=false&f=json`;
-    const fetchResult = await safeFetch<any>(url, undefined, 'FEMA-Flood', 60000); // 60s timeout
+    const fetchResult = await safeFetch<any>(url, undefined, 'FEMA-Flood', 30000); // 30s timeout - REDUCED from 60s
 
     if (!fetchResult.success || !fetchResult.data) {
       return { success: false, source: 'FEMA Flood', fields, error: fetchResult.error || 'Fetch failed' };
@@ -716,9 +716,9 @@ export async function callCrimeGrade(lat: number, lon: number, address: string):
     console.log(`[FBI Crime] Fetching property crime: ${propertyUrl.replace(apiKey, 'API_KEY_HIDDEN')}`);
 
     const [violentResult, propertyResult] = await Promise.all([
-      safeFetch<any>(violentUrl, undefined, 'FBI-Crime-Violent', 60000),
-      safeFetch<any>(propertyUrl, undefined, 'FBI-Crime-Property', 60000)
-    ]);
+      safeFetch<any>(violentUrl, undefined, 'FBI-Crime-Violent', 30000),
+      safeFetch<any>(propertyUrl, undefined, 'FBI-Crime-Property', 30000)
+    ]); // 30s timeout - REDUCED from 60s
 
     if (!violentResult.success || !violentResult.data) {
       console.log(`[FBI Crime] ⚠️ Violent crime fetch failed: ${violentResult.error}`);
@@ -1238,7 +1238,7 @@ export async function callNOAAClimate(lat: number, lon: number, zip: string, cou
     const url = `https://www.ncei.noaa.gov/access/services/data/v1?dataset=daily-summaries&stations=${station}&startDate=${startDate}&endDate=${endDate}&format=json&dataTypes=TMAX,TMIN,PRCP,AWND,WSF2&units=standard`;
 
     console.log(`[NOAA Climate] Fetching climate data for ${county} County (station: ${station})`);
-    const fetchResult = await safeFetch<any[]>(url, undefined, 'NOAA-Climate', 60000); // 60s timeout
+    const fetchResult = await safeFetch<any[]>(url, undefined, 'NOAA-Climate', 30000); // 30s timeout - REDUCED from 60s
 
     if (!fetchResult.success || !fetchResult.data) {
       console.log(`[NOAA Climate] ❌ Fetch failed: ${fetchResult.error || 'Unknown error'}`);
@@ -1301,7 +1301,7 @@ export async function callNOAAStormEvents(county: string, state: string = 'FL'):
     const url = `https://www.ncei.noaa.gov/access/services/data/v1?dataset=daily-summaries&stations=${station}&startDate=${startDate}&endDate=${endDate}&format=json&dataTypes=AWND,WSF2,WSF5&units=standard`;
 
     console.log(`[NOAA Storm] Fetching storm data for ${county} County (station: ${station})`);
-    const fetchResult = await safeFetch<any[]>(url, undefined, 'NOAA-Storm', 60000); // 60s timeout
+    const fetchResult = await safeFetch<any[]>(url, undefined, 'NOAA-Storm', 30000); // 30s timeout - REDUCED from 60s
 
     if (!fetchResult.success || !fetchResult.data) {
       console.log(`[NOAA Storm] ❌ Fetch failed: ${fetchResult.error || 'Unknown error'}`);
@@ -1410,7 +1410,7 @@ export async function callUSGSElevation(lat: number, lon: number): Promise<ApiRe
     // USGS National Map Elevation Point Query Service
     const url = `https://epqs.nationalmap.gov/v1/json?x=${lon}&y=${lat}&units=Feet&output=json`;
 
-    const fetchResult = await safeFetch<any>(url, undefined, 'USGS-Elevation', 60000); // 60s timeout
+    const fetchResult = await safeFetch<any>(url, undefined, 'USGS-Elevation', 30000); // 30s timeout - REDUCED from 60s
 
     if (!fetchResult.success || !fetchResult.data) {
       return { success: false, source: 'USGS Elevation', fields, error: fetchResult.error || 'Fetch failed' };
@@ -1453,7 +1453,7 @@ export async function callUSGSEarthquake(lat: number, lon: number): Promise<ApiR
 
     const url = `https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=${startDate}&endtime=${endDate}&minlatitude=${lat - latBuffer}&maxlatitude=${lat + latBuffer}&minlongitude=${lon - lonBuffer}&maxlongitude=${lon + lonBuffer}&minmagnitude=2.0`;
 
-    const fetchResult = await safeFetch<any>(url, undefined, 'USGS-Earthquake', 60000); // 60s timeout
+    const fetchResult = await safeFetch<any>(url, undefined, 'USGS-Earthquake', 30000); // 30s timeout - REDUCED from 60s
 
     if (!fetchResult.success || !fetchResult.data) {
       return { success: false, source: 'USGS Earthquake', fields, error: fetchResult.error || 'Fetch failed' };
@@ -1494,7 +1494,7 @@ export async function callEPAFRS(lat: number, lon: number): Promise<ApiResult> {
     // Filter for Superfund (SEMS) sites
     const url = `https://frs-public.epa.gov/ords/frs_public2/frs_rest_services.get_facilities?latitude83=${lat}&longitude83=${lon}&search_radius=5&pgm_sys_acrnm=SEMS&output=JSON`;
 
-    const fetchResult = await safeFetch<any>(url, undefined, 'EPA-FRS', 60000); // 60s timeout
+    const fetchResult = await safeFetch<any>(url, undefined, 'EPA-FRS', 30000); // 30s timeout - REDUCED from 60s
 
     if (!fetchResult.success || !fetchResult.data) {
       return { success: false, source: 'EPA FRS', fields, error: fetchResult.error || 'Fetch failed' };

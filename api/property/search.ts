@@ -53,9 +53,9 @@ export const config = {
 
 // Timeout wrapper for API/LLM calls - prevents hanging
 const STELLAR_MLS_TIMEOUT = 15000; // 15 seconds for Stellar MLS via Bridge API (Tier 1) - typically responds in <10s
-const FREE_API_TIMEOUT = 60000; // 60 seconds for free APIs (Tier 2) - reduced from 90s
-const TAVILY_TIMEOUT = 15000; // 15 seconds for Tavily web searches (Tier 3) - fast targeted searches
-const LLM_TIMEOUT = 180000; // 180 seconds (3 min) for Claude, GPT, Gemini, Grok (Tier 4-5) - GPT-4o with reasoning needs 2-3 min
+const FREE_API_TIMEOUT = 30000; // 30 seconds for free APIs (Tier 2) - REDUCED from 60s on 2026-01-08
+const TAVILY_TIMEOUT = 30000; // 30 seconds for Tavily web searches (Tier 3) - INCREASED from 15s on 2026-01-08
+const LLM_TIMEOUT = 60000; // 60 seconds (1 min) for Claude, GPT, Gemini, Grok (Tier 4-5) - REDUCED from 180s on 2026-01-08
 const PERPLEXITY_TIMEOUT = 45000; // 45 seconds for Perplexity deep web search (Tier 4 #1)
 
 // ============================================
@@ -1415,7 +1415,7 @@ async function getFloodZone(lat: number, lon: number): Promise<Record<string, an
   try {
     // Updated 2025-12-04: FEMA changed URL from /gis/nfhl/rest to /arcgis/rest
     const url = `https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query?where=1%3D1&geometry=${lon}%2C${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE%2CZONE_SUBTY%2CSFHA_TF&returnGeometry=false&f=json`;
-    const fetchResult = await safeFetch<any>(url, undefined, 'FEMA-Flood', 60000); // 60s timeout
+    const fetchResult = await safeFetch<any>(url, undefined, 'FEMA-Flood', 30000); // 30s timeout - REDUCED from 60s
 
     if (!fetchResult.success || !fetchResult.data) {
       console.error(`❌ [FEMA] Fetch failed: ${fetchResult.error || 'Unknown error'}`);
@@ -5013,7 +5013,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('========================================');
       console.log('TIER 2 & 3: FREE APIs (Google, WalkScore, FEMA, etc.)');
       console.log('========================================');
-      console.log('🔍 Calling enrichWithFreeAPIs with 60s timeout for:', realAddress); // Note: This is FREE_API_TIMEOUT, not STELLAR_MLS_TIMEOUT
+      console.log('🔍 Calling enrichWithFreeAPIs with 30s timeout for:', realAddress); // Note: This is FREE_API_TIMEOUT (30s)
       console.log('🔍 With validation: city=', mlsCity, 'state=', mlsState, 'zip=', mlsZip);
       try {
         const enrichedData = await withTimeout(
@@ -5113,7 +5113,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ========================================
     // TIER 3 (continued): TAVILY WEB SEARCH
     // Targeted searches for AVMs, market data, permits, views
-    // TIMEOUT: 15s (TAVILY_TIMEOUT) - fast targeted searches
+    // TIMEOUT: 30s (TAVILY_TIMEOUT) - targeted web searches
     // ========================================
     if (!skipApis) {
       console.log('========================================');
@@ -5121,7 +5121,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('========================================');
       try {
         const { runTavilyTier3 } = await import('./tavily-search');
-        // Wrap with 15s timeout to prevent hanging
+        // Wrap with 30s timeout to prevent hanging
         const tavilyFields = await withTimeout(
           runTavilyTier3(
             realAddress,
