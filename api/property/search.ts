@@ -3526,7 +3526,11 @@ const GPT_LLM_AUDITOR_USER_TEMPLATE = GPT_FIELD_COMPLETER_USER_TEMPLATE;
 // ============================================
 // CLAUDE SONNET PROMPT - WITH WEB SEARCH - Fast, accurate
 // ============================================
-const PROMPT_CLAUDE_SONNET = `You are Claude Sonnet, a property data specialist with web search capabilities.
+const PROMPT_CLAUDE_SONNET = `🚨 CRITICAL: OUTPUT JSON ONLY. NO CONVERSATIONAL TEXT. NO EXPLANATIONS. START YOUR RESPONSE WITH { AND END WITH }.
+
+You are Claude Sonnet, a property data specialist with web search capabilities.
+
+⚠️ NEVER SAY "I'll search for..." or "Let me find..." - ONLY OUTPUT RAW JSON.
 
 🔵 FIRING ORDER: You are the 4th LLM in the search chain (after Perplexity → Gemini → GPT). Grok and Opus fire AFTER you.
 PRIOR DATA SOURCES (already ran BEFORE you):
@@ -3745,13 +3749,18 @@ async function callClaudeSonnet(address: string): Promise<any> {
             role: 'user',
             content: `Property address: ${address}
 
-SEARCH and extract these fields:
-- 10_listing_price (search Zillow/Redfin for current price)
-- 17_bedrooms, 18_full_bathrooms, 21_living_sqft (property specs)
-- 25_year_built, 35_annual_taxes (county records)
-- 7_county, 8_zip_code (geographic)
+SEARCH and extract ALL 47 high-velocity fields listed in your instructions.
 
-Return JSON with numbered field keys like "10_listing_price": {"value": 450000, "source": "Zillow"}`,
+🚨 RESPOND WITH JSON ONLY - NO OTHER TEXT:
+{
+  "fields": {
+    "12_market_value_estimate": {"value": 450000, "source": "Zillow", "confidence": "High"},
+    ...
+  }
+}
+
+⛔ DO NOT write "I'll search for...", "Let me find...", or ANY conversational text.
+✅ START YOUR RESPONSE WITH { AND END WITH }`,
           },
         ],
       }),
@@ -4026,45 +4035,18 @@ async function callGPT5(
       console.log('[GPT] Final response after tool execution received');
     }
 
-    // Handle /v1/responses format - OpenAI handles web_search internally
-    // The output array contains: web_search_call items (search metadata) + message item (final text)
+    // Handle Chat Completions format (primary) - we use /v1/chat/completions
     let text: string | undefined;
 
-    // Method 1: Direct output_text (simplest case)
-    if (data.output_text) {
-      text = data.output_text;
-      console.log('[GPT] Found text in output_text');
-    }
-    // Method 2: Parse output array for message item
-    else if (Array.isArray(data.output)) {
-      // Log what we received for debugging
-      const outputTypes = data.output.map((o: any) => o.type).join(', ');
-      console.log(`[GPT] Output array contains: ${outputTypes}`);
-
-      // Check if web search was used
-      const webSearchCalls = data.output.filter((o: any) => o.type === 'web_search_call');
-      if (webSearchCalls.length > 0) {
-        console.log(`🔍 [GPT] Web search executed: ${webSearchCalls.length} searches`);
-      }
-
-      // Find the message item with the actual response
-      const messageItem = data.output.find((o: any) => o.type === 'message');
-      if (messageItem?.content) {
-        // Content is an array, find the output_text item
-        if (Array.isArray(messageItem.content)) {
-          const textItem = messageItem.content.find((c: any) => c.type === 'output_text' || c.type === 'text');
-          text = textItem?.text;
-          console.log(`[GPT] Found text in message.content array (${textItem?.type})`);
-        } else if (typeof messageItem.content === 'string') {
-          text = messageItem.content;
-          console.log('[GPT] Found text in message.content string');
-        }
-      }
-    }
-    // Method 3: Fallback to chat/completions format
-    else if (data.choices?.[0]?.message?.content) {
+    // Primary: Chat Completions format (this is what we're using now)
+    if (data.choices?.[0]?.message?.content) {
       text = data.choices[0].message.content;
-      console.log('[GPT] Found text in choices[0].message.content (chat/completions format)');
+      console.log('[GPT] Found text in choices[0].message.content');
+    }
+    // Legacy fallback: output_text (shouldn't happen with chat completions)
+    else if (data.output_text) {
+      text = data.output_text;
+      console.log('[GPT] Found text in output_text (legacy fallback)');
     }
 
     if (text) {
@@ -4193,8 +4175,8 @@ async function callGPT5FieldAuditor(
       console.log(`✅ [GPT LLM Auditor] Response completed - reasoning: ${reasoningTokens} tokens, output: ${outputTokens} tokens`);
     }
 
-    // Handle /v1/responses format
-    const text = data.output_text || data.choices?.[0]?.message?.content;
+    // Handle Chat Completions format (primary)
+    const text = data.choices?.[0]?.message?.content || data.output_text;
     if (text) {
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
