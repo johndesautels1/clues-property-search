@@ -38,9 +38,9 @@ export const PERPLEXITY_CONFIG = {
 
 // ============================================================================
 // PROMPT A: Listing Portals & Neighborhood Pricing
-// Fields: listing_price, market_value, AVMs, bedrooms, bathrooms, sqft,
+// Fields: listing_price, market_value, SPECIFIC AVMs (16a-16f), bedrooms, bathrooms, sqft,
 //         property_type, garage, HOA, pool, renovations, neighborhood stats,
-//         rental estimate, financing, comps
+//         rental estimate, rent_zestimate, financing, comps
 // ============================================================================
 export function buildPromptA(address: string, city: string, county: string): string {
   return `You are a retrieval-only real estate research agent with LIVE WEB SEARCH.
@@ -51,8 +51,16 @@ County: ${county}
 Goal: Using only major residential listing portals (Redfin, Zillow, Realtor.com, Trulia, Homes.com), extract the following if explicitly available for this specific property or its immediate area:
 
 listing_price
-market_value_estimate
-automated_valuation_models (list of AVMs with name and value)
+market_value_estimate (calculate as average of available AVMs below)
+
+SPECIFIC AVM VALUES (search each source individually):
+zestimate (Zillow's Zestimate - search site:zillow.com for this address)
+redfin_estimate (Redfin Estimate - search site:redfin.com for this address)
+first_american_avm (First American AVM if available)
+quantarium_avm (Quantarium AVM if available)
+ice_avm (ICE/Intercontinental Exchange AVM if available)
+collateral_analytics_avm (Collateral Analytics AVM if available)
+
 bedrooms
 full_bathrooms
 half_bathrooms
@@ -73,12 +81,15 @@ neighborhood_price_to_rent_ratio
 property_price_vs_neighborhood_median_percent
 neighborhood_avg_days_on_market
 rental_estimate_monthly
+rent_zestimate (Zillow's Rent Zestimate - search site:zillow.com for rental estimate)
 common_financing_terms_or_incentives
 notable_comparable_sales (short list with address, date, price, beds, baths, sqft if available)
 
 Rules:
 - Use only Redfin, Zillow, Realtor.com, Trulia, and Homes.com for property-level and neighborhood market stats.
 - Prefer Redfin > Zillow > Realtor.com when values conflict.
+- For AVMs: Search site:zillow.com for Zestimate, site:redfin.com for Redfin Estimate. Report each AVM separately.
+- For market_value_estimate: Calculate as arithmetic average of all AVMs found (if 2 found, add and divide by 2; if 3 found, add and divide by 3, etc.)
 - For neighborhood metrics, use portal "market stats" or similar pages for the neighborhood or ZIP.
 - If listing_price and rental_estimate_monthly are both available, compute price_to_rent_ratio = listing_price / (rental_estimate_monthly * 12).
 - Include a field only if you are ≥90% confident; otherwise omit it.
@@ -87,8 +98,12 @@ Rules:
 Output JSON only, no commentary. Example shape:
 {
   "listing_price": 500000,
+  "zestimate": 485000,
+  "redfin_estimate": 492000,
+  "market_value_estimate": 488500,
   "bedrooms": 3,
-  "neighborhood_median_price": 520000
+  "neighborhood_median_price": 520000,
+  "rent_zestimate": 2400
 }`;
 }
 
@@ -289,7 +304,17 @@ export const PERPLEXITY_FIELD_MAPPING: Record<string, string | null> = {
   // Prompt A - Listing Portals
   'listing_price': '10_listing_price',
   'market_value_estimate': '12_market_value_estimate',
-  'automated_valuation_models': '16_avms',
+  'automated_valuation_models': '16_avms', // Legacy - keep for backwards compat
+
+  // SPECIFIC AVM FIELDS (16a-16f) - Added 2026-01-08
+  'zestimate': '16a_zestimate',
+  'redfin_estimate': '16b_redfin_estimate',
+  'first_american_avm': '16c_first_american_avm',
+  'quantarium_avm': '16d_quantarium_avm',
+  'ice_avm': '16e_ice_avm',
+  'collateral_analytics_avm': '16f_collateral_analytics_avm',
+  'rent_zestimate': '181_rent_zestimate',
+
   'bedrooms': '17_bedrooms',
   'full_bathrooms': '18_full_bathrooms',
   'half_bathrooms': '19_half_bathrooms',
