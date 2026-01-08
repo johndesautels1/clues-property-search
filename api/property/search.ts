@@ -3116,10 +3116,10 @@ Do NOT re-search fields already populated - focus ONLY on MISSING fields.
    - 40_roof_age_est: Extract from permits or calculate from year built
    - 46_hvac_age: Extract from permits or calculate from year built
 5. PROPERTY FEATURES SEARCH STRATEGY:
-   - 133_security_features: Search "[ADDRESS] security system alarm cameras" on listing sites
+   - 133_ev_charging: Search "[ADDRESS] EV charging electric vehicle charger" on listing sites
    - 134_smart_home_features: Search "[ADDRESS] smart home Nest Alexa automation" on listing sites
-   - 135_view: Search "[ADDRESS] view water mountain city golf" on listing sites
-   - 138_guest_parking: Search "[ADDRESS] guest parking visitor" on listing sites
+   - 135_accessibility_modifications: Search "[ADDRESS] accessibility wheelchair ramp ADA" on listing sites
+   - 138_special_assessments: Search "[ADDRESS] special assessments HOA assessment" on listing sites
 6. JSON ONLY: Return ONLY the raw JSON object. No conversational text.
 
 ### MANDATORY SEARCH QUERIES
@@ -3164,10 +3164,10 @@ OUTPUT SCHEMA
     "110_trash_provider": <string|null>,
     "111_internet_providers_top3": <array|null>,
     "114_cable_tv_provider": <string|null>,
-    "133_security_features": <string|null>,
+    "133_ev_charging": <string|null>,
     "134_smart_home_features": <string|null>,
-    "135_view": <string|null>,
-    "138_guest_parking": <string|null>,
+    "135_accessibility_modifications": <string|null>,
+    "138_special_assessments": <string|null>,
     "169_zillow_views": <number|null>,
     "170_redfin_views": <number|null>,
     "171_homes_views": <number|null>,
@@ -3329,10 +3329,10 @@ HARD RULES (EVIDENCE FIREWALL)
    - "[ADDRESS] renovations upgrades" (listing sites) → 59_recent_renovations
 
 10) Property Features:
-   - "[ADDRESS] security system alarm cameras" (listing sites) → 133_security_features
+   - "[ADDRESS] EV charging electric vehicle charger" (listing sites) → 133_ev_charging
    - "[ADDRESS] smart home Nest Alexa automation" (listing sites) → 134_smart_home_features
-   - "[ADDRESS] view water mountain city golf" (listing sites) → 135_view
-   - "[ADDRESS] guest parking visitor" (listing sites) → 138_guest_parking
+   - "[ADDRESS] accessibility wheelchair ramp ADA" (listing sites) → 135_accessibility_modifications
+   - "[ADDRESS] special assessments HOA assessment" (listing sites) → 138_special_assessments
 
 11) Natural Gas:
    - "[CITY] [STATE] natural gas provider" → 109_natural_gas
@@ -3584,10 +3584,10 @@ PERMITS & RENOVATIONS FIELDS:
 - 62_permit_history_other: Other permit history
 
 PROPERTY FEATURES FIELDS:
-- 133_security_features: Security system details
+- 133_ev_charging: EV charging availability
 - 134_smart_home_features: Smart home technology
-- 135_view: Property view description
-- 138_guest_parking: Guest parking availability
+- 135_accessibility_modifications: Accessibility features
+- 138_special_assessments: Special assessments or HOA assessments
 
 SEARCH STRATEGY:
 1. SPECIFIC AVM SEARCHES (search for EACH AVM individually):
@@ -3601,7 +3601,7 @@ SEARCH STRATEGY:
 4. Search "[ADDRESS] public transit" for transit access
 5. Search "[ADDRESS] [COUNTY] building permits roof HVAC" for permit history (60-62) and age estimates (40, 46)
 6. Search "[ADDRESS] renovations upgrades" on listing sites for field 59
-7. Search "[ADDRESS] security smart home features view guest parking" on listing sites for fields 133-135, 138
+7. Search "[ADDRESS] EV charging smart home accessibility special assessments" on listing sites for fields 133-135, 138
 8. Only return fields you found with high confidence - use null for unverified data
 
 ${JSON_RESPONSE_FORMAT}`;

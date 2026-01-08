@@ -40,10 +40,10 @@ const cluesMissingFieldsList = {
     "110_trash_provider",
     "111_internet_providers_top3",
     "114_cable_tv_provider",
-    "133_security_features",
+    "133_ev_charging",
     "134_smart_home_features",
-    "135_view",
-    "138_guest_parking",
+    "135_accessibility_modifications",
+    "138_special_assessments",
     "169_zillow_views",
     "170_redfin_views",
     "171_homes_views",
@@ -90,10 +90,10 @@ Do NOT re-search fields already populated by Perplexity - focus ONLY on MISSING 
    - 40_roof_age_est: Extract from permits or calculate from year built
    - 46_hvac_age: Extract from permits or calculate from year built
 5. PROPERTY FEATURES SEARCH STRATEGY:
-   - 133_security_features: Search "[ADDRESS] security system alarm cameras" on listing sites
+   - 133_ev_charging: Search "[ADDRESS] EV charging electric vehicle charger" on listing sites
    - 134_smart_home_features: Search "[ADDRESS] smart home Nest Alexa automation" on listing sites
-   - 135_view: Search "[ADDRESS] view water mountain city golf" on listing sites
-   - 138_guest_parking: Search "[ADDRESS] guest parking visitor" on listing sites
+   - 135_accessibility_modifications: Search "[ADDRESS] accessibility wheelchair ramp ADA" on listing sites
+   - 138_special_assessments: Search "[ADDRESS] special assessments HOA assessment" on listing sites
 6. JSON ONLY: Return ONLY the raw JSON object. No conversational text.
 
 ### MANDATORY SEARCH QUERIES
@@ -155,10 +155,10 @@ RETURN JSON MATCHING THIS SCHEMA:
     "110_trash_provider": <string|null>,
     "111_internet_providers_top3": <array|null>,
     "114_cable_tv_provider": <string|null>,
-    "133_security_features": <string|null>,
+    "133_ev_charging": <string|null>,
     "134_smart_home_features": <string|null>,
-    "135_view": <string|null>,
-    "138_guest_parking": <string|null>,
+    "135_accessibility_modifications": <string|null>,
+    "138_special_assessments": <string|null>,
     "169_zillow_views": <number|null>,
     "170_redfin_views": <number|null>,
     "171_homes_views": <number|null>,

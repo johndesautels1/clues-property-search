@@ -33,7 +33,7 @@ const missingFieldsList = {
     "103_comparable_sales", "104_electric_provider", "105_avg_electric_bill",
     "106_water_provider", "107_avg_water_bill", "109_natural_gas", "110_trash_provider",
     "111_internet_providers_top3", "114_cable_tv_provider",
-    "133_security_features", "134_smart_home_features", "135_view", "138_guest_parking",
+    "133_ev_charging", "134_smart_home_features", "135_accessibility_modifications", "138_special_assessments",
     "169_zillow_views", "170_redfin_views", "171_homes_views", "172_realtor_views",
     "174_saves_favorites", "175_market_type", "176_avg_sale_to_list_percent",
     "177_avg_days_to_pending", "178_multiple_offers_likelihood", "180_price_trend", "181_rent_zestimate"
@@ -102,11 +102,11 @@ const missingFieldsRules = {
     // Utilities (ADDED 2026-01-08)
     "109_natural_gas": { type: "string", definition: "Natural gas provider name or 'None' if all-electric. Search '[CITY] [STATE] natural gas provider'." },
 
-    // Property Features (ADDED 2026-01-08)
-    "133_security_features": { type: "string", definition: "Security system details (e.g., 'Ring doorbell, ADT alarm, cameras'). Search listing portals." },
+    // Property Features (ADDED 2026-01-08) - CORRECTED per fields-schema.ts SOURCE OF TRUTH
+    "133_ev_charging": { type: "string", definition: "EV charging availability (e.g., 'Tesla charger installed', '240V outlet in garage', 'None'). Search listing portals." },
     "134_smart_home_features": { type: "string", definition: "Smart home technology (e.g., 'Nest thermostat, Alexa integration, smart locks'). Search listing portals." },
-    "135_view": { type: "string", definition: "Property view description (e.g., 'Water view', 'Mountain view', 'City skyline', 'Golf course'). Search listing portals." },
-    "138_guest_parking": { type: "string", definition: "Guest/visitor parking availability (e.g., 'Street parking', 'Visitor spots', 'None'). Search listing portals." },
+    "135_accessibility_modifications": { type: "string", definition: "Accessibility features (e.g., 'Wheelchair ramp, grab bars, wide doorways, ADA compliant'). Search listing portals." },
+    "138_special_assessments": { type: "string", definition: "Special assessments or pending HOA assessments (e.g., 'Roof assessment $5000', 'Road paving assessment'). Search listing portals and HOA docs." },
 
     // Legacy fields (kept for backward compatibility)
     "120_flood_risk_level": { type: "string", definition: "FEMA flood zone designation or flood risk category." },
@@ -1324,6 +1324,23 @@ LOCATION & TRANSIT FIELDS:
 - 81_public_transit_access: Public transit access description
 - 82_commute_to_city_center: Commute time to city center
 
+STRUCTURE & SYSTEMS FIELDS:
+- 40_roof_age_est: Estimated roof age
+- 46_hvac_age: HVAC system age
+
+PERMITS & RENOVATIONS FIELDS:
+- 59_recent_renovations: Recent renovations or upgrades
+- 60_permit_history_roof: Roof permit history
+- 61_permit_history_hvac: HVAC permit history
+- 62_permit_history_other: Other permit history
+
+PROPERTY FEATURES FIELDS:
+- 109_natural_gas: Natural gas provider or 'None'
+- 133_ev_charging: EV charging availability
+- 134_smart_home_features: Smart home technology
+- 135_accessibility_modifications: Accessibility features
+- 138_special_assessments: Special assessments or HOA assessments
+
 MARKET ACTIVITY FIELDS (if property is actively listed):
 - 169_zillow_views: Number of Zillow views
 - 170_redfin_views: Number of Redfin views
@@ -1339,9 +1356,12 @@ SEARCH STRATEGY:
    - Search for 16c_first_american_avm, 16d_quantarium_avm, 16e_ice_avm, 16f_collateral_analytics_avm if available
    - Calculate 12_market_value_estimate = arithmetic average of ALL AVMs found (if 2: add & divide by 2; if 3: add & divide by 3, etc.)
 2. Search "[CITY/ZIP] median home price 2026" for market statistics
-3. Search "[CITY] utility providers" for utility/service information
+3. Search "[CITY] utility providers" for utility/service information (including 109_natural_gas)
 4. Search "[ADDRESS] public transit" for transit access
-5. Only return fields you found with high confidence - use null for unverified data
+5. Search "[ADDRESS] [COUNTY] building permits roof HVAC" for permit history (60-62) and age estimates (40, 46)
+6. Search "[ADDRESS] renovations upgrades" on listing sites for field 59
+7. Search "[ADDRESS] EV charging smart home accessibility special assessments" on listing sites for fields 133-135, 138
+8. Only return fields you found with high confidence - use null for unverified data
 
 Return JSON with numbered field keys like:
 {

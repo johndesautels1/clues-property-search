@@ -195,9 +195,9 @@ return {
 
 ---
 
-## 📋 PART 4: COMPREHENSIVE FIELD-BY-FIELD ACTION PLAN
+## 📋 PART 4: COMPREHENSIVE FIELD-BY-FIELD ACTION PLAN ✅ COMPLETED 2026-01-08
 
-### Fields Needing Tavily + LLM Cascade Integration
+### Fields Needing Tavily + LLM Cascade Integration (ALL 23 FIELDS NOW IN ALL LLM PROMPTS)
 
 | Field | Field Name | Current Sources | Add Tavily | Add to Perplexity | Add to LLMs | Priority |
 |-------|------------|-----------------|------------|-------------------|-------------|----------|
@@ -272,15 +272,22 @@ return {
 
 ---
 
-### PHASE 4: LLM Cascade Expansion - 2 Hours
+### PHASE 4: LLM Cascade Expansion - 2 Hours ✅ COMPLETED 2026-01-08
 
-| LLM | Fields to Add | File Location | Verification |
-|-----|---------------|---------------|--------------|
-| Gemini | All 23 fields from table above | Gemini system prompt | Returns field data |
-| GPT | All 23 fields from table above | GPT field completer prompt | Returns field data |
-| Claude Sonnet | All 23 fields from table above | Sonnet system prompt | Returns field data |
-| Grok | All 23 fields from table above | Grok system prompt | Returns field data |
-| Claude Opus | Exclude web-search fields | Opus system prompt | Only non-web fields |
+| LLM | Fields to Add | File Location | Verification | Status |
+|-----|---------------|---------------|--------------|--------|
+| Gemini | All 23 fields (47 total) | src/config/gemini-prompts.ts | Returns field data | ✅ DONE |
+| GPT | All 23 fields (47 total) | api/property/retry-llm.ts | Returns field data | ✅ DONE |
+| Claude Sonnet | All 23 fields + permits/features | api/property/retry-llm.ts | Returns field data | ✅ DONE |
+| Grok | All 23 fields (47 total) | api/property/retry-llm.ts | Returns field data | ✅ DONE |
+| Claude Opus | Exclude web-search fields | api/property/retry-llm.ts | Only non-web fields | ✅ DONE |
+
+**CRITICAL FIX APPLIED:** Corrected field name mismatches per fields-schema.ts SOURCE OF TRUTH:
+- Field 133: `security_features` → `ev_charging`
+- Field 135: `view` → `accessibility_modifications`
+- Field 138: `guest_parking` → `special_assessments`
+
+Files updated: gemini-prompts.ts, retry-llm.ts, search.ts
 
 ---
 
