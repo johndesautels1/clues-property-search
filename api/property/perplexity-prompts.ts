@@ -396,6 +396,16 @@ export const PERPLEXITY_FIELD_MAPPING: Record<string, string | null> = {
   'timestamp': null,
   'error': null,
   'message': null,
+  'data_confidence_notes': null,
+
+  // Subject property echo fields - Perplexity sometimes echoes input data
+  'subject_property_address': null, // Already captured in 1_full_address
+  'subject_property_beds': '17_bedrooms',
+  'subject_property_baths': '20_total_bathrooms',
+  'subject_property_sqft': '21_living_sqft',
+  'subject_property_year_built': '25_year_built',
+  'subject_property_lot_size_acres': '24_lot_size_acres',
+  'subject_property_county': '7_county',
 
   // Additional field aliases Perplexity returns (discovered 2026-01-06)
   'current_listing_price': '10_listing_price',
