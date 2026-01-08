@@ -1489,13 +1489,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Invalid address format' });
   }
 
-  // Map engine IDs to functions (Order: Perplexity → Gemini → GPT → Grok → Sonnet → Opus)
+  // Map engine IDs to functions (Order: Perplexity → Gemini → GPT → Sonnet → Grok → Opus)
   const engineFunctions: Record<string, (address: string) => Promise<{ fields: Record<string, any>; error?: string }>> = {
     'perplexity': callPerplexity,     // #1 - Deep web search (HIGHEST)
     'gemini': callGemini,             // #2 - Google Search grounding
     'gpt': callGPT5,                  // #3 - Web evidence mode
-    'grok': callGrok,                 // #4 - X/Twitter real-time
-    'claude-sonnet': callClaudeSonnet, // #5 - Web search beta
+    'claude-sonnet': callClaudeSonnet, // #4 - Web search beta
+    'grok': callGrok,                 // #5 - X/Twitter real-time
     'claude-opus': callClaudeOpus,    // #6 - Deep reasoning, NO web (LAST)
   };
 

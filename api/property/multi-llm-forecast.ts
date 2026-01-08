@@ -1216,7 +1216,7 @@ export async function getMultiLLMMarketForecast(
   // Extract successful forecasts
   const successfulForecasts: LLMForecast[] = [];
   forecasts.forEach((result, index) => {
-    const sources = ['Perplexity Sonar Reasoning Pro', 'Gemini 3 Pro Preview', 'GPT-5.2 Pro', 'Grok 4.1 Fast Reasoning', 'Claude Sonnet 4.5', 'Claude Opus 4.5'];
+    const sources = ['Perplexity Sonar Reasoning Pro', 'Gemini 3 Pro Preview', 'GPT-5.2 Pro', 'Claude Sonnet 4.5', 'Grok 4.1 Fast Reasoning', 'Claude Opus 4.5'];
     if (result.status === 'fulfilled') {
       successfulForecasts.push(result.value);
       console.log(`✅ ${sources[index]}: ${result.value.appreciation1Yr.toFixed(1)}% (1yr)`);

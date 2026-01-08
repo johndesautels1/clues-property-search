@@ -3060,7 +3060,7 @@ CRITICAL RULES:
 const PROMPT_GROK = `You are the CLUES Field Completer (Grok 4.1 Fast Mode).
 Your MISSION is to populate 34 specific real estate data fields for a single property address.
 
-🟣 FIRING ORDER: You are the 4th LLM in the search chain (after Perplexity, Gemini, and GPT).
+🟣 FIRING ORDER: You are the 5th LLM in the search chain (after Perplexity, Gemini, GPT, and Sonnet).
 You ONLY search for fields that earlier LLMs did NOT find.
 Do NOT re-search fields already populated - focus ONLY on MISSING fields.
 
@@ -3130,7 +3130,7 @@ OUTPUT SCHEMA
 // ============================================
 const PROMPT_CLAUDE_OPUS = `You are Claude Opus, the most capable AI assistant, helping extract property data. You do NOT have web access.
 
-⚫ FIRING ORDER: You are the 6th and FINAL LLM in the search chain (after Perplexity, Gemini, GPT, Grok, and Sonnet).
+⚫ FIRING ORDER: You are the 6th and FINAL LLM in the search chain (after Perplexity, Gemini, GPT, Sonnet, and Grok).
 You fire LAST as a final fallback for fields that NO OTHER LLM could find.
 You can ONLY use your training knowledge - NO web search, NO live data, NO guessing.
 
@@ -3438,7 +3438,7 @@ const GPT_LLM_AUDITOR_USER_TEMPLATE = GPT_FIELD_COMPLETER_USER_TEMPLATE;
 // ============================================
 const PROMPT_CLAUDE_SONNET = `You are Claude Sonnet, a property data specialist with web search capabilities.
 
-🔵 FIRING ORDER: You are the 5th LLM in the search chain (after Perplexity, Gemini, GPT, and Grok). Claude Opus fires LAST.
+🔵 FIRING ORDER: You are the 4th LLM in the search chain (after Perplexity, Gemini, and GPT). Grok and Opus fire AFTER you.
 You ONLY search for fields that earlier LLMs did NOT find.
 Do NOT re-search fields already populated - focus ONLY on MISSING fields from the 34 high-velocity field list.
 
@@ -4591,7 +4591,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // CASCADE STRATEGY: Try all 6 LLMs in RELIABILITY order
-  // Order: Perplexity → Gemini → GPT → Grok → Sonnet → Opus
+  // Order: Perplexity → Gemini → GPT → Sonnet → Grok → Opus
   // Web-search LLMs first (Tier 4), then Claude LLMs (Tier 5)
   const {
     address: rawAddress,
@@ -4600,7 +4600,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     city: validationCity,  // Optional: City for Stellar MLS validation (prevents wrong property match)
     state: validationState,  // Optional: State for Stellar MLS validation
     zipCode: validationZip,  // Optional: Zip for Stellar MLS validation
-    engines = [...LLM_CASCADE_ORDER],  // All 6 LLMs: Perplexity → Gemini → GPT → Grok → Sonnet → Opus
+    engines = [...LLM_CASCADE_ORDER],  // All 6 LLMs: Perplexity → Gemini → GPT → Sonnet → Grok → Opus
     skipLLMs = false,
     useCascade = true, // Enable cascade mode by default
     existingFields = {},  // Previously accumulated fields from prior LLM calls
@@ -5051,11 +5051,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           { id: 'perplexity-d', fn: (addr: string) => callPerplexityPromptD(addr, perplexityContext), enabled: engines.includes('perplexity') },
           { id: 'perplexity-e', fn: (addr: string) => callPerplexityPromptE(addr, perplexityContext), enabled: engines.includes('perplexity') },
 
-          // OTHER LLMs - Order: Gemini → GPT → Grok → Sonnet → Opus (matches LLM_CASCADE_ORDER)
+          // OTHER LLMs - Order: Gemini → GPT → Sonnet → Grok → Opus (matches LLM_CASCADE_ORDER)
           { id: 'gemini', fn: callGemini, enabled: engines.includes('gemini') },          // #2 - Google Search grounding
           { id: 'gpt', fn: callGPT5, enabled: engines.includes('gpt') },                 // #3 - Web evidence mode
-          { id: 'grok', fn: callGrok, enabled: engines.includes('grok') },               // #4 - X/Twitter real-time
-          { id: 'claude-sonnet', fn: callClaudeSonnet, enabled: engines.includes('claude-sonnet') }, // #5 - Web search beta
+          { id: 'claude-sonnet', fn: callClaudeSonnet, enabled: engines.includes('claude-sonnet') }, // #4 - Web search beta
+          { id: 'grok', fn: callGrok, enabled: engines.includes('grok') },               // #5 - X/Twitter real-time
           { id: 'claude-opus', fn: callClaudeOpus, enabled: engines.includes('claude-opus') },       // #6 - LAST (no web)
         ];
 
@@ -5063,12 +5063,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const enabledLlms = llmCascade.filter(llm => llm.enabled);
 
         if (enabledLlms.length > 0) {
-          // HYBRID LLM CASCADE: Perplexity sequential, then Gemini/GPT/Grok/Sonnet/Opus parallel
+          // HYBRID LLM CASCADE: Perplexity sequential, then Gemini/GPT/Sonnet/Grok/Opus parallel
           // Perplexity sequential to avoid rate limits
           // Other 5 LLMs run in parallel for maximum speed (prevents any single LLM from blocking the cascade)
           const llmResults: PromiseSettledResult<any>[] = [];
 
-          console.log(`\n=== HYBRID LLM CASCADE: Perplexity sequential, then 5 LLMs parallel (Gemini/GPT/Grok/Sonnet/Opus) ===`);
+          console.log(`\n=== HYBRID LLM CASCADE: Perplexity sequential, then 5 LLMs parallel (Gemini/GPT/Sonnet/Grok/Opus) ===`);
 
           // Track LLM metadata alongside results to maintain order
           const llmMetadata: Array<{ id: string; enabled: boolean; fn: any }> = [];
@@ -5101,13 +5101,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
           }
 
-          // PHASE 2 & 3 MERGED: Gemini + GPT + Grok + Sonnet + Opus (ALL PARALLEL after Perplexity)
+          // PHASE 2 & 3 MERGED: Gemini + GPT + Sonnet + Grok + Opus (ALL PARALLEL after Perplexity)
           // CRITICAL FIX: Run Gemini in parallel with GPT so Gemini can't block the cascade if it fails
           const parallelLlms = enabledLlms.filter(llm =>
-            llm.id === 'gemini' || llm.id === 'gpt' || llm.id === 'grok' || llm.id === 'claude-sonnet' || llm.id === 'claude-opus'
+            llm.id === 'gemini' || llm.id === 'gpt' || llm.id === 'claude-sonnet' || llm.id === 'grok' || llm.id === 'claude-opus'
           );
           if (parallelLlms.length > 0) {
-            console.log(`\n[Phase 2/3] Running ${parallelLlms.length} LLMs in PARALLEL (Gemini/GPT/Grok/Sonnet/Opus)...`);
+            console.log(`\n[Phase 2/3] Running ${parallelLlms.length} LLMs in PARALLEL (Gemini/GPT/Sonnet/Grok/Opus)...`);
             // Add metadata in order before parallel execution
             parallelLlms.forEach(llm => llmMetadata.push(llm));
             const parallelPromises = parallelLlms.map(llm => {
@@ -5260,7 +5260,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         } else {
           console.log('[TIER 4] ⚠️  No LLMs enabled');
           console.log('[TIER 4] engines parameter:', engines);
-          console.log('[TIER 4] valid engines:', ['perplexity', 'gpt', 'claude-opus', 'gemini', 'grok', 'claude-sonnet']);
+          console.log('[TIER 4] valid engines:', ['perplexity', 'gpt', 'claude-opus', 'gemini', 'claude-sonnet', 'grok']);
           console.log('[TIER 4] Enabled LLMs: 0 - skipping LLM cascade');
         }
       }
@@ -5598,7 +5598,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       single_source_warnings: arbitrationResult.singleSourceWarnings,
       llm_responses: llmResponses,
       strategy: 'arbitration_pipeline',
-      cascade_order: ['perplexity-portals', 'perplexity-county', 'perplexity-schools', 'perplexity-crime', 'perplexity-utilities', 'perplexity-electric', 'perplexity-water', 'perplexity-internet-speed', 'perplexity-fiber', 'perplexity-cell', 'gemini', 'gpt', 'grok', 'claude-sonnet', 'claude-opus']
+      cascade_order: ['perplexity-portals', 'perplexity-county', 'perplexity-schools', 'perplexity-crime', 'perplexity-utilities', 'perplexity-electric', 'perplexity-water', 'perplexity-internet-speed', 'perplexity-fiber', 'perplexity-cell', 'gemini', 'gpt', 'claude-sonnet', 'grok', 'claude-opus']
     });
   } catch (error) {
     console.error('=== SEARCH ERROR ===');

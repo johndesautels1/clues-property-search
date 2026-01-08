@@ -7,7 +7,7 @@
  *   Tier 1: Stellar MLS (Primary source - when eKey obtained)
  *   Tier 2: Google APIs (Geocode, Places, Distance Matrix)
  *   Tier 3: Paid/Free APIs (WalkScore, SchoolDigger, FEMA, AirNow, HowLoud, Weather, FBI Crime)
- *   Tier 4: LLM Cascade (Perplexity → Gemini → GPT → Grok → Sonnet → Opus)
+ *   Tier 4: LLM Cascade (Perplexity → Gemini → GPT → Sonnet → Grok → Opus)
  * 
  * Key Principles:
  *   - Higher tier data NEVER gets overwritten by lower tier
@@ -38,12 +38,12 @@ export const DATA_TIERS: Record<string, TierConfig> = {
   'howloud': { tier: 3, name: 'HowLoud', description: 'Noise levels', reliability: 85 },
   'weather': { tier: 3, name: 'Weather API', description: 'Climate data', reliability: 85 },
   'fbi-crime': { tier: 3, name: 'FBI Crime', description: 'Crime statistics', reliability: 90 },
-  // LLM Cascade Order: Perplexity → Gemini → GPT → Grok → Sonnet → Opus
+  // LLM Cascade Order: Perplexity → Gemini → GPT → Sonnet → Grok → Opus
   'perplexity': { tier: 4, name: 'Perplexity Sonar Reasoning Pro', description: '#1 - Deep web search (HIGHEST LLM)', reliability: 90 },
   'gemini': { tier: 4, name: 'Gemini 3 Pro Preview', description: '#2 - Google Search grounding', reliability: 85 },
   'gpt': { tier: 4, name: 'GPT-5.2 Pro', description: '#3 - Web evidence mode', reliability: 80 },
-  'grok': { tier: 4, name: 'Grok 4.1 Fast', description: '#4 - X/Twitter real-time data', reliability: 75 },
-  'claude-sonnet': { tier: 5, name: 'Claude Sonnet 4.5', description: '#5 - Web search beta (fills gaps)', reliability: 70 },
+  'claude-sonnet': { tier: 4, name: 'Claude Sonnet 4.5', description: '#4 - Web search beta (fills gaps)', reliability: 75 },
+  'grok': { tier: 5, name: 'Grok 4.1 Fast', description: '#5 - X/Twitter real-time data', reliability: 70 },
   'claude-opus': { tier: 5, name: 'Claude Opus 4.5', description: '#6 - Deep reasoning, NO web search (LAST)', reliability: 65 },
 };
 
