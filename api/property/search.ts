@@ -2,18 +2,18 @@
  * CLUES Property Search API (Non-Streaming Version)
  *
  * DATA SOURCE ORDER (Most Reliable First):
- * Tier 1: Stellar MLS (when eKey obtained - future)
- * Tier 2: Google APIs (Geocode, Places)
- * Tier 3: Paid/Free APIs (WalkScore, SchoolDigger, AirNow, HowLoud, Weather, Crime, FEMA, Census)
- * Tier 4: Web-Search LLMs (Perplexity → Gemini → GPT → Grok)
- * Tier 5: Claude LLMs (Sonnet → Opus) - Opus is LAST (no web search)
+ * Tier 1: Stellar MLS (Primary source - Bridge Interactive API)
+ * Tier 2: APIs (Google APIs first, then Free APIs: WalkScore, SchoolDigger, FEMA, etc.)
+ * Tier 3: Tavily Web Search (Targeted searches for AVMs, WalkScore, Schools, Crime)
+ * Tier 4: Web-Search LLMs (Perplexity → Gemini → GPT → Sonnet → Grok)
+ * Tier 5: Claude Opus (Deep reasoning, NO web search - LAST)
  *
- * LLM CASCADE ORDER (Updated 2026-01-05):
+ * LLM CASCADE ORDER (Updated 2026-01-08):
  *   #1 Perplexity - Deep web search (HIGHEST)
  *   #2 Gemini - Google Search grounding
  *   #3 GPT - Web evidence mode
- *   #4 Grok - X/Twitter real-time data
- *   #5 Claude Sonnet - Web search beta
+ *   #4 Claude Sonnet - Web search beta
+ *   #5 Grok - X/Twitter real-time data
  *   #6 Claude Opus - Deep reasoning, NO web search (LAST)
  *
  * ADDED (2025-12-05):
@@ -53,9 +53,10 @@ export const config = {
 
 // Timeout wrapper for API/LLM calls - prevents hanging
 const STELLAR_MLS_TIMEOUT = 30000; // 30 seconds for Stellar MLS via Bridge API (Tier 1) - typically responds in <10s
-const FREE_API_TIMEOUT = 60000; // 60 seconds for free APIs (Tier 2 & 3) - reduced from 90s
-const LLM_TIMEOUT = 180000; // 180 seconds (3 min) for Claude, GPT, Gemini, Grok - GPT-5.2-pro with reasoning needs 2-3 min
-const PERPLEXITY_TIMEOUT = 90000; // 90 seconds for Perplexity deep web search
+const FREE_API_TIMEOUT = 60000; // 60 seconds for free APIs (Tier 2) - reduced from 90s
+const TAVILY_TIMEOUT = 15000; // 15 seconds for Tavily web searches (Tier 3) - fast targeted searches
+const LLM_TIMEOUT = 180000; // 180 seconds (3 min) for Claude, GPT, Gemini, Grok (Tier 4-5) - GPT-5.2-pro with reasoning needs 2-3 min
+const PERPLEXITY_TIMEOUT = 90000; // 90 seconds for Perplexity deep web search (Tier 4 #1)
 
 // ============================================
 // RATE LIMIT TRACKING - Skip LLMs only when 429 detected
