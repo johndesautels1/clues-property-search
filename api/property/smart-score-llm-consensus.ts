@@ -536,7 +536,7 @@ async function callGrok(prompt: string): Promise<LLMResponse> {
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'grok-4-1-fast-reasoning',
+      model: 'grok-4',
       max_tokens: 32000,
       temperature: 0.2,
       messages: messages,
@@ -589,7 +589,7 @@ async function callGrok(prompt: string): Promise<LLMResponse> {
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'grok-4-1-fast-reasoning',
+        model: 'grok-4',
         max_tokens: 32000,
         temperature: 0.2,
         messages: messages,
