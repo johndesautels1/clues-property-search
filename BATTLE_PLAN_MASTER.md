@@ -291,13 +291,18 @@ Files updated: gemini-prompts.ts, retry-llm.ts, search.ts
 
 ---
 
-### PHASE 5: UI Update (PublicRemarks Display) - 30 Minutes
+### PHASE 5: UI Update (PublicRemarks Display) - 30 Minutes ✅ ALREADY IMPLEMENTED
 
-| Task | File | Change | Verification |
-|------|------|--------|--------------|
-| Add PublicRemarks section | PropertyDetail.tsx | Add after Section 23 | Remarks display at bottom |
-| Style remarks box | CSS/Tailwind | Background, padding, border | Looks good |
-| Show source attribution | Component | "Source: MLS Listing Remarks" | Attribution visible |
+| Task | File | Change | Verification | Status |
+|------|------|--------|--------------|--------|
+| Add PublicRemarks section | PropertyDetail.tsx:2225-2248 | After Section 23 (Market Performance) | Remarks display at bottom | ✅ DONE |
+| Style remarks box | PropertyDetail.tsx | bg-quantum-dark/30, p-6, rounded-lg, border | Styled correctly | ✅ DONE |
+| Show source attribution | PropertyDetail.tsx:2243-2244 | "Source: Stellar MLS Public Remarks" | Attribution visible | ✅ DONE |
+
+**Implementation Details:**
+- Located inside Section W (Market Performance) after fields 169-181
+- Conditionally renders if `publicRemarksExtracted` exists and length > 50 chars
+- Features FileText icon, header, description, and source attribution
 
 ---
 
