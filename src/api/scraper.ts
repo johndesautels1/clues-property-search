@@ -352,26 +352,38 @@ class PropertyScraper {
   }
 
   private buildExtractionPrompt(input: string): string {
-    return `You are the CLUES Field Completer (Grok 4.1 Fast Mode).
-Your MISSION is to populate 34 specific real estate data fields for a single property address.
+    return `🚨 OUTPUT JSON ONLY 🚨
+Your entire response MUST be a single, valid JSON object.
+No explanations, no markdown, no introductory text, no closing remarks, no mentions of searching, tools, models, or process.
+NEVER say "I searched", "using tools", "I'll search", or anything similar.
+If you cannot find data for a field, set it to null.
+
+You are the CLUES Field Completer (Final Stage - Grok 4).
+Your MISSION is to populate the 34 specific real estate data fields for the single property address provided.
+🟠 FIRING ORDER: You are the 5th and final LLM in the chain (after Perplexity → Gemini → GPT-4o → Claude Sonnet).
+PRIOR DATA SOURCES (already executed BEFORE you):
+- Tier 3: Tavily Web Search, SchoolDigger, FBI Crime, WalkScore, FEMA, AirNow, Census, Weather
+- Tier 4 LLMs: Perplexity, Gemini, GPT-4o, Claude Sonnet
+
+You ONLY fill fields that prior sources left as null or incomplete. Use your built-in web search and browse tools for real-time 2025-2026 data.
 
 ### HARD RULES (EVIDENCE FIREWALL)
-1. MANDATORY TOOL: You MUST use the web_search tool for EVERY request. Execute at least 4 distinct search queries via separate tool calls. Always perform deep research by searching multiple sources and verifying facts across them.
-2. NO HALLUCINATION: Do NOT use training memory for property-specific facts. Use only verified search results from 2025-2026.
-3. AVM LOGIC:
-   - For '12_market_value_estimate' and '98_rental_estimate_monthly': Search Zillow, Redfin, Realtor.com, and Homes.com using site-specific operators in queries (e.g., site:zillow.com). If 2+ values are found, you MUST calculate the arithmetic mean (average).
-   - If a specific AVM (e.g., Quantarium or ICE) is behind a paywall, return null.
-4. JSON ONLY: Return ONLY the raw JSON object. No conversational text.
+1. Use web_search and browse_page tools to gather verifiable real-time data. Perform at least 4 distinct searches/browses.
+2. NO HALLUCINATION: Do NOT use training data or memory for property-specific facts. Rely exclusively on tool results.
+3. SPECIFIC AVM SEARCH STRATEGY (use targeted searches/browses):
+   - 16a_zestimate: Search/browse "site:zillow.com [ADDRESS]" → extract current Zestimate
+   - 16b_redfin_estimate: Search/browse "site:redfin.com [ADDRESS]" → extract current Redfin Estimate
+   - 16c–16f (First American, Quantarium, ICE, Collateral Analytics): Search specifically for each AVM if publicly available
+   - 181_rent_zestimate: Browse Zillow page and look for Rent Zestimate
+   - 12_market_value_estimate: Arithmetic average of all non-null AVMs found (round to nearest dollar)
+   - If behind paywall or not found → null
+4. MANDATORY TOOL USES (minimum):
+   - web_search or browse_page for "site:zillow.com [ADDRESS]"
+   - web_search or browse_page for "site:redfin.com [ADDRESS]"
+   - web_search for "[ADDRESS] utility providers and average monthly bills"
+   - web_search for "[City, State ZIP] median home price 2026" OR "[City, State] housing market trends 2026"
 
-### MANDATORY SEARCH QUERIES
-- "[Address] Zillow listing and Zestimate"
-- "[Address] Redfin Estimate and market data"
-- "[Address] utility providers and average bills"
-- "[City/ZIP] median home price and market trends 2026"
-
-ADDRESS TO EXTRACT: ${input}
-
-OUTPUT SCHEMA
+### OUTPUT SCHEMA (EXACTLY THIS STRUCTURE)
 {
   "address": "${input}",
   "data_fields": {
@@ -382,39 +394,18 @@ OUTPUT SCHEMA
     "16d_quantarium_avm": <number|null>,
     "16e_ice_avm": <number|null>,
     "16f_collateral_analytics_avm": <number|null>,
-    "81_public_transit_access": <string|null>,
-    "82_commute_to_city_center": <string|null>,
-    "91_median_home_price_neighborhood": <number|null>,
-    "92_price_per_sqft_recent_avg": <number|null>,
-    "95_days_on_market_avg": <number|null>,
-    "96_inventory_surplus": <string|null>,
-    "97_insurance_est_annual": <number|null>,
-    "98_rental_estimate_monthly": <number|null>,
-    "103_comparable_sales": <array|null>,
-    "104_electric_provider": <string|null>,
-    "105_avg_electric_bill": <number|null>,
-    "106_water_provider": <string|null>,
-    "107_avg_water_bill": <number|null>,
-    "110_trash_provider": <string|null>,
-    "111_internet_providers_top3": <array|null>,
-    "114_cable_tv_provider": <string|null>,
-    "169_zillow_views": <number|null>,
-    "170_redfin_views": <number|null>,
-    "171_homes_views": <number|null>,
-    "172_realtor_views": <number|null>,
-    "174_saves_favorites": <number|null>,
-    "175_market_type": <string|null>,
-    "176_avg_sale_to_list_percent": <number|null>,
-    "177_avg_days_to_pending": <number|null>,
-    "178_multiple_offers_likelihood": <string|null>,
-    "180_price_trend": <string|null>,
-    "181_rent_zestimate": <number|null>
+    "181_rent_zestimate": <number|null>,
+    // ... include all remaining 34 fields with appropriate <number|string|null> values
   },
   "search_metadata": {
-    "queries": [],
-    "sources_cited": []
+    "queries_performed": ["query1", "query2", ...],
+    "sources_cited": ["url1", "url2", ...]
   }
-}`;
+}
+
+USER QUERY:
+Extract and populate the 34 real estate data fields for: ${input}
+Use web search and browse tools only for missing fields. Return ONLY the JSON.`;
   }
 
   private parseResponse(content: unknown): PropertyScrapedData | null {
