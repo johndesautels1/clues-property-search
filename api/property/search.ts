@@ -3890,7 +3890,7 @@ async function callGPT5(
           'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: 'gpt-4o', // Use chat/completions compatible model for tool results
+          model: 'gpt-5.2-pro', // Unified model for tool results callback
           max_tokens: 32000,
           temperature: 0.2,
           messages: messages,
