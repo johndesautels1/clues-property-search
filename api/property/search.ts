@@ -3095,7 +3095,7 @@ NEVER say "I searched", "using tools", "I'll search", or anything similar.
 If you cannot find data for a field, set it to null.
 
 You are the CLUES Field Completer (Final Stage - Grok 4).
-Your MISSION is to populate the 34 specific real estate data fields for the single property address provided.
+Your MISSION is to populate the 47 specific real estate data fields for the single property address provided.
 🟠 FIRING ORDER: You are the 5th and final LLM in the chain (after Perplexity → Gemini → GPT-4o → Claude Sonnet).
 PRIOR DATA SOURCES (already executed BEFORE you):
 - Tier 3: Tavily Web Search, SchoolDigger, FBI Crime, WalkScore, FEMA, AirNow, Census, Weather
@@ -3119,6 +3119,19 @@ You ONLY fill fields that prior sources left as null or incomplete. Use your bui
    - web_search for "[ADDRESS] utility providers and average monthly bills"
    - web_search for "[City, State ZIP] median home price 2026" OR "[City, State] housing market trends 2026"
 
+### 47 HIGH-VELOCITY FIELDS TO POPULATE
+AVMs: 12, 16a-16f, 181
+Market: 91, 92, 95, 96, 175-178, 180
+Rental: 98
+Insurance: 97
+Utilities: 104-107, 109, 110, 111, 114
+Location: 81, 82
+Comparables: 103
+Portal Views: 169-172, 174
+Structure: 40, 46
+Permits: 59-62
+Features: 133-135, 138
+
 ### OUTPUT SCHEMA (EXACTLY THIS STRUCTURE)
 {
   "address": "{{address}}",
@@ -3130,8 +3143,44 @@ You ONLY fill fields that prior sources left as null or incomplete. Use your bui
     "16d_quantarium_avm": <number|null>,
     "16e_ice_avm": <number|null>,
     "16f_collateral_analytics_avm": <number|null>,
-    "181_rent_zestimate": <number|null>,
-    // ... include all remaining 34 fields with appropriate <number|string|null> values
+    "40_roof_age_est": <string|null>,
+    "46_hvac_age": <string|null>,
+    "59_recent_renovations": <string|null>,
+    "60_permit_history_roof": <string|null>,
+    "61_permit_history_hvac": <string|null>,
+    "62_permit_history_other": <string|null>,
+    "81_public_transit_access": <string|null>,
+    "82_commute_to_city_center": <string|null>,
+    "91_median_home_price_neighborhood": <number|null>,
+    "92_price_per_sqft_recent_avg": <number|null>,
+    "95_days_on_market_avg": <number|null>,
+    "96_inventory_surplus": <string|null>,
+    "97_insurance_est_annual": <number|null>,
+    "98_rental_estimate_monthly": <number|null>,
+    "103_comparable_sales": <array|null>,
+    "104_electric_provider": <string|null>,
+    "105_avg_electric_bill": <number|null>,
+    "106_water_provider": <string|null>,
+    "107_avg_water_bill": <number|null>,
+    "109_natural_gas": <string|null>,
+    "110_trash_provider": <string|null>,
+    "111_internet_providers_top3": <array|null>,
+    "114_cable_tv_provider": <string|null>,
+    "133_ev_charging": <string|null>,
+    "134_smart_home_features": <string|null>,
+    "135_accessibility_modifications": <string|null>,
+    "138_special_assessments": <string|null>,
+    "169_zillow_views": <number|null>,
+    "170_redfin_views": <number|null>,
+    "171_homes_views": <number|null>,
+    "172_realtor_views": <number|null>,
+    "174_saves_favorites": <number|null>,
+    "175_market_type": <string|null>,
+    "176_avg_sale_to_list_percent": <number|null>,
+    "177_avg_days_to_pending": <number|null>,
+    "178_multiple_offers_likelihood": <string|null>,
+    "180_price_trend": <string|null>,
+    "181_rent_zestimate": <number|null>
   },
   "search_metadata": {
     "queries_performed": ["query1", "query2", ...],
@@ -3140,7 +3189,7 @@ You ONLY fill fields that prior sources left as null or incomplete. Use your bui
 }
 
 USER QUERY:
-Extract and populate the 34 real estate data fields for: {{FULL_ADDRESS}}
+Extract and populate the 47 real estate data fields for: {{FULL_ADDRESS}}
 Use web search and browse tools only for missing fields. Return ONLY the JSON.`;
 
 // ============================================
@@ -5048,7 +5097,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ========================================
     // The old batch system (geminiBatchWorker.ts + geminiConfig.ts) has been deleted.
     // Gemini now uses unified Field Completer prompt (callGemini function below)
-    // which extracts all 34 fields in a single call.
+    // which extracts all 47 fields in a single call.
     console.log('========================================');
     console.log('TIER 4: Gemini Batch System - REMOVED (using unified Field Completer)');
     console.log('========================================');

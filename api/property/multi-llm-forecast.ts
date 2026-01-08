@@ -114,7 +114,7 @@ You must analyze properties across the FULL 181-field schema organized into 3 le
 - Parking (139-143), Building (144-148), Legal (149-154), Waterfront (155-159)
 - Leasing (160-165), Community (166-168), Portal Views & Market Velocity (169-181)
 
-### 34 HIGH-VELOCITY FIELDS (Web-Searched Daily)
+### 47 HIGH-VELOCITY FIELDS (Web-Searched Daily)
 - AVMs: Fields 12, 16a-16f (7 fields)
 - Portal Views: Fields 169-172, 174 (5 fields)
 - Market Indicators: Fields 91, 92, 95, 96, 175-178, 180 (9 fields)
@@ -314,7 +314,7 @@ You must analyze properties across the FULL 181-field schema organized into 3 le
 - Community & Features (166-168)
 - Portal Views & Market Velocity (169-181)
 
-### 34 HIGH-VELOCITY FIELDS (Web-Searched Daily)
+### 47 HIGH-VELOCITY FIELDS (Web-Searched Daily)
 These fields change frequently and require live web search:
 - AVMs: Fields 12, 16a-16f (7 fields)
 - Portal Views: Fields 169-172, 174 (5 fields)
@@ -848,7 +848,7 @@ You must analyze properties across the FULL 181-field schema organized into 3 le
 - Parking (139-143), Building (144-148), Legal (149-154), Waterfront (155-159)
 - Leasing (160-165), Community (166-168), Portal Views & Market Velocity (169-181)
 
-### 34 HIGH-VELOCITY FIELDS (Web-Searched Daily)
+### 47 HIGH-VELOCITY FIELDS (Web-Searched Daily)
 - AVMs: Fields 12, 16a-16f (7 fields)
 - Portal Views: Fields 169-172, 174 (5 fields)
 - Market Indicators: Fields 91, 92, 95, 96, 175-178, 180 (9 fields)
@@ -937,7 +937,7 @@ You must analyze properties across the FULL 181-field schema organized into 3 le
 - Parking (139-143), Building (144-148), Legal (149-154), Waterfront (155-159)
 - Leasing (160-165), Community (166-168), Portal Views & Market Velocity (169-181)
 
-### 34 HIGH-VELOCITY FIELDS (Web-Searched Daily)
+### 47 HIGH-VELOCITY FIELDS (Web-Searched Daily)
 - AVMs: Fields 12, 16a-16f (7 fields)
 - Portal Views: Fields 169-172, 174 (5 fields)
 - Market Indicators: Fields 91, 92, 95, 96, 175-178, 180 (9 fields)
