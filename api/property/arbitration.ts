@@ -4,18 +4,18 @@
  * SINGLE SOURCE OF TRUTH for data source precedence and conflict resolution.
  *
  * Tier Hierarchy (Higher tier ALWAYS wins):
- *   Tier 1: Stellar MLS (Primary source - when eKey obtained)
- *   Tier 2: Google APIs (Geocode, Places, Distance Matrix)
- *   Tier 3: Paid/Free APIs (WalkScore, SchoolDigger, FEMA, AirNow, HowLoud, Weather, FBI Crime)
- *   Tier 4: Web-Search LLMs (Perplexity → Gemini → GPT → Grok)
- *   Tier 5: Claude LLMs (Sonnet → Opus) - Sonnet has web search, Opus is pure reasoning (LAST)
+ *   Tier 1: Stellar MLS (Primary source - Bridge Interactive API)
+ *   Tier 2: APIs (Google APIs first, then Free APIs: WalkScore, SchoolDigger, FEMA, etc.)
+ *   Tier 3: Tavily Web Search (Targeted searches for AVMs, WalkScore, Schools, Crime)
+ *   Tier 4: Web-Search LLMs (Perplexity → Gemini → GPT → Sonnet → Grok)
+ *   Tier 5: Claude Opus (Deep reasoning, NO web search - LAST)
  *
- * LLM Cascade Order (Updated 2026-01-05):
+ * LLM Cascade Order (Updated 2026-01-08):
  *   #1 Perplexity - Deep web search (HIGHEST)
  *   #2 Gemini - Google Search grounding
  *   #3 GPT - Web evidence mode
- *   #4 Grok - X/Twitter real-time data
- *   #5 Claude Sonnet - Web search beta
+ *   #4 Claude Sonnet - Web search beta
+ *   #5 Grok - X/Twitter real-time data
  *   #6 Claude Opus - Deep reasoning, NO web search (LAST)
  *
  * Key Principles:
@@ -36,25 +36,30 @@ export interface TierConfig {
 }
 
 export const DATA_TIERS: Record<string, TierConfig> = {
+  // TIER 1: Primary MLS Data
   'stellar-mls': { tier: 1, name: 'Stellar MLS', description: 'Primary MLS data source', reliability: 100 },
   'backend-calculation': { tier: 1, name: 'Backend Calculation', description: 'Math-derived fields (price/sqft, tax rate, etc.)', reliability: 100 },
   'backend-logic': { tier: 1, name: 'Backend Logic', description: 'Smart defaults and conditional N/A fields', reliability: 100 },
+  // TIER 2: APIs (Google first, then Free APIs)
   'google-geocode': { tier: 2, name: 'Google Geocode', description: 'Address geocoding', reliability: 95 },
   'google-places': { tier: 2, name: 'Google Places', description: 'Nearby amenities', reliability: 95 },
   'google-distance': { tier: 2, name: 'Google Distance Matrix', description: 'Commute times', reliability: 95 },
-  'walkscore': { tier: 3, name: 'WalkScore', description: 'Walkability scores', reliability: 90 },
-  'schooldigger': { tier: 3, name: 'SchoolDigger', description: 'School ratings', reliability: 85 },
-  'fema': { tier: 3, name: 'FEMA NFHL', description: 'Flood zones', reliability: 95 },
-  'airnow': { tier: 3, name: 'AirNow', description: 'Air quality', reliability: 90 },
-  'howloud': { tier: 3, name: 'HowLoud', description: 'Noise levels', reliability: 85 },
-  'weather': { tier: 3, name: 'Weather API', description: 'Climate data', reliability: 85 },
-  'fbi-crime': { tier: 3, name: 'FBI Crime', description: 'Crime statistics', reliability: 90 },
-  // LLM Cascade Order: Perplexity → Gemini → GPT → Sonnet → Grok → Opus
+  'walkscore': { tier: 2, name: 'WalkScore', description: 'Walkability scores', reliability: 90 },
+  'schooldigger': { tier: 2, name: 'SchoolDigger', description: 'School ratings', reliability: 85 },
+  'fema': { tier: 2, name: 'FEMA NFHL', description: 'Flood zones', reliability: 95 },
+  'airnow': { tier: 2, name: 'AirNow', description: 'Air quality', reliability: 90 },
+  'howloud': { tier: 2, name: 'HowLoud', description: 'Noise levels', reliability: 85 },
+  'weather': { tier: 2, name: 'Weather API', description: 'Climate data', reliability: 85 },
+  'fbi-crime': { tier: 2, name: 'FBI Crime', description: 'Crime statistics', reliability: 90 },
+  // TIER 3: Tavily Web Search (targeted AVM, school, crime searches)
+  'tavily': { tier: 3, name: 'Tavily Web Search', description: 'Targeted web searches for AVMs, schools, crime', reliability: 85 },
+  // TIER 4: LLM Cascade Order: Perplexity → Gemini → GPT → Sonnet → Grok
   'perplexity': { tier: 4, name: 'Perplexity Sonar Reasoning Pro', description: '#1 - Deep web search (HIGHEST LLM)', reliability: 90 },
   'gemini': { tier: 4, name: 'Gemini 3 Pro Preview', description: '#2 - Google Search grounding', reliability: 85 },
   'gpt': { tier: 4, name: 'GPT-5.2 Pro', description: '#3 - Web evidence mode', reliability: 80 },
   'claude-sonnet': { tier: 4, name: 'Claude Sonnet 4.5', description: '#4 - Web search beta (fills gaps)', reliability: 75 },
-  'grok': { tier: 5, name: 'Grok 4.1 Fast', description: '#5 - X/Twitter real-time data', reliability: 70 },
+  'grok': { tier: 4, name: 'Grok 4.1 Fast', description: '#5 - X/Twitter real-time data', reliability: 70 },
+  // TIER 5: Claude Opus (Deep reasoning, NO web search - LAST)
   'claude-opus': { tier: 5, name: 'Claude Opus 4.5', description: '#6 - Deep reasoning, NO web search (LAST)', reliability: 65 },
 };
 
@@ -128,6 +133,7 @@ export function getSourceReliability(sourceName: string): number {
 const HIGH_CONFIDENCE_SOURCES = [
   'perplexity',  // Has web citations
   'grok',        // Has real-time data
+  'tavily',      // Tier 3 - Targeted web searches
   'google',
   'walkscore',
   'fema',
