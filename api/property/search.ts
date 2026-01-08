@@ -5113,6 +5113,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ========================================
     // TIER 3 (continued): TAVILY WEB SEARCH
     // Targeted searches for AVMs, market data, permits, views
+    // TIMEOUT: 15s (TAVILY_TIMEOUT) - fast targeted searches
     // ========================================
     if (!skipApis) {
       console.log('========================================');
@@ -5120,12 +5121,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('========================================');
       try {
         const { runTavilyTier3 } = await import('./tavily-search');
-        const tavilyFields = await runTavilyTier3(
-          realAddress,
-          mlsCity || '',
-          mlsState || 'FL',
-          mlsCounty || '',
-          mlsZip || ''
+        // Wrap with 15s timeout to prevent hanging
+        const tavilyFields = await withTimeout(
+          runTavilyTier3(
+            realAddress,
+            mlsCity || '',
+            mlsState || 'FL',
+            mlsCounty || '',
+            mlsZip || ''
+          ),
+          TAVILY_TIMEOUT,
+          {} // Return empty object on timeout
         );
 
         if (Object.keys(tavilyFields).length > 0) {
@@ -5139,7 +5145,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
           console.log(`✅ TIER 3: Added ${tavilyAdded} fields from Tavily`);
         } else {
-          console.log('⚠️ TIER 3: Tavily returned 0 fields');
+          console.log('⚠️ TIER 3: Tavily returned 0 fields (or timed out)');
         }
       } catch (tavilyError) {
         console.error('TIER 3: Tavily search failed:', tavilyError);

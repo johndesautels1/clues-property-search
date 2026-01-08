@@ -49,6 +49,10 @@ export async function tavilySearch(
     return { results: [], query };
   }
 
+  // Create AbortController for 5s timeout per API call (15s total for all 5 parallel groups)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+
   try {
     console.log(`🔍 [Tavily] Searching: "${query}"`);
 
@@ -63,7 +67,10 @@ export async function tavilySearch(
         include_domains: options.includeDomains || [],
         exclude_domains: options.excludeDomains || [],
       }),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       console.error(`❌ [Tavily] HTTP ${response.status}: ${response.statusText}`);
@@ -79,7 +86,12 @@ export async function tavilySearch(
       answer: data.answer,
     };
   } catch (error) {
-    console.error('❌ [Tavily] Search failed:', error);
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.log(`⚠️ [Tavily] Timeout after 5s for: "${query}"`);
+    } else {
+      console.error('❌ [Tavily] Search failed:', error);
+    }
     return { results: [], query };
   }
 }
