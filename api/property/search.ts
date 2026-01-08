@@ -3852,6 +3852,37 @@ async function callGPT5(
     if (data.output) console.log(`[GPT] output type: ${typeof data.output}, isArray: ${Array.isArray(data.output)}, length: ${Array.isArray(data.output) ? data.output.length : 'N/A'}`);
     if (data.error) console.log(`[GPT] API error in response: ${JSON.stringify(data.error).substring(0, 300)}`);
 
+    // ⚠️ CRITICAL: Check for incomplete response (GPT-5.x reasoning models can hit max_output_tokens)
+    // Per OpenAI docs: reasoning tokens count against output budget, causing incomplete responses
+    if (data.status === 'incomplete') {
+      const reason = data.incomplete_details?.reason || 'unknown';
+      const reasoningTokens = data.usage?.output_tokens_details?.reasoning_tokens || 0;
+      const totalOutputTokens = data.usage?.output_tokens || 0;
+
+      console.error(`⚠️ [GPT] INCOMPLETE RESPONSE detected!`);
+      console.error(`   Reason: ${reason}`);
+      console.error(`   Reasoning tokens used: ${reasoningTokens}`);
+      console.error(`   Total output tokens: ${totalOutputTokens} / ${requestBody.max_output_tokens}`);
+
+      if (reason === 'max_output_tokens') {
+        console.error(`   💡 Fix: Increase max_output_tokens OR lower reasoning.effort to 'low'`);
+      }
+
+      return {
+        error: `GPT response incomplete: ${reason} (reasoning tokens: ${reasoningTokens}, total output: ${totalOutputTokens})`,
+        fields: {},
+        llm: 'GPT',
+        incomplete: true
+      };
+    }
+
+    // Log successful completion with token usage
+    if (data.status === 'completed' && data.usage) {
+      const reasoningTokens = data.usage.output_tokens_details?.reasoning_tokens || 0;
+      const outputTokens = data.usage.output_tokens || 0;
+      console.log(`✅ [GPT] Response completed - reasoning: ${reasoningTokens} tokens, output: ${outputTokens} tokens`);
+    }
+
     // Check if GPT returned tool_calls that need manual execution (chat/completions format)
     const assistantMessage = data.choices?.[0]?.message;
     if (assistantMessage?.tool_calls && assistantMessage.tool_calls.length > 0) {
@@ -4061,6 +4092,34 @@ async function callGPT5FieldAuditor(
     }
 
     const data = await response.json();
+
+    // ⚠️ CRITICAL: Check for incomplete response
+    if (data.status === 'incomplete') {
+      const reason = data.incomplete_details?.reason || 'unknown';
+      const reasoningTokens = data.usage?.output_tokens_details?.reasoning_tokens || 0;
+      const totalOutputTokens = data.usage?.output_tokens || 0;
+
+      console.error(`⚠️ [GPT LLM Auditor] INCOMPLETE RESPONSE detected!`);
+      console.error(`   Reason: ${reason}`);
+      console.error(`   Reasoning tokens used: ${reasoningTokens}`);
+      console.error(`   Total output tokens: ${totalOutputTokens} / ${requestBody.max_output_tokens}`);
+
+      return {
+        fields: inputs.llmOnlyFields,
+        fields_audited: 0,
+        fields_corrected: 0,
+        fields_nulled: 0,
+        error: `Incomplete response: ${reason}`,
+        incomplete: true
+      };
+    }
+
+    // Log successful completion
+    if (data.status === 'completed' && data.usage) {
+      const reasoningTokens = data.usage.output_tokens_details?.reasoning_tokens || 0;
+      const outputTokens = data.usage.output_tokens || 0;
+      console.log(`✅ [GPT LLM Auditor] Response completed - reasoning: ${reasoningTokens} tokens, output: ${outputTokens} tokens`);
+    }
 
     // Handle /v1/responses format
     const text = data.output_text || data.choices?.[0]?.message?.content;
