@@ -431,7 +431,9 @@ export const PERPLEXITY_FIELD_MAPPING: Record<string, string | null> = {
   'noise_level_description_short': '78_noise_level',
   'traffic_level_description_short': '79_traffic_level',
   'violent_crime_index': '88_violent_crime_index',
+  'violent_crime_rate_per_1000_residents': '88_violent_crime_index',
   'property_crime_index': '89_property_crime_index',
+  'property_crime_rate_per_1000_residents': '89_property_crime_index',
   'neighborhood_safety_rating_description': '90_neighborhood_safety_rating',
 
   // Prompt D - Utilities

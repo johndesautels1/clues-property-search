@@ -202,8 +202,10 @@ export const FLAT_TO_NUMBERED_FIELD_MAP: Record<string, string> = {
   // Safety (88-90)
   'crime_index_violent': '88_violent_crime_index',
   'violent_crime_index': '88_violent_crime_index',
+  'violent_crime_rate_per_1000_residents': '88_violent_crime_index',
   'crime_index_property': '89_property_crime_index',
   'property_crime_index': '89_property_crime_index',
+  'property_crime_rate_per_1000_residents': '89_property_crime_index',
   'neighborhood_safety_rating': '90_neighborhood_safety_rating',
 
   // Market (91-103)
