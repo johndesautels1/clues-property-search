@@ -5257,6 +5257,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const propertyData: PropertyData = {
       field_10_listing_price: getFieldValue('10_listing_price'),
       field_15_assessed_value: getFieldValue('15_assessed_value'),
+      field_16a_zestimate: getFieldValue('16a_zestimate'),
+      field_16b_redfin_estimate: getFieldValue('16b_redfin_estimate'),
+      field_16c_first_american_avm: getFieldValue('16c_first_american_avm'),
+      field_16d_quantarium_avm: getFieldValue('16d_quantarium_avm'),
+      field_16e_ice_avm: getFieldValue('16e_ice_avm'),
+      field_16f_collateral_analytics_avm: getFieldValue('16f_collateral_analytics_avm'),
       field_18_full_bathrooms: getFieldValue('18_full_bathrooms'),
       field_19_half_bathrooms: getFieldValue('19_half_bathrooms'),
       field_21_living_sqft: getFieldValue('21_living_sqft'),
@@ -5273,6 +5279,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       field_98_rental_estimate_monthly: getFieldValue('98_rental_estimate_monthly'),
       field_140_carport_spaces: getFieldValue('140_carport_spaces'),
       field_143_assigned_parking: getFieldValue('143_assigned_parking'),
+      field_169_zillow_views: getFieldValue('169_zillow_views'),
+      field_170_redfin_views: getFieldValue('170_redfin_views'),
+      field_171_homes_views: getFieldValue('171_homes_views'),
+      field_172_realtor_views: getFieldValue('172_realtor_views'),
       // Extract permit years from text fields (Field 60 = Roof, Field 61 = HVAC)
       permit_roof_year: extractYearFromPermit(getFieldValue('60_permit_history_roof')),
       permit_hvac_year: extractYearFromPermit(getFieldValue('61_permit_history_hvac'))

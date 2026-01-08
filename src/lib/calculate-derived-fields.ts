@@ -8,6 +8,12 @@ export interface PropertyData {
   // Input fields for calculations
   field_10_listing_price?: number;
   field_15_assessed_value?: number;
+  field_16a_zestimate?: number;
+  field_16b_redfin_estimate?: number;
+  field_16c_first_american_avm?: number;
+  field_16d_quantarium_avm?: number;
+  field_16e_ice_avm?: number;
+  field_16f_collateral_analytics_avm?: number;
   field_18_full_bathrooms?: number;
   field_19_half_bathrooms?: number;
   field_21_living_sqft?: number;
@@ -24,6 +30,10 @@ export interface PropertyData {
   field_98_rental_estimate_monthly?: number;
   field_140_carport_spaces?: number;
   field_143_assigned_parking?: number;
+  field_169_zillow_views?: number;
+  field_170_redfin_views?: number;
+  field_171_homes_views?: number;
+  field_172_realtor_views?: number;
 
   // Permit data for age calculations
   permit_roof_year?: number;
@@ -520,11 +530,68 @@ export function calculatePoolType(data: PropertyData): CalculationResult | null 
 }
 
 /**
+ * Field 16: AVMs Average
+ * Formula: Average of all available AVMs (16a-16f)
+ */
+export function calculateAVMsAverage(data: PropertyData): CalculationResult | null {
+  const avms = [
+    parseNumericValue(data.field_16a_zestimate),
+    parseNumericValue(data.field_16b_redfin_estimate),
+    parseNumericValue(data.field_16c_first_american_avm),
+    parseNumericValue(data.field_16d_quantarium_avm),
+    parseNumericValue(data.field_16e_ice_avm),
+    parseNumericValue(data.field_16f_collateral_analytics_avm)
+  ].filter(val => !isNaN(val));
+
+  if (avms.length === 0) {
+    return null;
+  }
+
+  const sum = avms.reduce((acc, val) => acc + val, 0);
+  const average = sum / avms.length;
+  const value = Math.round(average);
+
+  return {
+    value,
+    source: 'Backend Calculation',
+    confidence: 'High',
+    calculation_method: `Average of ${avms.length} AVMs`
+  };
+}
+
+/**
+ * Field 173: Total Views
+ * Formula: Sum of all portal views (169-172)
+ */
+export function calculateTotalViews(data: PropertyData): CalculationResult | null {
+  const views = [
+    parseNumericValue(data.field_169_zillow_views),
+    parseNumericValue(data.field_170_redfin_views),
+    parseNumericValue(data.field_171_homes_views),
+    parseNumericValue(data.field_172_realtor_views)
+  ].filter(val => !isNaN(val));
+
+  if (views.length === 0) {
+    return null;
+  }
+
+  const total = views.reduce((acc, val) => acc + val, 0);
+
+  return {
+    value: total,
+    source: 'Backend Calculation',
+    confidence: 'High',
+    calculation_method: `Sum of ${views.length} portal views`
+  };
+}
+
+/**
  * Calculate all derived fields at once
  */
 export function calculateAllDerivedFields(data: PropertyData): Record<string, CalculationResult | null> {
   return {
     '11_price_per_sqft': calculatePricePerSqft(data),
+    '16_avms': calculateAVMsAverage(data),
     '20_total_bathrooms': calculateTotalBathrooms(data),
     '29_parking_total': calculateParkingTotal(data),
     '37_property_tax_rate': calculatePropertyTaxRate(data),
@@ -536,7 +603,8 @@ export function calculateAllDerivedFields(data: PropertyData): Record<string, Ca
     '94_price_vs_median_percent': calculatePriceVsMedian(data),
     '99_rental_yield_est': calculateRentalYield(data),
     '101_cap_rate_est': calculateCapRate(data),
-    '107_avg_water_bill': calculateWaterBill(data)
+    '107_avg_water_bill': calculateWaterBill(data),
+    '173_total_views': calculateTotalViews(data)
   };
 }
 
