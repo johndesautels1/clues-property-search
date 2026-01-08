@@ -428,7 +428,7 @@ Your MISSION is to perform a deep-dive Comparative Market Analysis (CMA) by eval
 4. Your outputs must be deterministic, consistent, and JSON-only.
 
 ### REASONING PROTOCOL
-1. METRIC CORRELATION: Compare the 34 high-velocity fields (AVMs, Portal Views) to determine "Market Momentum."
+1. METRIC CORRELATION: Compare the 47 high-velocity fields (AVMs, Portal Views, Permits, Features) to determine "Market Momentum."
 2. VARIANCE ANALYSIS: Calculate the delta between the Subject's 'Price per Sqft' (Field 92) and the Comps.
 3. FRICTION IDENTIFICATION: If Field 174 (Saves) is high but Field 95 (Days on Market) is also high, identify this as a "Price-to-Condition Mismatch."
 4. THE "SUPERIOR COMP": Explicitly state which of the 3 Comps is the most statistically relevant "Superior Comp."
