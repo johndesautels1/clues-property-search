@@ -601,14 +601,21 @@ Your MISSION is to populate 34 specific real estate data fields for a single pro
 
 ### HARD RULES (EVIDENCE FIREWALL)
 1. MANDATORY WEB SEARCH: You MUST perform thorough web research for EVERY request. Execute at least 4 distinct searches covering:
-   - "[Address] Zillow listing and Zestimate"
-   - "[Address] Redfin Estimate and market data"
+   - "site:zillow.com [Address]" (for 16a_zestimate and 181_rent_zestimate)
+   - "site:redfin.com [Address]" (for 16b_redfin_estimate)
    - "[Address] utility providers and average bills"
    - "[City/ZIP] median home price and market trends 2026"
 2. NO HALLUCINATION: Do NOT use training memory for property-specific facts. Use only verified search results from 2025-2026.
-3. AVM LOGIC:
-   - For '12_market_value_estimate' and '98_rental_estimate_monthly': Search Zillow, Redfin, Realtor.com, and Homes.com. If 2+ values are found, you MUST calculate the arithmetic mean (average).
-   - If a specific AVM (e.g., Quantarium or ICE) is behind a paywall, return null.
+3. SPECIFIC AVM SEARCH STRATEGY (search for EACH AVM individually):
+   - 16a_zestimate: Search "site:zillow.com [ADDRESS]" to find Zillow's Zestimate
+   - 16b_redfin_estimate: Search "site:redfin.com [ADDRESS]" to find Redfin Estimate
+   - 16c_first_american_avm: Search for First American AVM if available
+   - 16d_quantarium_avm: Search for Quantarium AVM if available
+   - 16e_ice_avm: Search for ICE/Intercontinental Exchange AVM if available
+   - 16f_collateral_analytics_avm: Search for Collateral Analytics AVM if available
+   - 181_rent_zestimate: Search "site:zillow.com [ADDRESS] rent" for Zillow Rent Zestimate
+   - 12_market_value_estimate: Calculate as arithmetic average of ALL AVMs found (if 2 found: add & divide by 2; if 3 found: add & divide by 3, etc.)
+   - If a specific AVM is behind a paywall, return null for that field.
 4. JSON ONLY: Return ONLY the raw JSON object. No conversational text.
 
 ### OUTPUT SCHEMA
@@ -763,14 +770,21 @@ Your MISSION is to populate 34 specific real estate data fields for a single pro
 ### HARD RULES (EVIDENCE FIREWALL)
 1. Use your built-in live web search capability to gather real-time data. Execute at least 4 distinct searches.
 2. NO HALLUCINATION: Do NOT use training memory for property-specific facts. Use only verified search results from 2025-2026.
-3. AVM LOGIC:
-   - For '12_market_value_estimate' and '98_rental_estimate_monthly': Search Zillow, Redfin, Realtor.com, and Homes.com using site-specific operators in queries (e.g., site:zillow.com). If 2+ values are found, you MUST calculate the arithmetic mean (average).
-   - If a specific AVM (e.g., Quantarium or ICE) is behind a paywall, return null.
+3. SPECIFIC AVM SEARCH STRATEGY (search for EACH AVM individually):
+   - 16a_zestimate: Search "site:zillow.com [ADDRESS]" to find Zillow's Zestimate
+   - 16b_redfin_estimate: Search "site:redfin.com [ADDRESS]" to find Redfin Estimate
+   - 16c_first_american_avm: Search for First American AVM if available
+   - 16d_quantarium_avm: Search for Quantarium AVM if available
+   - 16e_ice_avm: Search for ICE/Intercontinental Exchange AVM if available
+   - 16f_collateral_analytics_avm: Search for Collateral Analytics AVM if available
+   - 181_rent_zestimate: Search "site:zillow.com [ADDRESS] rent" for Zillow Rent Zestimate
+   - 12_market_value_estimate: Calculate as arithmetic average of ALL AVMs found (if 2 found: add & divide by 2; if 3 found: add & divide by 3, etc.)
+   - If a specific AVM is behind a paywall, return null for that field.
 4. JSON ONLY: Return ONLY the raw JSON object. No conversational text.
 
 ### MANDATORY SEARCH QUERIES
-- "[Address] Zillow listing and Zestimate"
-- "[Address] Redfin Estimate and market data"
+- "site:zillow.com [Address]" (for 16a_zestimate and 181_rent_zestimate)
+- "site:redfin.com [Address]" (for 16b_redfin_estimate)
 - "[Address] utility providers and average bills"
 - "[City/ZIP] median home price and market trends 2026"
 
@@ -1079,10 +1093,15 @@ HARD RULES (EVIDENCE FIREWALL)
 5) If sources conflict, do NOT "average." Choose the most authoritative source and record the conflict.
 
 ### MANDATORY SEARCH QUERIES (execute ALL of these)
-1) AVMs & Property Values:
-   - "site:zillow.com [ADDRESS]" → Extract Zestimate (16a_zestimate), Rent Zestimate (181_rent_zestimate)
-   - "site:redfin.com [ADDRESS]" → Extract Redfin Estimate (16b_redfin_estimate)
-   - Calculate 12_market_value_estimate = average of Zestimate + Redfin Estimate
+1) AVMs & Property Values (SEARCH FOR EACH SPECIFIC AVM):
+   - "site:zillow.com [ADDRESS]" → Extract 16a_zestimate (Zillow Zestimate)
+   - "site:redfin.com [ADDRESS]" → Extract 16b_redfin_estimate (Redfin Estimate)
+   - "site:zillow.com [ADDRESS] rent" → Extract 181_rent_zestimate (Zillow Rent Zestimate)
+   - Search for 16c_first_american_avm (First American AVM) if available
+   - Search for 16d_quantarium_avm (Quantarium AVM) if available
+   - Search for 16e_ice_avm (ICE/Intercontinental Exchange AVM) if available
+   - Search for 16f_collateral_analytics_avm (Collateral Analytics AVM) if available
+   - Calculate 12_market_value_estimate = arithmetic average of ALL AVMs found (if 2 found: add & divide by 2; if 3 found: add & divide by 3, etc.)
 
 2) Market Statistics:
    - "[ZIP CODE] median home price 2025 2026" → 91_median_home_price_neighborhood
@@ -1290,7 +1309,12 @@ MARKET ACTIVITY FIELDS (if property is actively listed):
 - 174_saves_favorites: Number of saves/favorites
 
 SEARCH STRATEGY:
-1. Use web search for "[ADDRESS]" on Zillow, Redfin, Homes.com, Realtor.com for AVMs and market activity
+1. SPECIFIC AVM SEARCHES (search for EACH AVM individually):
+   - "site:zillow.com [ADDRESS]" → Extract 16a_zestimate (Zillow Zestimate)
+   - "site:redfin.com [ADDRESS]" → Extract 16b_redfin_estimate (Redfin Estimate)
+   - "site:zillow.com [ADDRESS] rent" → Extract 181_rent_zestimate (Zillow Rent Zestimate)
+   - Search for 16c_first_american_avm, 16d_quantarium_avm, 16e_ice_avm, 16f_collateral_analytics_avm if available
+   - Calculate 12_market_value_estimate = arithmetic average of ALL AVMs found (if 2: add & divide by 2; if 3: add & divide by 3, etc.)
 2. Search "[CITY/ZIP] median home price 2026" for market statistics
 3. Search "[CITY] utility providers" for utility/service information
 4. Search "[ADDRESS] public transit" for transit access
