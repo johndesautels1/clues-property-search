@@ -14,7 +14,7 @@
 - Added system message to Grok (required by API)
 - Fixed GPT: `max_completion_tokens` instead of `max_tokens`
 - Fixed Perplexity: model `'sonar-reasoning-pro'` with system message
-- **Status:** 5 out of 6 LLMs working (Claude Opus, Claude Sonnet, GPT-5.1, Gemini 2.5, Perplexity)
+- **Status:** 5 out of 6 LLMs working (Claude Opus, Claude Sonnet, GPT-4o, Gemini 2.5, Perplexity)
 - **Vercel logs show:** Avg 1yr: 0.6%, Avg 5yr: 9.5%, Consensus: Moderate
 
 ### 2. Main Olivia Analysis (Claude Opus 4.5)
@@ -71,7 +71,7 @@ The hallucination validator detects 21 fields with missing calculation proofs in
 
 ## ENVIRONMENT VARIABLES (Vercel)
 - `ANTHROPIC_API_KEY` - Claude Opus/Sonnet
-- `OPENAI_API_KEY` - GPT-5.1
+- `OPENAI_API_KEY` - GPT-4o
 - `GEMINI_API_KEY` - Gemini 2.5 Pro
 - `PERPLEXITY_API_KEY` - Perplexity Sonar Reasoning Pro
 - `XAI_API_KEY` - Grok 4

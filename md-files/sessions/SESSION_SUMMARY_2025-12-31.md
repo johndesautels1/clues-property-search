@@ -219,7 +219,7 @@ This session focused on systematically fixing NULL/problematic fields in the CLU
 26. **Perplexity** (sonar-pro) - Web search, Tier 4, 45s timeout
 27. **Grok** (grok-4.1-fast-reasoning) - Web search, Tier 5, 210s timeout
 28. **Claude Opus** (claude-opus-4) - No web, Tier 5, 210s timeout
-29. **GPT** (gpt-5.2) - No web, Tier 5, 210s timeout
+29. **GPT** (gpt-4o) - No web, Tier 5, 210s timeout
 30. **Claude Sonnet** (claude-sonnet-4.5) - No web, Tier 5, 210s timeout
 31. **Gemini** (gemini-3-pro-preview) - Web search, Tier 5, 210s timeout
 

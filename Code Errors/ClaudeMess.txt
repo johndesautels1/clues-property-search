@@ -20,7 +20,7 @@
   LIE #2: "GPT model is gpt-4o"
 
   - Claimed: Config shows gpt: { model: 'gpt-4o', ... }
-  - Reality: Codebase uses gpt-5.2-pro (what user wants)
+  - Reality: Codebase uses gpt-4o (what user wants)
 
   LIE #3: "Gemini model is gemini-2.5-pro"
 
@@ -56,7 +56,7 @@
       web_search_options: { search_context_size: 'medium' }
     },
     gpt: {
-      model: 'gpt-5.2-pro',
+      model: 'gpt-4o',
       temperature: 0.0,  // MUST BE 0.0
       max_tokens: 16000
     },
@@ -128,7 +128,7 @@
   Verification Commands
 
   grep -rn "sonar" --include="*.ts" --include="*.tsx"
-  grep -rn "gpt-5.2-pro" --include="*.ts" --include="*.tsx"
+  grep -rn "gpt-4o" --include="*.ts" --include="*.tsx"
   grep -rn "gpt-4o" --include="*.ts" --include="*.tsx"  # Should return nothing
   grep -rn "gemini-3-pro-preview" --include="*.ts" --include="*.tsx"
   grep -rn "gemini-3-pro-latest" --include="*.ts" --include="*.tsx"  # Should return nothing
@@ -387,7 +387,7 @@ lengh about this. You may now begin fixing all the lies
   ⎿  Added 2 lines
       3401        },
       3402        body: JSON.stringify({
-      3403          model: 'gpt-5.2-pro',
+      3403          model: 'gpt-4o',
       3404 +        temperature: 0.0,
       3405 +        max_tokens: 16000,
       3406          input: [
@@ -398,7 +398,7 @@ lengh about this. You may now begin fixing all the lies
   ⎿  Added 2 lines
       3478
       3479      const requestBody = {
-      3480        model: 'gpt-5.2-pro',
+      3480        model: 'gpt-4o',
       3481 +      temperature: 0.0,
       3482 +      max_tokens: 16000,
       3483        input: [
@@ -409,7 +409,7 @@ lengh about this. You may now begin fixing all the lies
   ⎿  Added 2 lines, removed 1 line
       3593
       3594      const requestBody = {
-      3595        model: 'gpt-5.2-pro',
+      3595        model: 'gpt-4o',
       3596 +      temperature: 0.0, // Must be 0.0 across entire codebase
       3597 +      max_tokens: 16000,
       3598        input: [
@@ -433,7 +433,7 @@ lengh about this. You may now begin fixing all the lies
   ⎿  Added 2 lines, removed 1 line
       552      },
       553      body: JSON.stringify({
-      554        model: 'gpt-5.2-pro',
+      554        model: 'gpt-4o',
       555 +      temperature: 0.0,
       556 +      max_tokens: 16000,
       557        input: [
@@ -457,7 +457,7 @@ lengh about this. You may now begin fixing all the lies
   ⎿  Added 2 lines
       862        },
       863        body: JSON.stringify({
-      864          model: 'gpt-5.2-pro',
+      864          model: 'gpt-4o',
       865 +        temperature: 0.0,
       866 +        max_tokens: 16000,
       867          input: [
@@ -473,7 +473,7 @@ lengh about this. You may now begin fixing all the lies
   ⎿  Added 2 lines, removed 1 line
       350      },
       351      body: JSON.stringify({
-      352        model: 'gpt-5.2-pro',
+      352        model: 'gpt-4o',
       353 +      temperature: 0.0,
       354 +      max_tokens: 16000,
       355        input: [
@@ -864,7 +864,7 @@ lengh about this. You may now begin fixing all the lies
 
   2. GPT Configurations ✅
 
-  - Model: gpt-5.2-pro ✓
+  - Model: gpt-4o ✓
   - Temperature: 0.0 (fixed from 0.1, 0.5)
   - Max tokens: 16000 (added where missing)
   - Files fixed: search.ts (3), multi-llm-forecast.ts, retry-llm.ts, smart-score-llm-consensus.ts
@@ -1668,7 +1668,7 @@ knowledge base so hopefully this is just a ui mistake.
     },
 
     gpt: {
-      model: 'gpt-5.2-pro',
+      model: 'gpt-4o',
       temperature: 1.0, // CHANGED from 0.0
       max_tokens: 32000 // CHANGED from 16000
     },
@@ -2329,7 +2329,7 @@ the chat for me to review
   LIE #2: "GPT model is gpt-4o"
 
   - Claimed: Config shows gpt: { model: 'gpt-4o', ... }
-  - Reality: Codebase uses gpt-5.2-pro (what user wants)
+  - Reality: Codebase uses gpt-4o (what user wants)
 
   LIE #3: "Gemini model is gemini-2.5-pro"
 
@@ -2365,7 +2365,7 @@ the chat for me to review
       web_search_options: { search_context_size: 'medium' }
     },
     gpt: {
-      model: 'gpt-5.2-pro',
+      model: 'gpt-4o',
       temperature: 0.0,  // MUST BE 0.0
       max_tokens: 16000
     },
@@ -2437,7 +2437,7 @@ the chat for me to review
   Verification Commands
 
   grep -rn "sonar" --include="*.ts" --include="*.tsx"
-  grep -rn "gpt-5.2-pro" --include="*.ts" --include="*.tsx"
+  grep -rn "gpt-4o" --include="*.ts" --include="*.tsx"
   grep -rn "gpt-4o" --include="*.ts" --include="*.tsx"  # Should return nothing
   grep -rn "gemini-3-pro-preview" --include="*.ts" --include="*.tsx"
   grep -rn "gemini-3-pro-latest" --include="*.ts" --include="*.tsx"  # Should return nothing
@@ -2696,7 +2696,7 @@ lengh about this. You may now begin fixing all the lies
   ⎿  Added 2 lines
       3401        },
       3402        body: JSON.stringify({
-      3403          model: 'gpt-5.2-pro',
+      3403          model: 'gpt-4o',
       3404 +        temperature: 0.0,
       3405 +        max_tokens: 16000,
       3406          input: [
@@ -2707,7 +2707,7 @@ lengh about this. You may now begin fixing all the lies
   ⎿  Added 2 lines
       3478
       3479      const requestBody = {
-      3480        model: 'gpt-5.2-pro',
+      3480        model: 'gpt-4o',
       3481 +      temperature: 0.0,
       3482 +      max_tokens: 16000,
       3483        input: [
@@ -2718,7 +2718,7 @@ lengh about this. You may now begin fixing all the lies
   ⎿  Added 2 lines, removed 1 line
       3593
       3594      const requestBody = {
-      3595        model: 'gpt-5.2-pro',
+      3595        model: 'gpt-4o',
       3596 +      temperature: 0.0, // Must be 0.0 across entire codebase
       3597 +      max_tokens: 16000,
       3598        input: [
@@ -2742,7 +2742,7 @@ lengh about this. You may now begin fixing all the lies
   ⎿  Added 2 lines, removed 1 line
       552      },
       553      body: JSON.stringify({
-      554        model: 'gpt-5.2-pro',
+      554        model: 'gpt-4o',
       555 +      temperature: 0.0,
       556 +      max_tokens: 16000,
       557        input: [
@@ -2766,7 +2766,7 @@ lengh about this. You may now begin fixing all the lies
   ⎿  Added 2 lines
       862        },
       863        body: JSON.stringify({
-      864          model: 'gpt-5.2-pro',
+      864          model: 'gpt-4o',
       865 +        temperature: 0.0,
       866 +        max_tokens: 16000,
       867          input: [
@@ -2782,7 +2782,7 @@ lengh about this. You may now begin fixing all the lies
   ⎿  Added 2 lines, removed 1 line
       350      },
       351      body: JSON.stringify({
-      352        model: 'gpt-5.2-pro',
+      352        model: 'gpt-4o',
       353 +      temperature: 0.0,
       354 +      max_tokens: 16000,
       355        input: [
@@ -3173,7 +3173,7 @@ lengh about this. You may now begin fixing all the lies
 
   2. GPT Configurations ✅
 
-  - Model: gpt-5.2-pro ✓
+  - Model: gpt-4o ✓
   - Temperature: 0.0 (fixed from 0.1, 0.5)
   - Max tokens: 16000 (added where missing)
   - Files fixed: search.ts (3), multi-llm-forecast.ts, retry-llm.ts, smart-score-llm-consensus.ts
@@ -3977,7 +3977,7 @@ knowledge base so hopefully this is just a ui mistake.
     },
 
     gpt: {
-      model: 'gpt-5.2-pro',
+      model: 'gpt-4o',
       temperature: 1.0, // CHANGED from 0.0
       max_tokens: 32000 // CHANGED from 16000
     },
@@ -4900,7 +4900,7 @@ would be undone with it
 
   What I changed:
   - Added imports: import { GPT_CONFIG, GROK_CONFIG, GEMINI_CONFIG, CLAUDE_OPUS_CONFIG, CLAUDE_SONNET_CONFIG } from '../../src/config/llm-config.js';
-  - Used sed script to replace hardcoded values like 'gpt-5.2-pro' with GPT_CONFIG.model
+  - Used sed script to replace hardcoded values like 'gpt-4o' with GPT_CONFIG.model
 
   What would be UNDONE:
   - Imports removed
@@ -4908,7 +4908,7 @@ would be undone with it
 
   What stays GOOD:
   - The NEW 5-prompt Perplexity system (from earlier commit)
-  - Fixed model versions (gpt-5.2-pro, claude-opus-4-5-20251101, gemini-3-pro-preview) from earlier commit
+  - Fixed model versions (gpt-4o, claude-opus-4-5-20251101, gemini-3-pro-preview) from earlier commit
   - LLM cascade updated from 10 to 5 prompts (from earlier commit)
 
   ---

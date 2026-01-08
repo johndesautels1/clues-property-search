@@ -102,7 +102,7 @@ CLUES FIELD CONSISTENCY AUDIT - COMPLETE GAP ANALYSIS
   |---------------|-------------------------|--------------|-----------------|
   | Perplexity    | ❌ MISSING              | N/A          | 0               |
   | Gemini        | ❌ MISSING              | N/A          | 0               |
-  | GPT-5.2       | ✅ Present              | ~1050-1188   | 34 (correct)    |
+  | GPT-4o       | ✅ Present              | ~1050-1188   | 34 (correct)    |
   | Grok          | ❌ MISSING              | N/A          | 0               |
   | Claude Sonnet | ✅ Present              | ~1191-1300   | 16 (WRONG)      |
   | Claude Opus   | ❌ MISSING              | N/A          | 0               |
@@ -113,7 +113,7 @@ CLUES FIELD CONSISTENCY AUDIT - COMPLETE GAP ANALYSIS
   |------------------|---------------|--------------|---------------------|
   | Perplexity (A-E) | 34 fields     | 0            | ❌ Missing entirely |
   | Gemini 3 Pro     | 34 fields     | 0            | ❌ Missing entirely |
-  | GPT-5.2 Pro      | 34 fields     | 34           | ✅ Correct          |
+  | GPT-4o Pro      | 34 fields     | 34           | ✅ Correct          |
   | Grok 4.1         | 34 fields     | 0            | ❌ Missing entirely |
   | Claude Sonnet    | 34 fields     | 16 (8 wrong) | ❌ Wrong prompt     |
   | Claude Opus      | 34 fields     | 0            | ❌ Missing entirely |
@@ -322,7 +322,7 @@ CLUES FIELD CONSISTENCY AUDIT - COMPLETE GAP ANALYSIS
   | 3.3  | Add Grok 4.1 with 34 fields                                 |
   | 3.4  | Add Claude Opus with 34 fields                              |
   | 3.5  | FIX Claude Sonnet - Replace 16 wrong fields with correct 34 |
-  | 3.6  | Verify GPT-5.2 has correct 34 fields                        |
+  | 3.6  | Verify GPT-4o has correct 34 fields                        |
 
   PHASE 4: Standardize LLM Prompts
 
@@ -342,7 +342,7 @@ CLUES FIELD CONSISTENCY AUDIT - COMPLETE GAP ANALYSIS
   |-------|------------------|--------------------------|--------------------------------|
   | 1     | Perplexity (A-E) | search.ts + retry-llm.ts | Primary web search (5 prompts) |
   | 2     | Gemini 3 Pro     | search.ts + retry-llm.ts | Secondary web search           |
-  | 3     | GPT-5.2 Pro      | search.ts + retry-llm.ts | Tertiary web search            |
+  | 3     | GPT-4o Pro      | search.ts + retry-llm.ts | Tertiary web search            |
   | 4     | Grok 4.1 Fast    | search.ts + retry-llm.ts | Quaternary web search          |
   | 5     | Claude Sonnet    | search.ts + retry-llm.ts | Fifth web search               |
   | 6     | Claude Opus      | search.ts + retry-llm.ts | Final (training data only)     |

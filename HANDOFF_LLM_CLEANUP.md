@@ -46,7 +46,7 @@ Files to check:
 **Model Versions Already Standardized:**
 | LLM | Model ID | Status |
 |-----|----------|--------|
-| GPT | `gpt-5.2-pro-2025-12-11` | DONE |
+| GPT | `gpt-4o-2025-12-11` | DONE |
 | Gemini | `gemini-3-pro-preview` | DONE |
 | Grok | `grok-4-1-fast-reasoning` | DONE |
 | Perplexity | `sonar-pro` | DONE |
@@ -77,7 +77,7 @@ PROPERTY SEARCH FLOW:
 │    - Perplexity sonar-pro (primary)                   │
 │    - Grok grok-4-1-fast-reasoning (fallback)                    │
 │    - Gemini gemini-3-pro-preview (fallback)                             │
-│    - GPT gpt-5.2-pro (fallback)                                 │
+│    - GPT gpt-4o (fallback)                                 │
 ├─────────────────────────────────────────────────────────────────┤
 │ 7. TIER 6: Claude Opus (schema normalization, NO web search)    │
 └─────────────────────────────────────────────────────────────────┘
@@ -87,7 +87,7 @@ ASK OLIVIA FLOW (After property loaded):
 │ User clicks "Ask Olivia" for CMA analysis                       │
 ├─────────────────────────────────────────────────────────────────┤
 │ All 4 LLMs called in parallel for Olivia CMA:                   │
-│ - GPT-5.2 (Olivia CMA prompt)                                   │
+│ - GPT-4o (Olivia CMA prompt)                                   │
 │ - Gemini 3 Pro (Olivia CMA prompt)                              │
 │ - Grok 4.1 (Olivia CMA prompt)                                  │
 │ - Perplexity (Olivia CMA prompt)                                │

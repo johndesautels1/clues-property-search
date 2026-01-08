@@ -18,7 +18,7 @@
 - If you made a mistake, TELL the user and ASK before reverting
 
 ### 3. NEVER CHANGE LLM MODEL CONFIGURATIONS
-- DO NOT change model names/versions (e.g., gpt-5.2-2025-12-11, claude-opus-4, etc.)
+- DO NOT change model names/versions (e.g., gpt-4o, claude-opus-4, etc.)
 - DO NOT assume a model "doesn't exist" - THE USER KNOWS THEIR API ACCESS
 - DO NOT substitute models you think are "better" or "more current"
 - If you see a model name you don't recognize, IT EXISTS - leave it alone

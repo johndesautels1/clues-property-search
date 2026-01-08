@@ -161,7 +161,7 @@ const PERPLEXITY_TIMEOUT = 225000;   // 225 seconds (3.75 minutes) for Perplexit
 | Processing Order | LLM ID | Display Name | Exact Model ID | Web Search | Provider |
 |------------------|--------|--------------|----------------|------------|----------|
 | 1 | `grok` | Grok | `grok-4.1-fast-reasoning` | YES (real-time X/Twitter) | xAI |
-| 2 | `gpt` | GPT-5.2 | `gpt-5.2-2025-12-11` | NO (knowledge cutoff) | OpenAI |
+| 2 | `gpt` | GPT-4o | `gpt-4o` | NO (knowledge cutoff) | OpenAI |
 | 3 | `claude-opus` | Claude Opus | `claude-opus-4-5-20251101` | NO (knowledge only) | Anthropic |
 | 4 | `gemini` | Gemini | `gemini-3-pro-preview` | YES (Google Search grounding) | Google |
 | 5 | `claude-sonnet` | Claude Sonnet | `claude-sonnet-4-5-20250929` | YES (`web_search` tool) | Anthropic |
@@ -189,7 +189,7 @@ export const LLM_CASCADE_ORDER = [
 |-------|------------|--------|-------|
 | **Perplexity (sonar/sonar-pro)** | YES | Built-in | Real-time web search, citations |
 | **Grok (grok-4.1-fast-reasoning)** | YES | Built-in | Real-time X/Twitter + web |
-| **GPT-5.2** | NO | N/A | Knowledge cutoff only |
+| **GPT-4o** | NO | N/A | Knowledge cutoff only |
 | **Claude Opus** | NO | N/A | Knowledge cutoff only (web_search NOT supported) |
 | **Gemini 3 Pro** | YES | `googleSearch` grounding | Google Search integration |
 | **Claude Sonnet** | YES | `web_search_20250305` tool | Anthropic web search tool |
@@ -285,7 +285,7 @@ PERPLEXITY_MODEL=sonar-pro  # Optional, defaults to sonar-pro
 
 # TIER 5: LLMs
 ANTHROPIC_API_KEY=xxx       # Claude Opus & Sonnet
-OPENAI_API_KEY=xxx          # GPT-5.2
+OPENAI_API_KEY=xxx          # GPT-4o
 GOOGLE_AI_API_KEY=xxx       # Gemini
 XAI_API_KEY=xxx             # Grok
 ```
@@ -384,7 +384,7 @@ VITE_ANTHROPIC_API_KEY=xxx
 | **Property Search - Perplexity** | `sonar` | Perplexity | YES | search.ts:2434 |
 | **Property Search - Perplexity Pro** | `sonar-pro` | Perplexity | YES | search.ts:3179 |
 | **Property Search - Grok** | `grok-4.1-fast-reasoning` | xAI | YES | search.ts:4609 |
-| **Property Search - GPT** | `gpt-5.2-2025-12-11` | OpenAI | NO | search.ts:4464 |
+| **Property Search - GPT** | `gpt-4o` | OpenAI | NO | search.ts:4464 |
 | **Property Search - Claude Opus** | `claude-opus-4-5-20251101` | Anthropic | NO | search.ts:4224 |
 | **Property Search - Gemini** | `gemini-3-pro-preview` | Google | YES | search.ts:3987 |
 | **Property Search - Claude Sonnet** | `claude-sonnet-4-5-20250929` | Anthropic | YES | search.ts:4281 |

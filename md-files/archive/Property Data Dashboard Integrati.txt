@@ -13,7 +13,7 @@ Build the backend integration and frontend dashboard page that:
 
 ## Critical Requirements
 - **Never overwrite Medium/High confidence fields** unless newer authoritative source
-- **Merge data from multiple LLMs** intelligently (Claude Sonnet 4.5, Opus 4.1, Gemini, Grok, GPT-5.1)
+- **Merge data from multiple LLMs** intelligently (Claude Sonnet 4.5, Opus 4.1, Gemini, Grok, GPT-4o)
 - **Track data provenance** (which LLM filled which field, when, from what source)
 - **Handle conflicts gracefully** (show both values with sources when LLMs disagree)
 - **Backend code: Claude Sonnet 4.5** (you're writing the integration layer)

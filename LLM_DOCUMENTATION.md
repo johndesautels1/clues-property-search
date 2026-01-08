@@ -12,7 +12,7 @@
 |---|-----|----------|------------|------|-------------|
 | 1 | **Perplexity** | `sonar-pro` | ✅ Built-in | 4 | 90% |
 | 2 | **Gemini** | `gemini-3-pro-preview` | ✅ Google Search grounding | 4 | 85% |
-| 3 | **GPT** | `gpt-5.2-pro` | ✅ Web evidence mode | 4 | 80% |
+| 3 | **GPT** | `gpt-4o` | ✅ Web evidence mode | 4 | 80% |
 | 4 | **Grok** | `grok-4-1-fast-reasoning` | ✅ X/Twitter data | 4 | 75% |
 | 5 | **Claude Sonnet** | `claude-sonnet-4-5-20250929` | ✅ Beta (web-search-2025-03-05) | 5 | 70% |
 | 6 | **Claude Opus** | `claude-opus-4-5-20251101` | ❌ No (pure reasoning) | 5 | 65% |
@@ -70,7 +70,7 @@ TIER 3: Paid/Free APIs (parallel execution)
 TIER 4: Web-Search LLMs (cascade order)
    ├── #1 Perplexity - sonar-pro
    ├── #2 Gemini - gemini-3-pro-preview (Google Search grounding)
-   ├── #3 GPT - gpt-5.2-pro (Web evidence mode)
+   ├── #3 GPT - gpt-4o (Web evidence mode)
    └── #4 Grok - grok-4-1-fast-reasoning (X/Twitter)
 
 TIER 5: Claude LLMs
@@ -237,7 +237,7 @@ const response = await fetch('https://api.anthropic.com/v1/messages', {
 
 ```bash
 ANTHROPIC_API_KEY=sk-ant-...     # Claude Sonnet & Opus
-OPENAI_API_KEY=sk-...            # GPT-5.2
+OPENAI_API_KEY=sk-...            # GPT-4o
 GEMINI_API_KEY=...               # Gemini 3 Pro
 PERPLEXITY_API_KEY=pplx-...      # Perplexity Sonar
 XAI_API_KEY=...                  # Grok (xAI) - NOT GROK_API_KEY!
@@ -251,7 +251,7 @@ XAI_API_KEY=...                  # Grok (xAI) - NOT GROK_API_KEY!
 |----------|------|------|-------|
 | `callPerplexityForecast` | multi-llm-forecast.ts | 456 | sonar-pro |
 | `callGeminiForecast` | multi-llm-forecast.ts | 610 | gemini-3-pro-preview |
-| `callGPT5Forecast` | multi-llm-forecast.ts | 354 | gpt-5.2-pro |
+| `callGPT4oForecast` | multi-llm-forecast.ts | 354 | gpt-4o |
 | `callGrokForecast` | multi-llm-forecast.ts | 705 | grok-4-1-fast-reasoning |
 | `callClaudeForecast` | multi-llm-forecast.ts | 244 | claude-sonnet-4-5-20250929 |
 | `callClaudeOpusForecast` | multi-llm-forecast.ts | 304 | claude-opus-4-5-20251101 |

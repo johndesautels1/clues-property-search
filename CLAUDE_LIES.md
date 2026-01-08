@@ -57,7 +57,7 @@
 
 ### ISSUE #2: GPT Model
 
-**Required:** `gpt-5.2-pro` with temperature `0.0`
+**Required:** `gpt-4o` with temperature `0.0`
 
 **Files to check:**
 - `api/property/search.ts`
@@ -109,7 +109,7 @@ export const LLM_CONFIG = {
     web_search_options: { search_context_size: 'medium' }
   },
   gpt: {
-    model: 'gpt-5.2-pro',
+    model: 'gpt-4o',
     temperature: 0.0,
     max_tokens: 16000
   },

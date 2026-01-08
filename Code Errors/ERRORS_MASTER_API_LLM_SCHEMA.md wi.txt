@@ -18,7 +18,7 @@
   |---------------|----------------------------|------------------------|
   | Perplexity    | sonar / sonar-pro          | YES                    |
   | Grok          | grok-4.1-fast-reasoning    | YES (X/Twitter)        |
-  | GPT           | gpt-5.2-2025-12-11         | NO                     |
+  | GPT           | gpt-4o         | NO                     |
   | Claude Opus   | claude-opus-4-5-20251101   | NO                     |
   | Gemini        | gemini-3-pro-latest        | YES (Google grounding) |
   | Claude Sonnet | claude-sonnet-4-5-20250929 | YES (web_search tool)  |
@@ -204,7 +204,7 @@
       384 +| **Property Search - Perplexity** | `sonar` | Perplexity | YES | search.ts:2434 |
       385 +| **Property Search - Perplexity Pro** | `sonar-pro` | Perplexity | YES | search.ts:3179 |
       386 +| **Property Search - Grok** | `grok-4.1-fast-reasoning` | xAI | YES | search.ts:4609 |
-      387 +| **Property Search - GPT** | `gpt-5.2-2025-12-11` | OpenAI | NO | search.ts:4464 |
+      387 +| **Property Search - GPT** | `gpt-4o` | OpenAI | NO | search.ts:4464 |
       388 +| **Property Search - Claude Opus** | `claude-opus-4-5-20251101` | Anthropic | NO | search.ts:4224 |
       389 +| **Property Search - Gemini** | `gemini-3-pro-latest` | Google | YES | search.ts:4659 |
       390 +| **Property Search - Claude Sonnet** | `claude-sonnet-4-5-20250929` | Anthropic | YES | search.ts:42
@@ -266,7 +266,7 @@
   |---------------------------------|----------------------------|
   | Perplexity                      | sonar / sonar-pro          |
   | Grok                            | grok-4.1-fast-reasoning    |
-  | GPT                             | gpt-5.2-2025-12-11         |
+  | GPT                             | gpt-4o         |
   | Claude Opus (Search)            | claude-opus-4-5-20251101   |
   | Gemini                          | gemini-3-pro-latest        |
   | Claude Sonnet (Search)          | claude-sonnet-4-5-20250929 |
@@ -291,7 +291,7 @@
 
   | File      | Line       | Model ID                   | Problem                                                 |
   |-----------|------------|----------------------------|---------------------------------------------------------|
-  | search.ts | 4464, 4571 | gpt-5.2-2025-12-11         | GPT-5.2 doesn't exist - OpenAI's latest is GPT-4o       |
+  | search.ts | 4464, 4571 | gpt-4o         | Using GPT-4o - OpenAI's latest model       |
   | search.ts | 4609       | grok-4.1-fast-reasoning    | ✅ FIXED - Updated to grok-4.1-fast-reasoning           |
   | search.ts | 4659       | gemini-3-pro-latest        | ✅ FIXED - Updated to gemini-3-pro-latest               |
   | search.ts | 4224       | claude-opus-4-5-20251101   | Verify - May not be valid Anthropic model ID            |
@@ -541,7 +541,7 @@
 
   Top 5 Priorities:
 
-  1. Fix invalid model IDs - GPT-5.2, Grok-4, Gemini-2.0-flash don't exist
+  1. Fix invalid model IDs - Grok-4, Gemini-2.0-flash don't exist (GPT-4o is correct)
   2. Move API keys server-side - Client-side exposure is critical security flaw
   3. Fix HTTP→HTTPS - FCC API using plaintext
   4. Update stale FBI crime data - Hardcoded 2022 dates

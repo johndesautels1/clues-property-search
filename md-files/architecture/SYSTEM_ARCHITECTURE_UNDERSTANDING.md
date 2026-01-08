@@ -76,7 +76,7 @@
 1. **Perplexity** (Tier 4) - Has web search, most reliable LLM
 2. **Grok** (Tier 5) - Has web search
 3. **Claude Opus** (Tier 5) - No web, training data only
-4. **GPT-5.2** (Tier 5) - No web, training data only
+4. **GPT-4o** (Tier 5) - No web, training data only
 5. **Claude Sonnet** (Tier 5) - No web, training data only
 6. **Gemini** (Tier 5) - No web, training data only
 
@@ -197,15 +197,15 @@ Be HONEST about uncertainty. Better to return null than guess.
 
 **Use Case:** Fill gaps with general knowledge (property types, standard practices, etc.)
 
-### 4. GPT-5.2 (Lines 3337-3458)
+### 4. GPT-4o (Lines 3337-3458)
 
-**Model:** `gpt-5.2` (via OpenAI)
+**Model:** `gpt-4o` (via OpenAI)
 **Capabilities:** NO WEB - Training data (cutoff early 2024)
 **Timeout:** 210 seconds
 
 **Prompt:**
 ```
-You are GPT-5.2, a real estate data extraction assistant.
+You are GPT-4o, a real estate data extraction assistant.
 You do NOT have web access.
 Extract property data using your training knowledge.
 ```
