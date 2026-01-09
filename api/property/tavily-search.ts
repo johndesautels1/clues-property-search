@@ -361,7 +361,7 @@ export async function searchHomesteadAndCDD(address: string, county: string): Pr
       if (!fields['151_homestead_yn']) {
         fields['151_homestead_yn'] = {
           value: 'Yes',
-          source: `Tavily (${county} Property Appraiser)`,
+          source: 'Tavily (Property Appraiser)',
           confidence: 'Medium',
         };
         console.log(`✅ [Tavily] Found homestead exemption: Yes`);
@@ -371,7 +371,7 @@ export async function searchHomesteadAndCDD(address: string, county: string): Pr
       if (!fields['151_homestead_yn']) {
         fields['151_homestead_yn'] = {
           value: 'No',
-          source: `Tavily (${county} Property Appraiser)`,
+          source: 'Tavily (Property Appraiser)',
           confidence: 'Medium',
         };
         console.log(`✅ [Tavily] Found homestead exemption: No`);
@@ -383,7 +383,7 @@ export async function searchHomesteadAndCDD(address: string, county: string): Pr
       if (!fields['152_cdd_yn']) {
         fields['152_cdd_yn'] = {
           value: 'Yes',
-          source: `Tavily (${county} Property Appraiser)`,
+          source: 'Tavily (Property Appraiser)',
           confidence: 'Medium',
         };
         console.log(`✅ [Tavily] Found CDD: Yes`);
@@ -397,7 +397,7 @@ export async function searchHomesteadAndCDD(address: string, county: string): Pr
         if (fee > 0 && fee < 10000) { // Sanity check
           fields['153_annual_cdd_fee'] = {
             value: fee,
-            source: `Tavily (${county} Property Appraiser)`,
+            source: 'Tavily (Property Appraiser)',
             confidence: 'Medium',
           };
           console.log(`✅ [Tavily] Found CDD fee: $${fee}`);
@@ -407,7 +407,7 @@ export async function searchHomesteadAndCDD(address: string, county: string): Pr
       if (!fields['152_cdd_yn']) {
         fields['152_cdd_yn'] = {
           value: 'No',
-          source: `Tavily (${county} Property Appraiser)`,
+          source: 'Tavily (Property Appraiser)',
           confidence: 'Medium',
         };
         console.log(`✅ [Tavily] Found CDD: No`);
@@ -424,14 +424,14 @@ export async function searchHomesteadAndCDD(address: string, county: string): Pr
       if (r.content.match(/homestead.*yes|has homestead|homestead exemption active/i)) {
         fields['151_homestead_yn'] = {
           value: 'Yes',
-          source: `Tavily (${county} Tax Records)`,
+          source: 'Tavily (Tax Records)',
           confidence: 'Low',
         };
         break;
       } else if (r.content.match(/no homestead|homestead.*no|no exemptions/i)) {
         fields['151_homestead_yn'] = {
           value: 'No',
-          source: `Tavily (${county} Tax Records)`,
+          source: 'Tavily (Tax Records)',
           confidence: 'Low',
         };
         break;

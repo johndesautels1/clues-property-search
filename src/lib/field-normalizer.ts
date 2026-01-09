@@ -31,6 +31,8 @@ export const VALID_SOURCES = [
   'Tavily (Redfin)',
   'Tavily (Realtor.com)',
   'Tavily (Homes.com)',
+  'Tavily (Property Appraiser)',  // Homestead/CDD from county PAO
+  'Tavily (Tax Records)',          // Fallback tax record search
   'SchoolDigger',
   'FBI Crime',
   'WalkScore',
