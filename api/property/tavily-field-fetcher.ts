@@ -10,7 +10,7 @@
  *   // Returns internet providers for that address
  */
 
-import { getTavilyFieldConfig, isTavilyFetchable, TAVILY_FIELD_CONFIGS } from './tavily-field-config';
+import { getTavilyFieldConfig, isTavilyFetchable, TAVILY_FIELD_CONFIGS } from './tavily-field-config.js';
 
 // Tavily API configuration
 const TAVILY_API_KEY = process.env.TAVILY_API_KEY;

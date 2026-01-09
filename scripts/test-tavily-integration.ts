@@ -49,7 +49,7 @@ async function runTests() {
 
   // Test 2: Check module exports
   try {
-    const tavily = await import('../api/property/tavily-search');
+    const tavily = await import('../api/property/tavily-search.js');
     test('Module exports TAVILY_CONFIG', !!tavily.TAVILY_CONFIG);
     test('Module exports tavilySearch function', typeof tavily.tavilySearch === 'function');
     test('Module exports searchAVMs function', typeof tavily.searchAVMs === 'function');
@@ -69,7 +69,7 @@ async function runTests() {
 
   // Test 4: Check source-constants.ts has TAVILY_SOURCE
   try {
-    const sourceConstants = await import('../api/property/source-constants');
+    const sourceConstants = await import('../api/property/source-constants.js');
     test('source-constants exports TAVILY_SOURCE', !!sourceConstants.TAVILY_SOURCE);
     test('TAVILY_SOURCE equals "Tavily"', sourceConstants.TAVILY_SOURCE === 'Tavily');
   } catch (e) {
@@ -78,7 +78,7 @@ async function runTests() {
 
   // Test 5: Check llm-constants.ts has TAVILY_CONFIG
   try {
-    const llmConstants = await import('../api/property/llm-constants');
+    const llmConstants = await import('../api/property/llm-constants.js');
     test('llm-constants exports TAVILY_CONFIG', !!llmConstants.TAVILY_CONFIG);
     test('llm-constants TAVILY_CONFIG.tier is 3', llmConstants.TAVILY_CONFIG?.tier === 3);
   } catch (e) {
@@ -87,7 +87,7 @@ async function runTests() {
 
   // Test 6: Check field-normalizer.ts has VALID_SOURCES with Tavily
   try {
-    const normalizer = await import('../src/lib/field-normalizer');
+    const normalizer = await import('../src/lib/field-normalizer.js');
     const hasValidSources = !!(normalizer as any).VALID_SOURCES;
     test('field-normalizer exports VALID_SOURCES', hasValidSources);
 
