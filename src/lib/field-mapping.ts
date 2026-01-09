@@ -47,7 +47,14 @@ export const FIELD_MAPPINGS: FieldMapping[] = [
   { fieldNumber: 13, apiKey: '13_last_sale_date', frontendKey: 'pricingValue.lastSaleDate', csvHeader: 'Last Sale Date', label: 'Last Sale Date', group: 'Pricing & Value', type: 'date' },
   { fieldNumber: 14, apiKey: '14_last_sale_price', frontendKey: 'pricingValue.lastSalePrice', csvHeader: 'Last Sale Price', label: 'Last Sale Price', group: 'Pricing & Value', type: 'number' },
   { fieldNumber: 15, apiKey: '15_assessed_value', frontendKey: 'pricingValue.assessedValue', csvHeader: 'Assessed Value', label: 'Assessed Value', group: 'Pricing & Value', type: 'number' },
-  { fieldNumber: 16, apiKey: '16_avms', frontendKey: 'pricingValue.avms', csvHeader: 'Redfin Estimate', label: 'Redfin Estimate', group: 'Pricing & Value', type: 'number' },
+  { fieldNumber: 16, apiKey: '16_avms', frontendKey: 'pricingValue.avms', csvHeader: 'AVMs', label: 'AVMs', group: 'Pricing & Value', type: 'number' },
+  // AVM Subfields (16a-16f) - Individual AVM Sources
+  { fieldNumber: '16a', apiKey: '16a_zestimate', frontendKey: 'pricingValue.zestimate', csvHeader: 'Zestimate', label: 'Zestimate', group: 'Pricing & Value', type: 'number' },
+  { fieldNumber: '16b', apiKey: '16b_redfin_estimate', frontendKey: 'pricingValue.redfinEstimate', csvHeader: 'Redfin Estimate', label: 'Redfin Estimate', group: 'Pricing & Value', type: 'number' },
+  { fieldNumber: '16c', apiKey: '16c_first_american_avm', frontendKey: 'pricingValue.firstAmericanAvm', csvHeader: 'First American AVM', label: 'First American AVM', group: 'Pricing & Value', type: 'number' },
+  { fieldNumber: '16d', apiKey: '16d_quantarium_avm', frontendKey: 'pricingValue.quantariumAvm', csvHeader: 'Quantarium AVM', label: 'Quantarium AVM', group: 'Pricing & Value', type: 'number' },
+  { fieldNumber: '16e', apiKey: '16e_ice_avm', frontendKey: 'pricingValue.iceAvm', csvHeader: 'ICE AVM', label: 'ICE AVM', group: 'Pricing & Value', type: 'number' },
+  { fieldNumber: '16f', apiKey: '16f_collateral_analytics_avm', frontendKey: 'pricingValue.collateralAnalyticsAvm', csvHeader: 'Collateral Analytics AVM', label: 'Collateral Analytics AVM', group: 'Pricing & Value', type: 'number' },
 
   // ================================================================
   // GROUP 3: Property Basics (Fields 17-29)
