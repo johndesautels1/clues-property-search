@@ -18,7 +18,8 @@ async function getWalkScore(lat: number, lon: number, address: string): Promise<
   if (!apiKey) return {};
 
   try {
-    const url = `https://api.walkscore.com/score?format=json&address=${encodeURIComponent(address)}&lat=${lat}&lon=${lon}&wsapikey=${apiKey}`;
+    // FIX 2026-01-09: Added &transit=1&bike=1 to get transit/bike scores
+    const url = `https://api.walkscore.com/score?format=json&address=${encodeURIComponent(address)}&lat=${lat}&lon=${lon}&wsapikey=${apiKey}&transit=1&bike=1`;
     const result = await safeFetch<any>(url, undefined, 'WalkScore');
 
     if (!result.success || !result.data) return {};
