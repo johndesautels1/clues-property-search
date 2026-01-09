@@ -4347,8 +4347,11 @@ const STELLAR_MLS_AUTHORITATIVE_FIELDS = new Set([
   '142_parking_features', '143_assigned_parking_spaces',
   '144_floor_number', '145_building_total_floors', '146_building_name_number',
   '147_building_elevator_yn', '148_floors_in_unit',
-  '149_subdivision_name', '150_legal_description', '151_homestead_yn',
-  '152_cdd_yn', '153_annual_cdd_fee', '154_front_exposure',
+  '149_subdivision_name', '150_legal_description',
+  // NOTE: '151_homestead_yn', '152_cdd_yn', '153_annual_cdd_fee' REMOVED from authoritative list
+  // These fields are often NULL in Bridge MLS - allow Tavily/Perplexity to populate as fallback
+  // Stellar MLS still has Tier 1 priority when data exists
+  '154_front_exposure',
   '155_water_frontage_yn', '156_waterfront_feet', '157_water_access_yn',
   '158_water_view_yn', '159_water_body_name',
   '160_can_be_leased_yn', '161_minimum_lease_period', '162_lease_restrictions_yn',

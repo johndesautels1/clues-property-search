@@ -311,6 +311,138 @@ export async function searchPortalViews(address: string): Promise<Record<string,
 }
 
 /**
+ * Search for Homestead Exemption and CDD status from county property appraiser
+ * Fields: 151_homestead_yn, 152_cdd_yn, 153_annual_cdd_fee
+ */
+export async function searchHomesteadAndCDD(address: string, county: string): Promise<Record<string, any>> {
+  const fields: Record<string, any> = {};
+
+  // Determine county property appraiser domain
+  const countyDomains: Record<string, string> = {
+    'pinellas': 'pcpao.gov',
+    'hillsborough': 'hcpafl.org',
+    'pasco': 'pascopa.com',
+    'manatee': 'manateepao.com',
+    'sarasota': 'sc-pa.com',
+    'polk': 'polkpa.org',
+    'orange': 'ocpafl.org',
+    'osceola': 'property-appraiser.org',
+    'seminole': 'scpafl.org',
+    'brevard': 'bcpao.us',
+    'volusia': 'vcgov.org',
+    'lee': 'leepa.org',
+    'collier': 'collierappraiser.com',
+    'palm beach': 'pbcgov.org',
+    'broward': 'bcpa.net',
+    'miami-dade': 'miamidade.gov',
+  };
+
+  const countyLower = county.toLowerCase().replace(' county', '').trim();
+  const paoDomain = countyDomains[countyLower] || '';
+
+  // Search for homestead exemption status
+  const homesteadQuery = paoDomain
+    ? `"${address}" homestead exemption site:${paoDomain}`
+    : `"${address}" ${county} homestead exemption property appraiser`;
+
+  console.log(`🔍 [Tavily] Searching homestead: "${homesteadQuery}"`);
+
+  const homesteadResult = await tavilySearch(homesteadQuery, {
+    numResults: 5,
+    includeDomains: paoDomain ? [paoDomain] : undefined
+  });
+
+  for (const r of homesteadResult.results) {
+    const content = r.content.toLowerCase();
+
+    // Look for homestead exemption indicators
+    if (content.match(/homestead.*exempt|exempt.*homestead|\$50,000.*homestead|homestead.*\$50,000/i)) {
+      // Has homestead exemption
+      if (!fields['151_homestead_yn']) {
+        fields['151_homestead_yn'] = {
+          value: 'Yes',
+          source: `Tavily (${county} Property Appraiser)`,
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found homestead exemption: Yes`);
+      }
+    } else if (content.match(/no.*homestead|homestead.*none|no exemptions|exemptions:?\s*none/i)) {
+      // No homestead exemption
+      if (!fields['151_homestead_yn']) {
+        fields['151_homestead_yn'] = {
+          value: 'No',
+          source: `Tavily (${county} Property Appraiser)`,
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found homestead exemption: No`);
+      }
+    }
+
+    // Look for CDD indicators
+    if (content.match(/community development district|cdd.*\$|cdd.*fee|cdd.*assessment/i)) {
+      if (!fields['152_cdd_yn']) {
+        fields['152_cdd_yn'] = {
+          value: 'Yes',
+          source: `Tavily (${county} Property Appraiser)`,
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found CDD: Yes`);
+      }
+
+      // Try to extract CDD fee amount
+      const cddFeeMatch = r.content.match(/cdd.*?\$\s*([\d,]+(?:\.\d{2})?)|(?:cdd|community development).*?(?:fee|assessment).*?\$\s*([\d,]+(?:\.\d{2})?)/i);
+      if (cddFeeMatch && !fields['153_annual_cdd_fee']) {
+        const feeStr = cddFeeMatch[1] || cddFeeMatch[2];
+        const fee = parseFloat(feeStr.replace(/,/g, ''));
+        if (fee > 0 && fee < 10000) { // Sanity check
+          fields['153_annual_cdd_fee'] = {
+            value: fee,
+            source: `Tavily (${county} Property Appraiser)`,
+            confidence: 'Medium',
+          };
+          console.log(`✅ [Tavily] Found CDD fee: $${fee}`);
+        }
+      }
+    } else if (content.match(/no cdd|cdd:?\s*n\/a|not in.*cdd/i)) {
+      if (!fields['152_cdd_yn']) {
+        fields['152_cdd_yn'] = {
+          value: 'No',
+          source: `Tavily (${county} Property Appraiser)`,
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found CDD: No`);
+      }
+    }
+  }
+
+  // If we didn't find homestead info, try a broader search
+  if (!fields['151_homestead_yn']) {
+    const taxSearchQuery = `"${address}" ${county} property tax exemptions`;
+    const taxResult = await tavilySearch(taxSearchQuery, { numResults: 3 });
+
+    for (const r of taxResult.results) {
+      if (r.content.match(/homestead.*yes|has homestead|homestead exemption active/i)) {
+        fields['151_homestead_yn'] = {
+          value: 'Yes',
+          source: `Tavily (${county} Tax Records)`,
+          confidence: 'Low',
+        };
+        break;
+      } else if (r.content.match(/no homestead|homestead.*no|no exemptions/i)) {
+        fields['151_homestead_yn'] = {
+          value: 'No',
+          source: `Tavily (${county} Tax Records)`,
+          confidence: 'Low',
+        };
+        break;
+      }
+    }
+  }
+
+  return fields;
+}
+
+/**
  * Run all Tavily searches for a property (Tier 3)
  */
 export async function runTavilyTier3(
@@ -327,16 +459,17 @@ export async function runTavilyTier3(
   const allFields: Record<string, any> = {};
 
   // Run searches in parallel for speed
-  const [avmFields, marketFields, utilityFields, permitFields, viewFields] = await Promise.all([
+  const [avmFields, marketFields, utilityFields, permitFields, viewFields, homesteadFields] = await Promise.all([
     searchAVMs(address),
     searchMarketStats(city, zip),
     searchUtilities(city, state),
     searchPermits(address, county),
     searchPortalViews(address),
+    searchHomesteadAndCDD(address, county), // Fields 151, 152, 153
   ]);
 
   // Merge all fields
-  Object.assign(allFields, avmFields, marketFields, utilityFields, permitFields, viewFields);
+  Object.assign(allFields, avmFields, marketFields, utilityFields, permitFields, viewFields, homesteadFields);
 
   console.log(`✅ TIER 3: Tavily returned ${Object.keys(allFields).length} fields`);
 
