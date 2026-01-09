@@ -2484,7 +2484,7 @@ async function callPerplexityWithMapping(promptName: string, userPrompt: string)
     if (!response.ok) {
       console.error(`❌ [Perplexity ${promptName}] API error: ${response.status} ${response.statusText}`);
       if (response.status === 429) setRateLimited('perplexity');
-      return {};
+      return { fields: {}, llm: `Perplexity ${promptName}` };
     }
 
     if (data.choices?.[0]?.message?.content) {
@@ -2574,10 +2574,10 @@ async function callPerplexityWithMapping(promptName: string, userPrompt: string)
       console.log(`❌ [Perplexity ${promptName}] No content in response`);
       console.log(`❌ [Perplexity ${promptName}] Full response: ${JSON.stringify(data).substring(0, 500)}`);
     }
-    return {};
+    return { fields: {}, llm: `Perplexity ${promptName}` };
   } catch (error) {
     console.error(`❌ [Perplexity ${promptName}] Error:`, error);
-    return {};
+    return { fields: {}, llm: `Perplexity ${promptName}` };
   }
 }
 
