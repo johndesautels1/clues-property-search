@@ -9,7 +9,7 @@
 // Frontend key format: {group}.{camelCaseName}
 
 export interface FieldMapping {
-  fieldNumber: number;
+  fieldNumber: number | string;  // Allow string for AVM subfields (16a-16f)
   apiKey: string;           // e.g., "10_listing_price"
   frontendKey: string;      // e.g., "pricing.listingPrice"
   csvHeader: string;        // e.g., "Listing Price" for CSV exports
@@ -286,7 +286,7 @@ export const FIELD_MAPPINGS: FieldMapping[] = [
 // Lookup maps for fast conversion
 const apiToFrontendMap = new Map<string, FieldMapping>();
 const frontendToApiMap = new Map<string, FieldMapping>();
-const fieldNumberToMapping = new Map<number, FieldMapping>();
+const fieldNumberToMapping = new Map<number | string, FieldMapping>();  // Support AVM subfields
 const csvHeaderToMapping = new Map<string, FieldMapping>();
 
 // Build lookup maps
