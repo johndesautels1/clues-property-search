@@ -1398,13 +1398,21 @@ async function getWalkScore(lat: number, lon: number, address: string): Promise<
       return {};
     }
 
-    // UPDATED: 2025-11-30 - Corrected field numbers to match fields-schema.ts
-    const fields = {
-      '74_walk_score': { value: `${data.walkscore} - ${data.description}`, source: 'WalkScore', confidence: 'High' },
-      '75_transit_score': { value: data.transit?.score ? `${data.transit.score} - ${data.transit.description}` : null, source: 'WalkScore', confidence: 'High' },
-      '76_bike_score': { value: data.bike?.score ? `${data.bike.score} - ${data.bike.description}` : null, source: 'WalkScore', confidence: 'High' },
+    // UPDATED: 2026-01-09 - Fixed to return numeric values (Property type expects numbers)
+    const fields: Record<string, any> = {
+      '74_walk_score': { value: data.walkscore, source: 'WalkScore', confidence: 'High' },
       '80_walkability_description': { value: data.description, source: 'WalkScore', confidence: 'High' }
     };
+
+    // Only set transit/bike scores if they exist and are numbers
+    if (data.transit?.score) {
+      fields['75_transit_score'] = { value: data.transit.score, source: 'WalkScore', confidence: 'High' };
+      console.log(`[WalkScore] ✅ Transit score: ${data.transit.score} - ${data.transit.description}`);
+    }
+    if (data.bike?.score) {
+      fields['76_bike_score'] = { value: data.bike.score, source: 'WalkScore', confidence: 'High' };
+      console.log(`[WalkScore] ✅ Bike score: ${data.bike.score} - ${data.bike.description}`);
+    }
 
     console.log(`✅ [WalkScore] Returning 4 fields (transit/bike may be null)`);
     return fields;

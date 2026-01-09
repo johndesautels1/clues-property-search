@@ -335,17 +335,17 @@ const comparisonFields: Record<string, Array<{
   calculated?: boolean;
 }>> = {
   overview: [
-    { key: 'price', label: 'Price', path: 'price', format: 'currency', higherIsBetter: false },
-    { key: 'pricePerSqft', label: 'Price/SF', path: 'pricePerSqft', format: 'currency', higherIsBetter: false },
-    { key: 'bedrooms', label: 'Bedrooms', path: 'bedrooms', fieldNum: 17, format: 'number', higherIsBetter: true },
-    { key: 'bathrooms', label: 'Bathrooms', path: 'bathrooms', fieldNum: 20, format: 'number', higherIsBetter: true },
-    { key: 'sqft', label: 'Living Sqft', path: 'sqft', fieldNum: 21, format: 'number', higherIsBetter: true },
+    { key: 'price', label: 'Price', path: 'address.listingPrice.value', fieldNum: 10, format: 'currency', higherIsBetter: false },
+    { key: 'pricePerSqft', label: 'Price/SF', path: 'address.pricePerSqft.value', fieldNum: 11, format: 'currency', higherIsBetter: false },
+    { key: 'bedrooms', label: 'Bedrooms', path: 'details.bedrooms.value', fieldNum: 17, format: 'number', higherIsBetter: true },
+    { key: 'bathrooms', label: 'Bathrooms', path: 'details.totalBathrooms.value', fieldNum: 20, format: 'number', higherIsBetter: true },
+    { key: 'sqft', label: 'Living Sqft', path: 'details.livingSqft.value', fieldNum: 21, format: 'number', higherIsBetter: true },
     { key: 'smartScore', label: 'Smart Score', path: 'smartScore', format: 'number', higherIsBetter: true },
   ],
   scores: [
     { key: 'smartScore', label: 'Smart Score', path: 'smartScore', format: 'number', higherIsBetter: true },
-    { key: 'price', label: 'Price', path: 'price', format: 'currency', higherIsBetter: false },
-    { key: 'pricePerSqft', label: 'Price/SF', path: 'pricePerSqft', format: 'currency', higherIsBetter: false },
+    { key: 'price', label: 'Price', path: 'address.listingPrice.value', fieldNum: 10, format: 'currency', higherIsBetter: false },
+    { key: 'pricePerSqft', label: 'Price/SF', path: 'address.pricePerSqft.value', fieldNum: 11, format: 'currency', higherIsBetter: false },
     { key: 'dataCompleteness', label: 'Data Completeness %', path: 'dataCompleteness', format: 'percent', higherIsBetter: true },
     { key: 'valueScore', label: 'Value Score', path: 'calculated.valueScore', format: 'number', higherIsBetter: true, missingDataSource: true },
     { key: 'locationScore', label: 'Location Score', path: 'calculated.locationScore', format: 'number', higherIsBetter: true, missingDataSource: true },
