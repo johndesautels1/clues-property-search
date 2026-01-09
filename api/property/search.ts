@@ -631,12 +631,14 @@ function normalizeUtilityBillToMonthly(fieldKey: string, value: any): { value: n
     return null;
   }
 
-  // Field 107: Water bill - typical monthly is $40-80, bi-monthly would be $80-160
+  // Field 107: Water bill - FL utilities bill BI-MONTHLY (every 2 months)
+  // Typical bi-monthly is $80-200, so monthly should be $40-100
+  // If value > 120, assume it's bi-monthly and divide by 2
   if (fieldKey === '107_avg_water_bill' || fieldKey === 'avg_water_bill') {
-    if (value > 100) {
-      // Likely bi-monthly - divide by 2
+    if (value > 120) {
+      // Bi-monthly billing detected - divide by 2 for monthly
       const monthly = Math.round(value / 2);
-      console.log(`🔄 UTILITY NORMALIZED: ${fieldKey} $${value} → $${monthly}/month (detected bi-monthly)`);
+      console.log(`🔄 WATER BILL NORMALIZED: $${value} bi-monthly → $${monthly}/month`);
       return { value: monthly, wasNormalized: true };
     }
     return { value, wasNormalized: false };
