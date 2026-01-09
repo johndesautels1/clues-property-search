@@ -158,6 +158,13 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   '14_last_sale_price': 'currency', 'last_sale_price': 'currency',
   '15_assessed_value': 'currency', 'assessed_value': 'currency',
   '16_avms': 'currency', 'avms': 'currency',
+  // AVM Subfields (16a-16f) - Individual AVM sources
+  '16a_zestimate': 'currency', 'zestimate': 'currency',
+  '16b_redfin_estimate': 'currency', 'redfin_estimate': 'currency',
+  '16c_first_american_avm': 'currency', 'first_american_avm': 'currency',
+  '16d_quantarium_avm': 'currency', 'quantarium_avm': 'currency',
+  '16e_ice_avm': 'currency', 'ice_avm': 'currency',
+  '16f_collateral_analytics_avm': 'currency', 'collateral_analytics_avm': 'currency',
 
   // GROUP 3: Property Basics (Fields 17-29)
   '17_bedrooms': 'number', 'bedrooms': 'number',
@@ -182,7 +189,7 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   '34_ownership_type': 'select', 'ownership_type': 'select',
   '35_annual_taxes': 'currency', 'annual_taxes': 'currency',
   '36_tax_year': 'number', 'tax_year': 'number',
-  '37_property_tax_rate': 'percentage', 'property_tax_rate': 'percentage',
+  '37_property_tax_rate': 'percentage', 'property_tax_rate': 'percentage', 'property_tax_rate_percent': 'percentage',
   '38_tax_exemptions': 'text', 'tax_exemptions': 'text',
 
   // GROUP 5: Structure & Systems (Fields 39-48)
@@ -259,9 +266,9 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   '92_price_per_sqft_recent_avg': 'currency', 'price_per_sqft_recent_avg': 'currency',
   '93_price_to_rent_ratio': 'number', 'price_to_rent_ratio': 'number',
   '94_price_vs_median_percent': 'percentage', 'price_vs_median_percent': 'percentage',
-  '95_days_on_market_avg': 'number', 'days_on_market_avg': 'number',
+  '95_days_on_market_avg': 'number', 'days_on_market_avg': 'number', 'avg_days_on_market': 'number',
   '96_inventory_surplus': 'text', 'inventory_surplus': 'text',
-  '97_insurance_est_annual': 'currency', 'insurance_est_annual': 'currency',
+  '97_insurance_est_annual': 'currency', 'insurance_est_annual': 'currency', 'insurance_estimate_annual': 'currency',
   '98_rental_estimate_monthly': 'currency', 'rental_estimate_monthly': 'currency',
   '99_rental_yield_est': 'percentage', 'rental_yield_est': 'percentage',
   '100_vacancy_rate_neighborhood': 'percentage', 'vacancy_rate_neighborhood': 'percentage',
@@ -403,8 +410,8 @@ function filterNullValues(parsed: any, llmName: string): Record<string, any> {
   const dataToProcess = parsed.fields || parsed;
 
   for (const [key, val] of Object.entries(dataToProcess)) {
-    // Skip metadata fields
-    if (['llm', 'error', 'sources_searched', 'fields_found', 'fields_missing', 'note', 'status', 'message', 'success', 'citations'].includes(key)) {
+    // Skip metadata fields (echoed input or response metadata)
+    if (['llm', 'error', 'sources_searched', 'fields_found', 'fields_missing', 'note', 'status', 'message', 'success', 'citations', 'city', 'state', 'address', 'zip', 'county', 'search_metadata', 'queries', 'sources_cited', 'queries_performed'].includes(key)) {
       continue;
     }
 
