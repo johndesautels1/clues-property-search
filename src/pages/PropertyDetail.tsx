@@ -301,17 +301,17 @@ const DataField = ({ label, value, icon, format = 'text', confidence, sources, l
           )}
         </div>
       </div>
-      {/* STATUS BADGES - ADMIN ONLY */}
-      {isAdmin && statusBadge}
+      {/* STATUS BADGES - Show to ALL users for missing fields, ADMIN ONLY for other statuses */}
+      {(isMissing || isAdmin) && statusBadge}
 
-      {/* Retry UI - ADMIN ONLY */}
-      {isAdmin && showRetry && needsRetry && fieldKey && onRetry && (
+      {/* Retry UI - Show Tavily to ALL users, LLM buttons to ADMIN ONLY */}
+      {showRetry && needsRetry && fieldKey && (
         <div className="mt-2 p-3 bg-black/30 border border-quantum-cyan/20 rounded-lg">
           <div className="text-xs text-gray-400 mb-2">
             {isRetrying ? 'Fetching...' : 'Try fetching this field with:'}
           </div>
 
-          {/* Tavily button - show for Tavily-enabled fields */}
+          {/* Tavily button - show for Tavily-enabled fields (ALL USERS) */}
           {(() => {
             const fieldIdMatch = fieldKey?.match(/^(\d+)/);
             const fieldId = fieldIdMatch ? parseInt(fieldIdMatch[1]) : null;
@@ -337,20 +337,24 @@ const DataField = ({ label, value, icon, format = 'text', confidence, sources, l
             );
           })()}
 
-          {/* LLM buttons */}
-          <div className="text-xs text-gray-500 mb-1.5">🤖 LLM retry (slower, less reliable):</div>
-          <div className="flex flex-wrap gap-2">
-            {['Perplexity', 'Gemini', 'GPT-4o', 'Grok', 'Claude Sonnet', 'Claude Opus'].map((llm) => (
-              <button
-                key={llm}
-                onClick={() => onRetry(fieldKey, llm)}
-                disabled={isRetrying}
-                className={`px-3 py-1 text-xs rounded-full bg-quantum-cyan/10 hover:bg-quantum-cyan/20 text-quantum-cyan border border-quantum-cyan/30 transition-colors ${isRetrying ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {llm}
-              </button>
-            ))}
-          </div>
+          {/* LLM buttons - ADMIN ONLY */}
+          {isAdmin && onRetry && (
+            <>
+              <div className="text-xs text-gray-500 mb-1.5">🤖 LLM retry (slower, less reliable):</div>
+              <div className="flex flex-wrap gap-2">
+                {['Perplexity', 'Gemini', 'GPT-4o', 'Grok', 'Claude Sonnet', 'Claude Opus'].map((llm) => (
+                  <button
+                    key={llm}
+                    onClick={() => onRetry(fieldKey, llm)}
+                    disabled={isRetrying}
+                    className={`px-3 py-1 text-xs rounded-full bg-quantum-cyan/10 hover:bg-quantum-cyan/20 text-quantum-cyan border border-quantum-cyan/30 transition-colors ${isRetrying ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {llm}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
