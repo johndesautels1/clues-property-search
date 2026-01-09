@@ -509,6 +509,11 @@ export const PERPLEXITY_FIELD_MAPPING: Record<string, string | null> = {
   'subject_property_year_built': '25_year_built',
   'subject_property_lot_size_acres': '24_lot_size_acres',
   'subject_property_county': '7_county',
+  // Short aliases (Perplexity sometimes omits 'subject_' prefix)
+  'property_beds': '17_bedrooms',
+  'property_baths': '20_total_bathrooms',
+  'property_sqft': '21_living_sqft',
+  'property_year_built': '25_year_built',
 
   // Additional field aliases Perplexity returns (discovered 2026-01-06)
   'current_listing_price': '10_listing_price',

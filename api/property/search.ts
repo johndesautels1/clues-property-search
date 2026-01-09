@@ -4704,10 +4704,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const llmResponses: any[] = [];
     const actualFieldCounts: Record<string, number> = {}; // Track ACTUAL fields returned by each source
 
-    // CRITICAL: City/State/Zip from Bridge MLS for geocoding validation
+    // CRITICAL: City/State/Zip/County from Bridge MLS for geocoding validation
     let mlsCity: string | undefined;
     let mlsState: string | undefined;
     let mlsZip: string | undefined;
+    let mlsCounty: string | undefined;
 
     // Pre-load existing fields into the pipeline (from previous LLM calls)
     if (existingFields && Object.keys(existingFields).length > 0) {
@@ -4774,11 +4775,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             console.log('✅ Bridge returned fields:', mlsFieldCount, 'fields');
             console.log('📋 Field keys sample:', Object.keys(bridgeData.fields).slice(0, 10));
 
-            // 🔍 CRITICAL: Extract city/state/zip from raw Bridge data for geocoding validation
+            // 🔍 CRITICAL: Extract city/state/zip/county from raw Bridge data for geocoding validation
             mlsCity = bridgeData.rawData?.City;
             mlsState = bridgeData.rawData?.StateOrProvince;
             mlsZip = bridgeData.rawData?.PostalCode;
-            console.log('🔍 Bridge MLS location (for validation):', { city: mlsCity, state: mlsState, zip: mlsZip });
+            mlsCounty = bridgeData.rawData?.CountyOrParish;
+            console.log('🔍 Bridge MLS location (for validation):', { city: mlsCity, state: mlsState, zip: mlsZip, county: mlsCounty });
 
             // 🔍 DEBUG: Check for photo fields specifically
             const hasPhotoUrl = 'property_photo_url' in bridgeData.fields;
