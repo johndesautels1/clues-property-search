@@ -46,9 +46,13 @@ export default async function handler(
   try {
     const body: RequestBody = req.body;
 
-    // Validate
-    if (!body.fieldId || !body.address) {
-      return res.status(400).json({ error: 'fieldId and address are required' });
+    // Validate - FIX BUG #5: Allow fieldId 0, check type and bounds
+    if (typeof body.fieldId !== 'number' || body.fieldId < 0 || body.fieldId > 200) {
+      return res.status(400).json({ error: 'Invalid fieldId (must be 0-200)' });
+    }
+
+    if (typeof body.address !== 'string' || body.address.trim().length === 0) {
+      return res.status(400).json({ error: 'Valid address required' });
     }
 
     console.log(`[Tavily Field API] Fetching field ${body.fieldId} for ${body.address}`);
@@ -348,16 +352,21 @@ async function callExtractionLLM(prompt: string): Promise<string | null> {
 
   const data = await response.json();
 
-  // FIX ERROR #10: Validate response structure before accessing
+  // FIX ERROR #10 & BUG #4: Validate response structure before accessing
   if (!data || !Array.isArray(data.content) || data.content.length === 0) {
     throw new Error('Invalid Claude API response structure');
   }
 
-  if (!data.content[0]?.text) {
+  const firstContent = data.content[0];
+  if (!firstContent || typeof firstContent.text !== 'string') {
     throw new Error('Claude API response missing text content');
   }
 
-  const extracted = data.content[0].text.trim();
+  const extracted = firstContent.text.trim();
+
+  if (extracted.length === 0) {
+    throw new Error('Claude API returned empty text');
+  }
 
   return extracted === 'DATA_NOT_FOUND' ? null : extracted;
 }
@@ -394,16 +403,22 @@ async function updatePropertyDatabase(
     .eq('id', propertyId)
     .single();
 
+  // FIX BUG #3: Handle all Supabase response edge cases
   if (fetchError) {
     throw new Error(`Failed to fetch property: ${fetchError.message}`);
   }
 
-  if (!currentProperty) {
-    throw new Error(`Property ${propertyId} not found`);
+  if (!currentProperty || typeof currentProperty !== 'object') {
+    throw new Error(`Property ${propertyId} not found or invalid`);
   }
 
-  // Update nested property
+  // Update nested property - deep clone to avoid mutations
   const updated = JSON.parse(JSON.stringify(currentProperty));
+
+  if (!updated || typeof updated !== 'object') {
+    throw new Error(`Failed to clone property data for ${propertyId}`);
+  }
+
   updateNestedProperty(updated, fieldDbPath.path, value);
 
   // Save back to database
