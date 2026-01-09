@@ -49,6 +49,66 @@ import { useIsAdmin } from '@/store/authStore';
 import { isCalculatedField, getCalculationBadge } from '@/lib/field-calculations';
 import { MultiSelectField } from '@/components/MultiSelectField';
 
+// Tavily-enabled fields (55 fields) - can be fetched with Tavily button
+const TAVILY_ENABLED_FIELDS = new Set([
+  12, 40, 46, 59, 60, 61, 62, 78, 79, 80, 81, 82, 91, 92, 93, 95, 96, 97, 98, 99, 100, 102, 103,
+  104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 131, 132, 133, 134, 135, 136,
+  137, 138, 170, 171, 174, 177, 178
+]);
+
+// Map field keys to numeric field IDs for Tavily API
+const FIELD_KEY_TO_ID_MAP: Record<string, number> = {
+  '12_market_value_estimate': 12,
+  '40_roof_age': 40,
+  '46_hvac_age': 46,
+  '59_recent_renovations': 59,
+  '60_permit_history_roof': 60,
+  '61_permit_history_hvac': 61,
+  '62_permit_history_other': 62,
+  '78_noise_level': 78,
+  '79_traffic_level': 79,
+  '80_walkability': 80,
+  '81_public_transit': 81,
+  '82_commute_to_city_center': 82,
+  '91_median_home_price': 91,
+  '92_price_per_sqft_avg': 92,
+  '93_price_to_rent_ratio': 93,
+  '95_days_on_market_avg': 95,
+  '96_inventory_surplus': 96,
+  '97_insurance_estimate': 97,
+  '98_rental_estimate': 98,
+  '99_rental_yield': 99,
+  '100_vacancy_rate': 100,
+  '102_financing_terms': 102,
+  '103_comparable_sales': 103,
+  '104_electric_provider': 104,
+  '105_avg_electric_bill': 105,
+  '106_water_provider': 106,
+  '107_avg_water_bill': 107,
+  '108_sewer_provider': 108,
+  '109_natural_gas': 109,
+  '110_trash_provider': 110,
+  '111_internet_providers': 111,
+  '112_max_internet_speed': 112,
+  '113_fiber_available': 113,
+  '114_cable_tv_provider': 114,
+  '115_cell_coverage': 115,
+  '116_emergency_services_distance': 116,
+  '131_view_type': 131,
+  '132_lot_features': 132,
+  '133_ev_charging': 133,
+  '134_smart_home_features': 134,
+  '135_accessibility': 135,
+  '136_pet_policy': 136,
+  '137_age_restrictions': 137,
+  '138_special_assessments': 138,
+  '170_market_trend_direction': 170,
+  '171_sale_to_list_ratio': 171,
+  '174_inventory_level': 174,
+  '177_price_momentum': 177,
+  '178_buyer_vs_seller_market': 178,
+};
+
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -249,6 +309,35 @@ const DataField = ({ label, value, icon, format = 'text', confidence, sources, l
           <div className="text-xs text-gray-400 mb-2">
             {isRetrying ? 'Fetching...' : 'Try fetching this field with:'}
           </div>
+
+          {/* Tavily button - show for Tavily-enabled fields */}
+          {(() => {
+            const fieldIdMatch = fieldKey?.match(/^(\d+)/);
+            const fieldId = fieldIdMatch ? parseInt(fieldIdMatch[1]) : null;
+            const isTavilyEnabled = fieldId && TAVILY_ENABLED_FIELDS.has(fieldId);
+
+            return isTavilyEnabled && globalTavilyHandler && (
+              <div className="mb-3">
+                <div className="text-xs text-gray-500 mb-1.5">⚡ Fast targeted search:</div>
+                <button
+                  onClick={() => globalTavilyHandler!(fieldKey)}
+                  disabled={isRetrying}
+                  className={`w-full px-4 py-2 text-sm rounded-lg bg-gradient-to-r from-cyan-500/20 to-blue-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 text-cyan-300 border border-cyan-500/40 transition-all ${isRetrying ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg hover:shadow-cyan-500/20'}`}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <Search className="w-4 h-4" />
+                    🔍 Fetch with Tavily (Targeted Web Search)
+                  </span>
+                </button>
+                <div className="text-[10px] text-gray-600 mt-1 text-center">
+                  Uses field-specific sources (Redfin, FCC, PlugShare, etc.) • 30s max
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* LLM buttons */}
+          <div className="text-xs text-gray-500 mb-1.5">🤖 LLM retry (slower, less reliable):</div>
           <div className="flex flex-wrap gap-2">
             {['Perplexity', 'Gemini', 'GPT-4o', 'Grok', 'Claude Sonnet', 'Claude Opus'].map((llm) => (
               <button
@@ -331,6 +420,7 @@ interface DataFieldInput<T> {
 
 // This will be set by the component
 let globalRetryHandler: ((fieldKey: string, llmName: string) => void) | undefined;
+let globalTavilyHandler: ((fieldKey: string) => void) | undefined;
 let globalIsRetrying = false;
 let globalIsAdmin = false; // Controls source visibility (admin vs user view)
 
@@ -885,8 +975,88 @@ export default function PropertyDetail() {
     }
   };
 
+  // Tavily handler - fetches single field with targeted web search (ADMIN ONLY)
+  const handleTavilyField = async (fieldKey: string) => {
+    if (!fullProperty || !id) return;
+
+    setIsRetrying(true);
+    try {
+      const apiUrl = '/api/property/fetch-tavily-field';
+      const address = fullProperty.address?.fullAddress?.value || fullProperty.address?.streetAddress?.value || '';
+      const city = fullProperty.address?.city?.value || '';
+      const state = fullProperty.address?.state?.value || '';
+      const zip = fullProperty.address?.zipCode?.value || '';
+
+      if (!address) {
+        console.error('[TAVILY-FIELD] No address found in property');
+        setErrorMessage('Cannot fetch with Tavily: No address found for this property');
+        setIsRetrying(false);
+        return;
+      }
+
+      // Convert field key to numeric ID
+      const fieldId = FIELD_KEY_TO_ID_MAP[fieldKey];
+      if (!fieldId) {
+        console.error('[TAVILY-FIELD] Unknown field key:', fieldKey);
+        setErrorMessage(`Unknown field: ${fieldKey}`);
+        setIsRetrying(false);
+        return;
+      }
+
+      console.log(`[TAVILY-FIELD] Fetching field ${fieldId} (${fieldKey}) for ${address}`);
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fieldId,
+          address,
+          city,
+          state,
+          zip,
+          propertyId: id,
+          propertyData: fullProperty // For calculated fields
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`[TAVILY-FIELD] Response:`, data);
+
+        if (data.success && data.results) {
+          const result = data.results;
+
+          if (result.value !== null && result.value !== undefined) {
+            // Success - found data
+            alert(`✅ Tavily found: ${JSON.stringify(result.value)}\n\nSource: ${result.sourceName || 'N/A'}\nConfidence: ${result.confidence}`);
+
+            // Refresh property data to show updated value
+            const refreshed = await getFullPropertyById(id);
+            if (refreshed) {
+              updateFullProperty(id, refreshed);
+            }
+          } else {
+            // No data found
+            const note = result.note || 'No data found in top sources';
+            alert(`ℹ️ Tavily could not find this field\n\n${note}\n\nTry "Retry with LLM" instead.`);
+          }
+        } else {
+          alert('❌ Tavily search failed - check console for details');
+        }
+      } else {
+        alert(`Error calling Tavily API: ${response.status} ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Tavily fetch error:', error);
+      setErrorMessage(`Failed to fetch with Tavily: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setIsRetrying(false);
+    }
+  };
+
   // Set global handlers and admin state
   globalRetryHandler = handleRetryField;
+  globalTavilyHandler = handleTavilyField;
   globalIsRetrying = isRetrying;
   globalIsAdmin = isAdmin; // Pass admin state to renderDataField
 
