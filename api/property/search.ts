@@ -4911,6 +4911,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               console.log('🌊 Mapped WaterBodyName -> 159_water_body_name:', value);
             }
 
+            // ========================================
+            // PARKING/CARPORT FIELDS (139-143) from Bridge MLS rawData
+            // ========================================
+            if (bridgeData.rawData?.CarportYN !== undefined && !mlsFields['139_carport_yn']) {
+              const carportYn = bridgeData.rawData.CarportYN;
+              const value = carportYn === true || carportYn === 'Yes' || carportYn === 'Y' ? 'Yes' : 'No';
+              additionalFields['139_carport_yn'] = { value, source: 'Stellar MLS', confidence: 'High' };
+              console.log('🚗 Mapped CarportYN -> 139_carport_yn:', value);
+            }
+
+            if (bridgeData.rawData?.CarportSpaces !== undefined && !mlsFields['140_carport_spaces']) {
+              const value = parseInt(bridgeData.rawData.CarportSpaces) || 0;
+              additionalFields['140_carport_spaces'] = { value, source: 'Stellar MLS', confidence: 'High' };
+              console.log('🚗 Mapped CarportSpaces -> 140_carport_spaces:', value);
+            }
+
+            if (bridgeData.rawData?.AttachedGarageYN !== undefined && !mlsFields['141_garage_attached_yn']) {
+              const attachedYn = bridgeData.rawData.AttachedGarageYN;
+              const value = attachedYn === true || attachedYn === 'Yes' || attachedYn === 'Y' ? 'Yes' : 'No';
+              additionalFields['141_garage_attached_yn'] = { value, source: 'Stellar MLS', confidence: 'High' };
+              console.log('🚗 Mapped AttachedGarageYN -> 141_garage_attached_yn:', value);
+            }
+
+            if (bridgeData.rawData?.ParkingFeatures && !mlsFields['142_parking_features']) {
+              const features = bridgeData.rawData.ParkingFeatures;
+              const value = Array.isArray(features) ? features.join(', ') : String(features);
+              additionalFields['142_parking_features'] = { value, source: 'Stellar MLS', confidence: 'High' };
+              console.log('🚗 Mapped ParkingFeatures -> 142_parking_features:', value);
+            }
+
+            if (bridgeData.rawData?.AssignedParkingSpaces !== undefined && !mlsFields['143_assigned_parking_spaces']) {
+              const value = parseInt(bridgeData.rawData.AssignedParkingSpaces) || 0;
+              additionalFields['143_assigned_parking_spaces'] = { value, source: 'Stellar MLS', confidence: 'High' };
+              console.log('🚗 Mapped AssignedParkingSpaces -> 143_assigned_parking_spaces:', value);
+            }
+
             // Add additional fields to arbitration pipeline
             if (Object.keys(additionalFields).length > 0) {
               const addedCount = arbitrationPipeline.addFieldsFromSource(additionalFields, STELLAR_MLS_SOURCE);
