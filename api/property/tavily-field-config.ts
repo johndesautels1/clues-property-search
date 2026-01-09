@@ -45,8 +45,9 @@ export interface TavilyFieldConfig {
 /**
  * TAVILY FIELD CONFIGURATIONS
  * 55 fields organized by category
+ * FIX ERROR #3: Allow both number and string keys for AVM subfields (16a-16f)
  */
-export const TAVILY_FIELD_CONFIGS: Record<number, TavilyFieldConfig> = {
+export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = {
 
   // ======================
   // PROPERTY VALUE & AVMs
@@ -1490,15 +1491,17 @@ export const CALCULATED_FIELDS = Object.values(TAVILY_FIELD_CONFIGS)
 
 /**
  * Helper: Get field config by ID
+ * FIX ERROR #4: Accept both number and string IDs for AVM subfields
  */
-export function getTavilyFieldConfig(fieldId: number): TavilyFieldConfig | undefined {
+export function getTavilyFieldConfig(fieldId: number | string): TavilyFieldConfig | undefined {
   return TAVILY_FIELD_CONFIGS[fieldId];
 }
 
 /**
  * Helper: Check if field can be fetched with Tavily
+ * FIX ERROR #4: Accept both number and string IDs for AVM subfields
  */
-export function isTavilyFetchable(fieldId: number): boolean {
+export function isTavilyFetchable(fieldId: number | string): boolean {
   const config = TAVILY_FIELD_CONFIGS[fieldId];
   return config !== undefined && !config.calculationOnly;
 }

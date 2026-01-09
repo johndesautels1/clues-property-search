@@ -11,6 +11,7 @@ export interface FieldDatabasePath {
   fieldKey: string;  // Exact key used in PropertyDetail.tsx paths object
   path: [string, string];  // [parentObject, propertyName]
   label: string;
+  calculationOnly?: boolean;  // FIX ERROR #7: Mark fields that are calculated, not fetched
 }
 
 /**
@@ -24,6 +25,13 @@ export const TAVILY_FIELD_DATABASE_MAPPING: Record<number, FieldDatabasePath> = 
     fieldKey: '12_market_value_estimate',
     path: ['details', 'marketValueEstimate'],
     label: 'Market Value Estimate'
+  },
+  16: {
+    fieldId: 16,
+    fieldKey: '16_avms',
+    path: ['financial', 'avms'],
+    label: 'AVMs (Average)',
+    calculationOnly: true  // Calculated from fields 16a-16f
   },
 
   // Property Condition & Permits
@@ -115,6 +123,13 @@ export const TAVILY_FIELD_DATABASE_MAPPING: Record<number, FieldDatabasePath> = 
     path: ['financial', 'priceToRentRatio'],
     label: 'Price to Rent Ratio'
   },
+  94: {
+    fieldId: 94,
+    fieldKey: '94_price_vs_median_percent',
+    path: ['financial', 'priceVsMedianPercent'],
+    label: 'Price vs Median %',
+    calculationOnly: true  // Calculated from fields 12 and 91
+  },
   95: {
     fieldId: 95,
     fieldKey: '95_days_on_market_avg',  // NOTE: _avg suffix!
@@ -150,6 +165,13 @@ export const TAVILY_FIELD_DATABASE_MAPPING: Record<number, FieldDatabasePath> = 
     fieldKey: '100_vacancy_rate_neighborhood',  // NOTE: _neighborhood suffix!
     path: ['financial', 'vacancyRateNeighborhood'],
     label: 'Vacancy Rate (Neighborhood)'
+  },
+  101: {
+    fieldId: 101,
+    fieldKey: '101_cap_rate_est',
+    path: ['financial', 'capRateEst'],
+    label: 'Cap Rate (Est)',
+    calculationOnly: true  // Calculated from fields 12, 98, 35
   },
   102: {
     fieldId: 102,

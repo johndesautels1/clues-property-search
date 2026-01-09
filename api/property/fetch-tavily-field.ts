@@ -347,7 +347,17 @@ async function callExtractionLLM(prompt: string): Promise<string | null> {
   }
 
   const data = await response.json();
-  const extracted = data.content[0]?.text?.trim();
+
+  // FIX ERROR #10: Validate response structure before accessing
+  if (!data || !Array.isArray(data.content) || data.content.length === 0) {
+    throw new Error('Invalid Claude API response structure');
+  }
+
+  if (!data.content[0]?.text) {
+    throw new Error('Claude API response missing text content');
+  }
+
+  const extracted = data.content[0].text.trim();
 
   return extracted === 'DATA_NOT_FOUND' ? null : extracted;
 }
@@ -361,11 +371,21 @@ async function updatePropertyDatabase(
   fieldDbPath: any,
   value: any
 ): Promise<void> {
+  // FIX ERROR #11: Validate environment variables before use
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('Supabase environment variables not configured');
+  }
+
+  // FIX ERROR #12: Validate fieldDbPath before accessing .path
+  if (!fieldDbPath || !fieldDbPath.path) {
+    throw new Error(`Invalid database path mapping for field ${fieldId}`);
+  }
+
   const { createClient } = await import('@supabase/supabase-js');
-  const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   // Get current property data
   const { data: currentProperty, error: fetchError } = await supabase

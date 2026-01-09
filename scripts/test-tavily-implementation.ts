@@ -296,8 +296,8 @@ function testFieldConfigsExist() {
       allConfigured = false;
       missingConfigs.push(fieldId);
     } else {
-      // Verify config has required properties
-      if (!config.searchQueries || config.searchQueries.length === 0) {
+      // Verify config has required properties (unless it's calculationOnly)
+      if (!config.calculationOnly && (!config.searchQueries || config.searchQueries.length === 0)) {
         allConfigured = false;
         missingConfigs.push(fieldId);
       }
