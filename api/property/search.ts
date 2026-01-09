@@ -4947,6 +4947,47 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               console.log('🚗 Mapped AssignedParkingSpaces -> 143_assigned_parking_spaces:', value);
             }
 
+            // ========================================
+            // LEGAL/HOMESTEAD FIELDS (149-154) from Bridge MLS rawData
+            // ========================================
+            if (bridgeData.rawData?.LegalSubdivisionName && !mlsFields['149_subdivision_name']) {
+              const value = bridgeData.rawData.LegalSubdivisionName;
+              additionalFields['149_subdivision_name'] = { value, source: 'Stellar MLS', confidence: 'High' };
+              console.log('📜 Mapped LegalSubdivisionName -> 149_subdivision_name:', value);
+            }
+
+            if (bridgeData.rawData?.LegalDescription && !mlsFields['150_legal_description']) {
+              const value = bridgeData.rawData.LegalDescription;
+              additionalFields['150_legal_description'] = { value, source: 'Stellar MLS', confidence: 'High' };
+              console.log('📜 Mapped LegalDescription -> 150_legal_description:', value);
+            }
+
+            if (bridgeData.rawData?.HomesteadYN !== undefined && !mlsFields['151_homestead_yn']) {
+              const homesteadYn = bridgeData.rawData.HomesteadYN;
+              const value = homesteadYn === true || homesteadYn === 'Yes' || homesteadYn === 'Y' ? 'Yes' : 'No';
+              additionalFields['151_homestead_yn'] = { value, source: 'Stellar MLS', confidence: 'High' };
+              console.log('🏠 Mapped HomesteadYN -> 151_homestead_yn:', value);
+            }
+
+            if (bridgeData.rawData?.CDDYN !== undefined && !mlsFields['152_cdd_yn']) {
+              const cddYn = bridgeData.rawData.CDDYN;
+              const value = cddYn === true || cddYn === 'Yes' || cddYn === 'Y' ? 'Yes' : 'No';
+              additionalFields['152_cdd_yn'] = { value, source: 'Stellar MLS', confidence: 'High' };
+              console.log('🏘️ Mapped CDDYN -> 152_cdd_yn:', value);
+            }
+
+            if (bridgeData.rawData?.CDDAnnualAmount !== undefined && !mlsFields['153_annual_cdd_fee']) {
+              const value = parseFloat(bridgeData.rawData.CDDAnnualAmount) || 0;
+              additionalFields['153_annual_cdd_fee'] = { value, source: 'Stellar MLS', confidence: 'High' };
+              console.log('💰 Mapped CDDAnnualAmount -> 153_annual_cdd_fee:', value);
+            }
+
+            if (bridgeData.rawData?.DirectionFaces && !mlsFields['154_front_exposure']) {
+              const value = bridgeData.rawData.DirectionFaces;
+              additionalFields['154_front_exposure'] = { value, source: 'Stellar MLS', confidence: 'High' };
+              console.log('🧭 Mapped DirectionFaces -> 154_front_exposure:', value);
+            }
+
             // Add additional fields to arbitration pipeline
             if (Object.keys(additionalFields).length > 0) {
               const addedCount = arbitrationPipeline.addFieldsFromSource(additionalFields, STELLAR_MLS_SOURCE);
