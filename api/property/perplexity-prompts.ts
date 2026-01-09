@@ -523,6 +523,31 @@ export const PERPLEXITY_FIELD_MAPPING: Record<string, string | null> = {
   'comparable_sales_note': '103_comparable_sales', // Singular variant
   'financing_note': '102_financing_terms', // Singular variant
   'data_quality_notes': null, // Metadata about response quality - skip
+
+  // Waterfront fields (155-159) - Aliases for LLM responses
+  // Note: Web search rarely finds these, but map them if returned
+  'water_frontage_yn': '155_water_frontage_yn',
+  'water_frontage': '155_water_frontage_yn',
+  'waterfront_yn': '155_water_frontage_yn',
+  'waterfront': '155_water_frontage_yn',
+  'on_water': '155_water_frontage_yn',
+  'is_waterfront': '155_water_frontage_yn',
+  'waterfront_property': '155_water_frontage_yn',
+  'waterfront_feet': '156_waterfront_feet',
+  'water_feet': '156_waterfront_feet',
+  'water_frontage_feet': '156_waterfront_feet',
+  'frontage_feet': '156_waterfront_feet',
+  'water_access_yn': '157_water_access_yn',
+  'water_access': '157_water_access_yn',
+  'has_water_access': '157_water_access_yn',
+  'water_view_yn': '158_water_view_yn',
+  'water_view': '158_water_view_yn',
+  'has_water_view': '158_water_view_yn',
+  'water_body_name': '159_water_body_name',
+  'water_body': '159_water_body_name',
+  'body_of_water': '159_water_body_name',
+  'waterbody': '159_water_body_name',
+  'water_name': '159_water_body_name',
 };
 
 /**

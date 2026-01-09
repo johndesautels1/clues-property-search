@@ -318,16 +318,30 @@ export const FLAT_TO_NUMBERED_FIELD_MAP: Record<string, string> = {
   'front_exposure': '154_front_exposure',
   'exposure': '154_front_exposure',
 
-  // Stellar MLS Waterfront (155-159)
+  // Stellar MLS Waterfront (155-159) - Comprehensive aliases for LLM responses
   'water_frontage_yn': '155_water_frontage_yn',
   'water_frontage': '155_water_frontage_yn',
   'waterfront_yn': '155_water_frontage_yn',
+  'waterfront': '155_water_frontage_yn',
+  'on_water': '155_water_frontage_yn',
+  'is_waterfront': '155_water_frontage_yn',
+  'waterfront_property': '155_water_frontage_yn',
   'waterfront_feet': '156_waterfront_feet',
+  'water_feet': '156_waterfront_feet',
+  'water_frontage_feet': '156_waterfront_feet',
+  'frontage_feet': '156_waterfront_feet',
+  'linear_water_feet': '156_waterfront_feet',
   'water_access_yn': '157_water_access_yn',
   'water_access': '157_water_access_yn',
+  'has_water_access': '157_water_access_yn',
   'water_view_yn': '158_water_view_yn',
   'water_view': '158_water_view_yn',
+  'has_water_view': '158_water_view_yn',
   'water_body_name': '159_water_body_name',
+  'water_body': '159_water_body_name',
+  'body_of_water': '159_water_body_name',
+  'waterbody': '159_water_body_name',
+  'water_name': '159_water_body_name',
 
   // Stellar MLS Leasing (160-165)
   'can_be_leased_yn': '160_can_be_leased_yn',
