@@ -57,9 +57,10 @@ const TAVILY_ENABLED_FIELDS = new Set([
 ]);
 
 // Map field keys to numeric field IDs for Tavily API
+// CRITICAL: These MUST match the exact field keys in the paths object below (lines 780-927)
 const FIELD_KEY_TO_ID_MAP: Record<string, number> = {
   '12_market_value_estimate': 12,
-  '40_roof_age': 40,
+  '40_roof_age_est': 40,  // NOTE: _est suffix!
   '46_hvac_age': 46,
   '59_recent_renovations': 59,
   '60_permit_history_roof': 60,
@@ -67,18 +68,18 @@ const FIELD_KEY_TO_ID_MAP: Record<string, number> = {
   '62_permit_history_other': 62,
   '78_noise_level': 78,
   '79_traffic_level': 79,
-  '80_walkability': 80,
-  '81_public_transit': 81,
+  '80_walkability_description': 80,  // NOTE: _description suffix!
+  '81_public_transit_access': 81,  // NOTE: _access suffix!
   '82_commute_to_city_center': 82,
-  '91_median_home_price': 91,
-  '92_price_per_sqft_avg': 92,
+  '91_median_home_price_neighborhood': 91,  // NOTE: _neighborhood suffix!
+  '92_price_per_sqft_recent_avg': 92,  // NOTE: _recent_avg suffix!
   '93_price_to_rent_ratio': 93,
-  '95_days_on_market_avg': 95,
+  '95_days_on_market_avg': 95,  // NOTE: _avg suffix!
   '96_inventory_surplus': 96,
-  '97_insurance_estimate': 97,
-  '98_rental_estimate': 98,
-  '99_rental_yield': 99,
-  '100_vacancy_rate': 100,
+  '97_insurance_est_annual': 97,  // NOTE: _est_annual suffix!
+  '98_rental_estimate_monthly': 98,  // NOTE: _monthly suffix!
+  '99_rental_yield_est': 99,  // NOTE: _est suffix!
+  '100_vacancy_rate_neighborhood': 100,  // NOTE: _neighborhood suffix!
   '102_financing_terms': 102,
   '103_comparable_sales': 103,
   '104_electric_provider': 104,
@@ -88,17 +89,17 @@ const FIELD_KEY_TO_ID_MAP: Record<string, number> = {
   '108_sewer_provider': 108,
   '109_natural_gas': 109,
   '110_trash_provider': 110,
-  '111_internet_providers': 111,
+  '111_internet_providers_top3': 111,  // NOTE: _top3 suffix!
   '112_max_internet_speed': 112,
   '113_fiber_available': 113,
   '114_cable_tv_provider': 114,
-  '115_cell_coverage': 115,
+  '115_cell_coverage_quality': 115,  // NOTE: _quality suffix!
   '116_emergency_services_distance': 116,
   '131_view_type': 131,
   '132_lot_features': 132,
   '133_ev_charging': 133,
   '134_smart_home_features': 134,
-  '135_accessibility': 135,
+  '135_accessibility_modifications': 135,  // NOTE: _modifications suffix!
   '136_pet_policy': 136,
   '137_age_restrictions': 137,
   '138_special_assessments': 138,
