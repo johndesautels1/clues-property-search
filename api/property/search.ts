@@ -4830,14 +4830,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             // Map taxLegalDescription -> 150_legal_description
             if (bridgeData.rawData?.TaxLegalDescription && !mlsFields['150_legal_description']) {
-              additionalFields['150_legal_description'] = bridgeData.rawData.TaxLegalDescription;
+              additionalFields['150_legal_description'] = {
+                value: bridgeData.rawData.TaxLegalDescription,
+                source: 'Stellar MLS',
+                confidence: 'High'
+              };
               console.log('📋 Mapped TaxLegalDescription -> 150_legal_description');
             }
 
             // Map GarageSpaces -> 28_garage_spaces
             if (bridgeData.rawData?.GarageSpaces !== undefined && !mlsFields['28_garage_spaces']) {
-              additionalFields['28_garage_spaces'] = parseInt(bridgeData.rawData.GarageSpaces) || 0;
-              console.log('🚗 Mapped GarageSpaces -> 28_garage_spaces:', additionalFields['28_garage_spaces']);
+              const garageSpaces = parseInt(bridgeData.rawData.GarageSpaces) || 0;
+              additionalFields['28_garage_spaces'] = {
+                value: garageSpaces,
+                source: 'Stellar MLS',
+                confidence: 'High'
+              };
+              console.log('🚗 Mapped GarageSpaces -> 28_garage_spaces:', garageSpaces);
             }
 
             // Calculate 11_price_per_sqft from Price/Sqft if missing
@@ -4845,15 +4854,61 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               const price = mlsFields['10_listing_price'] || bridgeData.rawData?.ListPrice;
               const sqft = mlsFields['21_living_sqft'] || bridgeData.rawData?.LivingArea;
               if (price && sqft && sqft > 0) {
-                additionalFields['11_price_per_sqft'] = Math.round(price / sqft);
-                console.log('💲 Calculated 11_price_per_sqft: $', additionalFields['11_price_per_sqft'], '/sqft');
+                const pricePerSqft = Math.round(price / sqft);
+                additionalFields['11_price_per_sqft'] = {
+                  value: pricePerSqft,
+                  source: 'Stellar MLS',
+                  confidence: 'High'
+                };
+                console.log('💲 Calculated 11_price_per_sqft: $', pricePerSqft, '/sqft');
               }
             }
 
             // Set 31_hoa_fee_annual to 0 if 30_hoa_yn is false
             if (mlsFields['30_hoa_yn'] === false && !mlsFields['31_hoa_fee_annual']) {
-              additionalFields['31_hoa_fee_annual'] = 0;
+              additionalFields['31_hoa_fee_annual'] = {
+                value: 0,
+                source: 'Stellar MLS',
+                confidence: 'High'
+              };
               console.log('🏘️ Set 31_hoa_fee_annual = 0 (no HOA)');
+            }
+
+            // ========================================
+            // WATERFRONT FIELDS (155-159) from Bridge MLS rawData
+            // Must include { value, source, confidence } structure for proper attribution!
+            // ========================================
+            if (bridgeData.rawData?.WaterfrontYN !== undefined && !mlsFields['155_water_frontage_yn']) {
+              const waterfrontYn = bridgeData.rawData.WaterfrontYN;
+              const value = waterfrontYn === true || waterfrontYn === 'Yes' || waterfrontYn === 'Y' ? 'Yes' : 'No';
+              additionalFields['155_water_frontage_yn'] = { value, source: 'Stellar MLS', confidence: 'High' };
+              console.log('🌊 Mapped WaterfrontYN -> 155_water_frontage_yn:', value);
+            }
+
+            if (bridgeData.rawData?.WaterfrontFeet !== undefined && !mlsFields['156_waterfront_feet']) {
+              const value = parseInt(bridgeData.rawData.WaterfrontFeet) || 0;
+              additionalFields['156_waterfront_feet'] = { value, source: 'Stellar MLS', confidence: 'High' };
+              console.log('🌊 Mapped WaterfrontFeet -> 156_waterfront_feet:', value);
+            }
+
+            if (bridgeData.rawData?.WaterAccessYN !== undefined && !mlsFields['157_water_access_yn']) {
+              const accessYn = bridgeData.rawData.WaterAccessYN;
+              const value = accessYn === true || accessYn === 'Yes' || accessYn === 'Y' ? 'Yes' : 'No';
+              additionalFields['157_water_access_yn'] = { value, source: 'Stellar MLS', confidence: 'High' };
+              console.log('🌊 Mapped WaterAccessYN -> 157_water_access_yn:', value);
+            }
+
+            if (bridgeData.rawData?.WaterViewYN !== undefined && !mlsFields['158_water_view_yn']) {
+              const viewYn = bridgeData.rawData.WaterViewYN;
+              const value = viewYn === true || viewYn === 'Yes' || viewYn === 'Y' ? 'Yes' : 'No';
+              additionalFields['158_water_view_yn'] = { value, source: 'Stellar MLS', confidence: 'High' };
+              console.log('🌊 Mapped WaterViewYN -> 158_water_view_yn:', value);
+            }
+
+            if (bridgeData.rawData?.WaterBodyName && !mlsFields['159_water_body_name']) {
+              const value = bridgeData.rawData.WaterBodyName;
+              additionalFields['159_water_body_name'] = { value, source: 'Stellar MLS', confidence: 'High' };
+              console.log('🌊 Mapped WaterBodyName -> 159_water_body_name:', value);
             }
 
             // Add additional fields to arbitration pipeline
