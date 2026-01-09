@@ -41,7 +41,7 @@ export const ALL_FIELDS: readonly FieldDefinition[] = [
   // ================================================================
   { num: 1,  key: 'full_address',     label: 'Full Address',     group: 'Address & Identity', type: 'text',   required: true },
   { num: 2,  key: 'mls_primary',      label: 'MLS Primary',      group: 'Address & Identity', type: 'text',   required: false },
-  { num: 3,  key: 'mls_secondary',    label: 'MLS Secondary',    group: 'Address & Identity', type: 'text',   required: false },
+  { num: 3,  key: 'new_construction_yn', label: 'New Construction', group: 'Address & Identity', type: 'boolean', required: false },
   { num: 4,  key: 'listing_status',   label: 'Listing Status',   group: 'Address & Identity', type: 'select', required: false, options: ['Active', 'Pending', 'Sold', 'Off-Market'] },
   { num: 5,  key: 'listing_date',     label: 'Listing Date',     group: 'Address & Identity', type: 'date',   required: false },
   { num: 6,  key: 'neighborhood',     label: 'Neighborhood',     group: 'Address & Identity', type: 'text',   required: false },

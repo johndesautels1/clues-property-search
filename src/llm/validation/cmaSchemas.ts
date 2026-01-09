@@ -115,7 +115,7 @@ export const CmaSchema = z.object({
   // ================================================================
   '1_full_address': textField(),
   '2_mls_primary': textField(),
-  '3_mls_secondary': textField(),
+  '3_new_construction_yn': z.boolean().optional(),
   '4_listing_status': selectField(['Active', 'Pending', 'Sold', 'Off-Market']),
   '5_listing_date': dateField(),
   '6_neighborhood': textField(),

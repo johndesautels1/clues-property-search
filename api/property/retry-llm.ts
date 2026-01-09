@@ -142,7 +142,7 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   // GROUP 1: Address & Identity (Fields 1-9)
   '1_full_address': 'text', 'full_address': 'text',
   '2_mls_primary': 'text', 'mls_primary': 'text',
-  '3_mls_secondary': 'text', 'mls_secondary': 'text',
+  '3_new_construction_yn': 'boolean', 'new_construction_yn': 'boolean',
   '4_listing_status': 'select', 'listing_status': 'select',
   '5_listing_date': 'date', 'listing_date': 'date',
   '6_neighborhood': 'text', 'neighborhood': 'text',

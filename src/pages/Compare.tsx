@@ -563,7 +563,7 @@ const comparisonFields: Record<string, Array<{
     { key: 'homesteadYn', label: 'Homestead Exemption', path: 'stellarMLS.legal.homesteadYn.value', fieldNum: 151, format: 'boolean' },
     { key: 'cddYn', label: 'CDD', path: 'stellarMLS.legal.cddYn.value', fieldNum: 152, format: 'boolean' },
     { key: 'mlsPrimary', label: 'MLS Primary', path: 'address.mlsPrimary.value', fieldNum: 2, format: 'text' },
-    { key: 'mlsSecondary', label: 'MLS Secondary', path: 'address.mlsSecondary.value', fieldNum: 3, format: 'text' },
+    { key: 'newConstructionYN', label: 'New Construction', path: 'address.newConstructionYN.value', fieldNum: 3, format: 'boolean' },
     { key: 'listingStatus', label: 'Listing Status', path: 'address.listingStatus.value', fieldNum: 4, format: 'text' },
     { key: 'listingDate', label: 'Listing Date', path: 'address.listingDate.value', fieldNum: 5, format: 'text' },
     { key: 'permitHistoryOther', label: 'Permit History - Other', path: 'structural.permitHistoryPoolAdditions.value', fieldNum: 62, format: 'text' },

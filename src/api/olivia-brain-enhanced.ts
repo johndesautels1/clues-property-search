@@ -50,7 +50,7 @@ export function extractPropertyData(property: Property): OliviaEnhancedPropertyI
     // ========================================================================
     full_address: getValue<string>(property.address?.fullAddress) || '',
     mls_primary: getValue<string>(property.address?.mlsPrimary),
-    mls_secondary: getValue<string>(property.address?.mlsSecondary),
+    new_construction_yn: getValue<boolean>(property.address?.newConstructionYN),
     listing_status: getValue<string>(property.address?.listingStatus),
     listing_date: getValue<string>(property.address?.listingDate),
     neighborhood: getValue<string>(property.address?.neighborhoodName),
@@ -339,7 +339,7 @@ function formatPropertyForPrompt(p: OliviaEnhancedPropertyInput, index: number):
   lines.push(`\n📍 ADDRESS & IDENTITY (Fields 1-9)`);
   addField(1, 'Full Address', p.full_address);
   addField(2, 'MLS Primary', p.mls_primary);
-  addField(3, 'MLS Secondary', p.mls_secondary);
+  addField(3, 'New Construction', p.new_construction_yn);
   addField(4, 'Listing Status', p.listing_status);
   addField(5, 'Listing Date', p.listing_date);
   addField(6, 'Neighborhood', p.neighborhood);

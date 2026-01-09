@@ -677,7 +677,7 @@ export default function PropertyDetail() {
             // GROUP 1: Address & Identity (1-9)
             '1_full_address': ['address', 'fullAddress'],
             '2_mls_primary': ['address', 'mlsPrimary'],
-            '3_mls_secondary': ['address', 'mlsSecondary'],
+            '3_new_construction_yn': ['address', 'newConstructionYN'],
             '4_listing_status': ['address', 'listingStatus'],
             '5_listing_date': ['address', 'listingDate'],
             '6_neighborhood': ['address', 'neighborhoodName'],
@@ -1219,23 +1219,12 @@ export default function PropertyDetail() {
                     </span>
                   </button>
                 )}
-                {fullProperty?.address.mlsSecondary?.value && (
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      navigator.clipboard.writeText(String(fullProperty.address.mlsSecondary.value));
-                      const btn = e.currentTarget;
-                      const originalText = btn.innerHTML;
-                      btn.innerHTML = '<span class="text-quantum-green">✓ Copied!</span>';
-                      setTimeout(() => { btn.innerHTML = originalText; }, 1500);
-                    }}
-                    className="px-3 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 transition-colors cursor-pointer group"
-                    title="Click to copy Secondary MLS#"
-                  >
-                    <span className="text-xs font-semibold text-purple-400 group-hover:text-purple-300">
-                      MLS2# {fullProperty.address.mlsSecondary.value}
+                {fullProperty?.address.newConstructionYN?.value && (
+                  <div className="px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/30">
+                    <span className="text-xs font-semibold text-green-400">
+                      NEW CONSTRUCTION
                     </span>
-                  </button>
+                  </div>
                 )}
                 {fullProperty?.details.parcelId?.value && (
                   <button
@@ -1554,7 +1543,7 @@ export default function PropertyDetail() {
                     return null;
                   })()}
                   {renderDataField("MLS Primary", fullProperty.address.mlsPrimary, "text", undefined, "2_mls_primary")}
-                  {renderDataField("MLS Secondary", fullProperty.address.mlsSecondary, "text", undefined, "3_mls_secondary")}
+                  {renderDataField("New Construction", { value: fullProperty.address.newConstructionYN?.value ? 'Yes' : 'No', sources: fullProperty.address.newConstructionYN?.sources || [] }, "text", undefined, "3_new_construction_yn")}
                   {renderDataField("Listing Status", fullProperty.address.listingStatus, "text", undefined, "4_listing_status")}
                   {renderDataField("Listing Date", fullProperty.address.listingDate, 'date', undefined, "5_listing_date")}
                 </div>

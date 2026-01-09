@@ -30,7 +30,7 @@ export const FIELD_MAPPINGS: FieldMapping[] = [
   // ================================================================
   { fieldNumber: 1, apiKey: '1_full_address', frontendKey: 'addressIdentity.fullAddress', csvHeader: 'Full Address', label: 'Full Address', group: 'Address & Identity', type: 'string' },
   { fieldNumber: 2, apiKey: '2_mls_primary', frontendKey: 'addressIdentity.mlsPrimary', csvHeader: 'MLS Primary', label: 'MLS Primary', group: 'Address & Identity', type: 'string' },
-  { fieldNumber: 3, apiKey: '3_mls_secondary', frontendKey: 'addressIdentity.mlsSecondary', csvHeader: 'MLS Secondary', label: 'MLS Secondary', group: 'Address & Identity', type: 'string' },
+  { fieldNumber: 3, apiKey: '3_new_construction_yn', frontendKey: 'addressIdentity.newConstructionYN', csvHeader: 'New Construction', label: 'New Construction', group: 'Address & Identity', type: 'boolean' },
   { fieldNumber: 4, apiKey: '4_listing_status', frontendKey: 'addressIdentity.listingStatus', csvHeader: 'Listing Status', label: 'Listing Status', group: 'Address & Identity', type: 'string' },
   { fieldNumber: 5, apiKey: '5_listing_date', frontendKey: 'addressIdentity.listingDate', csvHeader: 'Listing Date', label: 'Listing Date', group: 'Address & Identity', type: 'date' },
   { fieldNumber: 6, apiKey: '6_neighborhood', frontendKey: 'addressIdentity.neighborhood', csvHeader: 'Neighborhood', label: 'Neighborhood', group: 'Address & Identity', type: 'string' },

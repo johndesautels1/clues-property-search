@@ -217,7 +217,7 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   // ================================================================
   '1_full_address': 'text', 'full_address': 'text',
   '2_mls_primary': 'text', 'mls_primary': 'text',
-  '3_mls_secondary': 'text', 'mls_secondary': 'text',
+  '3_new_construction_yn': 'boolean', 'new_construction_yn': 'boolean',
   '4_listing_status': 'select', 'listing_status': 'select',
   '4A_special_sale_type': 'select', 'special_sale_type': 'select',
   '5_listing_date': 'date', 'listing_date': 'date',
@@ -919,7 +919,7 @@ function convertFlatToNestedStructure(flatFields: Record<string, any>): any {
     // ================================================================
     '1_full_address': ['address', 'fullAddress'],
     '2_mls_primary': ['address', 'mlsPrimary'],
-    '3_mls_secondary': ['address', 'mlsSecondary'],
+    '3_new_construction_yn': ['address', 'newConstructionYN'],
     '4_listing_status': ['address', 'listingStatus'],
     '5_listing_date': ['address', 'listingDate'],
     '6_neighborhood': ['address', 'neighborhoodName'],
@@ -2665,7 +2665,7 @@ function extractFirstJsonObject(text: string): string | null {
 // Field definitions for the prompt - SYNCHRONIZED WITH fields-schema.ts (181 fields)
 const FIELD_GROUPS = `
 GROUP 1 - Address & Identity (Fields 1-9):
-1. full_address, 2. mls_primary, 3. mls_secondary, 4. listing_status, 5. listing_date,
+1. full_address, 2. mls_primary, 3. new_construction_yn, 4. listing_status, 5. listing_date,
 6. neighborhood, 7. county, 8. zip_code, 9. parcel_id
 
 GROUP 2 - Pricing & Value (Fields 10-16):
@@ -2763,7 +2763,7 @@ GROUP 23 - Market Performance (Fields 169-181):
 const FIELD_GROUPS_PERPLEXITY = `
 GROUP 1 - Address & Identity (Fields 1-9) [P1 = Priority 1]:
 1. full_address (from listing sites), 2. mls_primary (from MLS/Zillow/Redfin) [P1],
-3. mls_secondary, 4. listing_status (from listing sites) [P1], 5. listing_date (from MLS),
+3. new_construction_yn, 4. listing_status (from listing sites) [P1], 5. listing_date (from MLS),
 6. neighborhood (from listing sites), 7. county (from county records) [P1],
 8. zip_code (from listing sites), 9. parcel_id (from county property appraiser) [P1]
 
@@ -2924,7 +2924,7 @@ const EXACT_FIELD_KEYS = `
 EXACT FIELD KEYS - You MUST use these EXACT keys (number_fieldname format):
 
 GROUP 1 - Address & Identity (Fields 1-9):
-1_full_address, 2_mls_primary, 3_mls_secondary, 4_listing_status, 5_listing_date,
+1_full_address, 2_mls_primary, 3_new_construction_yn, 4_listing_status, 5_listing_date,
 6_neighborhood, 7_county, 8_zip_code, 9_parcel_id,
 
 GROUP 2 - Pricing & Value (Fields 10-16):
@@ -4291,7 +4291,7 @@ function shouldAuditLLMFields(llmFieldCount: number, llmOnlyFields: Record<strin
 // ============================================
 const STELLAR_MLS_AUTHORITATIVE_FIELDS = new Set([
   // CRITICAL: Current listing data (NOT historical)
-  '2_mls_primary', '3_mls_secondary', '4_listing_status', '5_listing_date',
+  '2_mls_primary', '3_new_construction_yn', '4_listing_status', '5_listing_date',
   '10_listing_price', // ← CRITICAL: CURRENT list price, not historical!
   '13_last_sale_date', '14_last_sale_price', // Historical sale data
 

@@ -82,7 +82,7 @@ export async function searchStellarMLS(address: string): Promise<StellarMLSResul
     //
     // Example fields to populate (aligned with fields-schema.ts SOURCE OF TRUTH):
     // - 2_mls_primary (MLS number)
-    // - 3_mls_secondary (Secondary MLS number if applicable)
+    // - 3_new_construction_yn (New Construction Yes/No from NewConstructionYN)
     // - 4_listing_status (Active, Pending, Sold, etc.)
     // - 5_listing_date (Date listed)
     // - 10_listing_price (Current list price)

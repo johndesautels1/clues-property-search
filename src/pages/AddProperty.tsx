@@ -804,7 +804,7 @@ export default function AddProperty() {
       address: {
         fullAddress: createDataField(row['1_full_address'] || ''),
         mlsPrimary: createDataField(row['2_mls_primary'] || ''),
-        mlsSecondary: createDataField(row['3_mls_secondary'] || ''),
+        newConstructionYN: createDataField(row['3_new_construction_yn'] === 'Yes' || row['3_new_construction_yn'] === 'true' || row['3_new_construction_yn'] === true),
         listingStatus: createDataField(row['4_listing_status'] || 'Active'),
         listingDate: createDataField(row['5_listing_date'] || ''),
         listingPrice: createDataField(row['10_listing_price'] ? parseFloat(row['10_listing_price'].toString().replace(/[^0-9.]/g, '')) : null),

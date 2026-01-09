@@ -113,7 +113,7 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
   // ========== GROUP 1: Address & Identity (Fields 1-9) ==========
   { fieldNumber: 1, apiKey: '1_full_address', group: 'address', propName: 'fullAddress', type: 'string' },
   { fieldNumber: 2, apiKey: '2_mls_primary', group: 'address', propName: 'mlsPrimary', type: 'string' },
-  { fieldNumber: 3, apiKey: '3_mls_secondary', group: 'address', propName: 'mlsSecondary', type: 'string' },
+  { fieldNumber: 3, apiKey: '3_new_construction_yn', group: 'address', propName: 'newConstructionYN', type: 'boolean' },
   { fieldNumber: 4, apiKey: '4_listing_status', group: 'address', propName: 'listingStatus', type: 'string' },
   { fieldNumber: 5, apiKey: '5_listing_date', group: 'address', propName: 'listingDate', type: 'date' },
   { fieldNumber: 6, apiKey: '6_neighborhood', group: 'address', propName: 'neighborhoodName', type: 'string' },
@@ -378,7 +378,7 @@ const PERPLEXITY_TO_NUMBERED_FIELDS: Record<string, string> = {
   // Address & Identity
   'address_identity_full_address': '1_full_address',
   'address_identity_mls_primary': '2_mls_primary',
-  'address_identity_mls_secondary': '3_mls_secondary',
+  'address_identity_new_construction_yn': '3_new_construction_yn',
   'address_identity_neighborhood': '6_neighborhood',
   'address_identity_county': '7_county',
   'address_identity_zip_code': '8_zip_code',
@@ -647,7 +647,7 @@ export function normalizeToProperty(
     address: {
       fullAddress: emptyDataField(),
       mlsPrimary: emptyDataField(),
-      mlsSecondary: emptyDataField(),
+      newConstructionYN: emptyDataField(),
       listingStatus: emptyDataField(),
       listingDate: emptyDataField(),
       listingPrice: emptyDataField(),

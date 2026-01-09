@@ -338,7 +338,7 @@ export const FIELD_WEIGHTS: Record<number, number> = {
   // GROUP 1: Address & Identity (1-9)
   1: 2,  // full_address
   2: 3,  // mls_primary
-  3: 4,  // mls_secondary
+  3: 4,  // new_construction_yn
   4: 2,  // street_address
   5: 2,  // city
   6: 2,  // state
@@ -752,7 +752,7 @@ ${properties.map((p, i) => `
 **GROUP 1: Address & Identity**
 [1] Full Address: ${p.full_address}
 [2] MLS Primary: ${p.mls_primary || 'N/A'}
-[3] MLS Secondary: ${p.mls_secondary || 'N/A'}
+[3] New Construction: ${p.new_construction_yn || 'N/A'}
 [4] Listing Status: ${p.listing_status || 'N/A'}
 [5] Listing Date: ${p.listing_date || 'N/A'}
 [6] Neighborhood: ${p.neighborhood || 'N/A'}
@@ -1002,7 +1002,7 @@ function filterPropertyFields(property: OliviaEnhancedPropertyInput, startField:
   const fieldMap: Record<number, { key: keyof OliviaEnhancedPropertyInput; label: string }> = {
     1: { key: 'full_address', label: 'Full Address' },
     2: { key: 'mls_primary', label: 'MLS Primary' },
-    3: { key: 'mls_secondary', label: 'MLS Secondary' },
+    3: { key: 'new_construction_yn', label: 'New Construction' },
     4: { key: 'listing_status', label: 'Listing Status' },
     5: { key: 'listing_date', label: 'Listing Date' },
     6: { key: 'neighborhood', label: 'Neighborhood' },

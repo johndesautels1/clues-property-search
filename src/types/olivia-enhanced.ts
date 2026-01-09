@@ -25,7 +25,7 @@ export interface OliviaEnhancedPropertyInput {
   // GROUP 1: Address & Identity (1-9)
   full_address: string;
   mls_primary?: string;
-  mls_secondary?: string;
+  new_construction_yn?: boolean;
   listing_status?: string;
   listing_date?: string;
   neighborhood?: string;

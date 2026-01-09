@@ -29,7 +29,7 @@ export interface DataField<T> {
 export interface AddressData {
   fullAddress: DataField<string>;        // #1 full_address
   mlsPrimary: DataField<string>;         // #2 mls_primary
-  mlsSecondary: DataField<string>;       // #3 mls_secondary
+  newConstructionYN: DataField<boolean>;  // #3 new_construction_yn
   listingStatus: DataField<string>;      // #4 listing_status
   listingDate: DataField<string>;        // #5 listing_date
   listingPrice: DataField<number>;       // #10 listing_price
