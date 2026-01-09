@@ -304,57 +304,47 @@ const DataField = ({ label, value, icon, format = 'text', confidence, sources, l
       {/* STATUS BADGES - Show to ALL users for missing fields, ADMIN ONLY for other statuses */}
       {(isMissing || isAdmin) && statusBadge}
 
-      {/* Retry UI - Show Tavily to ALL users, LLM buttons to ADMIN ONLY */}
-      {showRetry && needsRetry && fieldKey && (
-        <div className="mt-2 p-3 bg-black/30 border border-quantum-cyan/20 rounded-lg">
-          <div className="text-xs text-gray-400 mb-2">
-            {isRetrying ? 'Fetching...' : 'Try fetching this field with:'}
+      {/* Tavily button - ALWAYS VISIBLE for missing/low-confidence fields (ALL USERS) */}
+      {needsRetry && fieldKey && (() => {
+        const fieldIdMatch = fieldKey?.match(/^(\d+)/);
+        const fieldId = fieldIdMatch ? parseInt(fieldIdMatch[1]) : null;
+        const isTavilyEnabled = fieldId && TAVILY_ENABLED_FIELDS.has(fieldId);
+
+        return isTavilyEnabled && globalTavilyHandler && (
+          <div className="mt-2">
+            <button
+              onClick={() => globalTavilyHandler!(fieldKey)}
+              disabled={isRetrying}
+              className={`w-full px-4 py-2 text-sm rounded-lg bg-gradient-to-r from-cyan-500/20 to-blue-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 text-cyan-300 border border-cyan-500/40 transition-all ${isRetrying ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg hover:shadow-cyan-500/20'}`}
+            >
+              <span className="flex items-center justify-center gap-2">
+                <Search className="w-4 h-4" />
+                🔍 Fetch with Tavily (Targeted Web Search)
+              </span>
+            </button>
+            <div className="text-[10px] text-gray-600 mt-1 text-center">
+              Fast • Field-specific sources (Redfin, FCC, PlugShare, etc.) • 30s max
+            </div>
           </div>
+        );
+      })()}
 
-          {/* Tavily button - show for Tavily-enabled fields (ALL USERS) */}
-          {(() => {
-            const fieldIdMatch = fieldKey?.match(/^(\d+)/);
-            const fieldId = fieldIdMatch ? parseInt(fieldIdMatch[1]) : null;
-            const isTavilyEnabled = fieldId && TAVILY_ENABLED_FIELDS.has(fieldId);
-
-            return isTavilyEnabled && globalTavilyHandler && (
-              <div className="mb-3">
-                <div className="text-xs text-gray-500 mb-1.5">⚡ Fast targeted search:</div>
-                <button
-                  onClick={() => globalTavilyHandler!(fieldKey)}
-                  disabled={isRetrying}
-                  className={`w-full px-4 py-2 text-sm rounded-lg bg-gradient-to-r from-cyan-500/20 to-blue-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 text-cyan-300 border border-cyan-500/40 transition-all ${isRetrying ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg hover:shadow-cyan-500/20'}`}
-                >
-                  <span className="flex items-center justify-center gap-2">
-                    <Search className="w-4 h-4" />
-                    🔍 Fetch with Tavily (Targeted Web Search)
-                  </span>
-                </button>
-                <div className="text-[10px] text-gray-600 mt-1 text-center">
-                  Uses field-specific sources (Redfin, FCC, PlugShare, etc.) • 30s max
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* LLM buttons - ADMIN ONLY */}
-          {isAdmin && onRetry && (
-            <>
-              <div className="text-xs text-gray-500 mb-1.5">🤖 LLM retry (slower, less reliable):</div>
-              <div className="flex flex-wrap gap-2">
-                {['Perplexity', 'Gemini', 'GPT-4o', 'Grok', 'Claude Sonnet', 'Claude Opus'].map((llm) => (
-                  <button
-                    key={llm}
-                    onClick={() => onRetry(fieldKey, llm)}
-                    disabled={isRetrying}
-                    className={`px-3 py-1 text-xs rounded-full bg-quantum-cyan/10 hover:bg-quantum-cyan/20 text-quantum-cyan border border-quantum-cyan/30 transition-colors ${isRetrying ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    {llm}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
+      {/* LLM Retry UI - ADMIN ONLY (toggle on click) */}
+      {isAdmin && showRetry && needsRetry && fieldKey && onRetry && (
+        <div className="mt-2 p-3 bg-black/30 border border-quantum-cyan/20 rounded-lg">
+          <div className="text-xs text-gray-500 mb-1.5">🤖 LLM retry (slower, less reliable):</div>
+          <div className="flex flex-wrap gap-2">
+            {['Perplexity', 'Gemini', 'GPT-4o', 'Grok', 'Claude Sonnet', 'Claude Opus'].map((llm) => (
+              <button
+                key={llm}
+                onClick={() => onRetry(fieldKey, llm)}
+                disabled={isRetrying}
+                className={`px-3 py-1 text-xs rounded-full bg-quantum-cyan/10 hover:bg-quantum-cyan/20 text-quantum-cyan border border-quantum-cyan/30 transition-colors ${isRetrying ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {llm}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>
