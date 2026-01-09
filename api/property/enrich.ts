@@ -38,30 +38,34 @@ async function getWalkScore(lat: number, lon: number, address: string): Promise<
     const fields: Record<string, any> = {};
 
     // Field numbers aligned with fields-schema.ts (SOURCE OF TRUTH) - Location Scores (74-82)
-    if (walkScore !== undefined && walkDesc) {
+    // FIX 2026-01-09: Return NUMERIC values (Property type expects DataField<number>)
+    if (walkScore !== undefined) {
       fields['74_walk_score'] = {
-        value: `${walkScore} - ${walkDesc}`,
+        value: walkScore,  // Numeric value, not string
         source: 'WalkScore',
         confidence: 'High'
       };
     }
 
-    if (transitScore !== undefined && transitDesc) {
+    if (transitScore !== undefined) {
       fields['75_transit_score'] = {
-        value: `${transitScore} - ${transitDesc}`,
+        value: transitScore,  // Numeric value, not string
         source: 'WalkScore',
         confidence: 'High'
       };
+      console.log(`[enrich.ts] ✅ Transit score set: ${transitScore}`);
     }
 
-    if (bikeScore !== undefined && bikeDesc) {
+    if (bikeScore !== undefined) {
       fields['76_bike_score'] = {
-        value: `${bikeScore} - ${bikeDesc}`,
+        value: bikeScore,  // Numeric value, not string
         source: 'WalkScore',
         confidence: 'High'
       };
+      console.log(`[enrich.ts] ✅ Bike score set: ${bikeScore}`);
     }
 
+    // Walkability description stays as text
     if (walkDesc) {
       fields['80_walkability_description'] = {
         value: walkDesc,

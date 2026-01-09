@@ -612,6 +612,12 @@ function validateAndCoerce(value: any, mapping: FieldPathMapping): { valid: bool
       }
       break;
 
+    case 'any':
+      // FIX 2026-01-09: Preserve original type for 'any' fields (walk/transit/bike scores)
+      // Don't convert to string - keep numbers as numbers
+      coerced = value;
+      break;
+
     case 'date':
     case 'string':
     default:

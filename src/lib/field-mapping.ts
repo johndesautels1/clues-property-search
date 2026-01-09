@@ -137,16 +137,17 @@ export const FIELD_MAPPINGS: FieldMapping[] = [
 
   // ================================================================
   // GROUP 10: Location Scores (Fields 74-82)
+  // FIX 2026-01-09: Changed frontendKey from 'locationScores' to 'location' to match property.ts
   // ================================================================
-  { fieldNumber: 74, apiKey: '74_walk_score', frontendKey: 'locationScores.walkScore', csvHeader: 'Walk Score', label: 'Walk Score', group: 'Location Scores', type: 'number' },
-  { fieldNumber: 75, apiKey: '75_transit_score', frontendKey: 'locationScores.transitScore', csvHeader: 'Transit Score', label: 'Transit Score', group: 'Location Scores', type: 'number' },
-  { fieldNumber: 76, apiKey: '76_bike_score', frontendKey: 'locationScores.bikeScore', csvHeader: 'Bike Score', label: 'Bike Score', group: 'Location Scores', type: 'number' },
-  { fieldNumber: 77, apiKey: '77_safety_score', frontendKey: 'locationScores.safetyScore', csvHeader: 'Safety', label: 'Safety', group: 'Location Scores', type: 'number' },
-  { fieldNumber: 78, apiKey: '78_noise_level', frontendKey: 'locationScores.noiseLevel', csvHeader: 'Noise Level', label: 'Noise Level', group: 'Location Scores', type: 'string' },
-  { fieldNumber: 79, apiKey: '79_traffic_level', frontendKey: 'locationScores.trafficLevel', csvHeader: 'Traffic Level', label: 'Traffic Level', group: 'Location Scores', type: 'string' },
-  { fieldNumber: 80, apiKey: '80_walkability_description', frontendKey: 'locationScores.walkabilityDescription', csvHeader: 'Walkability Description', label: 'Walkability Description', group: 'Location Scores', type: 'string' },
-  { fieldNumber: 81, apiKey: '81_public_transit_access', frontendKey: 'locationScores.publicTransitAccess', csvHeader: 'Public Transit Access', label: 'Public Transit Access', group: 'Location Scores', type: 'string' },
-  { fieldNumber: 82, apiKey: '82_commute_to_city_center', frontendKey: 'locationScores.commuteToCityCenter', csvHeader: 'Commute to City Center', label: 'Commute to City Center', group: 'Location Scores', type: 'string' },
+  { fieldNumber: 74, apiKey: '74_walk_score', frontendKey: 'location.walkScore', csvHeader: 'Walk Score', label: 'Walk Score', group: 'Location Scores', type: 'number' },
+  { fieldNumber: 75, apiKey: '75_transit_score', frontendKey: 'location.transitScore', csvHeader: 'Transit Score', label: 'Transit Score', group: 'Location Scores', type: 'number' },
+  { fieldNumber: 76, apiKey: '76_bike_score', frontendKey: 'location.bikeScore', csvHeader: 'Bike Score', label: 'Bike Score', group: 'Location Scores', type: 'number' },
+  { fieldNumber: 77, apiKey: '77_safety_score', frontendKey: 'location.safetyScore', csvHeader: 'Safety', label: 'Safety', group: 'Location Scores', type: 'number' },
+  { fieldNumber: 78, apiKey: '78_noise_level', frontendKey: 'location.noiseLevel', csvHeader: 'Noise Level', label: 'Noise Level', group: 'Location Scores', type: 'string' },
+  { fieldNumber: 79, apiKey: '79_traffic_level', frontendKey: 'location.trafficLevel', csvHeader: 'Traffic Level', label: 'Traffic Level', group: 'Location Scores', type: 'string' },
+  { fieldNumber: 80, apiKey: '80_walkability_description', frontendKey: 'location.walkabilityDescription', csvHeader: 'Walkability Description', label: 'Walkability Description', group: 'Location Scores', type: 'string' },
+  { fieldNumber: 81, apiKey: '81_public_transit_access', frontendKey: 'location.publicTransitAccess', csvHeader: 'Public Transit Access', label: 'Public Transit Access', group: 'Location Scores', type: 'string' },
+  { fieldNumber: 82, apiKey: '82_commute_to_city_center', frontendKey: 'location.commuteTimeCityCenter', csvHeader: 'Commute to City Center', label: 'Commute to City Center', group: 'Location Scores', type: 'string' },
 
   // ================================================================
   // GROUP 11: Distances & Amenities (Fields 83-87)
