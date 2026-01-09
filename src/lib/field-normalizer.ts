@@ -533,6 +533,40 @@ function mapConfidence(apiConf?: string): ConfidenceLevel {
 }
 
 /**
+ * Normalize bi-monthly utility bills to monthly
+ * FL utilities often bill bi-monthly (every 2 months)
+ */
+function normalizeUtilityBillToMonthly(fieldKey: string, value: any): number | null {
+  // Parse string values like "$919" or "919" to numbers
+  let numericValue: number;
+  if (typeof value === 'number') {
+    numericValue = value;
+  } else if (typeof value === 'string') {
+    const cleaned = value.replace(/[$,\s]/g, '').trim();
+    numericValue = parseFloat(cleaned);
+  } else {
+    return null;
+  }
+
+  if (isNaN(numericValue) || numericValue <= 0) {
+    return null;
+  }
+
+  // Field 107: Water bill - if > 120, assume bi-monthly
+  if (fieldKey === '107_avg_water_bill' || fieldKey === 'avg_water_bill' || fieldKey === 'avgWaterBill') {
+    if (numericValue > 120) {
+      const monthly = Math.round(numericValue / 2);
+      console.log(`[FIELD-NORMALIZER] 🔄 WATER BILL: $${numericValue} bi-monthly → $${monthly}/month`);
+      return monthly;
+    }
+  }
+
+  // NOTE: Electric bill normalization removed per user request - only water bills are normalized
+
+  return null;
+}
+
+/**
  * Validate and coerce value based on expected type
  */
 function validateAndCoerce(value: any, mapping: FieldPathMapping): { valid: boolean; coerced: any } {
@@ -912,6 +946,13 @@ export function normalizeToProperty(
       continue;
     }
 
+    // Apply bi-monthly to monthly normalization for utility bills
+    let finalValue = coerced;
+    const normalizedUtility = normalizeUtilityBillToMonthly(apiKey, coerced);
+    if (normalizedUtility !== null) {
+      finalValue = normalizedUtility;
+    }
+
     const source = fieldData.source || 'Unknown';
     const confidence = mapConfidence(fieldData.confidence);
     const llmSources = fieldSources[apiKey] || fieldData.llmSources || [];
@@ -921,7 +962,7 @@ export function normalizeToProperty(
     const conflictValues = conflict?.values || [];
 
     const dataField = createDataField(
-      coerced,
+      finalValue,
       confidence,
       source,
       llmSources,

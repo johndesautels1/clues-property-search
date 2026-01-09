@@ -562,7 +562,19 @@ function coerceValue(key: string, value: any): any {
  * Typical FL monthly ranges: Water $40-80, Electric $100-200
  */
 function normalizeUtilityBillToMonthly(fieldKey: string, value: any): { value: number; wasNormalized: boolean } | null {
-  if (typeof value !== 'number' || isNaN(value) || value <= 0) {
+  // Parse string values like "$919" or "919" to numbers
+  let numericValue: number;
+  if (typeof value === 'number') {
+    numericValue = value;
+  } else if (typeof value === 'string') {
+    // Remove $ signs, commas, and whitespace
+    const cleaned = value.replace(/[$,\s]/g, '').trim();
+    numericValue = parseFloat(cleaned);
+  } else {
+    return null;
+  }
+
+  if (isNaN(numericValue) || numericValue <= 0) {
     return null;
   }
 
@@ -570,23 +582,15 @@ function normalizeUtilityBillToMonthly(fieldKey: string, value: any): { value: n
   // Typical bi-monthly is $80-200, so monthly should be $40-100
   // If value > 120, assume it's bi-monthly and divide by 2
   if (fieldKey === '107_avg_water_bill' || fieldKey === 'avg_water_bill') {
-    if (value > 120) {
-      const monthly = Math.round(value / 2);
-      console.log(`[RETRY-LLM] 🔄 WATER BILL: $${value} bi-monthly → $${monthly}/month`);
+    if (numericValue > 120) {
+      const monthly = Math.round(numericValue / 2);
+      console.log(`[RETRY-LLM] 🔄 WATER BILL: $${numericValue} bi-monthly → $${monthly}/month`);
       return { value: monthly, wasNormalized: true };
     }
-    return { value, wasNormalized: false };
+    return { value: numericValue, wasNormalized: false };
   }
 
-  // Field 105: Electric bill - typical monthly is $100-200, bi-monthly would be $200-400
-  if (fieldKey === '105_avg_electric_bill' || fieldKey === 'avg_electric_bill') {
-    if (value > 300) {
-      const monthly = Math.round(value / 2);
-      console.log(`[RETRY-LLM] 🔄 UTILITY NORMALIZED: ${fieldKey} $${value} → $${monthly}/month (detected bi-monthly)`);
-      return { value: monthly, wasNormalized: true };
-    }
-    return { value, wasNormalized: false };
-  }
+  // NOTE: Electric bill normalization removed per user request - only water bills are normalized
 
   return null;
 }
