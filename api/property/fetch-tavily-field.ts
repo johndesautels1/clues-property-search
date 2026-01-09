@@ -12,8 +12,8 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getTavilyFieldConfig } from './tavily-field-config';
-import { getFieldDatabasePath, updateNestedProperty } from './tavily-field-database-mapping';
+import { getTavilyFieldConfig } from './tavily-field-config.js';
+import { getFieldDatabasePath, updateNestedProperty } from './tavily-field-database-mapping.js';
 
 export const config = {
   maxDuration: 60  // 1 minute max
