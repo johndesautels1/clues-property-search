@@ -7,7 +7,7 @@
  */
 
 export interface FieldDatabasePath {
-  fieldId: number;
+  fieldId: number | string;  // Allow string for subfields like '16a', '16b', etc.
   fieldKey: string;  // Exact key used in PropertyDetail.tsx paths object
   path: [string, string];  // [parentObject, propertyName]
   label: string;
@@ -15,10 +15,10 @@ export interface FieldDatabasePath {
 }
 
 /**
- * Complete mapping for all 55 Tavily-enabled fields
+ * Complete mapping for all 55 Tavily-enabled fields + 6 AVM subfields
  * Source: PropertyDetail.tsx paths object (lines 677-927)
  */
-export const TAVILY_FIELD_DATABASE_MAPPING: Record<number, FieldDatabasePath> = {
+export const TAVILY_FIELD_DATABASE_MAPPING: Record<number | string, FieldDatabasePath> = {
   // Property Value & AVMs
   12: {
     fieldId: 12,
@@ -32,6 +32,44 @@ export const TAVILY_FIELD_DATABASE_MAPPING: Record<number, FieldDatabasePath> = 
     path: ['financial', 'avms'],
     label: 'AVMs (Average)',
     calculationOnly: true  // Calculated from fields 16a-16f
+  },
+
+  // AVM Subfields (16a-16f) - Individual AVM Sources
+  '16a': {
+    fieldId: '16a',
+    fieldKey: '16a_zestimate',
+    path: ['financial', 'zestimate'],
+    label: 'Zillow Zestimate'
+  },
+  '16b': {
+    fieldId: '16b',
+    fieldKey: '16b_redfin_estimate',
+    path: ['financial', 'redfinEstimate'],
+    label: 'Redfin Estimate'
+  },
+  '16c': {
+    fieldId: '16c',
+    fieldKey: '16c_first_american_avm',
+    path: ['financial', 'firstAmericanAvm'],
+    label: 'First American AVM'
+  },
+  '16d': {
+    fieldId: '16d',
+    fieldKey: '16d_quantarium_avm',
+    path: ['financial', 'quantariumAvm'],
+    label: 'Quantarium AVM'
+  },
+  '16e': {
+    fieldId: '16e',
+    fieldKey: '16e_ice_avm',
+    path: ['financial', 'iceAvm'],
+    label: 'ICE AVM'
+  },
+  '16f': {
+    fieldId: '16f',
+    fieldKey: '16f_collateral_analytics_avm',
+    path: ['financial', 'collateralAnalyticsAvm'],
+    label: 'Collateral Analytics AVM'
   },
 
   // Property Condition & Permits
@@ -353,14 +391,14 @@ export const TAVILY_FIELD_DATABASE_MAPPING: Record<number, FieldDatabasePath> = 
 /**
  * Helper: Get database path for a field ID
  */
-export function getFieldDatabasePath(fieldId: number): FieldDatabasePath | undefined {
+export function getFieldDatabasePath(fieldId: number | string): FieldDatabasePath | undefined {
   return TAVILY_FIELD_DATABASE_MAPPING[fieldId];
 }
 
 /**
  * Helper: Get field ID from field key
  */
-export function getFieldIdFromKey(fieldKey: string): number | undefined {
+export function getFieldIdFromKey(fieldKey: string): number | string | undefined {
   const entry = Object.values(TAVILY_FIELD_DATABASE_MAPPING).find(
     mapping => mapping.fieldKey === fieldKey
   );

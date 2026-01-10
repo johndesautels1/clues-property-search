@@ -23,7 +23,7 @@ export const config = {
 };
 
 interface RequestBody {
-  fieldId: number;
+  fieldId: number | string;  // Allow string for AVM subfields like '16a', '16b', etc.
   address: string;
   city?: string;
   state?: string;
@@ -49,9 +49,18 @@ export default async function handler(
   try {
     const body: RequestBody = req.body;
 
-    // Validate - FIX BUG #5: Allow fieldId 0, check type and bounds
-    if (typeof body.fieldId !== 'number' || body.fieldId < 0 || body.fieldId > 200) {
-      return res.status(400).json({ error: 'Invalid fieldId (must be 0-200)' });
+    // Validate - Allow both number (e.g., 12) and string (e.g., '16a') field IDs
+    if (typeof body.fieldId === 'number') {
+      if (body.fieldId < 0 || body.fieldId > 200) {
+        return res.status(400).json({ error: 'Invalid numeric fieldId (must be 0-200)' });
+      }
+    } else if (typeof body.fieldId === 'string') {
+      // Allow string IDs like '16a', '16b', etc.
+      if (!body.fieldId.match(/^(16[a-f]|181)$/)) {
+        return res.status(400).json({ error: 'Invalid string fieldId (must be 16a-16f or 181)' });
+      }
+    } else {
+      return res.status(400).json({ error: 'fieldId must be number or string' });
     }
 
     if (typeof body.address !== 'string' || body.address.trim().length === 0) {

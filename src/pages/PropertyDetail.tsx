@@ -49,17 +49,24 @@ import { useIsAdmin } from '@/store/authStore';
 import { isCalculatedField, getCalculationBadge } from '@/lib/field-calculations';
 import { MultiSelectField } from '@/components/MultiSelectField';
 
-// Tavily-enabled fields (55 fields) - can be fetched with Tavily button
+// Tavily-enabled fields (55 fields + 6 AVM subfields = 61 total) - can be fetched with Tavily button
 const TAVILY_ENABLED_FIELDS = new Set([
-  12, 40, 46, 59, 60, 61, 62, 78, 79, 80, 81, 82, 91, 92, 93, 95, 96, 97, 98, 99, 100, 102, 103,
+  12, '16a', '16b', '16c', '16d', '16e', '16f', 40, 46, 59, 60, 61, 62, 78, 79, 80, 81, 82, 91, 92, 93, 95, 96, 97, 98, 99, 100, 102, 103,
   104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 131, 132, 133, 134, 135, 136,
   137, 138, 170, 171, 174, 177, 178
 ]);
 
 // Map field keys to numeric field IDs for Tavily API
 // CRITICAL: These MUST match the exact field keys in the paths object below (lines 780-927)
-const FIELD_KEY_TO_ID_MAP: Record<string, number> = {
+const FIELD_KEY_TO_ID_MAP: Record<string, number | string> = {
   '12_market_value_estimate': 12,
+  // AVM Subfields (16a-16f)
+  '16a_zestimate': '16a',
+  '16b_redfin_estimate': '16b',
+  '16c_first_american_avm': '16c',
+  '16d_quantarium_avm': '16d',
+  '16e_ice_avm': '16e',
+  '16f_collateral_analytics_avm': '16f',
   '40_roof_age_est': 40,  // NOTE: _est suffix!
   '46_hvac_age': 46,
   '59_recent_renovations': 59,

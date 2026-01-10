@@ -14,7 +14,7 @@
  */
 
 export interface TavilyFieldConfig {
-  fieldId: number;
+  fieldId: number | string;  // Allow string for AVM subfields like '16a', '16b', etc.
   label: string;
   category: 'avm' | 'permits' | 'environment' | 'market' | 'utilities' | 'features' | 'performance';
 
