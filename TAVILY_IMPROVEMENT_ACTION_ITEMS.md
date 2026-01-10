@@ -1,7 +1,7 @@
 # Tavily Field Configuration - Action Items
 
 **Date Created:** 2026-01-10
-**Status:** In Progress (3 of 55 fields improved)
+**Status:** In Progress (6 of 55 fields improved)
 
 ---
 
@@ -10,8 +10,8 @@
 This document tracks improvements needed for Tavily web search field configurations based on comprehensive audit findings.
 
 **Total Fields:** 55 Tavily-enabled fields
-**Completed:** 5 fields (97, 98, 99, 100, 115)
-**Remaining:** 50 fields
+**Completed:** 6 fields (97, 98, 99, 100, 102, 115)
+**Remaining:** 49 fields
 
 ---
 
@@ -207,6 +207,23 @@ These fields work well but could be pushed to "Excellent" with additional source
   - Added 4 new queries for current market trends
   - Increased expected success rate: 75% → 85%
   - Added notes explaining data freshness priorities
+- **Commit:** f6c6e95
+
+### ✅ Field 102: Financing Terms
+- **Date:** 2026-01-11
+- **Changes:**
+  - Added property-specific rate queries (Zillow mortgage calculator, Redfin financing)
+  - Added state-specific mortgage rate queries (critical for investors - rates vary 0.25-0.75% by state)
+  - Added investment property rate queries (0.5-1% higher than primary residence)
+  - Added state housing finance agency queries (down payment assistance programs)
+  - Added year-specific queries (2025, 2026) for current rates
+  - Enhanced extraction patterns: Added APR, jumbo loans, investment property rates, down payment %, points
+  - Increased regex patterns: 4 → 9 patterns
+  - Increased total queries: 4 → 11 queries
+  - Upgraded granularity: national → address (property-specific → state → national)
+  - Maintained expected success rate: 95%
+  - Updated notes to emphasize investor focus and state program availability
+- **UI Improvement:** Widened Field 102 display to full-width for better readability of long mortgage rate details
 - **Commit:** [Pending]
 
 ---
@@ -214,9 +231,9 @@ These fields work well but could be pushed to "Excellent" with additional source
 ## Next Fields to Review (Sequential Order)
 
 1. **Field 101:** Cap Rate (Est) - Already calculation-only ✅
-2. **Field 102:** Financing Terms - Next in sequence
-3. **Field 103:** Comparable Sales
-4. Continue sequentially through remaining 50 fields...
+2. **Field 102:** Financing Terms - ✅ COMPLETED
+3. **Field 103:** Comparable Sales - NEXT in sequence
+4. Continue sequentially through remaining 49 fields...
 
 ---
 
@@ -269,5 +286,5 @@ Based on improvements made so far, common patterns emerge:
 
 ---
 
-**Last Updated:** 2026-01-10
-**Next Review:** After completing next 5 fields (Fields 98-102)
+**Last Updated:** 2026-01-11
+**Next Review:** After completing next 5 fields (Fields 103-107)

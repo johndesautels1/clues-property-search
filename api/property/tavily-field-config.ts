@@ -770,26 +770,45 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     label: 'Financing Terms',
     category: 'market',
     searchQueries: [
-      'site:bankrate.com mortgage rates',
-      'site:nerdwallet.com mortgage rates today',
-      'site:freddiemac.com PMMS',
-      'site:mortgagenewsdaily.com rates'
+      // Property-specific rates (HIGHEST PRIORITY - if available)
+      'site:zillow.com "{address}" mortgage rates calculator',
+      'site:redfin.com "{address}" financing',
+
+      // State-specific rates (HIGH PRIORITY)
+      '{state} mortgage rates 2025 2026',
+      'site:bankrate.com {state} mortgage rates',
+      '{state} housing finance agency rates',
+
+      // Investment property rates (MEDIUM PRIORITY)
+      'investment property mortgage rates {state} 2025',
+      '{state} investor loan rates',
+
+      // National sources with year (FALLBACK)
+      'site:mortgagenewsdaily.com rates january 2026',
+      'site:nerdwallet.com mortgage rates 2026',
+      'site:freddiemac.com PMMS 2025 2026',
+      'mortgage rates today 2026'
     ],
-    prioritySources: ['bankrate.com', 'nerdwallet.com', 'freddiemac.com', 'mortgagenewsdaily.com'],
+    prioritySources: ['zillow.com', 'redfin.com', 'bankrate.com', 'mortgagenewsdaily.com', 'nerdwallet.com', 'freddiemac.com', 'housing finance'],
     extractionPatterns: {
       regexPatterns: [
-        /30.*?year.*?([\d\.]+)%/i,
-        /15.*?year.*?([\d\.]+)%/i,
-        /FHA.*?([\d\.]+)%/i,
-        /VA.*?([\d\.]+)%/i
+        /30.*?year.*?([\d\.]+)%/i,                    // 30-year fixed rate
+        /15.*?year.*?([\d\.]+)%/i,                    // 15-year fixed rate
+        /FHA.*?([\d\.]+)%/i,                          // FHA rate
+        /VA.*?([\d\.]+)%/i,                           // VA rate
+        /APR[:\s]*([\d\.]+)%/i,                       // APR
+        /jumbo.*?([\d\.]+)%/i,                        // Jumbo loans
+        /investment.*?property.*?([\d\.]+)%/i,        // Investment properties
+        /down payment[:\s]*([\d\.]+)%/i,              // Down payment %
+        /([\d\.]+)\s*points/i                         // Points/fees
       ],
-      textMarkers: ['30-year fixed', '15-year fixed', 'FHA', 'VA', 'mortgage rates']
+      textMarkers: ['30-year fixed', '15-year fixed', 'FHA', 'VA', 'mortgage rates', 'APR', 'investment property', 'jumbo', 'down payment', 'housing finance agency', 'first-time buyer']
     },
     expectedSuccessRate: 0.95,
     confidenceThreshold: 'high',
-    dataLevel: 'national',
+    dataLevel: 'address',
     fallbackToLLM: true,
-    notes: 'National average rates - not location-specific'
+    notes: 'Prioritizes property-specific → state-specific → national rates. Includes investment property rates and state housing finance agency programs for investors.'
   },
 
   103: {
