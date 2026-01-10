@@ -604,7 +604,7 @@ export default function PropertyDetail() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           address,
-          engines: ['perplexity', 'grok'],  // ONLY web search LLMs - Claude/GPT/Gemini disabled for testing
+          engines: ['perplexity', 'gemini', 'gpt', 'claude-sonnet', 'grok', 'claude-opus'],  // Full cascade for maximum accuracy
           skipLLMs: false,
           existingFields, // CRITICAL: Pass existing fields for additive merging
           skipApis: false,

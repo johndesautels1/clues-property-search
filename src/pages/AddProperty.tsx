@@ -473,8 +473,8 @@ export default function AddProperty() {
       // Map selected engine to API format
       const getEngines = () => {
         if (selectedEngine === 'Auto') {
-          // ONLY Perplexity and Grok (web search LLMs) - Claude/GPT/Gemini disabled for testing
-          return ['perplexity', 'grok'];
+          // Full LLM cascade for maximum field completion accuracy
+          return ['perplexity', 'gemini', 'gpt', 'claude-sonnet', 'grok', 'claude-opus'];
         }
         // Single engine selected
         return [selectedEngine]; // Already in correct format (e.g., 'claude-opus', 'gpt')
@@ -1107,7 +1107,7 @@ export default function AddProperty() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 address: address,
-                engines: enrichWithAI ? ['perplexity', 'grok'] : undefined,  // LLM cascade only if enrichWithAI enabled
+                engines: enrichWithAI ? ['perplexity', 'gemini', 'gpt', 'claude-sonnet', 'grok', 'claude-opus'] : undefined,  // Full LLM cascade when AI enrichment enabled
                 useCascade: enrichWithAI,
               }),
             });
@@ -1433,7 +1433,7 @@ export default function AddProperty() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             address: enrichAddress,
-            engines: ['perplexity', 'grok'], // Only web search LLMs (not Claude/GPT/Gemini)
+            engines: ['perplexity', 'gemini', 'gpt', 'claude-sonnet', 'grok', 'claude-opus'], // Full cascade for PDF enrichment
             existingFields: pdfParsedFields, // Pass PDF data so APIs don't re-fetch what we have
             skipApis: false, // IMPORTANT: Run free APIs (WalkScore, Crime, etc.) to fill missing fields
             skipLLMs: false, // Run LLMs to fill gaps

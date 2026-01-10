@@ -7,6 +7,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { LLM_CASCADE_ORDER } from './llm-constants.js';
 import {
   FLAT_TO_NUMBERED_FIELD_MAP,
   mapFlatFieldsToNumbered as sharedMapFlatFieldsToNumbered,
@@ -1713,7 +1714,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { address: rawAddress, engines = ['perplexity'] } = req.body;
+  const { address: rawAddress, engines = [...LLM_CASCADE_ORDER] } = req.body;  // All 6 LLMs by default: Perplexity → Gemini → GPT → Sonnet → Grok → Opus
 
   // 🛡️ INPUT SANITIZATION: Prevent prompt injection attacks
   const address = sanitizeAddress(rawAddress);
