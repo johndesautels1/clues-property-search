@@ -99,7 +99,13 @@ Rules:
 - Include a field only if you are ≥90% confident; otherwise omit it.
 - IMPORTANT: Return FLAT values only, NOT nested objects. No source_name, source_url, or notes.
 
-Output JSON only, no commentary. Example shape:
+CRITICAL OUTPUT REQUIREMENTS:
+- You MUST return ONLY valid JSON - no explanations, no commentary, no markdown
+- If you cannot find data for a field, omit it or use null - DO NOT explain why
+- If you cannot find ANY data, return an empty object: {}
+- NEVER respond with explanatory text - JSON ONLY
+
+Output format example:
 {
   "listing_price": 500000,
   "zestimate": 485000,
@@ -108,7 +114,9 @@ Output JSON only, no commentary. Example shape:
   "bedrooms": 3,
   "neighborhood_median_price": 520000,
   "rent_zestimate": 2400
-}`;
+}
+
+Return valid JSON only, nothing else.`;
 }
 
 // ============================================================================
@@ -148,7 +156,23 @@ Rules:
 - Include a field only if you are ≥90% confident; otherwise omit it.
 - IMPORTANT: Return FLAT values only, NOT nested objects.
 
-Output JSON only with those keys as needed, no commentary.`;
+CRITICAL OUTPUT REQUIREMENTS:
+- You MUST return ONLY valid JSON - no explanations, no commentary, no markdown
+- If you cannot find data for a field, omit it or use null - DO NOT explain why
+- If you cannot find ANY data, return an empty object: {}
+- NEVER respond with explanatory text - JSON ONLY
+
+Output format example:
+{
+  "parcel_id": "29-30-16-12345-678-0900",
+  "last_sale_date": "2020-05-15",
+  "last_sale_price": 425000,
+  "assessed_value_current_year": 450000,
+  "annual_property_taxes": 6750,
+  "permit_history_roof": "Roof replacement permit 2018-03-12"
+}
+
+Return valid JSON only, nothing else.`;
 }
 
 // ============================================================================
@@ -202,7 +226,24 @@ General rules:
 - Include a field only if you are ≥90% confident.
 - IMPORTANT: Return FLAT values only, NOT nested objects.
 
-Output JSON only, no commentary.`;
+CRITICAL OUTPUT REQUIREMENTS:
+- You MUST return ONLY valid JSON - no explanations, no commentary, no markdown
+- If you cannot find data for a field, use null - DO NOT explain why
+- If you cannot find ANY data, return an empty object: {}
+- NEVER respond with explanatory text - JSON ONLY
+
+Output format example:
+{
+  "school_district_name": "Pinellas County Schools",
+  "elementary_school_name": "Gulf Beaches Elementary",
+  "elementary_school_rating_1_to_10": 8,
+  "walk_score": 42,
+  "transit_score": null,
+  "violent_crime_index": null,
+  "neighborhood_safety_rating_description": "Above Average"
+}
+
+Return valid JSON only, nothing else.`;
 }
 
 // ============================================================================
@@ -282,7 +323,24 @@ General rules:
 - IMPORTANT: Return FLAT values only, NOT nested objects. No source_name, source_url, or notes.
 - If a specific provider type truly does not exist (e.g., natural gas), set value to null.
 
-Output JSON only, no commentary.`;
+CRITICAL OUTPUT REQUIREMENTS:
+- You MUST return ONLY valid JSON - no explanations, no commentary, no markdown
+- If you cannot find data for a field, use null - DO NOT explain why
+- If you cannot find ANY data, return an empty object: {}
+- NEVER respond with explanatory text - JSON ONLY
+
+Output format example:
+{
+  "electric_utility_provider_name": "Duke Energy",
+  "typical_avg_monthly_electric_bill_usd": 165,
+  "water_utility_provider_name": "City of St. Petersburg",
+  "typical_avg_monthly_water_bill_usd": 55,
+  "max_advertised_wired_download_speed_mbps": 1000,
+  "fiber_internet_available_boolean": true,
+  "cell_coverage_quality_rating": "Excellent"
+}
+
+Return valid JSON only, nothing else.`;
 }
 
 // ============================================================================
@@ -304,7 +362,20 @@ Rules:
 - Include only explicitly described comps; do not invent.
 - IMPORTANT: Return FLAT values only, NOT nested objects.
 
-Output JSON only.`;
+CRITICAL OUTPUT REQUIREMENTS:
+- You MUST return ONLY valid JSON - no explanations, no commentary, no markdown
+- If you cannot find data, return empty object: {}
+- NEVER respond with explanatory text - JSON ONLY
+
+Output format example:
+{
+  "notable_comparable_sales": [
+    {"address": "123 Beach Dr", "sale_date": "2025-11-15", "sale_price": 495000, "beds": 3, "baths": 2, "sqft": 1850, "distance_miles": 0.2}
+  ],
+  "typical_financing_terms_or_concessions_for_area": "3% seller credits common, 5-10% down payment typical"
+}
+
+Return valid JSON only, nothing else.`;
 }
 
 // ============================================================================
@@ -339,7 +410,13 @@ Rules:
 - Include a field only if you are ≥90% confident; otherwise use null
 - IMPORTANT: Return FLAT values only, NOT nested objects
 
-Output JSON only, no commentary. Example:
+CRITICAL OUTPUT REQUIREMENTS:
+- You MUST return ONLY valid JSON - no explanations, no commentary, no markdown
+- If you cannot find data for a field, use null - DO NOT explain why
+- If you cannot find ANY data, return an empty object: {}
+- NEVER respond with explanatory text - JSON ONLY
+
+Output format example:
 {
   "ev_charging": "240V outlet in garage",
   "smart_home_features": "Nest thermostat, Ring doorbell",
@@ -350,7 +427,9 @@ Output JSON only, no commentary. Example:
   "homes_views": null,
   "realtor_views": 450,
   "saves_favorites": 45
-}`;
+}
+
+Return valid JSON only, nothing else.`;
 }
 
 // ============================================================================
