@@ -702,25 +702,19 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     fieldId: 99,
     label: 'Rental Yield (Est)',
     category: 'market',
-    searchQueries: [
-      'site:mashvisor.com "{city}" rental yield',
-      'site:mashvisor.com "{zip}"',
-      'site:airdna.co "{city}"',
-      'site:numbeo.com "{city}" "gross rental yield"'
-    ],
-    prioritySources: ['mashvisor.com', 'airdna.co', 'numbeo.com'],
+    searchQueries: [],
+    prioritySources: [],
     extractionPatterns: {
-      regexPatterns: [
-        /yield[:\s]*([\d\.]+)%/i,
-        /([\d\.]+)%\s*yield/i
-      ],
-      textMarkers: ['Gross Rental Yield', 'rental yield', 'cash on cash']
+      regexPatterns: [],
+      textMarkers: []
     },
-    expectedSuccessRate: 0.60,
-    confidenceThreshold: 'medium',
-    dataLevel: 'city',
-    requiresFields: [91, 98],
-    notes: 'Can calculate: (Field 98 × 12 ÷ Field 91) × 100'
+    expectedSuccessRate: 1.0,
+    confidenceThreshold: 'high',
+    dataLevel: 'address',
+    calculationOnly: true,
+    requiresFields: [10, 98],
+    fallbackToLLM: false,
+    notes: 'CALCULATION ONLY: (Field 98 monthly rent × 12 ÷ Field 10 listing price) × 100. Property-specific yield more accurate than city averages. Calculated in field-calculations.ts and calculate-derived-fields.ts. Good yields: 5-8% (strong), 3-5% (moderate), <3% (weak).'
   },
 
   100: {

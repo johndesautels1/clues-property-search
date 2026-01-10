@@ -547,7 +547,7 @@ export async function callAirDNA(lat: number, lon: number, address: string): Pro
     // STR market data - Note: These fields don't exist in the 168-field schema
     // Mapping to closest market/investment fields (91-103)
     setField(fields, '98_rental_estimate_monthly', market.adr ? Math.round(market.adr * 30) : null, 'AirDNA');
-    setField(fields, '99_rental_yield_est', market.occupancy, 'AirDNA');
+    // Field 99 (Rental Yield) removed - now calculation-only, auto-calculated from Fields 10 & 98
     // Note: STR-specific fields not in 181-field schema - storing as generic rental data
 
     return { success: Object.keys(fields).length > 0, source: 'AirDNA', fields };

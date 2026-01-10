@@ -49,9 +49,10 @@ import { useIsAdmin } from '@/store/authStore';
 import { isCalculatedField, getCalculationBadge } from '@/lib/field-calculations';
 import { MultiSelectField } from '@/components/MultiSelectField';
 
-// Tavily-enabled fields (55 fields + 6 AVM subfields = 61 total) - can be fetched with Tavily button
+// Tavily-enabled fields (54 fields + 6 AVM subfields = 60 total) - can be fetched with Tavily button
+// Field 99 removed - calculation-only (auto-calculated from Fields 10 & 98)
 const TAVILY_ENABLED_FIELDS = new Set([
-  12, '16a', '16b', '16c', '16d', '16e', '16f', 40, 46, 59, 60, 61, 62, 78, 79, 80, 81, 82, 91, 92, 93, 95, 96, 97, 98, 99, 100, 102, 103,
+  12, '16a', '16b', '16c', '16d', '16e', '16f', 40, 46, 59, 60, 61, 62, 78, 79, 80, 81, 82, 91, 92, 93, 95, 96, 97, 98, 100, 102, 103,
   104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 131, 132, 133, 134, 135, 136,
   137, 138, 170, 171, 174, 177, 178
 ]);

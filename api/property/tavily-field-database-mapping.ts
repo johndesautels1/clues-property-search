@@ -196,7 +196,8 @@ export const TAVILY_FIELD_DATABASE_MAPPING: Record<number | string, FieldDatabas
     fieldId: 99,
     fieldKey: '99_rental_yield_est',  // NOTE: _est suffix!
     path: ['financial', 'rentalYieldEst'],
-    label: 'Rental Yield (Est)'
+    label: 'Rental Yield (Est)',
+    calculationOnly: true  // Calculated from fields 10 and 98
   },
   100: {
     fieldId: 100,
