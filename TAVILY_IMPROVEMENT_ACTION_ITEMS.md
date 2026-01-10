@@ -10,8 +10,8 @@
 This document tracks improvements needed for Tavily web search field configurations based on comprehensive audit findings.
 
 **Total Fields:** 55 Tavily-enabled fields
-**Completed:** 3 fields (97, 115, 98)
-**Remaining:** 52 fields
+**Completed:** 5 fields (97, 98, 99, 100, 115)
+**Remaining:** 50 fields
 
 ---
 
@@ -183,16 +183,40 @@ These fields work well but could be pushed to "Excellent" with additional source
   - Added range extraction pattern ($X - $Y/mo)
   - Upgraded granularity: zip → address
   - Increased expected success rate: 85% → 90%
+- **Commit:** eeacf1a
+
+### ✅ Field 99: Rental Yield (Est)
+- **Date:** 2026-01-10
+- **Changes:**
+  - **Converted to calculation-only** - No Tavily web search
+  - Removed all search queries (Mashvisor, AirDNA, Numbeo)
+  - Fixed AirDNA bug: was incorrectly setting occupancy to yield
+  - Removed from TAVILY_ENABLED_FIELDS UI set
+  - Set calculationOnly: true in config and database mapping
+  - 100% success rate (calculated from Fields 10 & 98)
+  - Property-specific yield vs inaccurate city averages
+- **Commit:** 55910f2
+
+### ✅ Field 100: Vacancy Rate (Neighborhood)
+- **Date:** 2026-01-10
+- **Changes:**
+  - Prioritized current market data: Realtor.com, Redfin (2025 data)
+  - Moved Census.gov to last fallback (outdated 1-5 year old data)
+  - Added year-specific queries (2024, 2025)
+  - Enhanced extraction patterns: rental vacancy, homeowner vacancy, housing vacancy
+  - Added 4 new queries for current market trends
+  - Increased expected success rate: 75% → 85%
+  - Added notes explaining data freshness priorities
 - **Commit:** [Pending]
 
 ---
 
 ## Next Fields to Review (Sequential Order)
 
-1. **Field 99:** Rental Yield (Est) - Next in sequence
-2. **Field 100:** (To be identified)
-3. **Field 102:** Financing Terms - Previously skipped per user request
-4. Continue sequentially through remaining 52 fields...
+1. **Field 101:** Cap Rate (Est) - Already calculation-only ✅
+2. **Field 102:** Financing Terms - Next in sequence
+3. **Field 103:** Comparable Sales
+4. Continue sequentially through remaining 50 fields...
 
 ---
 

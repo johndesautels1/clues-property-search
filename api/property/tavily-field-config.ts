@@ -722,23 +722,32 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     label: 'Vacancy Rate (Neighborhood)',
     category: 'market',
     searchQueries: [
-      'site:city-data.com "{zip}"',
-      'site:neighborhoodscout.com "{zip}" vacancy',
-      'site:census.gov "{zip}" vacancy',
-      '"{city}, {state}" rental vacancy rate'
+      'site:realtor.com "{city}" {state} market trends vacancy 2025',
+      'site:redfin.com "{city}" housing supply vacancy rate',
+      'site:neighborhoodscout.com "{zip}" vacancy rate',
+      'site:city-data.com "{zip}" rental vacancy',
+      '"{zip}" housing vacancy rate 2024 2025',
+      '"{city}" {state} rental vacancy rate 2025',
+      'site:census.gov "{zip}" housing vacancy',
+      'site:data.census.gov "{zip}" vacant housing units'
     ],
-    prioritySources: ['city-data.com', 'neighborhoodscout.com', 'census.gov'],
+    prioritySources: ['realtor.com', 'redfin.com', 'neighborhoodscout.com', 'city-data.com', 'census.gov'],
     extractionPatterns: {
       regexPatterns: [
         /vacancy[:\s]*([\d\.]+)%/i,
-        /([\d\.]+)%\s*vacancy/i
+        /([\d\.]+)%\s*vacancy/i,
+        /rental\s*vacancy.*?([\d\.]+)%/i,
+        /homeowner\s*vacancy.*?([\d\.]+)%/i,
+        /housing\s*vacancy.*?([\d\.]+)%/i,
+        /vacant.*?([\d\.]+)%/i
       ],
-      textMarkers: ['vacancy rate', 'rental vacancy', 'housing vacancy']
+      textMarkers: ['vacancy rate', 'rental vacancy', 'housing vacancy', 'homeowner vacancy', 'vacant units', 'vacancy percent']
     },
-    expectedSuccessRate: 0.75,
+    expectedSuccessRate: 0.85,
     confidenceThreshold: 'medium',
     dataLevel: 'zip',
-    fallbackToLLM: true
+    fallbackToLLM: true,
+    notes: 'Prioritizes current market data (Realtor.com, Redfin) over outdated census. Census.gov as last fallback (data can be 1-5 years old). Rental vacancy more relevant than homeowner vacancy for investors.'
   },
 
   101: {
