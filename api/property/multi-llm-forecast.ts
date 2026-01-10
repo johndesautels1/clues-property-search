@@ -29,6 +29,7 @@ export const config = {
 // Timeout wrapper for LLM calls - prevents hanging
 const LLM_TIMEOUT = 60000; // 60s (1 min) - REDUCED from 180s on 2026-01-08
 const PERPLEXITY_TIMEOUT = 45000; // 45s for Perplexity API calls
+const TAVILY_TIMEOUT = 30000; // 30s for Tavily web searches
 
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([
@@ -574,24 +575,30 @@ async function callGPT5Forecast(
 
   const prompt = buildForecastPrompt(address, price, neighborhood, propertyType);
 
-  // Use OpenAI Chat Completions API (fixed from /v1/responses)
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      max_tokens: 16000,
-      messages: [
-        { role: 'system', content: GPT_OLIVIA_CMA_SYSTEM_PROMPT },
-        { role: 'user', content: prompt },
-      ],
-      temperature: 0.2,
-      response_format: { type: 'json_object' },
-    }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
+
+  try {
+    // Use OpenAI Chat Completions API (fixed from /v1/responses)
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        max_tokens: 16000,
+        messages: [
+          { role: 'system', content: GPT_OLIVIA_CMA_SYSTEM_PROMPT },
+          { role: 'user', content: prompt },
+        ],
+        temperature: 0.2,
+        response_format: { type: 'json_object' },
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
 
   if (!response.ok) {
     const error = await response.text();
@@ -622,6 +629,13 @@ async function callGPT5Forecast(
     keyTrends: forecast.key_trends ?? forecast.keyTrends,
     reasoning: forecast.reasoning,
   };
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      throw new Error('GPT-4o forecast request timed out after 60s');
+    }
+    throw error;
+  }
 }
 
 /**
@@ -640,31 +654,37 @@ async function callGeminiForecast(
 
   const prompt = buildForecastPrompt(address, price, neighborhood, propertyType);
 
-  // Use REST API for Gemini 3 Pro with thinking_config
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: GEMINI_FORECAST_SYSTEM_PROMPT }]
-        },
-        contents: [{ parts: [{ text: prompt }] }],
-        tools: [{ google_search: {} }],
-        tool_config: { function_calling_config: { mode: 'ANY' } },
-        generationConfig: {
-          thinking_config: {
-            thinking_level: "low",
-            include_thoughts: true  // Include reasoning for Olivia CMA
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
+
+  try {
+    // Use REST API for Gemini 3 Pro with thinking_config
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: {
+            parts: [{ text: GEMINI_FORECAST_SYSTEM_PROMPT }]
           },
-          temperature: 1.0,
-          maxOutputTokens: 16000,
-          responseMimeType: 'application/json'
-        },
-      }),
-    }
-  );
+          contents: [{ parts: [{ text: prompt }] }],
+          tools: [{ google_search: {} }],
+          tool_config: { function_calling_config: { mode: 'ANY' } },
+          generationConfig: {
+            thinking_config: {
+              thinking_level: "low",
+              include_thoughts: true  // Include reasoning for Olivia CMA
+            },
+            temperature: 1.0,
+            maxOutputTokens: 16000,
+            responseMimeType: 'application/json'
+          },
+        }),
+        signal: controller.signal,
+      }
+    );
+    clearTimeout(timeoutId);
 
   if (!response.ok) {
     const error = await response.text();
@@ -737,6 +757,13 @@ async function callGeminiForecast(
     keyTrends: data.keyTrends,
     reasoning: data.reasoning,
   };
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      throw new Error('Gemini forecast request timed out after 60s');
+    }
+    throw error;
+  }
 }
 
 /**
@@ -1015,6 +1042,9 @@ async function callTavilySearchForecast(query: string, numResults: number = 5): 
     return 'Search unavailable - API key not configured';
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TAVILY_TIMEOUT);
+
   try {
     console.log(`🔍 [Tavily/Forecast] Searching: "${query}"`);
     const response = await fetch('https://api.tavily.com/search', {
@@ -1027,8 +1057,10 @@ async function callTavilySearchForecast(query: string, numResults: number = 5): 
         max_results: Math.min(numResults, 10),
         include_answer: true,
         include_raw_content: false
-      })
+      }),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       console.error(`❌ [Tavily] HTTP ${response.status}`);
@@ -1047,6 +1079,11 @@ async function callTavilySearchForecast(query: string, numResults: number = 5): 
     }
     return formatted || 'No results found';
   } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      console.error('❌ [Tavily/Forecast] Request timed out after 30s');
+      return 'Search timed out after 30 seconds';
+    }
     console.error('❌ [Tavily] Error:', error);
     return `Search error: ${String(error)}`;
   }
@@ -1070,20 +1107,26 @@ async function callGrokForecast(
     { role: 'user', content: prompt }
   ];
 
-  // First call - Grok may request tool calls
-  const response = await fetch('https://api.x.ai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'grok-4',
-      max_tokens: 32000,
-      temperature: 0.1,
-      messages: messages,
-    }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
+
+  try {
+    // First call - Grok may request tool calls
+    const response = await fetch('https://api.x.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'grok-4',
+        max_tokens: 32000,
+        temperature: 0.1,
+        messages: messages,
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
 
   if (!response.ok) {
     throw new Error(`Grok API error: ${response.statusText}`);
@@ -1123,6 +1166,9 @@ async function callGrokForecast(
 
     // Second call - Grok processes tool results
     console.log('🔄 [Grok/Forecast] Sending tool results back...');
+    const controller2 = new AbortController();
+    const timeoutId2 = setTimeout(() => controller2.abort(), LLM_TIMEOUT);
+
     const response2 = await fetch('https://api.x.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -1135,7 +1181,9 @@ async function callGrokForecast(
         temperature: 0.1,
         messages: messages,
       }),
+      signal: controller2.signal,
     });
+    clearTimeout(timeoutId2);
 
     if (!response2.ok) {
       throw new Error(`Grok API error on second call: ${response2.statusText}`);
@@ -1176,6 +1224,13 @@ async function callGrokForecast(
     keyTrends: data.keyTrends,
     reasoning: data.reasoning,
   };
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      throw new Error('Grok forecast request timed out after 60s');
+    }
+    throw error;
+  }
 }
 
 // ============================================================================

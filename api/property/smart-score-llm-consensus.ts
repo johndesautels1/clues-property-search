@@ -25,6 +25,7 @@ export const config = {
 // Timeout wrapper for LLM calls - prevents hanging
 const LLM_TIMEOUT = 60000; // 60s (1 min) - REDUCED from 180s on 2026-01-08
 const PERPLEXITY_TIMEOUT = 45000; // 45s for Perplexity API calls
+const TAVILY_TIMEOUT = 30000; // 30s for Tavily web searches
 
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([
@@ -228,47 +229,61 @@ async function callClaudeOpus(prompt: string): Promise<LLMResponse> {
     throw new Error('ANTHROPIC_API_KEY not configured');
   }
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-opus-4-5-20251101',
-      max_tokens: 32000,
-      temperature: 0.2,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-    }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Claude Opus API error: ${response.status} ${error}`);
-  }
-
-  const data = await response.json();
-  const content = data.content[0]?.text;
-
-  if (!content) {
-    throw new Error('Claude Opus returned empty response');
-  }
-
-  // Parse JSON from response
-  const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || [null, content];
-  const jsonStr = jsonMatch[1] || content;
-
-  // CRASH FIX: Wrap JSON.parse in try-catch
   try {
-    return JSON.parse(jsonStr);
-  } catch (parseError) {
-    throw new Error(`Failed to parse Claude Opus JSON: ${parseError}`);
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-5-20251101',
+        max_tokens: 32000,
+        temperature: 0.2,
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Claude Opus API error: ${response.status} ${error}`);
+    }
+
+    const data = await response.json();
+    const content = data.content[0]?.text;
+
+    if (!content) {
+      throw new Error('Claude Opus returned empty response');
+    }
+
+    // Parse JSON from response
+    const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || [null, content];
+    const jsonStr = jsonMatch[1] || content;
+
+    // CRASH FIX: Wrap JSON.parse in try-catch
+    try {
+      return JSON.parse(jsonStr);
+    } catch (parseError) {
+      throw new Error(`Failed to parse Claude Opus JSON: ${parseError}`);
+    }
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      throw new Error('Claude Opus request timed out after 60s');
+    }
+    throw error;
   }
 }
 
@@ -377,43 +392,57 @@ async function callGPT5(prompt: string): Promise<LLMResponse> {
     throw new Error('OPENAI_API_KEY not configured');
   }
 
-  // Use OpenAI Chat Completions API (fixed from /v1/responses)
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      max_tokens: 16000,
-      messages: [
-        { role: 'system', content: OLIVIA_SYSTEM_PROMPT },
-        { role: 'user', content: prompt },
-      ],
-      temperature: 0.2,
-      response_format: { type: 'json_object' },
-    }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`GPT-4o API error: ${response.status} ${error}`);
-  }
-
-  const data = await response.json();
-  // Handle Chat Completions format
-  const content = data.choices?.[0]?.message?.content;
-
-  if (!content) {
-    throw new Error('GPT-4o returned empty response');
-  }
-
-  // CRASH FIX: Wrap JSON.parse in try-catch
   try {
-    return JSON.parse(content);
-  } catch (parseError) {
-    throw new Error(`Failed to parse GPT JSON: ${parseError}`);
+    // Use OpenAI Chat Completions API (fixed from /v1/responses)
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        max_tokens: 16000,
+        messages: [
+          { role: 'system', content: OLIVIA_SYSTEM_PROMPT },
+          { role: 'user', content: prompt },
+        ],
+        temperature: 0.2,
+        response_format: { type: 'json_object' },
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`GPT-4o API error: ${response.status} ${error}`);
+    }
+
+    const data = await response.json();
+    // Handle Chat Completions format
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+      throw new Error('GPT-4o returned empty response');
+    }
+
+    // CRASH FIX: Wrap JSON.parse in try-catch
+    try {
+      return JSON.parse(content);
+    } catch (parseError) {
+      throw new Error(`Failed to parse GPT JSON: ${parseError}`);
+    }
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      throw new Error('GPT-4o request timed out after 60s');
+    }
+    throw error;
   }
 }
 
@@ -476,6 +505,9 @@ async function callTavilySearchScore(query: string, numResults: number = 5): Pro
     return 'Search unavailable - API key not configured';
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TAVILY_TIMEOUT);
+
   try {
     console.log(`🔍 [Tavily/Score] Searching: "${query}"`);
     const response = await fetch('https://api.tavily.com/search', {
@@ -488,8 +520,11 @@ async function callTavilySearchScore(query: string, numResults: number = 5): Pro
         max_results: Math.min(numResults, 10),
         include_answer: true,
         include_raw_content: false
-      })
+      }),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       console.error(`❌ [Tavily] HTTP ${response.status}`);
@@ -508,6 +543,10 @@ async function callTavilySearchScore(query: string, numResults: number = 5): Pro
     }
     return formatted || 'No results found';
   } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      throw new Error('Tavily search timed out after 30s');
+    }
     console.error('❌ [Tavily] Error:', error);
     return `Search error: ${String(error)}`;
   }
@@ -528,27 +567,34 @@ async function callGrok(prompt: string): Promise<LLMResponse> {
     { role: 'user', content: prompt },
   ];
 
-  // First call - Grok may request tool calls
-  const response = await fetch('https://api.x.ai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'grok-4',
-      max_tokens: 32000,
-      temperature: 0.1,
-      messages: messages,
-    }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Grok API error: ${response.status} ${error}`);
-  }
+  try {
+    // First call - Grok may request tool calls
+    const response = await fetch('https://api.x.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'grok-4',
+        max_tokens: 32000,
+        temperature: 0.1,
+        messages: messages,
+      }),
+      signal: controller.signal,
+    });
 
-  let data = await response.json();
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Grok API error: ${response.status} ${error}`);
+    }
+
+    let data = await response.json();
 
   // Check if Grok wants to use tools
   const assistantMessage = data.choices?.[0]?.message;
@@ -582,6 +628,9 @@ async function callGrok(prompt: string): Promise<LLMResponse> {
 
     // Second call - Grok processes tool results
     console.log('🔄 [Grok/Score] Sending tool results back...');
+    const controller2 = new AbortController();
+    const timeoutId2 = setTimeout(() => controller2.abort(), LLM_TIMEOUT);
+
     const response2 = await fetch('https://api.x.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -594,7 +643,10 @@ async function callGrok(prompt: string): Promise<LLMResponse> {
         temperature: 0.1,
         messages: messages,
       }),
+      signal: controller2.signal,
     });
+
+    clearTimeout(timeoutId2);
 
     if (!response2.ok) {
       const error = await response2.text();
@@ -621,6 +673,13 @@ async function callGrok(prompt: string): Promise<LLMResponse> {
   } catch (parseError) {
     throw new Error(`Failed to parse Grok JSON: ${parseError}`);
   }
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      throw new Error('Grok request timed out after 60s');
+    }
+    throw error;
+  }
 }
 
 // ============================================
@@ -637,93 +696,107 @@ async function callGemini(prompt: string): Promise<LLMResponse> {
     throw new Error('GEMINI_API_KEY not configured');
   }
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: GEMINI_OLIVIA_CMA_SYSTEM }]
-        },
-        contents: [{ parts: [{ text: prompt }] }],
-        tools: [{ google_search: {} }],
-        tool_config: { function_calling_config: { mode: 'ANY' } },
-        generationConfig: {
-          thinking_config: {
-            thinking_level: "low",
-            include_thoughts: true  // Include reasoning for SMART Score analysis
-          },
-          temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro
-          maxOutputTokens: 16000,
-          responseMimeType: 'application/json'
-        },
-      }),
-    }
-  );
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Gemini API error: ${response.status} ${error}`);
-  }
-
-  const data = await response.json();
-  const parts = data.candidates?.[0]?.content?.parts;
-
-  if (!parts || parts.length === 0) {
-    throw new Error('Gemini returned empty response');
-  }
-
-  // Separate thoughts from final answer (Gemini 3 Pro thinking mode)
-  let thoughtProcess = "";
-  let finalAnswer = "";
-
-  parts.forEach((part: any) => {
-    if (part.thought === true) {
-      // Thought parts contain internal reasoning (plain text, not JSON)
-      thoughtProcess += part.text || "";
-    } else if (part.text) {
-      // Non-thought parts contain the actual response (should be JSON)
-      finalAnswer += part.text;
-    }
-  });
-
-  // Log the reasoning for debugging
-  if (thoughtProcess) {
-    console.log('[Gemini] 🧠 Thought process:', thoughtProcess.substring(0, 500) + '...');
-  }
-
-  // Use finalAnswer if available, otherwise fallback to first non-thought part
-  const content = finalAnswer || parts.find((p: any) => !p.thought)?.text;
-
-  if (!content) {
-    throw new Error('Gemini returned no content');
-  }
-
-  // Parse JSON from response - handle multiple formats
-  let jsonStr = content.trim();
-
-  // Case 1: Wrapped in markdown code block
-  const markdownMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-  if (markdownMatch) {
-    jsonStr = markdownMatch[1].trim();
-  }
-
-  // Case 2: Raw JSON (starts with { or [)
-  if (!jsonStr.startsWith('{') && !jsonStr.startsWith('[')) {
-    // Try to extract JSON object from mixed content
-    const jsonObjectMatch = jsonStr.match(/(\{[\s\S]*\})/);
-    const jsonArrayMatch = jsonStr.match(/(\[[\s\S]*\])/);
-    jsonStr = jsonObjectMatch?.[1] || jsonArrayMatch?.[1] || jsonStr;
-  }
-
-  // Parse with error handling
   try {
-    return JSON.parse(jsonStr);
-  } catch (parseError) {
-    console.error('[Gemini] JSON parse error:', parseError);
-    console.error('[Gemini] Raw content:', content.substring(0, 1000));
-    throw new Error(`Failed to parse Gemini JSON response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: {
+            parts: [{ text: GEMINI_OLIVIA_CMA_SYSTEM }]
+          },
+          contents: [{ parts: [{ text: prompt }] }],
+          tools: [{ google_search: {} }],
+          tool_config: { function_calling_config: { mode: 'ANY' } },
+          generationConfig: {
+            thinking_config: {
+              thinking_level: "low",
+              include_thoughts: true  // Include reasoning for SMART Score analysis
+            },
+            temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro
+            maxOutputTokens: 16000,
+            responseMimeType: 'application/json'
+          },
+        }),
+        signal: controller.signal,
+      }
+    );
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Gemini API error: ${response.status} ${error}`);
+    }
+
+    const data = await response.json();
+    const parts = data.candidates?.[0]?.content?.parts;
+
+    if (!parts || parts.length === 0) {
+      throw new Error('Gemini returned empty response');
+    }
+
+    // Separate thoughts from final answer (Gemini 3 Pro thinking mode)
+    let thoughtProcess = "";
+    let finalAnswer = "";
+
+    parts.forEach((part: any) => {
+      if (part.thought === true) {
+        // Thought parts contain internal reasoning (plain text, not JSON)
+        thoughtProcess += part.text || "";
+      } else if (part.text) {
+        // Non-thought parts contain the actual response (should be JSON)
+        finalAnswer += part.text;
+      }
+    });
+
+    // Log the reasoning for debugging
+    if (thoughtProcess) {
+      console.log('[Gemini] 🧠 Thought process:', thoughtProcess.substring(0, 500) + '...');
+    }
+
+    // Use finalAnswer if available, otherwise fallback to first non-thought part
+    const content = finalAnswer || parts.find((p: any) => !p.thought)?.text;
+
+    if (!content) {
+      throw new Error('Gemini returned no content');
+    }
+
+    // Parse JSON from response - handle multiple formats
+    let jsonStr = content.trim();
+
+    // Case 1: Wrapped in markdown code block
+    const markdownMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (markdownMatch) {
+      jsonStr = markdownMatch[1].trim();
+    }
+
+    // Case 2: Raw JSON (starts with { or [)
+    if (!jsonStr.startsWith('{') && !jsonStr.startsWith('[')) {
+      // Try to extract JSON object from mixed content
+      const jsonObjectMatch = jsonStr.match(/(\{[\s\S]*\})/);
+      const jsonArrayMatch = jsonStr.match(/(\[[\s\S]*\])/);
+      jsonStr = jsonObjectMatch?.[1] || jsonArrayMatch?.[1] || jsonStr;
+    }
+
+    // Parse with error handling
+    try {
+      return JSON.parse(jsonStr);
+    } catch (parseError) {
+      console.error('[Gemini] JSON parse error:', parseError);
+      console.error('[Gemini] Raw content:', content.substring(0, 1000));
+      throw new Error(`Failed to parse Gemini JSON response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+    }
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      throw new Error('Gemini request timed out after 60s');
+    }
+    throw error;
   }
 }
 

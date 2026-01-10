@@ -15,6 +15,9 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getTavilyFieldConfig } from './tavily-field-config.js';
 import { getFieldDatabasePath, updateNestedProperty } from './tavily-field-database-mapping.js';
 
+const TAVILY_TIMEOUT = 30000; // 30 seconds
+const LLM_TIMEOUT = 60000; // 60 seconds
+
 export const config = {
   maxDuration: 60  // 1 minute max
 };
@@ -187,7 +190,7 @@ async function callTavilyAPI(
   apiKey: string
 ): Promise<TavilySearchResult[]> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+  const timeoutId = setTimeout(() => controller.abort(), TAVILY_TIMEOUT);
 
   try {
     const response = await fetch('https://api.tavily.com/search', {
@@ -207,7 +210,7 @@ async function callTavilyAPI(
       signal: controller.signal
     });
 
-    clearTimeout(timeout);
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       throw new Error(`Tavily API error: ${response.status} ${response.statusText}`);
@@ -217,9 +220,9 @@ async function callTavilyAPI(
     return data.results || [];
 
   } catch (error) {
-    clearTimeout(timeout);
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('Tavily search timeout');
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      throw new Error('Tavily request timed out after 30s');
     }
     throw error;
   }
@@ -329,46 +332,60 @@ async function callExtractionLLM(prompt: string): Promise<string | null> {
     throw new Error('ANTHROPIC_API_KEY not configured');
   }
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01'
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 500,
-      messages: [{
-        role: 'user',
-        content: prompt
-      }]
-    })
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
 
-  if (!response.ok) {
-    throw new Error(`Claude API error: ${response.status}`);
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 500,
+        messages: [{
+          role: 'user',
+          content: prompt
+        }]
+      }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`Claude API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // FIX ERROR #10 & BUG #4: Validate response structure before accessing
+    if (!data || !Array.isArray(data.content) || data.content.length === 0) {
+      throw new Error('Invalid Claude API response structure');
+    }
+
+    const firstContent = data.content[0];
+    if (!firstContent || typeof firstContent.text !== 'string') {
+      throw new Error('Claude API response missing text content');
+    }
+
+    const extracted = firstContent.text.trim();
+
+    if (extracted.length === 0) {
+      throw new Error('Claude API returned empty text');
+    }
+
+    return extracted === 'DATA_NOT_FOUND' ? null : extracted;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      throw new Error('Claude extract request timed out after 60s');
+    }
+    throw error;
   }
-
-  const data = await response.json();
-
-  // FIX ERROR #10 & BUG #4: Validate response structure before accessing
-  if (!data || !Array.isArray(data.content) || data.content.length === 0) {
-    throw new Error('Invalid Claude API response structure');
-  }
-
-  const firstContent = data.content[0];
-  if (!firstContent || typeof firstContent.text !== 'string') {
-    throw new Error('Claude API response missing text content');
-  }
-
-  const extracted = firstContent.text.trim();
-
-  if (extracted.length === 0) {
-    throw new Error('Claude API returned empty text');
-  }
-
-  return extracted === 'DATA_NOT_FOUND' ? null : extracted;
 }
 
 /**

@@ -895,6 +895,9 @@ Example output format:
 
 Return ONLY the JSON object, no markdown or explanation.`;
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
+
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -926,7 +929,9 @@ Return ONLY the JSON object, no markdown or explanation.`;
           },
         ],
       }),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -959,6 +964,11 @@ Return ONLY the JSON object, no markdown or explanation.`;
 
     throw new Error('Failed to parse Claude response');
   } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      console.error('[PDF PARSER] Request timed out after 60s');
+      throw new Error('PDF parsing request timed out after 60s');
+    }
     console.error('[PDF PARSER] Error:', error);
     throw error;
   }

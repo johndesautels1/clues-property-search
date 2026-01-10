@@ -131,6 +131,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
 
 const LLM_TIMEOUT = 60000; // 60s (1 min) - REDUCED from 180s on 2026-01-08
 const PERPLEXITY_TIMEOUT = 45000; // 45s for Perplexity
+const TAVILY_TIMEOUT = 30000; // 30s for Tavily web searches
 
 // ============================================
 // COMPLETE TYPE MAP - ALL 181 FIELDS from fields-schema.ts
@@ -936,6 +937,9 @@ async function callTavilySearch(query: string, numResults: number = 5): Promise<
     return 'Search unavailable - API key not configured';
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TAVILY_TIMEOUT);
+
   try {
     console.log(`🔍 [Tavily] Searching: "${query}"`);
     const response = await fetch('https://api.tavily.com/search', {
@@ -948,8 +952,10 @@ async function callTavilySearch(query: string, numResults: number = 5): Promise<
         max_results: Math.min(numResults, 10),
         include_answer: true,
         include_raw_content: false
-      })
+      }),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       console.error(`❌ [Tavily] HTTP ${response.status}`);
@@ -968,6 +974,11 @@ async function callTavilySearch(query: string, numResults: number = 5): Promise<
     }
     return formatted || 'No results found';
   } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      console.error('❌ [Tavily] Request timed out after 30s');
+      return 'Search timed out after 30 seconds';
+    }
     console.error('❌ [Tavily] Error:', error);
     return `Search error: ${String(error)}`;
   }
@@ -985,6 +996,9 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
     { role: 'user', content: GROK_RETRY_USER_PROMPT(address) }
   ];
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
+
   try {
     // First call - Grok may request tool calls
     const response = await fetch('https://api.x.ai/v1/chat/completions', {
@@ -999,7 +1013,9 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
         temperature: 0.1,
         messages: messages,
       }),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     let data = await response.json();
     console.log('[GROK] Status:', response.status);
@@ -1036,6 +1052,9 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
 
       // Second call - Grok processes tool results
       console.log('🔄 [GROK] Sending tool results back...');
+      const controller2 = new AbortController();
+      const timeoutId2 = setTimeout(() => controller2.abort(), LLM_TIMEOUT);
+
       const response2 = await fetch('https://api.x.ai/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -1048,7 +1067,9 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
           temperature: 0.1,
           messages: messages,
         }),
+        signal: controller2.signal,
       });
+      clearTimeout(timeoutId2);
 
       data = await response2.json();
       console.log('[GROK] Final response received');
@@ -1080,6 +1101,11 @@ async function callGrok(address: string): Promise<{ fields: Record<string, any>;
     }
     return { error: 'No content in response', fields: {} };
   } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      console.error('❌ [GROK] Request timed out after 60s');
+      return { error: 'Request timed out', fields: {} };
+    }
     console.log('[GROK] Exception:', String(error));
     return { error: String(error), fields: {} };
   }
@@ -1121,6 +1147,9 @@ Return a JSON object with data for: ${address}
 
 Return null if you cannot find data. Return ONLY the JSON object.`;
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
+
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -1134,7 +1163,9 @@ Return null if you cannot find data. Return ONLY the JSON object.`;
         max_tokens: 32000,
         messages: [{ role: 'user', content: prompt }],
       }),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     const data = await response.json();
     console.log('[CLAUDE OPUS] Status:', response.status, '| Response:', JSON.stringify(data).slice(0, 500));
@@ -1165,6 +1196,11 @@ Return null if you cannot find data. Return ONLY the JSON object.`;
     }
     return { error: 'No content in response', fields: {} };
   } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      console.error('❌ [CLAUDE OPUS] Request timed out after 60s');
+      return { error: 'Request timed out', fields: {} };
+    }
     console.log('[CLAUDE OPUS] Exception:', String(error));
     return { error: String(error), fields: {} };
   }
@@ -1294,6 +1330,9 @@ TASK
 Use web search to fill as many missing fields as possible with evidence.
 Return ONLY the JSON object described in the system prompt.`;
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
+
   try {
     // Use OpenAI Chat Completions API with web_search tool (2025 format)
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -1312,7 +1351,9 @@ Return ONLY the JSON object described in the system prompt.`;
         temperature: 0.2,
         response_format: { type: 'json_object' }, // Enforce JSON output
       }),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     const data = await response.json();
     console.log('[GPT] Status:', response.status);
@@ -1345,6 +1386,11 @@ Return ONLY the JSON object described in the system prompt.`;
     }
     return { error: 'No content in response', fields: {} };
   } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      console.error('❌ [GPT] Request timed out after 60s');
+      return { error: 'Request timed out', fields: {} };
+    }
     console.log('[GPT] Exception:', String(error));
     return { error: String(error), fields: {} };
   }
@@ -1461,6 +1507,9 @@ SEARCH STRATEGY:
 ✅ START YOUR RESPONSE WITH { AND END WITH }.
 Use null only for fields you truly cannot find.`;
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
+
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -1481,7 +1530,9 @@ Use null only for fields you truly cannot find.`;
         ],
         messages: [{ role: 'user', content: prompt }],
       }),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     const data = await response.json();
     console.log('[CLAUDE SONNET] Status:', response.status);
@@ -1521,6 +1572,11 @@ Use null only for fields you truly cannot find.`;
     }
     return { error: 'No content in response', fields: {} };
   } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      console.error('❌ [CLAUDE SONNET] Request timed out after 60s');
+      return { error: 'Request timed out', fields: {} };
+    }
     console.log('[CLAUDE SONNET] Exception:', String(error));
     return { error: String(error), fields: {} };
   }
@@ -1545,6 +1601,9 @@ async function callGemini(address: string): Promise<{ fields: Record<string, any
 
   // Build user prompt with COMPLETE FIELD SCHEMA to prevent hallucination
   const userPrompt = buildGeminiFieldCompleterUserPrompt({ address, city, zip });
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
 
   try {
     const response = await fetch(
@@ -1571,8 +1630,10 @@ async function callGemini(address: string): Promise<{ fields: Record<string, any
             responseMimeType: 'application/json'
           },
         }),
+        signal: controller.signal,
       }
     );
+    clearTimeout(timeoutId);
 
     const elapsed = Date.now() - startTime;
     console.log(`[GEMINI] Response time: ${elapsed}ms ${elapsed < 2000 ? '⚠️ TOO FAST' : '✅ Searched'}`);
@@ -1627,6 +1688,11 @@ async function callGemini(address: string): Promise<{ fields: Record<string, any
     }
     return { error: 'No content in response', fields: {} };
   } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      console.error('❌ [GEMINI] Request timed out after 60s');
+      return { error: 'Request timed out', fields: {} };
+    }
     console.log('[GEMINI] Exception:', String(error));
     return { error: String(error), fields: {} };
   }

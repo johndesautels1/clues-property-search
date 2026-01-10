@@ -215,37 +215,52 @@ class PropertyScraper {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error('GPT not configured - OPENAI_API_KEY missing');
 
-    // Use OpenAI Chat Completions API (fixed from /v1/responses)
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        max_tokens: 16000,
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a real estate data extraction API. Return ONLY valid JSON.',
-          },
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0.2,
-        response_format: { type: 'json_object' },
-      }),
-    });
+    const LLM_TIMEOUT = 60000; // 60 seconds
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
 
-    const data = await response.json();
+    try {
+      // Use OpenAI Chat Completions API (fixed from /v1/responses)
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          max_tokens: 16000,
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a real estate data extraction API. Return ONLY valid JSON.',
+            },
+            { role: 'user', content: prompt },
+          ],
+          temperature: 0.2,
+          response_format: { type: 'json_object' },
+        }),
+        signal: controller.signal,
+      });
 
-    // Estimate cost (GPT-4o pricing)
-    const cost = 0.02; // Flat estimate per call
-    this.costs.gpt += cost;
-    this.costs.total += cost;
+      clearTimeout(timeoutId);
 
-    const text = data.choices?.[0]?.message?.content;
-    return this.parseResponse(text);
+      const data = await response.json();
+
+      // Estimate cost (GPT-4o pricing)
+      const cost = 0.02; // Flat estimate per call
+      this.costs.gpt += cost;
+      this.costs.total += cost;
+
+      const text = data.choices?.[0]?.message?.content;
+      return this.parseResponse(text);
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if ((error as any).name === 'AbortError') {
+        throw new Error('GPT request timed out after 60s');
+      }
+      throw error;
+    }
   }
 
   private async scrapeWithGrok(prompt: string): Promise<PropertyScrapedData | null> {

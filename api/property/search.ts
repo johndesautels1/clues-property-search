@@ -3684,6 +3684,9 @@ async function callClaudeOpus(address: string): Promise<any> {
   
   console.log('✅ [Claude Opus] Calling API...');
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
+
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -3705,7 +3708,9 @@ Return verified data only. If you cannot find data, return null for that field.`
           },
         ],
       }),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     const data = await response.json();
     if (data.content && data.content[0]?.text) {
@@ -3728,6 +3733,11 @@ Return verified data only. If you cannot find data, return null for that field.`
     }
     return { error: 'Failed to parse Claude Opus response', fields: {}, llm: 'Claude Opus' };
   } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      console.error('❌ [Claude Opus] Request timed out after 60s');
+      return { error: 'Request timed out', fields: {}, llm: 'Claude Opus' };
+    }
     return { error: String(error), fields: {}, llm: 'Claude Opus' };
   }
 }
@@ -3742,6 +3752,9 @@ async function callClaudeSonnet(address: string): Promise<any> {
   }
   
   console.log('✅ [Claude Sonnet] Calling API with web_search tool...');
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -3782,7 +3795,9 @@ SEARCH and extract ALL 47 high-velocity fields listed in your instructions.
           },
         ],
       }),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     const data = await response.json();
 
@@ -3843,6 +3858,11 @@ SEARCH and extract ALL 47 high-velocity fields listed in your instructions.
     console.log('[Claude Sonnet] Full response:', JSON.stringify(data).substring(0, 500));
     return { error: 'Failed to parse Claude Sonnet response', fields: {}, llm: 'Claude Sonnet' };
   } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      console.error('❌ [Claude Sonnet] Request timed out after 60s');
+      return { error: 'Request timed out', fields: {}, llm: 'Claude Sonnet' };
+    }
     console.error('❌ [Claude Sonnet] Exception:', error);
     return { error: String(error), fields: {}, llm: 'Claude Sonnet' };
   }
@@ -3857,6 +3877,9 @@ async function callCopilot(address: string): Promise<any> {
   const userPrompt = `Extract property data fields for: ${address}
 
 Return structured JSON with proper field keys. Use null for unknown data.`;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
 
   try {
     // Use OpenAI Chat Completions API (fixed from /v1/responses)
@@ -3876,7 +3899,9 @@ Return structured JSON with proper field keys. Use null for unknown data.`;
         temperature: 0.2,
         response_format: { type: 'json_object' },
       }),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     const data = await response.json();
     console.log('[Copilot GPT] Status:', response.status);
@@ -3928,6 +3953,11 @@ Return structured JSON with proper field keys. Use null for unknown data.`;
     }
     return { error: 'Failed to parse Copilot response', fields: {}, llm: 'Copilot' };
   } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      console.error('❌ [Copilot] Request timed out after 60s');
+      return { error: 'Request timed out', fields: {}, llm: 'Copilot' };
+    }
     return { error: String(error), fields: {}, llm: 'Copilot' };
   }
 }
@@ -3977,6 +4007,9 @@ async function callGPT5(
       response_format: { type: 'json_object' },
     };
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -3984,7 +4017,9 @@ async function callGPT5(
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify(requestBody),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -4042,6 +4077,9 @@ async function callGPT5(
 
       // Second call - GPT processes tool results and returns final answer
       console.log('🔄 [GPT] Sending tool results back...');
+      const controller2 = new AbortController();
+      const timeoutId2 = setTimeout(() => controller2.abort(), LLM_TIMEOUT);
+
       const response2 = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -4054,7 +4092,9 @@ async function callGPT5(
           temperature: 0.2,
           messages: messages,
         }),
+        signal: controller2.signal,
       });
+      clearTimeout(timeoutId2);
 
       data = await response2.json();
       console.log('[GPT] Final response after tool execution received');
@@ -4115,6 +4155,11 @@ async function callGPT5(
     console.error('[GPT] Full response (first 1000 chars):', JSON.stringify(data).substring(0, 1000));
     return { error: 'Failed to parse GPT response - no text content', fields: {}, llm: 'GPT' };
   } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      console.error('❌ [GPT] Request timed out after 60s');
+      return { error: 'Request timed out', fields: {}, llm: 'GPT' };
+    }
     console.error('[GPT] Exception:', error);
     return { error: String(error), fields: {}, llm: 'GPT' };
   }
@@ -4173,6 +4218,9 @@ async function callGPT5FieldAuditor(
       response_format: { type: 'json_object' },
     };
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -4180,7 +4228,9 @@ async function callGPT5FieldAuditor(
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify(requestBody),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     // LOG RAW RESPONSE STATUS
     console.log(`[GPT LLM Auditor] RESPONSE: status=${response.status} ${response.statusText}`);
@@ -4222,6 +4272,11 @@ async function callGPT5FieldAuditor(
     console.error('[GPT LLM Auditor] No valid response');
     return { fields: inputs.llmOnlyFields, fields_audited: 0, fields_corrected: 0, fields_nulled: 0 };
   } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      console.error('❌ [GPT LLM Auditor] Request timed out after 60s');
+      return { fields: inputs.llmOnlyFields, fields_audited: 0, fields_corrected: 0, fields_nulled: 0, error: 'Request timed out' };
+    }
     console.error('[GPT LLM Auditor] Error:', error);
     return { fields: inputs.llmOnlyFields, fields_audited: 0, fields_corrected: 0, fields_nulled: 0 };
   }
@@ -4374,6 +4429,9 @@ async function callTavilySearch(query: string, numResults: number = 5): Promise<
     return 'Search unavailable - API key not configured';
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TAVILY_TIMEOUT);
+
   try {
     console.log(`🔍 [Tavily] Searching: "${query}"`);
     const response = await fetch('https://api.tavily.com/search', {
@@ -4386,8 +4444,10 @@ async function callTavilySearch(query: string, numResults: number = 5): Promise<
         max_results: Math.min(numResults, 10),
         include_answer: true,
         include_raw_content: false
-      })
+      }),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       console.error(`❌ [Tavily] HTTP ${response.status}`);
@@ -4407,6 +4467,11 @@ async function callTavilySearch(query: string, numResults: number = 5): Promise<
     }
     return formatted || 'No results found';
   } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      console.error('❌ [Tavily] Request timed out after 30s');
+      return 'Search timed out after 30 seconds';
+    }
     console.error('❌ [Tavily] Error:', error);
     return `Search error: ${String(error)}`;
   }
@@ -4425,6 +4490,9 @@ async function callGrok(address: string): Promise<any> {
     { role: 'user', content: grokUserPrompt },
   ];
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
+
   try {
     // First call - Grok may request tool calls
     const response = await fetch('https://api.x.ai/v1/chat/completions', {
@@ -4439,7 +4507,9 @@ async function callGrok(address: string): Promise<any> {
         temperature: 0.1,
         messages: messages,
       }),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     let data = await response.json();
     console.log('Grok response:', JSON.stringify(data).substring(0, 500));
@@ -4470,6 +4540,9 @@ async function callGrok(address: string): Promise<any> {
 
       // Second call - Grok processes tool results and returns final answer
       console.log('🔄 [Grok] Sending tool results back...');
+      const controller2 = new AbortController();
+      const timeoutId2 = setTimeout(() => controller2.abort(), LLM_TIMEOUT);
+
       const response2 = await fetch('https://api.x.ai/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -4482,7 +4555,9 @@ async function callGrok(address: string): Promise<any> {
           temperature: 0.1,
           messages: messages,
         }),
+        signal: controller2.signal,
       });
+      clearTimeout(timeoutId2);
 
       data = await response2.json();
       console.log('Grok final response:', JSON.stringify(data).substring(0, 500));
@@ -4509,6 +4584,11 @@ async function callGrok(address: string): Promise<any> {
     }
     return { error: 'Failed to parse Grok response', fields: {}, llm: 'Grok' };
   } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      console.error('❌ [Grok] Request timed out after 60s');
+      return { error: 'Request timed out', fields: {}, llm: 'Grok' };
+    }
     console.error('Grok error:', error);
     return { error: String(error), fields: {}, llm: 'Grok' };
   }
@@ -4529,6 +4609,9 @@ async function callGemini(address: string): Promise<any> {
 
   // Build user prompt with COMPLETE FIELD SCHEMA to prevent hallucination
   const userPrompt = buildGeminiFieldCompleterUserPrompt({ address, city, zip });
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
 
   try {
     const response = await fetch(
@@ -4562,8 +4645,10 @@ async function callGemini(address: string): Promise<any> {
             responseMimeType: 'application/json'
           },
         }),
+        signal: controller.signal,
       }
     );
+    clearTimeout(timeoutId);
 
     const elapsed = Date.now() - startTime;
     console.log(`⏱️ [Gemini] Response time: ${elapsed}ms ${elapsed < 2000 ? '⚠️ TOO FAST - may not have searched' : '✅ Good - likely searched'}`);
@@ -4650,6 +4735,11 @@ async function callGemini(address: string): Promise<any> {
     }
     return { error: 'Failed to parse Gemini response', fields: {}, llm: 'Gemini' };
   } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      console.error('❌ [Gemini] Request timed out after 60s');
+      return { error: 'Request timed out', fields: {}, llm: 'Gemini' };
+    }
     console.error(`❌ [Gemini] Exception:`, String(error));
     return { error: String(error), fields: {}, llm: 'Gemini' };
   }

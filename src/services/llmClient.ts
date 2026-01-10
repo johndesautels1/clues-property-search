@@ -18,6 +18,7 @@ export interface LlmResponse {
 }
 
 const PERPLEXITY_TIMEOUT = 45000; // 45 seconds timeout for Perplexity API calls
+const LLM_TIMEOUT = 60000; // 60 seconds timeout for LLM calls
 
 /**
  * Call Perplexity API with web search capabilities
@@ -104,6 +105,9 @@ export async function callClaudeOpus(params: LlmCallParams): Promise<LlmResponse
     return { success: false, data: null, error: 'ANTHROPIC_API_KEY not set' };
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
+
   try {
     console.log('[Claude Opus] Calling API...');
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -120,7 +124,10 @@ export async function callClaudeOpus(params: LlmCallParams): Promise<LlmResponse
         system: params.system,
         messages: [{ role: 'user', content: params.user }],
       }),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     const data = await response.json();
 
@@ -153,6 +160,11 @@ export async function callClaudeOpus(params: LlmCallParams): Promise<LlmResponse
       return { success: false, data: null, error: 'No content in response' };
     }
   } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      console.error('[Claude Opus] Request timed out after 60s');
+      return { success: false, data: null, error: 'Claude Opus request timed out after 60s' };
+    }
     console.error('[Claude Opus] Error:', error);
     return { success: false, data: null, error: String(error) };
   }
