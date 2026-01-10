@@ -2106,9 +2106,15 @@ export default function PropertyDetail() {
                   {renderDataField("Rental Yield (Est)", fullProperty.financial.rentalYieldEst, "percent", undefined, "99_rental_yield_est")}
                   {renderDataField("Vacancy Rate (Neighborhood)", fullProperty.financial.vacancyRateNeighborhood, "percent", undefined, "100_vacancy_rate_neighborhood")}
                   {renderDataField("Cap Rate (Est)", fullProperty.financial.capRateEst, "percent", undefined, "101_cap_rate_est")}
-                  {renderDataField("Financing Terms", fullProperty.financial.financingTerms, "text", undefined, "102_financing_terms")}
-                  {/* Field 103: Comparable Sales - Custom rendering for structured data */}
-                  {(() => {
+                </div>
+              </div>
+              {/* Field 102: Financing Terms - Full width for long mortgage rate details */}
+              <div className="mt-6">
+                {renderDataField("Financing Terms", fullProperty.financial.financingTerms, "text", undefined, "102_financing_terms")}
+              </div>
+              {/* Field 103: Comparable Sales - Custom rendering for structured data */}
+              <div className="mt-6">
+                {(() => {
                     const compData = fullProperty.financial.comparableSalesLast3;
                     if (!compData || !compData.value) return null;
 
@@ -2175,7 +2181,6 @@ export default function PropertyDetail() {
                       </div>
                     );
                   })()}
-                </div>
               </div>
             </Section>
 
