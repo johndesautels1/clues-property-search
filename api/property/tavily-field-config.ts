@@ -669,25 +669,33 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     label: 'Rental Estimate (Monthly)',
     category: 'market',
     searchQueries: [
+      'site:zillow.com "{address}" rent zestimate',
+      'site:redfin.com "{address}" rental estimate',
       'site:zumper.com/rent-research/{city}-{state}',
       'site:zumper.com "{zip}" rent',
       'site:apartments.com "{city}" rent prices',
-      'site:rentcafe.com "{city}" rent'
+      'site:rentcafe.com "{city}" rent',
+      '"{zip}" rent median 2025 2026',
+      '"{city}" {state} average rent prices'
     ],
-    prioritySources: ['zumper.com', 'apartments.com', 'rentcafe.com'],
+    prioritySources: ['zillow.com', 'redfin.com', 'zumper.com', 'apartments.com', 'rentcafe.com'],
     extractionPatterns: {
       regexPatterns: [
+        /rent\s*zestimate.*?\$?([\d,]+)/i,
+        /rental\s*estimate.*?\$?([\d,]+)/i,
         /\$?([\d,]+)\s*\/?\s*mo/i,
+        /\$?([\d,]+)\s*per\s*month/i,
         /(\d)BR.*?\$?([\d,]+)/i,
-        /Median.*?\$?([\d,]+)/i
+        /Median.*?\$?([\d,]+)/i,
+        /\$?([\d,]+)\s*-\s*\$?([\d,]+)\s*\/mo/i
       ],
-      textMarkers: ['median rent', '1BR', '2BR', '3BR', '4BR', 'per month']
+      textMarkers: ['rent zestimate', 'rental estimate', 'median rent', '1BR', '2BR', '3BR', '4BR', 'per month', 'monthly rent']
     },
-    expectedSuccessRate: 0.85,
+    expectedSuccessRate: 0.90,
     confidenceThreshold: 'high',
-    dataLevel: 'zip',
+    dataLevel: 'address',
     fallbackToLLM: true,
-    notes: 'AVOID rentometer.com (Cloudflare blocking)'
+    notes: 'Property-specific estimates (Zillow, Redfin) prioritized over zip/city averages. AVOID rentometer.com (Cloudflare blocking)'
   },
 
   99: {
