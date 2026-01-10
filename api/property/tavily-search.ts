@@ -19,6 +19,71 @@ export const TAVILY_CONFIG = {
   searchDepth: 'basic' as const,
 };
 
+/**
+ * Florida Utility Fallbacks
+ * Used ONLY when Tavily/LLM search fails to find utility providers
+ * AND the property is located in Florida
+ */
+export const FL_UTILITY_FALLBACKS: Record<string, Record<string, string>> = {
+  // Electric providers by region/city
+  electric: {
+    tampa: 'TECO (Tampa Electric)',
+    'st petersburg': 'Duke Energy',
+    'st. petersburg': 'Duke Energy',
+    clearwater: 'Duke Energy',
+    orlando: 'Duke Energy',
+    miami: 'FPL (Florida Power & Light)',
+    'fort lauderdale': 'FPL (Florida Power & Light)',
+    jacksonville: 'JEA (Jacksonville Electric Authority)',
+    tallahassee: 'Tallahassee Utilities',
+    gainesville: 'Gainesville Regional Utilities',
+    default: 'FPL (Florida Power & Light)', // Most common statewide
+  },
+
+  // Water providers by region/city
+  water: {
+    tampa: 'Tampa Water Department',
+    'st petersburg': 'City of St. Petersburg Water',
+    'st. petersburg': 'City of St. Petersburg Water',
+    clearwater: 'City of Clearwater Water',
+    orlando: 'Orlando Utilities Commission',
+    miami: 'Miami-Dade Water',
+    'fort lauderdale': 'City of Fort Lauderdale Water',
+    jacksonville: 'JEA (Jacksonville Water)',
+    default: 'City Water Department',
+  },
+
+  // Natural gas providers
+  gas: {
+    tampa: 'TECO Peoples Gas',
+    'st petersburg': 'TECO Peoples Gas',
+    'st. petersburg': 'TECO Peoples Gas',
+    clearwater: 'TECO Peoples Gas',
+    orlando: 'Peoples Gas (Orlando)',
+    miami: 'Florida City Gas',
+    'fort lauderdale': 'Florida City Gas',
+    default: 'Peoples Gas',
+  },
+
+  // Sewer providers
+  sewer: {
+    tampa: 'Tampa Wastewater',
+    'st petersburg': 'City of St. Petersburg Wastewater',
+    'st. petersburg': 'City of St. Petersburg Wastewater',
+    clearwater: 'City of Clearwater Sewer',
+    default: 'City Sewer Department',
+  },
+
+  // Trash/waste providers
+  trash: {
+    tampa: 'City of Tampa Solid Waste',
+    'st petersburg': 'City of St. Petersburg Sanitation',
+    'st. petersburg': 'City of St. Petersburg Sanitation',
+    clearwater: 'City of Clearwater Solid Waste',
+    default: 'City Waste Management',
+  },
+};
+
 export interface TavilySearchResult {
   title: string;
   url: string;
@@ -192,6 +257,8 @@ export async function searchMarketStats(city: string, zip: string): Promise<Reco
 
 /**
  * Search for utility providers
+ * STRATEGY: Try Tavily search with GENERIC patterns first
+ * FALLBACK: If no results AND state is FL, use hardcoded Florida defaults
  */
 export async function searchUtilities(city: string, state: string): Promise<Record<string, any>> {
   const fields: Record<string, any> = {};
@@ -201,39 +268,86 @@ export async function searchUtilities(city: string, state: string): Promise<Reco
     { numResults: 5 }
   );
 
+  // STEP 1: Extract utility providers using GENERIC regex patterns (not FL-specific)
   for (const r of result.results) {
-    // Common Florida utilities
-    if (r.content.match(/Duke Energy|TECO|Tampa Electric|FPL|Florida Power/i) && !fields['104_electric_provider']) {
-      const match = r.content.match(/(Duke Energy|TECO|Tampa Electric|FPL|Florida Power & Light)/i);
-      if (match) {
+    // Electric provider - GENERIC pattern (any Electric/Power/Energy company)
+    if (!fields['104_electric_provider']) {
+      const electricMatch = r.content.match(/([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*)\s+(?:Electric|Power|Energy)/i);
+      if (electricMatch) {
+        const provider = electricMatch[0].trim();
         fields['104_electric_provider'] = {
-          value: match[1],
+          value: provider,
           source: 'Tavily',
           confidence: 'Medium',
         };
+        console.log(`✅ [Tavily] Found electric provider: ${provider}`);
       }
     }
 
-    if (r.content.match(/water.*(?:utility|department|provider)/i) && !fields['106_water_provider']) {
-      const match = r.content.match(/(\w+\s*(?:Water|Utilities|Public Works))/i);
-      if (match) {
+    // Water provider - GENERIC pattern (any Water/Utilities department)
+    if (!fields['106_water_provider']) {
+      const waterMatch = r.content.match(/((?:City of |Town of )?[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*)\s+(?:Water|Utilities|Public Works)/i);
+      if (waterMatch) {
+        const provider = waterMatch[0].trim();
         fields['106_water_provider'] = {
-          value: match[1],
+          value: provider,
           source: 'Tavily',
           confidence: 'Medium',
         };
+        console.log(`✅ [Tavily] Found water provider: ${provider}`);
       }
     }
 
-    if (r.content.match(/natural gas|Peoples Gas|TECO Gas/i) && !fields['109_natural_gas']) {
-      const match = r.content.match(/(Peoples Gas|TECO (?:Peoples )?Gas|No natural gas)/i);
-      if (match) {
+    // Natural gas provider - GENERIC pattern (any Gas company)
+    if (!fields['109_natural_gas']) {
+      const gasMatch = r.content.match(/([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*)\s+(?:Gas|Natural Gas)/i);
+      if (gasMatch) {
+        const provider = gasMatch[0].trim();
         fields['109_natural_gas'] = {
-          value: match[1],
+          value: provider,
           source: 'Tavily',
           confidence: 'Medium',
         };
+        console.log(`✅ [Tavily] Found gas provider: ${provider}`);
       }
+    }
+  }
+
+  // STEP 2: FALLBACK - If no results found AND state is Florida, use FL defaults
+  if (state.toUpperCase() === 'FL') {
+    const cityLower = city.toLowerCase().trim();
+
+    // Electric provider fallback
+    if (!fields['104_electric_provider']) {
+      const electricFallback = FL_UTILITY_FALLBACKS.electric[cityLower] || FL_UTILITY_FALLBACKS.electric.default;
+      fields['104_electric_provider'] = {
+        value: electricFallback,
+        source: 'Fallback (FL Default)',
+        confidence: 'Low',
+      };
+      console.log(`⚠️ [Tavily] Using FL electric fallback for ${city}: ${electricFallback}`);
+    }
+
+    // Water provider fallback
+    if (!fields['106_water_provider']) {
+      const waterFallback = FL_UTILITY_FALLBACKS.water[cityLower] || FL_UTILITY_FALLBACKS.water.default;
+      fields['106_water_provider'] = {
+        value: waterFallback,
+        source: 'Fallback (FL Default)',
+        confidence: 'Low',
+      };
+      console.log(`⚠️ [Tavily] Using FL water fallback for ${city}: ${waterFallback}`);
+    }
+
+    // Natural gas fallback
+    if (!fields['109_natural_gas']) {
+      const gasFallback = FL_UTILITY_FALLBACKS.gas[cityLower] || FL_UTILITY_FALLBACKS.gas.default;
+      fields['109_natural_gas'] = {
+        value: gasFallback,
+        source: 'Fallback (FL Default)',
+        confidence: 'Low',
+      };
+      console.log(`⚠️ [Tavily] Using FL gas fallback for ${city}: ${gasFallback}`);
     }
   }
 
