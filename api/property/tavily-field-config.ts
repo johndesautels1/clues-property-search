@@ -642,21 +642,26 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
       'site:policygenius.com "{city}" homeowners insurance',
       'site:valuepenguin.com "{city}" home insurance',
       'site:smartfinancial.com "{state}" home insurance average',
-      '"{state}" average homeowners insurance cost 2025 2026'
+      '"{state}" average homeowners insurance cost 2025 2026',
+      'average home insurance cost {zip}',
+      '{zip} flood zone insurance cost',
+      '"{city}" {state} homeowners insurance rates 2026'
     ],
     prioritySources: ['policygenius.com', 'valuepenguin.com', 'smartfinancial.com'],
     extractionPatterns: {
       regexPatterns: [
         /\$?([\d,]+)\s*\/?\s*year/i,
         /annual.*?\$?([\d,]+)/i,
-        /average.*?\$?([\d,]+)/i
+        /average.*?\$?([\d,]+)/i,
+        /flood.*?\$?([\d,]+)/i
       ],
-      textMarkers: ['annual premium', 'average cost', 'homeowners insurance']
+      textMarkers: ['annual premium', 'average cost', 'homeowners insurance', 'flood zone', 'flood insurance']
     },
-    expectedSuccessRate: 0.75,
+    expectedSuccessRate: 0.80,
     confidenceThreshold: 'medium',
-    dataLevel: 'city',
-    fallbackToLLM: true
+    dataLevel: 'zip',
+    fallbackToLLM: true,
+    notes: 'Zip-level granularity for flood zone accuracy (critical for Florida coastal properties)'
   },
 
   98: {
@@ -1084,22 +1089,30 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
       'site:cellmapper.net "{city}, {state}"',
       'site:opensignal.com "{city}"',
       'site:nperf.com "{city}" coverage',
-      'site:coveragecritic.com "{zip}"'
+      'site:coveragecritic.com "{zip}"',
+      'site:rootmetrics.com "{city}" coverage',
+      '"{city}" {state} Verizon coverage map',
+      '"{city}" {state} AT&T coverage map',
+      '"{zip}" cell tower locations'
     ],
-    prioritySources: ['cellmapper.net', 'opensignal.com', 'nperf.com'],
+    prioritySources: ['cellmapper.net', 'opensignal.com', 'nperf.com', 'rootmetrics.com'],
     extractionPatterns: {
       regexPatterns: [
-        /Verizon|AT&T|T-Mobile/i,
+        /Verizon|AT&T|T-Mobile|Sprint/i,
         /Excellent|Good|Fair|Poor/i,
-        /5G/i
+        /5G|LTE|4G/i,
+        /([\d\.]+)\s*Mbps/i,
+        /([\d]+)%\s*coverage/i,
+        /([\d]+)\s*bars/i,
+        /([\d]+)\s*towers?/i
       ],
-      textMarkers: ['Verizon', 'AT&T', 'T-Mobile', 'coverage', '5G', 'LTE']
+      textMarkers: ['Verizon', 'AT&T', 'T-Mobile', 'coverage', '5G', 'LTE', 'signal strength', 'Mbps', 'download speed', 'tower', 'bars']
     },
-    expectedSuccessRate: 0.75,
+    expectedSuccessRate: 0.85,
     confidenceThreshold: 'medium',
     dataLevel: 'zip',
     fallbackToLLM: true,
-    notes: 'CellMapper is crowdsourced - most granular data'
+    notes: 'CellMapper is crowdsourced; RootMetrics provides professional carrier testing data; carrier-specific maps for detailed coverage'
   },
 
   116: {
