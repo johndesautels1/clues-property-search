@@ -4021,7 +4021,13 @@ async function callGPT5(
       const toolCalls = assistantMessage.tool_calls.slice(0, 3);
       for (const toolCall of toolCalls) {
         if (toolCall.function?.name === 'web_search') {
-          const args = JSON.parse(toolCall.function.arguments || '{}');
+          let args: { query?: string; num_results?: number } = {};
+          try {
+            args = JSON.parse(toolCall.function.arguments || '{}');
+          } catch (parseErr) {
+            console.error(`❌ [GPT] Failed to parse tool call arguments: ${parseErr}`);
+            continue; // Skip this tool call, try next one
+          }
           console.log(`🔍 [GPT] Searching: ${args.query}`);
           const searchResult = await callTavilySearch(args.query, args.num_results || 5);
 
