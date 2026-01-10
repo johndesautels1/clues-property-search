@@ -1,7 +1,7 @@
 # Tavily Field Configuration - Action Items
 
 **Date Created:** 2026-01-10
-**Status:** In Progress (6 of 55 fields improved)
+**Status:** In Progress (7 of 55 fields improved)
 
 ---
 
@@ -10,8 +10,8 @@
 This document tracks improvements needed for Tavily web search field configurations based on comprehensive audit findings.
 
 **Total Fields:** 55 Tavily-enabled fields
-**Completed:** 6 fields (97, 98, 99, 100, 102, 115)
-**Remaining:** 49 fields
+**Completed:** 7 fields (97, 98, 99, 100, 102, 103, 115)
+**Remaining:** 48 fields
 
 ---
 
@@ -224,6 +224,23 @@ These fields work well but could be pushed to "Excellent" with additional source
   - Maintained expected success rate: 95%
   - Updated notes to emphasize investor focus and state program availability
 - **UI Improvement:** Widened Field 102 display to full-width for better readability of long mortgage rate details
+- **Commit:** d97c1b5
+
+### ✅ Field 103: Comparable Sales
+- **Date:** 2026-01-11
+- **Changes:**
+  - Added Realtor.com queries (MLS-backed official data - 2 new queries)
+  - Added Homes.com queries (additional aggregator coverage)
+  - Added year-specific queries (2024, 2025, 2026) for recent sales
+  - Added ZIP-level fallback queries for neighborhoods
+  - Enhanced extraction patterns: Added sale date, price/sqft, distance, closed price, list vs sold price
+  - Increased regex patterns: 5 → 10 patterns (100% increase)
+  - Increased total queries: 5 → 10 queries (100% increase)
+  - Added 4 new textMarkers for better extraction context
+  - Increased expected success rate: 85% → 90%
+  - Updated notes to reflect MLS prioritization and ZIP-level fallbacks
+- **Verified Sources Work:** Redfin (✅), Movoto (✅), Homes.com (✅), Realtor.com (✅) - all documented as accessible
+- **Avoided Blocked Sources:** Did not add Zillow (blocks automation ~15-20% success)
 - **Commit:** [Pending]
 
 ---
@@ -232,8 +249,9 @@ These fields work well but could be pushed to "Excellent" with additional source
 
 1. **Field 101:** Cap Rate (Est) - Already calculation-only ✅
 2. **Field 102:** Financing Terms - ✅ COMPLETED
-3. **Field 103:** Comparable Sales - NEXT in sequence
-4. Continue sequentially through remaining 49 fields...
+3. **Field 103:** Comparable Sales - ✅ COMPLETED
+4. **Field 104:** Electric Provider - NEXT in sequence
+5. Continue sequentially through remaining 48 fields...
 
 ---
 

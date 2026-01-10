@@ -816,29 +816,46 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     label: 'Comparable Sales',
     category: 'market',
     searchQueries: [
-      'site:movoto.com "{address}" sold',
+      // Major MLS/aggregator sites (HIGHEST PRIORITY)
+      'site:realtor.com "{address}" sold',
+      'site:redfin.com "{address}" "similar homes" sold',
+      'site:homes.com "{address}" sold homes',
+
+      // Existing working sources
       'site:movoto.com "{address}" comparables',
       'site:estately.com "{address}" "sold homes"',
-      'site:redfin.com "{address}" "similar homes" sold',
-      'site:homedisclosure.com "{address}"'
+      'site:homedisclosure.com "{address}"',
+
+      // Year-specific queries
+      '"{address}" sold homes 2024 2025 2026',
+      'recently sold homes near "{address}" 2025',
+
+      // ZIP-level fallback
+      '{zip} recently sold homes comparable',
+      'sold homes {zip} 2025 2026'
     ],
-    prioritySources: ['movoto.com', 'estately.com', 'redfin.com', 'homedisclosure.com'],
+    prioritySources: ['realtor.com', 'redfin.com', 'homes.com', 'movoto.com', 'estately.com', 'homedisclosure.com'],
     extractionPatterns: {
       jsonLdPaths: ['offers', 'soldPrice', 'salePrice'],
       regexPatterns: [
-        /Sold[:\s]*\$?([\d,]+)/i,
-        /Sale Price[:\s]*\$?([\d,]+)/i,
-        /(\d+)\s*bd/i,  // bedrooms
-        /(\d+\.?\d*)\s*ba/i,  // bathrooms
-        /([\d,]+)\s*sq\s*ft/i
+        /Sold[:\s]*\$?([\d,]+)/i,                           // Sold price
+        /Sale Price[:\s]*\$?([\d,]+)/i,                     // Sale price
+        /(\d+)\s*bd/i,                                       // Bedrooms
+        /(\d+\.?\d*)\s*ba/i,                                // Bathrooms
+        /([\d,]+)\s*sq\s*ft/i,                              // Square feet
+        /Sold[:\s]*([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})/i,    // Sale date
+        /\$?([\d,]+)\s*\/\s*sq\s*ft/i,                     // Price per sqft
+        /([\d\.]+)\s*miles?\s*away/i,                       // Distance
+        /Closed[:\s]*\$?([\d,]+)/i,                         // Closed price variant
+        /list.*\$?([\d,]+).*sold.*\$?([\d,]+)/i            // List vs sold price
       ],
-      textMarkers: ['Comparable Sales', 'Similar Homes Sold', 'sold', 'sale price']
+      textMarkers: ['Comparable Sales', 'Similar Homes Sold', 'sold', 'sale price', 'recently sold', 'closed', 'sold date', 'price per sqft']
     },
-    expectedSuccessRate: 0.85,
+    expectedSuccessRate: 0.90,
     confidenceThreshold: 'high',
     dataLevel: 'address',
     fallbackToLLM: true,
-    notes: 'Extract up to 5 comps within last 6 months'
+    notes: 'Extract up to 5 comps within last 6 months. Prioritizes MLS sources (Realtor.com, Redfin) with year-specific and ZIP-level fallbacks.'
   },
 
   // ======================
