@@ -396,16 +396,17 @@ smart_home_features (smart home technology: e.g., "Nest thermostat, smart locks,
 accessibility_modifications (accessibility features: e.g., "Wheelchair ramp, grab bars, wide doorways", null if none mentioned)
 special_assessments (any special assessments or pending HOA assessments: e.g., "Roof assessment $5,000 due 2026", null if none)
 
-MARKET ACTIVITY (if property is actively listed - return null if not found):
-zillow_views (number of views on Zillow listing page)
-redfin_views (number of views on Redfin listing page)
-homes_views (number of views on Homes.com listing page)
-realtor_views (number of views on Realtor.com listing page)
-saves_favorites (total saves or favorites across all portals)
+MARKET PERFORMANCE METRICS (search market data sites like Movoto, Estately, Redfin Market Data):
+months_of_inventory (months of housing supply in ZIP/city: <3mo = seller's market, 3-6mo = balanced, >6mo = buyer's market)
+new_listings_30d (new listings in ZIP/city in last 30 days - supply indicator)
+homes_sold_30d (homes sold in ZIP/city in last 30 days - demand indicator)
+median_dom_zip (median days on market for ZIP/city - velocity indicator)
+price_reduced_percent (percentage of active listings with price reductions - market pressure indicator)
+homes_under_contract (homes currently pending in ZIP/city - competition indicator)
 
 Rules:
-- Use only listing portals: Zillow, Redfin, Realtor.com, Homes.com, Trulia
-- For views/saves: Only report if explicitly shown on the listing page
+- Search market data sites: Movoto, Estately, Redfin Market Data, Homes.com market stats
+- For market metrics: Search ZIP-level or city-level data (not individual property)
 - For features: Extract from property description or features list
 - Include a field only if you are ≥90% confident; otherwise use null
 - IMPORTANT: Return FLAT values only, NOT nested objects
@@ -422,11 +423,12 @@ Output format example:
   "smart_home_features": "Nest thermostat, Ring doorbell",
   "accessibility_modifications": null,
   "special_assessments": null,
-  "zillow_views": 1250,
-  "redfin_views": 890,
-  "homes_views": null,
-  "realtor_views": 450,
-  "saves_favorites": 45
+  "months_of_inventory": 4.2,
+  "new_listings_30d": 156,
+  "homes_sold_30d": 142,
+  "median_dom_zip": 28,
+  "price_reduced_percent": 18.5,
+  "homes_under_contract": 89
 }
 
 Return valid JSON only, nothing else.`;
@@ -537,16 +539,17 @@ export const PERPLEXITY_FIELD_MAPPING: Record<string, string | null> = {
   'hvac_age_est': '46_hvac_age',
   'hvac_age': '46_hvac_age',
 
-  // Prompt F - Property Features & Market Activity (ADDED 2026-01-08)
+  // Prompt F - Property Features & Market Activity (UPDATED 2026-01-11: Fields 169-174 repurposed)
   'ev_charging': '133_ev_charging',
   'smart_home_features': '134_smart_home_features',
   'accessibility_modifications': '135_accessibility_modifications',
   'special_assessments': '138_special_assessments',
-  'zillow_views': '169_zillow_views',
-  'redfin_views': '170_redfin_views',
-  'homes_views': '171_homes_views',
-  'realtor_views': '172_realtor_views',
-  'saves_favorites': '174_saves_favorites',
+  'months_of_inventory': '169_months_of_inventory',
+  'new_listings_30d': '170_new_listings_30d',
+  'homes_sold_30d': '171_homes_sold_30d',
+  'median_dom_zip': '172_median_dom_zip',
+  'price_reduced_percent': '173_price_reduced_percent',
+  'homes_under_contract': '174_homes_under_contract',
 
   // Prompt E - Comps (same as A, already mapped above)
   'typical_financing_terms_or_concessions_for_area': '102_financing_terms',

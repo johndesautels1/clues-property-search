@@ -1478,11 +1478,12 @@ PROPERTY FEATURES FIELDS:
 - 135_accessibility_modifications: Accessibility features
 - 138_special_assessments: Special assessments or HOA assessments
 
-MARKET ACTIVITY FIELDS (if property is actively listed):
+MARKET PERFORMANCE METRICS (ZIP/city-level market data):
 - 169_months_of_inventory: Months of housing inventory in ZIP/city
-- 171_homes_sold_30d: Number of Redfin views
+- 170_new_listings_30d: New listings in last 30 days
 - 171_homes_sold_30d: Homes sold in last 30 days
 - 172_median_dom_zip: Median days on market (ZIP)
+- 173_price_reduced_percent: Percentage of listings with price reductions
 - 174_homes_under_contract: Homes currently under contract
 
 SEARCH STRATEGY:
