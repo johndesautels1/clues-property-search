@@ -867,23 +867,39 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     label: 'Electric Provider',
     category: 'utilities',
     searchQueries: [
+      // Address-specific (HIGHEST PRIORITY)
+      'site:inmyarea.com "{address}" electric provider',
+      '"{address}" electric utility',
+
+      // ZIP-level (HIGH PRIORITY)
       'site:inmyarea.com "{zip}" electric',
       'site:electricrate.com "{zip}"',
+      'site:chooseenergy.com "{zip}" electric providers',
+
+      // City-level
       'site:openinframap.org "{city}"',
-      '"{city}, {state}" electric utility company'
+      '"{city}, {state}" electric utility company',
+
+      // State-level fallback
+      '"{state}" electric utility map "{city}"'
     ],
-    prioritySources: ['inmyarea.com', 'electricrate.com', 'openinframap.org'],
+    prioritySources: ['inmyarea.com', 'electricrate.com', 'chooseenergy.com', 'openinframap.org'],
     extractionPatterns: {
       regexPatterns: [
-        /Electric[:\s]*([A-Z][^\n]+)/i,
-        /Provider[:\s]*([A-Z][^\n]+)/i
+        /Electric[:\s]*([A-Z][^\n]+)/i,                    // Electric provider name
+        /Provider[:\s]*([A-Z][^\n]+)/i,                    // Provider name
+        /Utility[:\s]*([A-Z][^\n]+)/i,                     // Utility company name
+        /Served by[:\s]*([A-Z][^\n]+)/i,                   // "Served by Duke Energy"
+        /(Duke Energy|FPL|Florida Power & Light|ComEd|PG&E|Pacific Gas & Electric|ConEd|Consolidated Edison|PSE&G|Entergy|AEP|American Electric Power|Southern Company|Xcel Energy|Dominion Energy|National Grid|Exelon|PPL|FirstEnergy|Ameren|Eversource|CenterPoint Energy|NRG Energy|Comed|PECO|Georgia Power|Alabama Power|Mississippi Power|Gulf Power|SCE|Southern California Edison|SDG&E|San Diego Gas & Electric|Tampa Electric|TECO|Duke Energy Florida|Duke Energy Carolinas|Progress Energy|DTE Energy|Consumers Energy|WE Energies|Alliant Energy|MidAmerican Energy|Avista|Idaho Power|PacifiCorp|NV Energy|APS|Arizona Public Service|Salt River Project|SRP|LADWP|SMUD|Austin Energy|CPS Energy)/i,  // Major utility names
+        /Power Company[:\s]*([A-Z][^\n]+)/i                // Power company name
       ],
-      textMarkers: ['Electric Provider', 'utility company', 'power company']
+      textMarkers: ['Electric Provider', 'utility company', 'power company', 'served by', 'electricity provider', 'electric utility']
     },
-    expectedSuccessRate: 0.95,
+    expectedSuccessRate: 0.97,
     confidenceThreshold: 'high',
-    dataLevel: 'zip',
-    fallbackToLLM: true
+    dataLevel: 'address',
+    fallbackToLLM: true,
+    notes: 'Address-level lookup provides exact provider. Major utility name recognition for accurate extraction. ZIP codes may have multiple providers in deregulated markets.'
   },
 
   105: {

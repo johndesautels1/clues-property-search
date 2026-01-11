@@ -1,7 +1,7 @@
 # Tavily Field Configuration - Action Items
 
 **Date Created:** 2026-01-10
-**Status:** In Progress (7 of 55 fields improved)
+**Status:** In Progress (8 of 55 fields improved)
 
 ---
 
@@ -10,8 +10,8 @@
 This document tracks improvements needed for Tavily web search field configurations based on comprehensive audit findings.
 
 **Total Fields:** 55 Tavily-enabled fields
-**Completed:** 7 fields (97, 98, 99, 100, 102, 103, 115)
-**Remaining:** 48 fields
+**Completed:** 8 fields (97, 98, 99, 100, 102, 103, 104, 115)
+**Remaining:** 47 fields
 
 ---
 
@@ -241,6 +241,22 @@ These fields work well but could be pushed to "Excellent" with additional source
   - Updated notes to reflect MLS prioritization and ZIP-level fallbacks
 - **Verified Sources Work:** Redfin (✅), Movoto (✅), Homes.com (✅), Realtor.com (✅) - all documented as accessible
 - **Avoided Blocked Sources:** Did not add Zillow (blocks automation ~15-20% success)
+- **Commit:** 2253ded
+
+### ✅ Field 104: Electric Provider
+- **Date:** 2026-01-11
+- **Changes:**
+  - Added address-level queries (2 new queries - highest priority)
+  - Added ChooseEnergy utility lookup site
+  - Added state-level utility map fallback
+  - Enhanced extraction patterns: Added 50+ major utility company names (Duke Energy, FPL, ComEd, PG&E, etc.)
+  - Increased regex patterns: 2 → 6 patterns (200% increase)
+  - Increased total queries: 4 → 8 queries (100% increase)
+  - Added 3 new textMarkers ('served by', 'electricity provider', 'electric utility')
+  - Increased expected success rate: 95% → 97%
+  - Upgraded granularity: zip → address
+  - Updated notes: Address-level provides exact provider; ZIP codes may have multiple providers in deregulated markets
+- **Major Utility Name Recognition:** Added comprehensive pattern matching for 50+ utility companies across all US states
 - **Commit:** [Pending]
 
 ---
@@ -250,8 +266,9 @@ These fields work well but could be pushed to "Excellent" with additional source
 1. **Field 101:** Cap Rate (Est) - Already calculation-only ✅
 2. **Field 102:** Financing Terms - ✅ COMPLETED
 3. **Field 103:** Comparable Sales - ✅ COMPLETED
-4. **Field 104:** Electric Provider - NEXT in sequence
-5. Continue sequentially through remaining 48 fields...
+4. **Field 104:** Electric Provider - ✅ COMPLETED
+5. **Field 105:** Avg Electric Bill - NEXT in sequence
+6. Continue sequentially through remaining 47 fields...
 
 ---
 
