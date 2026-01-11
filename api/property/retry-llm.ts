@@ -1278,11 +1278,17 @@ HARD RULES (EVIDENCE FIREWALL)
    - "[ADDRESS] public transit bus train" → 81_public_transit_access
    - "[ADDRESS] commute to [NEAREST MAJOR CITY] downtown" → 82_commute_to_city_center
 
-8) Market Activity (if property is actively listed):
-   - "site:zillow.com [ADDRESS]" → 169_months_of_inventory, 170_new_listings_30d
-   - "site:redfin.com [ADDRESS]" → 171_homes_sold_30d
+8) Market Performance Metrics (ZIP/city-level data from MARKET DATA SITES, NOT individual listings):
+   - "[ZIP CODE] months of inventory market trends" → 169_months_of_inventory
+   - "[CITY STATE] new listings last 30 days" → 170_new_listings_30d
+   - "[CITY STATE] homes sold last 30 days market data" → 171_homes_sold_30d
+   - "[ZIP CODE] median days on market" → 172_median_dom_zip
+   - "[ZIP CODE] price reductions percentage" → 173_price_reduced_percent
+   - "[ZIP CODE] homes under contract pending" → 174_homes_under_contract
    - "[ZIP CODE] sale to list price ratio" → 176_avg_sale_to_list_percent
    - "[ZIP CODE] days to pending" → 177_avg_days_to_pending
+   - "[ZIP CODE] appreciation YoY" → 179_appreciation_percent
+   - "[ZIP CODE] price trend rising falling stable" → 180_price_trend
    - "[ZIP CODE] multiple offers" → 178_multiple_offers_likelihood
 
 OUTPUT REQUIREMENTS
