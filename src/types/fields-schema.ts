@@ -314,12 +314,12 @@ export const ALL_FIELDS: readonly FieldDefinition[] = [
   // GROUP 23: Market Performance (Fields 169-181) - Section W
   // Real-time market metrics from portal data and Redfin analytics
   // ================================================================
-  { num: 169, key: 'zillow_views',                label: 'Zillow Views',              group: 'Market Performance', type: 'number',     required: false },
-  { num: 170, key: 'redfin_views',                label: 'Redfin Views',              group: 'Market Performance', type: 'number',     required: false },
-  { num: 171, key: 'homes_views',                 label: 'Homes.com Views',           group: 'Market Performance', type: 'number',     required: false },
-  { num: 172, key: 'realtor_views',               label: 'Realtor.com Views',         group: 'Market Performance', type: 'number',     required: false },
-  { num: 173, key: 'total_views',                 label: 'Total Views',               group: 'Market Performance', type: 'number',     required: false, calculated: true },
-  { num: 174, key: 'saves_favorites',             label: 'Saves/Favorites',           group: 'Market Performance', type: 'number',     required: false },
+  { num: 169, key: 'months_of_inventory',         label: 'Months of Inventory',       group: 'Market Performance', type: 'number',     required: false },
+  { num: 170, key: 'new_listings_30d',            label: 'New Listings (30d)',        group: 'Market Performance', type: 'number',     required: false },
+  { num: 171, key: 'homes_sold_30d',              label: 'Homes Sold (30d)',          group: 'Market Performance', type: 'number',     required: false },
+  { num: 172, key: 'median_dom_zip',              label: 'Median DOM (ZIP)',          group: 'Market Performance', type: 'number',     required: false },
+  { num: 173, key: 'price_reduced_percent',       label: 'Price Reduced %',           group: 'Market Performance', type: 'percentage', required: false },
+  { num: 174, key: 'homes_under_contract',        label: 'Homes Under Contract',      group: 'Market Performance', type: 'number',     required: false },
   { num: 175, key: 'market_type',                 label: 'Market Type',               group: 'Market Performance', type: 'select',     required: false, options: ["Buyer's Market", "Balanced Market", "Seller's Market"] },
   { num: 176, key: 'avg_sale_to_list_percent',    label: 'Avg Sale-to-List %',        group: 'Market Performance', type: 'percentage', required: false },
   { num: 177, key: 'avg_days_to_pending',         label: 'Avg Days to Pending',       group: 'Market Performance', type: 'number',     required: false },

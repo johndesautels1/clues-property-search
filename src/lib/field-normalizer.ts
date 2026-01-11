@@ -346,12 +346,12 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
   { fieldNumber: 168, apiKey: '168_exterior_features', group: 'stellarMLS.features', propName: 'exteriorFeatures', type: 'array' },
 
   // ========== GROUP 23: Market Performance (Fields 169-181) - Section W ==========
-  { fieldNumber: 169, apiKey: '169_zillow_views', group: 'marketPerformance', propName: 'zillowViews', type: 'number', validation: (v) => v >= 0 },
-  { fieldNumber: 170, apiKey: '170_redfin_views', group: 'marketPerformance', propName: 'redfinViews', type: 'number', validation: (v) => v >= 0 },
-  { fieldNumber: 171, apiKey: '171_homes_views', group: 'marketPerformance', propName: 'homesViews', type: 'number', validation: (v) => v >= 0 },
-  { fieldNumber: 172, apiKey: '172_realtor_views', group: 'marketPerformance', propName: 'realtorViews', type: 'number', validation: (v) => v >= 0 },
-  { fieldNumber: 173, apiKey: '173_total_views', group: 'marketPerformance', propName: 'totalViews', type: 'number', validation: (v) => v >= 0 },
-  { fieldNumber: 174, apiKey: '174_saves_favorites', group: 'marketPerformance', propName: 'savesFavorites', type: 'number', validation: (v) => v >= 0 },
+  { fieldNumber: 169, apiKey: '169_months_of_inventory', group: 'marketPerformance', propName: 'monthsOfInventory', type: 'number', validation: (v) => v >= 0 },
+  { fieldNumber: 170, apiKey: '170_new_listings_30d', group: 'marketPerformance', propName: 'newListings30d', type: 'number', validation: (v) => v >= 0 },
+  { fieldNumber: 171, apiKey: '171_homes_sold_30d', group: 'marketPerformance', propName: 'homesSold30d', type: 'number', validation: (v) => v >= 0 },
+  { fieldNumber: 172, apiKey: '172_median_dom_zip', group: 'marketPerformance', propName: 'medianDomZip', type: 'number', validation: (v) => v >= 0 },
+  { fieldNumber: 173, apiKey: '173_price_reduced_percent', group: 'marketPerformance', propName: 'priceReducedPercent', type: 'number', validation: (v) => v >= 0 },
+  { fieldNumber: 174, apiKey: '174_homes_under_contract', group: 'marketPerformance', propName: 'homesUnderContract', type: 'number', validation: (v) => v >= 0 },
   { fieldNumber: 175, apiKey: '175_market_type', group: 'marketPerformance', propName: 'marketType', type: 'string' },
   { fieldNumber: 176, apiKey: '176_avg_sale_to_list_percent', group: 'marketPerformance', propName: 'avgSaleToListPercent', type: 'number', validation: (v) => v >= 0 && v <= 200 },
   { fieldNumber: 177, apiKey: '177_avg_days_to_pending', group: 'marketPerformance', propName: 'avgDaysToPending', type: 'number', validation: (v) => v >= 0 && v <= 365 },
