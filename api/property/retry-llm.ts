@@ -1122,35 +1122,54 @@ async function callClaudeOpus(address: string): Promise<{ fields: Record<string,
   console.log('[CLAUDE OPUS] API key present:', !!apiKey, 'length:', apiKey?.length || 0);
   if (!apiKey) return { error: 'API key not set', fields: {} };
 
-  const prompt = `You are Claude Opus, a real estate data assistant with deep reasoning capabilities.
+  // CRITICAL FIX: Use comprehensive Opus prompt with proper 181-field schema (not inline 15-field version)
+  const systemPrompt = `You are Claude Opus, the most capable AI assistant, helping extract property data. You do NOT have web access.
 
-🟣 FIRING ORDER: You are the LAST (6th) LLM in the chain. NO web search capability.
+⚫ FIRING ORDER: You are the 6th and FINAL LLM in the search chain.
 PRIOR DATA SOURCES (already ran BEFORE you):
 - Tier 3: Tavily Web Search, SchoolDigger, FBI Crime, WalkScore, FEMA, AirNow, Census, Weather
 - Tier 4 LLMs: Perplexity, Gemini, GPT, Claude Sonnet, Grok
-Use your knowledge and reasoning to fill fields that web searches couldn't find.
+You fire LAST as a final fallback for fields that NO OTHER source could find.
+You can ONLY use your training knowledge - NO web search, NO live data, NO guessing.
 
-Return a JSON object with data for: ${address}
+YOUR MISSION: Extract ONLY fields that can be determined from static training knowledge, NOT live/current data.
 
+🚫 CRITICAL: NEVER GUESS OR ESTIMATE LIVE DATA
+You are EXPLICITLY FORBIDDEN from guessing, estimating, or inferring fields that require current/live data.
+
+FORBIDDEN FIELDS (require live data - DO NOT guess):
+- 12_market_value_estimate, 16a_zestimate, 16b-16f_*_avm (all AVMs require live data)
+- 91_median_home_price_neighborhood, 92_price_per_sqft_recent_avg (require current market stats)
+- 95_days_on_market_avg, 96_inventory_surplus (require current market activity)
+- 97_insurance_est_annual, 98_rental_estimate_monthly (require current rates/market)
+- 103_comparable_sales, 169-181_market_performance_* (require recent data)
+- 10_listing_price, 13-14_last_sale_* (require current MLS/property records)
+- 15_assessed_value, 35_annual_taxes (require current county records)
+
+WHAT YOU CAN PROVIDE (from static training knowledge):
+1. GEOGRAPHIC/REGIONAL DATA: County names, utility provider names, school districts for major metros
+2. STATIC INFRASTRUCTURE: 104_electric_provider, 106_water_provider, 110-114_utility_providers
+3. REGIONAL CHARACTERISTICS: 81_public_transit_access, 82_commute_to_city_center (general knowledge)
+
+RULES:
+1. If a field requires CURRENT/LIVE data, OMIT it entirely - do NOT return null
+2. Only return fields from STATIC training knowledge with HIGH confidence
+3. When uncertain, OMIT the field - do NOT guess
+4. NEVER estimate monetary values, statistics, or market metrics
+
+OUTPUT FORMAT - Return ONLY valid JSON with numbered field keys:
 {
-  "property_type": "Single Family | Condo | Townhouse | Multi-Family",
-  "city": "city name",
-  "state": "FL",
-  "county": "county name",
-  "neighborhood": "neighborhood name if known",
-  "zip_code": "ZIP code",
-  "median_home_price_neighborhood": median price if known,
-  "avg_days_on_market": DOM stats if known,
-  "school_district": assigned school district,
-  "flood_risk_level": FEMA flood zone,
-  "hurricane_risk": "Low | Moderate | High",
-  "walkability_description": "description of walkability",
-  "rental_estimate_monthly": rental estimate,
-  "insurance_estimate_annual": estimated annual insurance,
-  "property_tax_rate_percent": tax rate
+  "7_county": "County Name",
+  "104_electric_provider": "Provider Name",
+  "106_water_provider": "Provider Name"
 }
 
-Return null if you cannot find data. Return ONLY the JSON object.`;
+Use EXACT field key format: [number]_[field_name] (e.g., "7_county", "104_electric_provider")
+OMIT fields you cannot verify from training knowledge.`;
+
+  const userPrompt = `Property address: ${address}
+
+Extract ANY fields you can determine from your training knowledge. Return ONLY the JSON object with numbered field keys.`;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
@@ -1166,7 +1185,8 @@ Return null if you cannot find data. Return ONLY the JSON object.`;
       body: JSON.stringify({
         model: 'claude-opus-4-5-20251101',
         max_tokens: 32000,
-        messages: [{ role: 'user', content: prompt }],
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }],
       }),
       signal: controller.signal,
     });

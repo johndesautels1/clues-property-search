@@ -4578,7 +4578,14 @@ async function callGrok(address: string): Promise<any> {
       const toolCalls = assistantMessage.tool_calls.slice(0, 3);
       for (const toolCall of toolCalls) {
         if (toolCall.function?.name === 'web_search') {
-          const args = JSON.parse(toolCall.function.arguments || '{}');
+          // CRASH FIX: Wrap JSON.parse in try-catch to prevent malformed arguments from breaking cascade
+          let args: any = {};
+          try {
+            args = JSON.parse(toolCall.function.arguments || '{}');
+          } catch (parseError) {
+            console.error('[Grok] Failed to parse tool arguments:', parseError, '| Raw:', toolCall.function.arguments);
+            continue; // Skip this tool call if arguments are malformed
+          }
           const searchResult = await callTavilySearch(args.query, args.num_results || 5);
 
           // Add tool result to messages
