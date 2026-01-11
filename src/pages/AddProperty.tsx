@@ -68,7 +68,7 @@ const LLM_ENGINES = [
 
 export default function AddProperty() {
   const navigate = useNavigate();
-  const { addProperty, addProperties } = usePropertyStore();
+  const { addProperty, addProperties, clearProperty } = usePropertyStore();
 
   const [address, setAddress] = useState('');
   const [url, setUrl] = useState('');
@@ -389,6 +389,11 @@ export default function AddProperty() {
       const fullPropertyData = convertApiResponseToFullProperty(fields, scrapedProperty.id, fieldSources, conflicts);
 
       setSaveStatus('saving');
+
+      // BUGFIX 2026-01-11: Clear any existing property with this ID to prevent
+      // data contamination from previous searches (especially when re-searching same property)
+      clearProperty(scrapedProperty.id);
+
       addProperty(scrapedProperty, fullPropertyData);
       setLastAddedId(scrapedProperty.id);
       setSaveStatus('saved');
@@ -566,6 +571,11 @@ export default function AddProperty() {
       const fullPropertyData = convertApiResponseToFullProperty(fields, scrapedProperty.id, fieldSources, conflicts);
 
       setSaveStatus('saving');
+
+      // BUGFIX 2026-01-11: Clear any existing property with this ID to prevent
+      // data contamination from previous searches (especially when re-searching same property)
+      clearProperty(scrapedProperty.id);
+
       addProperty(scrapedProperty, fullPropertyData);
       setLastAddedId(scrapedProperty.id);
       setSaveStatus('saved');

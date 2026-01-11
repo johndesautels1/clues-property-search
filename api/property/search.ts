@@ -5461,9 +5461,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const perplexityLlms = enabledLlms.filter(llm => llm.id.startsWith('perplexity'));
           if (perplexityLlms.length > 0) {
             console.log(`\n[Phase 1/2] Running ${perplexityLlms.length} Perplexity prompts SEQUENTIALLY (rate limit protection)...`);
+            console.log(`[PERPLEXITY START] Timestamp: ${new Date().toISOString()}, Memory: ${process.memoryUsage().heapUsed / 1024 / 1024}MB`);
+
             for (let i = 0; i < perplexityLlms.length; i++) {
               const llm = perplexityLlms[i];
-              console.log(`  [${i + 1}/${perplexityLlms.length}] Calling ${llm.id}...`);
+              const startTime = Date.now();
+              console.log(`  [${i + 1}/${perplexityLlms.length}] ⏱️  START ${llm.id} at ${new Date().toISOString()}`);
               llmMetadata.push(llm);
               try {
                 const result = await withTimeout(
@@ -5471,18 +5474,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   PERPLEXITY_TIMEOUT,
                   { fields: {}, error: 'timeout' }
                 );
+                const elapsed = Date.now() - startTime;
                 llmResults.push({ status: 'fulfilled', value: result });
-                console.log(`  [${i + 1}/${perplexityLlms.length}] ${llm.id} completed - found ${Object.keys(result?.fields || {}).length} fields`);
+                console.log(`  [${i + 1}/${perplexityLlms.length}] ✅ ${llm.id} completed in ${elapsed}ms - found ${Object.keys(result?.fields || {}).length} fields`);
+                console.log(`  [${i + 1}/${perplexityLlms.length}] Memory after: ${process.memoryUsage().heapUsed / 1024 / 1024}MB`);
               } catch (err) {
+                const elapsed = Date.now() - startTime;
                 llmResults.push({ status: 'rejected', reason: err });
-                console.log(`  [${i + 1}/${perplexityLlms.length}] ${llm.id} failed: ${err}`);
+                console.log(`  [${i + 1}/${perplexityLlms.length}] ❌ ${llm.id} failed after ${elapsed}ms: ${err}`);
               }
               // Rate limit protection between Perplexity calls
               if (i < perplexityLlms.length - 1) {
-                console.log('  Waiting 500ms before next Perplexity call (rate limit protection)...');
+                console.log('  ⏸️  Waiting 500ms before next Perplexity call (rate limit protection)...');
                 await new Promise(resolve => setTimeout(resolve, 500));
               }
             }
+            console.log(`[PERPLEXITY END] All ${perplexityLlms.length} prompts complete. Timestamp: ${new Date().toISOString()}`);
           }
 
           // PHASE 2 & 3 MERGED: Gemini + GPT + Sonnet + Grok + Opus (ALL PARALLEL after Perplexity)

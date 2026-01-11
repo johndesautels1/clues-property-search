@@ -335,6 +335,7 @@ interface PropertyState {
   addToCompare: (id: string) => void;
   removeFromCompare: (id: string) => void;
   clearCompareList: () => void;
+  clearProperty: (id: string) => void; // BUGFIX 2026-01-11: Clear single property to prevent contamination
 }
 
 const defaultFilters: PropertyFilters = {};
@@ -618,6 +619,20 @@ export const usePropertyStore = create<PropertyState>()(
 
       clearCompareList: () =>
         set({ compareList: [] }),
+
+      // BUGFIX 2026-01-11: Clear specific property to prevent data contamination
+      // between searches. Call this BEFORE searching a new property to ensure
+      // old data doesn't bleed into new search results via mergeProperties().
+      clearProperty: (id) =>
+        set((state) => {
+          console.log('🗑️ CLEAR: Removing property from store to prevent contamination:', id);
+          const newFullProperties = new Map(state.fullProperties);
+          newFullProperties.delete(id);
+          return {
+            properties: state.properties.filter((p) => p.id !== id),
+            fullProperties: newFullProperties,
+          };
+        }),
     }),
     {
       name: 'clues-property-store',
