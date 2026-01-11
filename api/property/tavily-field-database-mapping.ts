@@ -355,37 +355,88 @@ export const TAVILY_FIELD_DATABASE_MAPPING: Record<number | string, FieldDatabas
     label: 'Special Assessments'
   },
 
-  // Market Performance - WARNING: These fields may not exist in database yet!
-  // TODO: Verify these paths exist in database schema
+  // ==========================================
+  // Market Performance (Fields 169-181)
+  // Repurposed 2026-01-11: Fields 169-174 changed from view counts to market metrics
+  // All paths verified against property.ts MarketPerformanceData interface
+  // ==========================================
+  169: {
+    fieldId: 169,
+    fieldKey: '169_months_of_inventory',
+    path: ['marketPerformance', 'monthsOfInventory'],
+    label: 'Months of Inventory'
+  },
   170: {
     fieldId: 170,
-    fieldKey: '170_market_trend_direction',
-    path: ['financial', 'marketTrendDirection'],  // UNVERIFIED!
-    label: 'Market Trend Direction'
+    fieldKey: '170_new_listings_30d',
+    path: ['marketPerformance', 'newListings30d'],
+    label: 'New Listings (30d)'
   },
   171: {
     fieldId: 171,
-    fieldKey: '171_sale_to_list_ratio',
-    path: ['financial', 'saleToListRatio'],  // UNVERIFIED!
-    label: 'Sale-to-List Ratio'
+    fieldKey: '171_homes_sold_30d',
+    path: ['marketPerformance', 'homesSold30d'],
+    label: 'Homes Sold (30d)'
+  },
+  172: {
+    fieldId: 172,
+    fieldKey: '172_median_dom_zip',
+    path: ['marketPerformance', 'medianDomZip'],
+    label: 'Median DOM (ZIP)'
+  },
+  173: {
+    fieldId: 173,
+    fieldKey: '173_price_reduced_percent',
+    path: ['marketPerformance', 'priceReducedPercent'],
+    label: 'Price Reduced %'
   },
   174: {
     fieldId: 174,
-    fieldKey: '174_inventory_level',
-    path: ['financial', 'inventoryLevel'],  // UNVERIFIED!
-    label: 'Inventory Level'
+    fieldKey: '174_homes_under_contract',
+    path: ['marketPerformance', 'homesUnderContract'],
+    label: 'Homes Under Contract'
+  },
+  175: {
+    fieldId: 175,
+    fieldKey: '175_market_type',
+    path: ['marketPerformance', 'marketType'],
+    label: 'Market Type'
+  },
+  176: {
+    fieldId: 176,
+    fieldKey: '176_avg_sale_to_list_percent',
+    path: ['marketPerformance', 'avgSaleToListPercent'],
+    label: 'Avg Sale-to-List %'
   },
   177: {
     fieldId: 177,
-    fieldKey: '177_price_momentum',
-    path: ['financial', 'priceMomentum3Mo'],  // UNVERIFIED!
-    label: 'Price Momentum (3 mo)'
+    fieldKey: '177_avg_days_to_pending',
+    path: ['marketPerformance', 'avgDaysToPending'],
+    label: 'Avg Days to Pending'
   },
   178: {
     fieldId: 178,
-    fieldKey: '178_buyer_vs_seller_market',
-    path: ['financial', 'buyerVsSellerMarket'],  // UNVERIFIED!
-    label: 'Buyer vs Seller Market Indicator'
+    fieldKey: '178_multiple_offers_likelihood',
+    path: ['marketPerformance', 'multipleOffersLikelihood'],
+    label: 'Multiple Offers Likelihood'
+  },
+  179: {
+    fieldId: 179,
+    fieldKey: '179_appreciation_percent',
+    path: ['marketPerformance', 'appreciationPercent'],
+    label: 'Appreciation %'
+  },
+  180: {
+    fieldId: 180,
+    fieldKey: '180_price_trend',
+    path: ['marketPerformance', 'priceTrend'],
+    label: 'Price Trend'
+  },
+  181: {
+    fieldId: 181,
+    fieldKey: '181_rent_zestimate',
+    path: ['marketPerformance', 'rentZestimate'],
+    label: 'Rent Zestimate'
   }
 };
 

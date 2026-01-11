@@ -1641,146 +1641,372 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     notes: 'Special assessments often NOT publicly disclosed - contact HOA directly for verification. MLS listings sometimes disclose pending/recent assessments. Includes year-specific queries (2025/2026) for recent assessment news. One-time vs recurring assessment detection.'
   },
 
-  // ======================
-  // MARKET PERFORMANCE
-  // ======================
+  // ==========================================
+  // MARKET PERFORMANCE (Fields 169-181)
+  // Repurposed 2026-01-11: Fields 169-174 changed from view counts to market metrics
+  // ==========================================
 
-  170: {
-    fieldId: 170,
-    label: 'Market Trend Direction',
+  169: {
+    fieldId: 169,
+    label: 'Months of Inventory',
     category: 'performance',
     searchQueries: [
-      'site:redfin.com/zipcode/{zip}',
-      'site:redfin.com "{city}" "market trends"',
-      'site:realtor.com "{zip}" trends',
-      'site:rockethomes.com "{city}" market'
+      'site:movoto.com "{city}, {state}" months inventory',
+      'site:estately.com "{city}" market supply',
+      'site:homes.com "{city}" inventory months',
+      'site:rockethomes.com "{city}" months supply',
+      'site:realtor.com/local/{zip}',
+      'site:realtor.com/realestateandhomes-search/{city}_{state}/overview',
+      'site:redfin.com/news/data-center/{state}',
+      'site:noradarealestate.com "{city}" months inventory',
+      '"{city}, {state}" months of inventory supply 2026'
     ],
-    prioritySources: ['redfin.com', 'realtor.com', 'rockethomes.com'],
+    prioritySources: ['movoto.com', 'estately.com', 'homes.com', 'rockethomes.com', 'realtor.com', 'redfin.com', 'noradarealestate.com'],
     extractionPatterns: {
-      jsonLdPaths: ['priceChange', 'trendDirection'],
       regexPatterns: [
-        /([+-]?[\d\.]+)%\s*(YoY|year|annual)/i,
-        /up|down|flat|rising|falling/i
+        /([\d\.]+)\s*months?\s+of\s+(inventory|supply)/i,
+        /inventory[:\s]*([\d\.]+)\s*months?/i,
+        /supply[:\s]*([\d\.]+)\s*months?/i
       ],
-      textMarkers: ['YoY', 'year over year', 'trend', 'price change']
+      textMarkers: ['months of inventory', 'months of supply', 'inventory level', 'months supply']
     },
     expectedSuccessRate: 0.85,
     confidenceThreshold: 'high',
     dataLevel: 'zip',
-    fallbackToLLM: true
+    fallbackToLLM: true,
+    notes: '<3 months = Seller\'s Market, 3-6 = Balanced, >6 = Buyer\'s Market. CRITICAL market health indicator.'
   },
 
-  171: {
-    fieldId: 171,
-    label: 'Sale-to-List Ratio',
+  170: {
+    fieldId: 170,
+    label: 'New Listings (30d)',
     category: 'performance',
     searchQueries: [
-      'site:redfin.com/zipcode/{zip}',
-      'site:redfin.com "{city}" "sale to list"',
-      'site:altosresearch.com "{zip}"',
-      'site:homelight.com "{city}" "sale to list"'
+      'site:movoto.com "{city}, {state}" new listings',
+      'site:estately.com "{city}" recently listed',
+      'site:homes.com "{city}" new homes for sale',
+      'site:realtor.com/local/{zip}',
+      'site:redfin.com/news/data-center/{state} "{city}"',
+      '"{city}, {state}" new listings last 30 days 2026'
     ],
-    prioritySources: ['redfin.com', 'altosresearch.com', 'homelight.com'],
+    prioritySources: ['movoto.com', 'estately.com', 'homes.com', 'realtor.com', 'redfin.com'],
     extractionPatterns: {
       regexPatterns: [
-        /([\d\.]+)%.*?(sale|list)/i,
-        /sold.*?([\d\.]+)%.*?asking/i
+        /([\d,]+)\s*new\s+listings?/i,
+        /recently\s+listed[:\s]*([\d,]+)/i,
+        /([\d,]+)\s*homes?\s+listed/i
       ],
-      textMarkers: ['Sale-to-List', 'sold above asking', 'sold below asking']
+      textMarkers: ['new listings', 'recently listed', 'newly listed', 'fresh inventory']
     },
     expectedSuccessRate: 0.80,
     confidenceThreshold: 'medium',
     dataLevel: 'zip',
     fallbackToLLM: true,
-    notes: '>100%=homes selling above asking, <100%=below asking'
+    notes: 'Count of new listings in last 30 days. Rising = increasing supply.'
   },
 
-  174: {
-    fieldId: 174,
-    label: 'Inventory Level',
+  171: {
+    fieldId: 171,
+    label: 'Homes Sold (30d)',
     category: 'performance',
     searchQueries: [
-      'site:altosresearch.com "{zip}"',
-      'site:redfin.com/zipcode/{zip} inventory',
-      'site:realtor.com "{city}" inventory',
-      'site:rockethomes.com "{city}" inventory'
+      'site:movoto.com "{city}, {state}" recently sold',
+      'site:estately.com "{city}" sold homes',
+      'site:realtor.com/local/{zip}',
+      'site:redfin.com/news/data-center/{state} "{city}"',
+      'site:rockethomes.com "{city}" closed sales',
+      '"{city}, {state}" homes sold last 30 days 2026'
     ],
-    prioritySources: ['altosresearch.com', 'redfin.com', 'realtor.com'],
+    prioritySources: ['movoto.com', 'estately.com', 'realtor.com', 'redfin.com', 'rockethomes.com'],
     extractionPatterns: {
       regexPatterns: [
-        /([\d,]+)\s*active listings/i,
-        /inventory[:\s]*([\d,]+)/i
+        /([\d,]+)\s*(homes?|properties)\s+sold/i,
+        /closed\s+sales?[:\s]*([\d,]+)/i,
+        /sold[:\s]*([\d,]+)\s*homes?/i
       ],
-      textMarkers: ['active listings', 'inventory', 'homes for sale']
+      textMarkers: ['homes sold', 'recently sold', 'closed sales', 'properties sold']
+    },
+    expectedSuccessRate: 0.80,
+    confidenceThreshold: 'medium',
+    dataLevel: 'zip',
+    fallbackToLLM: true,
+    notes: 'Count of homes sold in last 30 days. Rising = strong demand.'
+  },
+
+  172: {
+    fieldId: 172,
+    label: 'Median DOM (ZIP)',
+    category: 'performance',
+    searchQueries: [
+      'site:movoto.com "{city}, {state}" days on market',
+      'site:realtor.com/local/{zip}',
+      'site:redfin.com/zipcode/{zip}',
+      'site:redfin.com/news/data-center/{state} "{city}"',
+      'site:homes.com "{city}" median days market',
+      '"{city}, {state}" median days on market 2026'
+    ],
+    prioritySources: ['movoto.com', 'realtor.com', 'redfin.com', 'homes.com'],
+    extractionPatterns: {
+      regexPatterns: [
+        /median\s+days?\s+on\s+market[:\s]*([\d]+)/i,
+        /days?\s+on\s+market[:\s]*([\d]+)/i,
+        /([\d]+)\s*days?\s+to\s+sell/i
+      ],
+      textMarkers: ['median days on market', 'days on market', 'DOM', 'days to sell']
     },
     expectedSuccessRate: 0.75,
     confidenceThreshold: 'medium',
     dataLevel: 'zip',
-    fallbackToLLM: true
+    fallbackToLLM: true,
+    notes: 'ZIP-level median days on market. <20 days = hot market, >60 days = slow market.'
   },
 
-  177: {
-    fieldId: 177,
-    label: 'Price Momentum (3 mo)',
+  173: {
+    fieldId: 173,
+    label: 'Price Reduced %',
     category: 'performance',
     searchQueries: [
+      'site:realtor.com/local/{zip}',
       'site:redfin.com/zipcode/{zip}',
-      'site:redfin.com "{city}" "price" "3 month"',
-      'site:altosresearch.com "{zip}"',
-      'site:neighborhoodscout.com "{zip}" appreciation'
+      'site:redfin.com/news/data-center/{state} "{city}"',
+      'site:movoto.com "{city}" price reduced',
+      '"{city}, {state}" price reductions percentage 2026'
     ],
-    prioritySources: ['redfin.com', 'altosresearch.com', 'neighborhoodscout.com'],
+    prioritySources: ['realtor.com', 'redfin.com', 'movoto.com'],
     extractionPatterns: {
       regexPatterns: [
-        /([+-]?[\d\.]+)%.*?(3.*?month|quarter)/i
+        /([\d\.]+)%.*?price\s+redu/i,
+        /price\s+redu.*?([\d\.]+)%/i,
+        /([\d\.]+)%.*?listings.*?reduced/i
       ],
-      textMarkers: ['3-month', 'quarterly', 'price change', 'momentum']
+      textMarkers: ['price reduced', 'price reductions', 'price cuts', 'reduced price']
     },
     expectedSuccessRate: 0.70,
     confidenceThreshold: 'medium',
     dataLevel: 'zip',
     fallbackToLLM: true,
-    notes: 'Short-term momentum - distinguish from YoY trend (Field 170)'
+    notes: 'Percentage of active listings with price reductions. High % = overpriced market or cooling demand.'
   },
 
-  178: {
-    fieldId: 178,
-    label: 'Buyer vs Seller Market Indicator',
+  174: {
+    fieldId: 174,
+    label: 'Homes Under Contract',
     category: 'performance',
     searchQueries: [
-      'site:realtor.com "{city}" "buyer" OR "seller" market',
+      'site:realtor.com/local/{zip}',
       'site:redfin.com/zipcode/{zip}',
-      'site:rockethomes.com "{city}" market',
-      'site:homelight.com "{city}" market conditions'
+      'site:redfin.com/news/data-center/{state} "{city}"',
+      'site:movoto.com "{city}" pending sales',
+      '"{city}, {state}" homes under contract 2026'
     ],
-    prioritySources: ['realtor.com', 'redfin.com', 'rockethomes.com'],
+    prioritySources: ['realtor.com', 'redfin.com', 'movoto.com'],
     extractionPatterns: {
       regexPatterns: [
-        /buyer'?s market|seller'?s market|balanced market/i
+        /([\d,]+)\s*under\s+contract/i,
+        /([\d,]+)\s*pending/i,
+        /contract[:\s]*([\d,]+)/i
       ],
-      textMarkers: ['Buyer\'s Market', 'Seller\'s Market', 'Balanced Market']
+      textMarkers: ['under contract', 'pending', 'pending sales', 'accepted offers']
+    },
+    expectedSuccessRate: 0.75,
+    confidenceThreshold: 'medium',
+    dataLevel: 'zip',
+    fallbackToLLM: true,
+    notes: 'Count of homes with accepted offers. High count = competitive market.'
+  },
+
+  175: {
+    fieldId: 175,
+    label: 'Market Type',
+    category: 'performance',
+    searchQueries: [
+      'site:movoto.com "{city}, {state}" buyer seller market',
+      'site:realtor.com/local/{zip}',
+      'site:redfin.com/zipcode/{zip}',
+      'site:redfin.com/news/data-center/{state} "{city}"',
+      'site:noradarealestate.com "{city}" market analysis',
+      '"{city}, {state}" buyer market OR seller market 2026'
+    ],
+    prioritySources: ['movoto.com', 'realtor.com', 'redfin.com', 'noradarealestate.com'],
+    extractionPatterns: {
+      regexPatterns: [
+        /buyer'?s market|seller'?s market|balanced market|neutral market/i,
+        /market\s+(favors|advantages)\s+(buyers|sellers)/i,
+        /months?\s+of\s+supply[:\s]*([\d\.]+)/i
+      ],
+      textMarkers: ['Buyer\'s Market', 'Seller\'s Market', 'Balanced Market', 'months of supply', 'market conditions']
+    },
+    expectedSuccessRate: 0.90,
+    confidenceThreshold: 'high',
+    dataLevel: 'zip',
+    fallbackToLLM: true,
+    notes: 'Market classification. Months of supply indicator: <3 = Seller\'s, 3-6 = Balanced, >6 = Buyer\'s.'
+  },
+
+  176: {
+    fieldId: 176,
+    label: 'Avg Sale-to-List %',
+    category: 'performance',
+    searchQueries: [
+      'site:movoto.com "{city}" sale to list',
+      'site:realtor.com/local/{zip}',
+      'site:redfin.com/zipcode/{zip}',
+      'site:redfin.com/news/data-center/{state} "{city}"',
+      'site:homes.com "{city}" sale to list ratio',
+      '"{city}, {state}" sale to list percentage 2026'
+    ],
+    prioritySources: ['movoto.com', 'realtor.com', 'redfin.com', 'homes.com'],
+    extractionPatterns: {
+      regexPatterns: [
+        /sale-to-list.*?([\d\.]+)%/i,
+        /sold.*?([\d\.]+)%.*?(asking|list)/i,
+        /([\d\.]+)%.*?of.*?(asking|list)/i
+      ],
+      textMarkers: ['Sale-to-List', 'sold above asking', 'sold below asking', 'asking price']
     },
     expectedSuccessRate: 0.85,
     confidenceThreshold: 'high',
     dataLevel: 'zip',
-    requiresFields: [96, 171, 95],
     fallbackToLLM: true,
-    notes: 'Can derive from: Months Supply (96), Sale-to-List (171), DOM (95)'
+    notes: '>100% = bidding wars (Seller\'s Market), <100% = negotiations (Buyer\'s Market).'
+  },
+
+  177: {
+    fieldId: 177,
+    label: 'Avg Days to Pending',
+    category: 'performance',
+    searchQueries: [
+      'site:movoto.com "{city}" days to pending',
+      'site:realtor.com/local/{zip}',
+      'site:redfin.com/zipcode/{zip}',
+      'site:redfin.com/news/data-center/{state} "{city}"',
+      '"{city}, {state}" average days pending 2026'
+    ],
+    prioritySources: ['movoto.com', 'realtor.com', 'redfin.com'],
+    extractionPatterns: {
+      regexPatterns: [
+        /([\d]+)\s*days?\s+to\s+pending/i,
+        /pending\s+in\s+([\d]+)\s*days?/i,
+        /avg\s+days\s+to\s+contract[:\s]*([\d]+)/i
+      ],
+      textMarkers: ['days to pending', 'pending in', 'days to contract']
+    },
+    expectedSuccessRate: 0.75,
+    confidenceThreshold: 'medium',
+    dataLevel: 'zip',
+    fallbackToLLM: true,
+    notes: 'Average days from listing to pending. <10 = very competitive, >30 = slower market.'
+  },
+
+  178: {
+    fieldId: 178,
+    label: 'Multiple Offers Likelihood',
+    category: 'performance',
+    searchQueries: [
+      'site:movoto.com "{city}" multiple offers',
+      'site:realtor.com/local/{zip}',
+      'site:redfin.com/zipcode/{zip}',
+      '"{city}, {state}" bidding wars 2026'
+    ],
+    prioritySources: ['movoto.com', 'realtor.com', 'redfin.com'],
+    extractionPatterns: {
+      regexPatterns: [
+        /multiple\s+offers?/i,
+        /bidding\s+wars?/i,
+        /competitive\s+offers?/i
+      ],
+      textMarkers: ['multiple offers', 'bidding wars', 'competitive offers']
+    },
+    expectedSuccessRate: 0.60,
+    confidenceThreshold: 'medium',
+    dataLevel: 'zip',
+    fallbackToLLM: true,
+    requiresFields: [175, 176, 177],
+    notes: 'LLM infers from: Market Type (175), Sale-to-List % (176), Days to Pending (177). Direct mentions rare.'
+  },
+
+  179: {
+    fieldId: 179,
+    label: 'Appreciation %',
+    category: 'performance',
+    searchQueries: [
+      'site:movoto.com "{city}" appreciation',
+      'site:realtor.com/local/{zip}',
+      'site:redfin.com/news/data-center/{state} "{city}"',
+      'site:homes.com "{city}" home value trends',
+      'site:neighborhoodscout.com "{city}" appreciation',
+      '"{city}, {state}" home appreciation 2026'
+    ],
+    prioritySources: ['movoto.com', 'realtor.com', 'redfin.com', 'homes.com', 'neighborhoodscout.com'],
+    extractionPatterns: {
+      regexPatterns: [
+        /([\d\.]+)%\s*appreciation/i,
+        /appreciated\s+([\d\.]+)%/i,
+        /([\d\.]+)%\s*year\s+over\s+year/i
+      ],
+      textMarkers: ['appreciation', 'YoY', 'year over year', 'home value increase']
+    },
+    expectedSuccessRate: 0.85,
+    confidenceThreshold: 'high',
+    dataLevel: 'zip',
+    fallbackToLLM: true,
+    notes: 'Year-over-year appreciation percentage. Calculated field option: (Current Price - Last Sale Price) / Last Sale Price.'
+  },
+
+  180: {
+    fieldId: 180,
+    label: 'Price Trend',
+    category: 'performance',
+    searchQueries: [
+      'site:movoto.com "{city}" price trends',
+      'site:realtor.com/local/{zip}',
+      'site:redfin.com/news/data-center/{state} "{city}"',
+      'site:homes.com "{city}" market trends',
+      'site:neighborhoodscout.com "{city}" trends',
+      '"{city}, {state}" home prices rising falling 2026'
+    ],
+    prioritySources: ['movoto.com', 'realtor.com', 'redfin.com', 'homes.com', 'neighborhoodscout.com'],
+    extractionPatterns: {
+      regexPatterns: [
+        /falling|declining|dropping|decreasing/i,
+        /stable|flat|unchanged|steady/i,
+        /rising|increasing|growing|climbing|appreciating/i,
+        /([+-]?[\d\.]+)%\s*(YoY|year|annual)/i
+      ],
+      textMarkers: ['price trend', 'home values', 'appreciation', 'YoY', 'falling', 'rising', 'stable']
+    },
+    expectedSuccessRate: 0.90,
+    confidenceThreshold: 'high',
+    dataLevel: 'zip',
+    fallbackToLLM: true,
+    notes: 'LLM classifies as Falling/Stable/Rising. <-2% YoY = Falling, -2% to +2% = Stable, >+2% = Rising.'
   },
 
   181: {
     fieldId: 181,
-    label: 'Market Volatility Score',
+    label: 'Rent Zestimate',
     category: 'performance',
-    searchQueries: [],
-    prioritySources: [],
-    extractionPatterns: {},
-    expectedSuccessRate: 0.95,
-    confidenceThreshold: 'high',
-    dataLevel: 'zip',
-    requiresFields: [170, 171, 174, 177, 178],
-    calculationOnly: true,
-    notes: 'Aggregate of Fields 170-180. Scale 0-100 (higher=more volatile)'
+    searchQueries: [
+      'site:zillow.com "{address}" rent zestimate',
+      'site:zillow.com "{address}" rental',
+      'site:rentometer.com "{address}"',
+      'site:zumper.com "{city}" rental rates',
+      '"{address}" rental estimate 2026'
+    ],
+    prioritySources: ['zillow.com', 'rentometer.com', 'zumper.com'],
+    extractionPatterns: {
+      regexPatterns: [
+        /rent\s+zestimate[:\s]*\$?([\d,]+)/i,
+        /rental\s+estimate[:\s]*\$?([\d,]+)/i,
+        /\$?([\d,]+)\/mo/i
+      ],
+      textMarkers: ['Rent Zestimate', 'rental estimate', 'rental value', '/mo']
+    },
+    expectedSuccessRate: 0.80,
+    confidenceThreshold: 'medium',
+    dataLevel: 'address',
+    fallbackToLLM: true,
+    notes: 'Property-specific rental estimate from Zillow. Used for Field 99 (Rental Yield) calculation.'
   }
 };
 
