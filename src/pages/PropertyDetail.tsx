@@ -25,6 +25,7 @@ import {
   Hammer,
   School,
   TrendingUp,
+  TrendingDown,
   Wifi,
   Sun,
   Zap,
@@ -111,11 +112,20 @@ const FIELD_KEY_TO_ID_MAP: Record<string, number | string> = {
   '136_pet_policy': 136,
   '137_age_restrictions': 137,
   '138_special_assessments': 138,
-  '170_market_trend_direction': 170,
-  '171_sale_to_list_ratio': 171,
-  '174_inventory_level': 174,
-  '177_price_momentum': 177,
-  '178_buyer_vs_seller_market': 178,
+  // Market Performance (Fields 169-181) - Updated 2026-01-11
+  '169_months_of_inventory': 169,
+  '170_new_listings_30d': 170,
+  '171_homes_sold_30d': 171,
+  '172_median_dom_zip': 172,
+  '173_price_reduced_percent': 173,
+  '174_homes_under_contract': 174,
+  '175_market_type': 175,
+  '176_avg_sale_to_list_percent': 176,
+  '177_avg_days_to_pending': 177,
+  '178_multiple_offers_likelihood': 178,
+  '179_appreciation_percent': 179,
+  '180_price_trend': 180,
+  '181_rent_zestimate': 181,
 };
 
 const containerVariants = {
@@ -2367,19 +2377,18 @@ export default function PropertyDetail() {
               </div>
             </Section>
 
-            {/* Section W: Market Performance (Fields 169-181) - ADDED 2026-01-08 */}
+            {/* Section W: Market Performance (Fields 169-181) - Updated 2026-01-11 */}
             <Section title="Market Performance" icon={<TrendingUp className="w-6 h-6" />} defaultExpanded={false}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Portal Views (169-172) */}
-                {renderDataField("Zillow Views", fullProperty.marketPerformance?.zillowViews, "number", <Eye className="w-5 h-5" />, "169_zillow_views")}
-                {renderDataField("Redfin Views", fullProperty.marketPerformance?.redfinViews, "number", <Eye className="w-5 h-5" />, "170_redfin_views")}
-                {renderDataField("Homes.com Views", fullProperty.marketPerformance?.homesViews, "number", <Eye className="w-5 h-5" />, "171_homes_views")}
-                {renderDataField("Realtor.com Views", fullProperty.marketPerformance?.realtorViews, "number", <Eye className="w-5 h-5" />, "172_realtor_views")}
+                {/* Market Metrics (169-174) */}
+                {renderDataField("Months of Inventory", fullProperty.marketPerformance?.monthsOfInventory, "number", <TrendingUp className="w-5 h-5" />, "169_months_of_inventory")}
+                {renderDataField("New Listings (30d)", fullProperty.marketPerformance?.newListings30d, "number", <Home className="w-5 h-5" />, "170_new_listings_30d")}
+                {renderDataField("Homes Sold (30d)", fullProperty.marketPerformance?.homesSold30d, "number", <CheckCircle className="w-5 h-5" />, "171_homes_sold_30d")}
+                {renderDataField("Median DOM (ZIP)", fullProperty.marketPerformance?.medianDomZip, "number", <Calendar className="w-5 h-5" />, "172_median_dom_zip")}
+                {renderDataField("Price Reduced %", fullProperty.marketPerformance?.priceReducedPercent, "percent", <TrendingDown className="w-5 h-5" />, "173_price_reduced_percent")}
+                {renderDataField("Homes Under Contract", fullProperty.marketPerformance?.homesUnderContract, "number", <FileText className="w-5 h-5" />, "174_homes_under_contract")}
 
-                {/* Field 173 is calculated total views */}
-
-                {/* Saves/Favorites & Market Metrics (174-181) */}
-                {renderDataField("Saves/Favorites", fullProperty.marketPerformance?.savesFavorites, "number", <Bookmark className="w-5 h-5" />, "174_saves_favorites")}
+                {/* Market Analysis (175-181) */}
                 {renderDataField("Market Type", fullProperty.marketPerformance?.marketType, "text", <TrendingUp className="w-5 h-5" />, "175_market_type")}
                 {renderDataField("Avg Sale-to-List %", fullProperty.marketPerformance?.avgSaleToListPercent, "percent", <Target className="w-5 h-5" />, "176_avg_sale_to_list_percent")}
                 {renderDataField("Avg Days to Pending", fullProperty.marketPerformance?.avgDaysToPending, "number", <Calendar className="w-5 h-5" />, "177_avg_days_to_pending")}
