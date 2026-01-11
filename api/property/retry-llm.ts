@@ -35,9 +35,9 @@ const missingFieldsList = {
     "106_water_provider", "107_avg_water_bill", "109_natural_gas", "110_trash_provider",
     "111_internet_providers_top3", "114_cable_tv_provider",
     "133_ev_charging", "134_smart_home_features", "135_accessibility_modifications", "138_special_assessments",
-    "169_zillow_views", "170_redfin_views", "171_homes_views", "172_realtor_views",
-    "174_saves_favorites", "175_market_type", "176_avg_sale_to_list_percent",
-    "177_avg_days_to_pending", "178_multiple_offers_likelihood", "180_price_trend", "181_rent_zestimate"
+    "169_months_of_inventory", "170_new_listings_30d", "171_homes_sold_30d", "172_median_dom_zip",
+    "173_price_reduced_percent", "174_homes_under_contract", "175_market_type", "176_avg_sale_to_list_percent",
+    "177_avg_days_to_pending", "178_multiple_offers_likelihood", "179_appreciation_percent", "180_price_trend", "181_rent_zestimate"
   ]
 };
 const missingFieldsRules = {
@@ -75,20 +75,20 @@ const missingFieldsRules = {
     "111_internet_providers_top3": { type: "array", definition: "Top 3 internet providers available at this address with max speeds. Example: ['Spectrum (400 Mbps)', 'AT&T Fiber (1 Gbps)', 'T-Mobile 5G']." },
     "114_cable_tv_provider": { type: "string", definition: "Primary cable TV provider available at this address." },
 
-    // Listing Activity & Views
-    "169_zillow_views": { type: "number", definition: "Number of views on Zillow listing (if active listing). Return null if not listed or not available." },
-    "170_redfin_views": { type: "number", definition: "Number of views on Redfin listing (if active listing). Return null if not listed or not available." },
-    "171_homes_views": { type: "number", definition: "Number of views on Homes.com listing (if active listing). Return null if not listed or not available." },
-    "172_realtor_views": { type: "number", definition: "Number of views on Realtor.com listing (if active listing). Return null if not listed or not available." },
-    "174_saves_favorites": { type: "number", definition: "Number of times listing was saved/favorited across platforms. Return null if not available." },
-
-    // Market Trends
-    "175_market_type": { type: "string", definition: "Current market classification: 'Hot', 'Warm', 'Cool', or 'Cold' based on days on market and sale-to-list ratio." },
-    "176_avg_sale_to_list_percent": { type: "number", definition: "Average sale price as percentage of list price in this area (e.g., 98.5 means homes sell for 98.5% of asking)." },
-    "177_avg_days_to_pending": { type: "number", definition: "Average number of days from listing to pending status in this ZIP/neighborhood." },
-    "178_multiple_offers_likelihood": { type: "string", definition: "Likelihood of multiple offers: 'High' (>50% of listings), 'Medium' (25-50%), 'Low' (<25%)." },
-    "180_price_trend": { type: "string", definition: "Price trend direction: 'Rising', 'Stable', or 'Declining' based on YoY median price change." },
-    "181_rent_zestimate": { type: "number", definition: "Zillow's Rent Zestimate (estimated monthly rent) in USD. Search 'site:zillow.com [address] rent zestimate'." },
+    // Market Performance Metrics (Fields 169-181) - Updated 2026-01-11
+    "169_months_of_inventory": { type: "number", definition: "Months of housing inventory in the ZIP/city. <3 = Seller's Market, 3-6 = Balanced, >6 = Buyer's Market." },
+    "170_new_listings_30d": { type: "number", definition: "Number of new listings in the ZIP/city in the last 30 days. Rising count indicates increasing supply." },
+    "171_homes_sold_30d": { type: "number", definition: "Number of homes sold in the ZIP/city in the last 30 days. Rising count indicates strong demand." },
+    "172_median_dom_zip": { type: "number", definition: "Median days on market for homes in this ZIP code. <20 = hot market, >60 = slow market." },
+    "173_price_reduced_percent": { type: "number", definition: "Percentage of active listings with price reductions in this ZIP. High % indicates overpriced market or cooling demand." },
+    "174_homes_under_contract": { type: "number", definition: "Number of homes currently under contract (pending) in the ZIP. High count indicates competitive market." },
+    "175_market_type": { type: "string", definition: "Market classification: 'Buyer's Market', 'Balanced Market', or 'Seller's Market' based on months of supply." },
+    "176_avg_sale_to_list_percent": { type: "number", definition: "Average sale price as percentage of list price (e.g., 102 = homes selling 2% above asking). >100% = bidding wars." },
+    "177_avg_days_to_pending": { type: "number", definition: "Average days from listing to pending status in ZIP. <10 = very competitive, >30 = slower market." },
+    "178_multiple_offers_likelihood": { type: "string", definition: "Likelihood of multiple offers: 'High', 'Medium', or 'Low'. Infer from Market Type, Sale-to-List %, Days to Pending." },
+    "179_appreciation_percent": { type: "number", definition: "Year-over-year home appreciation percentage in ZIP (e.g., 5.2 = 5.2% YoY growth)." },
+    "180_price_trend": { type: "string", definition: "Price trend: 'Falling' (<-2% YoY), 'Stable' (-2% to +2%), or 'Rising' (>+2% YoY)." },
+    "181_rent_zestimate": { type: "number", definition: "Zillow Rent Zestimate for this property in USD/month. Search 'site:zillow.com [address] rent zestimate'." },
 
     // Structure & Systems (ADDED 2026-01-08)
     "40_roof_age_est": { type: "string", definition: "Estimated roof age (e.g., '5-10 years', 'New 2020'). Extract from permits or calculate from year built." },
@@ -361,13 +361,13 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   '167_interior_features': 'multiselect', 'interior_features': 'multiselect',
   '168_exterior_features': 'multiselect', 'exterior_features': 'multiselect',
 
-  // GROUP 23: Market Performance (Fields 169-181) - ADDED 2026-01-08
-  '169_zillow_views': 'number', 'zillow_views': 'number',
-  '170_redfin_views': 'number', 'redfin_views': 'number',
-  '171_homes_views': 'number', 'homes_views': 'number',
-  '172_realtor_views': 'number', 'realtor_views': 'number',
-  '173_listing_score': 'number', 'listing_score': 'number',
-  '174_saves_favorites': 'number', 'saves_favorites': 'number',
+  // GROUP 23: Market Performance (Fields 169-181) - Updated 2026-01-11
+  '169_months_of_inventory': 'number', 'months_of_inventory': 'number',
+  '170_new_listings_30d': 'number', 'new_listings_30d': 'number',
+  '171_homes_sold_30d': 'number', 'homes_sold_30d': 'number',
+  '172_median_dom_zip': 'number', 'median_dom_zip': 'number',
+  '173_price_reduced_percent': 'percentage', 'price_reduced_percent': 'percentage',
+  '174_homes_under_contract': 'number', 'homes_under_contract': 'number',
   '175_market_type': 'select', 'market_type': 'select',
   '176_avg_sale_to_list_percent': 'percentage', 'avg_sale_to_list_percent': 'percentage',
   '177_avg_days_to_pending': 'number', 'avg_days_to_pending': 'number',
@@ -703,15 +703,17 @@ You ONLY search for fields that Tier 3 did NOT find. Focus on fields that requir
     "110_trash_provider": <string|null>,
     "111_internet_providers_top3": <array|null>,
     "114_cable_tv_provider": <string|null>,
-    "169_zillow_views": <number|null>,
-    "170_redfin_views": <number|null>,
-    "171_homes_views": <number|null>,
-    "172_realtor_views": <number|null>,
-    "174_saves_favorites": <number|null>,
+    "169_months_of_inventory": <number|null>,
+    "170_new_listings_30d": <number|null>,
+    "171_homes_sold_30d": <number|null>,
+    "172_median_dom_zip": <number|null>,
+    "173_price_reduced_percent": <number|null>,
+    "174_homes_under_contract": <number|null>,
     "175_market_type": <string|null>,
     "176_avg_sale_to_list_percent": <number|null>,
     "177_avg_days_to_pending": <number|null>,
     "178_multiple_offers_likelihood": <string|null>,
+    "179_appreciation_percent": <number|null>,
     "180_price_trend": <string|null>,
     "181_rent_zestimate": <number|null>
   },
@@ -861,7 +863,7 @@ Insurance: 97
 Utilities: 104-107, 109, 110, 111, 114
 Location: 81, 82
 Comparables: 103
-Portal Views: 169-172, 174
+Market Performance: 169-181
 Structure: 40, 46
 Permits: 59-62
 Features: 133-135, 138
@@ -904,15 +906,17 @@ Features: 133-135, 138
     "134_smart_home_features": <string|null>,
     "135_accessibility_modifications": <string|null>,
     "138_special_assessments": <string|null>,
-    "169_zillow_views": <number|null>,
-    "170_redfin_views": <number|null>,
-    "171_homes_views": <number|null>,
-    "172_realtor_views": <number|null>,
-    "174_saves_favorites": <number|null>,
+    "169_months_of_inventory": <number|null>,
+    "170_new_listings_30d": <number|null>,
+    "171_homes_sold_30d": <number|null>,
+    "172_median_dom_zip": <number|null>,
+    "173_price_reduced_percent": <number|null>,
+    "174_homes_under_contract": <number|null>,
     "175_market_type": <string|null>,
     "176_avg_sale_to_list_percent": <number|null>,
     "177_avg_days_to_pending": <number|null>,
     "178_multiple_offers_likelihood": <string|null>,
+    "179_appreciation_percent": <number|null>,
     "180_price_trend": <string|null>,
     "181_rent_zestimate": <number|null>
   },
@@ -1275,8 +1279,8 @@ HARD RULES (EVIDENCE FIREWALL)
    - "[ADDRESS] commute to [NEAREST MAJOR CITY] downtown" → 82_commute_to_city_center
 
 8) Market Activity (if property is actively listed):
-   - "site:zillow.com [ADDRESS]" → 169_zillow_views, 174_saves_favorites
-   - "site:redfin.com [ADDRESS]" → 170_redfin_views
+   - "site:zillow.com [ADDRESS]" → 169_months_of_inventory, 170_new_listings_30d
+   - "site:redfin.com [ADDRESS]" → 171_homes_sold_30d
    - "[ZIP CODE] sale to list price ratio" → 176_avg_sale_to_list_percent
    - "[ZIP CODE] days to pending" → 177_avg_days_to_pending
    - "[ZIP CODE] multiple offers" → 178_multiple_offers_likelihood
@@ -1475,11 +1479,11 @@ PROPERTY FEATURES FIELDS:
 - 138_special_assessments: Special assessments or HOA assessments
 
 MARKET ACTIVITY FIELDS (if property is actively listed):
-- 169_zillow_views: Number of Zillow views
-- 170_redfin_views: Number of Redfin views
-- 171_homes_views: Number of Homes.com views
-- 172_realtor_views: Number of Realtor.com views
-- 174_saves_favorites: Number of saves/favorites
+- 169_months_of_inventory: Months of housing inventory in ZIP/city
+- 171_homes_sold_30d: Number of Redfin views
+- 171_homes_sold_30d: Homes sold in last 30 days
+- 172_median_dom_zip: Median days on market (ZIP)
+- 174_homes_under_contract: Homes currently under contract
 
 SEARCH STRATEGY:
 1. SPECIFIC AVM SEARCHES (search for EACH AVM individually):

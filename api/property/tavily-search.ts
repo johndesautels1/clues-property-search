@@ -397,31 +397,12 @@ export async function searchPortalViews(address: string): Promise<Record<string,
     { includeDomains: ['zillow.com', 'redfin.com', 'realtor.com', 'homes.com'], numResults: 5 }
   );
 
-  for (const r of result.results) {
-    const viewsMatch = r.content.match(/(\d+(?:,\d+)?)\s*views/i);
-    const savesMatch = r.content.match(/(\d+(?:,\d+)?)\s*(?:saves|favorites)/i);
-
-    if (viewsMatch) {
-      const views = parseInt(viewsMatch[1].replace(/,/g, ''));
-      if (r.url.includes('zillow') && !fields['169_zillow_views']) {
-        fields['169_zillow_views'] = { value: views, source: 'Tavily (Zillow)', confidence: 'Medium' };
-      } else if (r.url.includes('redfin') && !fields['170_redfin_views']) {
-        fields['170_redfin_views'] = { value: views, source: 'Tavily (Redfin)', confidence: 'Medium' };
-      } else if (r.url.includes('homes.com') && !fields['171_homes_views']) {
-        fields['171_homes_views'] = { value: views, source: 'Tavily (Homes.com)', confidence: 'Medium' };
-      } else if (r.url.includes('realtor') && !fields['172_realtor_views']) {
-        fields['172_realtor_views'] = { value: views, source: 'Tavily (Realtor.com)', confidence: 'Medium' };
-      }
-    }
-
-    if (savesMatch && !fields['174_saves_favorites']) {
-      fields['174_saves_favorites'] = {
-        value: parseInt(savesMatch[1].replace(/,/g, '')),
-        source: 'Tavily',
-        confidence: 'Medium',
-      };
-    }
-  }
+  // REMOVED 2026-01-11: View extraction logic for fields 169-174
+  // Fields 169-174 repurposed from portal views to market metrics
+  // View counts are no longer collected - fields now contain:
+  // 169: months_of_inventory, 170: new_listings_30d, 171: homes_sold_30d
+  // 172: median_dom_zip, 173: price_reduced_percent, 174: homes_under_contract
+  // Extraction now handled by field-specific configs in tavily-field-config.ts
 
   return fields;
 }
