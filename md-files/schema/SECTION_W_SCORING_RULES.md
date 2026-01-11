@@ -15,16 +15,18 @@
 ## Field Scoring Rules
 
 ### Perspective: BUYER-CENTRIC
-These scores assume the user is a BUYER evaluating properties. High market interest (views) can indicate desirable properties but also competition.
+These scores assume the user is a BUYER evaluating properties. Market metrics indicate supply/demand dynamics and competition level.
+
+**NOTE:** Fields 169-174 repurposed 2026-01-11 from portal views to market metrics.
 
 | Field # | Key | Normalization | Logic | Score Range |
 |---------|-----|---------------|-------|-------------|
-| 169 | zillow_views | HIGHER_BETTER | More views = market validation | 0-100 relative |
-| 170 | redfin_views | HIGHER_BETTER | More views = market validation | 0-100 relative |
-| 171 | homes_views | HIGHER_BETTER | More views = market validation | 0-100 relative |
-| 172 | realtor_views | HIGHER_BETTER | More views = market validation | 0-100 relative |
-| 173 | total_views | HIGHER_BETTER | Sum of 169-172, normalized | 0-100 relative |
-| 174 | saves_favorites | HIGHER_BETTER | More saves = desirability | 0-100 relative |
+| 169 | months_of_inventory | HIGHER_BETTER | More inventory = buyer leverage (buyer's market) | 0-100 (>6mo = 100, <3mo = 0) |
+| 170 | new_listings_30d | HIGHER_BETTER | More supply = buyer options | 0-100 relative |
+| 171 | homes_sold_30d | LOWER_BETTER* | High sales = competitive market | 0-100 relative |
+| 172 | median_dom_zip | HIGHER_BETTER | Slower market = buyer leverage | 0-100 relative |
+| 173 | price_reduced_percent | HIGHER_BETTER | More reductions = buyer leverage | 0-100 relative |
+| 174 | homes_under_contract | LOWER_BETTER | Less competition = buyer advantage | 0-100 relative |
 | 175 | market_type | ENUM_RANK | Buyer>Balanced>Seller (buyer benefits from buyer's market) | 100/50/25 |
 | 176 | avg_sale_to_list_percent | LOWER_BETTER | Below 100% = buyer leverage | 0-100 (97-103% = neutral) |
 | 177 | avg_days_to_pending | HIGHER_BETTER* | More time = less competition for buyer | 0-100 relative |
@@ -37,20 +39,48 @@ These scores assume the user is a BUYER evaluating properties. High market inter
 
 ## Detailed Scoring Logic
 
-### Fields 169-173: Portal Views (HIGHER_BETTER)
+### Field 169: Months of Inventory (HIGHER_BETTER)
 ```
-Score = ((value - min) / (max - min)) * 100
+Score = value > 6 ? 100 : value < 3 ? 0 : ((value - 3) / 3) * 100
 ```
-- Compared RELATIVE to the other 2 properties in comparison
-- More views indicates market validation and desirability
-- If all values equal: score = 50
+- >6 months = Buyer's Market (score 100)
+- 3-6 months = Balanced (score 0-100 scaled)
+- <3 months = Seller's Market (score 0)
 
-### Field 174: Saves/Favorites (HIGHER_BETTER)
+### Field 170: New Listings 30d (HIGHER_BETTER)
 ```
 Score = ((value - min) / (max - min)) * 100
 ```
-- Indicates how many buyers have saved the property
-- Higher = more desirable to other buyers
+- More new listings = more buyer options and leverage
+- Compared relative to other properties' ZIP codes
+
+### Field 171: Homes Sold 30d (LOWER_BETTER)
+```
+Score = 100 - ((value - min) / (max - min)) * 100
+```
+- High sales = competitive market (lower buyer score)
+- Low sales = less competition (higher buyer score)
+
+### Field 172: Median DOM ZIP (HIGHER_BETTER)
+```
+Score = ((value - min) / (max - min)) * 100
+```
+- Higher DOM = slower market = buyer leverage
+- <20 days = hot market, >60 days = slow market
+
+### Field 173: Price Reduced % (HIGHER_BETTER)
+```
+Score = ((value - min) / (max - min)) * 100
+```
+- High % = many price reductions = buyer leverage
+- Indicates overpriced market or cooling demand
+
+### Field 174: Homes Under Contract (LOWER_BETTER)
+```
+Score = 100 - ((value - min) / (max - min)) * 100
+```
+- High count = competitive market (lower buyer score)
+- Low count = less competition (higher buyer score)
 
 ### Field 175: Market Type (ENUM_RANK)
 ```typescript

@@ -352,12 +352,12 @@
 
 | # | Field Name | Primary Source | Status | Notes |
 |---|------------|---------------|--------|-------|
-| 169 | `zillow_views` | 🟡 Tavily/Perplexity/LLMs | ⚠️ Add to all LLMs | Zillow listing views - **ADD TO ALL LLMS** |
-| 170 | `redfin_views` | 🟡 Tavily/Perplexity/LLMs | ⚠️ Add to all LLMs | Redfin listing views - **ADD TO ALL LLMS** |
-| 171 | `homes_views` | 🟡 Tavily/Perplexity/LLMs | ⚠️ Add to all LLMs | Homes.com listing views - **ADD TO ALL LLMS** |
-| 172 | `realtor_views` | 🟡 Tavily/Perplexity/LLMs | ⚠️ Add to all LLMs | Realtor.com listing views - **ADD TO ALL LLMS** |
-| 173 | `total_views` | 🧮 Calculated | ✅ Calculated | Sum of Fields 169-172 |
-| 174 | `saves_favorites` | 🟡 Tavily/Perplexity/LLMs | ⚠️ Add to all LLMs | Portal save counts - **ADD TO ALL LLMS** |
+| 169 | `months_of_inventory` | 🟡 Tavily/Perplexity/LLMs | ✅ Implemented | ZIP/city inventory months - market health indicator |
+| 170 | `new_listings_30d` | 🟡 Tavily/Perplexity/LLMs | ✅ Implemented | New listings last 30 days - supply indicator |
+| 171 | `homes_sold_30d` | 🟡 Tavily/Perplexity/LLMs | ✅ Implemented | Homes sold last 30 days - demand indicator |
+| 172 | `median_dom_zip` | 🟡 Tavily/Perplexity/LLMs | ✅ Implemented | Median days on market (ZIP) - velocity indicator |
+| 173 | `price_reduced_percent` | 🟡 Tavily/Perplexity/LLMs | ✅ Implemented | % listings with price reductions - market pressure indicator |
+| 174 | `homes_under_contract` | 🟡 Tavily/Perplexity/LLMs | ✅ Implemented | Homes currently pending - competition indicator |
 | 175 | `market_type` | 🟡 Perplexity/LLMs | ✅ LLM fill | Hot/Warm/Cool/Cold classification |
 | 176 | `avg_sale_to_list_percent` | 🟡 Perplexity/LLMs | ✅ LLM fill | Redfin market data |
 | 177 | `avg_days_to_pending` | 🟡 Perplexity/LLMs | ✅ LLM fill | Market timing data |
