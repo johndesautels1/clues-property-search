@@ -628,6 +628,11 @@ export default function AddProperty() {
 
         const fullPropertyData = convertApiResponseToFullProperty(fields, scrapedProperty.id, {}, []);
         setSaveStatus('saving');
+
+        // BUGFIX 2026-01-11: Clear any existing property with this ID to prevent
+        // data contamination when using cached/accumulated fields after error
+        clearProperty(scrapedProperty.id);
+
         addProperty(scrapedProperty, fullPropertyData);
         setLastAddedId(scrapedProperty.id);
         setSaveStatus('saved');
@@ -1415,6 +1420,9 @@ export default function AddProperty() {
       setProgress(75);
 
       // Add to store with PDF data first
+      // BUGFIX 2026-01-11: Clear any existing property with this ID to prevent
+      // data contamination when re-uploading same property PDF
+      clearProperty(propertyId);
       addProperty(propertyCard, fullProperty);
       setLastAddedId(propertyId);
 

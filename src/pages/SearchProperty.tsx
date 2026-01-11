@@ -19,7 +19,7 @@ const generateId = () => Date.now().toString(36) + Math.random().toString(36).su
 
 export default function SearchProperty() {
   const navigate = useNavigate();
-  const { addProperty } = usePropertyStore();
+  const { addProperty, clearProperty } = usePropertyStore();
   const currentUser = useCurrentUser();
   const [showSuccess, setShowSuccess] = useState(false);
   const [savedPropertyId, setSavedPropertyId] = useState<string | null>(null);
@@ -123,6 +123,9 @@ export default function SearchProperty() {
     }
 
     // Save to store with full property data
+    // BUGFIX 2026-01-11: Clear any existing property with this ID to prevent
+    // data contamination from previous searches
+    clearProperty(propertyId);
     addProperty(newProperty, fullProperty);
     setSavedPropertyId(propertyId);
     setShowSuccess(true);
