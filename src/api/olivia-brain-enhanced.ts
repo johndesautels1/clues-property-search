@@ -17,6 +17,8 @@ import type {
 import type { Property } from '@/types/property';
 import {
   buildMathematicalAnalysisPrompt,
+  buildLevelPrompt,
+  buildAggregationPrompt,
   validateOliviaResponse,
   type ValidationResult,
 } from './olivia-math-engine';
@@ -857,8 +859,6 @@ export async function analyzeWithOliviaProgressive(
   console.log(`📊 Analyzing ${request.properties.length} properties across 181 fields`);
   console.log(`🎯 Buyer profile: ${request.buyerProfile || 'General'}`);
 
-  const { buildLevelPrompt, buildAggregationPrompt } = await import('./olivia-math-engine');
-
   // ============================================================================
   // LEVEL 1: Critical Decision Fields (Fields 1-56)
   // ============================================================================
@@ -1018,7 +1018,6 @@ export async function analyzeWithOliviaProgressive(
   // VALIDATION
   // ============================================================================
   console.log('\n🔍 Validating complete 181-field analysis...');
-  const { validateOliviaResponse } = await import('./olivia-math-engine');
   const validation = validateOliviaResponse(result);
 
   if (!validation.isValid) {
