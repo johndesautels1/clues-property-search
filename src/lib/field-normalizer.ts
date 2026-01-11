@@ -901,12 +901,12 @@ export function normalizeToProperty(
     },
     // NEW: Market Performance fields (169-181) - Section W
     marketPerformance: {
-      zillowViews: emptyDataField(),
-      redfinViews: emptyDataField(),
-      homesViews: emptyDataField(),
-      realtorViews: emptyDataField(),
-      totalViews: emptyDataField(),
-      savesFavorites: emptyDataField(),
+      monthsOfInventory: emptyDataField(),
+      newListings30d: emptyDataField(),
+      homesSold30d: emptyDataField(),
+      medianDomZip: emptyDataField(),
+      priceReducedPercent: emptyDataField(),
+      homesUnderContract: emptyDataField(),
       marketType: emptyDataField(),
       avgSaleToListPercent: emptyDataField(),
       avgDaysToPending: emptyDataField(),

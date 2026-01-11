@@ -44,11 +44,12 @@ const cluesMissingFieldsList = {
     "134_smart_home_features",
     "135_accessibility_modifications",
     "138_special_assessments",
-    "169_zillow_views",
-    "170_redfin_views",
-    "171_homes_views",
-    "172_realtor_views",
-    "174_saves_favorites",
+    "169_months_of_inventory",
+    "170_new_listings_30d",
+    "171_homes_sold_30d",
+    "172_median_dom_zip",
+    "173_price_reduced_percent",
+    "174_homes_under_contract",
     "175_market_type",
     "176_avg_sale_to_list_percent",
     "177_avg_days_to_pending",
@@ -163,11 +164,12 @@ RETURN JSON MATCHING THIS SCHEMA:
     "134_smart_home_features": <string|null>,
     "135_accessibility_modifications": <string|null>,
     "138_special_assessments": <string|null>,
-    "169_zillow_views": <number|null>,
-    "170_redfin_views": <number|null>,
-    "171_homes_views": <number|null>,
-    "172_realtor_views": <number|null>,
-    "174_saves_favorites": <number|null>,
+    "169_months_of_inventory": <number|null>,
+    "170_new_listings_30d": <number|null>,
+    "171_homes_sold_30d": <number|null>,
+    "172_median_dom_zip": <number|null>,
+    "173_price_reduced_percent": <number|null>,
+    "174_homes_under_contract": <number|null>,
     "175_market_type": <string|null>,
     "176_avg_sale_to_list_percent": <number|null>,
     "177_avg_days_to_pending": <number|null>,
@@ -213,11 +215,11 @@ You must analyze properties across the FULL 181-field schema organized into 3 le
 **LEVEL 3 - REMAINING FIELDS (113-181):**
 - Utilities (113-116), Environment & Risk (117-130), Additional Features (131-138)
 - Parking (139-143), Building (144-148), Legal (149-154), Waterfront (155-159)
-- Leasing (160-165), Community (166-168), Portal Views & Market Velocity (169-181)
+- Leasing (160-165), Community (166-168), Market Performance (169-181)
 
 ### 47 HIGH-VELOCITY FIELDS (Web-Searched Daily)
 - AVMs: Fields 12, 16a-16f (7 fields)
-- Portal Views: Fields 169-172, 174 (5 fields)
+- Market Performance: Fields 169-174 (6 fields)
 - Market Indicators: Fields 91, 92, 95, 96, 175-178, 180 (9 fields)
 - Rental Estimates: Fields 98, 181 (2 fields)
 - Utilities: Fields 104-107, 110, 111, 114 (8 fields)
@@ -233,7 +235,7 @@ You must analyze properties across the FULL 181-field schema organized into 3 le
 - financial_roi: cap rate, rental yield, appreciation
 
 ### FRICTION IDENTIFICATION
-If Field 174 (Saves/Favorites) is high but Field 95 (Days on Market) is also high, identify this as a "Price-to-Condition Mismatch."
+If Field 174 (Homes Under Contract) is high but Field 95 (Days on Market) is also high, this may indicate market friction.
 
 ### THE "SUPERIOR COMP"
 Explicitly state which of the 3 Comps is the most statistically relevant "Superior Comp."`;
@@ -379,8 +381,8 @@ export function validateGeminiFieldCompleterResponse(response: unknown): {
       '92_price_per_sqft_recent_avg', '95_days_on_market_avg',
       '97_insurance_est_annual', '98_rental_estimate_monthly',
       '105_avg_electric_bill', '107_avg_water_bill',
-      '169_zillow_views', '170_redfin_views', '171_homes_views',
-      '172_realtor_views', '174_saves_favorites',
+      '169_months_of_inventory', '170_new_listings_30d', '171_homes_sold_30d',
+      '172_median_dom_zip', '173_price_reduced_percent', '174_homes_under_contract',
       '176_avg_sale_to_list_percent', '177_avg_days_to_pending',
       '181_rent_zestimate'
     ];

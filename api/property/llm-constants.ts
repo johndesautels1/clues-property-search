@@ -67,11 +67,12 @@ export const TAVILY_CONFIG = {
     '134_smart_home_features',
     '135_accessibility_modifications',
     '138_special_assessments',
-    '169_zillow_views',
-    '170_redfin_views',
-    '171_homes_views',
-    '172_realtor_views',
-    '174_saves_favorites',
+    '169_months_of_inventory',
+    '170_new_listings_30d',
+    '171_homes_sold_30d',
+    '172_median_dom_zip',
+    '173_price_reduced_percent',
+    '174_homes_under_contract',
   ],
 } as const;
 
