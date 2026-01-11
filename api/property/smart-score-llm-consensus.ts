@@ -822,31 +822,84 @@ async function calculateConsensus(
   // STEP 1: Call Perplexity, Claude Opus, and Gemini simultaneously
   console.log('[LLM Consensus] Calling Perplexity, Claude Opus, and Gemini...');
 
-  const [perplexityResult, claudeOpusResult, geminiResult] = await Promise.all([
+  // CRITICAL FIX: Use Promise.allSettled instead of Promise.all to prevent breaking chain
+  const results = await Promise.allSettled([
     callPerplexity(prompt),
     callClaudeOpus(prompt),
     callGemini(prompt),
   ]);
 
-  const perplexityScores = [
+  // Extract successful results or null for failed ones
+  const perplexityResult = results[0].status === 'fulfilled' ? results[0].value : null;
+  const claudeOpusResult = results[1].status === 'fulfilled' ? results[1].value : null;
+  const geminiResult = results[2].status === 'fulfilled' ? results[2].value : null;
+
+  // Log failures
+  if (results[0].status === 'rejected') console.error('❌ Perplexity failed:', results[0].reason);
+  if (results[1].status === 'rejected') console.error('❌ Claude Opus failed:', results[1].reason);
+  if (results[2].status === 'rejected') console.error('❌ Gemini failed:', results[2].reason);
+
+  // If all 3 failed, throw error (handler will catch)
+  if (!perplexityResult && !claudeOpusResult && !geminiResult) {
+    throw new Error('All 3 LLMs (Perplexity, Claude Opus, Gemini) failed');
+  }
+
+  // Extract scores from successful LLMs
+  const perplexityScores = perplexityResult ? [
     perplexityResult.property1.finalScore,
     perplexityResult.property2.finalScore,
     perplexityResult.property3.finalScore,
-  ];
+  ] : null;
 
-  const claudeOpusScores = [
+  const claudeOpusScores = claudeOpusResult ? [
     claudeOpusResult.property1.finalScore,
     claudeOpusResult.property2.finalScore,
     claudeOpusResult.property3.finalScore,
-  ];
+  ] : null;
 
-  const geminiScores = [
+  const geminiScores = geminiResult ? [
     geminiResult.property1.finalScore,
     geminiResult.property2.finalScore,
     geminiResult.property3.finalScore,
-  ];
+  ] : null;
 
-  // STEP 2: Check if all 3 LLMs agree on all 3 properties (within tolerance)
+  // Count successful LLMs
+  const successfulLlms = [perplexityScores, claudeOpusScores, geminiScores].filter(s => s !== null);
+  const successCount = successfulLlms.length;
+
+  console.log(`[LLM Consensus] ${successCount}/3 LLMs succeeded`);
+
+  // STEP 2A: Handle partial failures (only 1 or 2 LLMs succeeded)
+  if (successCount < 3) {
+    console.log(`⚠️ Only ${successCount}/3 LLMs succeeded - averaging successful results`);
+
+    // Calculate average of successful LLMs for each property
+    const avgScores = [0, 1, 2].map((propIndex) => {
+      const validScores = [perplexityScores, claudeOpusScores, geminiScores]
+        .filter(scores => scores !== null)
+        .map(scores => scores[propIndex]);
+      return validScores.reduce((sum, score) => sum + score, 0) / validScores.length;
+    });
+
+    return {
+      property1Score: avgScores[0],
+      property2Score: avgScores[1],
+      property3Score: avgScores[2],
+      consensusMethod: `partial-${successCount}of3`,
+      llmVotes: {
+        perplexity: perplexityScores || [null, null, null],
+        claudeOpus: claudeOpusScores || [null, null, null],
+        gemini: geminiScores || [null, null, null],
+      },
+      fullResults: {
+        perplexity: perplexityResult,
+        claudeOpus: claudeOpusResult,
+        gemini: geminiResult,
+      },
+    };
+  }
+
+  // STEP 2B: All 3 LLMs succeeded - Check if they agree (within tolerance)
   const allAgree =
     scoresAgree(perplexityScores[0], claudeOpusScores[0]) &&
     scoresAgree(perplexityScores[0], geminiScores[0]) &&
