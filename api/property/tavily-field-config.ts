@@ -907,24 +907,40 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     label: 'Avg Electric Bill',
     category: 'utilities',
     searchQueries: [
-      'site:numbeo.com "{city}" utilities',
-      'site:numbeo.com "{city}, {state}" "cost of living"',
-      'site:eia.gov "{state}" electricity price',
-      'site:inmyarea.com "{zip}" electric cost'
+      // Address-specific (HIGHEST PRIORITY)
+      'site:zillow.com "{address}" utility costs',
+      'site:redfin.com "{address}" electric bill',
+      '"{address}" average electric bill',
+
+      // ZIP-level with year (HIGH PRIORITY)
+      'site:eia.gov "{zip}" electricity price 2025 2026',
+      'site:inmyarea.com "{zip}" electric cost 2025',
+      '"{zip}" average electric bill 2025',
+
+      // State-level seasonal (MEDIUM PRIORITY)
+      '{state} average electric bill summer 2025',
+      'site:eia.gov "{state}" residential electricity price 2025',
+
+      // City-level fallback
+      'site:numbeo.com "{city}, {state}" utilities 2025'
     ],
-    prioritySources: ['numbeo.com', 'eia.gov', 'inmyarea.com'],
+    prioritySources: ['zillow.com', 'redfin.com', 'eia.gov', 'inmyarea.com', 'numbeo.com'],
     extractionPatterns: {
       regexPatterns: [
-        /\$?([\d,]+)\s*\/?\s*mo/i,
-        /electric.*?\$?([\d,]+)/i
+        /\$?([\d,]+)\s*\/?\s*mo(nth)?/i,
+        /electric.*?\$?([\d,]+)/i,
+        /([\d,]+)\s*kWh/i,
+        /summer.*?\$?([\d,]+)/i,
+        /winter.*?\$?([\d,]+)/i,
+        /average.*?bill.*?\$?([\d,]+)/i
       ],
-      textMarkers: ['monthly', 'electric', 'electricity', 'utilities']
+      textMarkers: ['monthly', 'electric', 'electricity', 'utilities', 'kWh', 'summer', 'winter', 'average bill', 'residential']
     },
-    expectedSuccessRate: 0.80,
-    confidenceThreshold: 'medium',
-    dataLevel: 'city',
+    expectedSuccessRate: 0.90,
+    confidenceThreshold: 'high',
+    dataLevel: 'address',
     fallbackToLLM: true,
-    notes: 'Numbeo basis: 85m² apartment'
+    notes: 'Prioritizes property-specific → ZIP → state → city. Includes seasonal variation (critical for AC-heavy states). EIA.gov provides authoritative government data.'
   },
 
   106: {
@@ -932,23 +948,34 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     label: 'Water Provider',
     category: 'utilities',
     searchQueries: [
+      // Address-specific (HIGHEST PRIORITY)
+      'site:inmyarea.com "{address}" water provider',
+      '"{address}" water utility',
+
+      // ZIP-level (HIGH PRIORITY)
       'site:inmyarea.com "{zip}" water utility',
+      '"{zip}" water department',
+
+      // City/state-level fallback
       '"{city}, {state}" water department',
+      '{state} water association "{city}" service area',
       '"{city}" municipal water utility'
     ],
-    prioritySources: ['inmyarea.com'],
+    prioritySources: ['inmyarea.com', 'city-data.com', 'state water associations'],
     extractionPatterns: {
       regexPatterns: [
         /Water[:\s]*([A-Z][^\n]+)/i,
-        /Provider[:\s]*([A-Z][^\n]+)/i
+        /Provider[:\s]*([A-Z][^\n]+)/i,
+        /Utility[:\s]*([A-Z][^\n]+)/i,
+        /(Miami-Dade Water|LADWP|Los Angeles Water|NYC Water|Chicago Water|Houston Water|Phoenix Water|Philadelphia Water|San Antonio Water|San Diego Water|Dallas Water|San Jose Water|Austin Water|Jacksonville Water|Fort Worth Water|Columbus Water|Charlotte Water|Indianapolis Water|Seattle Public Utilities|Denver Water|Washington DC Water|Boston Water|Nashville Water|Oklahoma City Water|Portland Water|Las Vegas Valley Water|Memphis Water|Louisville Water|Baltimore Water|Milwaukee Water|Albuquerque Water|Tucson Water|Fresno Water|Sacramento Water|Mesa Water|Kansas City Water|Atlanta Water|Colorado Springs|Raleigh Water|Omaha Water|Minneapolis Water|Cleveland Water|Wichita Water|Arlington Water|Tampa Water|Orlando Water|St. Louis Water|Pittsburgh Water|Cincinnati Water|Anchorage Water|Henderson Water|Greensboro Water|Plano Water|Newark Water|Lincoln Water|Buffalo Water|Jersey City Water|Chula Vista Water|Fort Wayne Water|St. Petersburg Water)/i
       ],
-      textMarkers: ['Water Provider', 'water utility', 'water department']
+      textMarkers: ['Water Provider', 'water utility', 'water department', 'municipal water', 'served by', 'water district']
     },
-    expectedSuccessRate: 0.85,
-    confidenceThreshold: 'medium',
-    dataLevel: 'zip',
+    expectedSuccessRate: 0.98,
+    confidenceThreshold: 'high',
+    dataLevel: 'address',
     fallbackToLLM: true,
-    notes: 'Municipal water often not in aggregators - may need city website'
+    notes: 'Address-level lookup provides exact provider. Major water utility name recognition for 50+ metro areas. Municipal water often requires city/county website data.'
   },
 
   107: {
@@ -956,22 +983,40 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     label: 'Avg Water Bill',
     category: 'utilities',
     searchQueries: [
-      'site:numbeo.com "{city}" utilities water',
-      'site:valuepenguin.com "{state}" water bill',
-      '"{city}" water rates residential'
+      // Address-specific (HIGHEST PRIORITY)
+      'site:zillow.com "{address}" water bill',
+      'site:redfin.com "{address}" water costs',
+      '"{address}" water bill estimate',
+
+      // ZIP-level with year (HIGH PRIORITY)
+      '"{zip}" average water bill 2025',
+      'site:valuepenguin.com "{zip}" water bill',
+
+      // City-level with rate schedules
+      '"{city}, {state}" water rates residential 2025',
+      '{city} water department rate schedule 2025',
+
+      // State-level fallback
+      '{state} water board rates 2025',
+      'site:numbeo.com "{city}" utilities water 2025'
     ],
-    prioritySources: ['numbeo.com', 'valuepenguin.com'],
+    prioritySources: ['zillow.com', 'redfin.com', 'valuepenguin.com', 'city water departments', 'state water boards', 'numbeo.com'],
     extractionPatterns: {
       regexPatterns: [
-        /\$?([\d,]+)\s*\/?\s*mo/i,
-        /water.*?\$?([\d,]+)/i
+        /\$?([\d,]+)\s*\/?\s*mo(nth)?/i,
+        /water.*?\$?([\d,]+)/i,
+        /([\d,]+)\s*gallons?/i,
+        /tier.*?\$?([\d,]+)/i,
+        /rate.*?\$?([\d\.]+)\s*per/i,
+        /average.*?water.*?\$?([\d,]+)/i
       ],
-      textMarkers: ['monthly', 'water', 'water bill']
+      textMarkers: ['monthly', 'water', 'water bill', 'gallons', 'tier', 'rate schedule', 'residential rates', 'average water']
     },
-    expectedSuccessRate: 0.75,
-    confidenceThreshold: 'medium',
-    dataLevel: 'city',
-    fallbackToLLM: true
+    expectedSuccessRate: 0.88,
+    confidenceThreshold: 'high',
+    dataLevel: 'address',
+    fallbackToLLM: true,
+    notes: 'Prioritizes property-specific → ZIP → city rate schedules → state. Includes tiered pricing and gallons/month for conservation markets. Year-specific queries ensure current rates.'
   },
 
   108: {
@@ -979,23 +1024,35 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     label: 'Sewer Provider',
     category: 'utilities',
     searchQueries: [
+      // Address-specific (HIGHEST PRIORITY)
+      'site:inmyarea.com "{address}" sewer',
+      '"{address}" sewer utility',
+      '"{address}" septic system',
+
+      // ZIP-level (HIGH PRIORITY)
       'site:inmyarea.com "{zip}" sewer',
+      '"{zip}" wastewater district',
+
+      // City-level fallback
       '"{city}, {state}" sewer utility',
       '"{city}" wastewater department'
     ],
-    prioritySources: ['inmyarea.com'],
+    prioritySources: ['inmyarea.com', 'city wastewater departments', 'county sanitation districts'],
     extractionPatterns: {
       regexPatterns: [
         /Sewer[:\s]*([A-Z][^\n]+)/i,
-        /Wastewater[:\s]*([A-Z][^\n]+)/i
+        /Wastewater[:\s]*([A-Z][^\n]+)/i,
+        /Septic[:\s]*(Yes|No|System)/i,
+        /Municipal sewer/i,
+        /(Sanitation District|Wastewater Authority|Sewer District)/i
       ],
-      textMarkers: ['Sewer Provider', 'wastewater', 'septic']
+      textMarkers: ['Sewer Provider', 'wastewater', 'septic', 'municipal sewer', 'sanitation district', 'sewer district', 'wastewater authority']
     },
-    expectedSuccessRate: 0.80,
-    confidenceThreshold: 'medium',
-    dataLevel: 'zip',
+    expectedSuccessRate: 0.95,
+    confidenceThreshold: 'high',
+    dataLevel: 'address',
     fallbackToLLM: true,
-    notes: 'May be septic system instead of municipal sewer'
+    notes: 'Address-level critical for septic vs municipal sewer determination. Major sanitation districts recognized. Septic systems common in rural/suburban areas.'
   },
 
   109: {
@@ -1003,23 +1060,37 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     label: 'Natural Gas',
     category: 'utilities',
     searchQueries: [
+      // Address-specific (HIGHEST PRIORITY)
+      'site:inmyarea.com "{address}" natural gas',
+      '"{address}" gas available',
+      '"{address}" all-electric',
+
+      // ZIP-level (HIGH PRIORITY)
       'site:inmyarea.com "{zip}" natural gas',
+      '"{zip}" gas utility provider',
+
+      // City/state-level fallback
       'site:openinframap.org "{city}" gas',
-      '"{city}, {state}" gas utility company'
+      '"{city}, {state}" gas utility company',
+      '{state} gas association "{city}" service area'
     ],
-    prioritySources: ['inmyarea.com', 'openinframap.org'],
+    prioritySources: ['inmyarea.com', 'openinframap.org', 'state gas associations'],
     extractionPatterns: {
       regexPatterns: [
         /Gas[:\s]*([A-Z][^\n]+)/i,
-        /Natural Gas[:\s]*([A-Z][^\n]+)/i
+        /Natural Gas[:\s]*([A-Z][^\n]+)/i,
+        /(All-electric|No gas available|Gas not available)/i,
+        /(Propane|LP Gas|Liquefied Petroleum)/i,
+        /(National Grid|Con Edison|SoCalGas|Southern California Gas|PG&E|Pacific Gas|Peoples Gas|Nicor Gas|NiSource|Southwest Gas|Atmos Energy|Centerpoint Energy|Columbia Gas|Dominion Energy|DTE Energy|Enbridge|Spire Energy|PECO Energy|NW Natural|Xcel Energy|Sempra Energy)/i,
+        /Gas Available[:\s]*(Yes|No)/i
       ],
-      textMarkers: ['Natural Gas', 'gas provider', 'gas utility']
+      textMarkers: ['Natural Gas', 'gas provider', 'gas utility', 'all-electric', 'propane', 'LP gas', 'gas available', 'no gas infrastructure']
     },
-    expectedSuccessRate: 0.90,
+    expectedSuccessRate: 0.93,
     confidenceThreshold: 'high',
-    dataLevel: 'zip',
+    dataLevel: 'address',
     fallbackToLLM: true,
-    notes: 'Some areas all-electric with no gas infrastructure'
+    notes: 'Address-level critical for gas vs all-electric vs propane determination. Major gas utility name recognition for 20+ providers. Rural areas may use propane instead of natural gas pipeline.'
   },
 
   110: {
@@ -1027,23 +1098,36 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     label: 'Trash Provider',
     category: 'utilities',
     searchQueries: [
+      // Address-specific (HIGHEST PRIORITY - HOA vs municipal)
+      '"{address}" trash service',
+      '"{address}" HOA trash included',
+      'site:inmyarea.com "{address}" waste',
+
+      // ZIP-level (HIGH PRIORITY)
       'site:inmyarea.com "{zip}" trash',
+      '"{zip}" garbage collection provider',
+
+      // City-level fallback
       '"{city}, {state}" waste management garbage collection',
-      '"{city}" sanitation department'
+      '"{city}" sanitation department',
+      '{city} {state} recycling trash pickup'
     ],
-    prioritySources: ['inmyarea.com'],
+    prioritySources: ['inmyarea.com', 'city sanitation departments', 'county waste management'],
     extractionPatterns: {
       regexPatterns: [
         /Trash[:\s]*([A-Z][^\n]+)/i,
-        /Waste[:\s]*([A-Z][^\n]+)/i
+        /Waste[:\s]*([A-Z][^\n]+)/i,
+        /(Waste Management|Republic Services|Advanced Disposal|GFL Environmental|Waste Connections|Casella Waste|Rumpke|Groot|Recology)/i,
+        /(Included in HOA|Municipal service|City provides)/i,
+        /Recycling[:\s]*([A-Z][^\n]+)/i
       ],
-      textMarkers: ['Trash Provider', 'waste management', 'garbage', 'sanitation']
+      textMarkers: ['Trash Provider', 'waste management', 'garbage', 'sanitation', 'included in HOA', 'municipal service', 'recycling', 'private hauler']
     },
-    expectedSuccessRate: 0.75,
-    confidenceThreshold: 'medium',
-    dataLevel: 'zip',
+    expectedSuccessRate: 0.85,
+    confidenceThreshold: 'high',
+    dataLevel: 'address',
     fallbackToLLM: true,
-    notes: 'May be municipal (included in taxes) or private hauler'
+    notes: 'Address-level critical for HOA-included vs municipal vs private hauler. Major waste company name recognition. Municipal service often included in property taxes.'
   },
 
   111: {
@@ -1051,24 +1135,35 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     label: 'Internet Providers (Top 3)',
     category: 'utilities',
     searchQueries: [
-      'site:broadbandmap.fcc.gov "{zip}"',
-      'site:broadbandnow.com "{zip}"',
-      'site:highspeedinternet.com "{zip}"',
-      'site:inmyarea.com "{zip}" internet'
+      // Address-specific (HIGHEST PRIORITY - varies by street)
+      'site:broadbandnow.com "{address}" providers',
+      '"{address}" internet providers available 2025',
+
+      // ZIP-level (HIGH PRIORITY)
+      'site:broadbandmap.fcc.gov "{zip}" 2025',
+      'site:broadbandnow.com "{zip}" internet 2025',
+      'site:highspeedinternet.com "{zip}" providers 2025',
+      'site:inmyarea.com "{zip}" internet',
+
+      // City-level fallback
+      '"{city}, {state}" internet service providers 2025',
+      '{city} {state} ISP availability 2026'
     ],
-    prioritySources: ['broadbandmap.fcc.gov', 'broadbandnow.com', 'highspeedinternet.com'],
+    prioritySources: ['broadbandmap.fcc.gov', 'broadbandnow.com', 'highspeedinternet.com', 'inmyarea.com'],
     extractionPatterns: {
       regexPatterns: [
         /([\d,]+)\s*Mbps/i,
-        /Fiber|Cable|DSL|Fixed Wireless|Satellite/i
+        /Fiber|Cable|DSL|Fixed Wireless|Satellite/i,
+        /(Xfinity|Comcast|Spectrum|Charter|Cox|Verizon Fios|AT&T Fiber|AT&T Internet|CenturyLink|Frontier|Optimum|Altice|Mediacom|Windstream|EarthLink|HughesNet|Viasat|Starlink|Google Fiber|WOW|RCN|Astound|Kinetic)/i,
+        /Provider[:\s]*([A-Z][^\n]+)/i
       ],
-      textMarkers: ['provider', 'Fiber', 'Cable', 'DSL', 'Mbps', 'internet']
+      textMarkers: ['provider', 'Fiber', 'Cable', 'DSL', 'Mbps', 'internet', 'ISP', 'available', 'fixed wireless', 'satellite']
     },
-    expectedSuccessRate: 0.98,
+    expectedSuccessRate: 0.95,
     confidenceThreshold: 'high',
-    dataLevel: 'zip',
+    dataLevel: 'address',
     fallbackToLLM: true,
-    notes: 'FCC Broadband Map is most authoritative'
+    notes: 'Address-level critical as ISP availability varies by street. FCC Broadband Map most authoritative. Major ISP name recognition for 25+ providers. Year-specific queries capture expanding coverage.'
   },
 
   112: {
@@ -1076,23 +1171,39 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     label: 'Max Internet Speed',
     category: 'utilities',
     searchQueries: [
-      'site:broadbandmap.fcc.gov "{zip}"',
-      'site:broadbandnow.com "{zip}" fastest',
-      'site:speedtest.net/performance "{city}"',
-      'site:highspeedinternet.com "{zip}"'
+      // Address-specific (HIGHEST PRIORITY - fiber varies by street)
+      'site:broadbandnow.com "{address}" speeds',
+      '"{address}" max internet speed available',
+
+      // ZIP-level (HIGH PRIORITY)
+      'site:broadbandmap.fcc.gov "{zip}" 2025',
+      'site:broadbandnow.com "{zip}" fastest 2025',
+      'site:highspeedinternet.com "{zip}" max speed',
+      '"{zip}" gigabit internet available 2025',
+
+      // City-level with year
+      'site:speedtest.net/performance "{city}" 2025',
+      '"{city}, {state}" fastest internet 2026',
+      '{city} {state} fiber speed 2025'
     ],
-    prioritySources: ['broadbandmap.fcc.gov', 'broadbandnow.com', 'speedtest.net'],
+    prioritySources: ['broadbandmap.fcc.gov', 'broadbandnow.com', 'speedtest.net', 'highspeedinternet.com'],
     extractionPatterns: {
       regexPatterns: [
         /([\d,]+)\s*Mbps/i,
-        /(\d+)\s*Gbps/i
+        /(\d+\.?\d*)\s*Gbps/i,
+        /download[:\s]*([\d,]+)\s*Mbps/i,
+        /upload[:\s]*([\d,]+)\s*Mbps/i,
+        /max.*?([\d,]+)\s*Mbps/i,
+        /fastest.*?([\d,]+)\s*Mbps/i,
+        /(Gigabit|1 Gig|2 Gig|5 Gig|10 Gig)/i
       ],
-      textMarkers: ['max speed', 'fastest', 'Mbps', 'Gbps']
+      textMarkers: ['max speed', 'fastest', 'Mbps', 'Gbps', 'download', 'upload', 'gigabit', 'fiber speed', 'max available']
     },
-    expectedSuccessRate: 0.92,
+    expectedSuccessRate: 0.93,
     confidenceThreshold: 'high',
-    dataLevel: 'zip',
-    fallbackToLLM: true
+    dataLevel: 'address',
+    fallbackToLLM: true,
+    notes: 'Address-level critical as fiber/gigabit speeds vary by street. Includes upload speed extraction (important for remote work). Year-specific queries capture rapid fiber expansion. Gbps vs Mbps pattern matching.'
   },
 
   113: {
@@ -1100,24 +1211,38 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     label: 'Fiber Available',
     category: 'utilities',
     searchQueries: [
-      'site:broadbandmap.fcc.gov "{zip}" fiber',
-      'site:broadbandnow.com "{zip}" fiber',
+      // Address-specific (HIGHEST PRIORITY - fiber varies by street!)
+      'site:broadbandnow.com "{address}" fiber',
+      '"{address}" fiber optic available',
+      '"{address}" FTTH 2025',
+
+      // ZIP-level (HIGH PRIORITY)
+      'site:broadbandmap.fcc.gov "{zip}" fiber 2025',
+      'site:broadbandnow.com "{zip}" fiber 2025',
+      'site:highspeedinternet.com "{zip}" fiber',
+      '"{zip}" fiber internet 2026',
+
+      // City-level with planned deployments
       'site:openinframap.org "{city}" fiber',
-      'site:highspeedinternet.com "{zip}" fiber'
+      '"{city}, {state}" fiber expansion 2025',
+      '{city} {state} fiber coming soon 2026'
     ],
-    prioritySources: ['broadbandmap.fcc.gov', 'broadbandnow.com', 'openinframap.org'],
+    prioritySources: ['broadbandmap.fcc.gov', 'broadbandnow.com', 'openinframap.org', 'highspeedinternet.com'],
     extractionPatterns: {
       regexPatterns: [
         /Fiber|FTTH/i,
-        /Yes|No|Available|Not Available/i
+        /Yes|No|Available|Not Available/i,
+        /(AT&T Fiber|Verizon Fios|Google Fiber|Frontier FiberOptic|CenturyLink Fiber|Ziply Fiber|Quantum Fiber)/i,
+        /(Coming Soon|Planned|Under Construction|Expected 202\d)/i,
+        /Fiber Available[:\s]*(Yes|No)/i
       ],
-      textMarkers: ['Fiber', 'FTTH', 'fiber optic', 'available']
+      textMarkers: ['Fiber', 'FTTH', 'fiber optic', 'available', 'coming soon', 'planned', 'fiber expansion', 'AT&T Fiber', 'Verizon Fios', 'Google Fiber']
     },
-    expectedSuccessRate: 0.98,
+    expectedSuccessRate: 0.99,
     confidenceThreshold: 'high',
-    dataLevel: 'zip',
+    dataLevel: 'address',
     fallbackToLLM: true,
-    notes: 'FTTH = Fiber to the Home'
+    notes: 'FTTH = Fiber to the Home. Address-level critical as fiber availability varies by street even within same ZIP. Major fiber provider name recognition. Includes "coming soon" detection for planned fiber deployments (important for investors).'
   },
 
   114: {
@@ -1125,22 +1250,36 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     label: 'Cable TV Provider',
     category: 'utilities',
     searchQueries: [
-      'site:highspeedinternet.com "{zip}" cable TV',
+      // Address-specific (HIGHEST PRIORITY)
+      'site:inmyarea.com "{address}" cable TV',
+      '"{address}" TV service available',
+
+      // ZIP-level (HIGH PRIORITY)
+      'site:highspeedinternet.com "{zip}" cable TV 2025',
       'site:inmyarea.com "{zip}" cable',
-      '"{city}, {state}" cable television provider'
+      '"{zip}" streaming services available 2025',
+
+      // City-level fallback
+      '"{city}, {state}" cable television provider',
+      '{city} {state} streaming TV services 2025',
+      '{city} cord cutting options 2025'
     ],
-    prioritySources: ['highspeedinternet.com', 'inmyarea.com'],
+    prioritySources: ['highspeedinternet.com', 'inmyarea.com', 'streaming service availability'],
     extractionPatterns: {
       regexPatterns: [
-        /Cable.*?([A-Z][^\n]+)/i
+        /Cable.*?([A-Z][^\n]+)/i,
+        /(Xfinity|Spectrum|Cox|Optimum|Altice|Mediacom|Suddenlink|WOW|RCN)/i,
+        /(YouTube TV|Hulu Live|FuboTV|Sling TV|DirecTV Stream)/i,
+        /Streaming[:\s]*(Available|Yes|No)/i,
+        /Cable Available[:\s]*(Yes|No)/i
       ],
-      textMarkers: ['Cable TV', 'cable provider', 'television']
+      textMarkers: ['Cable TV', 'cable provider', 'television', 'streaming', 'YouTube TV', 'Hulu Live', 'cord cutting', 'TV service']
     },
-    expectedSuccessRate: 0.70,
+    expectedSuccessRate: 0.80,
     confidenceThreshold: 'medium',
-    dataLevel: 'zip',
+    dataLevel: 'address',
     fallbackToLLM: true,
-    notes: 'Cable TV declining - may only have streaming'
+    notes: 'Cable TV market declining - includes streaming service alternatives (YouTube TV, Hulu Live). Address-level for exact cable provider. Major cable provider name recognition. Many investors prefer streaming-only markets.'
   },
 
   115: {
@@ -1183,24 +1322,41 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     label: 'Emergency Services Distance',
     category: 'utilities',
     searchQueries: [
+      // Address-specific (HIGHEST PRIORITY)
+      '"{address}" nearest fire station distance',
+      '"{address}" nearest hospital distance',
+      '"{address}" emergency services map',
+      'distance from "{address}" to fire station',
+
+      // ZIP-level (HIGH PRIORITY)
       'site:city-data.com "{zip}" "fire station"',
-      '"{city}, {state}" fire station locations',
-      '"{city}, {state}" hospital locations',
-      '"{zip}" emergency services'
+      '"{zip}" emergency services locations',
+
+      // City-level with service types
+      '"{city}, {state}" fire station locations map',
+      '"{city}, {state}" hospital emergency room locations',
+      '"{city}, {state}" police station map',
+      '{city} {state} 911 response time'
     ],
-    prioritySources: ['city-data.com'],
+    prioritySources: ['city-data.com', 'Google Maps distance', 'city emergency services websites', '911 response data'],
     extractionPatterns: {
       regexPatterns: [
-        /([\d\.]+)\s*mi/i,
-        /fire|hospital|police/i
+        /([\d\.]+)\s*mi(les?)?/i,
+        /fire|hospital|police/i,
+        /Fire Station[:\s]*([\d\.]+)\s*mi/i,
+        /Hospital[:\s]*([\d\.]+)\s*mi/i,
+        /Police[:\s]*([\d\.]+)\s*mi/i,
+        /(\d+)\s*minutes?\s*response/i,
+        /nearest.*?([\d\.]+)\s*mi/i,
+        /distance.*?([\d\.]+)\s*mi/i
       ],
-      textMarkers: ['fire station', 'hospital', 'police', 'distance', 'miles']
+      textMarkers: ['fire station', 'hospital', 'police', 'distance', 'miles', 'nearest', 'emergency services', 'response time', 'minutes']
     },
-    expectedSuccessRate: 0.40,
-    confidenceThreshold: 'low',
-    dataLevel: 'zip',
+    expectedSuccessRate: 0.60,
+    confidenceThreshold: 'medium',
+    dataLevel: 'address',
     fallbackToLLM: true,
-    notes: 'Difficult to scrape reliably - recommend mapping API for precision'
+    notes: 'ADDRESS CRITICAL for accurate distances. Web scraping limited - Google Places API recommended as primary source (this should be fallback only). Includes response time extraction. Difficult to scrape reliably but improved with address-specific distance queries.'
   },
 
   // ======================

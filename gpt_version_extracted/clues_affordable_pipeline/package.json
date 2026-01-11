@@ -1,0 +1,22 @@
+{
+  "name": "clues-affordable-pipeline",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --loader ts-node/esm ./node_modules/.bin/vercel dev",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "echo \"(optional) add eslint\""
+  },
+  "dependencies": {
+    "openai": "^4.0.0",
+    "zod": "^3.23.8",
+    "lru-cache": "^10.2.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4",
+    "vercel": "^33.6.0",
+    "@vercel/node": "^3.0.20"
+  }
+}

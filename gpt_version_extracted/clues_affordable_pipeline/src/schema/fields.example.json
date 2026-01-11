@@ -1,0 +1,37 @@
+[
+  {
+    "key": "living_sqft",
+    "label": "Living Area (SqFt)",
+    "group": "Structure",
+    "type": "number",
+    "needsWeb": true
+  },
+  {
+    "key": "bedrooms",
+    "label": "Bedrooms",
+    "group": "Structure",
+    "type": "number",
+    "needsWeb": false
+  },
+  {
+    "key": "flood_zone",
+    "label": "Flood Zone",
+    "group": "Risk",
+    "type": "string",
+    "needsWeb": true
+  },
+  {
+    "key": "school_district",
+    "label": "School District",
+    "group": "Schools",
+    "type": "string",
+    "needsWeb": true
+  },
+  {
+    "key": "walk_score",
+    "label": "Walk Score",
+    "group": "Lifestyle",
+    "type": "number",
+    "needsWeb": true
+  }
+]
