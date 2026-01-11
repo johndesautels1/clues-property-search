@@ -568,32 +568,6 @@ export function calculateAVMsAverage(data: PropertyData): CalculationResult | nu
 }
 
 /**
- * Field 173: Total Views
- * Formula: Sum of all portal views (169-172)
- */
-export function calculateTotalViews(data: PropertyData): CalculationResult | null {
-  const views = [
-    parseNumericValue(data.field_169_zillow_views),
-    parseNumericValue(data.field_170_redfin_views),
-    parseNumericValue(data.field_171_homes_views),
-    parseNumericValue(data.field_172_realtor_views)
-  ].filter(val => !isNaN(val));
-
-  if (views.length === 0) {
-    return null;
-  }
-
-  const total = views.reduce((acc, val) => acc + val, 0);
-
-  return {
-    value: total,
-    source: 'Backend Calculation',
-    confidence: 'High',
-    calculation_method: `Sum of ${views.length} portal views`
-  };
-}
-
-/**
  * Calculate all derived fields at once
  */
 export function calculateAllDerivedFields(data: PropertyData): Record<string, CalculationResult | null> {
@@ -612,8 +586,8 @@ export function calculateAllDerivedFields(data: PropertyData): Record<string, Ca
     '94_price_vs_median_percent': calculatePriceVsMedian(data),
     '99_rental_yield_est': calculateRentalYield(data),
     '101_cap_rate_est': calculateCapRate(data),
-    '107_avg_water_bill': calculateWaterBill(data),
-    '173_total_views': calculateTotalViews(data)
+    '107_avg_water_bill': calculateWaterBill(data)
+    // Field 173 removed 2026-01-11: No longer calculated (was total_views, now price_reduced_percent from Tavily)
   };
 }
 
