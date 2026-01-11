@@ -279,135 +279,102 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
     setLiveFieldsFound(0);
     setLiveCompletionPct(0);
 
-    // Call search API and get JSON response
+    // Call search API using Server-Sent Events (SSE) for real-time progress
     const performSearch = () => {
       return new Promise<any>((resolve, reject) => {
-        // Create POST request body
-        const body = JSON.stringify({
+        const params = new URLSearchParams({
           address: addressInput,
-          engines: skipLLMs ? [] : selectedEngines,
-          skipLLMs,
+          engines: (skipLLMs ? [] : selectedEngines).join(','),
+          skipLLMs: String(skipLLMs),
         });
 
-        // Use regular JSON fetch (search.ts returns JSON, not SSE)
-        fetch(`${API_BASE}/search`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body,
-        }).then(async response => {
-          if (!response.ok) {
-            throw new Error('Search failed');
-          }
+        // Use SSE for real-time progress updates
+        const eventSource = new EventSource(`${API_BASE}/search-stream?${params.toString()}`);
 
-          // Parse JSON response directly
-          const data = await response.json();
+        // Track which sources have been updated
+        const updatedSources = new Set<string>();
 
-          // Update progress message
-          setSearchProgress('Search complete - processing results...');
+        // Listen for progress events (real-time updates from each source)
+        eventSource.addEventListener('progress', (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            console.log('[SSE Progress]', data.source, data.status, `${data.fieldsFound} fields`);
 
-          // Update final field counts
-          if (data.total_fields_found) {
-            setLiveFieldsFound(data.total_fields_found);
-            setLiveCompletionPct(data.completion_percentage || Math.round((data.total_fields_found / 181) * 100));
-          }
-
-          // Track Perplexity total to apply in final state update (avoid race condition)
-          let perplexityTotal = 0;
-
-          // Mark all sources as complete (since we get final result only)
-          if (data.source_breakdown) {
-            console.log('📊 Updating progress tracker from source_breakdown:', data.source_breakdown);
-
-            Object.entries(data.source_breakdown).forEach(([sourceName, count]) => {
-              console.log(`  - Trying to map "${sourceName}" to source ID...`);
-
-              // Normalize source name for matching
-              const normalizedSourceName = sourceName.toLowerCase()
-                .replace(/\./g, '')  // Remove dots
-                .replace(/\s+/g, ''); // Remove spaces
-
-              // SPECIAL CASE: Merge all Perplexity micro-prompts into single "perplexity" card
-              if (sourceName.toLowerCase().startsWith('perplexity')) {
-                console.log(`    ✅ Matched "${sourceName}" to perplexity (micro-prompt) - ${count} fields`);
-                perplexityTotal += count as number;
-                return; // Skip normal matching for Perplexity micro-prompts
-              }
-
-              // Find matching source with flexible matching rules
-              const matchingSource = DEFAULT_SOURCES.find(s => {
-                const normalizedId = s.id.replace(/-/g, '');
-                const normalizedName = s.name.toLowerCase().replace(/\s+/g, '');
-
-                // Direct match by ID or name
-                if (normalizedId === normalizedSourceName || normalizedName === normalizedSourceName) {
-                  return true;
-                }
-
-                // Special case mappings
-                const mappings: Record<string, string[]> = {
-                  'stellar-mls': ['stellarmls', 'stellar'],
-                  'google-geocode': ['googlemaps', 'googlegeocoding', 'googlegeoc'],
-                  'google-places': ['googleplaces'],
-                  'google-distance': ['googledistance', 'googledistancematrix'],
-                  'walkscore': ['walkscore'],
-                  'fema': ['fema', 'femanfhl', 'femaflood'],
-                  'fcc-broadband': ['fccbroadband', 'fcc', 'broadband'],
-                  'airnow': ['airnow'],
-                  'howloud': ['howloud'],
-                  'weather': ['weathercom', 'weather'],
-                  'crime': ['fbicrime'],
-                  'schooldigger': ['schooldigger'],
-                  'census': ['census', 'uscensus'],
-                  'internal': ['internal', 'backendcalculation', 'backend'],
-                  'grok': ['grok'],
-                  'claude-opus': ['claudeopus', 'opus'],
-                  'gpt': ['gpt', 'gpt4o'],
-                  'claude-sonnet': ['claudesonnet', 'sonnet'],
-                  'gemini': ['gemini'],
+            // Update source status in real-time
+            setSourcesProgress(prev => prev.map(s => {
+              if (s.id === data.source || s.id === data.source.replace(/-/g, '')) {
+                updatedSources.add(s.id);
+                return {
+                  ...s,
+                  status: data.status as SourceStatus,
+                  fieldsFound: data.fieldsFound || 0,
+                  error: data.error || undefined
                 };
-
-                const validMappings = mappings[s.id] || [];
-                return validMappings.some(mapping => normalizedSourceName.includes(mapping) || mapping.includes(normalizedSourceName));
-              });
-
-              if (matchingSource) {
-                console.log(`    ✅ Matched to ID: "${matchingSource.id}" (${matchingSource.name}) - ${count} fields`);
-                updateSource(matchingSource.id, {
-                  status: 'complete',
-                  fieldsFound: count as number || 0
-                });
-              } else {
-                console.log(`    ❌ No match found for "${sourceName}" (normalized: "${normalizedSourceName}")`);
-                console.log(`       Available source IDs:`, DEFAULT_SOURCES.map(s => s.id).join(', '));
               }
-            });
-          } else {
-            console.log('⚠️ No source_breakdown in response');
+              return s;
+            }));
+
+            // Update total field count in real-time
+            if (data.totalFieldsSoFar) {
+              setLiveFieldsFound(data.totalFieldsSoFar);
+              setLiveCompletionPct(Math.round((data.totalFieldsSoFar / 181) * 100));
+            }
+
+            // Update progress message
+            if (data.message) {
+              setSearchProgress(data.message);
+            }
+          } catch (err) {
+            console.error('[SSE] Failed to parse progress event:', err);
           }
+        });
 
-          // Mark any sources still in "searching" state as complete with 0 fields
-          // ALSO: Apply accumulated Perplexity total to avoid race condition
-          setSourcesProgress(prev => {
-            const updated = prev.map(s => {
-              // Apply Perplexity accumulated total
-              if (s.id === 'perplexity' && perplexityTotal > 0) {
-                console.log(`    ✅ Setting Perplexity total: ${perplexityTotal} fields (from ${Object.entries(data.source_breakdown || {}).filter(([k]) => k.toLowerCase().startsWith('perplexity')).length} micro-prompts)`);
-                return { ...s, status: 'complete' as const, fieldsFound: perplexityTotal };
-              }
+        // Listen for complete event (final aggregated data)
+        eventSource.addEventListener('complete', (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            console.log('[SSE Complete]', data.total_fields_found, 'fields found');
 
-              // Mark sources still pending/searching as complete with 0 fields
+            // Update final field counts
+            if (data.total_fields_found) {
+              setLiveFieldsFound(data.total_fields_found);
+              setLiveCompletionPct(data.completion_percentage || Math.round((data.total_fields_found / 181) * 100));
+            }
+
+            setSearchProgress('Search complete - processing results...');
+
+            // Mark any sources still pending/searching as complete with 0 fields
+            setSourcesProgress(prev => prev.map(s => {
               if (s.status === 'searching' || s.status === 'pending') {
                 console.log(`⚠️ Source "${s.name}" (${s.id}) still ${s.status} - marking complete with 0 fields`);
                 return { ...s, status: 'complete' as const, fieldsFound: 0 };
               }
               return s;
-            });
-            return updated;
-          });
+            }));
 
-          // Resolve with the complete data
-          resolve(data);
-        }).catch(reject);
+            // Close EventSource and resolve with complete data
+            eventSource.close();
+            resolve(data);
+          } catch (err) {
+            console.error('[SSE] Failed to parse complete event:', err);
+            eventSource.close();
+            reject(err);
+          }
+        });
+
+        // Listen for error events
+        eventSource.addEventListener('error', (e: any) => {
+          console.error('[SSE] Error:', e);
+          eventSource.close();
+
+          // Try to parse error data
+          try {
+            const errorData = e.data ? JSON.parse(e.data) : null;
+            reject(new Error(errorData?.error || 'SSE connection error'));
+          } catch {
+            reject(new Error('SSE connection error'));
+          }
+        });
       });
     };
 

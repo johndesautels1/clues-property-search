@@ -28,6 +28,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).end();
   }
 
+  // Convert GET query params to POST body format for search.ts compatibility
+  if (req.method === 'GET' && req.query) {
+    const { address, engines, skipLLMs } = req.query;
+    req.method = 'POST';
+    req.body = {
+      address: address as string,
+      engines: engines ? (engines as string).split(',') : [],
+      skipLLMs: skipLLMs === 'true'
+    };
+  }
+
   // Set up SSE
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -88,7 +99,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const searchModule = await import('./search.js');
     const searchHandler = searchModule.default;
 
-    // Create a mock response object to capture search.ts JSON result
+    // Create a mock response object that forwards SSE events to real response
     let searchResult: any = null;
     const mockRes = {
       status: (code: number) => mockRes,
@@ -96,10 +107,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         searchResult = data;
         return mockRes;
       },
-      setHeader: () => mockRes,
+      setHeader: (name: string, value: string) => mockRes,
+      getHeader: (name: string) => {
+        // Make search.ts think we're in SSE mode
+        if (name === 'Content-Type') return 'text/event-stream';
+        return undefined;
+      },
+      // Forward write() calls to real response (for SSE progress events)
+      write: (chunk: any) => {
+        res.write(chunk);
+      }
     } as any;
 
-    // Call search.ts handler
+    // Call search.ts handler - it will send SSE events via mockRes.write()
     await searchHandler(req, mockRes);
 
     if (!searchResult || !searchResult.success) {
@@ -108,54 +128,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log('[search-stream] search.ts returned:', searchResult.total_fields_found, 'fields');
 
-    // Convert source_breakdown to SSE progress events
-    if (searchResult.source_breakdown) {
-      const sourceMap: Record<string, string> = {
-        'Stellar MLS': 'stellar-mls',
-        'Google Geocode': 'google-geocode',
-        'Google Places': 'google-places',
-        'Google Distance Matrix': 'google-distance',
-        'Redfin': 'redfin',
-        'WalkScore': 'walkscore',
-        'FEMA NFHL': 'fema',
-        'AirNow': 'airnow',
-        'Census': 'census',
-        'U.S. Census': 'census',
-        'HowLoud': 'howloud',
-        'OpenWeatherMap': 'weather',
-        'Weather': 'weather',
-        'FBI Crime': 'crime',
-        'SchoolDigger': 'schooldigger',
-        'NOAA Climate': 'noaa-climate',
-        'NOAA Storm Events': 'noaa-storm',
-        'NOAA Sea Level': 'noaa-sealevel',
-        'USGS Elevation': 'usgs-elevation',
-        'USGS Earthquake': 'usgs-earthquake',
-        'EPA FRS': 'epa-frs',
-        'EPA Radon': 'epa-radon',
-        'Perplexity': 'perplexity',
-        'Grok': 'grok',
-        'Claude Opus': 'claude-opus',
-        'GPT': 'gpt',
-        'GPT-4o': 'gpt',
-        'Claude Sonnet': 'claude-sonnet',
-        'Gemini': 'gemini'
-      };
+    // Note: Real-time progress events already sent by search.ts via SSE
+    // No need to replay source_breakdown here
 
-      Object.entries(searchResult.source_breakdown).forEach(([sourceName, count]) => {
-        const sourceId = sourceMap[sourceName] || sourceName.toLowerCase().replace(/\s+/g, '-');
-        sendEvent(res, 'progress', {
-          source: sourceId,
-          status: 'complete',
-          fieldsFound: count,
-          newUniqueFields: count,
-          totalFieldsSoFar: searchResult.total_fields_found,
-          currentFields: searchResult.fields
-        });
-      });
-    }
-
-    // Send final complete event
+    // Send final complete event with all aggregated data
     sendEvent(res, 'complete', {
       success: true,
       address: searchResult.address,

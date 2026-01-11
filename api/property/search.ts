@@ -91,6 +91,37 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
 }
 
 /**
+ * SSE Progress Helper - Send real-time progress events to UI
+ * Only sends if response is in SSE mode (Content-Type: text/event-stream)
+ */
+function sendProgress(res: any, source: string, status: 'pending' | 'searching' | 'complete' | 'error' | 'warning', data: {
+  fieldsFound?: number;
+  totalFieldsSoFar?: number;
+  message?: string;
+  error?: string;
+}) {
+  // Check if response is in SSE mode
+  if (res.write && typeof res.getHeader === 'function' && res.getHeader('Content-Type') === 'text/event-stream') {
+    try {
+      const eventData = {
+        source,
+        status,
+        fieldsFound: data.fieldsFound || 0,
+        totalFieldsSoFar: data.totalFieldsSoFar || 0,
+        message: data.message || '',
+        error: data.error || '',
+        timestamp: new Date().toISOString()
+      };
+      res.write(`event: progress\n`);
+      res.write(`data: ${JSON.stringify(eventData)}\n\n`);
+    } catch (err) {
+      // Silent fail - don't break search if SSE write fails
+      console.error('[SSE] Failed to send progress:', err);
+    }
+  }
+}
+
+/**
  * CRASH FIX #3: Safe JSON serializer that handles BigInt, undefined, NaN, and circular refs
  * Prevents JSON.stringify crashes in final response
  */
@@ -4936,6 +4967,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             console.log(`✅ TIER 1 COMPLETE: Added ${mlsAdded} fields from ${STELLAR_MLS_SOURCE} (via Bridge Interactive)`);
             console.log('📊 Sample MLS field values:', JSON.stringify(Object.fromEntries(Object.entries(mlsFields).slice(0, 3)), null, 2));
 
+            // SSE Progress: Stellar MLS complete
+            sendProgress(res, 'stellar-mls', 'complete', {
+              fieldsFound: mlsAdded,
+              totalFieldsSoFar: arbitrationPipeline.getFieldCount(),
+              message: `Bridge MLS returned ${mlsFieldCount} fields, added ${mlsAdded} new unique`
+            });
+
             // CRITICAL LOGGING: Track Field 10 (listing_price) from Stellar MLS
             if (mlsFields['10_listing_price']) {
               console.log(`🏠 [FIELD 10 DEBUG] Stellar MLS set Field 10 = $${mlsFields['10_listing_price']} (Source: ${STELLAR_MLS_SOURCE}, Confidence: High)`);
@@ -5476,12 +5514,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 );
                 const elapsed = Date.now() - startTime;
                 llmResults.push({ status: 'fulfilled', value: result });
-                console.log(`  [${i + 1}/${perplexityLlms.length}] ✅ ${llm.id} completed in ${elapsed}ms - found ${Object.keys(result?.fields || {}).length} fields`);
+                const fieldsFound = Object.keys(result?.fields || {}).length;
+                console.log(`  [${i + 1}/${perplexityLlms.length}] ✅ ${llm.id} completed in ${elapsed}ms - found ${fieldsFound} fields`);
                 console.log(`  [${i + 1}/${perplexityLlms.length}] Memory after: ${process.memoryUsage().heapUsed / 1024 / 1024}MB`);
+
+                // SSE Progress: Perplexity prompt complete
+                sendProgress(res, llm.id, 'complete', {
+                  fieldsFound: fieldsFound,
+                  totalFieldsSoFar: arbitrationPipeline.getFieldCount(),
+                  message: `Completed in ${elapsed}ms`
+                });
               } catch (err) {
                 const elapsed = Date.now() - startTime;
                 llmResults.push({ status: 'rejected', reason: err });
                 console.log(`  [${i + 1}/${perplexityLlms.length}] ❌ ${llm.id} failed after ${elapsed}ms: ${err}`);
+
+                // SSE Progress: Perplexity error
+                sendProgress(res, llm.id, 'error', {
+                  fieldsFound: 0,
+                  totalFieldsSoFar: arbitrationPipeline.getFieldCount(),
+                  error: String(err),
+                  message: `Failed after ${elapsed}ms`
+                });
               }
               // Rate limit protection between Perplexity calls
               if (i < perplexityLlms.length - 1) {
@@ -5621,6 +5675,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 });
 
                 console.log(`✅ [${processingOrder}] ${llm.id}: ${rawFieldCount} returned, ${skippedNulls} nulls skipped, ${invalidKeys} invalid keys, ${newUniqueFields} new unique added (total now: ${totalAfter})`);
+
+                // SSE Progress: LLM complete
+                sendProgress(res, llm.id, llmError ? 'error' : 'complete', {
+                  fieldsFound: newUniqueFields,
+                  totalFieldsSoFar: totalAfter,
+                  message: llmError ? `Error: ${llmError}` : `${rawFieldCount} returned, ${newUniqueFields} new unique added`
+                });
               } else {
                 llmResponses.push({
                   llm: llm.id,
@@ -5630,6 +5691,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   error: llmError || 'No fields returned'
                 });
                 console.log(`⚠️ [${processingOrder}] ${llm.id}: No fields returned`);
+
+                // SSE Progress: LLM no data
+                sendProgress(res, llm.id, 'error', {
+                  fieldsFound: 0,
+                  totalFieldsSoFar: arbitrationPipeline.getFieldCount(),
+                  error: llmError || 'No fields returned'
+                });
               }
             } else {
               console.error(`❌ [${processingOrder}] ${llm.id} promise rejected:`, result.reason);
@@ -5638,6 +5706,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 fields_found: 0,
                 new_unique_fields: 0,
                 success: false,
+                error: String(result.reason)
+              });
+
+              // SSE Progress: LLM promise rejected
+              sendProgress(res, llm.id, 'error', {
+                fieldsFound: 0,
+                totalFieldsSoFar: arbitrationPipeline.getFieldCount(),
                 error: String(result.reason)
               });
             }
