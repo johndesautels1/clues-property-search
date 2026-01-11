@@ -1368,23 +1368,34 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     label: 'View Type',
     category: 'features',
     searchQueries: [
+      // MLS listing sites (HIGHEST PRIORITY - explicit mentions)
       'site:movoto.com "{address}"',
       'site:estately.com "{address}"',
       'site:homes.com "{address}"',
-      'site:realtor.com "{address}"'
+      'site:realtor.com "{address}"',
+
+      // General listing description fallback
+      '"{address}" listing description view',
+      '"{address}" property features view',
+
+      // County/GIS data for natural features proximity
+      '"{address}" near water ocean lake',
+      '"{address}" elevation view mountains'
     ],
-    prioritySources: ['movoto.com', 'estately.com', 'homes.com', 'realtor.com'],
+    prioritySources: ['movoto.com', 'estately.com', 'homes.com', 'realtor.com', 'county GIS'],
     extractionPatterns: {
       regexPatterns: [
-        /water view|ocean view|lake view|bay view|river view|mountain view|city view|skyline view|golf course view|park view|garden view/i
+        /water view|ocean view|lake view|bay view|river view|mountain view|city view|skyline view|golf course view|park view|garden view|scenic view|panoramic view|valley view|canyon view|hill view/i,
+        /view of (water|ocean|lake|bay|river|mountain|city|golf course|park|valley)/i,
+        /overlook(s|ing)?\s+(water|ocean|lake|mountains?|city)/i
       ],
-      textMarkers: ['view', 'water', 'ocean', 'mountain', 'city', 'golf course']
+      textMarkers: ['view', 'water', 'ocean', 'mountain', 'city', 'golf course', 'panoramic', 'scenic', 'overlook', 'vista']
     },
-    expectedSuccessRate: 0.40,
+    expectedSuccessRate: 0.55,
     confidenceThreshold: 'medium',
     dataLevel: 'address',
     fallbackToLLM: true,
-    notes: 'LISTING-DEPENDENT - only extract explicit mentions, do NOT infer from photos'
+    notes: 'LISTING-DEPENDENT - only extract explicit mentions in listing text, do NOT infer from photos. Fallback to general listing descriptions for view mentions. County GIS for natural feature proximity.'
   },
 
   132: {
@@ -1392,25 +1403,36 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     label: 'Lot Features',
     category: 'features',
     searchQueries: [
+      // MLS listing sites (HIGHEST PRIORITY - explicit mentions)
       'site:movoto.com "{address}"',
       'site:estately.com "{address}"',
       'site:realtor.com "{address}"',
-      'site:homes.com "{address}"'
+      'site:homes.com "{address}"',
+
+      // County parcel/plat data for lot characteristics
+      '"{address}" county parcel lot shape',
+      '"{address}" plat map corner lot cul-de-sac',
+
+      // General listing description
+      '"{address}" lot features yard',
+      '"{address}" property description outdoor'
     ],
-    prioritySources: ['movoto.com', 'estately.com', 'realtor.com', 'homes.com'],
+    prioritySources: ['movoto.com', 'estately.com', 'realtor.com', 'homes.com', 'county GIS', 'county plat maps'],
     extractionPatterns: {
       regexPatterns: [
-        /corner lot|cul-de-sac|fenced yard|pool|landscaped|mature trees|flat lot|sloped lot|waterfront|acreage|oversized lot|pie-shaped lot/i,
+        /corner lot|cul-de-sac|fenced yard|pool|landscaped|mature trees|flat lot|sloped lot|waterfront|acreage|oversized lot|pie-shaped lot|level lot|wooded lot|cleared lot|private lot|backs to (greenbelt|park|woods)/i,
         /([\d\.]+)\s*acre/i,
-        /([\d,]+)\s*sq\s*ft\s*lot/i
+        /([\d,]+)\s*sq\s*ft\s*lot/i,
+        /lot size[:\s]*([\d,]+)\s*sq\s*ft/i,
+        /backs to (greenbelt|park|trees|woods|open space)/i
       ],
-      textMarkers: ['lot', 'corner', 'cul-de-sac', 'fenced', 'pool', 'landscaped', 'waterfront']
+      textMarkers: ['lot', 'corner', 'cul-de-sac', 'fenced', 'pool', 'landscaped', 'waterfront', 'level', 'wooded', 'cleared', 'backs to']
     },
-    expectedSuccessRate: 0.50,
+    expectedSuccessRate: 0.65,
     confidenceThreshold: 'medium',
     dataLevel: 'address',
     fallbackToLLM: true,
-    notes: 'LISTING-DEPENDENT - only extract explicit mentions'
+    notes: 'LISTING-DEPENDENT - only extract explicit mentions in listing text. County GIS/plat maps can identify corner lots and cul-de-sac locations. Includes backing to greenbelt/park detection (valuable for privacy/views).'
   },
 
   133: {
@@ -1418,25 +1440,35 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     label: 'EV Charging',
     category: 'features',
     searchQueries: [
-      'site:plugshare.com "{city}, {state}"',
+      // PlugShare - THE authoritative EV charging database (ZIP-level PRIORITY)
       'site:plugshare.com "{zip}"',
+      'site:plugshare.com "{city}, {state}"',
+
+      // Additional authoritative sources (ZIP-level)
+      'site:chargehub.com "{zip}"',
+      'site:openchargemap.org "{zip}"',
+      'site:afdc.energy.gov "{zip}" charging stations',
+
+      // City-level fallback
       'site:chargehub.com "{city}"',
       'site:openchargemap.org "{city}"'
     ],
-    prioritySources: ['plugshare.com', 'chargehub.com', 'openchargemap.org'],
+    prioritySources: ['plugshare.com', 'chargehub.com', 'openchargemap.org', 'afdc.energy.gov'],
     extractionPatterns: {
       regexPatterns: [
-        /Level 2|DC Fast|Tesla Supercharger/i,
-        /ChargePoint|Electrify America|EVgo|Tesla/i,
-        /([\d\.]+)\s*mi/i
+        /Level 2|DC Fast|Tesla Supercharger|Level 1/i,
+        /ChargePoint|Electrify America|EVgo|Tesla|Blink|SemaConnect|Flo|Greenlots/i,
+        /([\d\.]+)\s*mi(les?)?/i,
+        /([\d]+)\s*kW/i,
+        /(\d+)\s*chargers?/i
       ],
-      textMarkers: ['charging station', 'Level 2', 'DC Fast', 'Tesla', 'ChargePoint']
+      textMarkers: ['charging station', 'Level 2', 'DC Fast', 'Tesla', 'ChargePoint', 'kW', 'Supercharger', 'Electrify America', 'EVgo']
     },
-    expectedSuccessRate: 0.90,
+    expectedSuccessRate: 0.93,
     confidenceThreshold: 'high',
-    dataLevel: 'city',
+    dataLevel: 'zip',
     fallbackToLLM: true,
-    notes: 'PlugShare is THE authoritative EV charging database'
+    notes: 'PlugShare is THE authoritative EV charging database. ZIP-level for better proximity accuracy. Added AFDC (Alternative Fuels Data Center) government source. Includes kW output and charger count extraction.'
   },
 
   134: {
@@ -1444,22 +1476,32 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     label: 'Smart Home Features',
     category: 'features',
     searchQueries: [
+      // MLS listing sites (explicit mentions)
       'site:movoto.com "{address}"',
       'site:realtor.com "{address}"',
-      'site:estately.com "{address}"'
+      'site:estately.com "{address}"',
+      'site:homes.com "{address}"',
+
+      // General listing description (fallback for smart features)
+      '"{address}" listing smart home features',
+      '"{address}" property features technology',
+      '"{address}" listing description automation'
     ],
-    prioritySources: ['movoto.com', 'realtor.com', 'estately.com'],
+    prioritySources: ['movoto.com', 'realtor.com', 'estately.com', 'homes.com'],
     extractionPatterns: {
       regexPatterns: [
-        /smart thermostat|Nest|Ecobee|smart locks|Ring doorbell|smart lighting|home automation|Alexa|Google Home|smart blinds|security system|smart sprinklers/i
+        /smart thermostat|Nest|Ecobee|Honeywell Home|smart locks|Ring doorbell|smart lighting|home automation|Alexa|Google Home|smart blinds|security system|smart sprinklers|smart garage|video doorbell/i,
+        /Ring|Nest|Ecobee|August|Schlage Encode|Lutron|Philips Hue|Arlo|SimpliSafe|ADT|Vivint/i,
+        /smart home|home automation|connected home|smart security/i,
+        /voice control|Alexa enabled|Google Assistant|HomeKit/i
       ],
-      textMarkers: ['smart', 'Nest', 'Ring', 'Alexa', 'Google Home', 'automation']
+      textMarkers: ['smart', 'Nest', 'Ring', 'Alexa', 'Google Home', 'automation', 'video doorbell', 'smart lock', 'smart thermostat', 'connected']
     },
-    expectedSuccessRate: 0.25,
-    confidenceThreshold: 'low',
+    expectedSuccessRate: 0.40,
+    confidenceThreshold: 'medium',
     dataLevel: 'address',
     fallbackToLLM: true,
-    notes: 'LISTING-DEPENDENT - smart features rarely listed, expect low success'
+    notes: 'LISTING-DEPENDENT - smart features rarely listed in older properties, expect higher success in new construction. Includes major brand recognition (Ring, Nest, Ecobee, etc.). Fallback to general listing descriptions for smart home mentions.'
   },
 
   135: {
@@ -1467,23 +1509,33 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     label: 'Accessibility Modifications',
     category: 'features',
     searchQueries: [
+      // Rental sites (more likely to list accessibility)
       'site:apartments.com "{address}"',
       'site:rent.com "{address}"',
+
+      // MLS sites with accessibility queries
       'site:realtor.com "{address}" accessible',
-      'site:movoto.com "{address}"'
+      'site:movoto.com "{address}"',
+      'site:homes.com "{address}"',
+
+      // General listing description
+      '"{address}" accessible features ADA',
+      '"{address}" listing wheelchair accessible'
     ],
-    prioritySources: ['apartments.com', 'rent.com', 'realtor.com'],
+    prioritySources: ['apartments.com', 'rent.com', 'realtor.com', 'movoto.com', 'homes.com'],
     extractionPatterns: {
       regexPatterns: [
-        /wheelchair accessible|ADA compliant|single-story|no stairs|grab bars|roll-in shower|wide doorways|ramp|elevator access|handicap accessible|first-floor master/i
+        /wheelchair accessible|ADA compliant|single-story|no stairs|grab bars|roll-in shower|wide doorways|ramp|elevator access|handicap accessible|first-floor master|accessible bathroom|accessible kitchen/i,
+        /step-free entry|barrier-free|universal design|accessible entrance/i,
+        /32.*?inch.*?door|36.*?inch.*?door/i
       ],
-      textMarkers: ['wheelchair', 'ADA', 'accessible', 'grab bars', 'ramp', 'elevator']
+      textMarkers: ['wheelchair', 'ADA', 'accessible', 'grab bars', 'ramp', 'elevator', 'single-story', 'no stairs', 'barrier-free', 'universal design']
     },
-    expectedSuccessRate: 0.30,
+    expectedSuccessRate: 0.45,
     confidenceThreshold: 'medium',
     dataLevel: 'address',
     fallbackToLLM: true,
-    notes: 'LISTING-DEPENDENT - rentals more likely to list accessibility features'
+    notes: 'LISTING-DEPENDENT - rentals more likely to list accessibility features. Includes ADA compliance detection, door width measurements (32"/36"), and universal design patterns. Fallback to general listing descriptions.'
   },
 
   136: {
@@ -1491,25 +1543,31 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     label: 'Pet Policy',
     category: 'features',
     searchQueries: [
+      // Rental sites (PRIORITY - most comprehensive pet policies)
       'site:apartments.com "{address}"',
       'site:zumper.com "{address}"',
       'site:rent.com "{address}"',
-      'site:zillow.com/rental "{address}"'
+      'site:zillow.com/rental "{address}"',
+
+      // Additional rental aggregators
+      'site:apartmentguide.com "{address}"',
+      'site:rentals.com "{address}"'
     ],
-    prioritySources: ['apartments.com', 'zumper.com', 'rent.com'],
+    prioritySources: ['apartments.com', 'zumper.com', 'rent.com', 'zillow.com/rental', 'apartmentguide.com'],
     extractionPatterns: {
       regexPatterns: [
-        /pets allowed|dogs allowed|cats allowed|no pets|pet deposit|pet rent/i,
+        /pets allowed|dogs allowed|cats allowed|no pets|pet deposit|pet rent|pet fee|pet-friendly|large dogs|small dogs|breed restrictions/i,
         /\$?([\d,]+)\s*pet deposit/i,
-        /\$?([\d,]+)\/mo.*?pet/i
+        /\$?([\d,]+)\/mo.*?pet/i,
+        /(\d+)\s*pet maximum|max.*?(\d+)\s*pets?/i
       ],
-      textMarkers: ['pets', 'dogs', 'cats', 'pet policy', 'pet deposit', 'pet rent']
+      textMarkers: ['pets', 'dogs', 'cats', 'pet policy', 'pet deposit', 'pet rent', 'pet-friendly', 'breed restrictions', 'weight limit']
     },
-    expectedSuccessRate: 0.90,
+    expectedSuccessRate: 0.92,
     confidenceThreshold: 'high',
     dataLevel: 'address',
     fallbackToLLM: true,
-    notes: 'RENTAL-SPECIFIC - for sale properties return "N/A - property is for sale"'
+    notes: 'RENTAL-SPECIFIC - for sale properties return "N/A - property is for sale". Includes breed restrictions, weight limits, and pet count maximums for comprehensive policy extraction.'
   },
 
   137: {
@@ -1517,25 +1575,33 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     label: 'Age Restrictions',
     category: 'features',
     searchQueries: [
+      // 55Places.com - THE specialist (HIGHEST PRIORITY)
       'site:55places.com "{community}"',
       'site:55places.com "{zip}"',
+
+      // MLS sites with age restriction queries
       'site:realtor.com "{address}" "55+"',
       'site:realtor.com "{community}" age restricted',
-      '"{community}" HOA age restriction'
+
+      // HOA and community searches
+      '"{community}" HOA age restriction',
+      '"{address}" senior community 55+',
+      '"{zip}" active adult community'
     ],
     prioritySources: ['55places.com', 'realtor.com'],
     extractionPatterns: {
       regexPatterns: [
-        /55\+|62\+|age restricted|age restriction/i,
-        /at least one resident.*?(\d+)/i
+        /55\+|62\+|age restricted|age restriction|active adult/i,
+        /at least one resident.*?(\d+)/i,
+        /minimum age.*?(\d+)/i
       ],
-      textMarkers: ['55+', '62+', 'age restricted', 'senior community']
+      textMarkers: ['55+', '62+', 'age restricted', 'senior community', 'active adult', 'age qualification', 'minimum age']
     },
-    expectedSuccessRate: 0.80,
+    expectedSuccessRate: 0.83,
     confidenceThreshold: 'high',
     dataLevel: 'address',
     fallbackToLLM: true,
-    notes: '55Places.com is THE specialist for age-restricted communities'
+    notes: '55Places.com is THE specialist for age-restricted communities. Includes "active adult" terminology and minimum age extraction (55+ vs 62+). ZIP-level fallback for community identification.'
   },
 
   138: {
@@ -1543,25 +1609,36 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     label: 'Special Assessments',
     category: 'features',
     searchQueries: [
+      // HOA databases (limited public disclosure)
       'site:hoadata.org "{community}"',
       'site:hoadata.org "{zip}"',
       'site:propertyshark.com "{address}" assessment',
-      '"{community}" HOA special assessment'
+
+      // MLS listing disclosures (sometimes disclosed)
+      'site:realtor.com "{address}" special assessment',
+      'site:homes.com "{address}" HOA assessment',
+
+      // Community and HOA searches
+      '"{community}" HOA special assessment',
+      '"{community}" special assessment 2025 2026',
+      '"{zip}" HOA assessment news'
     ],
-    prioritySources: ['hoadata.org', 'propertyshark.com'],
+    prioritySources: ['hoadata.org', 'propertyshark.com', 'realtor.com', 'HOA disclosure documents'],
     extractionPatterns: {
       regexPatterns: [
         /HOA.*?\$?([\d,]+)/i,
         /special assessment.*?\$?([\d,]+)/i,
-        /\$?([\d,]+)\/mo.*?HOA/i
+        /\$?([\d,]+)\/mo.*?HOA/i,
+        /one-time.*?assessment.*?\$?([\d,]+)/i,
+        /pending.*?assessment/i
       ],
-      textMarkers: ['HOA fee', 'special assessment', 'assessment', 'HOA']
+      textMarkers: ['HOA fee', 'special assessment', 'assessment', 'HOA', 'one-time assessment', 'pending assessment', 'approved assessment', 'condo fees']
     },
-    expectedSuccessRate: 0.30,
+    expectedSuccessRate: 0.40,
     confidenceThreshold: 'low',
     dataLevel: 'address',
     fallbackToLLM: true,
-    notes: 'Special assessments often NOT publicly disclosed - contact HOA directly'
+    notes: 'Special assessments often NOT publicly disclosed - contact HOA directly for verification. MLS listings sometimes disclose pending/recent assessments. Includes year-specific queries (2025/2026) for recent assessment news. One-time vs recurring assessment detection.'
   },
 
   // ======================
