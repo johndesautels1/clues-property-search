@@ -46,10 +46,10 @@ const missingFieldsRules = {
     "12_market_value_estimate": { type: "number", definition: "DO NOT RETURN - Backend calculates from highest-tier verified AVM source." },
     "16a_zestimate": { type: "number", definition: "Zillow's Zestimate value in USD. Search 'site:zillow.com [address]'." },
     "16b_redfin_estimate": { type: "number", definition: "Redfin's estimate value in USD. Search 'site:redfin.com [address]'." },
-    "16c_first_american_avm": { type: "number", definition: "First American AVM value in USD. Often behind paywall - return null if unavailable." },
-    "16d_quantarium_avm": { type: "number", definition: "Quantarium AVM value in USD. Often behind paywall - return null if unavailable." },
-    "16e_ice_avm": { type: "number", definition: "ICE (Intercontinental Exchange) AVM value in USD. Often behind paywall - return null if unavailable." },
-    "16f_collateral_analytics_avm": { type: "number", definition: "Collateral Analytics AVM value in USD. Often behind paywall - return null if unavailable." },
+    "16c_first_american_avm": { type: "number", definition: "First American AVM value in USD. Search real estate portals, lender sites, and property reports that may display this value." },
+    "16d_quantarium_avm": { type: "number", definition: "Quantarium AVM value in USD. Search real estate portals and property valuation sites that may display this value." },
+    "16e_ice_avm": { type: "number", definition: "ICE (Intercontinental Exchange) AVM value in USD. Search mortgage/lending sites and property reports that may display this value." },
+    "16f_collateral_analytics_avm": { type: "number", definition: "Collateral Analytics AVM value in USD. Search real estate portals and valuation reports that may display this value." },
 
     // Transit & Location
     "81_public_transit_access": { type: "string", definition: "Description of public transit options (bus routes, train stations) within 1 mile of property." },

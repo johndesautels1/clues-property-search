@@ -85,7 +85,7 @@ Do NOT re-search fields already populated - focus ONLY on MISSING fields.
    - 16f_collateral_analytics_avm: Search for Collateral Analytics AVM if available
    - 181_rent_zestimate: Search "site:zillow.com [ADDRESS] rent" for Zillow Rent Zestimate
    - DO NOT return 12_market_value_estimate - the backend calculates this from individual AVMs
-   - If a specific AVM is behind a paywall, return null for that field.
+   - Search real estate portals, lender sites, and property reports for AVMs that may be publicly displayed.
 4. PERMITS & RENOVATIONS SEARCH STRATEGY:
    - 59_recent_renovations: Search "[ADDRESS] renovations upgrades" on listing portals
    - 60_permit_history_roof: Search "[ADDRESS] [COUNTY] building permits roof"
