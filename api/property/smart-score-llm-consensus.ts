@@ -243,7 +243,7 @@ async function callClaudeOpus(prompt: string): Promise<LLMResponse> {
       body: JSON.stringify({
         model: 'claude-opus-4-5-20251101',
         max_tokens: 32000,
-        temperature: 0.2,
+        temperature: 0.1,  // FIX: Standardize Opus temp to 0.1 (lowest) for consensus scoring
         messages: [
           {
             role: 'user',

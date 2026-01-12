@@ -523,7 +523,7 @@ async function callClaudeOpusForecast(
   const response = await client.messages.create({
     model: 'claude-opus-4-5-20251101',
     max_tokens: 32000,
-    temperature: 0.2,
+    temperature: 0.1,  // FIX: Standardize Opus temp to 0.1 (lowest) for deep reasoning
     system: CLAUDE_OPUS_OLIVIA_CMA_SYSTEM_PROMPT,
     messages: [{ role: 'user', content: prompt }],
   });
