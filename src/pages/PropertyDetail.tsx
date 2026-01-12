@@ -1389,6 +1389,12 @@ export default function PropertyDetail() {
                 <div className="mt-3 flex items-center justify-end gap-3">
                   <div className="relative w-12 h-12">
                     <svg className="w-12 h-12 transform -rotate-90">
+                      <defs>
+                        <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#00f0ff" />
+                          <stop offset="100%" stopColor="#a855f7" />
+                        </linearGradient>
+                      </defs>
                       <circle
                         cx="24"
                         cy="24"
@@ -1410,12 +1416,6 @@ export default function PropertyDetail() {
                         className="transition-all duration-1000"
                       />
                     </svg>
-                    <defs>
-                      <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#00f0ff" />
-                        <stop offset="100%" stopColor="#a855f7" />
-                      </linearGradient>
-                    </defs>
                     <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
                       {Math.min(100, property.dataCompleteness)}%
                     </span>
