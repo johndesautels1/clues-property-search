@@ -1389,6 +1389,13 @@ Return ONLY the JSON object described in the system prompt.`;
     const data = await response.json();
     console.log('[GPT] Status:', response.status);
 
+    // Check for HTTP error status first
+    if (!response.ok) {
+      const errorMsg = data.error?.message || data.error || response.statusText || 'Unknown API error';
+      console.error(`[GPT] HTTP ${response.status} error:`, errorMsg);
+      return { error: `OpenAI API error (${response.status}): ${errorMsg}`, fields: {} };
+    }
+
     // Handle Chat Completions format
     const text = data.choices?.[0]?.message?.content;
 

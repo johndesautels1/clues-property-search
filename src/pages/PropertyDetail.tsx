@@ -977,7 +977,16 @@ export default function PropertyDetail() {
           alert(`❌ ${llmName} found no data for this property`);
         }
       } else {
-        alert(`Error calling ${llmName} API`);
+        // Parse error response to show actual error message
+        try {
+          const errorData = await response.json();
+          const errorMsg = errorData.error || response.statusText || 'Unknown error';
+          alert(`❌ Error calling ${llmName} API (${response.status})\n\n${errorMsg}`);
+          console.error(`[RETRY-LLM] ${llmName} API error:`, errorData);
+        } catch (parseError) {
+          // If JSON parsing fails, show generic error with status
+          alert(`❌ Error calling ${llmName} API (${response.status}): ${response.statusText}`);
+        }
       }
     } catch (error) {
       console.error('Retry error:', error);
