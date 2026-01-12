@@ -1364,21 +1364,43 @@ export async function callNOAASeaLevel(lat: number, lon: number, beachDistanceMi
       distanceSource = 'Google Places (Beach Distance)';
       console.log(`[NOAA Sea Level] Using accurate beach distance: ${distanceToCoast.toFixed(1)} mi from Google Places`);
     } else {
-      // Fallback: Calculate distance to nearest NOAA tide station
-      // Florida coastal stations by region
-      const floridaStations: Record<string, { id: string; name: string; lat: number; lon: number }> = {
-        'tampa_bay': { id: '8726520', name: 'St. Petersburg', lat: 27.76, lon: -82.63 },
-        'clearwater': { id: '8726724', name: 'Clearwater Beach', lat: 27.98, lon: -82.83 },
-        'naples': { id: '8725110', name: 'Naples', lat: 26.13, lon: -81.81 },
-        'miami': { id: '8723170', name: 'Miami Beach', lat: 25.77, lon: -80.13 },
-        'key_west': { id: '8724580', name: 'Key West', lat: 24.55, lon: -81.81 },
-      };
+      // Fallback: Calculate distance to nearest actual coastline point using Haversine formula
+      // Florida coastline reference points (actual coast/waterfront locations)
+      const coastlinePoints = [
+        // West Coast (Gulf of Mexico)
+        { lat: 27.6648, lon: -82.7340 }, // St. Pete Beach
+        { lat: 27.9650, lon: -82.8302 }, // Clearwater Beach (actual beach)
+        { lat: 28.3922, lon: -82.5983 }, // Tarpon Springs (coast)
+        { lat: 26.1420, lon: -81.7948 }, // Naples Beach
+        { lat: 26.4619, lon: -81.8337 }, // Bonita Springs Beach
+        { lat: 28.9384, lon: -82.7859 }, // Crystal River (coast)
+        { lat: 24.5551, lon: -81.7800 }, // Key West (actual coast)
+        // East Coast (Atlantic Ocean)
+        { lat: 25.7907, lon: -80.1300 }, // Miami Beach (actual beach)
+        { lat: 26.7153, lon: -80.0534 }, // Palm Beach
+        { lat: 29.2108, lon: -81.0228 }, // Daytona Beach
+        { lat: 30.3322, lon: -81.3934 }, // Jacksonville Beach
+        { lat: 30.6954, lon: -81.5074 }, // Jacksonville Beach (alt)
+        { lat: 30.7335, lon: -81.4421 }, // Atlantic Beach
+      ];
 
-      // Find nearest station (simplified - using Tampa Bay as default for FL properties)
-      const station = floridaStations.tampa_bay;
-      distanceToCoast = Math.sqrt(Math.pow(lat - station.lat, 2) + Math.pow(lon - station.lon, 2)) * 69; // miles
-      distanceSource = 'NOAA Tide Station (Estimated)';
-      console.warn(`[NOAA Sea Level] ⚠️ Using estimated distance to tide station (${distanceToCoast.toFixed(1)} mi) - Google beach distance unavailable`);
+      // Find minimum distance to any coastline point using Haversine formula
+      let minDistance = Infinity;
+      for (const point of coastlinePoints) {
+        const R = 3959; // Earth radius in miles
+        const dLat = (point.lat - lat) * Math.PI / 180;
+        const dLon = (point.lon - lon) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat * Math.PI / 180) * Math.cos(point.lat * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const distance = R * c;
+        minDistance = Math.min(minDistance, distance);
+      }
+
+      distanceToCoast = minDistance;
+      distanceSource = 'Coastline Calculation (Estimated)';
+      console.warn(`[NOAA Sea Level] ⚠️ Using estimated coastline distance (${distanceToCoast.toFixed(1)} mi) - Google beach distance unavailable`);
     }
 
     // Determine sea level rise risk based on distance to coast
