@@ -404,7 +404,7 @@ async function callGPT5(prompt: string): Promise<LLMResponse> {
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-2024-11-20',
+        model: 'gpt-4o',
         max_tokens: 16000,
         messages: [
           { role: 'system', content: OLIVIA_SYSTEM_PROMPT },

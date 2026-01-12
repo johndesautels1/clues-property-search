@@ -228,7 +228,7 @@ class PropertyScraper {
           'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: 'gpt-4o-2024-11-20',
+          model: 'gpt-4o',
           max_tokens: 16000,
           messages: [
             {
