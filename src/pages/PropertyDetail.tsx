@@ -1454,25 +1454,6 @@ export default function PropertyDetail() {
             </div>
           </div>
 
-          {/* Key Stats Bar - Inline Prominent Display */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="glass-card p-4 text-center hover:scale-105 transition-transform">
-              <Bed className="w-6 h-6 text-quantum-cyan mx-auto mb-1" />
-              <div className="text-3xl font-bold text-white">{fullProperty?.details.bedrooms.value || property.bedrooms || 0}</div>
-              <p className="text-xs text-gray-400">Beds</p>
-            </div>
-            <div className="glass-card p-4 text-center hover:scale-105 transition-transform">
-              <Bath className="w-6 h-6 text-quantum-cyan mx-auto mb-1" />
-              <div className="text-3xl font-bold text-white">{fullProperty?.details.totalBathrooms.value || property.bathrooms || 0}</div>
-              <p className="text-xs text-gray-400">Baths</p>
-            </div>
-            <div className="glass-card p-4 text-center hover:scale-105 transition-transform">
-              <Ruler className="w-6 h-6 text-quantum-cyan mx-auto mb-1" />
-              <div className="text-3xl font-bold text-white">{(fullProperty?.details.livingSqft.value || property.sqft).toLocaleString()}</div>
-              <p className="text-xs text-gray-400">Sq Ft</p>
-            </div>
-          </div>
-
           {/* Climate Risk Badges - Condensed Card View */}
           {(fullProperty?.utilities.floodRiskLevel?.value || fullProperty?.utilities.hurricaneRisk?.value || fullProperty?.utilities.seaLevelRiseRisk?.value) && (
             <div className="glass-card p-4 mb-4">
