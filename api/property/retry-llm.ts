@@ -185,7 +185,7 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
 
   // GROUP 4: HOA & Taxes (Fields 30-38)
   '30_hoa_yn': 'boolean', 'hoa_yn': 'boolean',
-  '31_hoa_fee_annual': 'currency', 'hoa_fee_annual': 'currency',
+  '31_association_fee': 'currency', 'association_fee': 'currency', 'hoa_fee_annual': 'currency', // FIXED 2026-01-12: Canonical name
   '32_hoa_name': 'text', 'hoa_name': 'text',
   '33_hoa_includes': 'text', 'hoa_includes': 'text',
   '34_ownership_type': 'select', 'ownership_type': 'select',

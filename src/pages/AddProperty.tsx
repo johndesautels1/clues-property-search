@@ -849,7 +849,8 @@ export default function AddProperty() {
         garageSpaces: createDataField(row['28_garage_spaces'] ? parseInt(row['28_garage_spaces']) : null),
         parkingTotal: createDataField(row['29_parking_total'] || ''),
         hoaYn: createDataField(parseBoolean(row['30_hoa_yn'])),
-        hoaFeeAnnual: createDataField(row['31_hoa_fee_annual'] ? parseFloat(row['31_hoa_fee_annual'].toString().replace(/[^0-9.]/g, '')) : null),
+        // FIXED 2026-01-12: Support both canonical name (31_association_fee) and legacy name (31_hoa_fee_annual) for CSV import
+        hoaFeeAnnual: createDataField((row['31_association_fee'] || row['31_hoa_fee_annual']) ? parseFloat((row['31_association_fee'] || row['31_hoa_fee_annual']).toString().replace(/[^0-9.]/g, '')) : null),
         hoaName: createDataField(row['32_hoa_name'] || ''),
         hoaIncludes: createDataField(row['33_hoa_includes'] || ''),
         annualTaxes: createDataField(row['35_annual_taxes'] ? parseFloat(row['35_annual_taxes'].toString().replace(/[^0-9.]/g, '')) : null),
