@@ -1373,7 +1373,7 @@ Return ONLY the JSON object described in the system prompt.`;
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-4o-2024-11-20',
         max_tokens: 16000,
         messages: [
           { role: 'system', content: GPT_RETRY_SYSTEM_PROMPT },

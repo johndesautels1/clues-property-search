@@ -3942,7 +3942,7 @@ Return structured JSON with proper field keys. Use null for unknown data.`;
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-4o-2024-11-20',
         max_tokens: 16000,
         messages: [
           { role: 'system', content: PROMPT_COPILOT },
@@ -4049,7 +4049,7 @@ async function callGPT5(
 
     // Use OpenAI Chat Completions API (fixed from /v1/responses)
     const requestBody = {
-      model: 'gpt-4o',
+      model: 'gpt-4o-2024-11-20',
       max_tokens: 16000,
       messages: [
         { role: 'system', content: systemPrompt },
@@ -4139,7 +4139,7 @@ async function callGPT5(
           'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: 'gpt-4o', // Unified model for tool results callback
+          model: 'gpt-4o-2024-11-20', // Unified model for tool results callback
           max_tokens: 32000,
           temperature: 0.2,
           messages: messages,
@@ -4260,7 +4260,7 @@ async function callGPT5FieldAuditor(
 
     // Use OpenAI Chat Completions API (fixed from /v1/responses)
     const requestBody = {
-      model: 'gpt-4o',
+      model: 'gpt-4o-2024-11-20',
       max_tokens: 16000,
       messages: [
         { role: 'system', content: systemPrompt },
