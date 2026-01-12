@@ -1301,82 +1301,15 @@ export default function PropertyDetail() {
         {/* Hero Section - Redesigned for Visual Impact */}
         <motion.div variants={itemVariants} className="mb-8">
 
-          {/* Stunning Gradient Price Banner */}
+          {/* Stunning Gradient Price Banner - Centered Layout */}
           <div className="relative mb-6 p-8 rounded-2xl bg-gradient-to-br from-quantum-cyan/20 via-quantum-purple/20 to-quantum-gold/20 border border-quantum-cyan/30 backdrop-blur-xl overflow-hidden">
             {/* Animated background glow */}
             <div className="absolute inset-0 bg-gradient-to-r from-quantum-cyan/10 via-transparent to-quantum-purple/10 animate-pulse" />
 
-            <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              {/* Left: Address & Status */}
-              <div className="flex-1">
-                <h1 className="text-3xl md:text-4xl font-bold text-white mb-3 leading-tight">
-                  {fullProperty?.address.fullAddress.value || property.address}
-                </h1>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  {/* Status Badge - Prominent */}
-                  <span className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg ${
-                    (fullProperty?.address.listingStatus.value || property.listingStatus) === 'Active' ? 'bg-quantum-green/30 text-quantum-green border border-quantum-green/50' :
-                    (fullProperty?.address.listingStatus.value || property.listingStatus) === 'Pending' ? 'bg-quantum-gold/30 text-quantum-gold border border-quantum-gold/50' :
-                    'bg-gray-500/30 text-gray-300 border border-gray-400/50'
-                  }`}>
-                    ● {fullProperty?.address.listingStatus.value || property.listingStatus}
-                  </span>
-
-                  {/* MLS# Badge */}
-                  {fullProperty?.address.mlsPrimary?.value && (
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        navigator.clipboard.writeText(String(fullProperty.address.mlsPrimary.value));
-                        const btn = e.currentTarget;
-                        const originalText = btn.innerHTML;
-                        btn.innerHTML = '<span class="text-quantum-green">✓ Copied!</span>';
-                        setTimeout(() => { btn.innerHTML = originalText; }, 1500);
-                      }}
-                      className="px-3 py-1.5 rounded-lg bg-quantum-cyan/20 hover:bg-quantum-cyan/30 border border-quantum-cyan/40 transition-all cursor-pointer group"
-                      title="Click to copy MLS#"
-                    >
-                      <span className="text-xs font-semibold text-quantum-cyan group-hover:text-white">
-                        MLS# {fullProperty.address.mlsPrimary.value}
-                      </span>
-                    </button>
-                  )}
-
-                  {/* New Construction Badge */}
-                  {fullProperty?.address.newConstructionYN?.value && (
-                    <div className="px-3 py-1.5 rounded-lg bg-green-500/20 border border-green-400/40 shadow-lg">
-                      <span className="text-xs font-bold text-green-400">
-                        🏗️ NEW CONSTRUCTION
-                      </span>
-                    </div>
-                  )}
-
-                  {/* APN Badge */}
-                  {fullProperty?.details.parcelId?.value && (
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        navigator.clipboard.writeText(String(fullProperty.details.parcelId.value));
-                        const btn = e.currentTarget;
-                        const originalText = btn.innerHTML;
-                        btn.innerHTML = '<span class="text-quantum-green">✓ Copied!</span>';
-                        setTimeout(() => { btn.innerHTML = originalText; }, 1500);
-                      }}
-                      className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 transition-all cursor-pointer group"
-                      title="Click to copy Parcel ID (APN)"
-                    >
-                      <span className="text-xs font-semibold text-amber-400 group-hover:text-white">
-                        APN: {fullProperty.details.parcelId.value}
-                      </span>
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Right: Price Display - HUGE and Eye-Catching */}
-              <div className="text-left md:text-right">
-                <div className="text-5xl md:text-6xl font-black bg-gradient-to-r from-quantum-cyan via-white to-quantum-gold bg-clip-text text-transparent mb-2 animate-shimmer">
+            <div className="relative z-10 text-center">
+              {/* Line 1: Price - CENTERED AT TOP */}
+              <div className="mb-4">
+                <div className="text-5xl md:text-6xl font-black bg-gradient-to-r from-quantum-cyan via-white to-quantum-gold bg-clip-text text-transparent mb-2">
                   {formatValue(fullProperty?.address.listingPrice.value || property.price, 'currency')}
                 </div>
                 {property.pricePerSqft > 0 && (
@@ -1384,46 +1317,124 @@ export default function PropertyDetail() {
                     ${property.pricePerSqft}/sqft
                   </p>
                 )}
+              </div>
 
-                {/* Data Completeness - Circular Progress */}
-                <div className="mt-3 flex items-center justify-end gap-3">
-                  <div className="relative w-12 h-12">
-                    <svg className="w-12 h-12 transform -rotate-90">
-                      <defs>
-                        <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="#00f0ff" />
-                          <stop offset="100%" stopColor="#a855f7" />
-                        </linearGradient>
-                      </defs>
-                      <circle
-                        cx="24"
-                        cy="24"
-                        r="20"
-                        stroke="rgba(255,255,255,0.1)"
-                        strokeWidth="4"
-                        fill="none"
-                      />
-                      <circle
-                        cx="24"
-                        cy="24"
-                        r="20"
-                        stroke="url(#progressGradient)"
-                        strokeWidth="4"
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeDasharray={`${2 * Math.PI * 20}`}
-                        strokeDashoffset={`${2 * Math.PI * 20 * (1 - Math.min(100, property.dataCompleteness) / 100)}`}
-                        className="transition-all duration-1000"
-                      />
-                    </svg>
-                    <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
-                      {Math.min(100, property.dataCompleteness)}%
+              {/* Water Body Name - CENTERED */}
+              {fullProperty?.stellarMLS?.waterfront?.waterBodyName?.value && (
+                <div className="mb-4">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-400/30">
+                    <Waves className="w-5 h-5 text-cyan-400" />
+                    <p className="text-lg text-cyan-300 font-semibold">
+                      {fullProperty.stellarMLS.waterfront.waterBodyName.value}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Line 2: Address - CENTERED */}
+              <h1 className="text-2xl md:text-3xl font-bold text-white mb-4 leading-tight">
+                {fullProperty?.address.fullAddress.value || property.address}
+              </h1>
+
+              {/* Line 3: Status, MLS#, APN - CENTERED */}
+              <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
+                {/* Status Badge */}
+                <span className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg ${
+                  (fullProperty?.address.listingStatus.value || property.listingStatus) === 'Active' ? 'bg-quantum-green/30 text-quantum-green border border-quantum-green/50' :
+                  (fullProperty?.address.listingStatus.value || property.listingStatus) === 'Pending' ? 'bg-quantum-gold/30 text-quantum-gold border border-quantum-gold/50' :
+                  'bg-gray-500/30 text-gray-300 border border-gray-400/50'
+                }`}>
+                  ● {fullProperty?.address.listingStatus.value || property.listingStatus}
+                </span>
+
+                {/* MLS# Badge */}
+                {fullProperty?.address.mlsPrimary?.value && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigator.clipboard.writeText(String(fullProperty.address.mlsPrimary.value));
+                      const btn = e.currentTarget;
+                      const originalText = btn.innerHTML;
+                      btn.innerHTML = '<span class="text-quantum-green">✓ Copied!</span>';
+                      setTimeout(() => { btn.innerHTML = originalText; }, 1500);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-quantum-cyan/20 hover:bg-quantum-cyan/30 border border-quantum-cyan/40 transition-all cursor-pointer group"
+                    title="Click to copy MLS#"
+                  >
+                    <span className="text-xs font-semibold text-quantum-cyan group-hover:text-white">
+                      MLS# {fullProperty.address.mlsPrimary.value}
+                    </span>
+                  </button>
+                )}
+
+                {/* New Construction Badge */}
+                {fullProperty?.address.newConstructionYN?.value && (
+                  <div className="px-3 py-1.5 rounded-lg bg-green-500/20 border border-green-400/40 shadow-lg">
+                    <span className="text-xs font-bold text-green-400">
+                      🏗️ NEW CONSTRUCTION
                     </span>
                   </div>
-                  <div className="text-left">
-                    <p className="text-sm font-semibold text-white">{fullProperty?.totalFieldsFound || Math.round(Math.min(100, property.dataCompleteness) * 1.68)}/181</p>
-                    <p className="text-xs text-gray-400">Fields</p>
-                  </div>
+                )}
+
+                {/* APN Badge */}
+                {fullProperty?.details.parcelId?.value && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigator.clipboard.writeText(String(fullProperty.details.parcelId.value));
+                      const btn = e.currentTarget;
+                      const originalText = btn.innerHTML;
+                      btn.innerHTML = '<span class="text-quantum-green">✓ Copied!</span>';
+                      setTimeout(() => { btn.innerHTML = originalText; }, 1500);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 transition-all cursor-pointer group"
+                    title="Click to copy Parcel ID (APN)"
+                  >
+                    <span className="text-xs font-semibold text-amber-400 group-hover:text-white">
+                      APN: {fullProperty.details.parcelId.value}
+                    </span>
+                  </button>
+                )}
+              </div>
+
+              {/* Data Completeness - Circular Progress - CENTERED */}
+              <div className="flex items-center justify-center gap-3">
+                <div className="relative w-12 h-12">
+                  <svg className="w-12 h-12 transform -rotate-90">
+                    <defs>
+                      <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#00f0ff" />
+                        <stop offset="100%" stopColor="#a855f7" />
+                      </linearGradient>
+                    </defs>
+                    <circle
+                      cx="24"
+                      cy="24"
+                      r="20"
+                      stroke="rgba(255,255,255,0.1)"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <circle
+                      cx="24"
+                      cy="24"
+                      r="20"
+                      stroke="url(#progressGradient)"
+                      strokeWidth="4"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeDasharray={`${2 * Math.PI * 20}`}
+                      strokeDashoffset={`${2 * Math.PI * 20 * (1 - Math.min(100, property.dataCompleteness) / 100)}`}
+                      className="transition-all duration-1000"
+                    />
+                  </svg>
+                  <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
+                    {Math.min(100, property.dataCompleteness)}%
+                  </span>
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-semibold text-white">{fullProperty?.totalFieldsFound || Math.round(Math.min(100, property.dataCompleteness) * 1.68)}/181</p>
+                  <p className="text-xs text-gray-400">Fields</p>
                 </div>
               </div>
             </div>
@@ -1447,18 +1458,6 @@ export default function PropertyDetail() {
               <p className="text-xs text-gray-400">Sq Ft</p>
             </div>
           </div>
-
-          {/* Water Body Name */}
-          {fullProperty?.stellarMLS?.waterfront?.waterBodyName?.value && (
-            <div className="glass-card p-4 mb-4 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-400/30">
-              <div className="flex items-center gap-3">
-                <Waves className="w-5 h-5 text-cyan-400" />
-                <p className="text-lg text-cyan-300 font-semibold">
-                  {fullProperty.stellarMLS.waterfront.waterBodyName.value}
-                </p>
-              </div>
-            </div>
-          )}
 
           {/* Climate Risk Badges - Condensed Card View */}
           {(fullProperty?.utilities.floodRiskLevel?.value || fullProperty?.utilities.hurricaneRisk?.value || fullProperty?.utilities.seaLevelRiseRisk?.value) && (
