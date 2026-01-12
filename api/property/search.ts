@@ -5267,7 +5267,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('========================================');
       console.log('TIER 2 & 3: FREE APIs (Google, WalkScore, FEMA, etc.)');
       console.log('========================================');
-      console.log('🔍 Calling enrichWithFreeAPIs with 30s timeout for:', realAddress); // Note: This is FREE_API_TIMEOUT (30s)
+      console.log('🔍 Calling enrichWithFreeAPIs with 60s timeout for:', realAddress); // Note: This is FREE_API_TIMEOUT (60s)
       console.log('🔍 With validation: city=', mlsCity, 'state=', mlsState, 'zip=', mlsZip);
       try {
         const enrichedData = await withTimeout(
