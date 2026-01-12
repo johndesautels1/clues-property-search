@@ -50,6 +50,7 @@ import { usePropertyStore } from '@/store/propertyStore';
 import { useIsAdmin } from '@/store/authStore';
 import { isCalculatedField, getCalculationBadge } from '@/lib/field-calculations';
 import { MultiSelectField } from '@/components/MultiSelectField';
+import { LLM_DISPLAY_NAMES } from '@/lib/llm-constants';
 
 // Tavily-enabled fields (54 fields + 6 AVM subfields = 60 total) - can be fetched with Tavily button
 // Field 99 removed - calculation-only (auto-calculated from Fields 10 & 98)
@@ -792,17 +793,20 @@ export default function PropertyDetail() {
         return;
       }
 
-      // Map display names to engine IDs
-      const engineMap: Record<string, string> = {
-        'Claude Opus': 'claude-opus',
-        'GPT': 'gpt',
-        'GPT-4o': 'gpt',
-        'Grok': 'grok',
-        'Claude Sonnet': 'claude-sonnet',
-        'Copilot': 'copilot',
-        'Gemini': 'gemini',
-        'Perplexity': 'perplexity',
-      };
+      // Map display names to engine IDs - dynamically built from LLM_DISPLAY_NAMES
+      // This ensures consistency with the single source of truth
+      const engineMap: Record<string, string> = {};
+
+      // Build reverse mapping from LLM_DISPLAY_NAMES
+      for (const [engineId, displayName] of Object.entries(LLM_DISPLAY_NAMES)) {
+        engineMap[displayName] = engineId;
+      }
+
+      // Add legacy/alternate display names for backward compatibility
+      engineMap['GPT'] = 'gpt';
+      engineMap['Perplexity'] = 'perplexity';
+      engineMap['Gemini'] = 'gemini';
+      engineMap['Grok'] = 'grok';
 
       const response = await fetch(apiUrl, {
         method: 'POST',
