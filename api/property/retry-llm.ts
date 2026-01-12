@@ -1185,6 +1185,7 @@ Extract ANY fields you can determine from your training knowledge. Return ONLY t
       body: JSON.stringify({
         model: 'claude-opus-4-5-20251101',
         max_tokens: 32000,
+        temperature: 0.1,  // FIX: Low temperature for static knowledge extraction (no web search)
         system: systemPrompt,
         messages: [{ role: 'user', content: userPrompt }],
       }),
@@ -1561,6 +1562,7 @@ Use null only for fields you truly cannot find.`;
       body: JSON.stringify({
         model: 'claude-sonnet-4-5-20250929',
         max_tokens: 32000,
+        temperature: 0.2,  // FIX: Match Perplexity/GPT temperature to prevent hallucinations
         tools: [
           {
             type: 'web_search_20250305',
