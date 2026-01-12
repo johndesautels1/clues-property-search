@@ -77,7 +77,8 @@ export interface BridgeProperty {
   BedroomsTotal?: number;
   BathroomsFull?: number;
   BathroomsHalf?: number;
-  BathroomsTotalInteger?: number;
+  BathroomsTotalInteger?: number; // Deprecated - use BathroomsTotalDecimal instead
+  BathroomsTotalDecimal?: number; // FIXED 2026-01-12: Preferred - includes half baths (2.5, 3.5, etc.)
   LivingArea?: number;
   BuildingAreaTotal?: number;
   LotSizeAcres?: number;
@@ -431,10 +432,12 @@ export class BridgeAPIClient {
       filters.push(`BedroomsTotal le ${params.maxBeds}`);
     }
     if (params.minBaths !== undefined) {
-      filters.push(`BathroomsTotalInteger ge ${params.minBaths}`);
+      // FIXED 2026-01-12: Use BathroomsTotalDecimal for consistency with field 20 mapping
+      filters.push(`BathroomsTotalDecimal ge ${params.minBaths}`);
     }
     if (params.maxBaths !== undefined) {
-      filters.push(`BathroomsTotalInteger le ${params.maxBaths}`);
+      // FIXED 2026-01-12: Use BathroomsTotalDecimal for consistency with field 20 mapping
+      filters.push(`BathroomsTotalDecimal le ${params.maxBaths}`);
     }
 
     // Property type

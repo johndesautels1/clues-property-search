@@ -995,7 +995,7 @@ function convertFlatToNestedStructure(flatFields: Record<string, any>): any {
     // GROUP 4: HOA & Taxes (Fields 30-38)
     // ================================================================
     '30_hoa_yn': ['details', 'hoaYn'],
-    '31_hoa_fee_annual': ['details', 'hoaFeeAnnual'],
+    '31_association_fee': ['details', 'associationFeeAnnualized'],
     '32_hoa_name': ['details', 'hoaName'],
     '33_hoa_includes': ['details', 'hoaIncludes'],
     '34_ownership_type': ['details', 'ownershipType'],
@@ -5015,10 +5015,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
 
             // Calculate 11_price_per_sqft from Price/Sqft if missing
+            // FIXED 2026-01-12: Don't calculate price/sqft for rentals (monthly rent / sqft is meaningless)
             if (!mlsFields['11_price_per_sqft']) {
               const price = mlsFields['10_listing_price'] || bridgeData.rawData?.ListPrice;
               const sqft = mlsFields['21_living_sqft'] || bridgeData.rawData?.LivingArea;
-              if (price && sqft && sqft > 0) {
+
+              // Detect if this is a rental listing
+              const standardStatus = (mlsFields['4_listing_status'] || bridgeData.rawData?.StandardStatus || '').toString().toLowerCase();
+              const propertySubType = (bridgeData.rawData?.PropertySubType || '').toString().toLowerCase();
+              const isRental = standardStatus.includes('lease') ||
+                              standardStatus.includes('rent') ||
+                              propertySubType.includes('rental') ||
+                              propertySubType.includes('lease');
+
+              if (price && sqft && sqft > 0 && !isRental) {
                 const pricePerSqft = Math.round(price / sqft);
                 additionalFields['11_price_per_sqft'] = {
                   value: pricePerSqft,
@@ -5026,17 +5036,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   confidence: 'High'
                 };
                 console.log('💲 Calculated 11_price_per_sqft: $', pricePerSqft, '/sqft');
+              } else if (isRental) {
+                console.log('⚠️ Skipping 11_price_per_sqft calculation for rental listing');
               }
             }
 
-            // Set 31_hoa_fee_annual to 0 if 30_hoa_yn is false
-            if (mlsFields['30_hoa_yn'] === false && !mlsFields['31_hoa_fee_annual']) {
-              additionalFields['31_hoa_fee_annual'] = {
+            // Set 31_association_fee to 0 if 30_hoa_yn is false
+            if (mlsFields['30_hoa_yn'] === false && !mlsFields['31_association_fee']) {
+              additionalFields['31_association_fee'] = {
                 value: 0,
                 source: 'Stellar MLS',
                 confidence: 'High'
               };
-              console.log('🏘️ Set 31_hoa_fee_annual = 0 (no HOA)');
+              console.log('🏘️ Set 31_association_fee = 0 (no HOA)');
             }
 
             // ========================================
@@ -5788,7 +5800,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       field_23_lot_size_sqft: getFieldValue('23_lot_size_sqft'),
       field_26_property_type: getFieldValue('26_property_type'),
       field_28_garage_spaces: getFieldValue('28_garage_spaces'),
-      field_31_hoa_fee_annual: getFieldValue('31_hoa_fee_annual'),
+      field_31_association_fee: getFieldValue('31_association_fee'),
       field_33_hoa_includes: getFieldValue('33_hoa_includes'),
       field_35_annual_taxes: getFieldValue('35_annual_taxes'),
       field_52_fireplace_yn: getFieldValue('52_fireplace_yn'),

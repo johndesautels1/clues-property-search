@@ -818,7 +818,7 @@ export default function PropertyDetail() {
             '29_parking_total': ['details', 'parkingTotal'],
             // GROUP 4: HOA & Taxes (30-38)
             '30_hoa_yn': ['details', 'hoaYn'],
-            '31_hoa_fee_annual': ['details', 'hoaFeeAnnual'],
+            '31_association_fee': ['details', 'associationFeeAnnualized'],
             '32_hoa_name': ['details', 'hoaName'],
             '33_hoa_includes': ['details', 'hoaIncludes'],
             '34_ownership_type': ['details', 'ownershipType'],
