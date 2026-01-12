@@ -347,8 +347,9 @@ export const FIELD_CATEGORIES = {
   },
 } as const;
 
-// Data sources by phase (updated 2025-11-27)
-// REMOVED: Zillow, Redfin, Realtor.com (scrapers blocked), BroadbandNow (not wired)
+// Data sources by phase (updated 2026-01-12)
+// REMOVED: Zillow, Redfin, Realtor.com (scrapers blocked)
+// ACTIVE: FCC Mobile Broadband API (callBroadbandNow) - Fields 112, 113, 115 - Tier 2
 // NOTE: See src/lib/data-sources.ts for the unified data source manifest
 export const DATA_SOURCES_BY_PHASE = {
   phase1: [

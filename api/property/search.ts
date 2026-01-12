@@ -22,8 +22,10 @@
  * REMOVED (2025-11-27):
  * - Scrapers (Zillow, Redfin, Realtor) - blocked by anti-bot
  * - AirDNA - not wired
- * - Broadband - not wired
  * - HUD - geo-blocked outside US (disabled for now)
+ *
+ * ADDED (2026-01-12):
+ * - FCC Mobile Broadband (callBroadbandNow) - Fields 112, 113, 115
  *
  * RULES:
  * - Never store null values
@@ -188,7 +190,7 @@ function safeJsonSerialize(data: any): any {
 import { LLM_CASCADE_ORDER } from './llm-constants.js';
 import { createArbitrationPipeline, type FieldValue, type ArbitrationResult } from './arbitration.js';
 import { sanitizeAddress, isValidAddress, safeFetch } from '../../src/lib/safe-json-parse.js';
-import { callCrimeGrade, callSchoolDigger, callGreatSchools, callFEMARiskIndex, callNOAAClimate, callNOAAStormEvents, callNOAASeaLevel, callUSGSElevation, callUSGSEarthquake, callEPAFRS, getRadonRisk, callGoogleStreetView, callGoogleSolarAPI, callHowLoud/*, callRedfinProperty*/ } from './free-apis.js';
+import { callCrimeGrade, callSchoolDigger, callGreatSchools, callFEMARiskIndex, callNOAAClimate, callNOAAStormEvents, callNOAASeaLevel, callUSGSElevation, callUSGSEarthquake, callEPAFRS, getRadonRisk, callGoogleStreetView, callGoogleSolarAPI, callHowLoud, callBroadbandNow/*, callRedfinProperty*/ } from './free-apis.js';
 import { STELLAR_MLS_SOURCE, FBI_CRIME_SOURCE } from './source-constants.js';
 import { calculateAllDerivedFields, type PropertyData } from '../../src/lib/calculate-derived-fields.js';
 // Inline JSON data to avoid Vercel import issues with `with { type: 'json' }` syntax
@@ -2282,8 +2284,8 @@ async function enrichWithFreeAPIs(
   console.log(`🔵 Beach distance extracted: ${beachDistanceMiles !== undefined ? beachDistanceMiles.toFixed(1) + ' mi' : 'unavailable'}`);
 
   // STEP 2: Call all other APIs in parallel (including NOAA Sea Level with beach distance)
-  console.log('🔵 [Step 2/2] Calling remaining 22 APIs in parallel...');
-  const [walkScore, floodZone, airQuality, censusData, noiseDataResult, climateData, commuteTime, schoolDistances, transitAccess, emergencyServices, crimeDataResult, schoolDiggerResult, femaRiskResult, noaaClimateResult, noaaStormResult, noaaSeaLevelResult, usgsElevationResult, usgsEarthquakeResult, epaFRSResult, epaRadonResult, streetViewResult, googleSolarResult/*, redfinResult*/] = await Promise.all([
+  console.log('🔵 [Step 2/2] Calling remaining 23 APIs in parallel...');
+  const [walkScore, floodZone, airQuality, censusData, noiseDataResult, climateData, commuteTime, schoolDistances, transitAccess, emergencyServices, crimeDataResult, schoolDiggerResult, femaRiskResult, noaaClimateResult, noaaStormResult, noaaSeaLevelResult, usgsElevationResult, usgsEarthquakeResult, epaFRSResult, epaRadonResult, streetViewResult, googleSolarResult, broadbandResult/*, redfinResult*/] = await Promise.all([
     getWalkScore(geo.lat, geo.lon, address),
     getFloodZone(geo.lat, geo.lon),
     getAirQuality(geo.lat, geo.lon),
@@ -2305,7 +2307,8 @@ async function enrichWithFreeAPIs(
     callEPAFRS(geo.lat, geo.lon),
     getRadonRisk(geo.county, 'FL'),
     callGoogleStreetView(geo.lat, geo.lon, address), // FALLBACK: Property front photo from Google Street View
-    callGoogleSolarAPI(geo.lat, geo.lon) // Google Solar API: Rooftop solar potential
+    callGoogleSolarAPI(geo.lat, geo.lon), // Google Solar API: Rooftop solar potential
+    callBroadbandNow(geo.lat, geo.lon, address) // FCC Mobile Broadband API: Cell coverage & internet speeds (Fields 112, 113, 115)
     // callRedfinProperty(address) // DISABLED: Redfin API autocomplete not working - returns dummy school data
   ]);
 
@@ -2349,6 +2352,7 @@ async function enrichWithFreeAPIs(
   const streetViewData = streetViewResult.fields || {}; // Google Street View fallback photos
   const googleSolarData = googleSolarResult.fields || {}; // Google Solar API: Rooftop solar potential
   const noiseData = noiseDataResult.fields || {}; // HowLoud API: Noise and traffic levels
+  const broadbandData = broadbandResult.fields || {}; // FCC Mobile Broadband: Cell coverage & internet speeds
   // const redfinData = redfinResult.fields || {}; // DISABLED: Redfin API not working
 
   const apiEndTime = Date.now();
@@ -2371,7 +2375,7 @@ async function enrichWithFreeAPIs(
     sendApiProgress('Google Places', Object.keys(distances || {}).length);
     sendApiProgress('Google Distance', Object.keys(commuteTime || {}).length);
     sendApiProgress('Google Street View', Object.keys(streetViewData || {}).length);
-    sendApiProgress('FCC Broadband', 0); // Not wired yet - always 0 fields
+    sendApiProgress('FCC Broadband', Object.keys(broadbandData || {}).length); // FCC Mobile Broadband fields
 
     // Send progress for other APIs
     sendApiProgress('WalkScore', Object.keys(walkScore || {}).length);
@@ -2393,7 +2397,7 @@ async function enrichWithFreeAPIs(
     console.log('✅ [SSE] Sent progress updates for all API sources');
   }
 
-  Object.assign(fields, walkScore, floodZone, airQuality, censusData, noiseData, distances, commuteTime, schoolDistances, transitAccess, emergencyServices, crimeData, schoolDiggerData, greatSchoolsData, femaRiskData, noaaClimateData, noaaStormData, noaaSeaLevelData, usgsElevationData, usgsEarthquakeData, epaFRSData, epaRadonData, streetViewData, googleSolarData, climateData/*, redfinData*/);
+  Object.assign(fields, walkScore, floodZone, airQuality, censusData, noiseData, distances, commuteTime, schoolDistances, transitAccess, emergencyServices, crimeData, schoolDiggerData, greatSchoolsData, femaRiskData, noaaClimateData, noaaStormData, noaaSeaLevelData, usgsElevationData, usgsEarthquakeData, epaFRSData, epaRadonData, streetViewData, googleSolarData, broadbandData, climateData/*, redfinData*/);
 
   console.log('🔵 [enrichWithFreeAPIs] Raw field count before filtering:', Object.keys(fields).length);
   console.log('🔵 [enrichWithFreeAPIs] Field breakdown:');
@@ -2420,6 +2424,7 @@ async function enrichWithFreeAPIs(
   console.log('  - EPA Radon fields:', Object.keys(epaRadonData || {}).length);
   console.log('  - Google Street View fields:', Object.keys(streetViewData || {}).length);
   console.log('  - Google Solar API fields:', Object.keys(googleSolarData || {}).length);
+  console.log('  - FCC Broadband fields:', Object.keys(broadbandData || {}).length);
   // console.log('  - Redfin fields:', Object.keys(redfinData || {}).length); // DISABLED
 
   // Store actual field counts in fields object for later tracking

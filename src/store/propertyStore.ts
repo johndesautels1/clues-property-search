@@ -61,7 +61,9 @@ const SOURCE_TIERS: Record<string, number> = {
   'Weather': 2,               // FIXED: Was 3, now 2
   'Weather API': 2,
   'FBI Crime': 2,
-  'BroadbandNow': 2,          // FIXED: Was 3, now 2
+  'BroadbandNow': 2,          // FIXED: Was 3, now 2 (legacy name)
+  'FCC Broadband': 2,         // FCC Mobile Broadband API (active)
+  'FCC VizMo': 2,             // FCC Mobile Broadband API (alternate source name)
   'CrimeGrade': 2,            // FIXED: Was 3, now 2
   'U.S. Census': 2,
   'NOAA Climate': 2,
