@@ -796,6 +796,7 @@ export default function PropertyDetail() {
       const engineMap: Record<string, string> = {
         'Claude Opus': 'claude-opus',
         'GPT': 'gpt',
+        'GPT-4o': 'gpt',
         'Grok': 'grok',
         'Claude Sonnet': 'claude-sonnet',
         'Copilot': 'copilot',
