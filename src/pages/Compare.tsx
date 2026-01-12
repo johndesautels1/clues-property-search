@@ -498,7 +498,7 @@ const comparisonFields: Record<string, Array<{
   ],
   community: [
     { key: 'hoaYn', label: 'HOA Required', path: 'details.hoaYn.value', fieldNum: 30, format: 'boolean' },
-    { key: 'hoaName', label: 'HOA Name', path: 'details.hoaName.value', fieldNum: 32, format: 'text' },
+    { key: 'hoaName', label: 'HOA Contact Information', path: 'details.hoaName.value', fieldNum: 32, format: 'text' },
     { key: 'hoaIncludes', label: 'HOA Includes', path: 'details.hoaIncludes.value', fieldNum: 33, format: 'text' },
     { key: 'communityFeatures', label: 'Community Features', path: 'stellarMLS.features.communityFeatures.value', fieldNum: 166, format: 'text' },
     { key: 'neighborhood', label: 'Neighborhood', path: 'address.neighborhoodName.value', fieldNum: 6, format: 'text' },

@@ -389,7 +389,7 @@ const allFieldPaths = [
 
   // Community (6 fields)
   { category: 'community', path: 'details.hoaYn.value', label: 'HOA Required', fieldNum: 30 },
-  { category: 'community', path: 'details.hoaName.value', label: 'HOA Name', fieldNum: 32 },
+  { category: 'community', path: 'details.hoaName.value', label: 'HOA Contact Information', fieldNum: 32 },
   { category: 'community', path: 'details.hoaIncludes.value', label: 'HOA Includes', fieldNum: 33 },
   { category: 'community', path: 'stellarMLS.features.communityFeatures.value', label: 'Community Features', fieldNum: 166 },
   { category: 'community', path: 'address.neighborhoodName.value', label: 'Neighborhood', fieldNum: 6 },

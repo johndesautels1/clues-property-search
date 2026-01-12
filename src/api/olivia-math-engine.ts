@@ -787,7 +787,7 @@ ${properties.map((p, i) => `
 **GROUP 4: HOA & Taxes** (CRITICAL WEIGHT 8-9)
 [30] HOA: ${p.hoa_yn ? 'Yes' : 'No'}
 [31] HOA Fee (Annual): $${p.hoa_fee_annual?.toLocaleString() || 'N/A'}
-[32] HOA Name: ${p.hoa_name || 'N/A'}
+[32] HOA Contact Information: ${p.hoa_name || 'N/A'}
 [33] HOA Includes: ${p.hoa_includes || 'N/A'}
 [34] Ownership Type: ${p.ownership_type || 'N/A'}
 [35] Annual Taxes: $${p.annual_taxes?.toLocaleString() || 'N/A'}
@@ -1031,7 +1031,7 @@ function filterPropertyFields(property: OliviaEnhancedPropertyInput, startField:
     29: { key: 'parking_total', label: 'Parking Total' },
     30: { key: 'hoa_yn', label: 'HOA' },
     31: { key: 'hoa_fee_annual', label: 'HOA Fee (Annual)' },
-    32: { key: 'hoa_name', label: 'HOA Name' },
+    32: { key: 'hoa_name', label: 'HOA Contact Information' },
     33: { key: 'hoa_includes', label: 'HOA Includes' },
     34: { key: 'ownership_type', label: 'Ownership Type' },
     35: { key: 'annual_taxes', label: 'Annual Taxes' },

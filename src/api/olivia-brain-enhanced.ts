@@ -385,7 +385,7 @@ function formatPropertyForPrompt(p: OliviaEnhancedPropertyInput, index: number):
   lines.push(`\n💵 HOA & TAXES (Fields 30-38)`);
   addField(30, 'HOA Required', p.hoa_yn ? 'Yes' : p.hoa_yn === false ? 'No' : null);
   addField(31, 'HOA Fee (Annual)', p.hoa_fee_annual ? `$${p.hoa_fee_annual.toLocaleString()}` : null);
-  addField(32, 'HOA Name', p.hoa_name);
+  addField(32, 'HOA Contact Information', p.hoa_name);
   addField(33, 'HOA Includes', p.hoa_includes);
   addField(34, 'Ownership Type', p.ownership_type);
   addField(35, 'Annual Taxes', p.annual_taxes ? `$${p.annual_taxes.toLocaleString()}` : null);

@@ -2008,7 +2008,7 @@ export default function PropertyDetail() {
                 <div>
                   {renderDataField("HOA", fullProperty.details.hoaYn, "text", undefined, "30_hoa_yn")}
                   {renderDataField("HOA Fee (Annual)", fullProperty.details.hoaFeeAnnual, "currency", undefined, "31_association_fee")}
-                  {renderDataField("HOA Name", fullProperty.details.hoaName, "text", undefined, "32_hoa_name")}
+                  {renderDataField("HOA Contact Information", fullProperty.details.hoaName, "text", undefined, "32_hoa_name")}
                   {renderDataField("HOA Includes", fullProperty.details.hoaIncludes, "text", undefined, "33_hoa_includes")}
                   {renderDataField("Ownership Type", fullProperty.details.ownershipType, "text", undefined, "34_ownership_type")}
                 </div>

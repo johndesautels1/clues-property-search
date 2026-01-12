@@ -96,7 +96,7 @@ export const ALL_FIELDS: readonly FieldDefinition[] = [
   // 31D: 31D_condo_fee_annual - Condo Fee (Annual) - currency
   // 31E: 31E_fee_frequency_primary - Fee Frequency - text
   // 31F: 31F_fee_raw_notes - Fee Raw Notes - text
-  { num: 32, key: 'hoa_name',          label: 'HOA Name',          group: 'HOA & Taxes', type: 'text',     required: false },
+  { num: 32, key: 'hoa_name',          label: 'HOA Contact Information', group: 'HOA & Taxes', type: 'text',     required: false },
   { num: 33, key: 'hoa_includes',      label: 'HOA Includes',      group: 'HOA & Taxes', type: 'text',     required: false },
   { num: 34, key: 'ownership_type',    label: 'Ownership Type',    group: 'HOA & Taxes', type: 'select',   required: false, options: ['Fee Simple', 'Leasehold', 'Condo', 'Co-op'] },
   { num: 35, key: 'annual_taxes',      label: 'Annual Taxes',      group: 'HOA & Taxes', type: 'currency', required: false },

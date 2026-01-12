@@ -78,7 +78,7 @@ export const FIELD_MAPPINGS: FieldMapping[] = [
   // ================================================================
   { fieldNumber: 30, apiKey: '30_hoa_yn', frontendKey: 'hoaTaxes.hoaYn', csvHeader: 'HOA', label: 'HOA', group: 'HOA & Taxes', type: 'boolean' },
   { fieldNumber: 31, apiKey: '31_hoa_fee_annual', frontendKey: 'hoaTaxes.hoaFeeAnnual', csvHeader: 'HOA Fee (Annual)', label: 'HOA Fee (Annual)', group: 'HOA & Taxes', type: 'number' },
-  { fieldNumber: 32, apiKey: '32_hoa_name', frontendKey: 'hoaTaxes.hoaName', csvHeader: 'HOA Name', label: 'HOA Name', group: 'HOA & Taxes', type: 'string' },
+  { fieldNumber: 32, apiKey: '32_hoa_name', frontendKey: 'hoaTaxes.hoaName', csvHeader: 'HOA Contact Information', label: 'HOA Contact Information', group: 'HOA & Taxes', type: 'string' },
   { fieldNumber: 33, apiKey: '33_hoa_includes', frontendKey: 'hoaTaxes.hoaIncludes', csvHeader: 'HOA Includes', label: 'HOA Includes', group: 'HOA & Taxes', type: 'string' },
   { fieldNumber: 34, apiKey: '34_ownership_type', frontendKey: 'hoaTaxes.ownershipType', csvHeader: 'Ownership Type', label: 'Ownership Type', group: 'HOA & Taxes', type: 'string' },
   { fieldNumber: 35, apiKey: '35_annual_taxes', frontendKey: 'hoaTaxes.annualTaxes', csvHeader: 'Annual Taxes', label: 'Annual Taxes', group: 'HOA & Taxes', type: 'number' },
