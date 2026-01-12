@@ -214,7 +214,7 @@ const DataField = ({ label, value, icon, format = 'text', confidence, sources, l
           <div className="text-orange-300 mt-1">This data came from only one LLM source - verify independently</div>
         </div>
       );
-    } else if (hasConflict && conflictValues && conflictValues.length > 0) {
+    } else if (isAdmin && hasConflict && conflictValues && conflictValues.length > 0) {
       // 🟡 YELLOW: Conflicting data from multiple LLMs
       // Deduplicate conflicts (same source + value) to prevent "Washer, Dryer" x7 bug
       const uniqueConflicts = conflictValues.reduce((acc, cv) => {
@@ -233,7 +233,7 @@ const DataField = ({ label, value, icon, format = 'text', confidence, sources, l
         <div className="mt-2 p-2 bg-yellow-500/20 border border-yellow-500/30 rounded text-xs">
           <div className="flex items-center gap-1 text-yellow-400 font-semibold mb-1">
             <AlertCircle className="w-3 h-3" />
-            CONFLICT DETECTED
+            DATA CONFLICT (Admin View)
           </div>
           <div className="text-gray-300">
             {deduplicatedConflicts.map((cv, idx) => (
@@ -241,6 +241,9 @@ const DataField = ({ label, value, icon, format = 'text', confidence, sources, l
                 • {cv.source}: {formatValue(cv.value, format)}
               </div>
             ))}
+          </div>
+          <div className="text-yellow-600 mt-1 text-[10px]">
+            ✓ Highest-tier source selected automatically
           </div>
         </div>
       );

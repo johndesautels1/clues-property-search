@@ -4951,16 +4951,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               console.log('  ✅ property_photos:', bridgeData.fields.property_photos);
             }
 
-            // Convert Bridge fields to arbitration format - pass primitives to addFieldsFromSource
+            // Convert Bridge fields to arbitration format - preserve source and confidence metadata
             const mlsFields: Record<string, any> = {};
             for (const [key, fieldData] of Object.entries(bridgeData.fields)) {
               const field = fieldData as any;
-              // Extract actual value from nested Bridge MLS response format
-              const actualValue = typeof field.value === 'object' && field.value !== null && 'value' in field.value
-                ? field.value.value
-                : field.value;
-              // addFieldsFromSource expects primitives, not wrapped FieldValue objects
-              mlsFields[key] = actualValue;
+
+              if (typeof field === 'object' && field !== null) {
+                if (typeof field.value === 'object' && field.value !== null && 'value' in field.value) {
+                  mlsFields[key] = {
+                    value: field.value.value,
+                    source: field.value.source || field.source || 'Stellar MLS',
+                    confidence: field.value.confidence || field.confidence || 'High'
+                  };
+                } else {
+                  mlsFields[key] = {
+                    value: field.value,
+                    source: field.source || 'Stellar MLS',
+                    confidence: field.confidence || 'High'
+                  };
+                }
+              } else {
+                mlsFields[key] = {
+                  value: field,
+                  source: 'Stellar MLS',
+                  confidence: 'High'
+                };
+              }
             }
 
             // CRASH FIX #4: Wrap MLS addFieldsFromSource in try-catch
