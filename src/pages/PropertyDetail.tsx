@@ -1336,8 +1336,8 @@ export default function PropertyDetail() {
                 {fullProperty?.address.fullAddress.value || property.address}
               </h1>
 
-              {/* Line 3: Status, MLS#, APN - CENTERED */}
-              <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
+              {/* Line 3: Status, MLS#, APN, Data Completeness - CENTERED (4 items) */}
+              <div className="flex flex-wrap items-center justify-center gap-2">
                 {/* Status Badge */}
                 <span className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg ${
                   (fullProperty?.address.listingStatus.value || property.listingStatus) === 'Active' ? 'bg-quantum-green/30 text-quantum-green border border-quantum-green/50' :
@@ -1395,46 +1395,45 @@ export default function PropertyDetail() {
                     </span>
                   </button>
                 )}
-              </div>
 
-              {/* Data Completeness - Circular Progress - CENTERED */}
-              <div className="flex items-center justify-center gap-3">
-                <div className="relative w-12 h-12">
-                  <svg className="w-12 h-12 transform -rotate-90">
-                    <defs>
-                      <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#00f0ff" />
-                        <stop offset="100%" stopColor="#a855f7" />
-                      </linearGradient>
-                    </defs>
-                    <circle
-                      cx="24"
-                      cy="24"
-                      r="20"
-                      stroke="rgba(255,255,255,0.1)"
-                      strokeWidth="4"
-                      fill="none"
-                    />
-                    <circle
-                      cx="24"
-                      cy="24"
-                      r="20"
-                      stroke="url(#progressGradient)"
-                      strokeWidth="4"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeDasharray={`${2 * Math.PI * 20}`}
-                      strokeDashoffset={`${2 * Math.PI * 20 * (1 - Math.min(100, property.dataCompleteness) / 100)}`}
-                      className="transition-all duration-1000"
-                    />
-                  </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
-                    {Math.min(100, property.dataCompleteness)}%
+                {/* Data Completeness - Circular Progress Badge */}
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-400/30">
+                  <div className="relative w-8 h-8">
+                    <svg className="w-8 h-8 transform -rotate-90">
+                      <defs>
+                        <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#00f0ff" />
+                          <stop offset="100%" stopColor="#a855f7" />
+                        </linearGradient>
+                      </defs>
+                      <circle
+                        cx="16"
+                        cy="16"
+                        r="14"
+                        stroke="rgba(255,255,255,0.1)"
+                        strokeWidth="3"
+                        fill="none"
+                      />
+                      <circle
+                        cx="16"
+                        cy="16"
+                        r="14"
+                        stroke="url(#progressGradient)"
+                        strokeWidth="3"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeDasharray={`${2 * Math.PI * 14}`}
+                        strokeDashoffset={`${2 * Math.PI * 14 * (1 - Math.min(100, property.dataCompleteness) / 100)}`}
+                        className="transition-all duration-1000"
+                      />
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white">
+                      {Math.min(100, property.dataCompleteness)}%
+                    </span>
+                  </div>
+                  <span className="text-xs font-semibold text-purple-300">
+                    {fullProperty?.totalFieldsFound || Math.round(Math.min(100, property.dataCompleteness) * 1.68)}/181 Fields
                   </span>
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-semibold text-white">{fullProperty?.totalFieldsFound || Math.round(Math.min(100, property.dataCompleteness) * 1.68)}/181</p>
-                  <p className="text-xs text-gray-400">Fields</p>
                 </div>
               </div>
             </div>
