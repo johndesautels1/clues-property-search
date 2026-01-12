@@ -79,7 +79,7 @@ export const ALL_FIELDS: readonly FieldDefinition[] = [
   { num: 23, key: 'lot_size_sqft',         label: 'Lot Size (Sq Ft)',      group: 'Property Basics', type: 'number', required: false },
   { num: 24, key: 'lot_size_acres',        label: 'Lot Size (Acres)',      group: 'Property Basics', type: 'number', required: false, calculated: true },
   { num: 25, key: 'year_built',            label: 'Year Built',            group: 'Property Basics', type: 'number', required: true },
-  { num: 26, key: 'property_type',         label: 'Property Type',         group: 'Property Basics', type: 'select', required: true, options: ['Single Family', 'Condo', 'Townhouse', 'Multi-Family', 'Land', 'Commercial'] },
+  { num: 26, key: 'property_type',         label: 'Property Type',         group: 'Property Basics', type: 'text', required: true },
   { num: 27, key: 'stories',               label: 'Stories',               group: 'Property Basics', type: 'number', required: false },
   { num: 28, key: 'garage_spaces',         label: 'Garage Spaces',         group: 'Property Basics', type: 'number', required: false },
   { num: 29, key: 'parking_total',         label: 'Parking Total',         group: 'Property Basics', type: 'text',   required: false },
@@ -109,14 +109,14 @@ export const ALL_FIELDS: readonly FieldDefinition[] = [
   // ================================================================
   { num: 39, key: 'roof_type',          label: 'Roof Type',          group: 'Structure & Systems', type: 'select', required: false, options: ['Shingle', 'Tile', 'Metal', 'Flat', 'Other'] },
   { num: 40, key: 'roof_age_est',       label: 'Roof Age (Est)',     group: 'Structure & Systems', type: 'text',   required: false },
-  { num: 41, key: 'exterior_material',  label: 'Exterior Material',  group: 'Structure & Systems', type: 'select', required: false, options: ['Block/Stucco', 'Brick', 'Wood', 'Vinyl Siding', 'Fiber Cement', 'Other'] },
+  { num: 41, key: 'exterior_material',  label: 'Exterior Material',  group: 'Structure & Systems', type: 'text', required: false },
   { num: 42, key: 'foundation',         label: 'Foundation',         group: 'Structure & Systems', type: 'select', required: false, options: ['Slab', 'Crawl Space', 'Basement', 'Pier/Beam'] },
   { num: 43, key: 'water_heater_type',  label: 'Water Heater Type',  group: 'Structure & Systems', type: 'text',   required: false },
   { num: 44, key: 'garage_type',        label: 'Garage Type',        group: 'Structure & Systems', type: 'text',   required: false },
   { num: 45, key: 'hvac_type',          label: 'HVAC Type',          group: 'Structure & Systems', type: 'text',   required: false },
   { num: 46, key: 'hvac_age',           label: 'HVAC Age',           group: 'Structure & Systems', type: 'text',   required: false },
   { num: 47, key: 'laundry_type',       label: 'Laundry Type',       group: 'Structure & Systems', type: 'text',   required: false },
-  { num: 48, key: 'interior_condition', label: 'Interior Condition', group: 'Structure & Systems', type: 'select', required: false, options: ['Excellent', 'Good', 'Average', 'Fair', 'Poor'] },
+  { num: 48, key: 'interior_condition', label: 'Interior Condition', group: 'Structure & Systems', type: 'text', required: false },
 
   // ================================================================
   // GROUP 6: Interior Features (Fields 49-53)
@@ -320,12 +320,12 @@ export const ALL_FIELDS: readonly FieldDefinition[] = [
   { num: 172, key: 'median_dom_zip',              label: 'Median DOM (ZIP)',          group: 'Market Performance', type: 'number',     required: false },
   { num: 173, key: 'price_reduced_percent',       label: 'Price Reduced %',           group: 'Market Performance', type: 'percentage', required: false },
   { num: 174, key: 'homes_under_contract',        label: 'Homes Under Contract',      group: 'Market Performance', type: 'number',     required: false },
-  { num: 175, key: 'market_type',                 label: 'Market Type',               group: 'Market Performance', type: 'select',     required: false, options: ["Buyer's Market", "Balanced Market", "Seller's Market"] },
+  { num: 175, key: 'market_type',                 label: 'Market Type',               group: 'Market Performance', type: 'text',     required: false },
   { num: 176, key: 'avg_sale_to_list_percent',    label: 'Avg Sale-to-List %',        group: 'Market Performance', type: 'percentage', required: false },
   { num: 177, key: 'avg_days_to_pending',         label: 'Avg Days to Pending',       group: 'Market Performance', type: 'number',     required: false },
-  { num: 178, key: 'multiple_offers_likelihood',  label: 'Multiple Offers',           group: 'Market Performance', type: 'select',     required: false, options: ['Unlikely', 'Sometimes', 'Likely'] },
+  { num: 178, key: 'multiple_offers_likelihood',  label: 'Multiple Offers',           group: 'Market Performance', type: 'text',     required: false },
   { num: 179, key: 'appreciation_percent',        label: 'Appreciation %',            group: 'Market Performance', type: 'percentage', required: false, calculated: true },
-  { num: 180, key: 'price_trend',                 label: 'Price Trend',               group: 'Market Performance', type: 'select',     required: false, options: ['Falling', 'Stable', 'Rising'] },
+  { num: 180, key: 'price_trend',                 label: 'Price Trend',               group: 'Market Performance', type: 'text',     required: false },
   { num: 181, key: 'rent_zestimate',              label: 'Rent Zestimate',            group: 'Market Performance', type: 'currency',   required: false },
 ] as const;
 

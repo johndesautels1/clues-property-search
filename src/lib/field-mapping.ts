@@ -219,7 +219,7 @@ export const FIELD_MAPPINGS: FieldMapping[] = [
   { fieldNumber: 124, apiKey: '124_hurricane_risk', frontendKey: 'environmentRisk.hurricaneRisk', csvHeader: 'Hurricane Risk', label: 'Hurricane Risk', group: 'Environment & Risk', type: 'string' },
   { fieldNumber: 125, apiKey: '125_tornado_risk', frontendKey: 'environmentRisk.tornadoRisk', csvHeader: 'Tornado Risk', label: 'Tornado Risk', group: 'Environment & Risk', type: 'string' },
   { fieldNumber: 126, apiKey: '126_radon_risk', frontendKey: 'environmentRisk.radonRisk', csvHeader: 'Radon Risk', label: 'Radon Risk', group: 'Environment & Risk', type: 'string' },
-  { fieldNumber: 127, apiKey: '127_superfund_site_nearby', frontendKey: 'environmentRisk.superfundSiteNearby', csvHeader: 'Superfund Site Nearby', label: 'Superfund Site Nearby', group: 'Environment & Risk', type: 'string' },
+  { fieldNumber: 127, apiKey: '127_superfund_site_nearby', frontendKey: 'utilities.superfundNearby', csvHeader: 'Superfund Site Nearby', label: 'Superfund Site Nearby', group: 'Environment & Risk', type: 'string' },
   { fieldNumber: 128, apiKey: '128_sea_level_rise_risk', frontendKey: 'environmentRisk.seaLevelRiseRisk', csvHeader: 'Sea Level Rise Risk', label: 'Sea Level Rise Risk', group: 'Environment & Risk', type: 'string' },
   { fieldNumber: 129, apiKey: '129_noise_level_db_est', frontendKey: 'environmentRisk.noiseLevelDbEst', csvHeader: 'Noise Level (dB Est)', label: 'Noise Level (dB Est)', group: 'Environment & Risk', type: 'string' },
   { fieldNumber: 130, apiKey: '130_solar_potential', frontendKey: 'environmentRisk.solarPotential', csvHeader: 'Solar Potential', label: 'Solar Potential', group: 'Environment & Risk', type: 'string' },

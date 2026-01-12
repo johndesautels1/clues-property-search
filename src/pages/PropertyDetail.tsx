@@ -979,7 +979,7 @@ export default function PropertyDetail() {
             '124_hurricane_risk': ['utilities', 'hurricaneRisk'],
             '125_tornado_risk': ['utilities', 'tornadoRisk'],
             '126_radon_risk': ['utilities', 'radonRisk'],
-            '127_superfund_site_nearby': ['utilities', 'superfundSiteNearby'],
+            '127_superfund_site_nearby': ['utilities', 'superfundNearby'],
             '128_sea_level_rise_risk': ['utilities', 'seaLevelRiseRisk'],
             '129_noise_level_db_est': ['utilities', 'noiseLevelDbEst'],
             '130_solar_potential': ['utilities', 'solarPotential'],

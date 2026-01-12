@@ -370,6 +370,51 @@ export function applyAgeBasedDefaults(property: FullProperty): Partial<FullPrope
 }
 
 /**
+ * Normalize bi-monthly utility bills to monthly
+ * Field 107: Water bill - FL utilities bill bi-monthly (every 2 months)
+ * If value > 120, assume it's bi-monthly and divide by 2
+ */
+function normalizeWaterBill(property: FullProperty): Partial<FullProperty> {
+  const defaults: any = { utilities: {} };
+
+  const waterBillField = property.utilities?.avgWaterBill;
+  if (!waterBillField?.value) return defaults;
+
+  let rawValue = waterBillField.value;
+  let numericValue: number;
+
+  // Parse string values like "$857" or "857" to numbers
+  if (typeof rawValue === 'number') {
+    numericValue = rawValue;
+  } else if (typeof rawValue === 'string') {
+    const cleaned = rawValue.replace(/[$,\s]/g, '').trim();
+    numericValue = parseFloat(cleaned);
+  } else {
+    return defaults;
+  }
+
+  if (isNaN(numericValue) || numericValue <= 0) return defaults;
+
+  // FL water bills: if > 120, assume bi-monthly and divide by 2
+  // Typical monthly water bill is $40-80
+  if (numericValue > 120) {
+    const monthly = Math.round(numericValue / 2);
+    console.log(`[FIELD-CALC] 🔄 WATER BILL: $${numericValue} bi-monthly → $${monthly}/month`);
+
+    defaults.utilities.avgWaterBill = {
+      value: `$${monthly}`,
+      confidence: waterBillField.confidence || 'Medium',
+      notes: `Normalized from bi-monthly $${numericValue} to monthly $${monthly}`,
+      sources: waterBillField.sources || ['Normalized'],
+      llmSources: waterBillField.llmSources || [],
+      validationStatus: 'valid'
+    };
+  }
+
+  return defaults;
+}
+
+/**
  * MASTER FUNCTION: Apply all automated calculations and defaults
  * This runs after LLM enrichment to fill data gaps
  */
@@ -381,6 +426,7 @@ export function enrichWithCalculatedFields(property: FullProperty): FullProperty
   const floridaDefaults = applyFloridaDefaults(property);
   const propertyTypeDefaults = applySingleFamilyDefaults(property);
   const ageDefaults = applyAgeBasedDefaults(property);
+  const waterBillNormalized = normalizeWaterBill(property);
 
   // Deep merge - preserve existing values, only fill gaps
   const enriched: FullProperty = {
@@ -388,7 +434,7 @@ export function enrichWithCalculatedFields(property: FullProperty): FullProperty
     address: { ...property.address, ...financial.address },
     details: { ...property.details, ...financial.details },
     financial: { ...property.financial, ...financial.financial },
-    utilities: { ...property.utilities, ...floridaDefaults.utilities },
+    utilities: { ...property.utilities, ...floridaDefaults.utilities, ...waterBillNormalized.utilities },
     structural: { ...property.structural, ...floridaDefaults.structural, ...ageDefaults.structural },
     stellarMLS: property.stellarMLS ? {
       ...property.stellarMLS,
@@ -407,7 +453,8 @@ export function enrichWithCalculatedFields(property: FullProperty): FullProperty
     ...Object.keys(floridaDefaults.utilities || {}),
     ...Object.keys(floridaDefaults.structural || {}),
     ...Object.keys(propertyTypeDefaults.stellarMLS?.building || {}),
-    ...Object.keys(ageDefaults.structural || {})
+    ...Object.keys(ageDefaults.structural || {}),
+    ...Object.keys(waterBillNormalized.utilities || {})
   ];
 
   console.log(`[FIELD-CALC] ✅ Auto-calculated ${calculatedFields.length} fields:`, calculatedFields);

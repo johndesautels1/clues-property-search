@@ -10,6 +10,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { PropertyCard, Property, PropertyFilters, PropertySort, DataField } from '@/types/property';
+import { enrichWithCalculatedFields } from '@/lib/field-calculations';
 
 /**
  * Default values for data fields - centralized for consistency
@@ -649,7 +650,12 @@ export const usePropertyStore = create<PropertyState>()(
       },
 
       getFullPropertyById: (id) => {
-        return get().fullProperties.get(id);
+        const property = get().fullProperties.get(id);
+        if (!property) return undefined;
+
+        // Run calculations on load to ensure calculated fields are populated
+        // This handles: Field 11 (price/sqft), Field 20 (total baths), Field 24 (lot acres), etc.
+        return enrichWithCalculatedFields(property);
       },
 
       addToCompare: (id) =>
