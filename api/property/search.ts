@@ -122,6 +122,40 @@ function sendProgress(res: any, source: string, status: 'pending' | 'searching' 
 }
 
 /**
+ * Map API source names (as returned from APIs) to data-sources.ts IDs
+ * This ensures SSE progress updates use the correct source IDs
+ */
+function mapSourceNameToId(sourceName: string): string {
+  const mapping: Record<string, string> = {
+    'Google Geocode': 'google-geocode',
+    'Google Places': 'google-places',
+    'Google Distance': 'google-distance',
+    'Google Street View': 'google-streetview',
+    'FCC Broadband': 'fcc-broadband',
+    'WalkScore': 'walkscore',
+    'SchoolDigger': 'schooldigger',
+    'FEMA': 'fema',
+    'FEMA Flood': 'fema',
+    'AirNow': 'airnow',
+    'HowLoud': 'howloud',
+    'Weather': 'weather',
+    'FBI Crime': 'crime',
+    'INTERNAL': 'internal',
+    'U.S. Census': 'census',
+    'NOAA Climate': 'noaa-climate',
+    'NOAA Storm Events': 'noaa-storm',
+    'NOAA Sea Level': 'noaa-sealevel',
+    'USGS Elevation': 'usgs-elevation',
+    'USGS Earthquake': 'usgs-earthquake',
+    'EPA FRS': 'epa-frs',
+    'EPA Radon': 'epa-radon',
+    'GreatSchools': 'schooldigger' // GreatSchools is a fallback for SchoolDigger
+  };
+
+  return mapping[sourceName] || sourceName.toLowerCase().replace(/\s+/g, '-');
+}
+
+/**
  * CRASH FIX #3: Safe JSON serializer that handles BigInt, undefined, NaN, and circular refs
  * Prevents JSON.stringify crashes in final response
  */
@@ -2206,7 +2240,8 @@ async function enrichWithFreeAPIs(
   address: string,
   expectedCity?: string,
   expectedState?: string,
-  expectedZip?: string
+  expectedZip?: string,
+  res?: any  // Optional VercelResponse for SSE progress updates
 ): Promise<Record<string, any>> {
   console.log('🔵 [enrichWithFreeAPIs] START - Address:', address);
   console.log('🔵 [enrichWithFreeAPIs] Validation:', { expectedCity, expectedState, expectedZip });
@@ -2318,6 +2353,45 @@ async function enrichWithFreeAPIs(
 
   const apiEndTime = Date.now();
   console.log(`✅ [enrichWithFreeAPIs] All APIs completed in ${apiEndTime - apiStartTime}ms`);
+
+  // Send SSE progress updates for each API source
+  if (res) {
+    // Helper to send progress for a source with field count
+    const sendApiProgress = (sourceName: string, fieldCount: number) => {
+      const sourceId = mapSourceNameToId(sourceName);
+      const status = fieldCount > 0 ? 'complete' : 'complete'; // Always 'complete', even if 0 fields
+      sendProgress(res, sourceId, status, {
+        fieldsFound: fieldCount,
+        message: fieldCount > 0 ? `${fieldCount} fields` : 'No data'
+      });
+    };
+
+    // Send progress for Google APIs (extracted from distances, commuteTime, etc.)
+    sendApiProgress('Google Geocode', 2); // County + coordinates (always 2 if geocoding succeeded)
+    sendApiProgress('Google Places', Object.keys(distances || {}).length);
+    sendApiProgress('Google Distance', Object.keys(commuteTime || {}).length);
+    sendApiProgress('Google Street View', Object.keys(streetViewData || {}).length);
+    sendApiProgress('FCC Broadband', 0); // Not wired yet - always 0 fields
+
+    // Send progress for other APIs
+    sendApiProgress('WalkScore', Object.keys(walkScore || {}).length);
+    sendApiProgress('SchoolDigger', Object.keys(schoolDiggerData || {}).length + Object.keys(greatSchoolsData || {}).length);
+    sendApiProgress('FEMA Flood', Object.keys(floodZone || {}).length);
+    sendApiProgress('AirNow', Object.keys(airQuality || {}).length);
+    sendApiProgress('HowLoud', Object.keys(noiseData || {}).length);
+    sendApiProgress('Weather', Object.keys(climateData || {}).length);
+    sendApiProgress('FBI Crime', Object.keys(crimeData || {}).length);
+    sendApiProgress('U.S. Census', Object.keys(censusData || {}).length);
+    sendApiProgress('NOAA Climate', Object.keys(noaaClimateData || {}).length);
+    sendApiProgress('NOAA Storm Events', Object.keys(noaaStormData || {}).length);
+    sendApiProgress('NOAA Sea Level', Object.keys(noaaSeaLevelData || {}).length);
+    sendApiProgress('USGS Elevation', Object.keys(usgsElevationData || {}).length);
+    sendApiProgress('USGS Earthquake', Object.keys(usgsEarthquakeData || {}).length);
+    sendApiProgress('EPA FRS', Object.keys(epaFRSData || {}).length);
+    sendApiProgress('EPA Radon', Object.keys(epaRadonData || {}).length);
+
+    console.log('✅ [SSE] Sent progress updates for all API sources');
+  }
 
   Object.assign(fields, walkScore, floodZone, airQuality, censusData, noiseData, distances, commuteTime, schoolDistances, transitAccess, emergencyServices, crimeData, schoolDiggerData, greatSchoolsData, femaRiskData, noaaClimateData, noaaStormData, noaaSeaLevelData, usgsElevationData, usgsEarthquakeData, epaFRSData, epaRadonData, streetViewData, googleSolarData, climateData/*, redfinData*/);
 
@@ -5301,7 +5375,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('🔍 With validation: city=', mlsCity, 'state=', mlsState, 'zip=', mlsZip);
       try {
         const enrichedData = await withTimeout(
-          enrichWithFreeAPIs(realAddress, mlsCity, mlsState, mlsZip),
+          enrichWithFreeAPIs(realAddress, mlsCity, mlsState, mlsZip, res), // Pass res for SSE updates
           FREE_API_TIMEOUT,
           {} // Empty object fallback if timeout
         );
@@ -5418,8 +5492,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           {} // Return empty object on timeout
         );
 
-        if (Object.keys(tavilyFields).length > 0) {
-          console.log(`✅ TIER 3: Tavily returned ${Object.keys(tavilyFields).length} fields`);
+        const tavilyFieldCount = Object.keys(tavilyFields).length;
+
+        // Send SSE progress update for Tavily
+        sendProgress(res, 'tavily', 'complete', {
+          fieldsFound: tavilyFieldCount,
+          message: tavilyFieldCount > 0 ? `${tavilyFieldCount} fields` : 'No data'
+        });
+
+        if (tavilyFieldCount > 0) {
+          console.log(`✅ TIER 3: Tavily returned ${tavilyFieldCount} fields`);
           // Add Tavily fields to arbitration pipeline
           let tavilyAdded = 0;
           try {
@@ -5433,6 +5515,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       } catch (tavilyError) {
         console.error('TIER 3: Tavily search failed:', tavilyError);
+        // Send error status for Tavily
+        sendProgress(res, 'tavily', 'error', {
+          fieldsFound: 0,
+          error: tavilyError instanceof Error ? tavilyError.message : 'Unknown error'
+        });
       }
     }
 
@@ -5879,11 +5966,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       try {
         arbitrationPipeline.addFieldsFromSource(backendCalcFields, 'Backend Calculation');
         console.log(`✅ Added ${calculationsAdded} calculated fields to arbitration pipeline (Tier 1)`);
+        // Send SSE progress update for internal calculations
+        sendProgress(res, 'internal', 'complete', {
+          fieldsFound: calculationsAdded,
+          message: `${calculationsAdded} fields`
+        });
       } catch (pipelineError) {
         console.error('CRASH FIX #8: Backend calc pipeline error:', pipelineError);
       }
     } else {
       console.log('⚠️  No calculations performed - missing required input fields');
+      // Send progress even if 0 fields
+      sendProgress(res, 'internal', 'complete', {
+        fieldsFound: 0,
+        message: 'No data'
+      });
     }
 
     // ========================================
