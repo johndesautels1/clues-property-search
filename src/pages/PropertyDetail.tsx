@@ -1306,6 +1306,33 @@ export default function PropertyDetail() {
             {/* Animated background glow */}
             <div className="absolute inset-0 bg-gradient-to-r from-quantum-cyan/10 via-transparent to-quantum-purple/10 animate-pulse" />
 
+            {/* Top Right: Views & Save Buttons */}
+            <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+              {/* View Count */}
+              {property?.viewCount && property.viewCount > 0 && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/20 border border-blue-400/40 backdrop-blur-sm">
+                  <Eye className="w-4 h-4 text-blue-400" />
+                  <span className="text-sm font-semibold text-blue-300">{getViewsLast7Days()} {getViewsLast7Days() === 1 ? 'view' : 'views'} (7d)</span>
+                </div>
+              )}
+
+              {/* Save Button */}
+              <button
+                onClick={handleToggleSave}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all hover:scale-105 backdrop-blur-sm ${
+                  isSaved
+                    ? 'bg-quantum-purple/30 border-quantum-purple/60 text-quantum-purple'
+                    : 'bg-white/10 border-white/30 text-gray-300 hover:bg-white/20'
+                }`}
+              >
+                <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
+                <span className="text-sm font-semibold">
+                  {isSaved ? 'Saved' : 'Save'}
+                  {property?.saveCount && property.saveCount > 0 && ` (${property.saveCount})`}
+                </span>
+              </button>
+            </div>
+
             <div className="relative z-10 text-center">
               {/* Line 1: Price - CENTERED AT TOP */}
               <div className="mb-4">
@@ -1318,18 +1345,6 @@ export default function PropertyDetail() {
                   </p>
                 )}
               </div>
-
-              {/* Water Body Name - CENTERED */}
-              {fullProperty?.stellarMLS?.waterfront?.waterBodyName?.value && (
-                <div className="mb-4">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-400/30">
-                    <Waves className="w-5 h-5 text-cyan-400" />
-                    <p className="text-lg text-cyan-300 font-semibold">
-                      {fullProperty.stellarMLS.waterfront.waterBodyName.value}
-                    </p>
-                  </div>
-                </div>
-              )}
 
               {/* Line 2: Address - CENTERED */}
               <h1 className="text-2xl md:text-3xl font-bold text-white mb-4 leading-tight">
@@ -1557,10 +1572,20 @@ export default function PropertyDetail() {
             </div>
           )}
 
-          {/* Feature Badges - Organized in Card */}
+          {/* Feature Badges - Organized in Card - CENTERED */}
           <div className="glass-card p-4 mb-4">
-            <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wide mb-3">Property Features</h3>
-            <div className="flex flex-wrap gap-2">
+            <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wide mb-3 text-center">Property Features</h3>
+            <div className="flex flex-wrap justify-center gap-2">
+              {/* Water Body Name */}
+              {fullProperty?.stellarMLS?.waterfront?.waterBodyName?.value && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-400/30">
+                  <Waves className="w-4 h-4 text-cyan-400" />
+                  <span className="text-sm font-semibold text-cyan-300">
+                    {fullProperty.stellarMLS.waterfront.waterBodyName.value}
+                  </span>
+                </div>
+              )}
+
               {/* Front Exposure */}
               {fullProperty?.stellarMLS?.legal?.frontExposure?.value && (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-500/10 border border-orange-400/30">
@@ -1608,30 +1633,6 @@ export default function PropertyDetail() {
                   </span>
                 </div>
               )}
-
-              {/* View Count */}
-              {property?.viewCount && property.viewCount > 0 && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-400/30">
-                  <Eye className="w-4 h-4 text-blue-400" />
-                  <span className="text-sm font-semibold text-blue-300">{getViewsLast7Days()} {getViewsLast7Days() === 1 ? 'view' : 'views'} (7d)</span>
-                </div>
-              )}
-
-              {/* Save Button */}
-              <button
-                onClick={handleToggleSave}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all hover:scale-105 ${
-                  isSaved
-                    ? 'bg-quantum-purple/20 border-quantum-purple/50 text-quantum-purple'
-                    : 'bg-white/5 border-white/20 text-gray-300 hover:bg-white/10'
-                }`}
-              >
-                <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
-                <span className="text-sm font-semibold">
-                  {isSaved ? 'Saved' : 'Save'}
-                  {property?.saveCount && property.saveCount > 0 && ` (${property.saveCount})`}
-                </span>
-              </button>
             </div>
           </div>
         </motion.div>
