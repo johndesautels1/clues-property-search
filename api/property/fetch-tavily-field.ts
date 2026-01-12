@@ -355,6 +355,7 @@ async function callExtractionLLM(prompt: string): Promise<string | null> {
       body: JSON.stringify({
         model: 'claude-sonnet-4-5-20250929',
         max_tokens: 500,
+        temperature: 0.2,  // FIX: Match Sonnet temperature to prevent hallucinations
         messages: [{
           role: 'user',
           content: prompt

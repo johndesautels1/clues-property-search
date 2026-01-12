@@ -909,6 +909,7 @@ Return ONLY the JSON object, no markdown or explanation.`;
       body: JSON.stringify({
         model: model,
         max_tokens: 32000,
+        temperature: 0.1,  // FIX: Low temperature for precise MLS data extraction
         messages: [
           {
             role: 'user',
