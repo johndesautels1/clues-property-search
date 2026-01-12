@@ -1707,7 +1707,7 @@ export default function PropertyDetail() {
               {/* Occupancy */}
               {fullProperty?.extendedMLS?.occupantType && (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/20 border border-purple-400/30">
-                  <span className="px-1.5 py-0.5 bg-purple-500/30 border border-purple-400/40 rounded text-purple-200 text-xs font-bold">E.D.</span>
+                  <span className="px-1.5 py-0.5 bg-purple-500/30 border border-purple-400/40 rounded text-purple-200 text-xs font-bold">Extended Data</span>
                   <span className="text-sm font-semibold text-purple-300">
                     {fullProperty.extendedMLS.occupantType}
                   </span>
@@ -1734,7 +1734,7 @@ export default function PropertyDetail() {
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-xl font-bold text-white">Take a Virtual Tour</h3>
-                      <span className="px-2 py-0.5 bg-purple-500/20 border border-purple-400/30 rounded text-purple-300 text-xs font-bold">E.D.</span>
+                      <span className="px-2 py-0.5 bg-purple-500/20 border border-purple-400/30 rounded text-purple-300 text-xs font-bold">Extended Data</span>
                     </div>
                     <p className="text-gray-400">Explore this property in 3D from anywhere</p>
                   </div>
@@ -1762,7 +1762,7 @@ export default function PropertyDetail() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <h3 className="text-lg font-bold text-white">Showing Instructions</h3>
-                    <span className="px-2 py-0.5 bg-purple-500/20 border border-purple-400/30 rounded text-purple-300 text-xs font-bold">E.D.</span>
+                    <span className="px-2 py-0.5 bg-purple-500/20 border border-purple-400/30 rounded text-purple-300 text-xs font-bold">Extended Data</span>
                   </div>
                   <p className="text-gray-300">{fullProperty.extendedMLS.showingInstructions}</p>
                 </div>
@@ -1916,7 +1916,7 @@ export default function PropertyDetail() {
                 <div className="mt-6 pt-6 border-t border-white/10">
                   <div className="flex items-center gap-2 mb-3">
                     <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Price History</h4>
-                    <span className="px-2 py-0.5 bg-purple-500/20 border border-purple-400/30 rounded text-purple-300 text-xs font-bold">E.D.</span>
+                    <span className="px-2 py-0.5 bg-purple-500/20 border border-purple-400/30 rounded text-purple-300 text-xs font-bold">Extended Data</span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {fullProperty.extendedMLS.originalListPrice && (
@@ -1971,7 +1971,7 @@ export default function PropertyDetail() {
                 <div className="mt-6 pt-6 border-t border-white/10">
                   <div className="flex items-center gap-2 mb-3">
                     <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Additional Property Details</h4>
-                    <span className="px-2 py-0.5 bg-purple-500/20 border border-purple-400/30 rounded text-purple-300 text-xs font-bold">E.D.</span>
+                    <span className="px-2 py-0.5 bg-purple-500/20 border border-purple-400/30 rounded text-purple-300 text-xs font-bold">Extended Data</span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {fullProperty.extendedMLS.architecturalStyle &&
@@ -2470,7 +2470,7 @@ export default function PropertyDetail() {
                 <div className="mt-6 pt-6 border-t border-white/10">
                   <div className="flex items-center gap-2 mb-3">
                     <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Waterfront Features</h4>
-                    <span className="px-2 py-0.5 bg-purple-500/20 border border-purple-400/30 rounded text-purple-300 text-xs font-bold">E.D.</span>
+                    <span className="px-2 py-0.5 bg-purple-500/20 border border-purple-400/30 rounded text-purple-300 text-xs font-bold">Extended Data</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {fullProperty.extendedMLS.waterfrontFeatures.map((feature: string, idx: number) => (
