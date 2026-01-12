@@ -5895,9 +5895,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // CRASH FIX #10: Ensure propertyType is a string before calling toLowerCase
     const rawPropertyType = getFieldValue('26_property_type');
     const propertyType = typeof rawPropertyType === 'string' ? rawPropertyType : String(rawPropertyType || '');
-    const isSingleFamily = propertyType.toLowerCase().includes('single') ||
-                           propertyType.toLowerCase().includes('detached') ||
-                           propertyType.toLowerCase().includes('house');
+    const propertyTypeLower = propertyType.toLowerCase();
+    const isSingleFamily = propertyTypeLower.includes('single') ||
+                           propertyTypeLower.includes('detached') ||
+                           propertyTypeLower.includes('house');
+    const isCondoOrTownhouse = propertyTypeLower.includes('condo') ||
+                               propertyTypeLower.includes('townhouse') ||
+                               propertyTypeLower.includes('townhome') ||
+                               propertyTypeLower.includes('co-op') ||
+                               propertyTypeLower.includes('apartment');
     const isWaterfront = getFieldValue('155_water_frontage_yn') === 'Yes' ||
                          getFieldValue('155_water_frontage_yn') === true;
 
@@ -5920,10 +5926,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!getFieldValue('158_water_view_yn')) smartDefaults['158_water_view_yn'] = 'No';
     }
 
-    // HOA Fee - If HOA=No, fee should be $0
+    // HOA Y/N - Smart default when missing from MLS
     const hoaYn = getFieldValue('30_hoa_yn');
-    if (hoaYn === false || hoaYn === 'No' || hoaYn === 'N') {
-      if (!getFieldValue('31_association_fee') && !getFieldValue('31A_hoa_fee_monthly') && !getFieldValue('31B_hoa_fee_annual')) {
+    const hoaFeeAnnual = getFieldValue('31_association_fee');
+    const hoaFeeMonthly = getFieldValue('31A_hoa_fee_monthly');
+    const hoaFeeAnnual2 = getFieldValue('31B_hoa_fee_annual');
+    const hasAnyHoaFee = (hoaFeeAnnual && hoaFeeAnnual > 0) ||
+                         (hoaFeeMonthly && hoaFeeMonthly > 0) ||
+                         (hoaFeeAnnual2 && hoaFeeAnnual2 > 0);
+
+    if (hoaYn === undefined || hoaYn === null) {
+      // If HOA Y/N is missing but HOA fee exists → Yes
+      if (hasAnyHoaFee) {
+        smartDefaults['30_hoa_yn'] = true;
+        console.log('✅ Inferred 30_hoa_yn = true (HOA fee exists)');
+      }
+      // Condos/Townhouses almost always have HOA - default to Yes with Unknown fee
+      else if (isCondoOrTownhouse) {
+        smartDefaults['30_hoa_yn'] = true;
+        console.log('✅ Inferred 30_hoa_yn = true (Condo/Townhouse typically has HOA)');
+        // Note: Don't set fee to 0 - leave it unknown so user sees "fee amount unknown"
+      }
+      // If Single Family home with no HOA data → default to No (most SF homes don't have HOA)
+      else if (isSingleFamily) {
+        smartDefaults['30_hoa_yn'] = false;
+        smartDefaults['31_association_fee'] = 0;
+        smartDefaults['31A_hoa_fee_monthly'] = 0;
+        smartDefaults['31B_hoa_fee_annual'] = 0;
+        console.log('✅ Inferred 30_hoa_yn = false (Single Family with no HOA data)');
+      }
+    }
+    // HOA Fee - If HOA=No, fee should be $0
+    else if (hoaYn === false || hoaYn === 'No' || hoaYn === 'N') {
+      if (!hasAnyHoaFee) {
         smartDefaults['31_association_fee'] = 0;
         smartDefaults['31A_hoa_fee_monthly'] = 0;
         smartDefaults['31B_hoa_fee_annual'] = 0;
