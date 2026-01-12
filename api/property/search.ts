@@ -5958,10 +5958,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         smartDefaults['30_hoa_yn'] = true;
         console.log('✅ Inferred 30_hoa_yn = true (Condo/Townhouse typically has HOA)');
       }
-      // NOTE: We do NOT default Single Family to "No HOA" because:
-      // - Many Florida subdivisions and gated communities ARE single family with HOAs
-      // - East Lake Woodlands, Cross Creek, etc. are SF homes with $400-500/month HOAs
-      // - Better to leave unknown than assume incorrectly
+      // Single Family with NO HOA evidence (no fee, no name, no includes) → No HOA
+      // NOTE: If SF has HOA (like Cross Creek, East Lake Woodlands), it will have
+      // fee/name/includes data and hit the hasAnyHoaEvidence branch above
+      else if (isSingleFamily) {
+        smartDefaults['30_hoa_yn'] = false;
+        smartDefaults['31_association_fee'] = 0;
+        smartDefaults['31A_hoa_fee_monthly'] = 0;
+        smartDefaults['31B_hoa_fee_annual'] = 0;
+        console.log('✅ Inferred 30_hoa_yn = false (Single Family with no HOA evidence)');
+      }
     }
     // HOA Fee - If HOA=No, fee should be $0
     else if (hoaYn === false || hoaYn === 'No' || hoaYn === 'N') {
