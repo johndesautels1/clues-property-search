@@ -644,10 +644,12 @@ export default function PropertyDetail() {
           // Use partial data if no complete event received
           if (!finalData && Object.keys(partialFields).length > 0) {
             console.warn('⚠️ Stream ended without complete event, using partial data:', Object.keys(partialFields).length, 'fields');
+            const fieldsCount = Object.keys(partialFields).length;
             finalData = {
               fields: partialFields,
               partial: true,
-              completion_percentage: Math.round((Object.keys(partialFields).length / 181) * 100),
+              total_fields_found: fieldsCount,
+              completion_percentage: Math.round((fieldsCount / 181) * 100),
             };
           } else if (!finalData) {
             throw new Error('Stream ended without complete event and no data received');
@@ -702,11 +704,19 @@ export default function PropertyDetail() {
         enrichedProperty.publicRemarksExtracted = finalData.publicRemarksExtracted;
       }
 
+      // FIXED 2026-01-12: Store actual field count from API
+      if (finalData.total_fields_found !== undefined) {
+        enrichedProperty.totalFieldsFound = finalData.total_fields_found;
+      }
+      if (finalData.completion_percentage !== undefined) {
+        enrichedProperty.dataCompleteness = finalData.completion_percentage;
+      }
+
       // This will trigger additive merge due to our updated store
       updateFullProperty(id, enrichedProperty);
 
       // Update property card with new data completeness
-      if (finalData.completion_percentage) {
+      if (finalData.completion_percentage !== undefined || finalData.total_fields_found !== undefined) {
         updateProperty(id, {
           dataCompleteness: finalData.completion_percentage,
           // smartScore is calculated via 2-tier system during comparison, not here
@@ -1460,7 +1470,7 @@ export default function PropertyDetail() {
               {fullProperty?.address.listingStatus.value || property.listingStatus}
             </span>
             <span className="text-sm text-gray-400">
-              {Math.min(100, property.dataCompleteness)}% Data Complete ({Math.round(Math.min(100, property.dataCompleteness) * 1.68)}/181 fields)
+              {Math.min(100, property.dataCompleteness)}% Data Complete ({fullProperty?.totalFieldsFound || Math.round(Math.min(100, property.dataCompleteness) * 1.68)}/181 fields)
             </span>
 
             {/* Front Exposure Badge */}

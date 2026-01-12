@@ -281,6 +281,9 @@ function mergeProperties(existing: Property, incoming: Property): Property {
   if (incoming.dataCompleteness !== undefined || existing.dataCompleteness !== undefined) {
     merged.dataCompleteness = Math.max(incoming.dataCompleteness || 0, existing.dataCompleteness || 0);
   }
+  if (incoming.totalFieldsFound !== undefined || existing.totalFieldsFound !== undefined) {
+    merged.totalFieldsFound = Math.max(incoming.totalFieldsFound || 0, existing.totalFieldsFound || 0);
+  }
 
   return merged;
 }

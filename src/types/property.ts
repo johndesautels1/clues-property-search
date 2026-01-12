@@ -312,7 +312,8 @@ export interface Property {
 
   // Computed scores
   smartScore?: number;
-  dataCompleteness?: number;
+  dataCompleteness?: number; // Percentage (0-100)
+  totalFieldsFound?: number; // Actual count of populated fields (0-181)
   aiConfidence?: number;
 
   // Images and media

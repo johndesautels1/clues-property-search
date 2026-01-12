@@ -388,6 +388,14 @@ export default function AddProperty() {
       // Create full property object with all 181 fields if available
       const fullPropertyData = convertApiResponseToFullProperty(fields, scrapedProperty.id, fieldSources, conflicts);
 
+      // FIXED 2026-01-12: Store actual field count from API
+      if (data.total_fields_found !== undefined) {
+        fullPropertyData.totalFieldsFound = data.total_fields_found;
+      }
+      if (data.completion_percentage !== undefined) {
+        fullPropertyData.dataCompleteness = data.completion_percentage;
+      }
+
       setSaveStatus('saving');
 
       // BUGFIX 2026-01-11: Clear any existing property with this ID to prevent
@@ -627,6 +635,12 @@ export default function AddProperty() {
         };
 
         const fullPropertyData = convertApiResponseToFullProperty(fields, scrapedProperty.id, {}, []);
+
+        // FIXED 2026-01-12: Store actual field count (calculated from cached fields)
+        const fieldsCount = Object.keys(fields).length;
+        fullPropertyData.totalFieldsFound = fieldsCount;
+        fullPropertyData.dataCompleteness = Math.round((fieldsCount / 181) * 100);
+
         setSaveStatus('saving');
 
         // BUGFIX 2026-01-11: Clear any existing property with this ID to prevent
