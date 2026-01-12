@@ -190,7 +190,7 @@ export const STELLAR_MLS_FIELD_MAPPING: Record<string, string> = {
 
   // HOA & Taxes (Fields 30-38)
   'AssociationYN': '30_hoa_yn',
-  'AssociationFee': '31_hoa_fee_annual',
+  'AssociationFee': '31_association_fee', // FIXED 2026-01-12: Use canonical field name
   'AssociationName': '32_hoa_name',
   'AssociationAmenities': '33_hoa_includes',
   'OwnershipType': '34_ownership_type',

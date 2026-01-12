@@ -460,7 +460,7 @@ export const PERPLEXITY_FIELD_MAPPING: Record<string, string | null> = {
   'property_type': '26_property_type',
   'garage_spaces': '28_garage_spaces',
   'hoa_present': '30_hoa_yn',
-  'hoa_fee_annual': '31_hoa_fee_annual',
+  'hoa_fee_annual': '31_association_fee', // FIXED 2026-01-12: Map to canonical field name
   'hoa_name': '32_hoa_name',
   'hoa_includes': '33_hoa_includes',
   'garage_type': '44_garage_type',
