@@ -23,32 +23,79 @@ const DEFAULTS = {
 } as const;
 
 /**
+/**
  * Source tier hierarchy for data arbitration
  * Lower number = higher priority (wins conflicts)
+ *
+ * UPDATED 2026-01-12: Synchronized with backend api/property/arbitration.ts
+ * - Tier 1: Stellar MLS (unchanged)
+ * - Tier 2: ALL APIs (Google + Free APIs merged from tier 3)
+ * - Tier 3: Tavily Web Search (ADDED)
+ * - Tier 4: Web-search LLMs (Perplexity, Gemini, GPT, Claude Sonnet, Grok)
+ * - Tier 5: Claude Opus only (NO web search)
+ * - Tier 6: Manual entry (user input)
  */
 const SOURCE_TIERS: Record<string, number> = {
+  // TIER 1: Primary MLS Data (HIGHEST AUTHORITY)
   'Stellar MLS': 1,
   'Stellar MLS PDF': 1,
   'MLS': 1,
+  'Backend Calculation': 1,
+  'Backend Logic': 1,
+
+  // TIER 2: APIs (Google + Free APIs) - UPDATED 2026-01-12
   'County Records': 2,
   'County Assessor': 2,
   'FEMA': 2,
-  'Google Maps': 3,
-  'Google Geocode': 3,
-  'Google Places': 3,
-  'WalkScore': 3,
-  'HowLoud': 3,
-  'AirNow': 3,
-  'SchoolDigger': 3,
-  'Weather': 3,
-  'BroadbandNow': 3,
-  'CrimeGrade': 3,
-  'Perplexity': 4,      // Tier 4 - Most accurate LLM (uses web search)
-  'Grok': 5,            // Tier 5 - Prone to hallucination, demoted
-  'Claude': 5,          // Tier 5 - Standard LLMs, can only fill gaps
-  'GPT': 5,             // Tier 5 - Standard LLMs, can only fill gaps
-  'Gemini': 5,          // Tier 5 - Standard LLMs, can only fill gaps
-  'Manual': 6,          // Tier 6 - Lowest priority (user entry)
+  'FEMA Flood': 2,
+  'Google Maps': 2,           // FIXED: Was 3, now 2
+  'Google Geocode': 2,        // FIXED: Was 3, now 2
+  'Google Places': 2,         // FIXED: Was 3, now 2
+  'Google Distance': 2,
+  'Google Street View': 2,
+  'Google Solar API': 2,
+  'WalkScore': 2,             // FIXED: Was 3, now 2
+  'SchoolDigger': 2,          // FIXED: Was 3, now 2
+  'AirNow': 2,                // FIXED: Was 3, now 2
+  'HowLoud': 2,               // FIXED: Was 3, now 2
+  'Weather': 2,               // FIXED: Was 3, now 2
+  'Weather API': 2,
+  'FBI Crime': 2,
+  'BroadbandNow': 2,          // FIXED: Was 3, now 2
+  'CrimeGrade': 2,            // FIXED: Was 3, now 2
+  'U.S. Census': 2,
+  'NOAA Climate': 2,
+  'NOAA Storm Events': 2,
+  'NOAA Sea Level': 2,
+  'USGS Elevation': 2,
+  'USGS Earthquake': 2,
+  'EPA FRS': 2,
+  'EPA Radon': 2,
+
+  // TIER 3: Tavily Web Search - ADDED 2026-01-12
+  'Tavily': 3,
+  'Tavily Web Search': 3,
+
+  // TIER 4: Web-Search LLMs - UPDATED 2026-01-12
+  'Perplexity': 4,
+  'Perplexity A (Portals & Pricing)': 4,
+  'Perplexity B (County Records)': 4,
+  'Perplexity C (Schools & Safety)': 4,
+  'Perplexity D (Utilities)': 4,
+  'Perplexity E (Comps)': 4,
+  'Gemini': 4,                // FIXED: Was 5, now 4
+  'Gemini 2.0 Flash Experimental': 4,
+  'GPT': 4,                   // FIXED: Was 5, now 4
+  'GPT-4o': 4,
+  'Claude Sonnet': 4,         // FIXED: Was 5, now 4
+  'Grok': 4,                  // FIXED: Was 5, now 4
+
+  // TIER 5: Claude Opus (Deep reasoning, NO web search - LAST)
+  'Claude Opus': 5,
+  'Claude': 5,                // Fallback for unspecified Claude
+
+  // TIER 6: Manual entry (LOWEST)
+  'Manual': 6,
 };
 
 /**

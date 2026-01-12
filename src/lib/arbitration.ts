@@ -27,26 +27,36 @@ export interface TierConfig {
 }
 
 export const DATA_TIERS: Record<string, TierConfig> = {
+  // TIER 1: Primary MLS Data
   'stellar-mls': { tier: 1, name: 'Stellar MLS', description: 'Primary MLS data source', reliability: 100 },
+  'backend-calculation': { tier: 1, name: 'Backend Calculation', description: 'Math-derived fields (price/sqft, tax rate, etc.)', reliability: 100 },
+  'backend-logic': { tier: 1, name: 'Backend Logic', description: 'Smart defaults and conditional N/A fields', reliability: 100 },
+  
+  // TIER 2: APIs (Google first, then Free APIs) - UPDATED 2026-01-12
   'google-geocode': { tier: 2, name: 'Google Geocode', description: 'Address geocoding', reliability: 95 },
   'google-places': { tier: 2, name: 'Google Places', description: 'Nearby amenities', reliability: 95 },
   'google-distance': { tier: 2, name: 'Google Distance Matrix', description: 'Commute times', reliability: 95 },
-  'walkscore': { tier: 3, name: 'WalkScore', description: 'Walkability scores', reliability: 90 },
-  'schooldigger': { tier: 3, name: 'SchoolDigger', description: 'School ratings', reliability: 85 },
-  'fema': { tier: 3, name: 'FEMA NFHL', description: 'Flood zones', reliability: 95 },
-  'airnow': { tier: 3, name: 'AirNow', description: 'Air quality', reliability: 90 },
-  'howloud': { tier: 3, name: 'HowLoud', description: 'Noise levels', reliability: 85 },
-  'weather': { tier: 3, name: 'Weather API', description: 'Climate data', reliability: 85 },
-  'fbi-crime': { tier: 3, name: 'FBI Crime', description: 'Crime statistics', reliability: 90 },
-  // LLM Cascade Order: Perplexity → Gemini → GPT → Sonnet → Grok → Opus
+  'walkscore': { tier: 2, name: 'WalkScore', description: 'Walkability scores', reliability: 90 },  // FIXED: Was 3, now 2
+  'schooldigger': { tier: 2, name: 'SchoolDigger', description: 'School ratings', reliability: 85 },  // FIXED: Was 3, now 2
+  'fema': { tier: 2, name: 'FEMA NFHL', description: 'Flood zones', reliability: 95 },  // FIXED: Was 3, now 2
+  'airnow': { tier: 2, name: 'AirNow', description: 'Air quality', reliability: 90 },  // FIXED: Was 3, now 2
+  'howloud': { tier: 2, name: 'HowLoud', description: 'Noise levels', reliability: 85 },  // FIXED: Was 3, now 2
+  'weather': { tier: 2, name: 'Weather API', description: 'Climate data', reliability: 85 },  // FIXED: Was 3, now 2
+  'fbi-crime': { tier: 2, name: 'FBI Crime', description: 'Crime statistics', reliability: 90 },  // FIXED: Was 3, now 2
+  
+  // TIER 3: Tavily Web Search (targeted AVM, school, crime searches) - ADDED 2026-01-12
+  'tavily': { tier: 3, name: 'Tavily Web Search', description: 'Targeted web searches for AVMs, schools, crime', reliability: 85 },
+  
+  // TIER 4: LLM Cascade Order: Perplexity → Gemini → GPT → Sonnet → Grok - UPDATED 2026-01-12
   'perplexity': { tier: 4, name: 'Perplexity Sonar Reasoning Pro', description: '#1 - Deep web search (HIGHEST LLM)', reliability: 90 },
   'gemini': { tier: 4, name: 'Gemini 3 Pro Preview', description: '#2 - Google Search grounding', reliability: 85 },
   'gpt': { tier: 4, name: 'GPT-4o', description: '#3 - Web evidence mode', reliability: 80 },
   'claude-sonnet': { tier: 4, name: 'Claude Sonnet 4.5', description: '#4 - Web search beta (fills gaps)', reliability: 75 },
-  'grok': { tier: 5, name: 'Grok 4.1 Fast', description: '#5 - X/Twitter real-time data', reliability: 70 },
+  'grok': { tier: 4, name: 'Grok 4.1 Fast', description: '#5 - X/Twitter real-time data', reliability: 70 },  // FIXED: Was 5, now 4
+  
+  // TIER 5: Claude Opus (Deep reasoning, NO web search - LAST)
   'claude-opus': { tier: 5, name: 'Claude Opus 4.5', description: '#6 - Deep reasoning, NO web search (LAST)', reliability: 65 },
 };
-
 export interface FieldValue {
   value: any;
   source: string;

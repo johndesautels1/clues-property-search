@@ -93,7 +93,7 @@ export const DATA_SOURCES: DataSource[] = [
     id: 'walkscore', 
     name: 'WalkScore', 
     type: 'free-api', 
-    tier: 3, 
+    tier: 2,  // FIXED: Was 3, now 2 
     icon: 'car', 
     color: 'green',
     enabled: true,
@@ -103,7 +103,7 @@ export const DATA_SOURCES: DataSource[] = [
     id: 'schooldigger', 
     name: 'SchoolDigger', 
     type: 'free-api', 
-    tier: 3, 
+    tier: 2,  // FIXED: Was 3, now 2 
     icon: 'school', 
     color: 'purple',
     enabled: true,
@@ -113,7 +113,7 @@ export const DATA_SOURCES: DataSource[] = [
     id: 'fema', 
     name: 'FEMA Flood', 
     type: 'free-api', 
-    tier: 3, 
+    tier: 2,  // FIXED: Was 3, now 2 
     icon: 'shield', 
     color: 'yellow',
     enabled: true,
@@ -123,7 +123,7 @@ export const DATA_SOURCES: DataSource[] = [
     id: 'airnow', 
     name: 'AirNow', 
     type: 'free-api', 
-    tier: 3, 
+    tier: 2,  // FIXED: Was 3, now 2 
     icon: 'wind', 
     color: 'green',
     enabled: true,
@@ -133,7 +133,7 @@ export const DATA_SOURCES: DataSource[] = [
     id: 'howloud', 
     name: 'HowLoud', 
     type: 'free-api', 
-    tier: 3, 
+    tier: 2,  // FIXED: Was 3, now 2 
     icon: 'volume', 
     color: 'purple',
     enabled: true,
@@ -143,7 +143,7 @@ export const DATA_SOURCES: DataSource[] = [
     id: 'weather',
     name: 'Weather',
     type: 'free-api',
-    tier: 3,
+    tier: 2,  // FIXED: Was 3, now 2
     icon: 'sun',
     color: 'orange',
     enabled: true,
@@ -153,7 +153,7 @@ export const DATA_SOURCES: DataSource[] = [
     id: 'crime',
     name: 'FBI Crime',
     type: 'free-api',
-    tier: 3,
+    tier: 2,  // FIXED: Was 3, now 2
     icon: 'alert',
     color: 'red',
     enabled: true,
@@ -163,7 +163,7 @@ export const DATA_SOURCES: DataSource[] = [
     id: 'internal',
     name: 'INTERNAL',
     type: 'free-api',
-    tier: 3,
+    tier: 2,  // FIXED: Was 3, now 2
     icon: 'cpu',
     color: 'gray',
     enabled: true,
@@ -173,7 +173,7 @@ export const DATA_SOURCES: DataSource[] = [
     id: 'census',
     name: 'U.S. Census',
     type: 'free-api',
-    tier: 3,
+    tier: 2,  // FIXED: Was 3, now 2
     icon: 'database',
     color: 'indigo',
     enabled: true,
@@ -183,7 +183,7 @@ export const DATA_SOURCES: DataSource[] = [
     id: 'noaa-climate',
     name: 'NOAA Climate',
     type: 'free-api',
-    tier: 3,
+    tier: 2,  // FIXED: Was 3, now 2
     icon: 'cloud',
     color: 'blue',
     enabled: true,
@@ -193,7 +193,7 @@ export const DATA_SOURCES: DataSource[] = [
     id: 'noaa-storm',
     name: 'NOAA Storm Events',
     type: 'free-api',
-    tier: 3,
+    tier: 2,  // FIXED: Was 3, now 2
     icon: 'wind',
     color: 'orange',
     enabled: true,
@@ -203,7 +203,7 @@ export const DATA_SOURCES: DataSource[] = [
     id: 'noaa-sealevel',
     name: 'NOAA Sea Level',
     type: 'free-api',
-    tier: 3,
+    tier: 2,  // FIXED: Was 3, now 2
     icon: 'waves',
     color: 'cyan',
     enabled: true,
@@ -213,7 +213,7 @@ export const DATA_SOURCES: DataSource[] = [
     id: 'usgs-elevation',
     name: 'USGS Elevation',
     type: 'free-api',
-    tier: 3,
+    tier: 2,  // FIXED: Was 3, now 2
     icon: 'mountain',
     color: 'brown',
     enabled: true,
@@ -223,7 +223,7 @@ export const DATA_SOURCES: DataSource[] = [
     id: 'usgs-earthquake',
     name: 'USGS Earthquake',
     type: 'free-api',
-    tier: 3,
+    tier: 2,  // FIXED: Was 3, now 2
     icon: 'activity',
     color: 'red',
     enabled: true,
@@ -233,7 +233,7 @@ export const DATA_SOURCES: DataSource[] = [
     id: 'epa-frs',
     name: 'EPA FRS',
     type: 'free-api',
-    tier: 3,
+    tier: 2,  // FIXED: Was 3, now 2
     icon: 'alert-triangle',
     color: 'orange',
     enabled: true,
@@ -243,14 +243,26 @@ export const DATA_SOURCES: DataSource[] = [
     id: 'epa-radon',
     name: 'EPA Radon',
     type: 'free-api',
-    tier: 3,
+    tier: 2,  // FIXED: Was 3, now 2
     icon: 'radiation',
     color: 'yellow',
     enabled: true,
     description: 'Radon risk zones'
   },
 
-  // Tier 4: Perplexity ONLY (Web-grounded LLM - highest LLM priority, now uses unified prompt)
+  // Tier 3: Tavily Web Search - ADDED 2026-01-12
+  {
+    id: 'tavily',
+    name: 'Tavily',
+    type: 'free-api',
+    tier: 3,
+    icon: 'search',
+    color: 'teal',
+    enabled: true,
+    description: 'Targeted web searches for AVMs, schools, crime'
+  },
+
+  // Tier 4: Web-Search LLMs - UPDATED 2026-01-12
   {
     id: 'perplexity',
     name: 'Perplexity',
@@ -262,12 +274,12 @@ export const DATA_SOURCES: DataSource[] = [
     description: 'Web-grounded AI (most reliable)'
   },
 
-  // Tier 5: Other LLMs (Fallback - lower priority than Perplexity)
+  // Tier 5: Claude Opus (Deep reasoning, NO web search - LAST)
   {
     id: 'grok',
     name: 'Grok',
     type: 'llm',
-    tier: 5,
+    tier: 4,  // FIXED: Was 5, now 4
     icon: 'brain',
     color: 'blue',
     enabled: true,
@@ -287,7 +299,7 @@ export const DATA_SOURCES: DataSource[] = [
     id: 'gpt',
     name: 'GPT-4o',
     type: 'llm',
-    tier: 5,
+    tier: 4,  // FIXED: Was 5, now 4
     icon: 'brain',
     color: 'green',
     enabled: true,
@@ -297,7 +309,7 @@ export const DATA_SOURCES: DataSource[] = [
     id: 'claude-sonnet',
     name: 'Claude Sonnet',
     type: 'llm',
-    tier: 5,
+    tier: 4,  // FIXED: Was 5, now 4
     icon: 'brain',
     color: 'pink',
     enabled: true,
@@ -307,7 +319,7 @@ export const DATA_SOURCES: DataSource[] = [
     id: 'gemini',
     name: 'Gemini',
     type: 'llm',
-    tier: 5,
+    tier: 4,  // FIXED: Was 5, now 4
     icon: 'brain',
     color: 'purple',
     enabled: true,
