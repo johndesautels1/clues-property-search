@@ -37,6 +37,7 @@ import {
   Wrench,
   Target,
   AlertCircle,
+  AlertTriangle,
   Search,
   Sparkles,
   Loader2,
@@ -1297,255 +1298,343 @@ export default function PropertyDetail() {
 
       {/* Content */}
       <div className="px-4 py-6 md:px-8 md:py-10 max-w-7xl mx-auto">
-        {/* Address & Price Header */}
+        {/* Hero Section - Redesigned for Visual Impact */}
         <motion.div variants={itemVariants} className="mb-8">
 
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-            <div className="flex-1">
-              <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-                {fullProperty?.address.fullAddress.value || property.address}
-              </h1>
-              {/* Waterfront Location Info */}
-              {fullProperty?.stellarMLS?.waterfront?.waterBodyName?.value && (
-                <div className="flex items-center gap-2 mt-2">
-                  <Waves className="w-4 h-4 text-cyan-400" />
-                  <p className="text-sm text-cyan-300 font-medium">
-                    {fullProperty.stellarMLS.waterfront.waterBodyName.value}
+          {/* Stunning Gradient Price Banner */}
+          <div className="relative mb-6 p-8 rounded-2xl bg-gradient-to-br from-quantum-cyan/20 via-quantum-purple/20 to-quantum-gold/20 border border-quantum-cyan/30 backdrop-blur-xl overflow-hidden">
+            {/* Animated background glow */}
+            <div className="absolute inset-0 bg-gradient-to-r from-quantum-cyan/10 via-transparent to-quantum-purple/10 animate-pulse" />
+
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              {/* Left: Address & Status */}
+              <div className="flex-1">
+                <h1 className="text-3xl md:text-4xl font-bold text-white mb-3 leading-tight">
+                  {fullProperty?.address.fullAddress.value || property.address}
+                </h1>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Status Badge - Prominent */}
+                  <span className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg ${
+                    (fullProperty?.address.listingStatus.value || property.listingStatus) === 'Active' ? 'bg-quantum-green/30 text-quantum-green border border-quantum-green/50' :
+                    (fullProperty?.address.listingStatus.value || property.listingStatus) === 'Pending' ? 'bg-quantum-gold/30 text-quantum-gold border border-quantum-gold/50' :
+                    'bg-gray-500/30 text-gray-300 border border-gray-400/50'
+                  }`}>
+                    ● {fullProperty?.address.listingStatus.value || property.listingStatus}
+                  </span>
+
+                  {/* MLS# Badge */}
+                  {fullProperty?.address.mlsPrimary?.value && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigator.clipboard.writeText(String(fullProperty.address.mlsPrimary.value));
+                        const btn = e.currentTarget;
+                        const originalText = btn.innerHTML;
+                        btn.innerHTML = '<span class="text-quantum-green">✓ Copied!</span>';
+                        setTimeout(() => { btn.innerHTML = originalText; }, 1500);
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-quantum-cyan/20 hover:bg-quantum-cyan/30 border border-quantum-cyan/40 transition-all cursor-pointer group"
+                      title="Click to copy MLS#"
+                    >
+                      <span className="text-xs font-semibold text-quantum-cyan group-hover:text-white">
+                        MLS# {fullProperty.address.mlsPrimary.value}
+                      </span>
+                    </button>
+                  )}
+
+                  {/* New Construction Badge */}
+                  {fullProperty?.address.newConstructionYN?.value && (
+                    <div className="px-3 py-1.5 rounded-lg bg-green-500/20 border border-green-400/40 shadow-lg">
+                      <span className="text-xs font-bold text-green-400">
+                        🏗️ NEW CONSTRUCTION
+                      </span>
+                    </div>
+                  )}
+
+                  {/* APN Badge */}
+                  {fullProperty?.details.parcelId?.value && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigator.clipboard.writeText(String(fullProperty.details.parcelId.value));
+                        const btn = e.currentTarget;
+                        const originalText = btn.innerHTML;
+                        btn.innerHTML = '<span class="text-quantum-green">✓ Copied!</span>';
+                        setTimeout(() => { btn.innerHTML = originalText; }, 1500);
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 transition-all cursor-pointer group"
+                      title="Click to copy Parcel ID (APN)"
+                    >
+                      <span className="text-xs font-semibold text-amber-400 group-hover:text-white">
+                        APN: {fullProperty.details.parcelId.value}
+                      </span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Right: Price Display - HUGE and Eye-Catching */}
+              <div className="text-left md:text-right">
+                <div className="text-5xl md:text-6xl font-black bg-gradient-to-r from-quantum-cyan via-white to-quantum-gold bg-clip-text text-transparent mb-2 animate-shimmer">
+                  {formatValue(fullProperty?.address.listingPrice.value || property.price, 'currency')}
+                </div>
+                {property.pricePerSqft > 0 && (
+                  <p className="text-xl text-quantum-cyan font-semibold">
+                    ${property.pricePerSqft}/sqft
                   </p>
-                </div>
-              )}
-
-              {/* Climate Risk Badges - Florida Critical Risks */}
-              {(fullProperty?.utilities.floodRiskLevel?.value || fullProperty?.utilities.hurricaneRisk?.value || fullProperty?.utilities.seaLevelRiseRisk?.value) && (
-                <div className="flex flex-wrap items-center gap-2 mt-3">
-                  <span className="text-xs text-gray-500 uppercase tracking-wider">Climate Risks:</span>
-                  {fullProperty.utilities.floodRiskLevel?.value && (
-                    <div className={`px-3 py-1.5 rounded-lg border flex items-center gap-2 ${
-                      String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('low') ?
-                        'bg-emerald-500/10 border-emerald-500/30' :
-                      String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('moderate') ?
-                        'bg-amber-500/10 border-amber-500/30' :
-                        'bg-red-500/10 border-red-500/30'
-                    }`}>
-                      <Waves className={`w-4 h-4 ${
-                        String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('low') ?
-                          'text-emerald-400' :
-                        String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('moderate') ?
-                          'text-amber-400' :
-                          'text-red-400'
-                      }`} />
-                      <span className={`text-xs font-semibold ${
-                        String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('low') ?
-                          'text-emerald-300' :
-                        String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('moderate') ?
-                          'text-amber-300' :
-                          'text-red-300'
-                      }`}>
-                        Flood: {fullProperty.utilities.floodRiskLevel.value}
-                      </span>
-                    </div>
-                  )}
-                  {fullProperty.utilities.hurricaneRisk?.value && (
-                    <div className={`px-3 py-1.5 rounded-lg border flex items-center gap-2 ${
-                      String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('low') ?
-                        'bg-emerald-500/10 border-emerald-500/30' :
-                      String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('moderate') ?
-                        'bg-amber-500/10 border-amber-500/30' :
-                        'bg-red-500/10 border-red-500/30'
-                    }`}>
-                      <Wind className={`w-4 h-4 ${
-                        String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('low') ?
-                          'text-emerald-400' :
-                        String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('moderate') ?
-                          'text-amber-400' :
-                          'text-red-400'
-                      }`} />
-                      <span className={`text-xs font-semibold ${
-                        String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('low') ?
-                          'text-emerald-300' :
-                        String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('moderate') ?
-                          'text-amber-300' :
-                          'text-red-300'
-                      }`}>
-                        Hurricane: {fullProperty.utilities.hurricaneRisk.value}
-                      </span>
-                    </div>
-                  )}
-                  {fullProperty.utilities.seaLevelRiseRisk?.value && (
-                    <div className={`px-3 py-1.5 rounded-lg border flex items-center gap-2 ${
-                      String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('low') ?
-                        'bg-emerald-500/10 border-emerald-500/30' :
-                      String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('moderate') ?
-                        'bg-amber-500/10 border-amber-500/30' :
-                        'bg-red-500/10 border-red-500/30'
-                    }`}>
-                      <TrendingUp className={`w-4 h-4 ${
-                        String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('low') ?
-                          'text-emerald-400' :
-                        String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('moderate') ?
-                          'text-amber-400' :
-                          'text-red-400'
-                      }`} />
-                      <span className={`text-xs font-semibold ${
-                        String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('low') ?
-                          'text-emerald-300' :
-                        String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('moderate') ?
-                          'text-amber-300' :
-                          'text-red-300'
-                      }`}>
-                        Sea Level: {fullProperty.utilities.seaLevelRiseRisk.value}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* MLS# and APN Badges */}
-              <div className="flex flex-wrap items-center gap-2 mt-3">
-                {fullProperty?.address.mlsPrimary?.value && (
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      navigator.clipboard.writeText(String(fullProperty.address.mlsPrimary.value));
-                      // Visual feedback
-                      const btn = e.currentTarget;
-                      const originalText = btn.innerHTML;
-                      btn.innerHTML = '<span class="text-quantum-green">✓ Copied!</span>';
-                      setTimeout(() => { btn.innerHTML = originalText; }, 1500);
-                    }}
-                    className="px-3 py-1.5 rounded-lg bg-quantum-cyan/10 hover:bg-quantum-cyan/20 border border-quantum-cyan/30 transition-colors cursor-pointer group"
-                    title="Click to copy MLS#"
-                  >
-                    <span className="text-xs font-semibold text-quantum-cyan group-hover:text-quantum-cyan">
-                      MLS# {fullProperty.address.mlsPrimary.value}
-                    </span>
-                  </button>
                 )}
-                {fullProperty?.address.newConstructionYN?.value && (
-                  <div className="px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/30">
-                    <span className="text-xs font-semibold text-green-400">
-                      NEW CONSTRUCTION
+
+                {/* Data Completeness - Circular Progress */}
+                <div className="mt-3 flex items-center justify-end gap-3">
+                  <div className="relative w-12 h-12">
+                    <svg className="w-12 h-12 transform -rotate-90">
+                      <circle
+                        cx="24"
+                        cy="24"
+                        r="20"
+                        stroke="rgba(255,255,255,0.1)"
+                        strokeWidth="4"
+                        fill="none"
+                      />
+                      <circle
+                        cx="24"
+                        cy="24"
+                        r="20"
+                        stroke="url(#progressGradient)"
+                        strokeWidth="4"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeDasharray={`${2 * Math.PI * 20}`}
+                        strokeDashoffset={`${2 * Math.PI * 20 * (1 - Math.min(100, property.dataCompleteness) / 100)}`}
+                        className="transition-all duration-1000"
+                      />
+                    </svg>
+                    <defs>
+                      <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#00f0ff" />
+                        <stop offset="100%" stopColor="#a855f7" />
+                      </linearGradient>
+                    </defs>
+                    <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
+                      {Math.min(100, property.dataCompleteness)}%
                     </span>
                   </div>
-                )}
-                {fullProperty?.details.parcelId?.value && (
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      navigator.clipboard.writeText(String(fullProperty.details.parcelId.value));
-                      const btn = e.currentTarget;
-                      const originalText = btn.innerHTML;
-                      btn.innerHTML = '<span class="text-quantum-green">✓ Copied!</span>';
-                      setTimeout(() => { btn.innerHTML = originalText; }, 1500);
-                    }}
-                    className="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-colors cursor-pointer group"
-                    title="Click to copy Parcel ID (APN)"
-                  >
-                    <span className="text-xs font-semibold text-amber-400 group-hover:text-amber-300">
-                      APN: {fullProperty.details.parcelId.value}
-                    </span>
-                  </button>
-                )}
+                  <div className="text-left">
+                    <p className="text-sm font-semibold text-white">{fullProperty?.totalFieldsFound || Math.round(Math.min(100, property.dataCompleteness) * 1.68)}/181</p>
+                    <p className="text-xs text-gray-400">Fields</p>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="text-left md:text-right">
-              <div className="text-3xl md:text-4xl font-bold text-white mb-1">
-                {formatValue(fullProperty?.address.listingPrice.value || property.price, 'currency')}
-              </div>
-              {property.pricePerSqft > 0 && (
-                <p className="text-gray-400">
-                  ${property.pricePerSqft}/sqft
-                </p>
-              )}
             </div>
           </div>
 
-          {/* Status Badge */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className={`px-3 py-1.5 rounded-full text-sm font-semibold ${
-              (fullProperty?.address.listingStatus.value || property.listingStatus) === 'Active' ? 'bg-quantum-green/20 text-quantum-green' :
-              (fullProperty?.address.listingStatus.value || property.listingStatus) === 'Pending' ? 'bg-quantum-gold/20 text-quantum-gold' :
-              'bg-gray-500/20 text-gray-400'
-            }`}>
-              {fullProperty?.address.listingStatus.value || property.listingStatus}
-            </span>
-            <span className="text-sm text-gray-400">
-              {Math.min(100, property.dataCompleteness)}% Data Complete ({fullProperty?.totalFieldsFound || Math.round(Math.min(100, property.dataCompleteness) * 1.68)}/181 fields)
-            </span>
+          {/* Key Stats Bar - Inline Prominent Display */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="glass-card p-4 text-center hover:scale-105 transition-transform">
+              <Bed className="w-6 h-6 text-quantum-cyan mx-auto mb-1" />
+              <div className="text-3xl font-bold text-white">{fullProperty?.details.bedrooms.value || property.bedrooms || 0}</div>
+              <p className="text-xs text-gray-400">Beds</p>
+            </div>
+            <div className="glass-card p-4 text-center hover:scale-105 transition-transform">
+              <Bath className="w-6 h-6 text-quantum-cyan mx-auto mb-1" />
+              <div className="text-3xl font-bold text-white">{fullProperty?.details.totalBathrooms.value || property.bathrooms || 0}</div>
+              <p className="text-xs text-gray-400">Baths</p>
+            </div>
+            <div className="glass-card p-4 text-center hover:scale-105 transition-transform">
+              <Ruler className="w-6 h-6 text-quantum-cyan mx-auto mb-1" />
+              <div className="text-3xl font-bold text-white">{(fullProperty?.details.livingSqft.value || property.sqft).toLocaleString()}</div>
+              <p className="text-xs text-gray-400">Sq Ft</p>
+            </div>
+          </div>
 
-            {/* Front Exposure Badge */}
-            {fullProperty?.stellarMLS?.legal?.frontExposure?.value && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-500/10 border border-orange-400/30">
-                <Sun className="w-4 h-4 text-orange-400" />
-                <span className="text-sm font-semibold text-orange-300">
-                  Faces {fullProperty.stellarMLS.legal.frontExposure.value}
-                </span>
+          {/* Water Body Name */}
+          {fullProperty?.stellarMLS?.waterfront?.waterBodyName?.value && (
+            <div className="glass-card p-4 mb-4 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-400/30">
+              <div className="flex items-center gap-3">
+                <Waves className="w-5 h-5 text-cyan-400" />
+                <p className="text-lg text-cyan-300 font-semibold">
+                  {fullProperty.stellarMLS.waterfront.waterBodyName.value}
+                </p>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Solar Potential Badge */}
-            {fullProperty?.utilities.solarPotential?.value && (
-              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${
-                String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('excellent') || String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('high') ?
-                  'bg-yellow-500/10 border-yellow-400/30' :
-                String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('good') || String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('moderate') ?
-                  'bg-orange-500/10 border-orange-400/30' :
-                  'bg-gray-500/10 border-gray-400/30'
-              }`}>
-                <Zap className={`w-4 h-4 ${
+          {/* Climate Risk Badges - Condensed Card View */}
+          {(fullProperty?.utilities.floodRiskLevel?.value || fullProperty?.utilities.hurricaneRisk?.value || fullProperty?.utilities.seaLevelRiseRisk?.value) && (
+            <div className="glass-card p-4 mb-4">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle className="w-5 h-5 text-amber-400" />
+                <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wide">Climate Risks</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {fullProperty.utilities.floodRiskLevel?.value && (
+                  <div className={`p-3 rounded-lg border flex items-center gap-3 ${
+                    String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('low') ?
+                      'bg-emerald-500/10 border-emerald-500/30' :
+                    String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('moderate') ?
+                      'bg-amber-500/10 border-amber-500/30' :
+                      'bg-red-500/10 border-red-500/30'
+                  }`}>
+                    <Waves className={`w-5 h-5 ${
+                      String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('low') ?
+                        'text-emerald-400' :
+                      String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('moderate') ?
+                        'text-amber-400' :
+                        'text-red-400'
+                    }`} />
+                    <div>
+                      <p className="text-xs text-gray-400">Flood</p>
+                      <p className={`text-sm font-bold ${
+                        String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('low') ?
+                          'text-emerald-300' :
+                        String(fullProperty.utilities.floodRiskLevel.value).toLowerCase().includes('moderate') ?
+                          'text-amber-300' :
+                          'text-red-300'
+                      }`}>
+                        {fullProperty.utilities.floodRiskLevel.value}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {fullProperty.utilities.hurricaneRisk?.value && (
+                  <div className={`p-3 rounded-lg border flex items-center gap-3 ${
+                    String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('low') ?
+                      'bg-emerald-500/10 border-emerald-500/30' :
+                    String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('moderate') ?
+                      'bg-amber-500/10 border-amber-500/30' :
+                      'bg-red-500/10 border-red-500/30'
+                  }`}>
+                    <Wind className={`w-5 h-5 ${
+                      String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('low') ?
+                        'text-emerald-400' :
+                      String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('moderate') ?
+                        'text-amber-400' :
+                        'text-red-400'
+                    }`} />
+                    <div>
+                      <p className="text-xs text-gray-400">Hurricane</p>
+                      <p className={`text-sm font-bold ${
+                        String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('low') ?
+                          'text-emerald-300' :
+                        String(fullProperty.utilities.hurricaneRisk.value).toLowerCase().includes('moderate') ?
+                          'text-amber-300' :
+                          'text-red-300'
+                      }`}>
+                        {fullProperty.utilities.hurricaneRisk.value}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {fullProperty.utilities.seaLevelRiseRisk?.value && (
+                  <div className={`p-3 rounded-lg border flex items-center gap-3 ${
+                    String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('low') ?
+                      'bg-emerald-500/10 border-emerald-500/30' :
+                    String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('moderate') ?
+                      'bg-amber-500/10 border-amber-500/30' :
+                      'bg-red-500/10 border-red-500/30'
+                  }`}>
+                    <TrendingUp className={`w-5 h-5 ${
+                      String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('low') ?
+                        'text-emerald-400' :
+                      String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('moderate') ?
+                        'text-amber-400' :
+                        'text-red-400'
+                    }`} />
+                    <div>
+                      <p className="text-xs text-gray-400">Sea Level</p>
+                      <p className={`text-sm font-bold ${
+                        String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('minimal') || String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('low') ?
+                          'text-emerald-300' :
+                        String(fullProperty.utilities.seaLevelRiseRisk.value).toLowerCase().includes('moderate') ?
+                          'text-amber-300' :
+                          'text-red-300'
+                      }`}>
+                        {fullProperty.utilities.seaLevelRiseRisk.value}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Feature Badges - Organized in Card */}
+          <div className="glass-card p-4 mb-4">
+            <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wide mb-3">Property Features</h3>
+            <div className="flex flex-wrap gap-2">
+              {/* Front Exposure */}
+              {fullProperty?.stellarMLS?.legal?.frontExposure?.value && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-500/10 border border-orange-400/30">
+                  <Sun className="w-4 h-4 text-orange-400" />
+                  <span className="text-sm font-semibold text-orange-300">
+                    Faces {fullProperty.stellarMLS.legal.frontExposure.value}
+                  </span>
+                </div>
+              )}
+
+              {/* Solar Potential */}
+              {fullProperty?.utilities.solarPotential?.value && (
+                <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
                   String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('excellent') || String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('high') ?
-                    'text-yellow-400' :
+                    'bg-yellow-500/10 border-yellow-400/30' :
                   String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('good') || String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('moderate') ?
-                    'text-orange-400' :
-                    'text-gray-400'
-                }`} />
-                <span className={`text-sm font-semibold ${
-                  String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('excellent') || String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('high') ?
-                    'text-yellow-300' :
-                  String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('good') || String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('moderate') ?
-                    'text-orange-300' :
-                    'text-gray-300'
+                    'bg-orange-500/10 border-orange-400/30' :
+                    'bg-gray-500/10 border-gray-400/30'
                 }`}>
-                  Solar: {fullProperty.utilities.solarPotential.value}
-                </span>
-              </div>
-            )}
+                  <Zap className={`w-4 h-4 ${
+                    String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('excellent') || String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('high') ?
+                      'text-yellow-400' :
+                    String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('good') || String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('moderate') ?
+                      'text-orange-400' :
+                      'text-gray-400'
+                  }`} />
+                  <span className={`text-sm font-semibold ${
+                    String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('excellent') || String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('high') ?
+                      'text-yellow-300' :
+                    String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('good') || String(fullProperty.utilities.solarPotential.value).toLowerCase().includes('moderate') ?
+                      'text-orange-300' :
+                      'text-gray-300'
+                  }`}>
+                    Solar: {fullProperty.utilities.solarPotential.value}
+                  </span>
+                </div>
+              )}
 
-            {/* Extended Data - Occupancy Badge */}
-            {fullProperty?.extendedMLS?.occupantType && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-500/20 border border-purple-400/30">
-                <span className="px-1.5 py-0.5 bg-purple-500/30 border border-purple-400/40 rounded text-purple-200 text-xs font-bold">E.D.</span>
-                <span className="text-sm font-semibold text-purple-300">
-                  {fullProperty.extendedMLS.occupantType}
-                </span>
-              </div>
-            )}
+              {/* Occupancy */}
+              {fullProperty?.extendedMLS?.occupantType && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/20 border border-purple-400/30">
+                  <span className="px-1.5 py-0.5 bg-purple-500/30 border border-purple-400/40 rounded text-purple-200 text-xs font-bold">E.D.</span>
+                  <span className="text-sm font-semibold text-purple-300">
+                    {fullProperty.extendedMLS.occupantType}
+                  </span>
+                </div>
+              )}
 
-            {/* View Count Badge */}
-            {property?.viewCount && property.viewCount > 0 && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/30">
-                <Eye className="w-4 h-4 text-blue-400" />
-                <span className="text-sm font-semibold text-blue-300">
-                  {getViewsLast7Days()} {getViewsLast7Days() === 1 ? 'view' : 'views'} (7d)
-                </span>
-              </div>
-            )}
+              {/* View Count */}
+              {property?.viewCount && property.viewCount > 0 && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-400/30">
+                  <Eye className="w-4 h-4 text-blue-400" />
+                  <span className="text-sm font-semibold text-blue-300">{getViewsLast7Days()} {getViewsLast7Days() === 1 ? 'view' : 'views'} (7d)</span>
+                </div>
+              )}
 
-            {/* Save Button */}
-            <button
-              onClick={handleToggleSave}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all hover:scale-105 ${
-                isSaved
-                  ? 'bg-quantum-purple/20 border-quantum-purple/50 text-quantum-purple'
-                  : 'bg-white/5 border-white/20 text-gray-300 hover:bg-white/10'
-              }`}
-            >
-              <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
-              <span className="text-sm font-semibold">
-                {isSaved ? 'Saved' : 'Save'}
-                {property?.saveCount && property.saveCount > 0 && ` (${property.saveCount})`}
-              </span>
-            </button>
+              {/* Save Button */}
+              <button
+                onClick={handleToggleSave}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all hover:scale-105 ${
+                  isSaved
+                    ? 'bg-quantum-purple/20 border-quantum-purple/50 text-quantum-purple'
+                    : 'bg-white/5 border-white/20 text-gray-300 hover:bg-white/10'
+                }`}
+              >
+                <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
+                <span className="text-sm font-semibold">
+                  {isSaved ? 'Saved' : 'Save'}
+                  {property?.saveCount && property.saveCount > 0 && ` (${property.saveCount})`}
+                </span>
+              </button>
+            </div>
           </div>
         </motion.div>
 
