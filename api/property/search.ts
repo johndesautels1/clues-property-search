@@ -5927,34 +5927,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // HOA Y/N - Smart default when missing from MLS
+    // Check ALL possible HOA-related fields
     const hoaYn = getFieldValue('30_hoa_yn');
     const hoaFeeAnnual = getFieldValue('31_association_fee');
     const hoaFeeMonthly = getFieldValue('31A_hoa_fee_monthly');
     const hoaFeeAnnual2 = getFieldValue('31B_hoa_fee_annual');
+    const hoaName = getFieldValue('32_hoa_name');
+    const hoaIncludes = getFieldValue('33_hoa_includes');
+
+    // ANY evidence of HOA means HOA exists
     const hasAnyHoaFee = (hoaFeeAnnual && hoaFeeAnnual > 0) ||
                          (hoaFeeMonthly && hoaFeeMonthly > 0) ||
                          (hoaFeeAnnual2 && hoaFeeAnnual2 > 0);
+    const hasHoaName = hoaName && typeof hoaName === 'string' && hoaName.trim().length > 0;
+    const hasHoaIncludes = hoaIncludes && typeof hoaIncludes === 'string' && hoaIncludes.trim().length > 0;
+    const hasAnyHoaEvidence = hasAnyHoaFee || hasHoaName || hasHoaIncludes;
 
     if (hoaYn === undefined || hoaYn === null) {
-      // If HOA Y/N is missing but HOA fee exists → Yes
-      if (hasAnyHoaFee) {
+      // If ANY HOA data exists (fee, name, or includes) → HOA = Yes
+      if (hasAnyHoaEvidence) {
         smartDefaults['30_hoa_yn'] = true;
-        console.log('✅ Inferred 30_hoa_yn = true (HOA fee exists)');
+        const evidence = [];
+        if (hasAnyHoaFee) evidence.push('fee');
+        if (hasHoaName) evidence.push('name');
+        if (hasHoaIncludes) evidence.push('includes');
+        console.log(`✅ Inferred 30_hoa_yn = true (HOA evidence: ${evidence.join(', ')})`);
       }
-      // Condos/Townhouses almost always have HOA - default to Yes with Unknown fee
+      // Condos/Townhouses almost always have HOA - default to Yes
       else if (isCondoOrTownhouse) {
         smartDefaults['30_hoa_yn'] = true;
         console.log('✅ Inferred 30_hoa_yn = true (Condo/Townhouse typically has HOA)');
-        // Note: Don't set fee to 0 - leave it unknown so user sees "fee amount unknown"
       }
-      // If Single Family home with no HOA data → default to No (most SF homes don't have HOA)
-      else if (isSingleFamily) {
-        smartDefaults['30_hoa_yn'] = false;
-        smartDefaults['31_association_fee'] = 0;
-        smartDefaults['31A_hoa_fee_monthly'] = 0;
-        smartDefaults['31B_hoa_fee_annual'] = 0;
-        console.log('✅ Inferred 30_hoa_yn = false (Single Family with no HOA data)');
-      }
+      // NOTE: We do NOT default Single Family to "No HOA" because:
+      // - Many Florida subdivisions and gated communities ARE single family with HOAs
+      // - East Lake Woodlands, Cross Creek, etc. are SF homes with $400-500/month HOAs
+      // - Better to leave unknown than assume incorrectly
     }
     // HOA Fee - If HOA=No, fee should be $0
     else if (hoaYn === false || hoaYn === 'No' || hoaYn === 'N') {
