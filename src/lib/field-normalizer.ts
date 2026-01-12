@@ -961,7 +961,7 @@ export function normalizeToProperty(
       finalValue = normalizedUtility;
     }
 
-    const source = fieldData.source || 'Unknown';
+    const source = (fieldData.sources && fieldData.sources[0]) || fieldData.source || 'Unknown';
     const confidence = mapConfidence(fieldData.confidence);
     const llmSources = fieldSources[apiKey] || fieldData.llmSources || [];
 
