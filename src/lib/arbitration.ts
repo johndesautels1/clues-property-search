@@ -1,21 +1,24 @@
 /**
  * CLUES Property Dashboard - Tiered Arbitration Service
- * 
+ *
  * SINGLE SOURCE OF TRUTH for data source precedence and conflict resolution.
- * 
+ *
  * Tier Hierarchy (Higher tier ALWAYS wins):
  *   Tier 1: Stellar MLS (Primary source - when eKey obtained)
  *   Tier 2: Google APIs (Geocode, Places, Distance Matrix)
  *   Tier 3: Paid/Free APIs (WalkScore, SchoolDigger, FEMA, AirNow, HowLoud, Weather, FBI Crime)
  *   Tier 4: LLM Cascade (Perplexity → Gemini → GPT → Sonnet → Grok → Opus)
- * 
+ *
  * Key Principles:
  *   - Higher tier data NEVER gets overwritten by lower tier
  *   - LLM quorum voting for numeric/text fields when multiple LLMs return same value
  *   - Validation gates for all fields (price range, year range, geo coords, bathroom math)
  *   - Single-source hallucination protection (flag data from only one LLM)
  *   - Full audit trail with sources, confidence, and conflicts
+ *   - Semantic comparison to prevent false conflicts (e.g., "Pinellas" vs "Pinellas County")
  */
+
+import { hasRealConflict } from './semantic-compare';
 
 export type DataTier = 1 | 2 | 3 | 4 | 5;
 
@@ -301,7 +304,8 @@ export function arbitrateField(
   existingField: FieldValue | undefined,
   newValue: any,
   newSource: string,
-  auditTrail: AuditEntry[]
+  auditTrail: AuditEntry[],
+  fieldKey?: string
 ): { result: FieldValue | null; action: 'set' | 'skip' | 'override' | 'conflict' | 'validation_fail' } {
   const newTier = getSourceTier(newSource);
   const timestamp = new Date().toISOString();
@@ -334,14 +338,17 @@ export function arbitrateField(
   }
   
   if (newTier < existingField.tier) {
+    // Use semantic comparison to determine if this is a real conflict
+    const isRealConflict = hasRealConflict(existingField.value, newValue, fieldKey);
+
     const overrideField: FieldValue = {
       value: newValue,
       source: newSource,
       confidence: getSourceConfidence(newSource, true),
       tier: newTier,
       timestamp,
-      hasConflict: JSON.stringify(existingField.value) !== JSON.stringify(newValue),
-      conflictValues: existingField.value !== newValue 
+      hasConflict: isRealConflict,
+      conflictValues: isRealConflict
         ? [{ source: existingField.source, value: existingField.value }]
         : undefined,
     };
@@ -361,7 +368,10 @@ export function arbitrateField(
     return { result: overrideField, action: 'override' };
   }
   
-  if (newTier === existingField.tier && JSON.stringify(existingField.value) !== JSON.stringify(newValue)) {
+  // Check for semantic differences (not just JSON equality)
+  const isRealConflict = hasRealConflict(existingField.value, newValue, fieldKey);
+
+  if (newTier === existingField.tier && isRealConflict) {
     if (newTier >= 4) {
       const updatedField: FieldValue = {
         ...existingField,
@@ -546,7 +556,7 @@ export function createArbitrationPipeline(minLLMQuorum: number = 2): {
         return;
       }
       
-      const { result, action } = arbitrateField(fields[fieldKey], value, source, auditTrail);
+      const { result, action } = arbitrateField(fields[fieldKey], value, source, auditTrail, fieldKey);
       
       if (result) {
         if (auditTrail.length > 0) {

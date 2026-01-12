@@ -26,6 +26,8 @@
  *   - Full audit trail with sources, confidence, and conflicts
  */
 
+import { hasRealConflict } from './semantic-compare.js';
+
 export type DataTier = 1 | 2 | 3 | 4 | 5;
 
 export interface TierConfig {
@@ -327,7 +329,8 @@ export function arbitrateField(
   existingField: FieldValue | undefined,
   newValue: any,
   newSource: string,
-  auditTrail: AuditEntry[]
+  auditTrail: AuditEntry[],
+  fieldKey?: string
 ): { result: FieldValue | null; action: 'set' | 'skip' | 'override' | 'conflict' | 'validation_fail' } {
   const newTier = getSourceTier(newSource);
   const timestamp = new Date().toISOString();
@@ -360,14 +363,17 @@ export function arbitrateField(
   }
   
   if (newTier < existingField.tier) {
+    // Use semantic comparison to determine if this is a real conflict
+    const isRealConflict = hasRealConflict(existingField.value, newValue, fieldKey);
+
     const overrideField: FieldValue = {
       value: newValue,
       source: newSource,
       confidence: getSourceConfidence(newSource, true),
       tier: newTier,
       timestamp,
-      hasConflict: safeStringify(existingField.value) !== safeStringify(newValue),
-      conflictValues: existingField.value !== newValue 
+      hasConflict: isRealConflict,
+      conflictValues: isRealConflict
         ? [{ source: existingField.source, value: existingField.value }]
         : undefined,
     };
@@ -386,8 +392,11 @@ export function arbitrateField(
     
     return { result: overrideField, action: 'override' };
   }
-  
-  if (newTier === existingField.tier && safeStringify(existingField.value) !== safeStringify(newValue)) {
+
+  // Check for semantic differences (not just JSON equality)
+  const isRealConflict = hasRealConflict(existingField.value, newValue, fieldKey);
+
+  if (newTier === existingField.tier && isRealConflict) {
     if (newTier >= 4) {
       const updatedField: FieldValue = {
         ...existingField,
@@ -572,7 +581,7 @@ export function createArbitrationPipeline(minLLMQuorum: number = 2): {
         return;
       }
       
-      const { result, action } = arbitrateField(fields[fieldKey], value, source, auditTrail);
+      const { result, action } = arbitrateField(fields[fieldKey], value, source, auditTrail, fieldKey);
       
       if (result) {
         if (auditTrail.length > 0) {
