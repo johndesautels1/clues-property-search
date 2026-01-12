@@ -589,6 +589,41 @@ export default function PropertyDetail() {
     }
   };
 
+  // Handler for Heart button (favorite/like) - uses same save functionality
+  const handleFavorite = () => {
+    handleToggleSave();
+  };
+
+  // Handler for Share button - share property URL
+  const handleShare = async () => {
+    if (!property) return;
+
+    const shareData = {
+      title: property.address,
+      text: `Check out this property: ${property.address}`,
+      url: window.location.href,
+    };
+
+    // Try Web Share API first (mobile-friendly)
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        // User cancelled share or error occurred
+        console.log('Share cancelled or failed:', err);
+      }
+    } else {
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        alert('Property link copied to clipboard!');
+      } catch (err) {
+        console.error('Failed to copy to clipboard:', err);
+        alert('Failed to copy link. Please copy manually: ' + window.location.href);
+      }
+    }
+  };
+
   // Handler for "Enrich with APIs" button - calls search API to add more data
   const handleEnrichWithApis = async () => {
     if (!fullProperty || !id || !property) return;
@@ -1180,10 +1215,18 @@ export default function PropertyDetail() {
                 </>
               )}
             </button>
-            <button className="p-2 hover:bg-white/10 rounded-xl transition-colors">
-              <Heart className="w-6 h-6" />
+            <button
+              onClick={handleFavorite}
+              className={`p-2 hover:bg-white/10 rounded-xl transition-colors ${isSaved ? 'text-red-400' : ''}`}
+              title={isSaved ? 'Unfavorite' : 'Favorite'}
+            >
+              <Heart className={`w-6 h-6 ${isSaved ? 'fill-current' : ''}`} />
             </button>
-            <button className="p-2 hover:bg-white/10 rounded-xl transition-colors">
+            <button
+              onClick={handleShare}
+              className="p-2 hover:bg-white/10 rounded-xl transition-colors"
+              title="Share property"
+            >
               <Share2 className="w-6 h-6" />
             </button>
             <button
