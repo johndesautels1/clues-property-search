@@ -42,8 +42,8 @@ const missingFieldsList = {
 };
 const missingFieldsRules = {
   field_rules: {
-    // AVMs & Market Values
-    "12_market_value_estimate": { type: "number", definition: "Estimated market value in USD. Average of Zestimate and Redfin Estimate if both available." },
+    // AVMs & Market Values (12_market_value_estimate is backend-calculated from highest-tier verified AVM)
+    "12_market_value_estimate": { type: "number", definition: "DO NOT RETURN - Backend calculates from highest-tier verified AVM source." },
     "16a_zestimate": { type: "number", definition: "Zillow's Zestimate value in USD. Search 'site:zillow.com [address]'." },
     "16b_redfin_estimate": { type: "number", definition: "Redfin's estimate value in USD. Search 'site:redfin.com [address]'." },
     "16c_first_american_avm": { type: "number", definition: "First American AVM value in USD. Often behind paywall - return null if unavailable." },
@@ -672,15 +672,14 @@ You ONLY search for fields that Tier 3 did NOT find. Focus on fields that requir
    - 16e_ice_avm: Search for ICE/Intercontinental Exchange AVM if available
    - 16f_collateral_analytics_avm: Search for Collateral Analytics AVM if available
    - 181_rent_zestimate: Search "site:zillow.com [ADDRESS] rent" for Zillow Rent Zestimate
-   - 12_market_value_estimate: Calculate as arithmetic average of ALL AVMs found (if 2 found: add & divide by 2; if 3 found: add & divide by 3, etc.)
+   - DO NOT return 12_market_value_estimate - backend calculates from individual AVMs
    - If a specific AVM is behind a paywall, return null for that field.
 4. JSON ONLY: Return ONLY the raw JSON object. No conversational text.
 
-### OUTPUT SCHEMA
+### OUTPUT SCHEMA (DO NOT include 12_market_value_estimate - backend calculates)
 {
   "address": "{{address}}",
   "data_fields": {
-    "12_market_value_estimate": <number|null>,
     "16a_zestimate": <number|null>,
     "16b_redfin_estimate": <number|null>,
     "16c_first_american_avm": <number|null>,
@@ -847,7 +846,7 @@ You ONLY fill fields that prior sources left as null or incomplete. Use your bui
    - 16b_redfin_estimate: Search/browse "site:redfin.com [ADDRESS]" → extract current Redfin Estimate
    - 16c–16f (First American, Quantarium, ICE, Collateral Analytics): Search specifically for each AVM if publicly available
    - 181_rent_zestimate: Browse Zillow page and look for Rent Zestimate
-   - 12_market_value_estimate: Arithmetic average of all non-null AVMs found (round to nearest dollar)
+   - DO NOT return 12_market_value_estimate - backend calculates from individual AVMs
    - If behind paywall or not found → null
 4. MANDATORY TOOL USES (minimum):
    - web_search or browse_page for "site:zillow.com [ADDRESS]"
@@ -868,11 +867,10 @@ Structure: 40, 46
 Permits: 59-62
 Features: 133-135, 138
 
-### OUTPUT SCHEMA (EXACTLY THIS STRUCTURE)
+### OUTPUT SCHEMA (EXACTLY THIS STRUCTURE - DO NOT include 12_market_value_estimate)
 {
   "address": "{{address}}",
   "data_fields": {
-    "12_market_value_estimate": <number|null>,
     "16a_zestimate": <number|null>,
     "16b_redfin_estimate": <number|null>,
     "16c_first_american_avm": <number|null>,
@@ -1267,7 +1265,7 @@ HARD RULES (EVIDENCE FIREWALL)
    - Search for 16d_quantarium_avm (Quantarium AVM) if available
    - Search for 16e_ice_avm (ICE/Intercontinental Exchange AVM) if available
    - Search for 16f_collateral_analytics_avm (Collateral Analytics AVM) if available
-   - Calculate 12_market_value_estimate = arithmetic average of ALL AVMs found (if 2 found: add & divide by 2; if 3 found: add & divide by 3, etc.)
+   - DO NOT calculate 12_market_value_estimate - backend handles this from individual AVMs
 
 2) Market Statistics:
    - "[ZIP CODE] median home price 2025 2026" → 91_median_home_price_neighborhood
@@ -1456,8 +1454,7 @@ Do NOT re-search fields already populated - focus ONLY on MISSING fields from th
 
 MISSION: Use web search to populate ANY of the 47 high-velocity fields that are still missing for: ${address}
 
-VALUATION & AVM FIELDS:
-- 12_market_value_estimate: Estimated market value (average of available AVMs)
+VALUATION & AVM FIELDS (DO NOT return 12_market_value_estimate - backend calculates):
 - 16a_zestimate: Zillow Zestimate
 - 16b_redfin_estimate: Redfin Estimate
 - 16c_first_american_avm: First American AVM
@@ -1526,7 +1523,7 @@ SEARCH STRATEGY:
    - "site:redfin.com [ADDRESS]" → Extract 16b_redfin_estimate (Redfin Estimate)
    - "site:zillow.com [ADDRESS] rent" → Extract 181_rent_zestimate (Zillow Rent Zestimate)
    - Search for 16c_first_american_avm, 16d_quantarium_avm, 16e_ice_avm, 16f_collateral_analytics_avm if available
-   - Calculate 12_market_value_estimate = arithmetic average of ALL AVMs found (if 2: add & divide by 2; if 3: add & divide by 3, etc.)
+   - DO NOT return 12_market_value_estimate - backend calculates from individual AVMs
 2. Search "[CITY/ZIP] median home price 2026" for market statistics
 3. Search "[CITY] utility providers" for utility/service information (including 109_natural_gas)
 4. Search "[ADDRESS] public transit" for transit access
@@ -1535,10 +1532,11 @@ SEARCH STRATEGY:
 7. Search "[ADDRESS] EV charging smart home accessibility special assessments" on listing sites for fields 133-135, 138
 8. Only return fields you found with high confidence - use null for unverified data
 
-🚨 RESPOND WITH THIS EXACT JSON FORMAT - NO OTHER TEXT:
+🚨 RESPOND WITH THIS EXACT JSON FORMAT - NO OTHER TEXT (DO NOT include 12_market_value_estimate):
 {
   "fields": {
-    "12_market_value_estimate": {"value": 450000, "source": "Zillow.com", "confidence": "High"},
+    "16a_zestimate": {"value": 485000, "source": "Zillow.com", "confidence": "High"},
+    "16b_redfin_estimate": {"value": 492000, "source": "Redfin.com", "confidence": "High"},
     "104_electric_provider": {"value": "Duke Energy", "source": "Duke Energy website", "confidence": "High"}
   }
 }

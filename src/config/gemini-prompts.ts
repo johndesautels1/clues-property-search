@@ -7,10 +7,9 @@
  */
 
 // Inline the field keys to avoid JSON import issues in Vercel
-// UPDATED 2026-01-09: 47 high-velocity fields for LLM field completion
+// UPDATED 2026-01-13: 46 high-velocity fields for LLM field completion (12_market_value_estimate removed - backend calculates)
 const cluesMissingFieldsList = {
   missing_field_keys: [
-    "12_market_value_estimate",
     "16a_zestimate",
     "16b_redfin_estimate",
     "16c_first_american_avm",
@@ -85,7 +84,7 @@ Do NOT re-search fields already populated - focus ONLY on MISSING fields.
    - 16e_ice_avm: Search for ICE/Intercontinental Exchange AVM if available
    - 16f_collateral_analytics_avm: Search for Collateral Analytics AVM if available
    - 181_rent_zestimate: Search "site:zillow.com [ADDRESS] rent" for Zillow Rent Zestimate
-   - 12_market_value_estimate: Calculate as arithmetic average of all AVMs found (e.g., if 2 AVMs found, add and divide by 2)
+   - DO NOT return 12_market_value_estimate - the backend calculates this from individual AVMs
    - If a specific AVM is behind a paywall, return null for that field.
 4. PERMITS & RENOVATIONS SEARCH STRATEGY:
    - 59_recent_renovations: Search "[ADDRESS] renovations upgrades" on listing portals
@@ -126,11 +125,10 @@ EXECUTE THESE SEARCHES:
 3. "${params.address} utility providers and average bills"
 4. "${params.city || 'Tampa'} ${params.zip || ''} median home price and market trends 2026"
 
-RETURN JSON MATCHING THIS SCHEMA:
+RETURN JSON MATCHING THIS SCHEMA (DO NOT include 12_market_value_estimate - backend calculates it):
 {
   "address": "${params.address}",
   "data_fields": {
-    "12_market_value_estimate": <number|null>,
     "16a_zestimate": <number|null>,
     "16b_redfin_estimate": <number|null>,
     "16c_first_american_avm": <number|null>,
@@ -373,9 +371,9 @@ export function validateGeminiFieldCompleterResponse(response: unknown): {
       continue;
     }
 
-    // Validate numeric fields are numbers
+    // Validate numeric fields are numbers (12_market_value_estimate excluded - backend calculates)
     const numericFields = [
-      '12_market_value_estimate', '16a_zestimate', '16b_redfin_estimate',
+      '16a_zestimate', '16b_redfin_estimate',
       '16c_first_american_avm', '16d_quantarium_avm', '16e_ice_avm',
       '16f_collateral_analytics_avm', '91_median_home_price_neighborhood',
       '92_price_per_sqft_recent_avg', '95_days_on_market_avg',

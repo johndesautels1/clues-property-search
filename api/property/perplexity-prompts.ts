@@ -55,9 +55,8 @@ County: ${county}
 Goal: Using only major residential listing portals (Redfin, Zillow, Realtor.com, Trulia, Homes.com), extract the following if explicitly available for this specific property or its immediate area:
 
 listing_price
-market_value_estimate (calculate as average of available AVMs below)
 
-SPECIFIC AVM VALUES (search each source individually):
+SPECIFIC AVM VALUES (search each source individually - DO NOT calculate averages, backend handles that):
 zestimate (Zillow's Zestimate - search site:zillow.com for this address)
 redfin_estimate (Redfin Estimate - search site:redfin.com for this address)
 first_american_avm (First American AVM if available)
@@ -93,7 +92,7 @@ Rules:
 - Use only Redfin, Zillow, Realtor.com, Trulia, and Homes.com for property-level and neighborhood market stats.
 - Prefer Redfin > Zillow > Realtor.com when values conflict.
 - For AVMs: Search site:zillow.com for Zestimate, site:redfin.com for Redfin Estimate. Report each AVM separately.
-- For market_value_estimate: Calculate as arithmetic average of all AVMs found (if 2 found, add and divide by 2; if 3 found, add and divide by 3, etc.)
+- DO NOT calculate market_value_estimate - the backend will calculate this from the individual AVMs you provide.
 - For neighborhood metrics, use portal "market stats" or similar pages for the neighborhood or ZIP.
 - If listing_price and rental_estimate_monthly are both available, compute price_to_rent_ratio = listing_price / (rental_estimate_monthly * 12).
 - Include a field only if you are ≥90% confident; otherwise omit it.
@@ -110,7 +109,6 @@ Output format example:
   "listing_price": 500000,
   "zestimate": 485000,
   "redfin_estimate": 492000,
-  "market_value_estimate": 488500,
   "bedrooms": 3,
   "neighborhood_median_price": 520000,
   "rent_zestimate": 2400

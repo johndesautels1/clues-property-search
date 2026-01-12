@@ -212,8 +212,8 @@ const missingFieldsList = {
 };
 const missingFieldsRules = {
   field_rules: {
-    // AVMs & Market Values
-    "12_market_value_estimate": { type: "number", definition: "Estimated market value in USD. Average of Zestimate and Redfin Estimate if both available." },
+    // AVMs & Market Values (12_market_value_estimate is backend-calculated from highest-tier verified AVM)
+    "12_market_value_estimate": { type: "number", definition: "DO NOT RETURN - Backend calculates from highest-tier verified AVM source." },
     "16a_zestimate": { type: "number", definition: "Zillow's Zestimate value in USD. Search 'site:zillow.com [address]'." },
     "16b_redfin_estimate": { type: "number", definition: "Redfin's estimate value in USD. Search 'site:redfin.com [address]'." },
     "16c_first_american_avm": { type: "number", definition: "First American AVM value in USD. Often behind paywall - return null if unavailable." },
@@ -3135,7 +3135,7 @@ You ONLY fill fields that prior sources left as null or incomplete. Use your bui
    - 16b_redfin_estimate: Search/browse "site:redfin.com [ADDRESS]" → extract current Redfin Estimate
    - 16c–16f (First American, Quantarium, ICE, Collateral Analytics): Search specifically for each AVM if publicly available
    - 181_rent_zestimate: Browse Zillow page and look for Rent Zestimate
-   - 12_market_value_estimate: Arithmetic average of all non-null AVMs found (round to nearest dollar)
+   - DO NOT return 12_market_value_estimate - backend calculates from individual AVMs
    - If behind paywall or not found → null
 4. MANDATORY TOOL USES (minimum):
    - web_search or browse_page for "site:zillow.com [ADDRESS]"
@@ -3156,11 +3156,10 @@ Structure: 40, 46
 Permits: 59-62
 Features: 133-135, 138
 
-### OUTPUT SCHEMA (EXACTLY THIS STRUCTURE)
+### OUTPUT SCHEMA (EXACTLY THIS STRUCTURE - DO NOT include 12_market_value_estimate)
 {
   "address": "{{address}}",
   "data_fields": {
-    "12_market_value_estimate": <number|null>,
     "16a_zestimate": <number|null>,
     "16b_redfin_estimate": <number|null>,
     "16c_first_american_avm": <number|null>,
@@ -3325,7 +3324,7 @@ HARD RULES (EVIDENCE FIREWALL)
    - Search for 16d_quantarium_avm (Quantarium AVM) if available
    - Search for 16e_ice_avm (ICE/Intercontinental Exchange AVM) if available
    - Search for 16f_collateral_analytics_avm (Collateral Analytics AVM) if available
-   - Calculate 12_market_value_estimate = arithmetic average of ALL AVMs found (if 2 found: add & divide by 2; if 3 found: add & divide by 3, etc.)
+   - DO NOT calculate 12_market_value_estimate - backend handles this from individual AVMs
 
 2) Market Statistics:
    - "[ZIP CODE] median home price 2025 2026" → 91_median_home_price_neighborhood
@@ -3581,8 +3580,7 @@ You ONLY search for fields that prior sources did NOT find.
 
 MISSION: Use web search to populate ANY of the 47 high-velocity fields that are still missing:
 
-VALUATION & AVM FIELDS:
-- 12_market_value_estimate: Estimated market value (average of available AVMs)
+VALUATION & AVM FIELDS (DO NOT return 12_market_value_estimate - backend calculates):
 - 16a_zestimate: Zillow Zestimate
 - 16b_redfin_estimate: Redfin Estimate
 - 16c_first_american_avm: First American AVM
@@ -3657,7 +3655,7 @@ SEARCH STRATEGY:
    - "site:redfin.com [ADDRESS]" → Extract 16b_redfin_estimate (Redfin Estimate)
    - "site:zillow.com [ADDRESS] rent" → Extract 181_rent_zestimate (Zillow Rent Zestimate)
    - Search for 16c_first_american_avm, 16d_quantarium_avm, 16e_ice_avm, 16f_collateral_analytics_avm if available
-   - Calculate 12_market_value_estimate = arithmetic average of ALL AVMs found (if 2: add & divide by 2; if 3: add & divide by 3, etc.)
+   - DO NOT return 12_market_value_estimate - backend calculates from individual AVMs
 2. Search "[CITY/ZIP] median home price 2026" for market statistics
 3. Search "[CITY] utility providers" for utility/service information (including 109_natural_gas)
 4. Search "[ADDRESS] public transit" for transit access
@@ -5886,6 +5884,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         fieldsFound: 0,
         message: 'No data'
       });
+    }
+
+    // ========================================
+    // FIELD 12 LOGIC: Set Market Value Estimate from highest-tier verified AVM
+    // Priority: Zestimate (16a) > Redfin (16b) > First American (16c) > Quantarium (16d) > ICE (16e) > Collateral (16f)
+    // ========================================
+    const avmPriority = [
+      { field: '16a_zestimate', source: 'Zillow Zestimate' },
+      { field: '16b_redfin_estimate', source: 'Redfin Estimate' },
+      { field: '16c_first_american_avm', source: 'First American AVM' },
+      { field: '16d_quantarium_avm', source: 'Quantarium AVM' },
+      { field: '16e_ice_avm', source: 'ICE AVM' },
+      { field: '16f_collateral_analytics_avm', source: 'Collateral Analytics AVM' }
+    ];
+
+    let field12Set = false;
+    for (const avm of avmPriority) {
+      const avmValue = getFieldValue(avm.field);
+      if (avmValue !== null && avmValue !== undefined && avmValue !== '') {
+        const numericValue = typeof avmValue === 'number' ? avmValue : parseFloat(String(avmValue).replace(/[$,]/g, ''));
+        if (!isNaN(numericValue) && numericValue > 0) {
+          // Set Field 12 to the highest-priority verified AVM
+          arbitrationPipeline.addFieldsFromSource({
+            '12_market_value_estimate': {
+              value: numericValue,
+              source: avm.source,
+              confidence: 'High',
+              tier: 1 // Tier 1 = highest priority
+            }
+          }, `Backend: ${avm.source}`);
+          console.log(`✅ Field 12 (Market Value Estimate) set from ${avm.source}: $${numericValue.toLocaleString()}`);
+          field12Set = true;
+          break; // Use first available AVM (highest priority)
+        }
+      }
+    }
+
+    if (!field12Set) {
+      console.log('⚠️  Field 12 not set - no verified AVM sources available');
     }
 
     // ========================================
