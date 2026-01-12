@@ -1454,6 +1454,62 @@ export default function PropertyDetail() {
             </div>
           </div>
 
+
+        {/* Quick Stats */}
+        <motion.div
+          variants={itemVariants}
+          className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8"
+        >
+          <div className="glass-card p-6 text-center">
+            <Bed className="w-6 h-6 text-quantum-cyan mx-auto mb-2" />
+            <span className="text-2xl font-bold text-white block">{fullProperty?.details.bedrooms.value || property.bedrooms || 0}</span>
+            <p className="text-sm text-gray-500">Bedrooms</p>
+          </div>
+          <div className="glass-card p-6 text-center">
+            <Bath className="w-6 h-6 text-quantum-cyan mx-auto mb-2" />
+            <span className="text-2xl font-bold text-white block">{fullProperty?.details.totalBathrooms.value || property.bathrooms || 0}</span>
+            <p className="text-sm text-gray-500">Bathrooms</p>
+          </div>
+          <div className="glass-card p-6 text-center">
+            <Ruler className="w-6 h-6 text-quantum-cyan mx-auto mb-2" />
+            <span className="text-2xl font-bold text-white block">{fullProperty?.details.livingSqft.value?.toLocaleString() || property.sqft.toLocaleString()}</span>
+            <p className="text-sm text-gray-500">Living Sq Ft</p>
+            {fullProperty?.details.totalSqftUnderRoof?.value && fullProperty.details.totalSqftUnderRoof.value !== fullProperty.details.livingSqft.value && (
+              <p className="text-xs text-gray-400 mt-1">
+                {fullProperty.details.totalSqftUnderRoof.value.toLocaleString()} total
+              </p>
+            )}
+          </div>
+          <div className="glass-card p-6 text-center">
+            <Calendar className="w-6 h-6 text-quantum-cyan mx-auto mb-2" />
+            <span className="text-2xl font-bold text-white block">{fullProperty?.details.yearBuilt.value || property.yearBuilt}</span>
+            <p className="text-sm text-gray-500">Year Built</p>
+          </div>
+          <div className="glass-card p-6 text-center">
+            <Trees className="w-6 h-6 text-quantum-cyan mx-auto mb-2" />
+            {fullProperty?.details.lotSizeAcres?.value ? (
+              <>
+                <span className="text-2xl font-bold text-white block">{fullProperty.details.lotSizeAcres.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                <p className="text-sm text-gray-500">Acres</p>
+                {fullProperty?.details.lotSizeSqft?.value && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    {fullProperty.details.lotSizeSqft.value.toLocaleString()} sq ft
+                  </p>
+                )}
+              </>
+            ) : fullProperty?.details.lotSizeSqft?.value ? (
+              <>
+                <span className="text-2xl font-bold text-white block">{fullProperty.details.lotSizeSqft.value.toLocaleString()}</span>
+                <p className="text-sm text-gray-500">Lot Sq Ft</p>
+              </>
+            ) : (
+              <>
+                <span className="text-2xl font-bold text-white block">—</span>
+                <p className="text-sm text-gray-500">Lot Size</p>
+              </>
+            )}
+          </div>
+        </motion.div>
           {/* Climate Risk Badges - Condensed Card View */}
           {(fullProperty?.utilities.floodRiskLevel?.value || fullProperty?.utilities.hurricaneRisk?.value || fullProperty?.utilities.seaLevelRiseRisk?.value) && (
             <div className="glass-card p-4 mb-4">
@@ -1615,62 +1671,6 @@ export default function PropertyDetail() {
                 </div>
               )}
             </div>
-          </div>
-        </motion.div>
-
-        {/* Quick Stats */}
-        <motion.div
-          variants={itemVariants}
-          className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8"
-        >
-          <div className="glass-card p-6 text-center">
-            <Bed className="w-6 h-6 text-quantum-cyan mx-auto mb-2" />
-            <span className="text-2xl font-bold text-white block">{fullProperty?.details.bedrooms.value || property.bedrooms || 0}</span>
-            <p className="text-sm text-gray-500">Bedrooms</p>
-          </div>
-          <div className="glass-card p-6 text-center">
-            <Bath className="w-6 h-6 text-quantum-cyan mx-auto mb-2" />
-            <span className="text-2xl font-bold text-white block">{fullProperty?.details.totalBathrooms.value || property.bathrooms || 0}</span>
-            <p className="text-sm text-gray-500">Bathrooms</p>
-          </div>
-          <div className="glass-card p-6 text-center">
-            <Ruler className="w-6 h-6 text-quantum-cyan mx-auto mb-2" />
-            <span className="text-2xl font-bold text-white block">{fullProperty?.details.livingSqft.value?.toLocaleString() || property.sqft.toLocaleString()}</span>
-            <p className="text-sm text-gray-500">Living Sq Ft</p>
-            {fullProperty?.details.totalSqftUnderRoof?.value && fullProperty.details.totalSqftUnderRoof.value !== fullProperty.details.livingSqft.value && (
-              <p className="text-xs text-gray-400 mt-1">
-                {fullProperty.details.totalSqftUnderRoof.value.toLocaleString()} total
-              </p>
-            )}
-          </div>
-          <div className="glass-card p-6 text-center">
-            <Calendar className="w-6 h-6 text-quantum-cyan mx-auto mb-2" />
-            <span className="text-2xl font-bold text-white block">{fullProperty?.details.yearBuilt.value || property.yearBuilt}</span>
-            <p className="text-sm text-gray-500">Year Built</p>
-          </div>
-          <div className="glass-card p-6 text-center">
-            <Trees className="w-6 h-6 text-quantum-cyan mx-auto mb-2" />
-            {fullProperty?.details.lotSizeAcres?.value ? (
-              <>
-                <span className="text-2xl font-bold text-white block">{fullProperty.details.lotSizeAcres.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                <p className="text-sm text-gray-500">Acres</p>
-                {fullProperty?.details.lotSizeSqft?.value && (
-                  <p className="text-xs text-gray-400 mt-1">
-                    {fullProperty.details.lotSizeSqft.value.toLocaleString()} sq ft
-                  </p>
-                )}
-              </>
-            ) : fullProperty?.details.lotSizeSqft?.value ? (
-              <>
-                <span className="text-2xl font-bold text-white block">{fullProperty.details.lotSizeSqft.value.toLocaleString()}</span>
-                <p className="text-sm text-gray-500">Lot Sq Ft</p>
-              </>
-            ) : (
-              <>
-                <span className="text-2xl font-bold text-white block">—</span>
-                <p className="text-sm text-gray-500">Lot Size</p>
-              </>
-            )}
           </div>
         </motion.div>
 
