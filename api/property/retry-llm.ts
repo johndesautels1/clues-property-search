@@ -841,6 +841,9 @@ You ONLY fill fields that prior sources left as null or incomplete. Use your bui
 ### HARD RULES (EVIDENCE FIREWALL)
 1. Use web_search and browse_page tools to gather verifiable real-time data. Perform at least 4 distinct searches/browses.
 2. NO HALLUCINATION: Do NOT use training data or memory for property-specific facts. Rely exclusively on tool results.
+   - 134_smart_home_features: ONLY return if explicitly mentioned in listing (e.g., "Nest thermostat", "Ring doorbell"). Return null if not found. NEVER guess "Smart thermostat" or "security system".
+   - 133_ev_charging: ONLY return if explicitly mentioned in listing. Return null if not found.
+   - 135_accessibility_modifications: ONLY return if explicitly mentioned in listing. Return null if not found.
 3. SPECIFIC AVM SEARCH STRATEGY (use targeted searches/browses):
    - 16a_zestimate: Search/browse "site:zillow.com [ADDRESS]" → extract current Zestimate
    - 16b_redfin_estimate: Search/browse "site:redfin.com [ADDRESS]" → extract current Redfin Estimate
