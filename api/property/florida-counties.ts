@@ -1154,12 +1154,18 @@ async function scrapePermits(address: string, county: string): Promise<Record<st
     if (roofPermits.length > 0) {
       fields['60_permit_history_roof'] = { value: roofPermits.slice(0, 3).join('; '), source, confidence: 'High' };
 
-      // Calculate roof age from most recent permit
+      // Calculate roof age from most recent permit (with year validation to prevent garbage data)
       const yearMatch = roofPermits[0].match(/(\d{4})/);
       if (yearMatch) {
         const roofYear = parseInt(yearMatch[1]);
-        const age = new Date().getFullYear() - roofYear;
-        fields['40_roof_age_est'] = { value: `${age} years (permit ${roofYear})`, source, confidence: 'High' };
+        const currentYear = new Date().getFullYear();
+        // VALIDATION: Year must be between 1950 and current year + 1 (reasonable roof installation range)
+        if (roofYear >= 1950 && roofYear <= currentYear + 1) {
+          const age = currentYear - roofYear;
+          fields['40_roof_age_est'] = { value: `${age} years (permit ${roofYear})`, source, confidence: 'High' };
+        } else {
+          console.log(`⚠️ [County Scraper] Invalid roof permit year: ${roofYear} (outside 1950-${currentYear + 1} range)`);
+        }
       }
     }
 
@@ -1172,12 +1178,18 @@ async function scrapePermits(address: string, county: string): Promise<Record<st
     if (hvacPermits.length > 0) {
       fields['61_permit_history_hvac'] = { value: hvacPermits.slice(0, 3).join('; '), source, confidence: 'High' };
 
-      // Calculate HVAC age
+      // Calculate HVAC age (with year validation to prevent garbage data)
       const yearMatch = hvacPermits[0].match(/(\d{4})/);
       if (yearMatch) {
         const hvacYear = parseInt(yearMatch[1]);
-        const age = new Date().getFullYear() - hvacYear;
-        fields['46_hvac_age'] = { value: `${age} years (permit ${hvacYear})`, source, confidence: 'High' };
+        const currentYear = new Date().getFullYear();
+        // VALIDATION: Year must be between 1950 and current year + 1 (reasonable HVAC installation range)
+        if (hvacYear >= 1950 && hvacYear <= currentYear + 1) {
+          const age = currentYear - hvacYear;
+          fields['46_hvac_age'] = { value: `${age} years (permit ${hvacYear})`, source, confidence: 'High' };
+        } else {
+          console.log(`⚠️ [County Scraper] Invalid HVAC permit year: ${hvacYear} (outside 1950-${currentYear + 1} range)`);
+        }
       }
     }
 
