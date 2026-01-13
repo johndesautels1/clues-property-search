@@ -198,12 +198,12 @@ export function getSeaLevelRiskFromDistance(distanceToCoast: number): {
   description: string;
 } {
   if (distanceToCoast < 5) {
-    return { risk: 'High', description: `${Math.round(distanceToCoast)} mi from coast - significant long-term risk` };
+    return { risk: 'High', description: `${distanceToCoast.toFixed(1)} mi from coast - significant long-term risk` };
   } else if (distanceToCoast < 15) {
-    return { risk: 'Moderate', description: `${Math.round(distanceToCoast)} mi from coast - consider 30-year outlook` };
+    return { risk: 'Moderate', description: `${distanceToCoast.toFixed(1)} mi from coast - consider 30-year outlook` };
   } else if (distanceToCoast < 30) {
-    return { risk: 'Low', description: `${Math.round(distanceToCoast)} mi from coast - minimal concern` };
+    return { risk: 'Low', description: `${distanceToCoast.toFixed(1)} mi from coast - minimal concern` };
   } else {
-    return { risk: 'Minimal', description: `${Math.round(distanceToCoast)} mi from coast - inland property` };
+    return { risk: 'Minimal', description: `${distanceToCoast.toFixed(1)} mi from coast - inland property` };
   }
 }
