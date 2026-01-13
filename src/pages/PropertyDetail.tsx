@@ -52,18 +52,40 @@ import { isCalculatedField, getCalculationBadge } from '@/lib/field-calculations
 import { MultiSelectField } from '@/components/MultiSelectField';
 import { LLM_DISPLAY_NAMES } from '@/lib/llm-constants';
 
-// Tavily-enabled fields (54 fields + 6 AVM subfields = 60 total) - can be fetched with Tavily button
-// Field 99 removed - calculation-only (auto-calculated from Fields 10 & 98)
+// Tavily-enabled fields (68 fields total) - can be fetched with Tavily button
+// Fields 94, 99, 101 are calculation-only (auto-calculated from other fields)
+// UPDATED 2026-01-13: Added 15, 35, 38, 151-153, 169, 172, 173, 175, 176, 179, 180, 181
 const TAVILY_ENABLED_FIELDS = new Set([
-  12, '16a', '16b', '16c', '16d', '16e', '16f', 40, 46, 59, 60, 61, 62, 78, 79, 80, 81, 82, 91, 92, 93, 95, 96, 97, 98, 100, 102, 103,
-  104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 131, 132, 133, 134, 135, 136,
-  137, 138, 170, 171, 174, 177, 178
+  // AVM & Value (7 fields)
+  12, '16a', '16b', '16c', '16d', '16e', '16f',
+  // Tax & Assessment (3 fields) - ADDED 2026-01-13
+  15, 35, 38,
+  // Property Condition & Permits (6 fields)
+  40, 46, 59, 60, 61, 62,
+  // Environment & Walkability (5 fields)
+  78, 79, 80, 81, 82,
+  // Market Data (7 fields - excludes 94 calculated)
+  91, 92, 93, 95, 96, 97, 98,
+  // Financial (4 fields - excludes 99, 101 calculated)
+  100, 102, 103,
+  // Utilities (13 fields)
+  104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116,
+  // Features (8 fields)
+  131, 132, 133, 134, 135, 136, 137, 138,
+  // Homestead & CDD (3 fields) - ADDED 2026-01-13
+  151, 152, 153,
+  // Market Performance (13 fields) - FIXED 2026-01-13: Added 169, 172, 173, 175, 176, 179, 180, 181
+  169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181
 ]);
 
 // Map field keys to numeric field IDs for Tavily API
 // CRITICAL: These MUST match the exact field keys in the paths object below (lines 780-927)
 const FIELD_KEY_TO_ID_MAP: Record<string, number | string> = {
   '12_market_value_estimate': 12,
+  // Tax & Assessment (ADDED 2026-01-13)
+  '15_assessed_value': 15,
+  '35_annual_taxes': 35,
+  '38_tax_exemptions': 38,
   // AVM Subfields (16a-16f)
   '16a_zestimate': '16a',
   '16b_redfin_estimate': '16b',
@@ -114,6 +136,10 @@ const FIELD_KEY_TO_ID_MAP: Record<string, number | string> = {
   '136_pet_policy': 136,
   '137_age_restrictions': 137,
   '138_special_assessments': 138,
+  // Homestead & CDD (ADDED 2026-01-13)
+  '151_homestead_yn': 151,
+  '152_cdd_yn': 152,
+  '153_annual_cdd_fee': 153,
   // Market Performance (Fields 169-181) - Updated 2026-01-11
   '169_months_of_inventory': 169,
   '170_new_listings_30d': 170,
