@@ -966,6 +966,192 @@ export async function searchAgeAndRenovations(address: string, county: string): 
 }
 
 /**
+ * Search for Property Features (Fields 131-138)
+ * - 131: pool_yn (Yes/No)
+ * - 132: pool_type (In-ground, Above-ground, etc.)
+ * - 133: ev_charging (Yes/No)
+ * - 134: smart_home_features (list)
+ * - 135: accessibility_modifications (list)
+ * - 136: outdoor_kitchen (Yes/No)
+ * - 137: hurricane_shutters (Yes/No)
+ * - 138: special_assessments (amount or list)
+ * ADDED 2026-01-13: Property feature searches for Florida homes
+ */
+export async function searchPropertyFeatures(address: string, city: string): Promise<Record<string, any>> {
+  const fields: Record<string, any> = {};
+
+  console.log(`🔍 [Tavily] Searching property features for ${address}`);
+
+  // Run searches in PARALLEL
+  const [poolResult, techResult, outdoorResult, assessmentResult] = await Promise.all([
+    // Fields 131, 132: Pool information
+    tavilySearch(
+      `"${address}" pool swimming pool in-ground above-ground`,
+      { numResults: 5 }
+    ),
+    // Fields 133, 134: Tech features (EV charging, smart home)
+    tavilySearch(
+      `"${address}" EV charging smart home features thermostat security`,
+      { numResults: 5 }
+    ),
+    // Fields 135, 136, 137: Outdoor/accessibility features
+    tavilySearch(
+      `"${address}" outdoor kitchen hurricane shutters accessibility wheelchair`,
+      { numResults: 5 }
+    ),
+    // Field 138: Special assessments
+    tavilySearch(
+      `"${address}" "${city}" special assessment CDD bond`,
+      { numResults: 5 }
+    ),
+  ]);
+
+  // Extract Fields 131, 132: Pool information
+  for (const r of poolResult.results) {
+    // Field 131: Pool Y/N
+    if (!fields['131_pool_yn']) {
+      if (r.content.match(/(?:has|with|includes?)\s*(?:a\s+)?pool|pool\s*(?:yes|included)/i) ||
+          r.content.match(/swimming\s*pool|heated\s*pool|in[- ]ground\s*pool/i)) {
+        fields['131_pool_yn'] = {
+          value: 'Yes',
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found pool: Yes`);
+      } else if (r.content.match(/no\s*pool|pool:?\s*no|without\s*pool/i)) {
+        fields['131_pool_yn'] = {
+          value: 'No',
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found pool: No`);
+      }
+    }
+
+    // Field 132: Pool type
+    if (!fields['132_pool_type']) {
+      if (r.content.match(/in[- ]ground\s*pool/i)) {
+        fields['132_pool_type'] = { value: 'In-ground', source: 'Tavily', confidence: 'Low' };
+      } else if (r.content.match(/above[- ]ground\s*pool/i)) {
+        fields['132_pool_type'] = { value: 'Above-ground', source: 'Tavily', confidence: 'Low' };
+      } else if (r.content.match(/heated\s*pool/i)) {
+        fields['132_pool_type'] = { value: 'Heated', source: 'Tavily', confidence: 'Low' };
+      } else if (r.content.match(/screened?\s*pool/i)) {
+        fields['132_pool_type'] = { value: 'Screened', source: 'Tavily', confidence: 'Low' };
+      }
+    }
+  }
+
+  // Extract Fields 133, 134: Tech features
+  for (const r of techResult.results) {
+    // Field 133: EV Charging
+    if (!fields['133_ev_charging']) {
+      if (r.content.match(/EV\s*charg|electric\s*vehicle\s*charg|Tesla\s*charg|Level\s*2\s*charg/i)) {
+        fields['133_ev_charging'] = {
+          value: 'Yes',
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found EV charging: Yes`);
+      }
+    }
+
+    // Field 134: Smart home features
+    if (!fields['134_smart_home_features']) {
+      const smartFeatures: string[] = [];
+      if (r.content.match(/smart\s*thermostat|Nest|ecobee/i)) smartFeatures.push('Smart Thermostat');
+      if (r.content.match(/smart\s*lock|keyless\s*entry/i)) smartFeatures.push('Smart Lock');
+      if (r.content.match(/smart\s*lighting|smart\s*lights/i)) smartFeatures.push('Smart Lighting');
+      if (r.content.match(/Ring|video\s*doorbell|security\s*camera/i)) smartFeatures.push('Security System');
+      if (r.content.match(/smart\s*home\s*hub|Alexa|Google\s*Home/i)) smartFeatures.push('Smart Hub');
+
+      if (smartFeatures.length > 0) {
+        fields['134_smart_home_features'] = {
+          value: smartFeatures.join(', '),
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found smart features: ${smartFeatures.join(', ')}`);
+      }
+    }
+  }
+
+  // Extract Fields 135, 136, 137: Outdoor/accessibility features
+  for (const r of outdoorResult.results) {
+    // Field 135: Accessibility modifications
+    if (!fields['135_accessibility_modifications']) {
+      const accessFeatures: string[] = [];
+      if (r.content.match(/wheelchair\s*accessible|ADA\s*compliant/i)) accessFeatures.push('Wheelchair Accessible');
+      if (r.content.match(/grab\s*bar|handicap\s*bath/i)) accessFeatures.push('Grab Bars');
+      if (r.content.match(/walk[- ]in\s*shower|roll[- ]in\s*shower/i)) accessFeatures.push('Walk-in Shower');
+      if (r.content.match(/ramp|no[- ]step\s*entry/i)) accessFeatures.push('Ramp/No-step Entry');
+
+      if (accessFeatures.length > 0) {
+        fields['135_accessibility_modifications'] = {
+          value: accessFeatures.join(', '),
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found accessibility: ${accessFeatures.join(', ')}`);
+      }
+    }
+
+    // Field 136: Outdoor kitchen
+    if (!fields['136_outdoor_kitchen']) {
+      if (r.content.match(/outdoor\s*kitchen|summer\s*kitchen|built[- ]in\s*grill|outdoor\s*cooking/i)) {
+        fields['136_outdoor_kitchen'] = {
+          value: 'Yes',
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found outdoor kitchen: Yes`);
+      }
+    }
+
+    // Field 137: Hurricane shutters
+    if (!fields['137_hurricane_shutters']) {
+      if (r.content.match(/hurricane\s*shutter|storm\s*shutter|impact\s*window|impact[- ]resistant/i)) {
+        fields['137_hurricane_shutters'] = {
+          value: 'Yes',
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found hurricane shutters: Yes`);
+      }
+    }
+  }
+
+  // Extract Field 138: Special assessments
+  for (const r of assessmentResult.results) {
+    if (!fields['138_special_assessments']) {
+      const assessmentMatch = r.content.match(/special\s*assessment.*?\$\s*([\d,]+)/i) ||
+                              r.content.match(/assessment.*?\$\s*([\d,]+)/i);
+      if (assessmentMatch) {
+        const value = parseFloat(assessmentMatch[1].replace(/,/g, ''));
+        if (value > 0 && value < 100000) {
+          fields['138_special_assessments'] = {
+            value: `$${value.toLocaleString()}`,
+            source: 'Tavily',
+            confidence: 'Low',
+          };
+          console.log(`✅ [Tavily] Found special assessment: $${value.toLocaleString()}`);
+        }
+      } else if (r.content.match(/no\s*special\s*assessment|assessment[:\s]*none/i)) {
+        fields['138_special_assessments'] = {
+          value: 'None',
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found special assessment: None`);
+      }
+    }
+  }
+
+  console.log(`✅ [Tavily] Property features search returned ${Object.keys(fields).length} fields`);
+  return fields;
+}
+
+/**
  * Search for Market Performance Metrics (Fields 169-174)
  * REPURPOSED 2026-01-13: Changed from portal views to market metrics
  *
@@ -1428,21 +1614,23 @@ export async function runTavilyTier3(
   // UPDATED 2026-01-13: Added searchPaywallAVMs for fields 16c-16f
   // UPDATED 2026-01-13: Added searchAgeAndRenovations for fields 40, 46, 59
   // UPDATED 2026-01-13: Added searchUtilityBills for fields 105, 107-108, 110-116
-  const [avmFields, paywallAvmFields, marketFields, utilityFields, utilityBillFields, permitFields, ageFields, marketPerfFields, homesteadFields, taxFields] = await Promise.all([
+  // UPDATED 2026-01-13: Added searchPropertyFeatures for fields 131-138
+  const [avmFields, paywallAvmFields, marketFields, utilityFields, utilityBillFields, permitFields, ageFields, featureFields, marketPerfFields, homesteadFields, taxFields] = await Promise.all([
     searchAVMs(address), // Fields 16a, 16b
     searchPaywallAVMs(address), // Fields 16c, 16d, 16e, 16f
-    searchMarketStats(city, zip), // Fields 91, 92, 95
+    searchMarketStats(city, zip), // Fields 91-98
     searchUtilities(city, state), // Fields 104, 106, 109
     searchUtilityBills(city, state, zip), // Fields 105, 107-108, 110-116
     searchPermits(address, county), // Fields 60, 61, 62
     searchAgeAndRenovations(address, county), // Fields 40, 46, 59
+    searchPropertyFeatures(address, city), // Fields 131-138
     searchMarketPerformance(city, state, zip), // Fields 169-174: market performance metrics
     searchHomesteadAndCDD(address, county), // Fields 151, 152, 153
     searchTaxData(address, county), // Fields 15, 35, 38: assessed value, annual taxes, exemptions
   ]);
 
   // Merge all fields
-  Object.assign(allFields, avmFields, paywallAvmFields, marketFields, utilityFields, utilityBillFields, permitFields, ageFields, marketPerfFields, homesteadFields, taxFields);
+  Object.assign(allFields, avmFields, paywallAvmFields, marketFields, utilityFields, utilityBillFields, permitFields, ageFields, featureFields, marketPerfFields, homesteadFields, taxFields);
 
   console.log(`✅ TIER 3: Tavily returned ${Object.keys(allFields).length} fields`);
 
