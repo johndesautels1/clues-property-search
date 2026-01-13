@@ -194,6 +194,7 @@ import { callCrimeGrade, callSchoolDigger, callGreatSchools, callFEMARiskIndex, 
 import { STELLAR_MLS_SOURCE, FBI_CRIME_SOURCE } from './source-constants.js';
 import { calculateCoastlineDistance, validateBeachDistance } from './coastline-utils.js';
 import { calculateAllDerivedFields, type PropertyData } from '../../src/lib/calculate-derived-fields.js';
+import { scrapeFloridaCounty } from './florida-counties.js';
 // Inline JSON data to avoid Vercel import issues with `with { type: 'json' }` syntax
 const missingFieldsList = {
   missing_field_keys: [
@@ -2223,8 +2224,8 @@ async function enrichWithFreeAPIs(
   console.log(`🔵 Beach distance extracted: ${beachDistanceMiles !== undefined ? beachDistanceMiles.toFixed(1) + ' mi' : 'unavailable'}`);
 
   // STEP 2: Call all other APIs in parallel (including NOAA Sea Level with beach distance)
-  console.log('🔵 [Step 2/2] Calling remaining 23 APIs in parallel...');
-  const [walkScore, floodZone, airQuality, censusData, noiseDataResult, climateData, commuteTime, schoolDistances, transitAccess, emergencyServices, crimeDataResult, schoolDiggerResult, femaRiskResult, noaaClimateResult, noaaStormResult, noaaSeaLevelResult, usgsElevationResult, usgsEarthquakeResult, epaFRSResult, epaRadonResult, streetViewResult, googleSolarResult, broadbandResult/*, redfinResult*/] = await Promise.all([
+  console.log('🔵 [Step 2/2] Calling remaining 24 APIs in parallel...');
+  const [walkScore, floodZone, airQuality, censusData, noiseDataResult, climateData, commuteTime, schoolDistances, transitAccess, emergencyServices, crimeDataResult, schoolDiggerResult, femaRiskResult, noaaClimateResult, noaaStormResult, noaaSeaLevelResult, usgsElevationResult, usgsEarthquakeResult, epaFRSResult, epaRadonResult, streetViewResult, googleSolarResult, broadbandResult, floridaCountyResult/*, redfinResult*/] = await Promise.all([
     getWalkScore(geo.lat, geo.lon, address),
     getFloodZone(geo.lat, geo.lon),
     getAirQuality(geo.lat, geo.lon),
@@ -2247,7 +2248,8 @@ async function enrichWithFreeAPIs(
     getRadonRisk(geo.county, 'FL'),
     callGoogleStreetView(geo.lat, geo.lon, address), // FALLBACK: Property front photo from Google Street View
     callGoogleSolarAPI(geo.lat, geo.lon), // Google Solar API: Rooftop solar potential
-    callBroadbandNow(geo.lat, geo.lon, address) // FCC Mobile Broadband API: Cell coverage & internet speeds (Fields 112, 113, 115)
+    callBroadbandNow(geo.lat, geo.lon, address), // FCC Mobile Broadband API: Cell coverage & internet speeds (Fields 112, 113, 115)
+    scrapeFloridaCounty(address, geo.county || '') // Florida County Property Appraiser: Homestead (151), CDD (152-153), Tax data
     // callRedfinProperty(address) // DISABLED: Redfin API autocomplete not working - returns dummy school data
   ]);
 
@@ -2292,6 +2294,7 @@ async function enrichWithFreeAPIs(
   const googleSolarData = googleSolarResult.fields || {}; // Google Solar API: Rooftop solar potential
   const noiseData = noiseDataResult.fields || {}; // HowLoud API: Noise and traffic levels
   const broadbandData = broadbandResult.fields || {}; // FCC Mobile Broadband: Cell coverage & internet speeds
+  const floridaCountyData = floridaCountyResult || {}; // Florida County PA: Homestead (151), CDD, Tax data
   // const redfinData = redfinResult.fields || {}; // DISABLED: Redfin API not working
 
   const apiEndTime = Date.now();
@@ -2332,11 +2335,12 @@ async function enrichWithFreeAPIs(
     sendApiProgress('USGS Earthquake', Object.keys(usgsEarthquakeData || {}).length);
     sendApiProgress('EPA FRS', Object.keys(epaFRSData || {}).length);
     sendApiProgress('EPA Radon', Object.keys(epaRadonData || {}).length);
+    sendApiProgress('Florida County PA', Object.keys(floridaCountyData || {}).length);
 
     console.log('✅ [SSE] Sent progress updates for all API sources');
   }
 
-  Object.assign(fields, walkScore, floodZone, airQuality, censusData, noiseData, distances, commuteTime, schoolDistances, transitAccess, emergencyServices, crimeData, schoolDiggerData, greatSchoolsData, femaRiskData, noaaClimateData, noaaStormData, noaaSeaLevelData, usgsElevationData, usgsEarthquakeData, epaFRSData, epaRadonData, streetViewData, googleSolarData, broadbandData, climateData/*, redfinData*/);
+  Object.assign(fields, walkScore, floodZone, airQuality, censusData, noiseData, distances, commuteTime, schoolDistances, transitAccess, emergencyServices, crimeData, schoolDiggerData, greatSchoolsData, femaRiskData, noaaClimateData, noaaStormData, noaaSeaLevelData, usgsElevationData, usgsEarthquakeData, epaFRSData, epaRadonData, streetViewData, googleSolarData, broadbandData, climateData, floridaCountyData/*, redfinData*/);
 
   console.log('🔵 [enrichWithFreeAPIs] Raw field count before filtering:', Object.keys(fields).length);
   console.log('🔵 [enrichWithFreeAPIs] Field breakdown:');
@@ -2364,6 +2368,7 @@ async function enrichWithFreeAPIs(
   console.log('  - Google Street View fields:', Object.keys(streetViewData || {}).length);
   console.log('  - Google Solar API fields:', Object.keys(googleSolarData || {}).length);
   console.log('  - FCC Broadband fields:', Object.keys(broadbandData || {}).length);
+  console.log('  - Florida County PA fields:', Object.keys(floridaCountyData || {}).length);
   // console.log('  - Redfin fields:', Object.keys(redfinData || {}).length); // DISABLED
 
   // Store actual field counts in fields object for later tracking
