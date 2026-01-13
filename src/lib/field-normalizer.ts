@@ -962,7 +962,7 @@ export function normalizeToProperty(
     }
 
     // FIX: Don't show 'Unknown' - use actual source or derive from llmSources
-    const source = fieldData.source || (fieldData.llmSources?.length > 0 ? fieldData.llmSources[0] : 'API Data');
+    const source = fieldData.source || fieldData.llmSources?.[0] || 'API Data';
     const confidence = mapConfidence(fieldData.confidence);
     const llmSources = fieldSources[apiKey] || fieldData.llmSources || [];
 
