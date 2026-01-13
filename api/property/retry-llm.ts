@@ -1793,7 +1793,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { address: rawAddress, engines = [...LLM_CASCADE_ORDER] } = req.body;  // All 6 LLMs by default: Perplexity → Gemini → GPT → Sonnet → Grok → Opus
+  const { address: rawAddress, engines = [...LLM_CASCADE_ORDER] } = req.body;  // All 5 LLMs by default: Perplexity → GPT → Sonnet → Grok → Opus (Gemini on-demand only)
 
   // 🛡️ INPUT SANITIZATION: Prevent prompt injection attacks
   const address = sanitizeAddress(rawAddress);
@@ -1807,14 +1807,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Invalid address format' });
   }
 
-  // Map engine IDs to functions (Order: Perplexity → Gemini → GPT → Sonnet → Grok → Opus)
+  // Map engine IDs to functions (All 6 LLMs available for on-demand retry)
+  // NOTE: Gemini removed from auto-cascade (2026-01-13) but still available for button use
   const engineFunctions: Record<string, (address: string) => Promise<{ fields: Record<string, any>; error?: string }>> = {
     'perplexity': callPerplexity,     // #1 - Deep web search (HIGHEST)
-    'gemini': callGemini,             // #2 - Google Search grounding
-    'gpt': callGPT5,                  // #3 - Web evidence mode
-    'claude-sonnet': callClaudeSonnet, // #4 - Web search beta
-    'grok': callGrok,                 // #5 - X/Twitter real-time
-    'claude-opus': callClaudeOpus,    // #6 - Deep reasoning, NO web (LAST)
+    'gpt': callGPT5,                  // #2 - Web evidence mode
+    'claude-sonnet': callClaudeSonnet, // #3 - Web search beta
+    'grok': callGrok,                 // #4 - X/Twitter real-time
+    'claude-opus': callClaudeOpus,    // #5 - Deep reasoning, NO web (LAST)
+    'gemini': callGemini,             // On-demand only - removed from auto-cascade 2026-01-13
   };
 
   // Get the first engine (single LLM call for retry)

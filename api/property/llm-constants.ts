@@ -14,31 +14,35 @@
  *
  * LLM CASCADE ORDER (Tier 4-5):
  * 1. Perplexity - Deep web search (HIGHEST PRIORITY)
- * 2. Gemini - Google Search grounding (web-search enabled)
- * 3. GPT - Web evidence mode (web-search enabled)
- * 4. Claude Sonnet - Web search beta (fills gaps)
- * 5. Grok - X/Twitter real-time data (web-search enabled)
- * 6. Claude Opus - Deep reasoning (NO web search - LAST)
+ * 2. GPT - Web evidence mode (web-search enabled)
+ * 3. Claude Sonnet - Web search beta (fills gaps)
+ * 4. Grok - X/Twitter real-time data (web-search enabled)
+ * 5. Claude Opus - Deep reasoning (NO web search - LAST)
+ *
+ * NOTE: Gemini removed from auto-cascade (2026-01-13) - available via on-demand button only
  */
 
 export const LLM_CASCADE_ORDER = [
   'perplexity',      // #1 - Tier 4 - Deep web search (HIGHEST LLM PRIORITY)
-  'gemini',          // #2 - Tier 4 - Google Search grounding
-  'gpt',             // #3 - Tier 4 - Web evidence mode
-  'claude-sonnet',   // #4 - Tier 4 - Web search beta (fills gaps)
-  'grok',            // #5 - Tier 4 - X/Twitter real-time data
-  'claude-opus',     // #6 - Tier 5 - Deep reasoning, NO web search (LAST)
+  'gpt',             // #2 - Tier 4 - Web evidence mode
+  'claude-sonnet',   // #3 - Tier 4 - Web search beta (fills gaps)
+  'grok',            // #4 - Tier 4 - X/Twitter real-time data
+  'claude-opus',     // #5 - Tier 5 - Deep reasoning, NO web search (LAST)
+  // NOTE: 'gemini' removed from auto-cascade (2026-01-13) - available via on-demand button
 ] as const;
 
 export type LLMEngine = typeof LLM_CASCADE_ORDER[number];
 
-export const LLM_DISPLAY_NAMES: Record<LLMEngine, string> = {
+// All available LLMs (including Gemini for on-demand button use)
+export type AllLLMEngines = LLMEngine | 'gemini';
+
+export const LLM_DISPLAY_NAMES: Record<AllLLMEngines, string> = {
   'perplexity': 'Perplexity Sonar Reasoning Pro',
-  'grok': 'Grok 4.1 Fast',
-  'claude-opus': 'Claude Opus 4.5',
   'gpt': 'GPT-4o',
   'claude-sonnet': 'Claude Sonnet 4.5',
-  'gemini': 'Gemini 3 Pro Preview',
+  'grok': 'Grok 4.1 Fast',
+  'claude-opus': 'Claude Opus 4.5',
+  'gemini': 'Gemini 3 Pro Preview',  // Available via on-demand button only
 };
 
 // Tavily Configuration (Tier 3)
@@ -99,6 +103,7 @@ export const TIER_STRUCTURE = {
   1: { name: 'Stellar MLS', source: 'Bridge Interactive API' },
   2: { name: 'Google APIs', source: 'Google Places, Geocoding' },
   3: { name: 'Free APIs + Tavily', source: 'SchoolDigger, FBI Crime, WalkScore, FEMA, Tavily' },
-  4: { name: 'Web-Search LLMs', source: 'Perplexity, Gemini, GPT, Sonnet, Grok' },
+  4: { name: 'Web-Search LLMs', source: 'Perplexity, GPT, Sonnet, Grok' },
   5: { name: 'Claude Opus', source: 'Deep reasoning, no web search' },
+  // Gemini: On-demand via button (removed from auto-cascade 2026-01-13)
 } as const;

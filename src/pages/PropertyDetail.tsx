@@ -52,6 +52,34 @@ import { isCalculatedField, getCalculationBadge } from '@/lib/field-calculations
 import { MultiSelectField } from '@/components/MultiSelectField';
 import { LLM_DISPLAY_NAMES } from '@/lib/llm-constants';
 
+// Gemini-enabled fields - ALL fields NOT reliably covered by Tier 1 (MLS) or Tier 2 (APIs)
+// ADDED 2026-01-13: Gemini removed from auto-cascade, now on-demand via button
+// Gemini excels at: interior condition, smart home features, accessibility, market inference
+const GEMINI_ENABLED_FIELDS = new Set([
+  // Structure & Systems (Fields 39-48) - Gemini can infer from remarks
+  39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
+  // Interior Features (Fields 49-53)
+  49, 50, 51, 52, 53,
+  // Exterior Features (Fields 54-58)
+  54, 55, 56, 57, 58,
+  // Permits & Renovations (Fields 59-62)
+  59, 60, 61, 62,
+  // Market & Investment (Fields 91-103) - excludes 94, 99, 101 (calculated)
+  91, 92, 93, 95, 96, 97, 98, 100, 102, 103,
+  // Utilities (Fields 104-116)
+  104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116,
+  // Additional Features (Fields 131-138) - Gemini excels here
+  131, 132, 133, 134, 135, 136, 137, 138,
+  // Stellar MLS extras (Fields 139-168) - backup for missing MLS data
+  139, 140, 141, 142, 143, 144, 145, 146, 147, 148,
+  149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
+  160, 161, 162, 163, 164, 165, 166, 167, 168,
+  // Market Performance (Fields 169-181)
+  169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181,
+  // AVMs (Gemini can search portals)
+  12, '16a', '16b', '16c', '16d', '16e', '16f',
+]);
+
 // Tavily-enabled fields (68 fields total) - can be fetched with Tavily button
 // Fields 94, 99, 101 are calculation-only (auto-calculated from other fields)
 // UPDATED 2026-01-13: Added 15, 35, 38, 151-153, 169, 172, 173, 175, 176, 179, 180, 181
@@ -397,6 +425,40 @@ const DataField = ({ label, value, icon, format = 'text', confidence, sources, l
         );
       })()}
 
+      {/* Gemini button - On-demand AI search (ALL USERS) - ADDED 2026-01-13 */}
+      {needsRetry && fieldKey && (() => {
+        const fieldIdMatch = fieldKey?.match(/^(\d+)/);
+        const fieldId = fieldIdMatch ? parseInt(fieldIdMatch[1]) : null;
+        const isGeminiEnabled = fieldId && GEMINI_ENABLED_FIELDS.has(fieldId);
+
+        return isGeminiEnabled && globalGeminiHandler && (
+          <div className="mt-2">
+            <button
+              onClick={() => globalGeminiHandler!(fieldKey)}
+              disabled={isRetrying}
+              className={`w-full px-4 py-2 text-sm rounded-lg bg-gradient-to-r from-violet-500/20 to-purple-500/20 hover:from-violet-500/30 hover:to-purple-500/30 text-violet-300 border border-violet-500/40 transition-all ${isRetrying ? 'opacity-50 cursor-not-allowed animate-pulse' : 'hover:shadow-lg hover:shadow-violet-500/20'}`}
+            >
+              <span className="flex items-center justify-center gap-2">
+                {isRetrying ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    ⏳ Searching with Gemini...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    ✨ Fetch with Gemini (AI Web Search)
+                  </>
+                )}
+              </span>
+            </button>
+            <div className="text-[10px] text-gray-600 mt-1 text-center">
+              Google Search grounding • Best for remarks parsing • 60s max
+            </div>
+          </div>
+        );
+      })()}
+
       {/* LLM Retry UI - ADMIN ONLY (toggle on click) */}
       {isAdmin && showRetry && needsRetry && fieldKey && onRetry && (
         <div className="mt-2 p-3 bg-black/30 border border-quantum-cyan/20 rounded-lg">
@@ -493,6 +555,7 @@ interface DataFieldInput<T> {
 // This will be set by the component
 let globalRetryHandler: ((fieldKey: string, llmName: string) => void) | undefined;
 let globalTavilyHandler: ((fieldKey: string) => void) | undefined;
+let globalGeminiHandler: ((fieldKey: string) => void) | undefined;  // ADDED 2026-01-13: On-demand Gemini button
 let globalIsRetrying = false;
 let globalIsAdmin = false; // Controls source visibility (admin vs user view)
 
@@ -709,7 +772,7 @@ export default function PropertyDetail() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           address,
-          engines: ['perplexity', 'gemini', 'gpt', 'claude-sonnet', 'grok', 'claude-opus'],  // Full cascade for maximum accuracy
+          engines: ['perplexity', 'gpt', 'claude-sonnet', 'grok', 'claude-opus'],  // Full cascade (Gemini available via on-demand button)
           skipLLMs: false,
           existingFields, // CRITICAL: Pass existing fields for additive merging
           skipApis: false,
@@ -1184,9 +1247,76 @@ export default function PropertyDetail() {
     }
   };
 
+  // Gemini handler - fetches single field with Gemini AI (ALL USERS) - ADDED 2026-01-13
+  const handleGeminiField = async (fieldKey: string) => {
+    if (!fullProperty || !id) return;
+
+    setIsRetrying(true);
+    try {
+      const apiUrl = '/api/property/retry-llm';
+      const fullAddress = fullProperty.address?.fullAddress?.value ||
+        `${fullProperty.address?.streetAddress?.value || ''}, ${fullProperty.address?.city?.value || ''}, ${fullProperty.address?.state?.value || ''} ${fullProperty.address?.zipCode?.value || ''}`.trim();
+
+      if (!fullAddress || fullAddress === ', ,') {
+        console.error('[GEMINI-FIELD] No address found in property');
+        setErrorMessage('Cannot fetch with Gemini: No address found for this property');
+        setIsRetrying(false);
+        return;
+      }
+
+      console.log(`[GEMINI-FIELD] Fetching field ${fieldKey} for ${fullAddress}`);
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          address: fullAddress,
+          engines: ['gemini'],  // Only call Gemini
+          fieldKey: fieldKey,   // Hint to Gemini which field we want
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`[GEMINI-FIELD] Response:`, data);
+
+        if (data.success && data.fields && Object.keys(data.fields).length > 0) {
+          // Find matching field in response
+          const matchingKey = Object.keys(data.fields).find(k =>
+            k === fieldKey || k.includes(fieldKey.replace(/^\d+_/, ''))
+          );
+
+          if (matchingKey && data.fields[matchingKey]) {
+            const fieldData = data.fields[matchingKey];
+            const value = fieldData?.value ?? fieldData;
+            alert(`✅ Gemini found: ${JSON.stringify(value)}\n\nSource: Gemini AI\nConfidence: ${fieldData?.confidence || 'Medium'}`);
+
+            // Refresh property data to show updated value
+            const refreshed = await getFullPropertyById(id);
+            if (refreshed) {
+              updateFullProperty(id, refreshed);
+            }
+          } else {
+            alert(`ℹ️ Gemini returned ${Object.keys(data.fields).length} fields but not the specific field requested.\n\nFields found: ${Object.keys(data.fields).join(', ')}\n\nTry "Retry with LLM" for more options.`);
+          }
+        } else {
+          alert('ℹ️ Gemini could not find this field\n\nTry "Retry with LLM" for other AI options.');
+        }
+      } else {
+        alert(`Error calling Gemini API: ${response.status} ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Gemini fetch error:', error);
+      setErrorMessage(`Failed to fetch with Gemini: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setIsRetrying(false);
+    }
+  };
+
   // Set global handlers and admin state
   globalRetryHandler = handleRetryField;
   globalTavilyHandler = handleTavilyField;
+  globalGeminiHandler = handleGeminiField;  // ADDED 2026-01-13
   globalIsRetrying = isRetrying;
   globalIsAdmin = isAdmin; // Pass admin state to renderDataField
 

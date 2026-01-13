@@ -60,7 +60,7 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
   const [addressInput, setAddressInput] = useState('');
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [selectedEngines, setSelectedEngines] = useState(['perplexity', 'gpt', 'claude-opus', 'gemini', 'claude-sonnet', 'grok']);
+  const [selectedEngines, setSelectedEngines] = useState(['perplexity', 'gpt', 'claude-sonnet', 'grok', 'claude-opus']);  // Gemini removed from auto-cascade 2026-01-13
   const [skipLLMs, setSkipLLMs] = useState(false);
   const [searchResults, setSearchResults] = useState<any>(null);
   const [sourcesProgress, setSourcesProgress] = useState<SourceProgress[]>(DEFAULT_SOURCES);
@@ -853,13 +853,13 @@ export default function PropertySearchForm({ onSubmit, initialData }: PropertySe
                 <span className="text-xs text-gray-500">(Fires in order, costs $):</span>
               </div>
               <div className="flex flex-wrap gap-2 ml-6">
+                {/* NOTE: Gemini removed from auto-cascade 2026-01-13 - available via on-demand button on PropertyDetail */}
                 {[
                   { id: 'perplexity', name: '1. Perplexity', color: 'cyan' },
-                  { id: 'gemini', name: '2. Gemini', color: 'purple' },
-                  { id: 'gpt', name: '3. GPT-4o', color: 'green' },
+                  { id: 'gpt', name: '2. GPT-4o', color: 'green' },
+                  { id: 'claude-sonnet', name: '3. Claude Sonnet', color: 'pink' },
                   { id: 'grok', name: '4. Grok', color: 'blue' },
-                  { id: 'claude-sonnet', name: '5. Claude Sonnet', color: 'pink' },
-                  { id: 'claude-opus', name: '6. Claude Opus', color: 'orange' },
+                  { id: 'claude-opus', name: '5. Claude Opus', color: 'orange' },
                 ].map(engine => (
                   <button
                     key={engine.id}

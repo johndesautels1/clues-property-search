@@ -74,12 +74,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       'usgs-earthquake',
       'epa-frs',
       'epa-radon',
-      // Tier 4: Web-Search LLMs
+      // Tier 4: Web-Search LLMs (Gemini removed from auto-cascade 2026-01-13)
       'perplexity',
-      'grok',
       'gpt',
       'claude-sonnet',
-      'gemini',
+      'grok',
       // Tier 5: Claude Opus (no web search)
       'claude-opus'
     ];

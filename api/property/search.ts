@@ -4879,7 +4879,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     city: validationCity,  // Optional: City for Stellar MLS validation (prevents wrong property match)
     state: validationState,  // Optional: State for Stellar MLS validation
     zipCode: validationZip,  // Optional: Zip for Stellar MLS validation
-    engines = [...LLM_CASCADE_ORDER],  // All 6 LLMs: Perplexity → Gemini → GPT → Sonnet → Grok → Opus
+    engines = [...LLM_CASCADE_ORDER],  // All 5 LLMs: Perplexity → GPT → Sonnet → Grok → Opus (Gemini on-demand only)
     skipLLMs = false,
     useCascade = true, // Enable cascade mode by default
     existingFields = {},  // Previously accumulated fields from prior LLM calls
@@ -5571,24 +5571,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           { id: 'perplexity-d', fn: (addr: string) => callPerplexityPromptD(addr, perplexityContext), enabled: engines.includes('perplexity') },
           { id: 'perplexity-e', fn: (addr: string) => callPerplexityPromptE(addr, perplexityContext), enabled: engines.includes('perplexity') },
 
-          // OTHER LLMs - Order: Gemini → GPT → Sonnet → Grok → Opus (matches LLM_CASCADE_ORDER)
-          { id: 'gemini', fn: callGemini, enabled: engines.includes('gemini') },          // #2 - Google Search grounding
-          { id: 'gpt', fn: callGPT5, enabled: engines.includes('gpt') },                 // #3 - Web evidence mode
-          { id: 'claude-sonnet', fn: callClaudeSonnet, enabled: engines.includes('claude-sonnet') }, // #4 - Web search beta
-          { id: 'grok', fn: callGrok, enabled: engines.includes('grok') },               // #5 - X/Twitter real-time
-          { id: 'claude-opus', fn: callClaudeOpus, enabled: engines.includes('claude-opus') },       // #6 - LAST (no web)
+          // OTHER LLMs - Order: GPT → Sonnet → Grok → Opus (matches LLM_CASCADE_ORDER)
+          // NOTE: Gemini removed from auto-cascade (2026-01-13) - available via on-demand button only
+          { id: 'gpt', fn: callGPT5, enabled: engines.includes('gpt') },                 // #2 - Web evidence mode
+          { id: 'claude-sonnet', fn: callClaudeSonnet, enabled: engines.includes('claude-sonnet') }, // #3 - Web search beta
+          { id: 'grok', fn: callGrok, enabled: engines.includes('grok') },               // #4 - X/Twitter real-time
+          { id: 'claude-opus', fn: callClaudeOpus, enabled: engines.includes('claude-opus') },       // #5 - LAST (no web)
         ];
 
         // Filter to enabled LLMs only
         const enabledLlms = llmCascade.filter(llm => llm.enabled);
 
         if (enabledLlms.length > 0) {
-          // HYBRID LLM CASCADE: Perplexity sequential, then Gemini/GPT/Sonnet/Grok/Opus parallel
+          // HYBRID LLM CASCADE: Perplexity sequential, then GPT/Sonnet/Grok/Opus parallel
           // Perplexity sequential to avoid rate limits
-          // Other 5 LLMs run in parallel for maximum speed (prevents any single LLM from blocking the cascade)
+          // Other 4 LLMs run in parallel for maximum speed (prevents any single LLM from blocking the cascade)
+          // NOTE: Gemini removed from auto-cascade (2026-01-13) - available via on-demand button only
           const llmResults: PromiseSettledResult<any>[] = [];
 
-          console.log(`\n=== HYBRID LLM CASCADE: Perplexity sequential, then 5 LLMs parallel (Gemini/GPT/Sonnet/Grok/Opus) ===`);
+          console.log(`\n=== HYBRID LLM CASCADE: Perplexity sequential, then 4 LLMs parallel (GPT/Sonnet/Grok/Opus) ===`);
 
           // Track LLM metadata alongside results to maintain order
           const llmMetadata: Array<{ id: string; enabled: boolean; fn: any }> = [];
@@ -5644,13 +5645,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             console.log(`[PERPLEXITY END] All ${perplexityLlms.length} prompts complete. Timestamp: ${new Date().toISOString()}`);
           }
 
-          // PHASE 2 & 3 MERGED: Gemini + GPT + Sonnet + Grok + Opus (ALL PARALLEL after Perplexity)
-          // CRITICAL FIX: Run Gemini in parallel with GPT so Gemini can't block the cascade if it fails
+          // PHASE 2: GPT + Sonnet + Grok + Opus (ALL PARALLEL after Perplexity)
+          // NOTE: Gemini removed from auto-cascade (2026-01-13) - available via on-demand button only
           const parallelLlms = enabledLlms.filter(llm =>
-            llm.id === 'gemini' || llm.id === 'gpt' || llm.id === 'claude-sonnet' || llm.id === 'grok' || llm.id === 'claude-opus'
+            llm.id === 'gpt' || llm.id === 'claude-sonnet' || llm.id === 'grok' || llm.id === 'claude-opus'
           );
           if (parallelLlms.length > 0) {
-            console.log(`\n[Phase 2/3] Running ${parallelLlms.length} LLMs in PARALLEL (Gemini/GPT/Sonnet/Grok/Opus)...`);
+            console.log(`\n[Phase 2] Running ${parallelLlms.length} LLMs in PARALLEL (GPT/Sonnet/Grok/Opus)...`);
             // Add metadata in order before parallel execution
             parallelLlms.forEach(llm => llmMetadata.push(llm));
             const parallelPromises = parallelLlms.map(llm => {
@@ -5830,7 +5831,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         } else {
           console.log('[TIER 4] ⚠️  No LLMs enabled');
           console.log('[TIER 4] engines parameter:', engines);
-          console.log('[TIER 4] valid engines:', ['perplexity', 'gpt', 'claude-opus', 'gemini', 'claude-sonnet', 'grok']);
+          console.log('[TIER 4] valid engines:', ['perplexity', 'gpt', 'claude-sonnet', 'grok', 'claude-opus']);  // Gemini on-demand only
           console.log('[TIER 4] Enabled LLMs: 0 - skipping LLM cascade');
         }
       }
@@ -6296,7 +6297,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       single_source_warnings: arbitrationResult.singleSourceWarnings,
       llm_responses: llmResponses,
       strategy: 'arbitration_pipeline',
-      cascade_order: ['perplexity-portals', 'perplexity-county', 'perplexity-schools', 'perplexity-crime', 'perplexity-utilities', 'perplexity-electric', 'perplexity-water', 'perplexity-internet-speed', 'perplexity-fiber', 'perplexity-cell', 'gemini', 'gpt', 'claude-sonnet', 'grok', 'claude-opus']
+      cascade_order: ['perplexity-portals', 'perplexity-county', 'perplexity-schools', 'perplexity-crime', 'perplexity-utilities', 'perplexity-electric', 'perplexity-water', 'perplexity-internet-speed', 'perplexity-fiber', 'perplexity-cell', 'gpt', 'claude-sonnet', 'grok', 'claude-opus']  // Gemini on-demand only (2026-01-13)
     }));
   } catch (error) {
     console.error('=== SEARCH ERROR ===');
