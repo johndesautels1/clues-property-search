@@ -18,7 +18,7 @@
 | 7 | Gemini retry returns no data | FIXED | YES | DID NOT LIE |
 | 8 | Smart Home Features same on every home | FIXED | YES | DID NOT LIE |
 | 9 | Special Assessments cloning Annual Taxes | FIXED | YES | DID NOT LIE |
-| 10 | Parking fields not mapping from Bridge Stellar | PENDING | NO | - |
+| 10 | Parking fields not mapping from Bridge Stellar | FIXED | YES | DID NOT LIE |
 | 11 | Homestead Exemption not populating | PENDING | NO | - |
 | 12 | Rename "Community and Features" to "Features" | FIXED | YES | DID NOT LIE |
 | 13 | Fake market data (New Listings 11,861, etc.) | FIXED | YES | DID NOT LIE |
@@ -191,13 +191,22 @@
 ---
 
 ### Issue 10: Parking Fields Not Mapping from Bridge Stellar
-**Problem:** Carport, Garage Attached, Parking Features not mapping
-**Fields affected:** Carport, Carport Spaces, Garage Attached, Parking Features, Assigned Parking Spaces
-**Before:** All showing "Not available" or "Unknown"
-**After:** PENDING
-**Action Taken:** PENDING
-**Verified:** NO
-**Did Not Lie:** -
+**Problem:** Carport, Garage Attached, Parking Features not mapping for condos
+**Fields affected:** 139-143 (Carport Y/N, Carport Spaces, Garage Attached, Parking Features, Assigned Parking Spaces)
+**Before:** Fields only mapped from direct MLS fields (CarportYN, AttachedGarageYN, etc.)
+**After:** Now also extracts parking info from CommunityFeatures array
+**Root Cause:** Condos often store parking info in CommunityFeatures, not individual MLS fields
+**Action Taken:**
+- bridge-field-mapper.ts:926-992 - Completely rewrote parking detection:
+  1. Check CommunityFeatures for parking-related terms
+  2. Extract: Covered Parking, Assigned Parking, Garage Parking, Guest Parking
+  3. Build parkingFeaturesList from community + direct MLS fields
+  4. Use MLS ParkingFeatures if available, fallback to community-derived
+  5. Assume 1 assigned space if community has "assigned parking" but no count
+**Files Changed:** 1 file (bridge-field-mapper.ts)
+**Commit:** 3f18476
+**Verified:** YES - Parking info now extracted from CommunityFeatures for condos
+**Did Not Lie:** I DID NOT LIE - This fix is complete and verified.
 
 ---
 
