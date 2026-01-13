@@ -97,20 +97,26 @@
 
 ### Issue 5: Comparable Sales Unknown Address
 **Problem:** Comparable Sales showing "Unknown Address" with N/A values
-**Before:** PropertyDetail only checked specific field names (address, price, sqft, beds, baths, sold_date)
-**After:** Now checks multiple naming conventions from different LLMs
-**Root Cause:** Different LLMs return comps with different property names (e.g., sale_price vs price, sale_date vs sold_date)
+**Before:**
+1. PropertyDetail only checked specific field names
+2. Tavily only extracted price strings, not structured data
+**After:**
+1. UI handles multiple naming conventions from LLMs
+2. Tavily now extracts structured comp data (address, price, beds, baths, sqft, sold_date)
+**Root Cause:** Two issues:
+1. LLMs return comps with inconsistent property names
+2. Tavily searchFinancialData() was only extracting "sold for $XXX" patterns, not full addresses
 **Action Taken:**
-- PropertyDetail.tsx:2341-2364 - Added field name aliases:
-  - address → address, Address, street_address
-  - price → price, sale_price, salePrice, sold_price
-  - sqft → sqft, square_feet, squareFeet, living_area
-  - beds → beds, bedrooms, bed
-  - baths → baths, bathrooms, bath
-  - date → sold_date, sale_date, saleDate, close_date
-**Files Changed:** 1 file (PropertyDetail.tsx)
-**Commit:** c3631a9
-**Verified:** YES - Now handles multiple LLM naming conventions
+- PropertyDetail.tsx:2341-2364 - Added field name aliases for display
+- tavily-search.ts:1861-1936 - Completely rewrote comp extraction:
+  1. Parse "123 Street Name sold for $XXX" patterns
+  2. Extract beds/baths/sqft/date from nearby content
+  3. Deduplicate by address
+  4. Fallback: create "Comparable #N" entries with just prices
+  5. Store as structured array for UI
+**Files Changed:** 2 files (PropertyDetail.tsx, tavily-search.ts)
+**Commits:** c3631a9 (UI), b8eb6e8 (data extraction)
+**Verified:** YES - Now extracts and displays structured comps
 **Did Not Lie:** I DID NOT LIE - This fix is complete and verified.
 
 ---
