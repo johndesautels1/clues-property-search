@@ -1745,6 +1745,177 @@ export async function searchHomesteadAndCDD(address: string, county: string): Pr
 }
 
 /**
+ * Search for walkability and environment data (Fields 78-82)
+ * ADDED 2026-01-13: Previously missing from main search cascade
+ * Fields: 78_noise_level, 79_traffic_level, 80_walkability_description, 81_public_transit_access, 82_commute_to_city_center
+ */
+export async function searchWalkability(address: string, city: string, state: string): Promise<Record<string, any>> {
+  const fields: Record<string, any> = {};
+
+  try {
+    // Run parallel searches for different walkability metrics
+    const [noiseResult, walkResult, transitResult] = await Promise.all([
+      tavilySearch(`site:howloud.com "${address}" OR site:numbeo.com "${city}" noise pollution`, 3),
+      tavilySearch(`site:walkscore.com "${address}" OR "${city}, ${state}" walkability bike score`, 3),
+      tavilySearch(`"${city}, ${state}" public transit commute time downtown`, 3)
+    ]);
+
+    // Process noise/traffic results (fields 78, 79)
+    for (const r of noiseResult.results || []) {
+      // Field 78: Noise Level
+      const soundscoreMatch = r.content.match(/soundscore[:\s]*(\d+)/i) || r.content.match(/noise.*?(\d+)\/100/i);
+      if (soundscoreMatch && !fields['78_noise_level']) {
+        const score = parseInt(soundscoreMatch[1]);
+        let level = 'Unknown';
+        if (score >= 80) level = 'Very Quiet';
+        else if (score >= 60) level = 'Quiet';
+        else if (score >= 40) level = 'Moderate';
+        else if (score >= 20) level = 'Noisy';
+        else level = 'Very Noisy';
+        fields['78_noise_level'] = { value: `${level} (${score}/100)`, source: 'Tavily', confidence: 'Medium' };
+      }
+
+      // Field 79: Traffic Level
+      const trafficMatch = r.content.match(/traffic[:\s]*(low|moderate|high|heavy|light)/i);
+      if (trafficMatch && !fields['79_traffic_level']) {
+        fields['79_traffic_level'] = { value: trafficMatch[1], source: 'Tavily', confidence: 'Medium' };
+      }
+    }
+
+    // Process walkability results (fields 80, 81, 82)
+    for (const r of walkResult.results || []) {
+      // Field 80: Walkability Description
+      const walkScoreMatch = r.content.match(/walk\s*score[:\s]*(\d+)/i);
+      if (walkScoreMatch && !fields['80_walkability_description']) {
+        const score = parseInt(walkScoreMatch[1]);
+        let desc = 'Unknown';
+        if (score >= 90) desc = "Walker's Paradise";
+        else if (score >= 70) desc = 'Very Walkable';
+        else if (score >= 50) desc = 'Somewhat Walkable';
+        else if (score >= 25) desc = 'Car-Dependent';
+        else desc = 'Almost All Errands Require a Car';
+        fields['80_walkability_description'] = { value: `${desc} (${score}/100)`, source: 'Tavily', confidence: 'High' };
+      }
+
+      // Field 81: Public Transit Access
+      const transitScoreMatch = r.content.match(/transit\s*score[:\s]*(\d+)/i);
+      if (transitScoreMatch && !fields['81_public_transit_access']) {
+        const score = parseInt(transitScoreMatch[1]);
+        let access = 'Unknown';
+        if (score >= 70) access = 'Excellent Transit';
+        else if (score >= 50) access = 'Good Transit';
+        else if (score >= 25) access = 'Some Transit';
+        else access = 'Minimal Transit';
+        fields['81_public_transit_access'] = { value: `${access} (${score}/100)`, source: 'Tavily', confidence: 'High' };
+      }
+    }
+
+    // Process commute results (field 82)
+    for (const r of transitResult.results || []) {
+      const commuteMatch = r.content.match(/commute.*?(\d+)\s*(min|minute)/i) || r.content.match(/(\d+)\s*(min|minute).*?(downtown|city center)/i);
+      if (commuteMatch && !fields['82_commute_to_city_center']) {
+        fields['82_commute_to_city_center'] = { value: `${commuteMatch[1]} minutes`, source: 'Tavily', confidence: 'Medium' };
+      }
+    }
+
+  } catch (error) {
+    console.error('[TAVILY] searchWalkability error:', error);
+  }
+
+  return fields;
+}
+
+/**
+ * Search for financial/investment data (Fields 100, 102, 103)
+ * ADDED 2026-01-13: Previously missing from main search cascade
+ * Fields: 100_vacancy_rate_neighborhood, 102_financing_terms, 103_comparable_sales
+ */
+export async function searchFinancialData(city: string, state: string, zip: string): Promise<Record<string, any>> {
+  const fields: Record<string, any> = {};
+
+  try {
+    // Run parallel searches for different financial metrics
+    const [vacancyResult, financingResult, compsResult] = await Promise.all([
+      tavilySearch(`"${zip}" OR "${city}, ${state}" vacancy rate rental housing 2025 2026`, 3),
+      tavilySearch(`"${city}, ${state}" mortgage rates financing terms 2026 OR current interest rates home loan`, 3),
+      tavilySearch(`site:zillow.com "${zip}" recently sold OR site:redfin.com "${zip}" sold homes 2025 2026`, 3)
+    ]);
+
+    // Process vacancy results (field 100)
+    for (const r of vacancyResult.results || []) {
+      const vacancyMatch = r.content.match(/vacancy[:\s]*([\d\.]+)%/i) || r.content.match(/([\d\.]+)%\s*vacancy/i);
+      if (vacancyMatch && !fields['100_vacancy_rate_neighborhood']) {
+        fields['100_vacancy_rate_neighborhood'] = { value: `${vacancyMatch[1]}%`, source: 'Tavily', confidence: 'Medium' };
+      }
+    }
+
+    // Process financing results (field 102)
+    for (const r of financingResult.results || []) {
+      const rateMatch = r.content.match(/(\d+\.?\d*)%\s*(apr|interest|mortgage|rate)/i) || r.content.match(/(mortgage|30-year|15-year).*?(\d+\.?\d*)%/i);
+      if (rateMatch && !fields['102_financing_terms']) {
+        const rate = rateMatch[1] || rateMatch[2];
+        fields['102_financing_terms'] = { value: `Current rates ~${rate}% (verify with lender)`, source: 'Tavily', confidence: 'Low' };
+      }
+    }
+
+    // Process comparable sales results (field 103)
+    for (const r of compsResult.results || []) {
+      const soldMatch = r.content.match(/sold\s*(?:for)?\s*\$?([\d,]+)/gi);
+      if (soldMatch && soldMatch.length >= 1 && !fields['103_comparable_sales']) {
+        const prices = soldMatch.slice(0, 3).map(s => s.replace(/sold\s*(?:for)?\s*/i, ''));
+        fields['103_comparable_sales'] = { value: `Recent sales: ${prices.join(', ')}`, source: 'Tavily', confidence: 'Medium' };
+      }
+    }
+
+  } catch (error) {
+    console.error('[TAVILY] searchFinancialData error:', error);
+  }
+
+  return fields;
+}
+
+/**
+ * Search for emergency services distance (Field 116)
+ * ADDED 2026-01-13: Previously missing from main search cascade
+ * Fields: 116_emergency_services_distance
+ */
+export async function searchEmergencyServices(address: string, city: string, state: string): Promise<Record<string, any>> {
+  const fields: Record<string, any> = {};
+
+  try {
+    const result = await tavilySearch(`"${address}" OR "${city}, ${state}" nearest fire station hospital emergency services distance`, 3);
+
+    for (const r of result.results || []) {
+      // Look for distance mentions
+      const distanceMatch = r.content.match(/([\d\.]+)\s*(mile|mi|km|block)s?\s*(?:from|to|away)/i) ||
+                           r.content.match(/(?:fire station|hospital|emergency).*?([\d\.]+)\s*(mile|mi|minute)/i);
+      if (distanceMatch && !fields['116_emergency_services_distance']) {
+        fields['116_emergency_services_distance'] = {
+          value: `~${distanceMatch[1]} ${distanceMatch[2]}s to nearest emergency services`,
+          source: 'Tavily',
+          confidence: 'Low'
+        };
+      }
+
+      // Alternative: look for response time
+      const responseMatch = r.content.match(/response\s*time[:\s]*([\d]+)\s*min/i);
+      if (responseMatch && !fields['116_emergency_services_distance']) {
+        fields['116_emergency_services_distance'] = {
+          value: `~${responseMatch[1]} min emergency response time`,
+          source: 'Tavily',
+          confidence: 'Low'
+        };
+      }
+    }
+
+  } catch (error) {
+    console.error('[TAVILY] searchEmergencyServices error:', error);
+  }
+
+  return fields;
+}
+
+/**
  * Run all Tavily searches for a property (Tier 3)
  */
 export async function runTavilyTier3(
@@ -1767,22 +1938,28 @@ export async function runTavilyTier3(
   // UPDATED 2026-01-13: Added searchAgeAndRenovations for fields 40, 46, 59
   // UPDATED 2026-01-13: Added searchUtilityBills for fields 105, 107-108, 110-116
   // UPDATED 2026-01-13: Added searchPropertyFeatures for fields 131-138
-  const [avmFields, paywallAvmFields, marketFields, utilityFields, utilityBillFields, permitFields, ageFields, featureFields, marketPerfFields, homesteadFields, taxFields] = await Promise.all([
+  // UPDATED 2026-01-13: Added searchWalkability for fields 78-82
+  // UPDATED 2026-01-13: Added searchFinancialData for fields 100, 102, 103
+  // UPDATED 2026-01-13: Added searchEmergencyServices for field 116
+  const [avmFields, paywallAvmFields, marketFields, utilityFields, utilityBillFields, permitFields, ageFields, featureFields, marketPerfFields, homesteadFields, taxFields, walkabilityFields, financialFields, emergencyFields] = await Promise.all([
     searchAVMs(address), // Fields 16a, 16b
     searchPaywallAVMs(address), // Fields 16c, 16d, 16e, 16f
     searchMarketStats(city, zip), // Fields 91-98
     searchUtilities(city, state), // Fields 104, 106, 109
-    searchUtilityBills(city, state, zip), // Fields 105, 107-108, 110-116
+    searchUtilityBills(city, state, zip), // Fields 105, 107-108, 110-115
     searchPermits(address, county), // Fields 60, 61, 62
     searchAgeAndRenovations(address, county), // Fields 40, 46, 59
     searchPropertyFeatures(address, city), // Fields 131-138
-    searchMarketPerformance(city, state, zip), // Fields 169-174: market performance metrics
+    searchMarketPerformance(city, state, zip), // Fields 169-181: market performance metrics
     searchHomesteadAndCDD(address, county), // Fields 151, 152, 153
     searchTaxData(address, county), // Fields 15, 35, 38: assessed value, annual taxes, exemptions
+    searchWalkability(address, city, state), // Fields 78-82: noise, traffic, walkability, transit, commute
+    searchFinancialData(city, state, zip), // Fields 100, 102, 103: vacancy, financing, comps
+    searchEmergencyServices(address, city, state), // Field 116: emergency services distance
   ]);
 
   // Merge all fields
-  Object.assign(allFields, avmFields, paywallAvmFields, marketFields, utilityFields, utilityBillFields, permitFields, ageFields, featureFields, marketPerfFields, homesteadFields, taxFields);
+  Object.assign(allFields, avmFields, paywallAvmFields, marketFields, utilityFields, utilityBillFields, permitFields, ageFields, featureFields, marketPerfFields, homesteadFields, taxFields, walkabilityFields, financialFields, emergencyFields);
 
   console.log(`✅ TIER 3: Tavily returned ${Object.keys(allFields).length} fields`);
 
