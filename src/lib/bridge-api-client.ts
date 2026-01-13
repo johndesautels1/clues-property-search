@@ -90,6 +90,7 @@ export interface BridgeProperty {
   ArchitecturalStyle?: string[];  // e.g., ["Ranch", "Mediterranean", "Colonial", "Contemporary"]
   Stories?: number;
   StoriesTotal?: number;
+  Levels?: string[]; // e.g., ["One"], ["Two"] - text representation of floors
 
   // Parking & Garage
   GarageSpaces?: number;

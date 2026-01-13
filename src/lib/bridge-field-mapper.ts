@@ -275,16 +275,31 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   }
 
   // Stories - try explicit count, then extract from ArchitecturalStyle, then use Levels
+  // DEBUG: Log available stories data for troubleshooting
+  console.log('[Bridge Mapper] 🏠 Stories field debug:', {
+    Stories: property.Stories,
+    StoriesTotal: property.StoriesTotal,
+    Levels: property.Levels,
+    ArchitecturalStyle: property.ArchitecturalStyle
+  });
+
   if (property.Stories || property.StoriesTotal) {
-    addField('27_stories', property.Stories || property.StoriesTotal);
+    const storyValue = property.Stories || property.StoriesTotal;
+    addField('27_stories', storyValue);
+    console.log(`[Bridge Mapper] ✅ Stories from Stories/StoriesTotal: ${storyValue}`);
   } else if (property.ArchitecturalStyle && Array.isArray(property.ArchitecturalStyle)) {
     const styleText = property.ArchitecturalStyle.join(' ').toLowerCase();
     if (styleText.includes('one story') || styleText.includes('ranch') || styleText.includes('single level')) {
       addField('27_stories', 1, 'Medium');
+      console.log('[Bridge Mapper] ✅ Stories inferred from ArchitecturalStyle (one story/ranch): 1');
     } else if (styleText.includes('two story') || styleText.includes('2 story') || styleText.includes('two-story')) {
       addField('27_stories', 2, 'Medium');
+      console.log('[Bridge Mapper] ✅ Stories inferred from ArchitecturalStyle (two story): 2');
     } else if (styleText.includes('three story') || styleText.includes('3 story') || styleText.includes('tri-level')) {
       addField('27_stories', 3, 'Medium');
+      console.log('[Bridge Mapper] ✅ Stories inferred from ArchitecturalStyle (three story): 3');
+    } else {
+      console.log(`[Bridge Mapper] ⚠️ ArchitecturalStyle "${styleText}" did not contain story indicators`);
     }
   } else if (property.Levels) {
     // Convert Levels array (e.g., ["One"], ["Two"]) to numeric value
@@ -310,7 +325,12 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
     }
     if (stories) {
       addField('27_stories', stories, 'Medium');
+      console.log(`[Bridge Mapper] ✅ Stories from Levels array "${levelsText}": ${stories}`);
+    } else {
+      console.log(`[Bridge Mapper] ⚠️ Could not parse stories from Levels: "${levelsText}"`);
     }
+  } else {
+    console.log('[Bridge Mapper] ⚠️ No Stories data available (Stories, StoriesTotal, Levels, ArchitecturalStyle all missing/unusable)');
   }
 
   addField('28_garage_spaces', property.GarageSpaces);
