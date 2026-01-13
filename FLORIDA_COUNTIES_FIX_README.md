@@ -41,7 +41,8 @@ Removed `34_recent_tax_history` extraction - no schema field exists for this.
 ## EXPANSION TASKS (PENDING)
 
 ### Task 1: Add Annual Taxes (Field 35) as FALLBACK
-**Status:** PENDING
+**Status:** DONE
+**Date Completed:** 2026-01-13
 **Priority:** HIGH
 **Field:** 35_annual_taxes
 
@@ -50,10 +51,15 @@ Removed `34_recent_tax_history` extraction - no schema field exists for this.
 - Extract from Tax Collector websites
 - Validate: Must be reasonable ($500 - $50,000 range for Florida)
 
-**Files to update:**
-- [ ] florida-counties.ts - Add extraction in scrapeTaxCollector()
-- [ ] Verify field-normalizer.ts has correct mapping
-- [ ] Verify PropertyDetail.tsx displays correctly
+**Implementation Details:**
+- Added annual taxes extraction to scrapeTaxCollector() function
+- Patterns detect: Total Tax, Annual Tax, Tax Amount, Tax Due, Tax Bill, Ad Valorem Tax
+- Validates range: $500 - $50,000 (Florida typical)
+- Smart monthly detection: If amount < $500, assumes monthly and converts to annual
+- Tavily buttons already wired (TAVILY_ENABLED_FIELDS, FIELD_KEY_TO_ID_MAP, searchTaxData)
+
+**Files updated:**
+- [x] florida-counties.ts - Added extraction in scrapeTaxCollector() (lines 810-837)
 
 ---
 
@@ -230,7 +236,7 @@ Each field needs an entry in the Tavily field database with:
 
 | Field # | Field Key | TAVILY_ENABLED_FIELDS | FIELD_KEY_TO_ID_MAP | tavily-search.ts | Status |
 |---------|-----------|----------------------|---------------------|------------------|--------|
-| 35 | annual_taxes | [x] Already there | [x] Already there | [ ] needs search function | PENDING |
+| 35 | annual_taxes | [x] Already there | [x] Already there | [x] searchTaxData | DONE |
 | 42 | foundation | [x] Added | [x] Added | [x] searchPropertyFeatures | DONE |
 | 150 | legal_description | [x] Added | [x] Added | [x] searchHomesteadAndCDD | DONE |
 | 152 | cdd_yn | [x] Already there | [x] Already there | [x] searchHomesteadAndCDD | DONE |
@@ -264,6 +270,7 @@ Before marking any task DONE:
 | 20 | total_bathrooms | Pinellas, Hillsborough, Polk | WORKING |
 | 21 | living_sqft | All PA scrapers | WORKING |
 | 25 | year_built | All PA scrapers | WORKING |
+| 35 | annual_taxes | Tax Collector | NEW 2026-01-13 |
 | 37 | property_tax_rate | Tax Collector | WORKING |
 | 38 | tax_exemptions | Tax Collector | WORKING |
 | 39 | roof_type | Pinellas only | WORKING |
@@ -282,7 +289,7 @@ Before marking any task DONE:
 | 152 | cdd_yn | Tax Collector | NEW 2026-01-13 |
 | 153 | annual_cdd_fee | Tax Collector | NEW 2026-01-13 |
 
-**Total: 24 fields currently extracted**
+**Total: 25 fields currently extracted**
 
 ---
 

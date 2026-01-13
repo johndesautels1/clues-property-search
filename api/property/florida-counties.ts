@@ -807,6 +807,35 @@ async function scrapeTaxCollector(address: string, county: string, parcelId?: st
     // REMOVED: 34_recent_tax_history - No schema field exists for this
     // Tax history extraction was removed 2026-01-13
 
+    // Field 35: Annual Taxes - ADDED 2026-01-13 (FALLBACK only)
+    // Only extract if MLS doesn't provide - this is a fallback source
+    const taxAmountPatterns = [
+      /(?:Total|Annual)\s*Tax(?:es)?[:\s]*\$?\s*([\d,]+(?:\.\d{2})?)/i,
+      /Tax\s*(?:Amount|Due|Bill)[:\s]*\$?\s*([\d,]+(?:\.\d{2})?)/i,
+      /(?:Ad\s*Valorem|Property)\s*Tax[:\s]*\$?\s*([\d,]+(?:\.\d{2})?)/i,
+      /(?:2024|2025|2026)\s*Tax[:\s]*\$?\s*([\d,]+(?:\.\d{2})?)/i,
+    ];
+    for (const pattern of taxAmountPatterns) {
+      const match = html.match(pattern);
+      if (match) {
+        const taxAmount = parseFloat(match[1].replace(/,/g, ''));
+        // Validate: Florida annual taxes typically $500 - $50,000
+        if (taxAmount >= 500 && taxAmount <= 50000) {
+          fields['35_annual_taxes'] = { value: taxAmount, source, confidence: 'High' };
+          console.log(`✅ [${county}] Found Annual Taxes: $${taxAmount.toLocaleString()}`);
+          break;
+        } else if (taxAmount > 0 && taxAmount < 500) {
+          // Might be monthly - try to convert
+          const annualized = taxAmount * 12;
+          if (annualized >= 500 && annualized <= 50000) {
+            fields['35_annual_taxes'] = { value: annualized, source, confidence: 'Medium' };
+            console.log(`⚠️ [${county}] Annual Taxes $${taxAmount} seems monthly, converted: $${annualized.toLocaleString()}`);
+            break;
+          }
+        }
+      }
+    }
+
     // Extract special assessments (CDD, etc.)
     const assessmentPatterns = [
       /(?:Special|Non.?Ad.?Valorem) Assessment[s]?[:\s]*\$?([\d,]+)/i,
