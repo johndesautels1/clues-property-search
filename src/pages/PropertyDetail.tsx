@@ -2534,7 +2534,7 @@ export default function PropertyDetail() {
                   {renderDataField("Water Provider", fullProperty.utilities.waterProvider, "text", undefined, "106_water_provider")}
                   {renderDataField("Avg Water Bill", fullProperty.utilities.avgWaterBill, "text", undefined, "107_avg_water_bill")}
                   {renderDataField("Sewer Provider", fullProperty.utilities.sewerProvider, "text", undefined, "108_sewer_provider")}
-                  {renderDataField("Natural Gas", fullProperty.utilities.naturalGas, "text", undefined, "109_natural_gas")}
+                  {renderDataField("Natural Gas", fullProperty.utilities.naturalGas, "boolean", undefined, "109_natural_gas")}
                   {renderDataField("Trash Provider", fullProperty.utilities.trashProvider, "text", undefined, "110_trash_provider")}
                 </div>
                 <div>
@@ -2593,7 +2593,7 @@ export default function PropertyDetail() {
                 <div>
                   {renderDataField("View Type", fullProperty.utilities.viewType, "text", undefined, "131_view_type")}
                   {renderDataField("Lot Features", fullProperty.utilities.lotFeatures, "text", undefined, "132_lot_features")}
-                  {renderDataField("EV Charging", fullProperty.utilities.evChargingYn, "text", undefined, "133_ev_charging")}
+                  {renderDataField("EV Charging", fullProperty.utilities.evChargingYn, "boolean", undefined, "133_ev_charging")}
                   {renderDataField("Smart Home Features", fullProperty.utilities.smartHomeFeatures, "text", undefined, "134_smart_home_features")}
                 </div>
                 <div>
