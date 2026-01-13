@@ -4535,7 +4535,7 @@ async function callGrok(address: string): Promise<any> {
       body: JSON.stringify({
         model: 'grok-4', // Grok 4.0 for field completion
         max_tokens: 32000,
-        temperature: 0.1,
+        temperature: 0,  // MUST BE 0 to prevent hallucinations
         messages: messages,
       }),
       signal: controller.signal,

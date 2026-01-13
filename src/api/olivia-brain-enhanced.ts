@@ -296,7 +296,7 @@ export function extractPropertyData(property: Property): OliviaEnhancedPropertyI
     association_approval_yn: getValue<boolean>(property.stellarMLS?.leasing?.associationApprovalYn),
 
     // ========================================================================
-    // GROUP 22: Community & Features (Fields 166-168) - Stellar MLS
+    // GROUP 22: Features (Fields 166-168) - Stellar MLS
     // ========================================================================
     community_features: getValue<string[]>(property.stellarMLS?.features?.communityFeatures),
     interior_features: getValue<string[]>(property.stellarMLS?.features?.interiorFeatures),
@@ -606,7 +606,7 @@ function formatPropertyForPrompt(p: OliviaEnhancedPropertyInput, index: number):
   addField(165, 'Association Approval Required', p.association_approval_yn ? 'Yes' : p.association_approval_yn === false ? 'No' : null);
 
   // ========================================================================
-  // GROUP 22: Community & Features (Fields 166-168) - Stellar MLS
+  // GROUP 22: Features (Fields 166-168) - Stellar MLS
   // ========================================================================
   lines.push(`\n👥 COMMUNITY & FEATURES (Fields 166-168)`);
   addField(166, 'Community Features', p.community_features);

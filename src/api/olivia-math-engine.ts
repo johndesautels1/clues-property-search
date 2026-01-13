@@ -70,7 +70,7 @@ export const FIELD_LEVELS = {
       'Legal & Compliance',
       'Waterfront',
       'Leasing & Rentals',
-      'Community & Features',
+      'Features',
       'Market Performance' // fields 169-181
     ],
     description: 'Environmental risks, legal, waterfront, leasing, and additional features'
@@ -1399,7 +1399,7 @@ Using the complete field analysis above, calculate:
 19. Legal & Compliance (Fields 149-154)
 20. Waterfront (Fields 155-159)
 21. Leasing & Rentals (Fields 160-165)
-22. Community & Features (Fields 166-168)
+22. Features (Fields 166-168)
 
 ## SECTION WEIGHTS (1-10):
 

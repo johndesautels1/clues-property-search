@@ -1121,7 +1121,7 @@ async function callGrokForecast(
       body: JSON.stringify({
         model: 'grok-4',
         max_tokens: 32000,
-        temperature: 0.1,
+        temperature: 0,  // MUST BE 0 to prevent hallucinations
         messages: messages,
       }),
       signal: controller.signal,
@@ -1178,7 +1178,7 @@ async function callGrokForecast(
       body: JSON.stringify({
         model: 'grok-4',
         max_tokens: 32000,
-        temperature: 0.1,
+        temperature: 0,  // MUST BE 0 to prevent hallucinations
         messages: messages,
       }),
       signal: controller2.signal,

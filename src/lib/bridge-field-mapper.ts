@@ -997,7 +997,7 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   addField('165_association_approval_yn', property.AssociationApprovalRequiredYN);
 
   // ================================================================
-  // GROUP 23: Community & Features (Fields 166-168)
+  // GROUP 23: Features (Fields 166-168)
   // ================================================================
   if (property.CommunityFeatures && Array.isArray(property.CommunityFeatures)) {
     addField('166_community_features', property.CommunityFeatures.join(', '));

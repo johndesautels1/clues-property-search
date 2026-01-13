@@ -2533,8 +2533,8 @@ export default function PropertyDetail() {
               </div>
             </Section>
 
-            {/* Stellar MLS - Community & Features (Fields 166-168) */}
-            <Section title="Community & Features" icon={<Sparkles className="w-6 h-6" />} defaultExpanded={true}>
+            {/* Stellar MLS - Features (Fields 166-168) */}
+            <Section title="Features" icon={<Sparkles className="w-6 h-6" />} defaultExpanded={true}>
               <div className="grid grid-cols-1 gap-4">
                 {renderMultiSelectField("Community Features", fullProperty.stellarMLS?.features?.communityFeatures, "166_community_features")}
                 {renderMultiSelectField("Interior Features", fullProperty.stellarMLS?.features?.interiorFeatures, "167_interior_features")}

@@ -57,7 +57,7 @@ const SECTION_ICONS: Record<string, any> = {
   'Legal & Compliance': Scale,
   'Waterfront': Waves,
   'Leasing & Rentals': FileText,
-  'Community & Features': Users,
+  'Features': Users,
   'Market Performance': TrendingUp,  // Section W - fields 169-181
 };
 

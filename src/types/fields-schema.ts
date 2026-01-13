@@ -306,9 +306,9 @@ export const ALL_FIELDS: readonly FieldDefinition[] = [
   // ================================================================
   // GROUP 22: Stellar MLS - Features & Flood (Fields 166-168)
   // ================================================================
-  { num: 166, key: 'community_features',    label: 'Community Features',    group: 'Community & Features', type: 'multiselect', required: false, options: ['Pool', 'Clubhouse', 'Tennis Courts', 'Golf', 'Fitness Center', 'Gated', 'Sidewalks', 'Playground', 'Dog Park', 'Marina', 'Beach Access'] },
-  { num: 167, key: 'interior_features',     label: 'Interior Features',     group: 'Community & Features', type: 'multiselect', required: false, options: ['Cathedral Ceiling(s)', 'Walk-In Closet(s)', 'Primary Bedroom Main Floor', 'Open Floor Plan', 'Crown Molding', 'Skylight(s)', 'Wet Bar', 'Built-in Features'] },
-  { num: 168, key: 'exterior_features',     label: 'Exterior Features',     group: 'Community & Features', type: 'multiselect', required: false, options: ['Balcony', 'Outdoor Shower', 'Sidewalk', 'Sliding Doors', 'Hurricane Shutters', 'Sprinkler System', 'Outdoor Kitchen', 'Private Dock'] },
+  { num: 166, key: 'community_features',    label: 'Community Features',    group: 'Features', type: 'multiselect', required: false, options: ['Pool', 'Clubhouse', 'Tennis Courts', 'Golf', 'Fitness Center', 'Gated', 'Sidewalks', 'Playground', 'Dog Park', 'Marina', 'Beach Access'] },
+  { num: 167, key: 'interior_features',     label: 'Interior Features',     group: 'Features', type: 'multiselect', required: false, options: ['Cathedral Ceiling(s)', 'Walk-In Closet(s)', 'Primary Bedroom Main Floor', 'Open Floor Plan', 'Crown Molding', 'Skylight(s)', 'Wet Bar', 'Built-in Features'] },
+  { num: 168, key: 'exterior_features',     label: 'Exterior Features',     group: 'Features', type: 'multiselect', required: false, options: ['Balcony', 'Outdoor Shower', 'Sidewalk', 'Sliding Doors', 'Hurricane Shutters', 'Sprinkler System', 'Outdoor Kitchen', 'Private Dock'] },
 
   // ================================================================
   // GROUP 23: Market Performance (Fields 169-181) - Section W

@@ -229,7 +229,7 @@ export interface OliviaEnhancedPropertyInput {
   max_pet_weight?: number;
   association_approval_yn?: boolean;
 
-  // GROUP 22: Community & Features (166-168)
+  // GROUP 22: Features (166-168)
   community_features?: string[];
   interior_features?: string[];
   exterior_features?: string[];
@@ -559,6 +559,6 @@ export const SECTION_METADATA: Record<SectionId, { name: string; fields: number[
   legal: { name: 'Legal & Compliance', fields: [149, 150, 151, 152, 153, 154], icon: 'Scale' },
   waterfront: { name: 'Waterfront', fields: [155, 156, 157, 158, 159], icon: 'Waves' },
   leasing: { name: 'Leasing & Rentals', fields: [160, 161, 162, 163, 164, 165], icon: 'FileText' },
-  community_features: { name: 'Community & Features', fields: [166, 167, 168], icon: 'Users' },
+  community_features: { name: 'Features', fields: [166, 167, 168], icon: 'Users' },
   market_performance: { name: 'Market Performance', fields: [169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181], icon: 'BarChart3' },
 };

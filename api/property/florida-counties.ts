@@ -545,7 +545,7 @@ async function scrapeTaxCollector(address: string, county: string, parcelId?: st
     for (const pattern of assessmentPatterns) {
       const match = html.match(pattern);
       if (match) {
-        fields['35_special_assessments'] = { value: `$${match[1]}`, source, confidence: 'High' };
+        fields['138_special_assessments'] = { value: `$${match[1]}`, source, confidence: 'High' };
         break;
       }
     }
