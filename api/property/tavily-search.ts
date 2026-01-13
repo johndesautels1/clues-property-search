@@ -495,8 +495,151 @@ export async function searchPermits(address: string, county: string): Promise<Re
         confidence: 'Low',
       };
     }
+
+    // Field 62: Other permits (electrical, plumbing, structural, etc.)
+    if (!fields['62_permit_history_other']) {
+      const otherPermitMatch = r.content.match(/(electrical|plumbing|structural|addition|remodel|pool|fence|solar).*permit|permit.*(electrical|plumbing|structural|addition|remodel|pool|fence|solar)/i);
+      if (otherPermitMatch) {
+        fields['62_permit_history_other'] = {
+          value: `${otherPermitMatch[1] || otherPermitMatch[2]} permit found - see county records`,
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+      }
+    }
   }
 
+  return fields;
+}
+
+/**
+ * Search for Property Age Estimates and Renovations (Fields 40, 46, 59)
+ * - 40: roof_age_est (estimated roof age in years)
+ * - 46: hvac_age (estimated HVAC age in years)
+ * - 59: recent_renovations (list of recent renovations)
+ * ADDED 2026-01-13: Critical for property condition assessment
+ */
+export async function searchAgeAndRenovations(address: string, county: string): Promise<Record<string, any>> {
+  const fields: Record<string, any> = {};
+
+  console.log(`🔍 [Tavily] Searching age estimates and renovations for ${address}`);
+
+  // Run searches in PARALLEL
+  const [roofResult, hvacResult, renovationResult] = await Promise.all([
+    // Field 40: Roof Age Estimate
+    tavilySearch(
+      `"${address}" roof age years installed replaced`,
+      { numResults: 5 }
+    ),
+    // Field 46: HVAC Age Estimate
+    tavilySearch(
+      `"${address}" HVAC "air conditioning" age years installed replaced`,
+      { numResults: 5 }
+    ),
+    // Field 59: Recent Renovations
+    tavilySearch(
+      `"${address}" renovations remodel updated upgraded kitchen bathroom`,
+      { numResults: 5 }
+    ),
+  ]);
+
+  // Extract Field 40: Roof Age Estimate
+  for (const r of roofResult.results) {
+    // Try to find year installed/replaced
+    const yearMatch = r.content.match(/roof.*(?:installed|replaced|new).*(?:in\s+)?(\d{4})/i) ||
+                      r.content.match(/(\d{4}).*(?:roof|shingles?).*(?:installed|replaced|new)/i);
+    if (yearMatch && !fields['40_roof_age_est']) {
+      const year = parseInt(yearMatch[1]);
+      const currentYear = new Date().getFullYear();
+      if (year >= 1970 && year <= currentYear) {
+        const age = currentYear - year;
+        fields['40_roof_age_est'] = {
+          value: age,
+          source: 'Tavily',
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found roof age: ${age} years (installed ${year})`);
+        break;
+      }
+    }
+    // Try to find age directly stated
+    const ageMatch = r.content.match(/roof.*(\d+)\s*(?:year|yr)s?\s*old/i) ||
+                     r.content.match(/(\d+)\s*(?:year|yr)s?\s*old.*roof/i);
+    if (ageMatch && !fields['40_roof_age_est']) {
+      const age = parseInt(ageMatch[1]);
+      if (age >= 0 && age <= 50) {
+        fields['40_roof_age_est'] = {
+          value: age,
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found roof age: ${age} years`);
+        break;
+      }
+    }
+  }
+
+  // Extract Field 46: HVAC Age Estimate
+  for (const r of hvacResult.results) {
+    // Try to find year installed/replaced
+    const yearMatch = r.content.match(/(?:HVAC|AC|air condition).*(?:installed|replaced|new).*(?:in\s+)?(\d{4})/i) ||
+                      r.content.match(/(\d{4}).*(?:HVAC|AC|air condition).*(?:installed|replaced|new)/i);
+    if (yearMatch && !fields['46_hvac_age']) {
+      const year = parseInt(yearMatch[1]);
+      const currentYear = new Date().getFullYear();
+      if (year >= 1980 && year <= currentYear) {
+        const age = currentYear - year;
+        fields['46_hvac_age'] = {
+          value: age,
+          source: 'Tavily',
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found HVAC age: ${age} years (installed ${year})`);
+        break;
+      }
+    }
+    // Try to find age directly stated
+    const ageMatch = r.content.match(/(?:HVAC|AC|air condition).*(\d+)\s*(?:year|yr)s?\s*old/i) ||
+                     r.content.match(/(\d+)\s*(?:year|yr)s?\s*old.*(?:HVAC|AC|air condition)/i);
+    if (ageMatch && !fields['46_hvac_age']) {
+      const age = parseInt(ageMatch[1]);
+      if (age >= 0 && age <= 30) {
+        fields['46_hvac_age'] = {
+          value: age,
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found HVAC age: ${age} years`);
+        break;
+      }
+    }
+  }
+
+  // Extract Field 59: Recent Renovations
+  for (const r of renovationResult.results) {
+    const renovations: string[] = [];
+
+    if (r.content.match(/(?:new|updated|remodel|renovated).*kitchen/i)) renovations.push('Kitchen');
+    if (r.content.match(/(?:new|updated|remodel|renovated).*bathroom/i)) renovations.push('Bathroom');
+    if (r.content.match(/(?:new|updated|remodel|renovated).*floor/i)) renovations.push('Flooring');
+    if (r.content.match(/(?:new|updated|remodel|renovated).*window/i)) renovations.push('Windows');
+    if (r.content.match(/(?:new|updated|remodel|renovated).*(?:appliance|stainless)/i)) renovations.push('Appliances');
+    if (r.content.match(/pool.*(?:install|add|new)|(?:new|added).*pool/i)) renovations.push('Pool');
+    if (r.content.match(/(?:new|updated).*(?:paint|exterior)/i)) renovations.push('Paint/Exterior');
+    if (r.content.match(/(?:addition|expand|extended)/i)) renovations.push('Addition');
+
+    if (renovations.length > 0 && !fields['59_recent_renovations']) {
+      fields['59_recent_renovations'] = {
+        value: renovations.join(', '),
+        source: 'Tavily',
+        confidence: 'Low',
+      };
+      console.log(`✅ [Tavily] Found renovations: ${renovations.join(', ')}`);
+      break;
+    }
+  }
+
+  console.log(`✅ [Tavily] Age/renovation search returned ${Object.keys(fields).length} fields`);
   return fields;
 }
 
@@ -961,19 +1104,21 @@ export async function runTavilyTier3(
   // UPDATED 2026-01-13: Replaced searchPortalViews with searchMarketPerformance (fields 169-174)
   // UPDATED 2026-01-13: Added searchTaxData for fields 15, 35, 38
   // UPDATED 2026-01-13: Added searchPaywallAVMs for fields 16c-16f
-  const [avmFields, paywallAvmFields, marketFields, utilityFields, permitFields, marketPerfFields, homesteadFields, taxFields] = await Promise.all([
+  // UPDATED 2026-01-13: Added searchAgeAndRenovations for fields 40, 46, 59
+  const [avmFields, paywallAvmFields, marketFields, utilityFields, permitFields, ageFields, marketPerfFields, homesteadFields, taxFields] = await Promise.all([
     searchAVMs(address), // Fields 16a, 16b
     searchPaywallAVMs(address), // Fields 16c, 16d, 16e, 16f
     searchMarketStats(city, zip), // Fields 91, 92, 95
     searchUtilities(city, state), // Fields 104, 106, 109
-    searchPermits(address, county), // Fields 60, 61
+    searchPermits(address, county), // Fields 60, 61, 62
+    searchAgeAndRenovations(address, county), // Fields 40, 46, 59
     searchMarketPerformance(city, state, zip), // Fields 169-174: market performance metrics
     searchHomesteadAndCDD(address, county), // Fields 151, 152, 153
     searchTaxData(address, county), // Fields 15, 35, 38: assessed value, annual taxes, exemptions
   ]);
 
   // Merge all fields
-  Object.assign(allFields, avmFields, paywallAvmFields, marketFields, utilityFields, permitFields, marketPerfFields, homesteadFields, taxFields);
+  Object.assign(allFields, avmFields, paywallAvmFields, marketFields, utilityFields, permitFields, ageFields, marketPerfFields, homesteadFields, taxFields);
 
   console.log(`✅ TIER 3: Tavily returned ${Object.keys(allFields).length} fields`);
 
