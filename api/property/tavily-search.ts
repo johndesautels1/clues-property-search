@@ -324,48 +324,176 @@ export async function searchPaywallAVMs(address: string): Promise<Record<string,
 }
 
 /**
- * Search for market statistics
+ * Search for Market Statistics (Fields 91-98)
+ * - 91: median_home_price_neighborhood
+ * - 92: price_per_sqft_recent_avg
+ * - 93: avg_sale_to_list_ratio
+ * - 94: appreciation_1yr
+ * - 95: days_on_market_avg
+ * - 96: inventory_level
+ * - 97: sale_price_median
+ * - 98: list_price_median
+ * EXPANDED 2026-01-13: Added fields 93, 94, 96, 97, 98
  */
 export async function searchMarketStats(city: string, zip: string): Promise<Record<string, any>> {
   const fields: Record<string, any> = {};
 
-  const result = await tavilySearch(
-    `"${city}" ${zip} median home price average days on market 2026`,
-    { numResults: 5 }
-  );
+  console.log(`🔍 [Tavily] Searching market stats for ${city} ${zip}`);
 
-  for (const r of result.results) {
-    // Extract median price
-    const medianMatch = r.content.match(/median.*?\$?([\d,]+)/i);
+  // Run searches in PARALLEL for more comprehensive coverage
+  const [basicResult, ratioResult, appreciationResult] = await Promise.all([
+    // Fields 91, 92, 95, 97, 98: Basic market stats
+    tavilySearch(
+      `"${city}" ${zip} median home price sale price list price days on market 2026`,
+      { numResults: 5 }
+    ),
+    // Fields 93, 96: Sale-to-list ratio and inventory
+    tavilySearch(
+      `"${city}" ${zip} sale to list ratio inventory months supply 2026`,
+      { numResults: 5 }
+    ),
+    // Field 94: Appreciation
+    tavilySearch(
+      `"${city}" ${zip} home price appreciation year over year change 2026`,
+      { numResults: 5 }
+    ),
+  ]);
+
+  // Extract from basic results
+  for (const r of basicResult.results) {
+    // Field 91: Median Home Price (neighborhood)
+    const medianMatch = r.content.match(/median.*?(?:home|house)?\s*price.*?\$\s*([\d,]+)/i) ||
+                        r.content.match(/\$\s*([\d,]+).*?median/i);
     if (medianMatch && !fields['91_median_home_price_neighborhood']) {
-      fields['91_median_home_price_neighborhood'] = {
-        value: parseInt(medianMatch[1].replace(/,/g, '')),
-        source: 'Tavily',
-        confidence: 'Medium',
-      };
+      const value = parseInt(medianMatch[1].replace(/,/g, ''));
+      if (value > 50000 && value < 10000000) {
+        fields['91_median_home_price_neighborhood'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found median home price: $${value.toLocaleString()}`);
+      }
     }
 
-    // Extract price per sqft
-    const psfMatch = r.content.match(/\$?([\d]+)\s*(?:per|\/)\s*(?:sq\.?\s*ft|sqft)/i);
+    // Field 92: Price per sqft
+    const psfMatch = r.content.match(/\$\s*([\d]+)\s*(?:per|\/)\s*(?:sq\.?\s*ft|sqft)/i) ||
+                     r.content.match(/([\d]+)\s*(?:per|\/)\s*(?:sq\.?\s*ft|sqft)/i);
     if (psfMatch && !fields['92_price_per_sqft_recent_avg']) {
-      fields['92_price_per_sqft_recent_avg'] = {
-        value: parseInt(psfMatch[1]),
-        source: 'Tavily',
-        confidence: 'Medium',
-      };
+      const value = parseInt(psfMatch[1]);
+      if (value > 50 && value < 2000) {
+        fields['92_price_per_sqft_recent_avg'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found price per sqft: $${value}`);
+      }
     }
 
-    // Extract DOM
-    const domMatch = r.content.match(/(\d+)\s*(?:days?\s*on\s*market|DOM)/i);
+    // Field 95: Days on Market
+    const domMatch = r.content.match(/(\d+)\s*(?:days?\s*on\s*market|DOM|average\s*days)/i);
     if (domMatch && !fields['95_days_on_market_avg']) {
-      fields['95_days_on_market_avg'] = {
-        value: parseInt(domMatch[1]),
-        source: 'Tavily',
-        confidence: 'Medium',
-      };
+      const value = parseInt(domMatch[1]);
+      if (value > 0 && value < 365) {
+        fields['95_days_on_market_avg'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found days on market: ${value}`);
+      }
+    }
+
+    // Field 97: Median Sale Price
+    const saleMatch = r.content.match(/median\s*sale\s*price.*?\$\s*([\d,]+)/i) ||
+                      r.content.match(/sold\s*(?:for)?\s*median.*?\$\s*([\d,]+)/i);
+    if (saleMatch && !fields['97_sale_price_median']) {
+      const value = parseInt(saleMatch[1].replace(/,/g, ''));
+      if (value > 50000 && value < 10000000) {
+        fields['97_sale_price_median'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found median sale price: $${value.toLocaleString()}`);
+      }
+    }
+
+    // Field 98: Median List Price
+    const listMatch = r.content.match(/median\s*list\s*price.*?\$\s*([\d,]+)/i) ||
+                      r.content.match(/list(?:ed)?\s*(?:for)?\s*median.*?\$\s*([\d,]+)/i);
+    if (listMatch && !fields['98_list_price_median']) {
+      const value = parseInt(listMatch[1].replace(/,/g, ''));
+      if (value > 50000 && value < 10000000) {
+        fields['98_list_price_median'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found median list price: $${value.toLocaleString()}`);
+      }
     }
   }
 
+  // Extract from ratio/inventory results
+  for (const r of ratioResult.results) {
+    // Field 93: Sale-to-List Ratio
+    const ratioMatch = r.content.match(/sale[- ]to[- ]list.*?([\d.]+)%/i) ||
+                       r.content.match(/([\d.]+)%.*?sale[- ]to[- ]list/i) ||
+                       r.content.match(/sold\s+(?:for|at).*?([\d.]+)%\s*(?:of)?\s*(?:list|asking)/i);
+    if (ratioMatch && !fields['93_avg_sale_to_list_ratio']) {
+      const value = parseFloat(ratioMatch[1]);
+      if (value > 80 && value < 120) {
+        fields['93_avg_sale_to_list_ratio'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found sale-to-list ratio: ${value}%`);
+      }
+    }
+
+    // Field 96: Inventory Level
+    const inventoryMatch = r.content.match(/([\d.]+)\s*months?\s*(?:of)?\s*(?:supply|inventory)/i) ||
+                           r.content.match(/inventory.*?([\d.]+)\s*months?/i);
+    if (inventoryMatch && !fields['96_inventory_level']) {
+      const value = parseFloat(inventoryMatch[1]);
+      if (value > 0 && value < 24) {
+        fields['96_inventory_level'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found inventory level: ${value} months`);
+      }
+    }
+  }
+
+  // Extract from appreciation results
+  for (const r of appreciationResult.results) {
+    // Field 94: Appreciation 1yr
+    const appreciationMatch = r.content.match(/(?:appreciation|increase|grew|up).*?([\d.]+)%/i) ||
+                              r.content.match(/([\d.]+)%.*?(?:year|annual|yoy|y-o-y)/i) ||
+                              r.content.match(/prices?\s*(?:rose|increased|up).*?([\d.]+)%/i);
+    if (appreciationMatch && !fields['94_appreciation_1yr']) {
+      let value = parseFloat(appreciationMatch[1]);
+      // Check for negative appreciation (depreciation)
+      if (r.content.match(/(?:decrease|decline|down|fell|dropped).*?([\d.]+)%/i)) {
+        value = -value;
+      }
+      if (value > -50 && value < 50) {
+        fields['94_appreciation_1yr'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found appreciation: ${value}%`);
+      }
+    }
+  }
+
+  console.log(`✅ [Tavily] Market stats search returned ${Object.keys(fields).length} fields`);
   return fields;
 }
 
