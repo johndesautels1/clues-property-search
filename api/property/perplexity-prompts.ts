@@ -18,7 +18,7 @@ PRIOR DATA SOURCES (Tier 3 - already ran BEFORE you):
 - Tavily Web Search: Targeted searches for AVMs, market data, permits, portal views
 - Free APIs: SchoolDigger, FBI Crime, WalkScore, FEMA, AirNow, Census, Weather
 
-Your results will be processed BEFORE other LLMs (Gemini, GPT, Sonnet, Grok, Claude Opus).
+Your results will be processed BEFORE other LLMs (GPT, Sonnet, Grok, Claude Opus). Gemini available on-demand only.
 Focus on fields that require DEEP web research beyond what Tier 3 already found.
 
 Use only reputable, primary sources relevant to the task (listing portals, county .gov sites, official school data, WalkScore, crime data providers, utilities, broadband providers, carrier maps).

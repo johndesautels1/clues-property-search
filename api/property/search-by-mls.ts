@@ -9,7 +9,7 @@
  * - Tier 1: Stellar MLS (Bridge Interactive API) - Called directly in Step 1
  * - Tier 2: Google APIs (Geocoding, Places, Distance)
  * - Tier 3: Free APIs + Tavily (SchoolDigger, FBI Crime, WalkScore, FEMA, Tavily Web Search)
- * - Tier 4: Web-Search LLMs (Perplexity, Gemini, GPT, Sonnet, Grok)
+ * - Tier 4: Web-Search LLMs (Perplexity, GPT, Sonnet, Grok) - Gemini on-demand only (2026-01-13)
  * - Tier 5: Claude Opus (Deep reasoning, no web search)
  *
  * ISOLATION: This endpoint is ONLY used by AddProperty.tsx Manual tab
@@ -60,7 +60,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('[MLS-First Search] MLS Number:', JSON.stringify(mls));
     console.log('[MLS-First Search] MLS Type:', typeof mls);
     console.log('[MLS-First Search] MLS Length:', mls?.length);
-    console.log('[MLS-First Search] Engines:', engines || 'Auto (all 6 LLMs)');
+    console.log('[MLS-First Search] Engines:', engines || 'Auto (all 5 LLMs)');
 
     // ========================================
     // STEP 1: Call Bridge MLS API with MLS #

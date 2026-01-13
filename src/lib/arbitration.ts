@@ -7,7 +7,7 @@
  *   Tier 1: Stellar MLS (Primary source - when eKey obtained)
  *   Tier 2: Google APIs (Geocode, Places, Distance Matrix)
  *   Tier 3: Paid/Free APIs (WalkScore, SchoolDigger, FEMA, AirNow, HowLoud, Weather, FBI Crime)
- *   Tier 4: LLM Cascade (Perplexity → Gemini → GPT → Sonnet → Grok → Opus)
+ *   Tier 4: LLM Cascade (Perplexity → GPT → Sonnet → Grok → Opus) - Gemini on-demand only (2026-01-13)
  *
  * Key Principles:
  *   - Higher tier data NEVER gets overwritten by lower tier
@@ -50,15 +50,15 @@ export const DATA_TIERS: Record<string, TierConfig> = {
   // TIER 3: Tavily Web Search (targeted AVM, school, crime searches) - ADDED 2026-01-12
   'tavily': { tier: 3, name: 'Tavily Web Search', description: 'Targeted web searches for AVMs, schools, crime', reliability: 85 },
   
-  // TIER 4: LLM Cascade Order: Perplexity → Gemini → GPT → Sonnet → Grok - UPDATED 2026-01-12
+  // TIER 4: LLM Cascade Order: Perplexity → GPT → Sonnet → Grok (Gemini on-demand only - 2026-01-13)
   'perplexity': { tier: 4, name: 'Perplexity Sonar Reasoning Pro', description: '#1 - Deep web search (HIGHEST LLM)', reliability: 90 },
-  'gemini': { tier: 4, name: 'Gemini 3 Pro Preview', description: '#2 - Google Search grounding', reliability: 85 },
-  'gpt': { tier: 4, name: 'GPT-4o', description: '#3 - Web evidence mode', reliability: 80 },
-  'claude-sonnet': { tier: 4, name: 'Claude Sonnet 4.5', description: '#4 - Web search beta (fills gaps)', reliability: 75 },
-  'grok': { tier: 4, name: 'Grok 4.1 Fast', description: '#5 - X/Twitter real-time data', reliability: 70 },  // FIXED: Was 5, now 4
-  
+  'gemini': { tier: 4, name: 'Gemini 3 Pro Preview', description: 'On-demand only (removed from auto-cascade 2026-01-13)', reliability: 85 },
+  'gpt': { tier: 4, name: 'GPT-4o', description: '#2 - Web evidence mode', reliability: 80 },
+  'claude-sonnet': { tier: 4, name: 'Claude Sonnet 4.5', description: '#3 - Web search beta (fills gaps)', reliability: 75 },
+  'grok': { tier: 4, name: 'Grok 4.1 Fast', description: '#4 - X/Twitter real-time data', reliability: 70 },
+
   // TIER 5: Claude Opus (Deep reasoning, NO web search - LAST)
-  'claude-opus': { tier: 5, name: 'Claude Opus 4.5', description: '#6 - Deep reasoning, NO web search (LAST)', reliability: 65 },
+  'claude-opus': { tier: 5, name: 'Claude Opus 4.5', description: '#5 - Deep reasoning, NO web search (LAST)', reliability: 65 },
 };
 export interface FieldValue {
   value: any;

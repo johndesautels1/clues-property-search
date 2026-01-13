@@ -7,16 +7,16 @@
  *   Tier 1: Stellar MLS (Primary source - Bridge Interactive API)
  *   Tier 2: APIs (Google APIs first, then Free APIs: WalkScore, SchoolDigger, FEMA, etc.)
  *   Tier 3: Tavily Web Search (Targeted searches for AVMs, WalkScore, Schools, Crime)
- *   Tier 4: Web-Search LLMs (Perplexity → Gemini → GPT → Sonnet → Grok)
+ *   Tier 4: Web-Search LLMs (Perplexity → GPT → Sonnet → Grok)
  *   Tier 5: Claude Opus (Deep reasoning, NO web search - LAST)
  *
- * LLM Cascade Order (Updated 2026-01-08):
+ * LLM Cascade Order (Updated 2026-01-13 - Gemini removed from auto-cascade):
  *   #1 Perplexity - Deep web search (HIGHEST)
- *   #2 Gemini - Google Search grounding
- *   #3 GPT - Web evidence mode
- *   #4 Claude Sonnet - Web search beta
- *   #5 Grok - X/Twitter real-time data
- *   #6 Claude Opus - Deep reasoning, NO web search (LAST)
+ *   #2 GPT - Web evidence mode
+ *   #3 Claude Sonnet - Web search beta
+ *   #4 Grok - X/Twitter real-time data
+ *   #5 Claude Opus - Deep reasoning, NO web search (LAST)
+ *   (Gemini available on-demand via button on PropertyDetail)
  *
  * Key Principles:
  *   - Higher tier data NEVER gets overwritten by lower tier
@@ -55,14 +55,14 @@ export const DATA_TIERS: Record<string, TierConfig> = {
   'fbi-crime': { tier: 2, name: 'FBI Crime', description: 'Crime statistics', reliability: 90 },
   // TIER 3: Tavily Web Search (targeted AVM, school, crime searches)
   'tavily': { tier: 3, name: 'Tavily Web Search', description: 'Targeted web searches for AVMs, schools, crime', reliability: 85 },
-  // TIER 4: LLM Cascade Order: Perplexity → Gemini → GPT → Sonnet → Grok
+  // TIER 4: LLM Cascade Order: Perplexity → GPT → Sonnet → Grok (Gemini on-demand only - 2026-01-13)
   'perplexity': { tier: 4, name: 'Perplexity Sonar Reasoning Pro', description: '#1 - Deep web search (HIGHEST LLM)', reliability: 90 },
-  'gemini': { tier: 4, name: 'Gemini 3 Pro Preview', description: '#2 - Google Search grounding', reliability: 85 },
-  'gpt': { tier: 4, name: 'GPT-4o', description: '#3 - Web evidence mode', reliability: 80 },
-  'claude-sonnet': { tier: 4, name: 'Claude Sonnet 4.5', description: '#4 - Web search beta (fills gaps)', reliability: 75 },
-  'grok': { tier: 4, name: 'Grok 4.1 Fast', description: '#5 - X/Twitter real-time data', reliability: 70 },
+  'gemini': { tier: 4, name: 'Gemini 3 Pro Preview', description: 'On-demand only (removed from auto-cascade 2026-01-13)', reliability: 85 },
+  'gpt': { tier: 4, name: 'GPT-4o', description: '#2 - Web evidence mode', reliability: 80 },
+  'claude-sonnet': { tier: 4, name: 'Claude Sonnet 4.5', description: '#3 - Web search beta (fills gaps)', reliability: 75 },
+  'grok': { tier: 4, name: 'Grok 4.1 Fast', description: '#4 - X/Twitter real-time data', reliability: 70 },
   // TIER 5: Claude Opus (Deep reasoning, NO web search - LAST)
-  'claude-opus': { tier: 5, name: 'Claude Opus 4.5', description: '#6 - Deep reasoning, NO web search (LAST)', reliability: 65 },
+  'claude-opus': { tier: 5, name: 'Claude Opus 4.5', description: '#5 - Deep reasoning, NO web search (LAST)', reliability: 65 },
 };
 
 export interface FieldValue {
