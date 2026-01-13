@@ -925,16 +925,71 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
 
   // ================================================================
   // GROUP 18: Parking Details (Fields 139-143) - Stellar MLS
+  // FIX: Also check CommunityFeatures for parking info (condos may not have individual fields)
   // ================================================================
-  addField('139_carport_yn', property.CarportYN);
-  addField('140_carport_spaces', property.CarportSpaces);
-  addField('141_garage_attached_yn', property.AttachedGarageYN);
 
-  if (property.ParkingFeatures && Array.isArray(property.ParkingFeatures)) {
-    addField('142_parking_features', property.ParkingFeatures.join(', '));
+  // Build parking features list from multiple sources
+  const parkingFeaturesList: string[] = [];
+  let hasCoveredParking = false;
+  let hasAssignedParking = false;
+  let hasGarageParking = false;
+
+  // Check CommunityFeatures for parking-related amenities (common for condos)
+  if (property.CommunityFeatures && Array.isArray(property.CommunityFeatures)) {
+    const communityFeatureStr = property.CommunityFeatures.join(',').toLowerCase();
+    if (communityFeatureStr.includes('parking')) {
+      if (communityFeatureStr.includes('covered')) {
+        parkingFeaturesList.push('Covered Parking');
+        hasCoveredParking = true;
+      }
+      if (communityFeatureStr.includes('assigned') || communityFeatureStr.includes('reserved')) {
+        parkingFeaturesList.push('Assigned Parking');
+        hasAssignedParking = true;
+      }
+      if (communityFeatureStr.includes('garage') || communityFeatureStr.includes('underground')) {
+        parkingFeaturesList.push('Garage Parking');
+        hasGarageParking = true;
+      }
+      if (communityFeatureStr.includes('guest')) {
+        parkingFeaturesList.push('Guest Parking');
+      }
+    }
   }
 
-  addField('143_assigned_parking_spaces', property.AssignedParkingSpaces);
+  // Direct MLS fields
+  if (property.CarportYN !== undefined) {
+    addField('139_carport_yn', property.CarportYN);
+    if (property.CarportYN === true && !parkingFeaturesList.includes('Carport')) {
+      parkingFeaturesList.push('Carport');
+    }
+  }
+  if (property.CarportSpaces !== undefined) {
+    addField('140_carport_spaces', property.CarportSpaces);
+  }
+  if (property.AttachedGarageYN !== undefined) {
+    addField('141_garage_attached_yn', property.AttachedGarageYN);
+    if (property.AttachedGarageYN === true && !hasGarageParking) {
+      parkingFeaturesList.push('Attached Garage');
+    }
+  }
+
+  // MLS parking features (primary source)
+  if (property.ParkingFeatures && Array.isArray(property.ParkingFeatures) && property.ParkingFeatures.length > 0) {
+    // Use MLS features as primary, add community features if not duplicates
+    const mlsFeatures = property.ParkingFeatures.join(', ');
+    addField('142_parking_features', mlsFeatures);
+  } else if (parkingFeaturesList.length > 0) {
+    // Fallback: use community-derived parking features
+    addField('142_parking_features', parkingFeaturesList.join(', '));
+  }
+
+  // Assigned parking spaces
+  if (property.AssignedParkingSpaces !== undefined) {
+    addField('143_assigned_parking_spaces', property.AssignedParkingSpaces);
+  } else if (hasAssignedParking) {
+    // If community has assigned parking but no specific count, assume 1
+    addField('143_assigned_parking_spaces', 1, 'Medium');
+  }
 
   // ================================================================
   // GROUP 19: Building Details (Fields 144-148)
