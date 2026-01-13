@@ -41,6 +41,15 @@ const getFieldValue = (field: any): any => {
   return field.value !== undefined ? field.value : field;
 };
 
+// Helper to normalize boolean values - handles "Yes", "Y", "true", "1", etc.
+const normalizeBooleanValue = (val: any): boolean => {
+  if (typeof val === 'boolean') return val;
+  if (val == null || val === '') return false;
+  const str = String(val).toLowerCase().trim();
+  const trueValues = ['yes', 'y', 'true', '1', 'on', 'enabled', 'available'];
+  return trueValues.includes(str);
+};
+
 // Autocomplete suggestion type
 interface AddressSuggestion {
   description: string;
@@ -812,13 +821,14 @@ export default function AddProperty() {
   };
 
   // Helper to normalize boolean values consistently
-  // Handles: true, 'true', 'TRUE', 'yes', 'YES', 'y', 'Y', '1', 1
+  // Handles: true, 'true', 'TRUE', 'yes', 'YES', 'y', 'Y', '1', 1, 'on', 'enabled', 'available'
   const parseBoolean = (value: any): boolean => {
     if (typeof value === 'boolean') return value;
     if (typeof value === 'number') return value === 1;
     if (typeof value === 'string') {
       const lower = value.toLowerCase().trim();
-      return lower === 'true' || lower === 'yes' || lower === 'y' || lower === '1';
+      const trueValues = ['true', 'yes', 'y', '1', 'on', 'enabled', 'available'];
+      return trueValues.includes(lower);
     }
     return false;
   };
@@ -835,7 +845,7 @@ export default function AddProperty() {
       address: {
         fullAddress: createDataField(row['1_full_address'] || ''),
         mlsPrimary: createDataField(row['2_mls_primary'] || ''),
-        newConstructionYN: createDataField(row['3_new_construction_yn'] === 'Yes' || row['3_new_construction_yn'] === 'true' || row['3_new_construction_yn'] === true),
+        newConstructionYN: createDataField(normalizeBooleanValue(row['3_new_construction_yn'])),
         listingStatus: createDataField(row['4_listing_status'] || 'Active'),
         listingDate: createDataField(row['5_listing_date'] || ''),
         listingPrice: createDataField(row['10_listing_price'] ? parseFloat(row['10_listing_price'].toString().replace(/[^0-9.]/g, '')) : null),
