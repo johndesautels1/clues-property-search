@@ -5,16 +5,16 @@
  * Tier 1: Stellar MLS (Primary source - Bridge Interactive API)
  * Tier 2: APIs (Google APIs first, then Free APIs: WalkScore, SchoolDigger, FEMA, etc.)
  * Tier 3: Tavily Web Search (Targeted searches for AVMs, WalkScore, Schools, Crime)
- * Tier 4: Web-Search LLMs (Perplexity → Gemini → GPT → Sonnet → Grok)
+ * Tier 4: Web-Search LLMs (Perplexity → GPT → Sonnet → Grok)
  * Tier 5: Claude Opus (Deep reasoning, NO web search - LAST)
  *
- * LLM CASCADE ORDER (Updated 2026-01-08):
+ * LLM CASCADE ORDER (Updated 2026-01-13 - Gemini removed from auto-cascade):
  *   #1 Perplexity - Deep web search (HIGHEST)
- *   #2 Gemini - Google Search grounding
- *   #3 GPT - Web evidence mode
- *   #4 Claude Sonnet - Web search beta
- *   #5 Grok - X/Twitter real-time data
- *   #6 Claude Opus - Deep reasoning, NO web search (LAST)
+ *   #2 GPT - Web evidence mode
+ *   #3 Claude Sonnet - Web search beta
+ *   #4 Grok - X/Twitter real-time data
+ *   #5 Claude Opus - Deep reasoning, NO web search (LAST)
+ *   (Gemini available on-demand via button on PropertyDetail)
  *
  * ADDED (2025-12-05):
  * - U.S. Census API (Vacancy Rate - Field 100) - Tier 3
@@ -4869,8 +4869,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // CASCADE STRATEGY: Try all 6 LLMs in RELIABILITY order
-  // Order: Perplexity → Gemini → GPT → Sonnet → Grok → Opus
+  // CASCADE STRATEGY: Try all 5 LLMs in RELIABILITY order (Gemini on-demand only - 2026-01-13)
+  // Order: Perplexity → GPT → Sonnet → Grok → Opus
   // Web-search LLMs first (Tier 4), then Claude LLMs (Tier 5)
   const {
     address: rawAddress,
