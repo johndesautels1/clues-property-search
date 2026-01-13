@@ -47,26 +47,40 @@ export const TAVILY_CONFIG = {
   tier: 3,
   timeout: 45000, // 45 seconds - INCREASED from 30s on 2026-01-13 for fields 169-174
   reliability: 85, // 85% reliability score
-  description: 'Targeted web searches for AVMs, market data, permits, market performance (169-174)',
+  description: 'Targeted web searches for AVMs, market data, permits, tax data, market performance',
   fields: [
+    // Tax fields (NEW 2026-01-13)
+    '15_assessed_value',
+    '35_annual_taxes',
+    '38_tax_exemptions',
+    // AVM fields
     '16a_zestimate',
     '16b_redfin_estimate',
+    // Age/Permit fields
     '40_roof_age_est',
     '46_hvac_age',
     '59_recent_renovations',
     '60_permit_history_roof',
     '61_permit_history_hvac',
     '62_permit_history_other',
+    // Market stats
     '91_median_home_price_neighborhood',
     '92_price_per_sqft_recent_avg',
     '95_days_on_market_avg',
+    // Utilities
     '104_electric_provider',
     '106_water_provider',
     '109_natural_gas',
+    // Features
     '133_ev_charging',
     '134_smart_home_features',
     '135_accessibility_modifications',
     '138_special_assessments',
+    // Homestead/CDD
+    '151_homestead_yn',
+    '152_cdd_yn',
+    '153_annual_cdd_fee',
+    // Market Performance (169-174)
     '169_months_of_inventory',
     '170_new_listings_30d',
     '171_homes_sold_30d',

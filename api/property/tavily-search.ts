@@ -562,6 +562,140 @@ export async function searchPortalViews(address: string): Promise<Record<string,
 }
 
 /**
+ * Search for Tax Data from county property appraiser
+ * Fields: 15_assessed_value, 35_annual_taxes, 38_tax_exemptions
+ * Field 37 (property_tax_rate) is backend-calculated from 15 and 35
+ * ADDED 2026-01-13: Critical fields for property tax calculations
+ */
+export async function searchTaxData(address: string, county: string): Promise<Record<string, any>> {
+  const fields: Record<string, any> = {};
+
+  // County property appraiser domains (Florida)
+  const countyDomains: Record<string, string> = {
+    'pinellas': 'pcpao.gov',
+    'hillsborough': 'hcpafl.org',
+    'pasco': 'pascopa.com',
+    'manatee': 'manateepao.com',
+    'sarasota': 'sc-pa.com',
+    'polk': 'polkpa.org',
+    'orange': 'ocpafl.org',
+    'osceola': 'property-appraiser.org',
+    'seminole': 'scpafl.org',
+    'brevard': 'bcpao.us',
+    'volusia': 'vcgov.org',
+    'lee': 'leepa.org',
+    'collier': 'collierappraiser.com',
+    'palm beach': 'pbcgov.org',
+    'broward': 'bcpa.net',
+    'miami-dade': 'miamidade.gov',
+  };
+
+  const countyLower = county.toLowerCase().replace(' county', '').trim();
+  const paoDomain = countyDomains[countyLower] || '';
+
+  console.log(`🔍 [Tavily] Searching tax data for ${address} in ${county}`);
+
+  // Run searches in PARALLEL
+  const [assessedResult, taxResult, exemptionResult] = await Promise.all([
+    // Field 15: Assessed Value
+    tavilySearch(
+      paoDomain
+        ? `site:${paoDomain} "${address}" assessed value`
+        : `"${address}" ${county} property appraiser assessed value`,
+      { numResults: 5, includeDomains: paoDomain ? [paoDomain] : undefined }
+    ),
+    // Field 35: Annual Taxes
+    tavilySearch(
+      paoDomain
+        ? `site:${paoDomain} "${address}" property taxes annual`
+        : `"${address}" ${county} property tax bill annual taxes`,
+      { numResults: 5, includeDomains: paoDomain ? [paoDomain] : undefined }
+    ),
+    // Field 38: Tax Exemptions
+    tavilySearch(
+      paoDomain
+        ? `site:${paoDomain} "${address}" exemptions`
+        : `"${address}" ${county} property tax exemptions homestead`,
+      { numResults: 5, includeDomains: paoDomain ? [paoDomain] : undefined }
+    ),
+  ]);
+
+  // Extract Field 15: Assessed Value
+  for (const r of assessedResult.results) {
+    const match = r.content.match(/assessed\s+value[:\s]*\$?\s*([\d,]+)/i) ||
+                  r.content.match(/just\s+value[:\s]*\$?\s*([\d,]+)/i) ||
+                  r.content.match(/market\s+value[:\s]*\$?\s*([\d,]+)/i);
+    if (match && !fields['15_assessed_value']) {
+      const value = parseInt(match[1].replace(/,/g, ''));
+      if (value > 10000 && value < 50000000) { // Sanity check
+        fields['15_assessed_value'] = {
+          value: value,
+          source: 'Tavily (Property Appraiser)',
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found assessed value: $${value.toLocaleString()}`);
+        break;
+      }
+    }
+  }
+
+  // Extract Field 35: Annual Taxes
+  for (const r of taxResult.results) {
+    const match = r.content.match(/(?:annual|total)\s+tax(?:es)?[:\s]*\$?\s*([\d,]+(?:\.\d{2})?)/i) ||
+                  r.content.match(/property\s+tax(?:es)?[:\s]*\$?\s*([\d,]+(?:\.\d{2})?)/i) ||
+                  r.content.match(/tax\s+(?:amount|bill)[:\s]*\$?\s*([\d,]+(?:\.\d{2})?)/i);
+    if (match && !fields['35_annual_taxes']) {
+      const value = parseFloat(match[1].replace(/,/g, ''));
+      if (value > 100 && value < 500000) { // Sanity check
+        fields['35_annual_taxes'] = {
+          value: value,
+          source: 'Tavily (Property Appraiser)',
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found annual taxes: $${value.toLocaleString()}`);
+        break;
+      }
+    }
+  }
+
+  // Extract Field 38: Tax Exemptions
+  for (const r of exemptionResult.results) {
+    // Look for exemption types
+    const exemptions: string[] = [];
+    if (r.content.match(/homestead\s+exempt/i)) exemptions.push('Homestead');
+    if (r.content.match(/senior\s+exempt|over\s+65/i)) exemptions.push('Senior');
+    if (r.content.match(/veteran\s+exempt|disabled\s+veteran/i)) exemptions.push('Veteran');
+    if (r.content.match(/widow(?:er)?\s+exempt/i)) exemptions.push('Widow/Widower');
+    if (r.content.match(/disability\s+exempt|disabled\s+exempt/i)) exemptions.push('Disability');
+    if (r.content.match(/save\s+our\s+homes|soh/i)) exemptions.push('Save Our Homes');
+
+    if (exemptions.length > 0 && !fields['38_tax_exemptions']) {
+      fields['38_tax_exemptions'] = {
+        value: exemptions.join(', '),
+        source: 'Tavily (Property Appraiser)',
+        confidence: 'Medium',
+      };
+      console.log(`✅ [Tavily] Found tax exemptions: ${exemptions.join(', ')}`);
+      break;
+    }
+
+    // If no specific exemptions found but "no exemptions" mentioned
+    if (r.content.match(/no\s+exemptions?|exemptions?:?\s*none/i) && !fields['38_tax_exemptions']) {
+      fields['38_tax_exemptions'] = {
+        value: 'None',
+        source: 'Tavily (Property Appraiser)',
+        confidence: 'Medium',
+      };
+      console.log(`✅ [Tavily] Found tax exemptions: None`);
+      break;
+    }
+  }
+
+  console.log(`✅ [Tavily] Tax data search returned ${Object.keys(fields).length} fields`);
+  return fields;
+}
+
+/**
  * Search for Homestead Exemption and CDD status from county property appraiser
  * Fields: 151_homestead_yn, 152_cdd_yn, 153_annual_cdd_fee
  */
@@ -711,17 +845,19 @@ export async function runTavilyTier3(
 
   // Run searches in parallel for speed
   // UPDATED 2026-01-13: Replaced searchPortalViews with searchMarketPerformance (fields 169-174)
-  const [avmFields, marketFields, utilityFields, permitFields, marketPerfFields, homesteadFields] = await Promise.all([
+  // UPDATED 2026-01-13: Added searchTaxData for fields 15, 35, 38
+  const [avmFields, marketFields, utilityFields, permitFields, marketPerfFields, homesteadFields, taxFields] = await Promise.all([
     searchAVMs(address),
     searchMarketStats(city, zip),
     searchUtilities(city, state),
     searchPermits(address, county),
     searchMarketPerformance(city, state, zip), // Fields 169-174: market performance metrics
     searchHomesteadAndCDD(address, county), // Fields 151, 152, 153
+    searchTaxData(address, county), // Fields 15, 35, 38: assessed value, annual taxes, exemptions
   ]);
 
   // Merge all fields
-  Object.assign(allFields, avmFields, marketFields, utilityFields, permitFields, marketPerfFields, homesteadFields);
+  Object.assign(allFields, avmFields, marketFields, utilityFields, permitFields, marketPerfFields, homesteadFields, taxFields);
 
   console.log(`✅ TIER 3: Tavily returned ${Object.keys(allFields).length} fields`);
 
