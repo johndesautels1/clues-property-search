@@ -315,16 +315,17 @@ export const DATA_SOURCES: DataSource[] = [
     enabled: true,
     description: 'Anthropic balanced'
   },
-  {
-    id: 'gemini',
-    name: 'Gemini',
-    type: 'llm',
-    tier: 4,  // FIXED: Was 5, now 4
-    icon: 'brain',
-    color: 'purple',
-    enabled: true,
-    description: 'Google AI'
-  },
+  // NOTE: Gemini REMOVED from auto-cascade (2026-01-13) - available via on-demand button on PropertyDetail
+  // {
+  //   id: 'gemini',
+  //   name: 'Gemini',
+  //   type: 'llm',
+  //   tier: 4,
+  //   icon: 'brain',
+  //   color: 'purple',
+  //   enabled: false,  // DISABLED - on-demand only via button
+  //   description: 'Google AI (on-demand only)'
+  // },
 ];
 
 export function getSourceById(id: string): DataSource | undefined {
