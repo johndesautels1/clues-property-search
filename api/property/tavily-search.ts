@@ -1311,6 +1311,158 @@ export async function searchMarketPerformance(city: string, state: string, zip: 
     }
   }
 
+  // ADDED 2026-01-13: Additional market performance metrics (175-181)
+  // Run additional searches in PARALLEL
+  const [marketTypeResult, forecastResult, rentalResult] = await Promise.all([
+    // Fields 175, 176, 177: Market type indicators
+    tavilySearch(
+      `"${city}, ${state}" buyer seller market absorption rate list price change 2026`,
+      { numResults: 5 }
+    ),
+    // Field 178: Price growth forecast
+    tavilySearch(
+      `"${city}, ${state}" home price forecast prediction 2026 2027`,
+      { numResults: 5 }
+    ),
+    // Fields 179, 180, 181: Rental/investment metrics
+    tavilySearch(
+      `"${city}, ${state}" rental yield cap rate gross rent multiplier investment 2026`,
+      { numResults: 5 }
+    ),
+  ]);
+
+  // Extract Fields 175, 176, 177: Market type indicators
+  for (const r of marketTypeResult.results) {
+    // Field 175: Avg List Price Change
+    const listChangeMatch = r.content.match(/list\s*price.*?([-+]?[\d.]+)%/i) ||
+                            r.content.match(/([-+]?[\d.]+)%.*?list\s*price/i);
+    if (listChangeMatch && !fields['175_avg_list_price_change']) {
+      let value = parseFloat(listChangeMatch[1]);
+      if (r.content.match(/decrease|down|fell|dropped/i) && value > 0) {
+        value = -value;
+      }
+      if (value > -50 && value < 50) {
+        fields['175_avg_list_price_change'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found list price change: ${value}%`);
+      }
+    }
+
+    // Field 176: Buyer vs Seller Market
+    if (!fields['176_buyer_vs_seller_market']) {
+      if (r.content.match(/seller['']?s?\s*market|strong\s*seller|favor.*seller/i)) {
+        fields['176_buyer_vs_seller_market'] = {
+          value: "Seller's Market",
+          source: 'Tavily',
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found market type: Seller's Market`);
+      } else if (r.content.match(/buyer['']?s?\s*market|strong\s*buyer|favor.*buyer/i)) {
+        fields['176_buyer_vs_seller_market'] = {
+          value: "Buyer's Market",
+          source: 'Tavily',
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found market type: Buyer's Market`);
+      } else if (r.content.match(/balanced\s*market|neutral\s*market/i)) {
+        fields['176_buyer_vs_seller_market'] = {
+          value: 'Balanced Market',
+          source: 'Tavily',
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found market type: Balanced Market`);
+      }
+    }
+
+    // Field 177: Absorption Rate
+    const absorptionMatch = r.content.match(/absorption\s*rate[:\s]*([\d.]+)%?/i) ||
+                            r.content.match(/([\d.]+)%?\s*absorption/i);
+    if (absorptionMatch && !fields['177_absorption_rate']) {
+      const value = parseFloat(absorptionMatch[1]);
+      if (value > 0 && value < 200) {
+        fields['177_absorption_rate'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found absorption rate: ${value}%`);
+      }
+    }
+  }
+
+  // Extract Field 178: Price Growth Forecast
+  for (const r of forecastResult.results) {
+    const forecastMatch = r.content.match(/(?:forecast|predict|expect).*?([-+]?[\d.]+)%/i) ||
+                          r.content.match(/([-+]?[\d.]+)%.*?(?:forecast|growth|increase)/i);
+    if (forecastMatch && !fields['178_price_growth_forecast']) {
+      let value = parseFloat(forecastMatch[1]);
+      if (r.content.match(/decline|decrease|fall|drop/i) && value > 0) {
+        value = -value;
+      }
+      if (value > -30 && value < 30) {
+        fields['178_price_growth_forecast'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found price forecast: ${value}%`);
+      }
+    }
+  }
+
+  // Extract Fields 179, 180, 181: Rental/investment metrics
+  for (const r of rentalResult.results) {
+    // Field 179: Rental Yield Estimate
+    const yieldMatch = r.content.match(/rental\s*yield[:\s]*([\d.]+)%/i) ||
+                       r.content.match(/([\d.]+)%.*?rental\s*yield/i) ||
+                       r.content.match(/yield[:\s]*([\d.]+)%/i);
+    if (yieldMatch && !fields['179_rental_yield_estimate']) {
+      const value = parseFloat(yieldMatch[1]);
+      if (value > 0 && value < 20) {
+        fields['179_rental_yield_estimate'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found rental yield: ${value}%`);
+      }
+    }
+
+    // Field 180: Cap Rate Estimate
+    const capMatch = r.content.match(/cap\s*rate[:\s]*([\d.]+)%/i) ||
+                     r.content.match(/([\d.]+)%.*?cap\s*rate/i);
+    if (capMatch && !fields['180_cap_rate_estimate']) {
+      const value = parseFloat(capMatch[1]);
+      if (value > 0 && value < 15) {
+        fields['180_cap_rate_estimate'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found cap rate: ${value}%`);
+      }
+    }
+
+    // Field 181: Gross Rent Multiplier
+    const grmMatch = r.content.match(/gross\s*rent\s*multiplier[:\s]*([\d.]+)/i) ||
+                     r.content.match(/GRM[:\s]*([\d.]+)/i) ||
+                     r.content.match(/([\d.]+)\s*(?:x|times).*?rent/i);
+    if (grmMatch && !fields['181_gross_rent_multiplier']) {
+      const value = parseFloat(grmMatch[1]);
+      if (value > 5 && value < 50) {
+        fields['181_gross_rent_multiplier'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found GRM: ${value}`);
+      }
+    }
+  }
+
   console.log(`✅ [Tavily] Market performance search returned ${Object.keys(fields).length} fields`);
   return fields;
 
