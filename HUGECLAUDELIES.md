@@ -14,7 +14,7 @@
 | 3 | Distance to Beach = 0 | FIXED | YES | DID NOT LIE |
 | 4 | Price to Rent/Price vs Median calculations | PENDING | NO | - |
 | 5 | Comparable Sales Unknown Address | FIXED | YES | DID NOT LIE |
-| 6 | No loading indicator for Tavily/LLM retries | PENDING | NO | - |
+| 6 | No loading indicator for Tavily/LLM retries | FIXED | YES | DID NOT LIE |
 | 7 | Gemini retry returns no data | PENDING | NO | - |
 | 8 | Smart Home Features same on every home | FIXED | YES | DID NOT LIE |
 | 9 | Special Assessments cloning Annual Taxes | FIXED | YES | DID NOT LIE |
@@ -117,11 +117,22 @@
 
 ### Issue 6: No Loading Indicator for Tavily/LLM Retries
 **Problem:** When "Fetch with Tavily" or "Retry with LLM" clicked, no visual feedback
-**Before:** No hourglass/spinner shown during search
-**After:** PENDING
-**Action Taken:** PENDING
-**Verified:** NO
-**Did Not Lie:** -
+**Before:** Buttons only showed opacity change, no spinner or loading text
+**After:** Both buttons now show animated spinner and loading message
+**Root Cause:** isRetrying state existed but no visual loading indicator was rendered
+**Action Taken:**
+- PropertyDetail.tsx:366-384 - Tavily button now shows:
+  - Loader2 spinner (animate-spin)
+  - "Searching with Tavily..." text
+  - animate-pulse effect on button
+- PropertyDetail.tsx:395-417 - LLM retry section now shows:
+  - Loader2 spinner (animate-spin)
+  - "Retrying with LLM... (may take 30-60s)" text
+  - animate-pulse effect on all LLM buttons
+**Files Changed:** 1 file (PropertyDetail.tsx)
+**Commit:** b1ab57d
+**Verified:** YES - Loading indicators now visible during searches
+**Did Not Lie:** I DID NOT LIE - This fix is complete and verified.
 
 ---
 
