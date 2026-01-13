@@ -26,6 +26,15 @@ export const TAVILY_FIELD_DATABASE_MAPPING: Record<number | string, FieldDatabas
     path: ['details', 'marketValueEstimate'],
     label: 'Market Value Estimate'
   },
+
+  // Tax & Assessment (ADDED 2026-01-13)
+  15: {
+    fieldId: 15,
+    fieldKey: '15_assessed_value',
+    path: ['financial', 'assessedValue'],
+    label: 'Assessed Value'
+  },
+
   16: {
     fieldId: 16,
     fieldKey: '16_avms',
@@ -70,6 +79,20 @@ export const TAVILY_FIELD_DATABASE_MAPPING: Record<number | string, FieldDatabas
     fieldKey: '16f_collateral_analytics_avm',
     path: ['financial', 'collateralAnalyticsAvm'],
     label: 'Collateral Analytics AVM'
+  },
+
+  // Tax Fields (ADDED 2026-01-13)
+  35: {
+    fieldId: 35,
+    fieldKey: '35_annual_taxes',
+    path: ['financial', 'annualTaxes'],
+    label: 'Annual Taxes'
+  },
+  38: {
+    fieldId: 38,
+    fieldKey: '38_tax_exemptions',
+    path: ['financial', 'taxExemptions'],
+    label: 'Tax Exemptions'
   },
 
   // Property Condition & Permits
@@ -353,6 +376,28 @@ export const TAVILY_FIELD_DATABASE_MAPPING: Record<number | string, FieldDatabas
     fieldKey: '138_special_assessments',
     path: ['utilities', 'specialAssessments'],
     label: 'Special Assessments'
+  },
+
+  // ==========================================
+  // Homestead & CDD (Fields 151-153) - ADDED 2026-01-13
+  // ==========================================
+  151: {
+    fieldId: 151,
+    fieldKey: '151_homestead_yn',
+    path: ['financial', 'homesteadYn'],
+    label: 'Homestead Y/N'
+  },
+  152: {
+    fieldId: 152,
+    fieldKey: '152_cdd_yn',
+    path: ['financial', 'cddYn'],
+    label: 'CDD Y/N'
+  },
+  153: {
+    fieldId: 153,
+    fieldKey: '153_annual_cdd_fee',
+    path: ['financial', 'annualCddFee'],
+    label: 'Annual CDD Fee'
   },
 
   // ==========================================

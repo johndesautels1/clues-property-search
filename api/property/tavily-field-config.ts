@@ -76,6 +76,32 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     fallbackToLLM: true
   },
 
+  // ======================
+  // TAX & ASSESSMENT (ADDED 2026-01-13)
+  // ======================
+
+  15: {
+    fieldId: 15,
+    label: 'Assessed Value',
+    category: 'avm',
+    searchQueries: [
+      '{county} property appraiser "{address}" assessed value',
+      'site:pcpao.gov "{address}"',
+      'site:hcpafl.org "{address}"',
+      '{county} tax collector "{address}" property value'
+    ],
+    prioritySources: ['pcpao.gov', 'hcpafl.org', 'pascopa.com', 'bcpao.us'],
+    extractionPatterns: {
+      regexPatterns: [/assessed\s*value[:\s]*\$?([\d,]+)/i, /just\s*value[:\s]*\$?([\d,]+)/i],
+      textMarkers: ['Assessed Value', 'Just Value', 'Market Value', 'Total Value']
+    },
+    expectedSuccessRate: 0.70,
+    confidenceThreshold: 'medium',
+    dataLevel: 'address',
+    fallbackToLLM: true,
+    notes: 'Search county property appraiser websites for assessed/just value'
+  },
+
   16: {
     fieldId: 16,
     label: 'AVMs (Average)',
@@ -208,6 +234,50 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     confidenceThreshold: 'medium',
     dataLevel: 'address',
     fallbackToLLM: true
+  },
+
+  35: {
+    fieldId: 35,
+    label: 'Annual Taxes',
+    category: 'avm',
+    searchQueries: [
+      '{county} property appraiser "{address}" tax bill',
+      'site:pcpao.gov "{address}" taxes',
+      'site:hcpafl.org "{address}" taxes',
+      '{county} tax collector "{address}" annual property tax'
+    ],
+    prioritySources: ['pcpao.gov', 'hcpafl.org', 'pascopa.com', 'bcpao.us'],
+    extractionPatterns: {
+      regexPatterns: [/(?:annual|total)\s*tax(?:es)?[:\s]*\$?([\d,]+)/i, /property\s*tax[:\s]*\$?([\d,]+)/i],
+      textMarkers: ['Annual Taxes', 'Total Taxes', 'Property Tax', 'Tax Amount']
+    },
+    expectedSuccessRate: 0.70,
+    confidenceThreshold: 'medium',
+    dataLevel: 'address',
+    fallbackToLLM: true,
+    notes: 'Search county property appraiser/tax collector for annual tax amount'
+  },
+
+  38: {
+    fieldId: 38,
+    label: 'Tax Exemptions',
+    category: 'avm',
+    searchQueries: [
+      '{county} property appraiser "{address}" exemptions',
+      'site:pcpao.gov "{address}" homestead exemption',
+      'site:hcpafl.org "{address}" exemptions',
+      '{county} "{address}" property tax exemption'
+    ],
+    prioritySources: ['pcpao.gov', 'hcpafl.org', 'pascopa.com', 'bcpao.us'],
+    extractionPatterns: {
+      regexPatterns: [/homestead\s*exempt/i, /senior\s*exempt/i, /veteran\s*exempt/i],
+      textMarkers: ['Homestead Exemption', 'Senior Exemption', 'Veteran Exemption', 'No Exemptions']
+    },
+    expectedSuccessRate: 0.65,
+    confidenceThreshold: 'medium',
+    dataLevel: 'address',
+    fallbackToLLM: true,
+    notes: 'Search county property appraiser for tax exemption status'
   },
 
   // ======================
@@ -1639,6 +1709,86 @@ export const TAVILY_FIELD_CONFIGS: Record<number | string, TavilyFieldConfig> = 
     dataLevel: 'address',
     fallbackToLLM: true,
     notes: 'Special assessments often NOT publicly disclosed - contact HOA directly for verification. MLS listings sometimes disclose pending/recent assessments. Includes year-specific queries (2025/2026) for recent assessment news. One-time vs recurring assessment detection.'
+  },
+
+  // ==========================================
+  // HOMESTEAD & CDD (Fields 151-153) - ADDED 2026-01-13
+  // ==========================================
+
+  151: {
+    fieldId: 151,
+    label: 'Homestead Y/N',
+    category: 'avm',
+    searchQueries: [
+      '{county} property appraiser "{address}" homestead',
+      'site:pcpao.gov "{address}" homestead',
+      'site:hcpafl.org "{address}" homestead',
+      '{county} "{address}" homestead exemption status'
+    ],
+    prioritySources: ['pcpao.gov', 'hcpafl.org', 'pascopa.com', 'bcpao.us'],
+    extractionPatterns: {
+      regexPatterns: [
+        /homestead[:\s]*(yes|no|y|n|true|false)/i,
+        /homestead\s+exemption[:\s]*(active|yes|no|none)/i
+      ],
+      textMarkers: ['Homestead Exemption', 'Homestead: Yes', 'Homestead: No', 'No Homestead']
+    },
+    expectedSuccessRate: 0.70,
+    confidenceThreshold: 'medium',
+    dataLevel: 'address',
+    fallbackToLLM: true,
+    notes: 'Search county property appraiser for homestead exemption status'
+  },
+
+  152: {
+    fieldId: 152,
+    label: 'CDD Y/N',
+    category: 'avm',
+    searchQueries: [
+      '"{address}" CDD community development district',
+      '{community} CDD annual fee',
+      '{county} "{address}" CDD district',
+      'site:specialdistrictreports.com "{community}"'
+    ],
+    prioritySources: ['specialdistrictreports.com', 'floridajobs.org', 'osceolagov.com'],
+    extractionPatterns: {
+      regexPatterns: [
+        /CDD[:\s]*(yes|no|y|n)/i,
+        /community development district[:\s]*(yes|active)/i
+      ],
+      textMarkers: ['CDD District', 'Community Development District', 'CDD Fee', 'No CDD']
+    },
+    expectedSuccessRate: 0.55,
+    confidenceThreshold: 'medium',
+    dataLevel: 'address',
+    fallbackToLLM: true,
+    notes: 'Search for Community Development District status and fees'
+  },
+
+  153: {
+    fieldId: 153,
+    label: 'Annual CDD Fee',
+    category: 'avm',
+    searchQueries: [
+      '"{community}" CDD annual fee assessment',
+      '{county} "{address}" CDD annual assessment',
+      'site:specialdistrictreports.com "{community}" assessment',
+      '"{community}" community development district fee 2026'
+    ],
+    prioritySources: ['specialdistrictreports.com', 'floridajobs.org', 'county tax records'],
+    extractionPatterns: {
+      regexPatterns: [
+        /CDD\s*(?:fee|assessment)[:\s]*\$?([\d,]+)/i,
+        /annual\s*CDD[:\s]*\$?([\d,]+)/i,
+        /\$?([\d,]+)(?:\s*\/\s*year)?\s*CDD/i
+      ],
+      textMarkers: ['CDD Fee', 'CDD Assessment', 'Annual CDD', 'CDD $']
+    },
+    expectedSuccessRate: 0.50,
+    confidenceThreshold: 'medium',
+    dataLevel: 'address',
+    fallbackToLLM: true,
+    notes: 'Search for annual CDD fee amount - often on tax bills or special district reports'
   },
 
   // ==========================================
