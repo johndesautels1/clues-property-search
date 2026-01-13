@@ -274,7 +274,7 @@ export const CmaSchema = z.object({
   '106_water_provider': textField(),
   '107_avg_water_bill': textField(),
   '108_sewer_provider': textField(),
-  '109_natural_gas': textField(),
+  '109_natural_gas': booleanField(),
   '110_trash_provider': textField(),
   '111_internet_providers_top3': textField(),
   '112_max_internet_speed': textField(),
@@ -306,7 +306,7 @@ export const CmaSchema = z.object({
   // ================================================================
   '131_view_type': textField(),
   '132_lot_features': textField(),
-  '133_ev_charging': textField(),
+  '133_ev_charging': booleanField(),
   '134_smart_home_features': textField(),
   '135_accessibility_modifications': textField(),
   '136_pet_policy': textField(),
