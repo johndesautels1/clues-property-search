@@ -1652,38 +1652,71 @@ async function callGemini(address: string): Promise<{ fields: Record<string, any
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT);
 
-  try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          // SYSTEM INSTRUCTION: Prompt goes here per 2026 Gemini 3 Pro specs
-          system_instruction: {
-            parts: [{ text: GEMINI_FIELD_COMPLETER_SYSTEM }]
-          },
-          // USER CONTENT: Full schema prompt to prevent field hallucination
-          contents: [{ parts: [{ text: userPrompt }] }],
-          tools: [{ google_search: {} }],
-          tool_config: { function_calling_config: { mode: "ANY" } },
-          generationConfig: {
-            thinking_config: {
-              thinking_level: "low",
-              include_thoughts: false  // Just need data, not reasoning
+  // FIX: Try multiple Gemini models in order (primary → fallback)
+  const GEMINI_MODELS = [
+    'gemini-2.5-pro-preview-06-05',  // Latest 2.5 Pro Preview
+    'gemini-2.0-flash-exp',          // Fallback: 2.0 Flash (fast, grounded)
+    'gemini-3-pro-preview',          // Legacy: 3.0 Pro Preview (may be deprecated)
+  ];
+
+  let response: Response | null = null;
+  let lastError: string | null = null;
+  let usedModel = '';
+
+  for (const model of GEMINI_MODELS) {
+    try {
+      console.log(`[GEMINI] Trying model: ${model}`);
+      response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            // SYSTEM INSTRUCTION: Prompt goes here per Gemini specs
+            system_instruction: {
+              parts: [{ text: GEMINI_FIELD_COMPLETER_SYSTEM }]
             },
-            temperature: 1.0,  // MUST be 1.0 for Gemini 3 Pro
-            maxOutputTokens: 16000,
-            responseMimeType: 'application/json'
-          },
-        }),
-        signal: controller.signal,
+            // USER CONTENT: Full schema prompt to prevent field hallucination
+            contents: [{ parts: [{ text: userPrompt }] }],
+            tools: [{ google_search: {} }],
+            tool_config: { function_calling_config: { mode: "ANY" } },
+            generationConfig: {
+              temperature: 1.0,  // Required for grounded responses
+              maxOutputTokens: 16000,
+              responseMimeType: 'application/json'
+            },
+          }),
+          signal: controller.signal,
+        }
+      );
+
+      if (response.ok) {
+        usedModel = model;
+        console.log(`[GEMINI] ✅ Success with model: ${model}`);
+        break;
+      } else {
+        const errorText = await response.text();
+        lastError = `${model}: ${response.status} - ${errorText.substring(0, 200)}`;
+        console.log(`[GEMINI] ⚠️ Model ${model} failed: ${lastError}`);
+        response = null;
       }
-    );
-    clearTimeout(timeoutId);
+    } catch (modelError) {
+      lastError = `${model}: ${String(modelError)}`;
+      console.log(`[GEMINI] ⚠️ Model ${model} exception: ${lastError}`);
+    }
+  }
+
+  clearTimeout(timeoutId);
+
+  if (!response) {
+    console.error('[GEMINI] ❌ All models failed. Last error:', lastError);
+    return { error: `All Gemini models failed: ${lastError}`, fields: {} };
+  }
+
+  try {
 
     const elapsed = Date.now() - startTime;
-    console.log(`[GEMINI] Response time: ${elapsed}ms ${elapsed < 2000 ? '⚠️ TOO FAST' : '✅ Searched'}`);
+    console.log(`[GEMINI] Model: ${usedModel} | Response time: ${elapsed}ms ${elapsed < 2000 ? '⚠️ TOO FAST' : '✅ Searched'}`);
 
     const data = await response.json();
     console.log('[GEMINI] Status:', response.status);
