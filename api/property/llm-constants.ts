@@ -56,6 +56,10 @@ export const TAVILY_CONFIG = {
     // AVM fields
     '16a_zestimate',
     '16b_redfin_estimate',
+    '16c_first_american_avm',
+    '16d_quantarium_avm',
+    '16e_ice_avm',
+    '16f_collateral_analytics_avm',
     // Age/Permit fields
     '40_roof_age_est',
     '46_hvac_age',

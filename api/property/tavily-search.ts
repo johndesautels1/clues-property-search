@@ -210,6 +210,120 @@ export async function searchAVMs(address: string): Promise<Record<string, any>> 
 }
 
 /**
+ * Search for Paywall AVMs (16c-16f)
+ * These are typically behind paywalls but may appear on public sites:
+ * - First American AVM
+ * - Quantarium AVM
+ * - ICE AVM
+ * - Collateral Analytics AVM
+ * ADDED 2026-01-13: Search real estate portals, lender sites, property reports
+ */
+export async function searchPaywallAVMs(address: string): Promise<Record<string, any>> {
+  const fields: Record<string, any> = {};
+
+  console.log(`🔍 [Tavily] Searching paywall AVMs for ${address}`);
+
+  // Run all 4 searches in PARALLEL
+  const [firstAmResult, quantResult, iceResult, collateralResult] = await Promise.all([
+    // Field 16c: First American AVM
+    tavilySearch(
+      `"${address}" "First American" AVM home value estimate`,
+      { numResults: 5 }
+    ),
+    // Field 16d: Quantarium AVM
+    tavilySearch(
+      `"${address}" "Quantarium" AVM home value estimate`,
+      { numResults: 5 }
+    ),
+    // Field 16e: ICE AVM (Intercontinental Exchange)
+    tavilySearch(
+      `"${address}" "ICE" AVM "automated valuation" home value`,
+      { numResults: 5 }
+    ),
+    // Field 16f: Collateral Analytics AVM
+    tavilySearch(
+      `"${address}" "Collateral Analytics" AVM home value estimate`,
+      { numResults: 5 }
+    ),
+  ]);
+
+  // Extract Field 16c: First American AVM
+  for (const r of firstAmResult.results) {
+    const match = r.content.match(/First American.*?(?:AVM|value|estimate)[:\s]*\$?\s*([\d,]+)/i) ||
+                  r.content.match(/\$?\s*([\d,]+).*?First American/i);
+    if (match && !fields['16c_first_american_avm']) {
+      const value = parseInt(match[1].replace(/,/g, ''));
+      if (value > 10000 && value < 50000000) { // Sanity check
+        fields['16c_first_american_avm'] = {
+          value: value,
+          source: 'Tavily (First American)',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found First American AVM: $${value.toLocaleString()}`);
+        break;
+      }
+    }
+  }
+
+  // Extract Field 16d: Quantarium AVM
+  for (const r of quantResult.results) {
+    const match = r.content.match(/Quantarium.*?(?:AVM|value|estimate)[:\s]*\$?\s*([\d,]+)/i) ||
+                  r.content.match(/\$?\s*([\d,]+).*?Quantarium/i);
+    if (match && !fields['16d_quantarium_avm']) {
+      const value = parseInt(match[1].replace(/,/g, ''));
+      if (value > 10000 && value < 50000000) { // Sanity check
+        fields['16d_quantarium_avm'] = {
+          value: value,
+          source: 'Tavily (Quantarium)',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found Quantarium AVM: $${value.toLocaleString()}`);
+        break;
+      }
+    }
+  }
+
+  // Extract Field 16e: ICE AVM
+  for (const r of iceResult.results) {
+    const match = r.content.match(/ICE.*?(?:AVM|value|estimate)[:\s]*\$?\s*([\d,]+)/i) ||
+                  r.content.match(/\$?\s*([\d,]+).*?ICE.*?AVM/i);
+    if (match && !fields['16e_ice_avm']) {
+      const value = parseInt(match[1].replace(/,/g, ''));
+      if (value > 10000 && value < 50000000) { // Sanity check
+        fields['16e_ice_avm'] = {
+          value: value,
+          source: 'Tavily (ICE)',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found ICE AVM: $${value.toLocaleString()}`);
+        break;
+      }
+    }
+  }
+
+  // Extract Field 16f: Collateral Analytics AVM
+  for (const r of collateralResult.results) {
+    const match = r.content.match(/Collateral Analytics.*?(?:AVM|value|estimate)[:\s]*\$?\s*([\d,]+)/i) ||
+                  r.content.match(/\$?\s*([\d,]+).*?Collateral Analytics/i);
+    if (match && !fields['16f_collateral_analytics_avm']) {
+      const value = parseInt(match[1].replace(/,/g, ''));
+      if (value > 10000 && value < 50000000) { // Sanity check
+        fields['16f_collateral_analytics_avm'] = {
+          value: value,
+          source: 'Tavily (Collateral Analytics)',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found Collateral Analytics AVM: $${value.toLocaleString()}`);
+        break;
+      }
+    }
+  }
+
+  console.log(`✅ [Tavily] Paywall AVM search returned ${Object.keys(fields).length} fields`);
+  return fields;
+}
+
+/**
  * Search for market statistics
  */
 export async function searchMarketStats(city: string, zip: string): Promise<Record<string, any>> {
@@ -846,18 +960,20 @@ export async function runTavilyTier3(
   // Run searches in parallel for speed
   // UPDATED 2026-01-13: Replaced searchPortalViews with searchMarketPerformance (fields 169-174)
   // UPDATED 2026-01-13: Added searchTaxData for fields 15, 35, 38
-  const [avmFields, marketFields, utilityFields, permitFields, marketPerfFields, homesteadFields, taxFields] = await Promise.all([
-    searchAVMs(address),
-    searchMarketStats(city, zip),
-    searchUtilities(city, state),
-    searchPermits(address, county),
+  // UPDATED 2026-01-13: Added searchPaywallAVMs for fields 16c-16f
+  const [avmFields, paywallAvmFields, marketFields, utilityFields, permitFields, marketPerfFields, homesteadFields, taxFields] = await Promise.all([
+    searchAVMs(address), // Fields 16a, 16b
+    searchPaywallAVMs(address), // Fields 16c, 16d, 16e, 16f
+    searchMarketStats(city, zip), // Fields 91, 92, 95
+    searchUtilities(city, state), // Fields 104, 106, 109
+    searchPermits(address, county), // Fields 60, 61
     searchMarketPerformance(city, state, zip), // Fields 169-174: market performance metrics
     searchHomesteadAndCDD(address, county), // Fields 151, 152, 153
     searchTaxData(address, county), // Fields 15, 35, 38: assessed value, annual taxes, exemptions
   ]);
 
   // Merge all fields
-  Object.assign(allFields, avmFields, marketFields, utilityFields, permitFields, marketPerfFields, homesteadFields, taxFields);
+  Object.assign(allFields, avmFields, paywallAvmFields, marketFields, utilityFields, permitFields, marketPerfFields, homesteadFields, taxFields);
 
   console.log(`✅ TIER 3: Tavily returned ${Object.keys(allFields).length} fields`);
 
