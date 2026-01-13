@@ -613,7 +613,14 @@ function coerceValue(key: string, value: any): any {
 
   // NUMBER, CURRENCY, PERCENTAGE types - must be numeric
   if (expectedType === 'number' || expectedType === 'currency' || expectedType === 'percentage') {
-    if (typeof value === 'number' && !isNaN(value)) return value;
+    if (typeof value === 'number' && !isNaN(value)) {
+      // Validate market data fields against sanity thresholds
+      const validated = validateMarketDataValue(key, value);
+      if (validated === null) {
+        return null; // Rejected by sanity check
+      }
+      return value;
+    }
 
     // Coerce string to number
     if (typeof value === 'string') {
@@ -644,6 +651,11 @@ function coerceValue(key: string, value: any): any {
 
       const num = parseFloat(cleaned);
       if (!isNaN(num)) {
+        // Validate market data fields against sanity thresholds
+        const validated = validateMarketDataValue(key, num);
+        if (validated === null) {
+          return null; // Rejected by sanity check
+        }
         console.log(`🔄 TYPE COERCED: ${key} "${value}" → ${num} (${expectedType})`);
         return num;
       }
@@ -686,6 +698,33 @@ function coerceValue(key: string, value: any): any {
   }
 
   // Default: return as-is
+  return value;
+}
+
+// ============================================
+// MARKET DATA SANITY CHECK - Reject obviously fake LLM values
+// These thresholds are for a single ZIP code in a 30-day period
+// ============================================
+function validateMarketDataValue(key: string, value: number): number | null {
+  const sanityChecks: Record<string, { min: number; max: number; description: string }> = {
+    '170_new_listings_30d': { min: 0, max: 500, description: 'new listings per ZIP/30d' },
+    '171_homes_sold_30d': { min: 0, max: 300, description: 'homes sold per ZIP/30d' },
+    '172_median_dom_zip': { min: 1, max: 365, description: 'median days on market' },
+    '174_homes_under_contract': { min: 0, max: 200, description: 'pending sales per ZIP' },
+    '169_months_of_inventory': { min: 0.1, max: 24, description: 'months of inventory' },
+    '173_price_reduced_percent': { min: 0, max: 100, description: 'price reduced %' },
+    '176_avg_sale_to_list_percent': { min: 70, max: 130, description: 'sale-to-list %' },
+    '177_avg_days_to_pending': { min: 1, max: 180, description: 'days to pending' },
+    '179_appreciation_percent': { min: -50, max: 50, description: 'appreciation %' },
+  };
+
+  const check = sanityChecks[key];
+  if (check) {
+    if (value < check.min || value > check.max) {
+      console.log(`🚫 REJECTED FAKE DATA: ${key} = ${value} (valid range: ${check.min}-${check.max} ${check.description})`);
+      return null;
+    }
+  }
   return value;
 }
 
@@ -3133,6 +3172,11 @@ You ONLY fill fields that prior sources left as null or incomplete. Use your bui
    - 134_smart_home_features: ONLY return if explicitly mentioned in listing (e.g., "Nest thermostat", "Ring doorbell"). Return null if not found. NEVER guess "Smart thermostat" or "security system".
    - 133_ev_charging: ONLY return if explicitly mentioned in listing. Return null if not found.
    - 135_accessibility_modifications: ONLY return if explicitly mentioned in listing. Return null if not found.
+   - MARKET DATA (169-181): ONLY return if found from Redfin, Realtor.com, or Zillow market data pages. Return null if not verifiable.
+     * 170_new_listings_30d: Max 500 for a single ZIP. If you see >1000, return null (bad data).
+     * 171_homes_sold_30d: Max 300 for a single ZIP. If you see >500, return null (bad data).
+     * 172_median_dom_zip: Should be 5-120 days. If outside this range, return null.
+     * 174_homes_under_contract: Max 200 for a single ZIP. If higher, return null.
 3. SPECIFIC AVM SEARCH STRATEGY (use targeted searches/browses):
    - 16a_zestimate: Search/browse "site:zillow.com [ADDRESS]" → extract current Zestimate
    - 16b_redfin_estimate: Search/browse "site:redfin.com [ADDRESS]" → extract current Redfin Estimate

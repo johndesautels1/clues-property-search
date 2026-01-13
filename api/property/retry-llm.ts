@@ -844,6 +844,11 @@ You ONLY fill fields that prior sources left as null or incomplete. Use your bui
    - 134_smart_home_features: ONLY return if explicitly mentioned in listing (e.g., "Nest thermostat", "Ring doorbell"). Return null if not found. NEVER guess "Smart thermostat" or "security system".
    - 133_ev_charging: ONLY return if explicitly mentioned in listing. Return null if not found.
    - 135_accessibility_modifications: ONLY return if explicitly mentioned in listing. Return null if not found.
+   - MARKET DATA (169-181): ONLY return if found from Redfin, Realtor.com, or Zillow market data pages. Return null if not verifiable.
+     * 170_new_listings_30d: Max 500 for a single ZIP. If you see >1000, return null (bad data).
+     * 171_homes_sold_30d: Max 300 for a single ZIP. If you see >500, return null (bad data).
+     * 172_median_dom_zip: Should be 5-120 days. If outside this range, return null.
+     * 174_homes_under_contract: Max 200 for a single ZIP. If higher, return null.
 3. SPECIFIC AVM SEARCH STRATEGY (use targeted searches/browses):
    - 16a_zestimate: Search/browse "site:zillow.com [ADDRESS]" → extract current Zestimate
    - 16b_redfin_estimate: Search/browse "site:redfin.com [ADDRESS]" → extract current Redfin Estimate
