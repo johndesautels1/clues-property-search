@@ -111,7 +111,7 @@ const FIELD_KEY_TO_ID_MAP: Record<string, number | string> = {
   '96_inventory_surplus': 96,
   '97_insurance_est_annual': 97,  // NOTE: _est_annual suffix!
   '98_rental_estimate_monthly': 98,  // NOTE: _monthly suffix!
-  '99_rental_yield_est': 99,  // NOTE: _est suffix!
+  // Field 99 (rental_yield_est) removed - calculation-only field
   '100_vacancy_rate_neighborhood': 100,  // NOTE: _neighborhood suffix!
   '102_financing_terms': 102,
   '103_comparable_sales': 103,
