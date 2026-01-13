@@ -469,6 +469,200 @@ export async function searchUtilities(city: string, state: string): Promise<Reco
 }
 
 /**
+ * Search for Utility Bill Estimates (Fields 105, 107-108, 110-116)
+ * - 105: electric_bill_avg (monthly average)
+ * - 107: water_bill_avg (monthly average)
+ * - 108: sewer_bill_avg (monthly average)
+ * - 110: trash_bill_avg (monthly average)
+ * - 111: cable_internet_avg (monthly average)
+ * - 112: total_utilities_avg (monthly total)
+ * - 113: solar_panels_yn
+ * - 114: solar_owned_leased
+ * - 115: solar_monthly_savings
+ * - 116: utility_included_in_hoa
+ * ADDED 2026-01-13: Utility cost estimates for property analysis
+ */
+export async function searchUtilityBills(city: string, state: string, zip: string): Promise<Record<string, any>> {
+  const fields: Record<string, any> = {};
+
+  console.log(`🔍 [Tavily] Searching utility bill estimates for ${city}, ${state} ${zip}`);
+
+  // Run searches in PARALLEL
+  const [electricResult, waterResult, totalResult, solarResult] = await Promise.all([
+    // Field 105: Electric bill average
+    tavilySearch(
+      `"${city}, ${state}" average electric bill monthly cost 2026`,
+      { numResults: 5 }
+    ),
+    // Fields 107, 108, 110: Water, Sewer, Trash bills
+    tavilySearch(
+      `"${city}, ${state}" average water sewer trash utility bills monthly 2026`,
+      { numResults: 5 }
+    ),
+    // Fields 111, 112: Cable/Internet and Total utilities
+    tavilySearch(
+      `"${city}, ${state}" average utilities cost monthly internet cable 2026`,
+      { numResults: 5 }
+    ),
+    // Fields 113-116: Solar information
+    tavilySearch(
+      `"${zip}" solar panels savings lease owned Florida`,
+      { numResults: 5 }
+    ),
+  ]);
+
+  // Extract Field 105: Electric Bill Average
+  for (const r of electricResult.results) {
+    const match = r.content.match(/(?:average|typical).*electric.*?\$\s*([\d,]+)/i) ||
+                  r.content.match(/electric.*?(?:bill|cost).*?\$\s*([\d,]+)/i) ||
+                  r.content.match(/\$\s*([\d,]+).*?(?:month|monthly).*electric/i);
+    if (match && !fields['105_electric_bill_avg']) {
+      const value = parseFloat(match[1].replace(/,/g, ''));
+      if (value > 20 && value < 1000) { // Sanity check
+        fields['105_electric_bill_avg'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found electric bill avg: $${value}`);
+        break;
+      }
+    }
+  }
+
+  // Extract Fields 107, 108, 110: Water, Sewer, Trash
+  for (const r of waterResult.results) {
+    // Water bill
+    const waterMatch = r.content.match(/water.*?(?:bill|cost).*?\$\s*([\d,]+)/i) ||
+                       r.content.match(/\$\s*([\d,]+).*?water/i);
+    if (waterMatch && !fields['107_water_bill_avg']) {
+      const value = parseFloat(waterMatch[1].replace(/,/g, ''));
+      if (value > 10 && value < 500) {
+        fields['107_water_bill_avg'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found water bill avg: $${value}`);
+      }
+    }
+
+    // Sewer bill
+    const sewerMatch = r.content.match(/sewer.*?(?:bill|cost).*?\$\s*([\d,]+)/i) ||
+                       r.content.match(/\$\s*([\d,]+).*?sewer/i);
+    if (sewerMatch && !fields['108_sewer_bill_avg']) {
+      const value = parseFloat(sewerMatch[1].replace(/,/g, ''));
+      if (value > 10 && value < 300) {
+        fields['108_sewer_bill_avg'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found sewer bill avg: $${value}`);
+      }
+    }
+
+    // Trash bill
+    const trashMatch = r.content.match(/(?:trash|garbage|waste).*?(?:bill|cost).*?\$\s*([\d,]+)/i) ||
+                       r.content.match(/\$\s*([\d,]+).*?(?:trash|garbage)/i);
+    if (trashMatch && !fields['110_trash_bill_avg']) {
+      const value = parseFloat(trashMatch[1].replace(/,/g, ''));
+      if (value > 10 && value < 200) {
+        fields['110_trash_bill_avg'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found trash bill avg: $${value}`);
+      }
+    }
+  }
+
+  // Extract Fields 111, 112: Cable/Internet and Total utilities
+  for (const r of totalResult.results) {
+    // Cable/Internet
+    const internetMatch = r.content.match(/(?:internet|cable).*?\$\s*([\d,]+)/i) ||
+                          r.content.match(/\$\s*([\d,]+).*?(?:internet|cable)/i);
+    if (internetMatch && !fields['111_cable_internet_avg']) {
+      const value = parseFloat(internetMatch[1].replace(/,/g, ''));
+      if (value > 30 && value < 400) {
+        fields['111_cable_internet_avg'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found cable/internet avg: $${value}`);
+      }
+    }
+
+    // Total utilities
+    const totalMatch = r.content.match(/total\s+utilit.*?\$\s*([\d,]+)/i) ||
+                       r.content.match(/utilit.*?total.*?\$\s*([\d,]+)/i);
+    if (totalMatch && !fields['112_total_utilities_avg']) {
+      const value = parseFloat(totalMatch[1].replace(/,/g, ''));
+      if (value > 100 && value < 2000) {
+        fields['112_total_utilities_avg'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found total utilities avg: $${value}`);
+      }
+    }
+  }
+
+  // Extract Fields 113-116: Solar information
+  for (const r of solarResult.results) {
+    // Field 113: Solar panels Y/N
+    if (!fields['113_solar_panels_yn']) {
+      if (r.content.match(/solar\s+panel|has\s+solar|with\s+solar/i)) {
+        fields['113_solar_panels_yn'] = {
+          value: 'Yes',
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found solar panels: Yes`);
+      }
+    }
+
+    // Field 114: Solar owned/leased
+    if (!fields['114_solar_owned_leased']) {
+      if (r.content.match(/solar.*owned|owns?\s+solar/i)) {
+        fields['114_solar_owned_leased'] = {
+          value: 'Owned',
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+      } else if (r.content.match(/solar.*lease|leased\s+solar/i)) {
+        fields['114_solar_owned_leased'] = {
+          value: 'Leased',
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+      }
+    }
+
+    // Field 115: Solar monthly savings
+    const savingsMatch = r.content.match(/solar.*sav.*?\$\s*([\d,]+)/i) ||
+                         r.content.match(/\$\s*([\d,]+).*?sav.*solar/i);
+    if (savingsMatch && !fields['115_solar_monthly_savings']) {
+      const value = parseFloat(savingsMatch[1].replace(/,/g, ''));
+      if (value > 20 && value < 500) {
+        fields['115_solar_monthly_savings'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found solar savings: $${value}`);
+      }
+    }
+  }
+
+  console.log(`✅ [Tavily] Utility bills search returned ${Object.keys(fields).length} fields`);
+  return fields;
+}
+
+/**
  * Search for permit history
  */
 export async function searchPermits(address: string, county: string): Promise<Record<string, any>> {
@@ -1105,11 +1299,13 @@ export async function runTavilyTier3(
   // UPDATED 2026-01-13: Added searchTaxData for fields 15, 35, 38
   // UPDATED 2026-01-13: Added searchPaywallAVMs for fields 16c-16f
   // UPDATED 2026-01-13: Added searchAgeAndRenovations for fields 40, 46, 59
-  const [avmFields, paywallAvmFields, marketFields, utilityFields, permitFields, ageFields, marketPerfFields, homesteadFields, taxFields] = await Promise.all([
+  // UPDATED 2026-01-13: Added searchUtilityBills for fields 105, 107-108, 110-116
+  const [avmFields, paywallAvmFields, marketFields, utilityFields, utilityBillFields, permitFields, ageFields, marketPerfFields, homesteadFields, taxFields] = await Promise.all([
     searchAVMs(address), // Fields 16a, 16b
     searchPaywallAVMs(address), // Fields 16c, 16d, 16e, 16f
     searchMarketStats(city, zip), // Fields 91, 92, 95
     searchUtilities(city, state), // Fields 104, 106, 109
+    searchUtilityBills(city, state, zip), // Fields 105, 107-108, 110-116
     searchPermits(address, county), // Fields 60, 61, 62
     searchAgeAndRenovations(address, county), // Fields 40, 46, 59
     searchMarketPerformance(city, state, zip), // Fields 169-174: market performance metrics
@@ -1118,7 +1314,7 @@ export async function runTavilyTier3(
   ]);
 
   // Merge all fields
-  Object.assign(allFields, avmFields, paywallAvmFields, marketFields, utilityFields, permitFields, ageFields, marketPerfFields, homesteadFields, taxFields);
+  Object.assign(allFields, avmFields, paywallAvmFields, marketFields, utilityFields, utilityBillFields, permitFields, ageFields, marketPerfFields, homesteadFields, taxFields);
 
   console.log(`✅ TIER 3: Tavily returned ${Object.keys(allFields).length} fields`);
 
