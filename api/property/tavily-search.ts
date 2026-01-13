@@ -983,7 +983,7 @@ export async function searchPropertyFeatures(address: string, city: string): Pro
   console.log(`🔍 [Tavily] Searching property features for ${address}`);
 
   // Run searches in PARALLEL
-  const [poolResult, techResult, outdoorResult, assessmentResult] = await Promise.all([
+  const [poolResult, techResult, outdoorResult, assessmentResult, foundationResult] = await Promise.all([
     // Fields 131, 132: Pool information
     tavilySearch(
       `"${address}" pool swimming pool in-ground above-ground`,
@@ -1002,6 +1002,11 @@ export async function searchPropertyFeatures(address: string, city: string): Pro
     // Field 138: Special assessments
     tavilySearch(
       `"${address}" "${city}" special assessment CDD bond`,
+      { numResults: 5 }
+    ),
+    // Field 42: Foundation type - ADDED 2026-01-13
+    tavilySearch(
+      `"${address}" foundation type slab crawl space basement pier beam construction`,
       { numResults: 5 }
     ),
   ]);
@@ -1143,6 +1148,42 @@ export async function searchPropertyFeatures(address: string, city: string): Pro
           confidence: 'Low',
         };
         console.log(`✅ [Tavily] Found special assessment: None`);
+      }
+    }
+  }
+
+  // Extract Field 42: Foundation type - ADDED 2026-01-13
+  for (const r of foundationResult.results) {
+    if (!fields['42_foundation']) {
+      // Normalize foundation types to schema options: 'Slab', 'Crawl Space', 'Basement', 'Pier/Beam'
+      if (r.content.match(/slab\s*foundation|concrete\s*slab|monolithic\s*slab|poured\s*slab/i)) {
+        fields['42_foundation'] = {
+          value: 'Slab',
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found foundation: Slab`);
+      } else if (r.content.match(/crawl\s*space/i)) {
+        fields['42_foundation'] = {
+          value: 'Crawl Space',
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found foundation: Crawl Space`);
+      } else if (r.content.match(/basement/i)) {
+        fields['42_foundation'] = {
+          value: 'Basement',
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found foundation: Basement`);
+      } else if (r.content.match(/pier\s*(?:and|&)?\s*beam|pile\s*foundation/i)) {
+        fields['42_foundation'] = {
+          value: 'Pier/Beam',
+          source: 'Tavily',
+          confidence: 'Low',
+        };
+        console.log(`✅ [Tavily] Found foundation: Pier/Beam`);
       }
     }
   }

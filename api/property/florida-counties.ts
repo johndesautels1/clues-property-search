@@ -188,6 +188,32 @@ function extractFromPinellasHtml(html: string, parcelId: string): Record<string,
     };
   }
 
+  // Extract foundation type (Field 42) - ADDED 2026-01-13
+  const foundationPatterns = [
+    /Foundation[:\s]*([A-Za-z\s\/]+?)(?:<|,|\n|$)/i,
+    /Foundation Type[:\s]*([A-Za-z\s\/]+?)(?:<|,|\n|$)/i,
+    /Base[:\s]*(Slab|Crawl|Basement|Pier|Beam|Monolithic|Poured|Block)/i,
+  ];
+  for (const pattern of foundationPatterns) {
+    const foundationMatch = html.match(pattern);
+    if (foundationMatch) {
+      const rawValue = foundationMatch[1].trim();
+      // Normalize to schema options: 'Slab', 'Crawl Space', 'Basement', 'Pier/Beam'
+      let normalized = rawValue;
+      if (/slab|mono|poured|concrete/i.test(rawValue)) normalized = 'Slab';
+      else if (/crawl/i.test(rawValue)) normalized = 'Crawl Space';
+      else if (/basement/i.test(rawValue)) normalized = 'Basement';
+      else if (/pier|beam|pile/i.test(rawValue)) normalized = 'Pier/Beam';
+
+      fields['42_foundation'] = {
+        value: normalized,
+        source: 'Pinellas County Property Appraiser',
+        confidence: 'High'
+      };
+      break;
+    }
+  }
+
   return fields;
 }
 
@@ -267,6 +293,27 @@ function extractFromHillsboroughHtml(html: string): Record<string, any> {
     fields['20_total_bathrooms'] = { value: parseFloat(bathMatch[1]), source: 'Hillsborough County Property Appraiser', confidence: 'High' };
   }
 
+  // Extract foundation type (Field 42) - ADDED 2026-01-13
+  const foundationPatterns = [
+    /Foundation[:\s]*([A-Za-z\s\/]+?)(?:<|,|\n|$)/i,
+    /Foundation Type[:\s]*([A-Za-z\s\/]+?)(?:<|,|\n|$)/i,
+    /Base[:\s]*(Slab|Crawl|Basement|Pier|Beam|Monolithic|Poured|Block)/i,
+  ];
+  for (const pattern of foundationPatterns) {
+    const foundationMatch = html.match(pattern);
+    if (foundationMatch) {
+      const rawValue = foundationMatch[1].trim();
+      let normalized = rawValue;
+      if (/slab|mono|poured|concrete/i.test(rawValue)) normalized = 'Slab';
+      else if (/crawl/i.test(rawValue)) normalized = 'Crawl Space';
+      else if (/basement/i.test(rawValue)) normalized = 'Basement';
+      else if (/pier|beam|pile/i.test(rawValue)) normalized = 'Pier/Beam';
+
+      fields['42_foundation'] = { value: normalized, source: 'Hillsborough County Property Appraiser', confidence: 'High' };
+      break;
+    }
+  }
+
   return fields;
 }
 
@@ -301,6 +348,27 @@ function extractFromManateeHtml(html: string): Record<string, any> {
 
   const sqftMatch = html.match(/(?:Living|Heated) Area[:\s]*([\d,]+)/i);
   if (sqftMatch) fields['21_living_sqft'] = { value: parseInt(sqftMatch[1].replace(/,/g, '')), source, confidence: 'High' };
+
+  // Extract foundation type (Field 42) - ADDED 2026-01-13
+  const foundationPatterns = [
+    /Foundation[:\s]*([A-Za-z\s\/]+?)(?:<|,|\n|$)/i,
+    /Foundation Type[:\s]*([A-Za-z\s\/]+?)(?:<|,|\n|$)/i,
+    /Base[:\s]*(Slab|Crawl|Basement|Pier|Beam|Monolithic|Poured|Block)/i,
+  ];
+  for (const pattern of foundationPatterns) {
+    const foundationMatch = html.match(pattern);
+    if (foundationMatch) {
+      const rawValue = foundationMatch[1].trim();
+      let normalized = rawValue;
+      if (/slab|mono|poured|concrete/i.test(rawValue)) normalized = 'Slab';
+      else if (/crawl/i.test(rawValue)) normalized = 'Crawl Space';
+      else if (/basement/i.test(rawValue)) normalized = 'Basement';
+      else if (/pier|beam|pile/i.test(rawValue)) normalized = 'Pier/Beam';
+
+      fields['42_foundation'] = { value: normalized, source, confidence: 'High' };
+      break;
+    }
+  }
 
   return fields;
 }
@@ -346,6 +414,27 @@ function extractFromPolkHtml(html: string): Record<string, any> {
   const bathMatch = html.match(/Bath(?:room)?s?[:\s]*([\d.]+)/i);
   if (bathMatch) fields['20_total_bathrooms'] = { value: parseFloat(bathMatch[1]), source, confidence: 'High' };
 
+  // Extract foundation type (Field 42) - ADDED 2026-01-13
+  const foundationPatterns = [
+    /Foundation[:\s]*([A-Za-z\s\/]+?)(?:<|,|\n|$)/i,
+    /Foundation Type[:\s]*([A-Za-z\s\/]+?)(?:<|,|\n|$)/i,
+    /Base[:\s]*(Slab|Crawl|Basement|Pier|Beam|Monolithic|Poured|Block)/i,
+  ];
+  for (const pattern of foundationPatterns) {
+    const foundationMatch = html.match(pattern);
+    if (foundationMatch) {
+      const rawValue = foundationMatch[1].trim();
+      let normalized = rawValue;
+      if (/slab|mono|poured|concrete/i.test(rawValue)) normalized = 'Slab';
+      else if (/crawl/i.test(rawValue)) normalized = 'Crawl Space';
+      else if (/basement/i.test(rawValue)) normalized = 'Basement';
+      else if (/pier|beam|pile/i.test(rawValue)) normalized = 'Pier/Beam';
+
+      fields['42_foundation'] = { value: normalized, source, confidence: 'High' };
+      break;
+    }
+  }
+
   return fields;
 }
 
@@ -381,6 +470,27 @@ function extractFromPascoHtml(html: string): Record<string, any> {
   const sqftMatch = html.match(/(?:Living|Heated) Area[:\s]*([\d,]+)/i);
   if (sqftMatch) fields['21_living_sqft'] = { value: parseInt(sqftMatch[1].replace(/,/g, '')), source, confidence: 'High' };
 
+  // Extract foundation type (Field 42) - ADDED 2026-01-13
+  const foundationPatterns = [
+    /Foundation[:\s]*([A-Za-z\s\/]+?)(?:<|,|\n|$)/i,
+    /Foundation Type[:\s]*([A-Za-z\s\/]+?)(?:<|,|\n|$)/i,
+    /Base[:\s]*(Slab|Crawl|Basement|Pier|Beam|Monolithic|Poured|Block)/i,
+  ];
+  for (const pattern of foundationPatterns) {
+    const foundationMatch = html.match(pattern);
+    if (foundationMatch) {
+      const rawValue = foundationMatch[1].trim();
+      let normalized = rawValue;
+      if (/slab|mono|poured|concrete/i.test(rawValue)) normalized = 'Slab';
+      else if (/crawl/i.test(rawValue)) normalized = 'Crawl Space';
+      else if (/basement/i.test(rawValue)) normalized = 'Basement';
+      else if (/pier|beam|pile/i.test(rawValue)) normalized = 'Pier/Beam';
+
+      fields['42_foundation'] = { value: normalized, source, confidence: 'High' };
+      break;
+    }
+  }
+
   return fields;
 }
 
@@ -415,6 +525,27 @@ function extractFromHernandoHtml(html: string): Record<string, any> {
 
   const sqftMatch = html.match(/(?:Living|Heated) Area[:\s]*([\d,]+)/i);
   if (sqftMatch) fields['21_living_sqft'] = { value: parseInt(sqftMatch[1].replace(/,/g, '')), source, confidence: 'High' };
+
+  // Extract foundation type (Field 42) - ADDED 2026-01-13
+  const foundationPatterns = [
+    /Foundation[:\s]*([A-Za-z\s\/]+?)(?:<|,|\n|$)/i,
+    /Foundation Type[:\s]*([A-Za-z\s\/]+?)(?:<|,|\n|$)/i,
+    /Base[:\s]*(Slab|Crawl|Basement|Pier|Beam|Monolithic|Poured|Block)/i,
+  ];
+  for (const pattern of foundationPatterns) {
+    const foundationMatch = html.match(pattern);
+    if (foundationMatch) {
+      const rawValue = foundationMatch[1].trim();
+      let normalized = rawValue;
+      if (/slab|mono|poured|concrete/i.test(rawValue)) normalized = 'Slab';
+      else if (/crawl/i.test(rawValue)) normalized = 'Crawl Space';
+      else if (/basement/i.test(rawValue)) normalized = 'Basement';
+      else if (/pier|beam|pile/i.test(rawValue)) normalized = 'Pier/Beam';
+
+      fields['42_foundation'] = { value: normalized, source, confidence: 'High' };
+      break;
+    }
+  }
 
   return fields;
 }

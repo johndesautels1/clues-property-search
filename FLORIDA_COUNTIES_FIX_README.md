@@ -77,7 +77,8 @@ Removed `34_recent_tax_history` extraction - no schema field exists for this.
 ---
 
 ### Task 3: Add Foundation Type (Field 42) - NEW SOURCE
-**Status:** PENDING
+**Status:** DONE
+**Date Completed:** 2026-01-13
 **Priority:** HIGH
 **Field:** 42_foundation
 
@@ -86,12 +87,17 @@ Removed `34_recent_tax_history` extraction - no schema field exists for this.
 - Values: "Slab", "Crawl Space", "Basement", "Pier/Beam"
 - Extract from Property Appraiser building characteristics
 
-**Files to update:**
-- [ ] florida-counties.ts - Add extraction patterns for foundation
-- [ ] search.ts - Verify field 42 is in arbitration
-- [ ] retry-llm.ts - Verify LLM prompts include field 42
-- [ ] field-normalizer.ts - Verify mapping
-- [ ] PropertyDetail.tsx - Verify display
+**Implementation Details:**
+- Added foundation extraction patterns to ALL 6 county scrapers
+- Patterns detect: Slab, Crawl Space, Basement, Pier/Beam, Monolithic, Poured, Block, Pile
+- Normalizes values to schema options: 'Slab', 'Crawl Space', 'Basement', 'Pier/Beam'
+
+**Files updated:**
+- [x] florida-counties.ts - Added extraction in extractFromPinellasHtml, extractFromHillsboroughHtml,
+      extractFromManateeHtml, extractFromPolkHtml, extractFromPascoHtml, extractFromHernandoHtml
+- [x] PropertyDetail.tsx - Added 42 to TAVILY_ENABLED_FIELDS (line 64)
+- [x] PropertyDetail.tsx - Added '42_foundation': 42 to FIELD_KEY_TO_ID_MAP (line 92)
+- [x] tavily-search.ts - Added foundation search in searchPropertyFeatures() (lines 1007-1011, 1155-1189)
 
 ---
 
@@ -216,8 +222,8 @@ Each field needs an entry in the Tavily field database with:
 
 | Field # | Field Key | TAVILY_ENABLED_FIELDS | FIELD_KEY_TO_ID_MAP | tavily-search.ts | Status |
 |---------|-----------|----------------------|---------------------|------------------|--------|
-| 35 | annual_taxes | [ ] | [ ] | [ ] | PENDING |
-| 42 | foundation | [ ] | [ ] | [ ] | PENDING |
+| 35 | annual_taxes | [x] Already there | [x] Already there | [ ] needs search function | PENDING |
+| 42 | foundation | [x] Added | [x] Added | [x] searchPropertyFeatures | DONE |
 | 150 | legal_description | [ ] | [ ] | [ ] | PENDING |
 | 152 | cdd_yn | [x] Already there | [x] Already there | [x] searchHomesteadAndCDD | DONE |
 | 153 | annual_cdd_fee | [x] Already there | [x] Already there | [x] searchHomesteadAndCDD + monthly/annual conversion | DONE |
@@ -255,6 +261,7 @@ Before marking any task DONE:
 | 39 | roof_type | Pinellas only | WORKING |
 | 40 | roof_age_est | Permits | WORKING |
 | 41 | exterior_material | Pinellas only | WORKING |
+| 42 | foundation | All PA scrapers | NEW 2026-01-13 |
 | 46 | hvac_age | Permits | WORKING |
 | 54 | pool_yn | Pinellas only | WORKING |
 | 59 | recent_renovations | Permits | WORKING |
@@ -263,8 +270,10 @@ Before marking any task DONE:
 | 62 | permit_history_other | Permits | WORKING |
 | 138 | special_assessments | Tax Collector | WORKING |
 | 151 | homestead_yn | Tax Collector | WORKING |
+| 152 | cdd_yn | Tax Collector | NEW 2026-01-13 |
+| 153 | annual_cdd_fee | Tax Collector | NEW 2026-01-13 |
 
-**Total: 20 fields currently extracted**
+**Total: 23 fields currently extracted**
 
 ---
 

@@ -60,6 +60,8 @@ const TAVILY_ENABLED_FIELDS = new Set([
   12, '16a', '16b', '16c', '16d', '16e', '16f',
   // Tax & Assessment (3 fields) - ADDED 2026-01-13
   15, 35, 38,
+  // Structure & Systems (1 field) - ADDED 2026-01-13
+  42,
   // Property Condition & Permits (6 fields)
   40, 46, 59, 60, 61, 62,
   // Environment & Walkability (5 fields)
@@ -86,6 +88,8 @@ const FIELD_KEY_TO_ID_MAP: Record<string, number | string> = {
   '15_assessed_value': 15,
   '35_annual_taxes': 35,
   '38_tax_exemptions': 38,
+  // Structure & Systems (ADDED 2026-01-13)
+  '42_foundation': 42,
   // AVM Subfields (16a-16f)
   '16a_zestimate': '16a',
   '16b_redfin_estimate': '16b',
