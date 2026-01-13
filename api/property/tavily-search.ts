@@ -1859,12 +1859,80 @@ export async function searchFinancialData(city: string, state: string, zip: stri
     }
 
     // Process comparable sales results (field 103)
+    // FIX: Extract STRUCTURED comp data, not just prices
+    const comps: Array<{ address: string; price: number; sqft?: number; beds?: number; baths?: number; sold_date?: string }> = [];
+
     for (const r of compsResult.results || []) {
-      const soldMatch = r.content.match(/sold\s*(?:for)?\s*\$?([\d,]+)/gi);
-      if (soldMatch && soldMatch.length >= 1 && !fields['103_comparable_sales']) {
-        const prices = soldMatch.slice(0, 3).map(s => s.replace(/sold\s*(?:for)?\s*/i, ''));
-        fields['103_comparable_sales'] = { value: `Recent sales: ${prices.join(', ')}`, source: 'Tavily', confidence: 'Medium' };
+      // Try to extract structured comp data from Zillow/Redfin results
+      // Pattern 1: "123 Main St sold for $450,000" or "$450,000 | 3 bed | 2 bath | 1,500 sqft"
+      const content = r.content || '';
+
+      // Extract addresses that look like "123 Street Name" followed by sold/price
+      const addressPriceMatches = content.match(/(\d+\s+[A-Za-z]+(?:\s+[A-Za-z]+)*(?:\s+(?:St|Street|Ave|Avenue|Rd|Road|Dr|Drive|Ln|Lane|Blvd|Boulevard|Way|Ct|Court|Pl|Place))?)[,\s]*(?:sold|for|,)?\s*\$?([\d,]+)/gi);
+
+      if (addressPriceMatches && comps.length < 5) {
+        for (const match of addressPriceMatches) {
+          if (comps.length >= 5) break;
+
+          // Parse address and price from the match
+          const parts = match.match(/^(.+?)(?:sold|for|,)?\s*\$?([\d,]+)$/i);
+          if (parts) {
+            const address = parts[1].trim().replace(/[,\s]+$/, '');
+            const price = parseInt(parts[2].replace(/,/g, ''));
+
+            // Skip if price is unrealistic (< $50k or > $10M for residential)
+            if (price >= 50000 && price <= 10000000 && address.length > 5) {
+              // Try to extract beds/baths/sqft from nearby content
+              const bedsMatch = content.match(/(\d+)\s*(?:bed|br|bedroom)/i);
+              const bathsMatch = content.match(/([\d\.]+)\s*(?:bath|ba|bathroom)/i);
+              const sqftMatch = content.match(/([\d,]+)\s*(?:sq\s*ft|sqft|square\s*feet)/i);
+              const dateMatch = content.match(/(?:sold|closed|sale\s*date)[:\s]*(\d{1,2}\/\d{1,2}\/\d{4}|\d{4}-\d{2}-\d{2}|\w+\s+\d{1,2},?\s+\d{4})/i);
+
+              // Check for duplicate addresses
+              if (!comps.find(c => c.address.toLowerCase() === address.toLowerCase())) {
+                comps.push({
+                  address,
+                  price,
+                  beds: bedsMatch ? parseInt(bedsMatch[1]) : undefined,
+                  baths: bathsMatch ? parseFloat(bathsMatch[1]) : undefined,
+                  sqft: sqftMatch ? parseInt(sqftMatch[1].replace(/,/g, '')) : undefined,
+                  sold_date: dateMatch ? dateMatch[1] : undefined
+                });
+              }
+            }
+          }
+        }
       }
+
+      // Fallback: just extract prices if structured extraction fails
+      if (comps.length === 0) {
+        const soldPrices = content.match(/\$[\d,]+(?:k|K)?/g);
+        if (soldPrices && soldPrices.length > 0) {
+          for (let i = 0; i < Math.min(soldPrices.length, 3); i++) {
+            const priceStr = soldPrices[i];
+            let price = parseInt(priceStr.replace(/[$,]/g, ''));
+            if (priceStr.toLowerCase().endsWith('k')) {
+              price *= 1000;
+            }
+            if (price >= 50000 && price <= 10000000) {
+              comps.push({
+                address: `Comparable #${i + 1} (${zip})`,
+                price
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // Store comps as structured array
+    if (comps.length > 0 && !fields['103_comparable_sales']) {
+      fields['103_comparable_sales'] = {
+        value: comps,  // Store as array, UI will render it properly
+        source: 'Tavily',
+        confidence: comps[0].beds ? 'Medium' : 'Low'  // Higher confidence if we got full details
+      };
+      console.log(`[TAVILY] Found ${comps.length} comparable sales:`, comps.map(c => `${c.address} @ $${c.price.toLocaleString()}`));
     }
 
   } catch (error) {
