@@ -509,6 +509,41 @@ async function scrapeTaxCollector(address: string, county: string, parcelId?: st
       }
     }
 
+    // Field 151: Homestead Exemption Y/N - EXPLICIT boolean extraction
+    // Check for explicit homestead status indicators
+    const homesteadYesPatterns = [
+      /Homestead[:\s]*Yes/i,
+      /Homestead[:\s]*Exempt/i,
+      /Homestead Exemption[:\s]*\$[\d,]+/i,
+      /Homestead[:\s]*\$[\d,]+/i,
+      /Exemptions?[^<\n]*Homestead/i,
+      /HX[:\s]*\$[\d,]+/i,  // HX = Homestead Exemption abbreviation
+    ];
+    const homesteadNoPatterns = [
+      /Homestead[:\s]*No/i,
+      /Homestead[:\s]*None/i,
+      /Homestead[:\s]*N\/A/i,
+      /No Homestead/i,
+      /Exemptions?[:\s]*None/i,
+    ];
+
+    for (const pattern of homesteadYesPatterns) {
+      if (html.match(pattern)) {
+        fields['151_homestead_yn'] = { value: 'Yes', source, confidence: 'High' };
+        console.log(`✅ [${county}] Found Homestead Exemption: Yes`);
+        break;
+      }
+    }
+    if (!fields['151_homestead_yn']) {
+      for (const pattern of homesteadNoPatterns) {
+        if (html.match(pattern)) {
+          fields['151_homestead_yn'] = { value: 'No', source, confidence: 'High' };
+          console.log(`✅ [${county}] Found Homestead Exemption: No`);
+          break;
+        }
+      }
+    }
+
     // Extract mill rate / tax rate
     const ratePatterns = [
       /Mill(?:age)? Rate[:\s]*([\d.]+)/i,
