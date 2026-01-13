@@ -497,7 +497,7 @@ const PERPLEXITY_TO_NUMBERED_FIELDS: Record<string, string> = {
 function createDataField<T>(
   value: T | null,
   confidence: ConfidenceLevel = 'Medium',
-  source: string = 'Unknown',
+  source: string = 'API Data',
   llmSources: string[] = [],
   hasConflict: boolean = false,
   conflictValues: Array<{ source: string; value: any }> = [],
@@ -961,7 +961,8 @@ export function normalizeToProperty(
       finalValue = normalizedUtility;
     }
 
-    const source = fieldData.source || 'Unknown';
+    // FIX: Don't show 'Unknown' - use actual source or derive from llmSources
+    const source = fieldData.source || (fieldData.llmSources?.length > 0 ? fieldData.llmSources[0] : 'API Data');
     const confidence = mapConfidence(fieldData.confidence);
     const llmSources = fieldSources[apiKey] || fieldData.llmSources || [];
 
@@ -1275,7 +1276,7 @@ export function propertyToFlatFields(property: Property): Record<string, FlatFie
 
     flatFields[apiKey] = {
       value: field.value,
-      source: field.sources?.[0] || 'Unknown',
+      source: field.sources?.[0] || (field.llmSources?.[0] || 'API Data'),
       confidence: (field.confidence as 'High' | 'Medium' | 'Low' | 'Unverified') || 'Medium',
       llmSources: field.llmSources,
     };

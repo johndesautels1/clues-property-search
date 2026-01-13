@@ -329,25 +329,27 @@ const DataField = ({ label, value, icon, format = 'text', confidence, sources, l
           <p className="text-white font-medium">
             {isMissing ? <span className="text-gray-500 italic">Not available</span> : formattedValue}
           </p>
-          {/* SOURCE INFO - ADMIN ONLY */}
-          {isAdmin && (sources || llmSources) && ((sources && sources.length > 0) || (llmSources && llmSources.length > 0)) && (
-            <div className="mt-1 flex items-center gap-2">
-              <span className="text-xs text-gray-500">
-                Source: {
-                  llmSources && llmSources.length > 0
-                    ? llmSources.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')
-                    : sources ? sources.join(', ') : 'Unknown'
-                }
-              </span>
-              {/* Calculated Field Badge */}
-              {isCalculatedField({ sources: llmSources || sources || [] }) && (
-                <span className="px-2 py-0.5 bg-quantum-cyan/20 text-quantum-cyan text-[10px] font-semibold rounded-full flex items-center gap-1">
-                  <Zap className="w-3 h-3" />
-                  {getCalculationBadge({ sources: llmSources || sources || [] })}
+          {/* SOURCE INFO - ADMIN ONLY - Hide generic fallbacks like 'Unknown' and 'API Data' */}
+          {isAdmin && (() => {
+            const displaySource = llmSources && llmSources.length > 0
+              ? llmSources.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')
+              : sources ? sources.filter(s => s && s !== 'Unknown' && s !== 'API Data').join(', ') : '';
+            if (!displaySource || displaySource.length === 0) return null;
+            return (
+              <div className="mt-1 flex items-center gap-2">
+                <span className="text-xs text-gray-500">
+                  Source: {displaySource}
                 </span>
-              )}
-            </div>
-          )}
+                {/* Calculated Field Badge */}
+                {isCalculatedField({ sources: llmSources || sources || [] }) && (
+                  <span className="px-2 py-0.5 bg-quantum-cyan/20 text-quantum-cyan text-[10px] font-semibold rounded-full flex items-center gap-1">
+                    <Zap className="w-3 h-3" />
+                    {getCalculationBadge({ sources: llmSources || sources || [] })}
+                  </span>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
       {/* STATUS BADGES - Show to ALL users for missing fields, ADMIN ONLY for other statuses */}
