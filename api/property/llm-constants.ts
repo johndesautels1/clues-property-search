@@ -45,9 +45,9 @@ export const LLM_DISPLAY_NAMES: Record<LLMEngine, string> = {
 export const TAVILY_CONFIG = {
   name: 'Tavily',
   tier: 3,
-  timeout: 30000, // 30 seconds - INCREASED from 15s on 2026-01-08
+  timeout: 45000, // 45 seconds - INCREASED from 30s on 2026-01-13 for fields 169-174
   reliability: 85, // 85% reliability score
-  description: 'Targeted web searches for AVMs, market data, permits, views',
+  description: 'Targeted web searches for AVMs, market data, permits, market performance (169-174)',
   fields: [
     '16a_zestimate',
     '16b_redfin_estimate',

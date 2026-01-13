@@ -10,11 +10,11 @@
  * - Portal views/saves
  */
 
-const TAVILY_TIMEOUT = 30000; // 30 seconds
+const TAVILY_TIMEOUT = 45000; // 45 seconds - INCREASED from 30s on 2026-01-13 for fields 169-174
 
 export const TAVILY_CONFIG = {
   baseUrl: 'https://api.tavily.com/search',
-  timeout: 30000, // 30 seconds - INCREASED from 15s on 2026-01-08
+  timeout: 45000, // 45 seconds - INCREASED from 30s on 2026-01-13 for fields 169-174
   maxResults: 5,
   searchDepth: 'basic' as const,
 };
@@ -387,24 +387,178 @@ export async function searchPermits(address: string, county: string): Promise<Re
 }
 
 /**
- * Search for portal views (Zillow, Redfin, etc.)
+ * Search for Market Performance Metrics (Fields 169-174)
+ * REPURPOSED 2026-01-13: Changed from portal views to market metrics
+ *
+ * Fields searched:
+ * - 169: months_of_inventory
+ * - 170: new_listings_30d
+ * - 171: homes_sold_30d
+ * - 172: median_dom_zip
+ * - 173: price_reduced_percent
+ * - 174: homes_under_contract
  */
-export async function searchPortalViews(address: string): Promise<Record<string, any>> {
+export async function searchMarketPerformance(city: string, state: string, zip: string): Promise<Record<string, any>> {
   const fields: Record<string, any> = {};
 
-  const result = await tavilySearch(
-    `"${address}" views saves favorites Zillow Redfin`,
-    { includeDomains: ['zillow.com', 'redfin.com', 'realtor.com', 'homes.com'], numResults: 5 }
-  );
+  console.log(`🔍 [Tavily] Searching market performance metrics for ${city}, ${state} ${zip}`);
 
-  // REMOVED 2026-01-11: View extraction logic for fields 169-174
-  // Fields 169-174 repurposed from portal views to market metrics
-  // View counts are no longer collected - fields now contain:
-  // 169: months_of_inventory, 170: new_listings_30d, 171: homes_sold_30d
-  // 172: median_dom_zip, 173: price_reduced_percent, 174: homes_under_contract
-  // Extraction now handled by field-specific configs in tavily-field-config.ts
+  // Run all 6 field searches in PARALLEL for speed
+  const [inventoryResult, newListingsResult, soldResult, domResult, priceReducedResult, contractResult] = await Promise.all([
+    // Field 169: Months of Inventory
+    tavilySearch(
+      `"${city}, ${state}" months of inventory housing supply 2026`,
+      { numResults: 5 }
+    ),
+    // Field 170: New Listings (30d)
+    tavilySearch(
+      `"${city}, ${state}" new listings last 30 days 2026`,
+      { numResults: 5 }
+    ),
+    // Field 171: Homes Sold (30d)
+    tavilySearch(
+      `"${city}, ${state}" homes sold last 30 days closed sales 2026`,
+      { numResults: 5 }
+    ),
+    // Field 172: Median DOM (ZIP)
+    tavilySearch(
+      `"${city}, ${state}" ${zip} median days on market 2026`,
+      { numResults: 5 }
+    ),
+    // Field 173: Price Reduced %
+    tavilySearch(
+      `"${city}, ${state}" price reductions percentage listings 2026`,
+      { numResults: 5 }
+    ),
+    // Field 174: Homes Under Contract
+    tavilySearch(
+      `"${city}, ${state}" homes under contract pending 2026`,
+      { numResults: 5 }
+    ),
+  ]);
 
+  // Extract Field 169: Months of Inventory
+  for (const r of inventoryResult.results) {
+    const match = r.content.match(/([\d\.]+)\s*months?\s+(?:of\s+)?(?:inventory|supply)/i) ||
+                  r.content.match(/inventory[:\s]*([\d\.]+)\s*months?/i);
+    if (match && !fields['169_months_of_inventory']) {
+      const value = parseFloat(match[1]);
+      if (value > 0 && value < 24) { // Sanity check
+        fields['169_months_of_inventory'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found months of inventory: ${value}`);
+        break;
+      }
+    }
+  }
+
+  // Extract Field 170: New Listings (30d)
+  for (const r of newListingsResult.results) {
+    const match = r.content.match(/([\d,]+)\s*new\s+listings?/i) ||
+                  r.content.match(/recently\s+listed[:\s]*([\d,]+)/i);
+    if (match && !fields['170_new_listings_30d']) {
+      const value = parseInt(match[1].replace(/,/g, ''));
+      if (value > 0 && value < 50000) { // Sanity check
+        fields['170_new_listings_30d'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found new listings: ${value}`);
+        break;
+      }
+    }
+  }
+
+  // Extract Field 171: Homes Sold (30d)
+  for (const r of soldResult.results) {
+    const match = r.content.match(/([\d,]+)\s*(?:homes?|properties)\s+sold/i) ||
+                  r.content.match(/closed\s+sales?[:\s]*([\d,]+)/i);
+    if (match && !fields['171_homes_sold_30d']) {
+      const value = parseInt(match[1].replace(/,/g, ''));
+      if (value > 0 && value < 50000) { // Sanity check
+        fields['171_homes_sold_30d'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found homes sold: ${value}`);
+        break;
+      }
+    }
+  }
+
+  // Extract Field 172: Median DOM (ZIP)
+  for (const r of domResult.results) {
+    const match = r.content.match(/median\s+days?\s+on\s+market[:\s]*([\d]+)/i) ||
+                  r.content.match(/days?\s+on\s+market[:\s]*([\d]+)/i) ||
+                  r.content.match(/([\d]+)\s*days?\s+(?:on\s+market|to\s+sell)/i);
+    if (match && !fields['172_median_dom_zip']) {
+      const value = parseInt(match[1]);
+      if (value > 0 && value < 365) { // Sanity check
+        fields['172_median_dom_zip'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found median DOM: ${value} days`);
+        break;
+      }
+    }
+  }
+
+  // Extract Field 173: Price Reduced %
+  for (const r of priceReducedResult.results) {
+    const match = r.content.match(/([\d\.]+)%.*?price\s+redu/i) ||
+                  r.content.match(/price\s+redu.*?([\d\.]+)%/i);
+    if (match && !fields['173_price_reduced_percent']) {
+      const value = parseFloat(match[1]);
+      if (value >= 0 && value <= 100) { // Sanity check
+        fields['173_price_reduced_percent'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found price reduced: ${value}%`);
+        break;
+      }
+    }
+  }
+
+  // Extract Field 174: Homes Under Contract
+  for (const r of contractResult.results) {
+    const match = r.content.match(/([\d,]+)\s*(?:homes?)?\s*under\s+contract/i) ||
+                  r.content.match(/([\d,]+)\s*pending/i);
+    if (match && !fields['174_homes_under_contract']) {
+      const value = parseInt(match[1].replace(/,/g, ''));
+      if (value > 0 && value < 50000) { // Sanity check
+        fields['174_homes_under_contract'] = {
+          value: value,
+          source: 'Tavily',
+          confidence: 'Medium',
+        };
+        console.log(`✅ [Tavily] Found homes under contract: ${value}`);
+        break;
+      }
+    }
+  }
+
+  console.log(`✅ [Tavily] Market performance search returned ${Object.keys(fields).length} fields`);
   return fields;
+
+}
+
+/**
+ * @deprecated Use searchMarketPerformance() instead
+ * Kept for backwards compatibility - redirects to new function
+ */
+export async function searchPortalViews(address: string): Promise<Record<string, any>> {
+  console.log('⚠️ [Tavily] searchPortalViews() is deprecated - use searchMarketPerformance()');
+  // Return empty - caller should use searchMarketPerformance() with city/state/zip params
+  return {};
 }
 
 /**
@@ -556,17 +710,18 @@ export async function runTavilyTier3(
   const allFields: Record<string, any> = {};
 
   // Run searches in parallel for speed
-  const [avmFields, marketFields, utilityFields, permitFields, viewFields, homesteadFields] = await Promise.all([
+  // UPDATED 2026-01-13: Replaced searchPortalViews with searchMarketPerformance (fields 169-174)
+  const [avmFields, marketFields, utilityFields, permitFields, marketPerfFields, homesteadFields] = await Promise.all([
     searchAVMs(address),
     searchMarketStats(city, zip),
     searchUtilities(city, state),
     searchPermits(address, county),
-    searchPortalViews(address),
+    searchMarketPerformance(city, state, zip), // Fields 169-174: market performance metrics
     searchHomesteadAndCDD(address, county), // Fields 151, 152, 153
   ]);
 
   // Merge all fields
-  Object.assign(allFields, avmFields, marketFields, utilityFields, permitFields, viewFields, homesteadFields);
+  Object.assign(allFields, avmFields, marketFields, utilityFields, permitFields, marketPerfFields, homesteadFields);
 
   console.log(`✅ TIER 3: Tavily returned ${Object.keys(allFields).length} fields`);
 

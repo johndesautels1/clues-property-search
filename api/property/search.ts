@@ -56,7 +56,7 @@ export const config = {
 // Timeout wrapper for API/LLM calls - prevents hanging
 const STELLAR_MLS_TIMEOUT = 15000; // 15 seconds for Stellar MLS via Bridge API (Tier 1) - typically responds in <10s
 const FREE_API_TIMEOUT = 60000; // 60 seconds for free APIs (Tier 2) - INCREASED back to 60s on 2026-01-12 (APIs need 42s to complete)
-const TAVILY_TIMEOUT = 30000; // 30 seconds for Tavily web searches (Tier 3) - INCREASED from 15s on 2026-01-08
+const TAVILY_TIMEOUT = 45000; // 45 seconds for Tavily web searches (Tier 3) - INCREASED from 30s on 2026-01-13 for fields 169-174
 const LLM_TIMEOUT = 60000; // 60 seconds (1 min) for Claude, GPT, Gemini, Grok (Tier 4-5) - REDUCED from 180s on 2026-01-08
 const PERPLEXITY_TIMEOUT = 45000; // 45 seconds for Perplexity deep web search (Tier 4 #1)
 
