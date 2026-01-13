@@ -170,7 +170,7 @@ export interface UtilitiesData {
   electricProvider: DataField<string>;   // #104 electric_provider
   waterProvider: DataField<string>;      // #106 water_provider
   sewerProvider: DataField<string>;      // #108 sewer_provider
-  naturalGas: DataField<string>;         // #109 natural_gas
+  naturalGas: DataField<boolean>;        // #109 natural_gas
   trashProvider: DataField<string>;      // #110 trash_provider
   internetProvidersTop3: DataField<string[]>; // #111 internet_providers_top3
   maxInternetSpeed: DataField<string>;   // #112 max_internet_speed
@@ -194,7 +194,7 @@ export interface UtilitiesData {
   seaLevelRiseRisk: DataField<string>;   // #128 sea_level_rise_risk
   noiseLevelDbEst: DataField<string>;    // #129 noise_level_db_est
   solarPotential: DataField<string>;     // #130 solar_potential
-  evChargingYn: DataField<string>;       // #133 ev_charging
+  evChargingYn: DataField<boolean>;      // #133 ev_charging
   smartHomeFeatures: DataField<string>;  // #134 smart_home_features
   accessibilityMods: DataField<string>;  // #135 accessibility_modifications
   viewType: DataField<string>;           // #131 view_type
