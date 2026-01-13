@@ -1813,6 +1813,37 @@ export async function searchHomesteadAndCDD(address: string, county: string): Pr
     }
   }
 
+  // Search for legal description (Field 150) - ADDED 2026-01-13
+  const legalQuery = paoDomain
+    ? `"${address}" legal description site:${paoDomain}`
+    : `"${address}" ${county} legal description property appraiser`;
+
+  const legalResult = await tavilySearch(legalQuery, { numResults: 3 });
+
+  for (const r of legalResult.results) {
+    if (!fields['150_legal_description']) {
+      // Look for legal description patterns
+      const legalMatch = r.content.match(/legal[:\s]*description[:\s]*([^.]+(?:LOT|BLK|BLOCK|SEC|UNIT|PH|PHASE|SUB|SUBDIVISION|PLAT|PB|PG)[^.]+)/i) ||
+                         r.content.match(/((?:LOT|BLK|BLOCK)\s*[\d]+[^.]{10,200})/i);
+      if (legalMatch) {
+        let description = legalMatch[1].trim();
+        // Truncate if > 500 chars per requirements
+        if (description.length > 500) {
+          description = description.substring(0, 497) + '...';
+        }
+        if (description.length > 10) {
+          fields['150_legal_description'] = {
+            value: description,
+            source: 'Tavily (Property Appraiser)',
+            confidence: 'Low',
+          };
+          console.log(`✅ [Tavily] Found legal description: ${description.substring(0, 50)}...`);
+          break;
+        }
+      }
+    }
+  }
+
   return fields;
 }
 

@@ -102,7 +102,8 @@ Removed `34_recent_tax_history` extraction - no schema field exists for this.
 ---
 
 ### Task 4: Add Legal Description (Field 150) as FALLBACK
-**Status:** PENDING
+**Status:** DONE
+**Date Completed:** 2026-01-13
 **Priority:** MEDIUM
 **Field:** 150_legal_description
 
@@ -111,10 +112,17 @@ Removed `34_recent_tax_history` extraction - no schema field exists for this.
 - Extract from Property Appraiser legal section
 - Can be long text - truncate if > 500 chars
 
-**Files to update:**
-- [ ] florida-counties.ts - Add extraction
-- [ ] Verify field-normalizer.ts mapping
-- [ ] Verify PropertyDetail.tsx displays correctly
+**Implementation Details:**
+- Added legal description extraction to ALL 6 county scrapers
+- Patterns detect: LOT, BLK, BLOCK, SEC, UNIT, PH, PHASE, SUB, SUBDIVISION, PLAT, PB, PG
+- Auto-truncates descriptions > 500 chars
+- Only saves if description > 10 chars (to avoid garbage matches)
+
+**Files updated:**
+- [x] florida-counties.ts - Added extraction in all 6 county extractors
+- [x] PropertyDetail.tsx - Added 150 to TAVILY_ENABLED_FIELDS (line 80)
+- [x] PropertyDetail.tsx - Added '150_legal_description': 150 to FIELD_KEY_TO_ID_MAP (line 150)
+- [x] tavily-search.ts - Added legal description search in searchHomesteadAndCDD() (lines 1816-1845)
 
 ---
 
@@ -224,7 +232,7 @@ Each field needs an entry in the Tavily field database with:
 |---------|-----------|----------------------|---------------------|------------------|--------|
 | 35 | annual_taxes | [x] Already there | [x] Already there | [ ] needs search function | PENDING |
 | 42 | foundation | [x] Added | [x] Added | [x] searchPropertyFeatures | DONE |
-| 150 | legal_description | [ ] | [ ] | [ ] | PENDING |
+| 150 | legal_description | [x] Added | [x] Added | [x] searchHomesteadAndCDD | DONE |
 | 152 | cdd_yn | [x] Already there | [x] Already there | [x] searchHomesteadAndCDD | DONE |
 | 153 | annual_cdd_fee | [x] Already there | [x] Already there | [x] searchHomesteadAndCDD + monthly/annual conversion | DONE |
 
@@ -269,11 +277,12 @@ Before marking any task DONE:
 | 61 | permit_history_hvac | Permits | WORKING |
 | 62 | permit_history_other | Permits | WORKING |
 | 138 | special_assessments | Tax Collector | WORKING |
+| 150 | legal_description | All PA scrapers | NEW 2026-01-13 |
 | 151 | homestead_yn | Tax Collector | WORKING |
 | 152 | cdd_yn | Tax Collector | NEW 2026-01-13 |
 | 153 | annual_cdd_fee | Tax Collector | NEW 2026-01-13 |
 
-**Total: 23 fields currently extracted**
+**Total: 24 fields currently extracted**
 
 ---
 

@@ -76,6 +76,8 @@ const TAVILY_ENABLED_FIELDS = new Set([
   131, 132, 133, 134, 135, 136, 137, 138,
   // Homestead & CDD (3 fields) - ADDED 2026-01-13
   151, 152, 153,
+  // Legal (1 field) - ADDED 2026-01-13
+  150,
   // Market Performance (13 fields) - FIXED 2026-01-13: Added 169, 172, 173, 175, 176, 179, 180, 181
   169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181
 ]);
@@ -144,6 +146,8 @@ const FIELD_KEY_TO_ID_MAP: Record<string, number | string> = {
   '151_homestead_yn': 151,
   '152_cdd_yn': 152,
   '153_annual_cdd_fee': 153,
+  // Legal (ADDED 2026-01-13)
+  '150_legal_description': 150,
   // Market Performance (Fields 169-181) - Updated 2026-01-11
   '169_months_of_inventory': 169,
   '170_new_listings_30d': 170,

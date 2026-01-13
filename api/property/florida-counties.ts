@@ -214,6 +214,31 @@ function extractFromPinellasHtml(html: string, parcelId: string): Record<string,
     }
   }
 
+  // Extract legal description (Field 150) - ADDED 2026-01-13
+  const legalPatterns = [
+    /Legal[:\s]*Description[:\s]*([^<]+?)(?:<|$)/i,
+    /Legal[:\s]*([A-Z0-9\s,.-]+(?:LOT|BLK|BLOCK|SEC|UNIT|PH|PHASE|SUB|SUBDIVISION|PLAT|PB|PG)[A-Z0-9\s,.-]+)/i,
+    /(?:LOT|BLK|BLOCK)\s*[\d]+[^<]{10,200}/i,
+  ];
+  for (const pattern of legalPatterns) {
+    const legalMatch = html.match(pattern);
+    if (legalMatch) {
+      let description = (legalMatch[1] || legalMatch[0]).trim();
+      // Truncate if > 500 chars per requirements
+      if (description.length > 500) {
+        description = description.substring(0, 497) + '...';
+      }
+      if (description.length > 10) { // Only save if meaningful
+        fields['150_legal_description'] = {
+          value: description,
+          source: 'Pinellas County Property Appraiser',
+          confidence: 'High'
+        };
+        break;
+      }
+    }
+  }
+
   return fields;
 }
 
@@ -314,6 +339,24 @@ function extractFromHillsboroughHtml(html: string): Record<string, any> {
     }
   }
 
+  // Extract legal description (Field 150) - ADDED 2026-01-13
+  const legalPatterns = [
+    /Legal[:\s]*Description[:\s]*([^<]+?)(?:<|$)/i,
+    /Legal[:\s]*([A-Z0-9\s,.-]+(?:LOT|BLK|BLOCK|SEC|UNIT|PH|PHASE|SUB|SUBDIVISION|PLAT|PB|PG)[A-Z0-9\s,.-]+)/i,
+    /(?:LOT|BLK|BLOCK)\s*[\d]+[^<]{10,200}/i,
+  ];
+  for (const pattern of legalPatterns) {
+    const legalMatch = html.match(pattern);
+    if (legalMatch) {
+      let description = (legalMatch[1] || legalMatch[0]).trim();
+      if (description.length > 500) description = description.substring(0, 497) + '...';
+      if (description.length > 10) {
+        fields['150_legal_description'] = { value: description, source: 'Hillsborough County Property Appraiser', confidence: 'High' };
+        break;
+      }
+    }
+  }
+
   return fields;
 }
 
@@ -367,6 +410,24 @@ function extractFromManateeHtml(html: string): Record<string, any> {
 
       fields['42_foundation'] = { value: normalized, source, confidence: 'High' };
       break;
+    }
+  }
+
+  // Extract legal description (Field 150) - ADDED 2026-01-13
+  const legalPatterns = [
+    /Legal[:\s]*Description[:\s]*([^<]+?)(?:<|$)/i,
+    /Legal[:\s]*([A-Z0-9\s,.-]+(?:LOT|BLK|BLOCK|SEC|UNIT|PH|PHASE|SUB|SUBDIVISION|PLAT|PB|PG)[A-Z0-9\s,.-]+)/i,
+    /(?:LOT|BLK|BLOCK)\s*[\d]+[^<]{10,200}/i,
+  ];
+  for (const pattern of legalPatterns) {
+    const legalMatch = html.match(pattern);
+    if (legalMatch) {
+      let description = (legalMatch[1] || legalMatch[0]).trim();
+      if (description.length > 500) description = description.substring(0, 497) + '...';
+      if (description.length > 10) {
+        fields['150_legal_description'] = { value: description, source, confidence: 'High' };
+        break;
+      }
     }
   }
 
@@ -435,6 +496,24 @@ function extractFromPolkHtml(html: string): Record<string, any> {
     }
   }
 
+  // Extract legal description (Field 150) - ADDED 2026-01-13
+  const legalPatterns = [
+    /Legal[:\s]*Description[:\s]*([^<]+?)(?:<|$)/i,
+    /Legal[:\s]*([A-Z0-9\s,.-]+(?:LOT|BLK|BLOCK|SEC|UNIT|PH|PHASE|SUB|SUBDIVISION|PLAT|PB|PG)[A-Z0-9\s,.-]+)/i,
+    /(?:LOT|BLK|BLOCK)\s*[\d]+[^<]{10,200}/i,
+  ];
+  for (const pattern of legalPatterns) {
+    const legalMatch = html.match(pattern);
+    if (legalMatch) {
+      let description = (legalMatch[1] || legalMatch[0]).trim();
+      if (description.length > 500) description = description.substring(0, 497) + '...';
+      if (description.length > 10) {
+        fields['150_legal_description'] = { value: description, source, confidence: 'High' };
+        break;
+      }
+    }
+  }
+
   return fields;
 }
 
@@ -491,6 +570,24 @@ function extractFromPascoHtml(html: string): Record<string, any> {
     }
   }
 
+  // Extract legal description (Field 150) - ADDED 2026-01-13
+  const legalPatterns = [
+    /Legal[:\s]*Description[:\s]*([^<]+?)(?:<|$)/i,
+    /Legal[:\s]*([A-Z0-9\s,.-]+(?:LOT|BLK|BLOCK|SEC|UNIT|PH|PHASE|SUB|SUBDIVISION|PLAT|PB|PG)[A-Z0-9\s,.-]+)/i,
+    /(?:LOT|BLK|BLOCK)\s*[\d]+[^<]{10,200}/i,
+  ];
+  for (const pattern of legalPatterns) {
+    const legalMatch = html.match(pattern);
+    if (legalMatch) {
+      let description = (legalMatch[1] || legalMatch[0]).trim();
+      if (description.length > 500) description = description.substring(0, 497) + '...';
+      if (description.length > 10) {
+        fields['150_legal_description'] = { value: description, source, confidence: 'High' };
+        break;
+      }
+    }
+  }
+
   return fields;
 }
 
@@ -544,6 +641,24 @@ function extractFromHernandoHtml(html: string): Record<string, any> {
 
       fields['42_foundation'] = { value: normalized, source, confidence: 'High' };
       break;
+    }
+  }
+
+  // Extract legal description (Field 150) - ADDED 2026-01-13
+  const legalPatterns = [
+    /Legal[:\s]*Description[:\s]*([^<]+?)(?:<|$)/i,
+    /Legal[:\s]*([A-Z0-9\s,.-]+(?:LOT|BLK|BLOCK|SEC|UNIT|PH|PHASE|SUB|SUBDIVISION|PLAT|PB|PG)[A-Z0-9\s,.-]+)/i,
+    /(?:LOT|BLK|BLOCK)\s*[\d]+[^<]{10,200}/i,
+  ];
+  for (const pattern of legalPatterns) {
+    const legalMatch = html.match(pattern);
+    if (legalMatch) {
+      let description = (legalMatch[1] || legalMatch[0]).trim();
+      if (description.length > 500) description = description.substring(0, 497) + '...';
+      if (description.length > 10) {
+        fields['150_legal_description'] = { value: description, source, confidence: 'High' };
+        break;
+      }
     }
   }
 
