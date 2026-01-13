@@ -575,6 +575,109 @@ async function scrapeTaxCollector(address: string, county: string, parcelId?: st
       }
     }
 
+    // ================================================================
+    // Fields 152, 153: CDD (Community Development District)
+    // CRITICAL: Must detect monthly vs annual and convert to annual
+    // ================================================================
+
+    // CDD Y/N detection patterns
+    const cddYesPatterns = [
+      /CDD[:\s]*Yes/i,
+      /Community Development District[:\s]*Yes/i,
+      /CDD[:\s]*\$[\d,]+/i,  // If CDD has a dollar amount, it exists
+      /CDD Fee[:\s]*\$[\d,]+/i,
+      /CDD Assessment[:\s]*\$[\d,]+/i,
+      /Non.?Ad.?Valorem.*CDD/i,
+    ];
+    const cddNoPatterns = [
+      /CDD[:\s]*No/i,
+      /CDD[:\s]*N\/A/i,
+      /CDD[:\s]*None/i,
+      /No CDD/i,
+      /Not in.*CDD/i,
+    ];
+
+    // Check for CDD presence
+    let hasCDD = false;
+    for (const pattern of cddYesPatterns) {
+      if (html.match(pattern)) {
+        hasCDD = true;
+        fields['152_cdd_yn'] = { value: 'Yes', source, confidence: 'High' };
+        console.log(`✅ [${county}] Found CDD: Yes`);
+        break;
+      }
+    }
+    if (!hasCDD) {
+      for (const pattern of cddNoPatterns) {
+        if (html.match(pattern)) {
+          fields['152_cdd_yn'] = { value: 'No', source, confidence: 'High' };
+          console.log(`✅ [${county}] Found CDD: No`);
+          break;
+        }
+      }
+    }
+
+    // Extract CDD fee amount with MONTHLY/ANNUAL detection
+    if (hasCDD) {
+      // Patterns to extract CDD fee with context for monthly/annual detection
+      const cddFeePatterns = [
+        // Pattern with explicit annual/yearly indicator
+        /CDD[^$]*?\$\s*([\d,]+(?:\.\d{2})?)[^$]*?(?:per\s*)?(?:year|annual|yearly)/i,
+        // Pattern with explicit monthly indicator
+        /CDD[^$]*?\$\s*([\d,]+(?:\.\d{2})?)[^$]*?(?:per\s*)?(?:month|monthly|mo\b)/i,
+        // Pattern with just dollar amount (no period indicator)
+        /CDD[:\s]*\$\s*([\d,]+(?:\.\d{2})?)/i,
+        /CDD Fee[:\s]*\$\s*([\d,]+(?:\.\d{2})?)/i,
+        /CDD Assessment[:\s]*\$\s*([\d,]+(?:\.\d{2})?)/i,
+        /Community Development District[^$]*?\$\s*([\d,]+(?:\.\d{2})?)/i,
+      ];
+
+      for (const pattern of cddFeePatterns) {
+        const feeMatch = html.match(pattern);
+        if (feeMatch) {
+          let fee = parseFloat(feeMatch[1].replace(/,/g, ''));
+          const context = feeMatch[0].toLowerCase();
+
+          // CRITICAL: Determine if monthly or annual
+          const isMonthly = /month|mo\b|\/mo/i.test(context);
+          const isAnnual = /year|annual|yearly/i.test(context);
+
+          // If no explicit indicator, use fee amount as heuristic:
+          // - Florida CDD fees are typically $500-$5000/year
+          // - If fee < $500 and no annual indicator, likely monthly
+          // - If fee >= $500, likely already annual
+          if (!isMonthly && !isAnnual) {
+            if (fee < 500) {
+              // Likely monthly - convert to annual
+              fee = fee * 12;
+              console.log(`⚠️ [${county}] CDD fee $${feeMatch[1]} assumed MONTHLY, converted to annual: $${fee}`);
+            } else {
+              console.log(`✅ [${county}] CDD fee $${fee} assumed ANNUAL`);
+            }
+          } else if (isMonthly) {
+            fee = fee * 12;
+            console.log(`✅ [${county}] CDD fee $${feeMatch[1]}/month converted to annual: $${fee}`);
+          } else {
+            console.log(`✅ [${county}] CDD fee $${fee}/year (already annual)`);
+          }
+
+          // Sanity check: Annual CDD should be between $200 and $5000
+          if (fee >= 200 && fee <= 5000) {
+            fields['153_annual_cdd_fee'] = { value: fee, source, confidence: 'High' };
+          } else if (fee > 0 && fee < 200) {
+            // Too low - might be partial or error, still save with lower confidence
+            fields['153_annual_cdd_fee'] = { value: fee, source, confidence: 'Low' };
+            console.log(`⚠️ [${county}] CDD fee $${fee} seems low - saved with Low confidence`);
+          } else if (fee > 5000) {
+            // Too high - might include other assessments, save with warning
+            fields['153_annual_cdd_fee'] = { value: fee, source, confidence: 'Low' };
+            console.log(`⚠️ [${county}] CDD fee $${fee} seems high - may include other assessments`);
+          }
+          break;
+        }
+      }
+    }
+
     return fields;
   } catch (e) {
     console.error(`${county} Tax Collector scrape error:`, e);

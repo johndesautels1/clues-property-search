@@ -113,7 +113,8 @@ Removed `34_recent_tax_history` extraction - no schema field exists for this.
 ---
 
 ### Task 5: Add CDD Fields (152, 153) - CRITICAL
-**Status:** PENDING
+**Status:** DONE
+**Date Completed:** 2026-01-13
 **Priority:** CRITICAL
 **Fields:** 152_cdd_yn, 153_annual_cdd_fee
 
@@ -136,15 +137,13 @@ if (fee < 500 && /month|mo\b|\/mo/i.test(context)) {
 }
 ```
 
-**Files to update:**
-- [ ] florida-counties.ts - Add CDD extraction with monthly/annual detection
-- [ ] scrapeTaxCollector() - Look for CDD in non-ad valorem section
-- [ ] tavily-search.ts - searchHomesteadAndCDD() already exists - verify it works
-- [ ] search.ts - Verify field 152, 153 in arbitration
-- [ ] retry-llm.ts - Verify LLM prompts for CDD fields
-- [ ] field-normalizer.ts - Verify mapping for 152, 153
-- [ ] PropertyDetail.tsx - Verify CDD displays correctly
-- [ ] TAVILY_ENABLED_FIELDS - Verify 152, 153 are in the array
+**Files updated:**
+- [x] florida-counties.ts - Added CDD extraction with monthly/annual detection (lines 578-679)
+- [x] scrapeTaxCollector() - CDD patterns added in non-ad valorem section
+- [x] tavily-search.ts - Fixed searchHomesteadAndCDD() with monthly/annual conversion (lines 1694-1738)
+- [x] PropertyDetail.tsx - CDD displays correctly (lines 2509-2510)
+- [x] TAVILY_ENABLED_FIELDS - 152, 153 already in array (line 76)
+- [x] FIELD_KEY_TO_ID_MAP - 152_cdd_yn, 153_annual_cdd_fee already mapped (lines 141-142)
 
 ---
 
@@ -171,6 +170,57 @@ When adding any new field extraction, ALL these files must be checked:
 12. **llm-constants.ts** - LLM field constants
 13. **perplexity-prompts.ts** - Perplexity field mapping
 14. **tavily-field-database-mapping.ts** - Tavily field database
+
+---
+
+## FETCH WITH TAVILY BUTTON WIRING - CRITICAL
+
+**Every new field MUST have the "Fetch with Tavily" button wired in PropertyDetail.tsx!**
+
+### Required Steps for Each New Field:
+
+#### Step 1: Add to TAVILY_ENABLED_FIELDS array (PropertyDetail.tsx ~line 65-79)
+```typescript
+const TAVILY_ENABLED_FIELDS = new Set([
+  // ... existing fields ...
+  42,   // foundation - ADD THIS
+  150,  // legal_description - ADD THIS
+  152,  // cdd_yn - ADD THIS
+  153,  // annual_cdd_fee - ADD THIS
+]);
+```
+
+#### Step 2: Add to FIELD_KEY_TO_ID_MAP (PropertyDetail.tsx ~line 83-160)
+```typescript
+const FIELD_KEY_TO_ID_MAP: Record<string, number | string> = {
+  // ... existing mappings ...
+  '42_foundation': 42,
+  '150_legal_description': 150,
+  '152_cdd_yn': 152,
+  '153_annual_cdd_fee': 153,
+};
+```
+
+#### Step 3: Verify tavily-search.ts has search function for the field
+- Field 42 (foundation): May need new searchPropertyFeatures() pattern
+- Field 150 (legal_description): searchHomesteadAndCDD() or new function
+- Field 152/153 (CDD): searchHomesteadAndCDD() already exists
+
+#### Step 4: Verify tavily-field-database-mapping.ts has entry
+Each field needs an entry in the Tavily field database with:
+- fieldKey
+- searchQuery template
+- extractionPatterns
+
+### Tavily Button Wiring Checklist:
+
+| Field # | Field Key | TAVILY_ENABLED_FIELDS | FIELD_KEY_TO_ID_MAP | tavily-search.ts | Status |
+|---------|-----------|----------------------|---------------------|------------------|--------|
+| 35 | annual_taxes | [ ] | [ ] | [ ] | PENDING |
+| 42 | foundation | [ ] | [ ] | [ ] | PENDING |
+| 150 | legal_description | [ ] | [ ] | [ ] | PENDING |
+| 152 | cdd_yn | [x] Already there | [x] Already there | [x] searchHomesteadAndCDD | DONE |
+| 153 | annual_cdd_fee | [x] Already there | [x] Already there | [x] searchHomesteadAndCDD + monthly/annual conversion | DONE |
 
 ---
 

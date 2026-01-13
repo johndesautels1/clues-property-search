@@ -1691,18 +1691,49 @@ export async function searchHomesteadAndCDD(address: string, county: string): Pr
         console.log(`✅ [Tavily] Found CDD: Yes`);
       }
 
-      // Try to extract CDD fee amount
+      // Try to extract CDD fee amount with MONTHLY/ANNUAL conversion
       const cddFeeMatch = r.content.match(/cdd.*?\$\s*([\d,]+(?:\.\d{2})?)|(?:cdd|community development).*?(?:fee|assessment).*?\$\s*([\d,]+(?:\.\d{2})?)/i);
       if (cddFeeMatch && !fields['153_annual_cdd_fee']) {
         const feeStr = cddFeeMatch[1] || cddFeeMatch[2];
-        const fee = parseFloat(feeStr.replace(/,/g, ''));
-        if (fee > 0 && fee < 10000) { // Sanity check
+        let fee = parseFloat(feeStr.replace(/,/g, ''));
+        const context = cddFeeMatch[0].toLowerCase();
+
+        // CRITICAL: Determine if monthly or annual
+        const isMonthly = /month|mo\b|\/mo/i.test(context);
+        const isAnnual = /year|annual|yearly/i.test(context);
+
+        // If no explicit indicator, use fee amount as heuristic:
+        // - Florida CDD fees are typically $500-$5000/year
+        // - If fee < $500 and no annual indicator, likely monthly
+        if (!isMonthly && !isAnnual) {
+          if (fee < 500) {
+            fee = fee * 12; // Convert monthly to annual
+            console.log(`⚠️ [Tavily] CDD fee $${feeStr} assumed MONTHLY, converted to annual: $${fee}`);
+          } else {
+            console.log(`✅ [Tavily] CDD fee $${fee} assumed ANNUAL`);
+          }
+        } else if (isMonthly) {
+          fee = fee * 12;
+          console.log(`✅ [Tavily] CDD fee $${feeStr}/month converted to annual: $${fee}`);
+        } else {
+          console.log(`✅ [Tavily] CDD fee $${fee}/year (already annual)`);
+        }
+
+        // Sanity check: Annual CDD should be between $200 and $5000
+        if (fee >= 200 && fee <= 5000) {
           fields['153_annual_cdd_fee'] = {
             value: fee,
             source: 'Tavily (Property Appraiser)',
             confidence: 'Medium',
           };
-          console.log(`✅ [Tavily] Found CDD fee: $${fee}`);
+        } else if (fee > 0) {
+          // Still save with lower confidence if outside expected range
+          fields['153_annual_cdd_fee'] = {
+            value: fee,
+            source: 'Tavily (Property Appraiser)',
+            confidence: 'Low',
+          };
+          console.log(`⚠️ [Tavily] CDD fee $${fee} outside expected range - saved with Low confidence`);
         }
       }
     } else if (content.match(/no cdd|cdd:?\s*n\/a|not in.*cdd/i)) {
