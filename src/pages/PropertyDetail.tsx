@@ -2338,22 +2338,30 @@ export default function PropertyDetail() {
                           )}
                         </div>
                         <div className="grid gap-3">
-                          {comps.slice(0, 3).map((comp: any, idx: number) => (
+                          {comps.slice(0, 3).map((comp: any, idx: number) => {
+                            // FIX: Handle multiple field name conventions from different LLMs
+                            const compAddress = comp.address || comp.Address || comp.street_address || 'Unknown Address';
+                            const compPrice = comp.price || comp.sale_price || comp.salePrice || comp.sold_price;
+                            const compSqft = comp.sqft || comp.square_feet || comp.squareFeet || comp.living_area;
+                            const compBeds = comp.beds || comp.bedrooms || comp.bed;
+                            const compBaths = comp.baths || comp.bathrooms || comp.bath;
+                            const compDate = comp.sold_date || comp.sale_date || comp.saleDate || comp.close_date;
+                            return (
                             <div key={idx} className="bg-white/5 border border-white/10 rounded-lg p-3">
                               <div className="flex items-start justify-between mb-2">
-                                <div className="text-sm font-medium text-white">{comp.address || 'Unknown Address'}</div>
+                                <div className="text-sm font-medium text-white">{compAddress}</div>
                                 <div className="text-sm font-semibold text-quantum-green">
-                                  {comp.price ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(comp.price) : 'N/A'}
+                                  {compPrice ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(compPrice) : 'N/A'}
                                 </div>
                               </div>
                               <div className="grid grid-cols-4 gap-2 text-xs text-gray-400">
-                                <div><span className="text-gray-500">Sqft:</span> {comp.sqft?.toLocaleString() || 'N/A'}</div>
-                                <div><span className="text-gray-500">Beds:</span> {comp.beds || 'N/A'}</div>
-                                <div><span className="text-gray-500">Baths:</span> {comp.baths || 'N/A'}</div>
-                                <div><span className="text-gray-500">Sold:</span> {comp.sold_date || 'N/A'}</div>
+                                <div><span className="text-gray-500">Sqft:</span> {compSqft?.toLocaleString() || 'N/A'}</div>
+                                <div><span className="text-gray-500">Beds:</span> {compBeds || 'N/A'}</div>
+                                <div><span className="text-gray-500">Baths:</span> {compBaths || 'N/A'}</div>
+                                <div><span className="text-gray-500">Sold:</span> {compDate || 'N/A'}</div>
                               </div>
                             </div>
-                          ))}
+                          );})}
                         </div>
                       </div>
                     );
