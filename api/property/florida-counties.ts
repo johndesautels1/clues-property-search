@@ -558,18 +558,8 @@ async function scrapeTaxCollector(address: string, county: string, parcelId?: st
       }
     }
 
-    // Extract tax history (look for table rows with years/amounts)
-    const historyMatches = Array.from(html.matchAll(/(\d{4})[^$]*\$?([\d,]+\.?\d*)/g));
-    const taxHistory: string[] = [];
-    for (const match of historyMatches) {
-      const year = parseInt(match[1]);
-      if (year >= 2019 && year <= 2025) {
-        taxHistory.push(`${match[1]}: $${match[2]}`);
-      }
-    }
-    if (taxHistory.length > 0) {
-      fields['34_recent_tax_history'] = { value: taxHistory.slice(0, 5).join(', '), source, confidence: 'High' };
-    }
+    // REMOVED: 34_recent_tax_history - No schema field exists for this
+    // Tax history extraction was removed 2026-01-13
 
     // Extract special assessments (CDD, etc.)
     const assessmentPatterns = [
