@@ -239,6 +239,56 @@ function extractFromPinellasHtml(html: string, parcelId: string): Record<string,
     }
   }
 
+  // Extract last sale date/price (Fields 13, 14) - ADDED 2026-01-13 (FALLBACK only)
+  const saleDatePatterns = [
+    /(?:Last\s*)?Sale\s*Date[:\s]*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i,
+    /(?:Last\s*)?(?:Sale|Transfer|Deed)\s*(?:Date)?[:\s]*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i,
+    /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})[^$]*\$\s*[\d,]+/i, // Date followed by price
+  ];
+  const salePricePatterns = [
+    /(?:Last\s*)?Sale\s*Price[:\s]*\$?\s*([\d,]+)/i,
+    /(?:Sale|Transfer|Deed)\s*(?:Amount|Price)[:\s]*\$?\s*([\d,]+)/i,
+    /Sold[:\s]*(?:for)?\s*\$?\s*([\d,]+)/i,
+  ];
+
+  for (const pattern of saleDatePatterns) {
+    const dateMatch = html.match(pattern);
+    if (dateMatch) {
+      const rawDate = dateMatch[1];
+      // Convert to YYYY-MM-DD format
+      const parts = rawDate.split(/[\/\-]/);
+      if (parts.length === 3) {
+        let year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+        const month = parts[0].padStart(2, '0');
+        const day = parts[1].padStart(2, '0');
+        if (parseInt(year) >= 1990 && parseInt(year) <= 2026) {
+          fields['13_last_sale_date'] = {
+            value: `${year}-${month}-${day}`,
+            source: 'Pinellas County Property Appraiser',
+            confidence: 'High'
+          };
+          break;
+        }
+      }
+    }
+  }
+
+  for (const pattern of salePricePatterns) {
+    const priceMatch = html.match(pattern);
+    if (priceMatch) {
+      const price = parseInt(priceMatch[1].replace(/,/g, ''));
+      // Validate: $10,000 - $50,000,000 range
+      if (price >= 10000 && price <= 50000000) {
+        fields['14_last_sale_price'] = {
+          value: price,
+          source: 'Pinellas County Property Appraiser',
+          confidence: 'High'
+        };
+        break;
+      }
+    }
+  }
+
   return fields;
 }
 
@@ -357,6 +407,27 @@ function extractFromHillsboroughHtml(html: string): Record<string, any> {
     }
   }
 
+  // Extract last sale date/price (Fields 13, 14) - ADDED 2026-01-13 (FALLBACK only)
+  const saleDateMatch = html.match(/(?:Last\s*)?(?:Sale|Transfer|Deed)\s*Date[:\s]*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i);
+  if (saleDateMatch) {
+    const parts = saleDateMatch[1].split(/[\/\-]/);
+    if (parts.length === 3) {
+      const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+      const month = parts[0].padStart(2, '0');
+      const day = parts[1].padStart(2, '0');
+      if (parseInt(year) >= 1990 && parseInt(year) <= 2026) {
+        fields['13_last_sale_date'] = { value: `${year}-${month}-${day}`, source: 'Hillsborough County Property Appraiser', confidence: 'High' };
+      }
+    }
+  }
+  const salePriceMatch = html.match(/(?:Last\s*)?(?:Sale|Transfer|Deed)\s*(?:Amount|Price)[:\s]*\$?\s*([\d,]+)/i);
+  if (salePriceMatch) {
+    const price = parseInt(salePriceMatch[1].replace(/,/g, ''));
+    if (price >= 10000 && price <= 50000000) {
+      fields['14_last_sale_price'] = { value: price, source: 'Hillsborough County Property Appraiser', confidence: 'High' };
+    }
+  }
+
   return fields;
 }
 
@@ -428,6 +499,27 @@ function extractFromManateeHtml(html: string): Record<string, any> {
         fields['150_legal_description'] = { value: description, source, confidence: 'High' };
         break;
       }
+    }
+  }
+
+  // Extract last sale date/price (Fields 13, 14) - ADDED 2026-01-13 (FALLBACK only)
+  const saleDateMatch = html.match(/(?:Last\s*)?(?:Sale|Transfer|Deed)\s*Date[:\s]*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i);
+  if (saleDateMatch) {
+    const parts = saleDateMatch[1].split(/[\/\-]/);
+    if (parts.length === 3) {
+      const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+      const month = parts[0].padStart(2, '0');
+      const day = parts[1].padStart(2, '0');
+      if (parseInt(year) >= 1990 && parseInt(year) <= 2026) {
+        fields['13_last_sale_date'] = { value: `${year}-${month}-${day}`, source, confidence: 'High' };
+      }
+    }
+  }
+  const salePriceMatch = html.match(/(?:Last\s*)?(?:Sale|Transfer|Deed)\s*(?:Amount|Price)[:\s]*\$?\s*([\d,]+)/i);
+  if (salePriceMatch) {
+    const price = parseInt(salePriceMatch[1].replace(/,/g, ''));
+    if (price >= 10000 && price <= 50000000) {
+      fields['14_last_sale_price'] = { value: price, source, confidence: 'High' };
     }
   }
 
@@ -514,6 +606,27 @@ function extractFromPolkHtml(html: string): Record<string, any> {
     }
   }
 
+  // Extract last sale date/price (Fields 13, 14) - ADDED 2026-01-13 (FALLBACK only)
+  const saleDateMatch = html.match(/(?:Last\s*)?(?:Sale|Transfer|Deed)\s*Date[:\s]*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i);
+  if (saleDateMatch) {
+    const parts = saleDateMatch[1].split(/[\/\-]/);
+    if (parts.length === 3) {
+      const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+      const month = parts[0].padStart(2, '0');
+      const day = parts[1].padStart(2, '0');
+      if (parseInt(year) >= 1990 && parseInt(year) <= 2026) {
+        fields['13_last_sale_date'] = { value: `${year}-${month}-${day}`, source, confidence: 'High' };
+      }
+    }
+  }
+  const salePriceMatch = html.match(/(?:Last\s*)?(?:Sale|Transfer|Deed)\s*(?:Amount|Price)[:\s]*\$?\s*([\d,]+)/i);
+  if (salePriceMatch) {
+    const price = parseInt(salePriceMatch[1].replace(/,/g, ''));
+    if (price >= 10000 && price <= 50000000) {
+      fields['14_last_sale_price'] = { value: price, source, confidence: 'High' };
+    }
+  }
+
   return fields;
 }
 
@@ -588,6 +701,27 @@ function extractFromPascoHtml(html: string): Record<string, any> {
     }
   }
 
+  // Extract last sale date/price (Fields 13, 14) - ADDED 2026-01-13 (FALLBACK only)
+  const saleDateMatch = html.match(/(?:Last\s*)?(?:Sale|Transfer|Deed)\s*Date[:\s]*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i);
+  if (saleDateMatch) {
+    const parts = saleDateMatch[1].split(/[\/\-]/);
+    if (parts.length === 3) {
+      const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+      const month = parts[0].padStart(2, '0');
+      const day = parts[1].padStart(2, '0');
+      if (parseInt(year) >= 1990 && parseInt(year) <= 2026) {
+        fields['13_last_sale_date'] = { value: `${year}-${month}-${day}`, source, confidence: 'High' };
+      }
+    }
+  }
+  const salePriceMatch = html.match(/(?:Last\s*)?(?:Sale|Transfer|Deed)\s*(?:Amount|Price)[:\s]*\$?\s*([\d,]+)/i);
+  if (salePriceMatch) {
+    const price = parseInt(salePriceMatch[1].replace(/,/g, ''));
+    if (price >= 10000 && price <= 50000000) {
+      fields['14_last_sale_price'] = { value: price, source, confidence: 'High' };
+    }
+  }
+
   return fields;
 }
 
@@ -659,6 +793,27 @@ function extractFromHernandoHtml(html: string): Record<string, any> {
         fields['150_legal_description'] = { value: description, source, confidence: 'High' };
         break;
       }
+    }
+  }
+
+  // Extract last sale date/price (Fields 13, 14) - ADDED 2026-01-13 (FALLBACK only)
+  const saleDateMatch = html.match(/(?:Last\s*)?(?:Sale|Transfer|Deed)\s*Date[:\s]*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i);
+  if (saleDateMatch) {
+    const parts = saleDateMatch[1].split(/[\/\-]/);
+    if (parts.length === 3) {
+      const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+      const month = parts[0].padStart(2, '0');
+      const day = parts[1].padStart(2, '0');
+      if (parseInt(year) >= 1990 && parseInt(year) <= 2026) {
+        fields['13_last_sale_date'] = { value: `${year}-${month}-${day}`, source, confidence: 'High' };
+      }
+    }
+  }
+  const salePriceMatch = html.match(/(?:Last\s*)?(?:Sale|Transfer|Deed)\s*(?:Amount|Price)[:\s]*\$?\s*([\d,]+)/i);
+  if (salePriceMatch) {
+    const price = parseInt(salePriceMatch[1].replace(/,/g, ''));
+    if (price >= 10000 && price <= 50000000) {
+      fields['14_last_sale_price'] = { value: price, source, confidence: 'High' };
     }
   }
 

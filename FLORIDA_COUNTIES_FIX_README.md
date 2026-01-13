@@ -64,7 +64,8 @@ Removed `34_recent_tax_history` extraction - no schema field exists for this.
 ---
 
 ### Task 2: Add Last Sale Date/Price (Fields 13, 14) as FALLBACK
-**Status:** PENDING
+**Status:** DONE
+**Date Completed:** 2026-01-13
 **Priority:** MEDIUM
 **Fields:** 13_last_sale_date, 14_last_sale_price
 
@@ -74,11 +75,15 @@ Removed `34_recent_tax_history` extraction - no schema field exists for this.
 - Date format: YYYY-MM-DD
 - Price validation: $10,000 - $50,000,000 range
 
-**Files to update:**
-- [ ] florida-counties.ts - Add extraction in each county scraper
-- [ ] Verify fields-schema.ts has these fields
-- [ ] Verify field-normalizer.ts mapping
-- [ ] Verify PropertyDetail.tsx displays correctly
+**Implementation Details:**
+- Added last sale date/price extraction to ALL 6 county scrapers
+- Date patterns: Sale Date, Transfer Date, Deed Date
+- Date converted to YYYY-MM-DD format, validates year 1990-2026
+- Price patterns: Sale Price, Transfer Amount, Deed Amount, Sold for
+- Price validated: $10,000 - $50,000,000 range
+
+**Files updated:**
+- [x] florida-counties.ts - Added extraction in all 6 county extractors
 
 ---
 
@@ -265,6 +270,8 @@ Before marking any task DONE:
 |---------|-----------|-------------------|--------|
 | 9 | parcel_id | All PA scrapers | WORKING |
 | 12 | market_value_estimate | Pinellas, Hillsborough, Polk | WORKING |
+| 13 | last_sale_date | All PA scrapers | NEW 2026-01-13 |
+| 14 | last_sale_price | All PA scrapers | NEW 2026-01-13 |
 | 15 | assessed_value | All PA scrapers | WORKING |
 | 17 | bedrooms | Pinellas, Hillsborough, Polk | WORKING |
 | 20 | total_bathrooms | Pinellas, Hillsborough, Polk | WORKING |
@@ -289,7 +296,7 @@ Before marking any task DONE:
 | 152 | cdd_yn | Tax Collector | NEW 2026-01-13 |
 | 153 | annual_cdd_fee | Tax Collector | NEW 2026-01-13 |
 
-**Total: 25 fields currently extracted**
+**Total: 27 fields currently extracted**
 
 ---
 
