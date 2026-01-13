@@ -982,7 +982,7 @@ export default function AddProperty() {
         electricProvider: createDataField(row['104_electric_provider'] || ''),
         waterProvider: createDataField(row['106_water_provider'] || ''),
         sewerProvider: createDataField(row['108_sewer_provider'] || ''),
-        naturalGas: createDataField(row['109_natural_gas'] || ''),
+        naturalGas: createDataField(parseBoolean(row['109_natural_gas'])),
         trashProvider: createDataField(row['110_trash_provider'] || ''),
         internetProvidersTop3: createDataField(row['111_internet_providers_top3'] ? row['111_internet_providers_top3'].split(',').map((s: string) => s.trim()) : []),
         maxInternetSpeed: createDataField(row['112_max_internet_speed'] || ''),
@@ -1008,7 +1008,7 @@ export default function AddProperty() {
         noiseLevelDbEst: createDataField(row['129_noise_level_db_est'] || ''),
         solarPotential: createDataField(row['130_solar_potential'] || ''),
         // Additional Features (fields 131-168)
-        evChargingYn: createDataField(row['133_ev_charging'] || ''),
+        evChargingYn: createDataField(parseBoolean(row['133_ev_charging'])),
         smartHomeFeatures: createDataField(row['134_smart_home_features'] || ''),
         accessibilityMods: createDataField(row['135_accessibility_modifications'] || ''),
         viewType: createDataField(row['131_view_type'] || ''),
