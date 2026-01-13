@@ -151,12 +151,12 @@ export interface ChartProperty {
   trafficLevel: string;
   walkabilityDescription: string;
 
-  // Distances & Amenities
-  distanceGrocery: number;
-  distanceHospital: number;
-  distanceAirport: number;
-  distancePark: number;
-  distanceBeach: number;
+  // Distances & Amenities (null = not available)
+  distanceGrocery: number | null;
+  distanceHospital: number | null;
+  distanceAirport: number | null;
+  distancePark: number | null;
+  distanceBeach: number | null;
 
   // Safety & Crime
   violentCrimeIndex: string;
@@ -359,12 +359,12 @@ export function mapPropertyToChart(property: Property): ChartProperty {
     trafficLevel: getVal(location?.trafficLevel, ''),
     walkabilityDescription: getVal(location?.walkabilityDescription, ''),
 
-    // Distances & Amenities
-    distanceGrocery: getVal(location?.distanceGroceryMiles, 0),
-    distanceHospital: getVal(location?.distanceHospitalMiles, 0),
-    distanceAirport: getVal(location?.distanceAirportMiles, 0),
-    distancePark: getVal(location?.distanceParkMiles, 0),
-    distanceBeach: getVal(location?.distanceBeachMiles, 0),
+    // Distances & Amenities (null = not available, NOT 0 which means "at location")
+    distanceGrocery: getVal(location?.distanceGroceryMiles, null),
+    distanceHospital: getVal(location?.distanceHospitalMiles, null),
+    distanceAirport: getVal(location?.distanceAirportMiles, null),
+    distancePark: getVal(location?.distanceParkMiles, null),
+    distanceBeach: getVal(location?.distanceBeachMiles, null),
 
     // Safety & Crime
     violentCrimeIndex: getVal(location?.crimeIndexViolent, ''),
