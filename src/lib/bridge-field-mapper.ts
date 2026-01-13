@@ -506,10 +506,36 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   // ================================================================
   // GROUP 7: Exterior Features (Fields 54-58)
   // ================================================================
-  addField('54_pool_yn', property.PoolPrivateYN);
+
+  // FIX: Check for both private AND community pools
+  // Private pool: PoolPrivateYN = true
+  // Community pool: CommunityFeatures includes "Pool", "Community Pool", "Swimming Pool", etc.
+  let hasPool = property.PoolPrivateYN === true;
+  let poolTypePrefix = property.PoolPrivateYN ? 'Private' : '';
+
+  // Check CommunityFeatures for community/condo pool
+  if (property.CommunityFeatures && Array.isArray(property.CommunityFeatures)) {
+    const communityFeatureStr = property.CommunityFeatures.join(',').toLowerCase();
+    if (communityFeatureStr.includes('pool') || communityFeatureStr.includes('swimming')) {
+      hasPool = true;
+      poolTypePrefix = poolTypePrefix ? `${poolTypePrefix}, Community` : 'Community';
+    }
+  }
+
+  // Set pool_yn if either private or community pool exists
+  if (hasPool) {
+    addField('54_pool_yn', true);
+  } else {
+    // Explicitly set to false if no pool (prevents "Not available")
+    addField('54_pool_yn', false);
+  }
 
   // Field 55: Pool Type - Combine pool features with spa features
   const poolAndSpaFeatures: string[] = [];
+  // Add pool type prefix (Private, Community, or both)
+  if (poolTypePrefix) {
+    poolAndSpaFeatures.push(poolTypePrefix);
+  }
   if (property.PoolFeatures && Array.isArray(property.PoolFeatures) && property.PoolFeatures.length > 0) {
     poolAndSpaFeatures.push(...property.PoolFeatures);
   }
@@ -522,6 +548,9 @@ export function mapBridgePropertyToSchema(property: BridgeProperty): MappedPrope
   }
   if (poolAndSpaFeatures.length > 0) {
     addField('55_pool_type', poolAndSpaFeatures.join(', '));
+  } else if (!hasPool) {
+    // Explicitly set "None" for homes without pools
+    addField('55_pool_type', 'None');
   }
 
   if (property.PatioAndPorchFeatures && Array.isArray(property.PatioAndPorchFeatures)) {
