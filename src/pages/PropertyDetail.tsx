@@ -219,6 +219,8 @@ interface DataFieldProps {
   fieldKey?: string; // Field key for retry API calls
   onRetry?: (fieldKey: string, llmName: string) => void;
   isRetrying?: boolean;
+  isTavilyRetrying?: boolean;
+  isGeminiRetrying?: boolean;
   isAdmin?: boolean; // Controls visibility of source info
   // Validation status from arbitration service
   validationStatus?: 'passed' | 'failed' | 'warning';
@@ -227,7 +229,7 @@ interface DataFieldProps {
   singleSourceWarning?: boolean;
 }
 
-const DataField = ({ label, value, icon, format = 'text', confidence, sources, llmSources, hasConflict, conflictValues, fieldKey, onRetry, isRetrying, isAdmin = false, validationStatus, validationMessage, singleSourceWarning }: DataFieldProps) => {
+const DataField = ({ label, value, icon, format = 'text', confidence, sources, llmSources, hasConflict, conflictValues, fieldKey, onRetry, isRetrying, isTavilyRetrying, isGeminiRetrying, isAdmin = false, validationStatus, validationMessage, singleSourceWarning }: DataFieldProps) => {
   const [showRetry, setShowRetry] = useState(false);
 
   // Don't render if no value AND not explicitly showing missing data
@@ -401,11 +403,11 @@ const DataField = ({ label, value, icon, format = 'text', confidence, sources, l
           <div className="mt-2">
             <button
               onClick={() => globalTavilyHandler!(fieldKey)}
-              disabled={isRetrying}
-              className={`w-full px-4 py-2 text-sm rounded-lg bg-gradient-to-r from-cyan-500/20 to-blue-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 text-cyan-300 border border-cyan-500/40 transition-all ${isRetrying ? 'opacity-50 cursor-not-allowed animate-pulse' : 'hover:shadow-lg hover:shadow-cyan-500/20'}`}
+              disabled={isTavilyRetrying}
+              className={`w-full px-4 py-2 text-sm rounded-lg bg-gradient-to-r from-cyan-500/20 to-blue-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 text-cyan-300 border border-cyan-500/40 transition-all ${isTavilyRetrying ? 'opacity-50 cursor-not-allowed animate-pulse' : 'hover:shadow-lg hover:shadow-cyan-500/20'}`}
             >
               <span className="flex items-center justify-center gap-2">
-                {isRetrying ? (
+                {isTavilyRetrying ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
                     ⏳ Searching with Tavily...
@@ -435,11 +437,11 @@ const DataField = ({ label, value, icon, format = 'text', confidence, sources, l
           <div className="mt-2">
             <button
               onClick={() => globalGeminiHandler!(fieldKey)}
-              disabled={isRetrying}
-              className={`w-full px-4 py-2 text-sm rounded-lg bg-gradient-to-r from-violet-500/20 to-purple-500/20 hover:from-violet-500/30 hover:to-purple-500/30 text-violet-300 border border-violet-500/40 transition-all ${isRetrying ? 'opacity-50 cursor-not-allowed animate-pulse' : 'hover:shadow-lg hover:shadow-violet-500/20'}`}
+              disabled={isGeminiRetrying}
+              className={`w-full px-4 py-2 text-sm rounded-lg bg-gradient-to-r from-violet-500/20 to-purple-500/20 hover:from-violet-500/30 hover:to-purple-500/30 text-violet-300 border border-violet-500/40 transition-all ${isGeminiRetrying ? 'opacity-50 cursor-not-allowed animate-pulse' : 'hover:shadow-lg hover:shadow-violet-500/20'}`}
             >
               <span className="flex items-center justify-center gap-2">
-                {isRetrying ? (
+                {isGeminiRetrying ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
                     ⏳ Searching with Gemini...
@@ -565,6 +567,8 @@ let globalRetryHandler: ((fieldKey: string, llmName: string) => void) | undefine
 let globalTavilyHandler: ((fieldKey: string) => void) | undefined;
 let globalGeminiHandler: ((fieldKey: string) => void) | undefined;  // ADDED 2026-01-13: On-demand Gemini button
 let globalIsRetrying = false;
+let globalIsTavilyRetrying = false;  // Separate state for Tavily button
+let globalIsGeminiRetrying = false;  // Separate state for Gemini button
 let globalIsAdmin = false; // Controls source visibility (admin vs user view)
 
 const renderDataField = (
@@ -603,6 +607,8 @@ const renderDataField = (
       fieldKey={fieldKey}
       onRetry={globalRetryHandler}
       isRetrying={globalIsRetrying}
+      isTavilyRetrying={globalIsTavilyRetrying}
+      isGeminiRetrying={globalIsGeminiRetrying}
       isAdmin={globalIsAdmin}
       validationStatus={validationStatus as 'passed' | 'failed' | 'warning' | undefined}
       validationMessage={field.validationMessage}
@@ -681,6 +687,8 @@ export default function PropertyDetail() {
   const navigate = useNavigate();
   const { getPropertyById, getFullPropertyById, removeProperty, updateFullProperty, updateProperty, markPropertyAsViewed, saveProperty, unsaveProperty } = usePropertyStore();
   const [isRetrying, setIsRetrying] = useState(false);
+  const [isTavilyRetrying, setIsTavilyRetrying] = useState(false);
+  const [isGeminiRetrying, setIsGeminiRetrying] = useState(false);
   const [isEnriching, setIsEnriching] = useState(false);
   const [enrichProgress, setEnrichProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null); // Error state for consistent UX
@@ -1176,11 +1184,11 @@ export default function PropertyDetail() {
     }
   };
 
-  // Tavily handler - fetches single field with targeted web search (ADMIN ONLY)
+  // Tavily handler - fetches single field with targeted web search (ALL USERS)
   const handleTavilyField = async (fieldKey: string) => {
     if (!fullProperty || !id) return;
 
-    setIsRetrying(true);
+    setIsTavilyRetrying(true);
     try {
       const apiUrl = '/api/property/fetch-tavily-field';
       const address = fullProperty.address?.fullAddress?.value || fullProperty.address?.streetAddress?.value || '';
@@ -1191,7 +1199,7 @@ export default function PropertyDetail() {
       if (!address) {
         console.error('[TAVILY-FIELD] No address found in property');
         setErrorMessage('Cannot fetch with Tavily: No address found for this property');
-        setIsRetrying(false);
+        setIsTavilyRetrying(false);
         return;
       }
 
@@ -1200,7 +1208,7 @@ export default function PropertyDetail() {
       if (!fieldId) {
         console.error('[TAVILY-FIELD] Unknown field key:', fieldKey);
         setErrorMessage(`Unknown field: ${fieldKey}`);
-        setIsRetrying(false);
+        setIsTavilyRetrying(false);
         return;
       }
 
@@ -1251,7 +1259,7 @@ export default function PropertyDetail() {
       console.error('Tavily fetch error:', error);
       setErrorMessage(`Failed to fetch with Tavily: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
-      setIsRetrying(false);
+      setIsTavilyRetrying(false);
     }
   };
 
@@ -1259,7 +1267,7 @@ export default function PropertyDetail() {
   const handleGeminiField = async (fieldKey: string) => {
     if (!fullProperty || !id) return;
 
-    setIsRetrying(true);
+    setIsGeminiRetrying(true);
     try {
       const apiUrl = '/api/property/retry-llm';
       const fullAddress = fullProperty.address?.fullAddress?.value ||
@@ -1268,7 +1276,7 @@ export default function PropertyDetail() {
       if (!fullAddress || fullAddress === ', ,') {
         console.error('[GEMINI-FIELD] No address found in property');
         setErrorMessage('Cannot fetch with Gemini: No address found for this property');
-        setIsRetrying(false);
+        setIsGeminiRetrying(false);
         return;
       }
 
@@ -1317,7 +1325,7 @@ export default function PropertyDetail() {
       console.error('Gemini fetch error:', error);
       setErrorMessage(`Failed to fetch with Gemini: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
-      setIsRetrying(false);
+      setIsGeminiRetrying(false);
     }
   };
 
@@ -1326,6 +1334,8 @@ export default function PropertyDetail() {
   globalTavilyHandler = handleTavilyField;
   globalGeminiHandler = handleGeminiField;  // ADDED 2026-01-13
   globalIsRetrying = isRetrying;
+  globalIsTavilyRetrying = isTavilyRetrying;
+  globalIsGeminiRetrying = isGeminiRetrying;
   globalIsAdmin = isAdmin; // Pass admin state to renderDataField
 
   console.log('🔎 DETAIL PAGE: Property ID:', id);
