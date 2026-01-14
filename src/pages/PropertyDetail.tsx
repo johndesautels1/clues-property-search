@@ -915,7 +915,8 @@ export default function PropertyDetail() {
 
     setIsRetrying(true);
     try {
-      const apiUrl = '/api/property/retry-llm';
+      const baseUrl = import.meta.env.VITE_API_URL || '';
+      const apiUrl = `${baseUrl}/api/property/retry-llm`;
       const address = fullProperty.address?.fullAddress?.value || fullProperty.address?.streetAddress?.value || '';
 
       if (!address) {
@@ -1190,7 +1191,8 @@ export default function PropertyDetail() {
 
     setIsTavilyRetrying(true);
     try {
-      const apiUrl = '/api/property/fetch-tavily-field';
+      const baseUrl = import.meta.env.VITE_API_URL || '';
+      const apiUrl = `${baseUrl}/api/property/fetch-tavily-field`;
       const address = fullProperty.address?.fullAddress?.value || fullProperty.address?.streetAddress?.value || '';
       const city = fullProperty.address?.city?.value || '';
       const state = fullProperty.address?.state?.value || '';
@@ -1269,7 +1271,8 @@ export default function PropertyDetail() {
 
     setIsGeminiRetrying(true);
     try {
-      const apiUrl = '/api/property/retry-llm';
+      const baseUrl = import.meta.env.VITE_API_URL || '';
+      const apiUrl = `${baseUrl}/api/property/retry-llm`;
       const fullAddress = fullProperty.address?.fullAddress?.value ||
         `${fullProperty.address?.streetAddress?.value || ''}, ${fullProperty.address?.city?.value || ''}, ${fullProperty.address?.state?.value || ''} ${fullProperty.address?.zipCode?.value || ''}`.trim();
 
