@@ -403,7 +403,7 @@ export function mapPropertyToChart(property: Property): ChartProperty {
 
     // Additional Features
     solarPotential: getVal(utilities?.solarPotential, ''),
-    evCharging: getVal(utilities?.evChargingYn, ''),
+    evCharging: (() => { const v = utilities?.evChargingYn?.value; return v === true ? 'Yes' : v === false ? 'No' : (typeof v === 'string' ? v : ''); })(),
     smartHomeFeatures: getVal(utilities?.smartHomeFeatures, ''),
     viewType: getVal(utilities?.viewType, ''),
     lotFeatures: getVal(utilities?.lotFeatures, ''),

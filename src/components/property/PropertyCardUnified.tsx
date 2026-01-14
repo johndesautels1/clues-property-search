@@ -165,7 +165,7 @@ export default function PropertyCardUnified({
     // Features (fields 54, 133, 134)
     hasPool: fullProperty ? getFieldValue(fullProperty.structural?.poolYn) === true : false,
     hasBeach: false, // Not in 181-field schema
-    hasEV: fullProperty ? (getFieldValue(fullProperty.utilities?.evChargingYn) === 'Yes' || getFieldValue(fullProperty.utilities?.evChargingYn) === 'true') : false,
+    hasEV: fullProperty ? getFieldValue(fullProperty.utilities?.evChargingYn) === true : false,
     hasSmart: fullProperty ? (getFieldValue(fullProperty.utilities?.smartHomeFeatures) ? true : false) : false,
 
     // FIX #4: Get garage spaces for bottom widget

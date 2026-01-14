@@ -188,7 +188,8 @@ function ExteriorUpgrades({ properties, onPropertyClick }: CategoryGProps) {
     const address = getVal(p.address?.streetAddress) || `Property ${idx + 1}`;
 
     // Get upgrade fields
-    const evCharging = getVal(p.utilities?.evChargingYn) || '';
+    const evChargingRaw = getVal(p.utilities?.evChargingYn);
+    const evCharging = evChargingRaw === true ? 'Yes' : evChargingRaw === false ? 'No' : (evChargingRaw || '');
     const solarPotential = getVal(p.utilities?.solarPotential) || '';
     const fence = getVal(p.structural?.fence) || '';
     const landscaping = getVal(p.structural?.landscaping) || '';

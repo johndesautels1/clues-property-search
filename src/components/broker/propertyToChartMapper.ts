@@ -350,7 +350,7 @@ export function mapPropertyToChart(property: Property): ChartProperty {
       deck: hasDeck ? true : null,
       smartHome: smartHomeStr ? true : null,
       fireplace: hasFireplace ?? null,
-      evCharging: evChargingStr ? (evChargingStr.toLowerCase() === 'yes' || evChargingStr.toLowerCase() === 'true') : null,
+      evCharging: evChargingStr ?? null,
       beachAccess: beachDist !== null ? beachDist <= 0.5 : null,
     },
 

@@ -209,7 +209,7 @@ interface DataFieldProps {
   label: string;
   value: any;
   icon?: React.ReactNode;
-  format?: 'currency' | 'number' | 'percent' | 'date' | 'text';
+  format?: 'currency' | 'number' | 'percent' | 'date' | 'text' | 'boolean';
   // LLM metadata for color coding (ADMIN ONLY)
   confidence?: string;
   sources?: string[]; // Primary sources (MLS, Google, APIs, etc.)
@@ -506,6 +506,14 @@ const formatValue = (value: any, format: string): string => {
       return `${Number(value).toFixed(2)}%`;
     case 'date':
       return new Date(value).toLocaleDateString();
+    case 'boolean':
+      if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+      if (typeof value === 'string') {
+        const lower = value.toLowerCase();
+        if (lower === 'true' || lower === 'yes' || lower === 'y' || lower === '1') return 'Yes';
+        if (lower === 'false' || lower === 'no' || lower === 'n' || lower === '0') return 'No';
+      }
+      return value ? 'Yes' : 'No';
     default:
       if (typeof value === 'boolean') return value ? 'Yes' : 'No';
       if (Array.isArray(value)) {
@@ -562,7 +570,7 @@ let globalIsAdmin = false; // Controls source visibility (admin vs user view)
 const renderDataField = (
   label: string,
   field: DataFieldInput<any> | undefined,
-  format: 'currency' | 'number' | 'percent' | 'date' | 'text' = 'text',
+  format: 'currency' | 'number' | 'percent' | 'date' | 'text' | 'boolean' = 'text',
   icon?: React.ReactNode,
   fieldKey?: string
 ) => {
