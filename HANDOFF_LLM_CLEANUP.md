@@ -47,7 +47,7 @@ Files to check:
 | LLM | Model ID | Status |
 |-----|----------|--------|
 | GPT | `gpt-4o-2025-12-11` | DONE |
-| Gemini | `gemini-3-pro-preview` | DONE |
+| Gemini | `gemini-3-pro` | DONE |
 | Grok | `grok-4-1-fast-reasoning` | DONE |
 | Perplexity | `sonar-pro` | DONE |
 | Claude Opus | `claude-opus-4-5-20251101` | NEEDS VERIFICATION |
@@ -76,7 +76,7 @@ PROPERTY SEARCH FLOW:
 │ 6. TIER 5: LLM Web Search (34 missing fields)                   │
 │    - Perplexity sonar-pro (primary)                   │
 │    - Grok grok-4-1-fast-reasoning (fallback)                    │
-│    - Gemini gemini-3-pro-preview (fallback)                             │
+│    - Gemini gemini-3-pro (fallback)                             │
 │    - GPT gpt-4o (fallback)                                 │
 ├─────────────────────────────────────────────────────────────────┤
 │ 7. TIER 6: Claude Opus (schema normalization, NO web search)    │

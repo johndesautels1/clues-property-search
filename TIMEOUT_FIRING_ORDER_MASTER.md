@@ -164,7 +164,7 @@ t=195s  └───────────────────────
                                         │
                                         ▼
 t=195s  ┌─────────────────────────────────────────────────────────────────────────┐
-        │ LLM #2: GEMINI (gemini-3-pro-preview + Google Search)                   │
+        │ LLM #2: GEMINI (gemini-3-pro + Google Search)                   │
         │ Timeout: 180s │ Files: search.ts:5286, gemini-prompts.ts               │
         ├─────────────────────────────────────────────────────────────────────────┤
         │ Prompt Context:                                                         │

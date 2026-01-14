@@ -1239,12 +1239,60 @@ export default function PropertyDetail() {
 
           if (result.value !== null && result.value !== undefined) {
             // Success - found data
-            alert(`✅ Tavily found: ${JSON.stringify(result.value)}\n\nSource: ${result.sourceName || 'N/A'}\nConfidence: ${result.confidence}`);
+            alert(`✅ Tavily found: ${JSON.stringify(result.value)}\n\nSource: ${result.sourceName || 'Tavily'}\nConfidence: ${result.confidence || 'High'}`);
 
-            // Refresh property data to show updated value
-            const refreshed = await getFullPropertyById(id);
-            if (refreshed) {
-              updateFullProperty(id, refreshed);
+            // Update local store with fetched value
+            const currentProperty = getFullPropertyById(id);
+            if (currentProperty) {
+              // Create field update with proper metadata structure
+              const fieldUpdate = {
+                value: result.value,
+                source: result.sourceName || 'Tavily',
+                confidence: result.confidence || 'High',
+                llmSources: ['Tavily']
+              };
+
+              // Build partial property update based on fieldKey
+              // The store's mergeProperties will handle deep merging
+              const partialUpdate: any = { id };
+
+              // Map fieldKey to property path and update
+              // Uses the field naming convention (e.g., '12_market_value_estimate')
+              const fieldKeyLower = fieldKey.toLowerCase();
+
+              // Determine section based on field number ranges
+              const fieldNum = parseInt(fieldKey.split('_')[0]) || 0;
+
+              if (fieldNum >= 10 && fieldNum <= 16 || fieldNum >= 91 && fieldNum <= 103 || fieldNum >= 169 && fieldNum <= 181) {
+                // Financial/Market fields
+                if (!partialUpdate.financial) partialUpdate.financial = {};
+                if (!partialUpdate.marketPerformance) partialUpdate.marketPerformance = {};
+
+                // Map common field patterns
+                if (fieldKeyLower.includes('zestimate') || fieldKeyLower.includes('avm') || fieldKeyLower.includes('redfin')) {
+                  partialUpdate.financial[fieldKey.replace(/^\d+[a-f]?_/, '')] = fieldUpdate;
+                } else if (fieldNum >= 169) {
+                  partialUpdate.marketPerformance[fieldKey.replace(/^\d+_/, '')] = fieldUpdate;
+                } else {
+                  partialUpdate.financial[fieldKey.replace(/^\d+_/, '')] = fieldUpdate;
+                }
+              } else if (fieldNum >= 39 && fieldNum <= 62) {
+                // Structural fields
+                if (!partialUpdate.structural) partialUpdate.structural = {};
+                partialUpdate.structural[fieldKey.replace(/^\d+_/, '')] = fieldUpdate;
+              } else if (fieldNum >= 104 && fieldNum <= 138) {
+                // Utilities fields
+                if (!partialUpdate.utilities) partialUpdate.utilities = {};
+                partialUpdate.utilities[fieldKey.replace(/^\d+_/, '')] = fieldUpdate;
+              } else if (fieldNum >= 74 && fieldNum <= 90) {
+                // Location fields
+                if (!partialUpdate.location) partialUpdate.location = {};
+                partialUpdate.location[fieldKey.replace(/^\d+_/, '')] = fieldUpdate;
+              }
+
+              // Update store - mergeProperties will handle the deep merge
+              updateFullProperty(id, partialUpdate as any);
+              console.log(`[TAVILY-FIELD] Updated store with field ${fieldKey}:`, fieldUpdate);
             }
           } else {
             // No data found

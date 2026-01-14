@@ -13,7 +13,7 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getTavilyFieldConfig } from './tavily-field-config.js';
-import { getFieldDatabasePath, updateNestedProperty } from './tavily-field-database-mapping.js';
+import { getFieldDatabasePath } from './tavily-field-database-mapping.js';
 
 const TAVILY_TIMEOUT = 30000; // 30 seconds
 const LLM_TIMEOUT = 60000; // 60 seconds
@@ -116,15 +116,8 @@ export default async function handler(
       body
     );
 
-    // STEP 3: Update database if propertyId provided and value found
-    if (body.propertyId && extractionResult.value !== null) {
-      await updatePropertyDatabase(
-        body.propertyId,
-        body.fieldId,
-        fieldDbPath,
-        extractionResult.value
-      );
-    }
+    // STEP 3: Return value to frontend (frontend handles local store update)
+    // NOTE: Database persistence removed - app uses Zustand store, not Supabase
 
     return res.status(200).json({
       success: true,
@@ -396,72 +389,6 @@ async function callExtractionLLM(prompt: string): Promise<string | null> {
     }
     throw error;
   }
-}
-
-/**
- * Update property database with CORRECT nested path
- */
-async function updatePropertyDatabase(
-  propertyId: string,
-  fieldId: number,
-  fieldDbPath: any,
-  value: any
-): Promise<void> {
-  // FIX ERROR #11: Validate environment variables before use
-  const SUPABASE_URL = process.env.SUPABASE_URL;
-  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error('Supabase environment variables not configured');
-  }
-
-  // FIX ERROR #12: Validate fieldDbPath before accessing .path
-  if (!fieldDbPath || !fieldDbPath.path) {
-    throw new Error(`Invalid database path mapping for field ${fieldId}`);
-  }
-
-  const { createClient } = await import('@supabase/supabase-js');
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-  // Get current property data
-  const { data: currentProperty, error: fetchError } = await supabase
-    .from('properties')
-    .select('*')
-    .eq('id', propertyId)
-    .single();
-
-  // FIX BUG #3: Handle all Supabase response edge cases
-  if (fetchError) {
-    throw new Error(`Failed to fetch property: ${fetchError.message}`);
-  }
-
-  if (!currentProperty || typeof currentProperty !== 'object') {
-    throw new Error(`Property ${propertyId} not found or invalid`);
-  }
-
-  // Update nested property - deep clone to avoid mutations
-  const updated = JSON.parse(JSON.stringify(currentProperty));
-
-  if (!updated || typeof updated !== 'object') {
-    throw new Error(`Failed to clone property data for ${propertyId}`);
-  }
-
-  updateNestedProperty(updated, fieldDbPath.path, value);
-
-  // Save back to database
-  const { error: updateError } = await supabase
-    .from('properties')
-    .update({
-      ...updated,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', propertyId);
-
-  if (updateError) {
-    throw new Error(`Failed to update property: ${updateError.message}`);
-  }
-
-  console.log(`[Database] Updated field ${fieldId} (${fieldDbPath.label}) at path ${fieldDbPath.path.join('.')}`);
 }
 
 /**

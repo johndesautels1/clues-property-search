@@ -145,13 +145,13 @@
 ### Issue 7: Gemini Retry Returns No Data
 **Problem:** Gemini finds no data on any retry LLM request
 **Before:** Single model `gemini-3-pro-preview` may be deprecated or unavailable
-**After:** Now tries 3 models in sequence with fallback
-**Root Cause:** Google frequently deprecates Gemini model names; single model approach fails when model unavailable
+**After:** Now tries 3 stable models in sequence with fallback
+**Root Cause:** Google frequently deprecates Gemini preview/experimental model names; must use stable production IDs
 **Action Taken:**
-- search.ts:4701-4765 - Added model fallback loop with 3 models:
-  1. gemini-2.5-pro-preview-06-05 (primary)
-  2. gemini-2.0-flash-exp (fallback)
-  3. gemini-3-pro-preview (legacy)
+- search.ts:4701-4765 - Added model fallback loop with 3 stable models:
+  1. gemini-3-pro (primary - stable, Nov 2025)
+  2. gemini-2.5-pro (fallback)
+  3. gemini-2.5-flash (fast fallback)
 - retry-llm.ts:1655-1719 - Same model fallback logic
 - Removed deprecated thinking_config that may cause API errors
 - Enhanced logging shows which model succeeded/failed

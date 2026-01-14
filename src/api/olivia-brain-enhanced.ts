@@ -769,10 +769,10 @@ export async function analyzeWithOliviaEnhanced(
           llmSources: forecast.llmSources.map((source: string) => {
             if (source.includes('Claude')) return 'claude-opus';
             if (source.includes('GPT')) return 'gpt-4o';
-            if (source.includes('Gemini')) return 'gemini-3-pro-preview';
+            if (source.includes('Gemini')) return 'gemini-3-pro';
             if (source.includes('Perplexity')) return 'perplexity';
             return 'claude-opus';
-          }) as ('claude-opus' | 'gpt-4o' | 'gemini-3-pro-preview' | 'perplexity')[],
+          }) as ('claude-opus' | 'gpt-4o' | 'gemini-3-pro' | 'perplexity')[],
 
           appreciationForecast: {
             year1: forecast.appreciation1Yr,
@@ -1072,10 +1072,10 @@ export async function analyzeWithOliviaProgressive(
         llmSources: forecast.llmSources.map((source: string) => {
           if (source.includes('Claude')) return 'claude-opus';
           if (source.includes('GPT')) return 'gpt-4o';
-          if (source.includes('Gemini')) return 'gemini-3-pro-preview';
+          if (source.includes('Gemini')) return 'gemini-3-pro';
           if (source.includes('Perplexity')) return 'perplexity';
           return 'claude-opus';
-        }) as ('claude-opus' | 'gpt-4o' | 'gemini-3-pro-preview' | 'perplexity')[],
+        }) as ('claude-opus' | 'gpt-4o' | 'gemini-3-pro' | 'perplexity')[],
 
         appreciationForecast: {
           year1: forecast.appreciation1Yr,

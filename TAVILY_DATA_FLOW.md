@@ -107,7 +107,7 @@ The LLM prompts have been updated to inform them that Tavily already ran.
 │    ├─ Prompt E: Comparable sales, financing                                 │
 │    └─ Prompt F: EV charging, smart home, views/saves                        │
 │                                                                             │
-│ 2. GEMINI (gemini-3-pro-preview + Google Search)                            │
+│ 2. GEMINI (gemini-3-pro + Google Search)                            │
 │    └─ 47 high-velocity fields with web grounding                            │
 │                                                                             │
 │ 3. GPT (gpt-4o + web_search tool)                                           │

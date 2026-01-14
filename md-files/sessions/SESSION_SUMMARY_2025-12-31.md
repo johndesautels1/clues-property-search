@@ -221,7 +221,7 @@ This session focused on systematically fixing NULL/problematic fields in the CLU
 28. **Claude Opus** (claude-opus-4) - No web, Tier 5, 210s timeout
 29. **GPT** (gpt-4o) - No web, Tier 5, 210s timeout
 30. **Claude Sonnet** (claude-sonnet-4.5) - No web, Tier 5, 210s timeout
-31. **Gemini** (gemini-3-pro-preview) - Web search, Tier 5, 210s timeout
+31. **Gemini** (gemini-3-pro) - Web search, Tier 5, 210s timeout
 
 ### Backend Calculation Engine (1)
 32. **calculate-derived-fields.ts** - 11 derived fields (Tier 1 priority)

@@ -222,7 +222,7 @@ Extract property data using your training knowledge.
 
 ### 6. GEMINI (Lines 3792-3860)
 
-**Model:** `gemini-3-pro-preview`
+**Model:** `gemini-3-pro`
 **Capabilities:** NO WEB - Training data only
 **Timeout:** 210 seconds
 

@@ -81,7 +81,7 @@ Actual model identifiers sent to LLM providers:
 ```typescript
 {
   'perplexity': 'sonar-reasoning-pro',
-  'gemini': 'gemini-3-pro-preview',
+  'gemini': 'gemini-3-pro',
   'gpt': 'gpt-4o',
   'claude-sonnet': 'claude-sonnet-4-5-20250929',
   'grok': 'grok-4',

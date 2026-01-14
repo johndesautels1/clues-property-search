@@ -4705,9 +4705,9 @@ async function callGemini(address: string): Promise<any> {
 
   // FIX: Try multiple Gemini models in order (primary → fallback)
   const GEMINI_MODELS = [
-    'gemini-2.5-pro-preview-06-05',  // Latest 2.5 Pro Preview
-    'gemini-2.0-flash-exp',          // Fallback: 2.0 Flash (fast, grounded)
-    'gemini-3-pro-preview',          // Legacy: 3.0 Pro Preview (may be deprecated)
+    'gemini-3-pro',      // Primary: Best reasoning for complex comparisons (stable, Nov 2025)
+    'gemini-2.5-pro',    // Fallback 1: Previous stable high-reasoning model
+    'gemini-2.5-flash',  // Fallback 2: High speed, lower cost
   ];
 
   let response: Response | null = null;
@@ -5155,6 +5155,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
 
             // ========================================
+            // WATERFRONT FALLBACK: Infer from WaterfrontFeatures array
+            // When Bridge has WaterfrontFeatures but NOT individual fields
+            // ========================================
+            const waterfrontFeatures = bridgeData.rawData?.WaterfrontFeatures;
+            if (waterfrontFeatures && Array.isArray(waterfrontFeatures) && waterfrontFeatures.length > 0) {
+              console.log('🌊 Found WaterfrontFeatures array:', waterfrontFeatures);
+
+              // Field 155: Infer waterfront Y/N from features presence
+              if (!mlsFields['155_water_frontage_yn'] && !additionalFields['155_water_frontage_yn']) {
+                additionalFields['155_water_frontage_yn'] = { value: 'Yes', source: 'Stellar MLS', confidence: 'Medium' };
+                console.log('🌊 Inferred 155_water_frontage_yn = Yes (from WaterfrontFeatures)');
+              }
+
+              // Field 157: Infer water access from features
+              if (!mlsFields['157_water_access_yn'] && !additionalFields['157_water_access_yn']) {
+                const hasAccess = waterfrontFeatures.some((f: string) =>
+                  /access|boat|dock|ramp|marina|launch/i.test(f)
+                );
+                const value = hasAccess ? 'Yes' : 'Yes'; // If waterfront features exist, assume access
+                additionalFields['157_water_access_yn'] = { value, source: 'Stellar MLS', confidence: 'Medium' };
+                console.log('🌊 Inferred 157_water_access_yn =', value, '(from WaterfrontFeatures)');
+              }
+
+              // Field 158: Infer water view from features
+              if (!mlsFields['158_water_view_yn'] && !additionalFields['158_water_view_yn']) {
+                const hasView = waterfrontFeatures.some((f: string) =>
+                  /view|front|facing|bay|gulf|ocean|lake|river|intracoastal/i.test(f)
+                );
+                if (hasView) {
+                  additionalFields['158_water_view_yn'] = { value: 'Yes', source: 'Stellar MLS', confidence: 'Medium' };
+                  console.log('🌊 Inferred 158_water_view_yn = Yes (from WaterfrontFeatures)');
+                }
+              }
+
+              // Field 159: Use WaterfrontFeatures as water body description if not set
+              if (!mlsFields['159_water_body_name'] && !additionalFields['159_water_body_name']) {
+                const value = waterfrontFeatures.join(', ');
+                additionalFields['159_water_body_name'] = { value, source: 'Stellar MLS', confidence: 'Medium' };
+                console.log('🌊 Inferred 159_water_body_name from WaterfrontFeatures:', value);
+              }
+            }
+
+            // ========================================
             // PARKING/CARPORT FIELDS (139-143) from Bridge MLS rawData
             // ========================================
             if (bridgeData.rawData?.CarportYN !== undefined && !mlsFields['139_carport_yn']) {
@@ -5175,6 +5218,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               const value = attachedYn === true || attachedYn === 'Yes' || attachedYn === 'Y' ? 'Yes' : 'No';
               additionalFields['141_garage_attached_yn'] = { value, source: 'Stellar MLS', confidence: 'High' };
               console.log('🚗 Mapped AttachedGarageYN -> 141_garage_attached_yn:', value);
+            }
+
+            // FALLBACK: Infer garage_attached_yn from ParkingFeatures if not directly available
+            if (!mlsFields['141_garage_attached_yn'] && !additionalFields['141_garage_attached_yn']) {
+              const parkingFeatures = bridgeData.rawData?.ParkingFeatures;
+              if (parkingFeatures && Array.isArray(parkingFeatures)) {
+                const hasAttachedGarage = parkingFeatures.some((f: string) =>
+                  /attached\s*garage|garage\s*attached/i.test(f)
+                );
+                if (hasAttachedGarage) {
+                  additionalFields['141_garage_attached_yn'] = { value: 'Yes', source: 'Stellar MLS', confidence: 'Medium' };
+                  console.log('🚗 Inferred 141_garage_attached_yn = Yes (from ParkingFeatures)');
+                }
+              }
             }
 
             if (bridgeData.rawData?.ParkingFeatures && !mlsFields['142_parking_features']) {

@@ -1654,9 +1654,9 @@ async function callGemini(address: string): Promise<{ fields: Record<string, any
 
   // FIX: Try multiple Gemini models in order (primary → fallback)
   const GEMINI_MODELS = [
-    'gemini-2.5-pro-preview-06-05',  // Latest 2.5 Pro Preview
-    'gemini-2.0-flash-exp',          // Fallback: 2.0 Flash (fast, grounded)
-    'gemini-3-pro-preview',          // Legacy: 3.0 Pro Preview (may be deprecated)
+    'gemini-3-pro',      // Primary: Best reasoning for complex comparisons (stable, Nov 2025)
+    'gemini-2.5-pro',    // Fallback 1: Previous stable high-reasoning model
+    'gemini-2.5-flash',  // Fallback 2: High speed, lower cost
   ];
 
   let response: Response | null = null;
