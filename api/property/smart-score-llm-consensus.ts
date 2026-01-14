@@ -84,19 +84,19 @@ interface ConsensusResult {
   property3Score: number;
   consensusMethod: 'agreement' | 'tiebreaker';
   llmVotes: {
-    perplexity: number[];
-    claudeOpus: number[];
-    gemini: number[];
+    perplexity: number[] | null;
+    claudeOpus: number[] | null;
+    gemini: number[] | null;
     tiebreaker?: {
       model: 'gpt-4o' | 'grok';
       scores: number[];
     };
   };
   fullResults: {
-    perplexity: LLMResponse;
-    claudeOpus: LLMResponse;
-    gemini: LLMResponse;
-    tiebreaker?: LLMResponse;
+    perplexity: LLMResponse | null;
+    claudeOpus: LLMResponse | null;
+    gemini: LLMResponse | null;
+    tiebreaker?: LLMResponse | null;
   };
 }
 
