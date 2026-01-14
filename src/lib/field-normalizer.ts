@@ -267,7 +267,7 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
   { fieldNumber: 106, apiKey: '106_water_provider', group: 'utilities', propName: 'waterProvider', type: 'string' },
   { fieldNumber: 107, apiKey: '107_avg_water_bill', group: 'utilities', propName: 'avgWaterBill', type: 'string' },
   { fieldNumber: 108, apiKey: '108_sewer_provider', group: 'utilities', propName: 'sewerProvider', type: 'string' },
-  { fieldNumber: 109, apiKey: '109_natural_gas', group: 'utilities', propName: 'naturalGas', type: 'string' },
+  { fieldNumber: 109, apiKey: '109_natural_gas', group: 'utilities', propName: 'naturalGas', type: 'boolean' },
   { fieldNumber: 110, apiKey: '110_trash_provider', group: 'utilities', propName: 'trashProvider', type: 'string' },
   { fieldNumber: 111, apiKey: '111_internet_providers_top3', group: 'utilities', propName: 'internetProvidersTop3', type: 'array' },
   { fieldNumber: 112, apiKey: '112_max_internet_speed', group: 'utilities', propName: 'maxInternetSpeed', type: 'string' },
@@ -295,7 +295,7 @@ export const FIELD_TO_PROPERTY_MAP: FieldPathMapping[] = [
   // ========== GROUP 16: Additional Features (Fields 131-138) ==========
   { fieldNumber: 131, apiKey: '131_view_type', group: 'utilities', propName: 'viewType', type: 'string' },
   { fieldNumber: 132, apiKey: '132_lot_features', group: 'utilities', propName: 'lotFeatures', type: 'string' },
-  { fieldNumber: 133, apiKey: '133_ev_charging', group: 'utilities', propName: 'evChargingYn', type: 'string' },
+  { fieldNumber: 133, apiKey: '133_ev_charging', group: 'utilities', propName: 'evChargingYn', type: 'boolean' },
   { fieldNumber: 134, apiKey: '134_smart_home_features', group: 'utilities', propName: 'smartHomeFeatures', type: 'string' },
   { fieldNumber: 135, apiKey: '135_accessibility_modifications', group: 'utilities', propName: 'accessibilityMods', type: 'string' },
   { fieldNumber: 136, apiKey: '136_pet_policy', group: 'utilities', propName: 'petPolicy', type: 'string' },
