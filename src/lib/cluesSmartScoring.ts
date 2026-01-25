@@ -63,24 +63,57 @@ export function getScoreResult(score: number): ScoreResult {
 
 /**
  * Normalize values to 0-100 scale (higher is better)
+ * BUG #5 FIX: Use absolute scale instead of relative min/max
+ * This prevents scores from changing when additional properties are added
+ *
+ * @param values - Array of raw values to normalize
+ * @param absoluteMin - Minimum possible value (default 0)
+ * @param absoluteMax - Maximum possible value (default 100)
  */
-export function normalizeHigherIsBetter(values: number[]): number[] {
+export function normalizeHigherIsBetter(
+  values: number[],
+  absoluteMin: number = 0,
+  absoluteMax: number = 100
+): number[] {
   if (!values.length) return [];
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  if (max === min) return values.map(() => 50); // All equal = average
-  return values.map((v) => ((v - min) / (max - min)) * 100);
+
+  // Use absolute scale for consistent scoring regardless of input set
+  const range = absoluteMax - absoluteMin;
+  if (range <= 0) return values.map(() => 50); // Invalid range = average
+
+  return values.map((v) => {
+    // Clamp value to absolute range
+    const clamped = Math.max(absoluteMin, Math.min(absoluteMax, v));
+    return ((clamped - absoluteMin) / range) * 100;
+  });
 }
 
 /**
  * Normalize values to 0-100 scale (lower is better)
+ * BUG #5 FIX: Use absolute scale instead of relative min/max
+ * This prevents scores from changing when additional properties are added
+ *
+ * @param values - Array of raw values to normalize
+ * @param absoluteMin - Minimum possible value (default 0)
+ * @param absoluteMax - Maximum possible value (default 100)
  */
-export function normalizeLowerIsBetter(values: number[]): number[] {
+export function normalizeLowerIsBetter(
+  values: number[],
+  absoluteMin: number = 0,
+  absoluteMax: number = 100
+): number[] {
   if (!values.length) return [];
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  if (max === min) return values.map(() => 50); // All equal = average
-  return values.map((v) => ((max - v) / (max - min)) * 100);
+
+  // Use absolute scale for consistent scoring regardless of input set
+  const range = absoluteMax - absoluteMin;
+  if (range <= 0) return values.map(() => 50); // Invalid range = average
+
+  return values.map((v) => {
+    // Clamp value to absolute range
+    const clamped = Math.max(absoluteMin, Math.min(absoluteMax, v));
+    // Invert: lower values get higher scores
+    return ((absoluteMax - clamped) / range) * 100;
+  });
 }
 
 /**

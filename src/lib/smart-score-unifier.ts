@@ -145,8 +145,9 @@ function arbitratePropertyScore(
 
     const finalScore = clientScore * weights.clientSide + llmScore * weights.llmConsensus;
 
+    // BUG #6 FIX: Store precise value - only round at final display
     return {
-      finalScore: Math.round(finalScore * 10) / 10, // Round to 1 decimal
+      finalScore,  // No intermediate rounding
       method: 'weighted',
       weights,
     };
@@ -169,8 +170,9 @@ function arbitratePropertyScore(
     `[SMART Score Unifier] HIGH DIVERGENCE: Client=${clientScore}, LLM=${llmScore}, Diff=${divergence}`
   );
 
+  // BUG #6 FIX: Store precise value - only round at final display
   return {
-    finalScore: Math.round(finalScore * 10) / 10,
+    finalScore,  // No intermediate rounding
     method: 'weighted',
     weights,
   };

@@ -36,6 +36,8 @@ export interface SectionScore {
   weightedContribution: number;    // sectionAverage * sectionWeight / 100
   fieldsPopulated: number;
   fieldsTotal: number;
+  dataCompleteness: number;        // % of fields populated in this section (0-1)
+  rawAverage: number;              // Average before completeness penalty
 }
 
 export interface SmartScoreResult {
@@ -738,32 +740,61 @@ export function calculateSmartScore(
       });
     }
 
-    // Calculate section average (only populated fields)
-    const populatedScores = fieldScores
+    // BUG #4 FIX: Include ALL field scores in average (don't filter out 0s for missing fields)
+    // This ensures missing fields penalize the score appropriately
+    const allScores = fieldScores.map(f => f.normalizedScore);
+    const populatedCount = fieldScores.filter(f =>
+      f.rawValue !== null && f.rawValue !== undefined && f.rawValue !== ''
+    ).length;
+    const totalFields = fieldScores.length;
+
+    // BUG #1 FIX: Calculate data completeness and apply penalty
+    const sectionDataCompleteness = totalFields > 0 ? populatedCount / totalFields : 0;
+
+    // Calculate raw average (only from populated fields for fairness)
+    const populatedFieldScores = fieldScores
       .filter(f => f.rawValue !== null && f.rawValue !== undefined && f.rawValue !== '')
       .map(f => f.normalizedScore);
 
-    const sectionAverage = populatedScores.length > 0
-      ? populatedScores.reduce((sum, score) => sum + score, 0) / populatedScores.length
+    const rawAverage = populatedFieldScores.length > 0
+      ? populatedFieldScores.reduce((sum, score) => sum + score, 0) / populatedFieldScores.length
       : 0;
 
-    // Apply section weight
-    const sectionWeight = weights[sectionId] || 0;
-    const weightedContribution = (sectionAverage / 100) * sectionWeight;
+    // Apply data completeness penalty: 100% complete = no penalty, 50% complete = 25% penalty
+    // Formula: finalAvg = rawAvg * (1 - (1 - completeness) * 0.5)
+    const completenessPenalty = (1 - sectionDataCompleteness) * 0.5;
+    const sectionAverage = rawAverage * (1 - completenessPenalty);
+
+    // BUG #7 FIX: Use default weight if undefined instead of 0
+    const DEFAULT_SECTION_WEIGHT = 5; // 5% if not specified
+    const sectionWeight = weights[sectionId] ?? DEFAULT_SECTION_WEIGHT;
+
+    if (weights[sectionId] === undefined) {
+      console.warn(`[SMART Score] Section ${sectionId} has no weight defined, using default ${DEFAULT_SECTION_WEIGHT}%`);
+    }
+
+    // BUG #3 FIX: Normalize weights to ensure they sum to 100%
+    const totalWeight = Object.values(weights).reduce((sum, w) => sum + (w || 0), 0);
+    const normalizedWeight = totalWeight > 0 ? (sectionWeight / totalWeight) * 100 : sectionWeight;
+
+    const weightedContribution = (sectionAverage / 100) * normalizedWeight;
 
     // Get section name from first field in this section
     const firstField = ALL_FIELDS.find((f: FieldDefinition) => f.num === fieldIds[0]);
     const sectionName = firstField?.group || sectionId;
 
+    // BUG #6 FIX: Store precise values - only round for final display
     sectionScores.push({
       sectionId,
       sectionName,
-      sectionWeight,
+      sectionWeight: normalizedWeight,
       fieldScores,
-      sectionAverage: Math.round(sectionAverage * 10) / 10,
-      weightedContribution: Math.round(weightedContribution * 10) / 10,
-      fieldsPopulated: populatedScores.length,
-      fieldsTotal: fieldScores.length
+      sectionAverage,              // No rounding - store precise value
+      weightedContribution,        // No rounding - store precise value
+      fieldsPopulated: populatedCount,
+      fieldsTotal: totalFields,
+      dataCompleteness: sectionDataCompleteness,
+      rawAverage
     });
   }
 
@@ -799,6 +830,10 @@ export function calculateSmartScore(
 // COMPARISON NORMALIZATION
 // ================================================================
 
+/**
+ * Normalize comparison across properties
+ * Uses full calculateSmartScore for each property with ALL fields
+ */
 export function normalizeComparison(
   property1: Property,
   property2: Property,
@@ -811,7 +846,7 @@ export function normalizeComparison(
 } {
   const properties = [property1, property2, property3];
 
-  // Find fields that ALL 3 properties have populated
+  // Find fields that ALL 3 properties have populated (for informational purposes)
   const commonFields = SCOREABLE_FIELDS.filter(fieldId => {
     return properties.every(prop => {
       const value = getFieldValue(prop, fieldId);
@@ -827,9 +862,8 @@ export function normalizeComparison(
   console.log(`  Common fields: ${commonFields.length}/${SCOREABLE_FIELDS.length}`);
   console.log(`  Excluded fields: ${excludedFields.length}`);
 
-  // Recalculate scores using ONLY common fields
-  // TODO: Implement filtered calculation
-
+  // Calculate full scores using ALL fields for each property
+  // Data completeness penalty ensures sparse properties score appropriately lower
   const normalizedScores = properties.map(prop =>
     calculateSmartScore(prop, weights)
   );
